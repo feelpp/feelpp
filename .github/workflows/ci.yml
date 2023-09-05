@@ -13,7 +13,7 @@ jobs:
   check_skip:
     runs-on: self-docker
     outputs:
-        check_skip_components: ${{ steps.check_skip_components.outputs.SKIP_COMPONENT }}
+        check_skip_components: ${{ steps.check_skip_components.outputs.SKIP_COMPONENTS }}
         check_skip_feelpp: ${{ steps.check_skip_components.outputs.SKIP_FEELPP }}
         check_skip_tests: ${{ steps.check_skip_components.outputs.SKIP_TESTS }}
         check_skip_toolboxes: ${{ steps.check_skip_components.outputs.SKIP_TOOLBOXES }}
@@ -28,9 +28,9 @@ jobs:
       id: check_skip_components
       run: |
         if [[ $(git show -s --format=%s) =~ "skip components" ]]; then
-          echo "SKIP_COMPONENT=true" >> $GITHUB_OUTPUT
+          echo "SKIP_COMPONENTS=true" >> $GITHUB_OUTPUT
         else
-          echo "SKIP_COMPONENT=false" >> $GITHUB_OUTPUT
+          echo "SKIP_COMPONENTS=false" >> $GITHUB_OUTPUT
         fi
         if [[ $(git show -s --format=%s) =~ "skip feelpp" ]]; then
           echo "SKIP_FEELPP=true" >> $GITHUB_OUTPUT
