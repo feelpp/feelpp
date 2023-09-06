@@ -19,12 +19,13 @@ on:
             skip:
                 description: 'Skip docker build'
                 required: false
-                type: boolean
-                default: false
+                type: string
+                default: ""
 
 jobs:
 
   version:
+    if: ${{ !contains( github.event.inputs.skip, 'skip docker' ) }}
     runs-on: self-docker
     outputs:
         version: ${{ steps.get_version.outputs.version }}
@@ -53,6 +54,7 @@ jobs:
             echo "version=$version" >> $GITHUB_OUTPUT
 
   docker:
+    if: ${{ !contains( github.event.inputs.skip, 'skip docker' ) }}
     needs: [version]
     runs-on: self-docker
     strategy:
@@ -72,8 +74,8 @@ jobs:
               service: "feelpp-dev",
               flavor: "${{ github.event.inputs.flavor }}",
               dist: "${{ github.event.inputs.dist }}",
-              version: "${{ github.event.inputs.version }}",
-              tag: "v${{ github.event.inputs.version }}-${{ github.event.inputs.dist }}",
+              version: "${{ needs.version.outputs.version }}",
+              tag: "v${{ needs.version.outputs.version }}-${{ github.event.inputs.dist }}",
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile-dev",
             }
