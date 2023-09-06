@@ -79,7 +79,7 @@ public:
     typedef typename fluid_model_type::mesh_type mesh_fluid_type;
     typedef mesh_fluid_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    static const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nDim = mesh_type::nDim;
 
     // materials properties
     typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;

@@ -53,7 +53,7 @@ class Geo0D
 
   public:
     typedef Geo0D<Dim, T, IndexT> self_type;
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
     static const bool is_simplex = true;
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;

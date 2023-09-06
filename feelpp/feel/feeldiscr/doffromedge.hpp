@@ -62,13 +62,13 @@ public:
     
     using global_dof_from_entity_type = typename doftable_type::global_dof_from_entity_type;
     using size_type = typename mesh_type::size_type;
-    static const uint16_type nOrder = fe_type::nOrder;
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type Shape = mesh_type::Shape;
-    static const uint16_type nComponents = fe_type::nComponents;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type nOrder = fe_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type Shape = mesh_type::Shape;
+    static inline const uint16_type nComponents = fe_type::nComponents;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
 
 
     static const bool is_continuous = fe_type::isContinuous;
@@ -83,7 +83,7 @@ public:
 
     static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
+    static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
 
     //@}
 

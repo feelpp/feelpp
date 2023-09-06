@@ -26,9 +26,9 @@ exprResidual( CoefficientFormPDEType const& cfpde, std::shared_ptr<ModelPhysicCo
               FieldType const& u, SymbolsExprType const& se, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
 {
     using Coefficient = typename CoefficientFormPDEType::Coefficient;
-    static const uint16_type nDim = CoefficientFormPDEType::nDim;
-    static constexpr bool unknown_is_scalar = CoefficientFormPDEType::unknown_is_scalar;
-    static const uint16_type nOrderUnknown = CoefficientFormPDEType::nOrderUnknown;
+    constexpr uint16_type nDim = CoefficientFormPDEType::nDim;
+    constexpr bool unknown_is_scalar = CoefficientFormPDEType::unknown_is_scalar;
+    constexpr uint16_type nOrderUnknown = CoefficientFormPDEType::nOrderUnknown;
 
     bool hasConvectionTerm = physicCFPDEData->hasCoefficient( Coefficient::convection );
     bool hasDiffusionTerm = physicCFPDEData->hasCoefficient( Coefficient::diffusion );

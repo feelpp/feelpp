@@ -79,35 +79,35 @@ public:
     static const size_type Shape = mpl::at<shapes_t, mpl::int_<Dim> >::type::value;
     static const size_type Geometry = mpl::at<geometries_t, mpl::int_<Dim> >::type::value;
 
-    inline static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type nOrder = Order;
+    static inline const uint16_type nRealDim = RDim;
 
-    static const uint16_type topological_dimension = nDim;
-    static const uint16_type real_dimension = RDim;
+    static inline const uint16_type topological_dimension = nDim;
+    static inline const uint16_type real_dimension = RDim;
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
     typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type edge_type;
     
-    static const uint16_type numVertices = mpl::at<vertices_t, mpl::int_<Dim> >::type::value;
-    static const uint16_type numEdges = mpl::at<edges_t, mpl::int_<Dim> >::type::value;
-    static const uint16_type numFaces = mpl::at<geo_faces_index_t, mpl::int_<Dim> >::type::value;
-    static const uint16_type numGeometricFaces = mpl::at<geo_faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numTopologicalFaces = mpl::at<faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
+    static inline const uint16_type numVertices = mpl::at<vertices_t, mpl::int_<Dim> >::type::value;
+    static inline const uint16_type numEdges = mpl::at<edges_t, mpl::int_<Dim> >::type::value;
+    static inline const uint16_type numFaces = mpl::at<geo_faces_index_t, mpl::int_<Dim> >::type::value;
+    static inline const uint16_type numGeometricFaces = mpl::at<geo_faces_index_t, mpl::int_<nDim> >::type::value;
+    static inline const uint16_type numTopologicalFaces = mpl::at<faces_index_t, mpl::int_<nDim> >::type::value;
+    static inline const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
+    static inline const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
 
-    static const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
-    static const uint16_type nbPtsPerEdge = ( nOrder==0 )?( ( nDim==1 )?1:0 ):mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerFace = ( nOrder==0 )?( ( nDim==2 )?1:0 ):mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type nbPtsPerVolume = ( nOrder==0 )?( ( nDim==3 )?1:0 ):mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
+    static inline const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
+    static inline const uint16_type nbPtsPerEdge = ( nOrder==0 )?( ( nDim==1 )?1:0 ):(uint16_type)mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
+    static inline const uint16_type nbPtsPerFace = ( nOrder==0 )?( ( nDim==2 )?1:0 ):(uint16_type)mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
+    static inline const uint16_type nbPtsPerVolume = ( nOrder == 0 ) ? ( ( nDim == 3 ) ? 1 : 0 ) : (uint16_type)mpl::at<points_volume_t, mpl::int_<nDim>>::type::value;
+    static inline const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
                                            numEdges * nbPtsPerEdge +
                                            numFaces * nbPtsPerFace +
                                            numVolumes * nbPtsPerVolume );
 
-    static const uint16_type orderSquare = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
+    static inline const uint16_type orderSquare = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
                              boost::mpl::int_<5> >,
                              boost::mpl::int_<5>,
                              typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
@@ -219,7 +219,7 @@ public:
     template<int N>
     struct PolyDims
     {
-        static const uint32_type value = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+        static inline const uint32_type value = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                                  mpl::identity<mpl::int_<( N+1 )*( N+1 )*( N+1 )> >,
                                  typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
                                  mpl::identity<mpl::int_<( N+1 )*( N+1 )> >,
@@ -280,12 +280,6 @@ public:
         return "hypercube";
     }
 };
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Hypercube<Dim, Order, RDim>::topological_dimension;
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim >
-const uint16_type Hypercube<Dim, Order, RDim>::nOrder;
 
 }
 #endif /* __Hypercube_H */

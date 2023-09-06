@@ -28,7 +28,7 @@ public:
     typedef typename space_type::element_type element_type;
     typedef typename space_type::element_ptrtype element_ptrtype;
 
-    static const uint16_type Dim = levelset_type::nDim;
+    static inline const uint16_type Dim = levelset_type::nDim;
 
     //--------------------------------------------------------------------//
     // Construction

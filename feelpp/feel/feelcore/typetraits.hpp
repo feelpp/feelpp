@@ -295,8 +295,8 @@ struct type_traits<FEELPP_TRAITS_TYPE( T )> {                                   
     typedef FEELPP_TRAITS_REAL_TYPE( T ) real_type;                                  \
     typedef FEELPP_TRAITS_REAL_TYPE( T ) precision_type;                             \
                                                                                     \
-    static const bool is_floating = FEELPP_TRAITS_IS_FLOATING( T );       \
-    static const uint16_type rank = FEELPP_TRAITS_RANK( T );              \
+    static inline const bool is_floating = FEELPP_TRAITS_IS_FLOATING( T );       \
+    static inline const uint16_type rank = FEELPP_TRAITS_RANK( T );              \
     static real_type epsilon() { return FEELPP_TRAITS_EPSILON( T ); }     \
 };                                                                      \
 inline                                                                              \

@@ -64,7 +64,7 @@ public:
     typedef Backend<value_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
-    static const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type Dim = space_type::nDim;
 
 
     static const value_type polyOrder = space_type::basis_type::nOrder;
