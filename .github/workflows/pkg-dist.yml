@@ -124,7 +124,7 @@ jobs:
             echo "inputs: ${{ inputs.skip }}"
             echo "skip commit: ${{ contains( github.event.head_commit.message, 'skip docker' ) }}"
             echo "skip inputs: ${{ contains( inputs.skip, 'skip docker' ) }}"
-            echo "skip: ${{ contains( github.event.head_commit.message, 'skip docker' ) || contains( inputs.skip, 'skip docker' ) }}"
+            echo "skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}"
 
     pkg-docker:
       needs: pkg-docker-dbg
@@ -133,6 +133,6 @@ jobs:
         dist: ${{ inputs.dist }}
         flavor: ${{ inputs.flavor }}
         version: ${{ inputs.parallel }}
-        skip: ${{ contains( github.event.head_commit.message, 'skip docker' ) || contains( inputs.skip, 'skip docker' ) }}
+        skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}
       secrets: inherit
 
