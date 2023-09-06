@@ -53,7 +53,7 @@ jobs:
             echo "version=$version" >> $GITHUB_OUTPUT
 
   docker:
-    if: ${{ !github.event.inputs.skip }}
+    if: !github.event.inputs.skip
     needs: [version]
     runs-on: self-docker
     strategy:
