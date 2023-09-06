@@ -23,7 +23,11 @@ jobs:
     activate:
         runs-on: self-pkg
         steps:
-        - run: echo ok go ${{ env.FLAVOR }} - ${{ env.DIST }}
+        - run: |
+            echo "  flavor: ${{ github.event.inputs.flavor }}"
+            echo "    dist: ${{ github.event.inputs.dist }}"
+            echo "    skip: ${{ github.event.inputs.skip }}"
+            echo "parallel: ${{ github.event.inputs.parallel }}"
           shell: bash
           env:
             DIST: ${{ github.event.inputs.dist }}

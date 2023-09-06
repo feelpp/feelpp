@@ -35,7 +35,7 @@ jobs:
     with:
         dist: ${{ matrix.dist }}
         flavor: ${{ matrix.flavor }}
-        parallel: ${{ github.event.inputs.parallel }}
-        skip: ${{ github.event.inputs.skip }}
+        parallel: ${{ inputs.parallel || '20' }}
+        skip: ${{ inputs.skip || '' }}
     secrets: inherit
 
