@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
-# set -x
+set -x
 component=${1:-base}
 
 source $(dirname $0)/common.sh
@@ -9,9 +9,9 @@ source $(dirname $0)/common.sh
 echo '--- clone/pull feelpp/docker'
 if [ -d docker ]; then (cd docker; git pull) else git clone --depth=1 https://github.com/feelpp/docker; fi
 
-#tag=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
+#tag=$(echo "${BRANCH}" | sed -e 's/\//-/g')-$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
 #tag=$(cut -d- -f 2- <<< $(tag_from_target $TARGET))
-BRANCHTAG=$(echo "${BUILDKITE_BRANCH}" | sed -e 's/\//-/g')
+BRANCHTAG=$(echo "${BRANCH}" | sed -e 's/\//-/g')
 tag_compiler=$(echo ${CC} | sed -e 's/-//g')
 if test "$tag_compiler" != "${tag_compiler%gcc*}"; then
     tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)-${tag_compiler}
@@ -58,34 +58,16 @@ else
     CTEST_FLAGS="-T test --no-compress-output --output-on-failure"
 fi
 
-if [[ ! -z ${BUILDKITE_JOB_ID} ]]; then
-cat << EOF | buildkite-agent annotate --style "info"
-Building Feel++ ${component} with the following configuration
- * CXX=${CXX}
- * CC=${CXX}
- * CONFIGURE_FLAGS=${CONFIGURE_FLAGS}
- * CMAKE_FLAGS=${CMAKE_FLAGS}
- * CTEST_FLAGS=${CTEST_FLAGS}
- * JOBS=${JOBS}
- * BRANCH=${BUILDKITE_BRANCH}
-
-Docker image: ghcr.io/feelpp/${image}:${tag}
-EOF
-fi
-
 docker build \
        --pull \
        --tag=ghcr.io/feelpp/${image}:${tag} \
        --build-arg=BUILD_JOBS=${JOBS}\
-       --build-arg=BRANCH=${BUILDKITE_BRANCH}\
+       --build-arg=BRANCH=${BRANCH}\
        --build-arg=CXX="${CXX}" \
        --build-arg=CC="${CC}" \
        --build-arg=CONFIGURE_FLAGS="${CONFIGURE_FLAGS}" \
        --build-arg=CMAKE_FLAGS="${CMAKE_FLAGS}" \
        --build-arg=CTEST_FLAGS="${CTEST_FLAGS}" \
-       --build-arg=BUILDKITE_JOB_ID="${BUILDKITE_JOB_ID}"\
-       --build-arg=BUILDKITE_AGENT_ACCESS_TOKEN="${BUILDKITE_AGENT_ACCESS_TOKEN}" \
-       --build-arg=BUILDKITE_AGENT_ENDPOINT="${BUILDKITE_AGENT_ENDPOINT}" \
        --no-cache=true \
        -f docker/${image}/dockerfile.tmp \
        docker/${image}

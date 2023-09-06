@@ -74,7 +74,7 @@ public :
     typedef std::shared_ptr<element_fluid_meshvelocityonboundary_type> element_fluid_meshvelocityonboundary_ptrtype;
     //___________________________________________________________________________________//
     // normal stress from fluid into solid model
-    static const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
+    static inline const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
     typedef bases<Lagrange< nOrder_solid_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid_normalstressfromfluid_type;
     //typedef FunctionSpace<mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
     typedef FunctionSpace<trace_mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
@@ -84,7 +84,7 @@ public :
     typedef std::shared_ptr<element_solid_normalstressfromfluid_type> element_solid_normalstressfromfluid_ptrtype;
     //___________________________________________________________________________________//
     // normal stress from fluid into solid 1dreduced model
-    static const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
+    static inline const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
     typedef bases<Lagrange< nOrder_solid1dReduced_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid1dreduced_normalstressfromfluid_vect_type;
     typedef FunctionSpace<mesh_solid_1dreduced_type, basis_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_type;
     typedef std::shared_ptr<space_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_ptrtype;

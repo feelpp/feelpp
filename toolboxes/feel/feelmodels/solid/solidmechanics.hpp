@@ -97,16 +97,16 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
     // basis
-    static const uint16_type nOrder = BasisDisplacementType::nOrder;
-    static const uint16_type nOrderDisplacement = nOrder;
-    static const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
+    static inline const uint16_type nOrder = BasisDisplacementType::nOrder;
+    static inline const uint16_type nOrderDisplacement = nOrder;
+    static inline const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
     typedef BasisDisplacementType basis_u_type;
     typedef Lagrange<nOrderPressure, Scalar,Continuous,PointSetFekete> basis_l_type;
     typedef Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
