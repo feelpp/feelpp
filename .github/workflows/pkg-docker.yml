@@ -70,15 +70,6 @@ jobs:
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }
-          - {
-              service: "feelpp-dev",
-              flavor: "${{ github.event.inputs.flavor }}",
-              dist: "${{ github.event.inputs.dist }}",
-              version: "${{ needs.version.outputs.version }}",
-              tag: "v${{ needs.version.outputs.version }}-${{ github.event.inputs.dist }}",
-              dir: "feelpp/tools/scripts/pkg/",
-              dockerfile: "Dockerfile-dev",
-            }
     name: Build and Push feelpp/${{ matrix.service }}:${{ matrix.tag }}
 
     steps:
@@ -103,7 +94,6 @@ jobs:
     -
       name: Build ${{ matrix.service }}:${{ matrix.tag }}
       uses: docker/build-push-action@v4
-      if: ${{ matrix.service == 'feelpp' }}
       with:
         context: ${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.dist }}
@@ -117,13 +107,12 @@ jobs:
         secrets: |
             GIT_AUTH_TOKEN=${{ secrets.CR_PAT }}
     -
-      name: Build ${{ matrix.service }}:${{ matrix.tag }}
-      if: ${{ matrix.service == 'feelpp-dev'}}
+      name: Build ${{ matrix.service }}-dev:${{ matrix.tag }}
       uses: docker/build-push-action@v4
       with:
         context: ./${{ matrix.dir }}
-        tags: ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.dist }}
-        file: ${{ matrix.dir }}/${{ matrix.dockerfile }}
+        tags: ghcr.io/feelpp/${{ matrix.service }}-dev:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}-dev:${{ matrix.dist }}
+        file: ${{ matrix.dir }}/${{ matrix.dockerfile }}-dev
         build-args: TAG=${{ matrix.tag }}
         push: true
         secrets: |
