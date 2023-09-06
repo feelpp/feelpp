@@ -114,13 +114,25 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    pkg-docker:
+    pkg-docker-dbg:
       needs: pkg
+      runs-on: self-docker
+      steps:
+        - name: Show
+          run: |
+            echo "message: ${{ github.event.head_commit.message }}"
+            echo "inputs: ${{ inputs.skip }}"
+            echo "skip commit: ${{ contains( github.event.head_commit.message, 'skip docker' ) }}"
+            echo "skip inputs: ${{ contains( inputs.skip, 'skip docker' ) }}"
+            echo "skip: ${{ contains( github.event.head_commit.message, 'skip docker' ) || contains( inputs.skip, 'skip docker' ) }}"
+
+    pkg-docker:
+      needs: pkg-docker-dbg
       uses: ./.github/workflows/pkg-docker.yml
       with:
         dist: ${{ inputs.dist }}
         flavor: ${{ inputs.flavor }}
         version: ${{ inputs.parallel }}
-        skip: ${{ contains( inputs.skip, 'skip docker' ) }}
+        skip: ${{ contains( github.event.head_commit.message, 'skip docker' ) || contains( inputs.skip, 'skip docker' ) }}
       secrets: inherit
 
