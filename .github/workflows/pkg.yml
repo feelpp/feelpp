@@ -33,9 +33,9 @@ jobs:
           - { distro: 'debian/sid', flavor: debian, dist: sid, version: 'unstable' }
     uses: ./.github/workflows/pkg-dist.yml
     with:
-        dist: ${{ matrix.dist }}
-        flavor: ${{ matrix.flavor }}
-        parallel: ${{ inputs.parallel || '20' }}
-        skip: ${{ inputs.skip || '' }}
+        dist: "${{ matrix.dist }}"
+        flavor: "${{ matrix.flavor }}"
+        parallel: "${{ inputs.parallel || '20' }}"
+        skip: "${{ inputs.skip || '' }}"
     secrets: inherit
 

@@ -23,24 +23,25 @@ jobs:
     activate:
         runs-on: self-pkg
         steps:
-        - run: |
-            echo "  flavor: ${{ github.event.inputs.flavor }}"
-            echo "    dist: ${{ github.event.inputs.dist }}"
-            echo "    skip: ${{ github.event.inputs.skip }}"
-            echo "parallel: ${{ github.event.inputs.parallel }}"
+        - name: how
+          run: |
+            echo "  flavor: ${{ inputs.flavor }}"
+            echo "    dist: ${{ inputs.dist }}"
+            echo "    skip: ${{ inputs.skip }}"
+            echo "parallel: ${{ inputs.parallel }}"
           shell: bash
           env:
-            DIST: ${{ github.event.inputs.dist }}
-            FLAVOR: ${{ github.event.inputs.flavor }}
+            DIST: ${{ inputs.dist }}
+            FLAVOR: ${{ inputs.flavor }}
     pkg:
-        if: ${{ github.event.inputs.flavor == 'ubuntu' || github.event.inputs.flavor == 'debian' }}
+        if: ${{ inputs.flavor == 'ubuntu' || inputs.flavor == 'debian' }}
         needs: activate
         runs-on: self-pkg
         timeout-minutes: 600
         env:
-            DIST: ${{ github.event.inputs.dist }}
-            FLAVOR: ${{ github.event.inputs.flavor }}
-            DEB_BUILD_OPTIONS: "parallel=${{ github.event.inputs.parallel }}"
+            DIST: ${{ inputs.dist }}
+            FLAVOR: ${{ inputs.flavor }}
+            DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
         steps:
         - name: Checkout code
           uses: actions/checkout@v3
