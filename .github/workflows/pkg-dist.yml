@@ -104,7 +104,7 @@ jobs:
             COMPONENT: feelpp-python
 
         - name: Publish Feelpp Python package
-          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip publish' ) }}
+          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip publish' )  }}
           run: |
             echo "Publishing Feelpp Python packages"
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
@@ -114,8 +114,13 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-        - name: Build and publish Feelpp Docker package
-          if: ${{ !contains( github.event.head_commit.message, 'skip docker' ) && !contains( inputs.skip, 'skip docker' )}}
-          run: |
-            feelpp/tools/scripts/pkg/feelpp_pkg_docker.sh
+    pkg-docker:
+      needs: pkg
+      uses: ./.github/workflows/pkg-docker.yml
+      with:
+        dist: ${{ inputs.dist }}
+        flavor: ${{ inputs.flavor }}
+        version: ${{ inputs.parallel }}
+        skip: ${{ contains( inputs.skip, 'skip docker' ) }}
+      secrets: inherit
 
