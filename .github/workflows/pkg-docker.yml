@@ -24,8 +24,37 @@ on:
 
 jobs:
 
+  version:
+    runs-on: self-docker
+    outputs:
+        version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+#        lfs: true
+        token: ${{ secrets.CR_PAT }}
+        submodules: recursive
+    - name: Get version
+      id: get_version
+      run: |
+            cmake --preset feelpp
+            cmake --build --preset feelpp -t dist
+            COMPONENT=feelpp
+            main_version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g")
+            extra_version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g")
+            if [ -z $extra_version ]; then
+                version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g" )
+            else
+                version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1-\2/g" )
+            fi
+            echo "main_version=$main_version"
+            echo "extra_version=$extra_version"
+            echo "version=$version"
+            echo "version=$version" >> $GITHUB_OUTPUT
+
   docker:
     if: ${{ !github.event.inputs.skip }}
+    needs: [version]
     runs-on: self-docker
     strategy:
       fail-fast: false
@@ -35,8 +64,9 @@ jobs:
               service: "feelpp",
               flavor: "${{ github.event.inputs.flavor }}",
               dist: "${{ github.event.inputs.dist }}",
-              version: "${{ github.event.inputs.version }}",
-              tag: "v${{ github.event.inputs.version }}-${{ github.event.inputs.dist }}",
+              version: "${{ needs.version.outputs.version }}",
+              tag: "v${{ needs.version.outputs.version }}-${{ github.event.inputs.dist }}",
+              dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }
           - {
@@ -45,7 +75,8 @@ jobs:
               dist: "${{ github.event.inputs.dist }}",
               version: "${{ github.event.inputs.version }}",
               tag: "v${{ github.event.inputs.version }}-${{ github.event.inputs.dist }}",
-              dockerfile: "Dockerfile",
+              dir: "feelpp/tools/scripts/pkg/",
+              dockerfile: "Dockerfile-dev",
             }
     name: Build and Push feelpp/${{ matrix.service }}:${{ matrix.tag }}
 
@@ -73,9 +104,9 @@ jobs:
       uses: docker/build-push-action@v4
       if: ${{ matrix.service == 'feelpp' }}
       with:
-        context: ./${{ matrix.service }}/
+        context: ${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.dist }}
-        file: ${{ matrix.service }}/${{ matrix.dockerfile }}
+        file: ${{ matrix.dir }}/${{ matrix.dockerfile }}
         build-args: |
           IMAGE=${{ matrix.flavor }}:${{ matrix.dist }}
           FLAVOR=${{ matrix.flavor }}
@@ -87,11 +118,11 @@ jobs:
     -
       name: Build ${{ matrix.service }}:${{ matrix.tag }}
       if: ${{ matrix.service == 'feelpp-dev' }}
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v4
       with:
-        context: ./${{ matrix.service }}
+        context: ./${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.dist }}
-        file: ${{ matrix.service }}/${{ matrix.dockerfile }}
+        file: ${{ matrix.dir }}/${{ matrix.dockerfile }}
         build-args: TAG=${{ matrix.tag }}
         push: true
         secrets: |
