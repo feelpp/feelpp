@@ -21,7 +21,6 @@ on:
 
 jobs:
     activate:
-        if: ${{ github.event.inputs.flavor == 'ubuntu' || github.event.inputs.flavor == 'debian' }}
         runs-on: self-pkg
         steps:
         - run: echo ok go ${{ env.FLAVOR }} - ${{ env.DIST }}
@@ -30,6 +29,7 @@ jobs:
             DIST: ${{ github.event.inputs.dist }}
             FLAVOR: ${{ github.event.inputs.flavor }}
     pkg:
+        if: ${{ github.event.inputs.flavor == 'ubuntu' || github.event.inputs.flavor == 'debian' }}
         needs: activate
         runs-on: self-pkg
         timeout-minutes: 600
