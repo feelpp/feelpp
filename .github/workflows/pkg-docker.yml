@@ -53,7 +53,6 @@ jobs:
             echo "version=$version" >> $GITHUB_OUTPUT
 
   docker:
-    if: ${{ !github.event.inputs.skip }}
     needs: [version]
     runs-on: self-docker
     strategy:
@@ -117,7 +116,7 @@ jobs:
             GIT_AUTH_TOKEN=${{ secrets.CR_PAT }}
     -
       name: Build ${{ matrix.service }}:${{ matrix.tag }}
-      if: ${{ matrix.service == 'feelpp-dev' }}
+      if: ${{ matrix.service == 'feelpp-dev'}}
       uses: docker/build-push-action@v4
       with:
         context: ./${{ matrix.dir }}
