@@ -21,12 +21,18 @@ on:
                 required: false
                 type: string
                 default: ""
+            continue-on-error:
+                description: 'Continue on error'
+                required: false
+                type: string
+                default: "false"
 
 jobs:
 
   version:
-    if: ${{ !contains( github.event.inputs.skip, 'skip docker' ) }}
+    if: ${{ !contains( inputs.skip, 'skip docker' ) }}
     runs-on: self-docker
+    continue-on-error: ${{ inputs.continue-on-error ==  'true' }}
     outputs:
         version: ${{ steps.get_version.outputs.version }}
     steps:
@@ -54,19 +60,20 @@ jobs:
             echo "version=$version" >> $GITHUB_OUTPUT
 
   docker:
-    if: ${{ !contains( github.event.inputs.skip, 'skip docker' ) }}
+    if: ${{ !contains( inputs.skip, 'skip docker' ) }}
     needs: [version]
     runs-on: self-docker
+    continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - {
               service: "feelpp",
-              flavor: "${{ github.event.inputs.flavor }}",
-              dist: "${{ github.event.inputs.dist }}",
+              flavor: "${{ inputs.flavor }}",
+              dist: "${{ inputs.dist }}",
               version: "${{ needs.version.outputs.version }}",
-              tag: "v${{ needs.version.outputs.version }}-${{ github.event.inputs.dist }}",
+              tag: "v${{ needs.version.outputs.version }}-${{ inputs.dist }}",
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }

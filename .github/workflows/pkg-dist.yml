@@ -18,6 +18,10 @@ on:
                 required: false
                 type: string
                 default: ""
+            continue-on-error:
+                required: false
+                type: string
+                default: "false"
 
 jobs:
     activate:
@@ -37,6 +41,7 @@ jobs:
         if: ${{ inputs.flavor == 'ubuntu' || inputs.flavor == 'debian' }}
         needs: activate
         runs-on: self-pkg
+        continue-on-error: ${{ inputs.continue-on-error == 'true' }}
         timeout-minutes: 600
         env:
             DIST: ${{ inputs.dist }}
@@ -139,5 +144,6 @@ jobs:
         flavor: ${{ inputs.flavor }}
         version: ${{ inputs.parallel }}
         skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}
+        continue-on-error: ${{ inputs.continue-on-error }}
       secrets: inherit
 
