@@ -21,7 +21,7 @@ jobs:
         check_skip_python: ${{ steps.check_skip_components.outputs.SKIP_PYTHON }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Check if skip components
@@ -88,12 +88,12 @@ jobs:
               - { target: "debian:12", continue-on-error: false }
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Workaround checkout Needed single revision issue
         run: |
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -128,7 +128,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -162,7 +162,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -196,7 +196,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -230,7 +230,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 

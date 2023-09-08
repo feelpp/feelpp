@@ -49,7 +49,7 @@ jobs:
             DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
         steps:
         - name: Checkout code
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
           with: 
             submodules: true
         - name: Build Feelpp package

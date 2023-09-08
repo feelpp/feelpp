@@ -24,7 +24,7 @@ jobs:
       tag: ${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
     name: feelpp-runner:${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Configure feelpp
