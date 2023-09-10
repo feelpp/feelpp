@@ -183,7 +183,7 @@ Eye2Brain<Order, Dim>::initModel()
     form1_type out1;
     int measure_index = ioption(_name = "measure-index");
     Feel::cout << "Measure index = " << measure_index << std::endl;
-    if (measure_index >= 1 && measure_index <= 9)    // sensor output
+    if (measure_index >= 1 && measure_index <= 9)    // sensor pointwise output
     {
         std::string name = m_outputNames[measure_index-1];
         std::vector<double> coord = m_coordinates[measure_index-1];
@@ -192,7 +192,21 @@ Eye2Brain<Order, Dim>::initModel()
         for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
             n(i) = coord[i];
         Feel::cout << n << std::endl;
-        auto s = std::make_shared<SensorPointwise<space_type>>(this->Xh, n, "O");
+        auto s = std::make_shared<SensorPointwise<space_type>>(this->Xh, n, name);
+        out1 = form1(_test = this->Xh, _vector = s->containerPtr());
+        out1.vectorPtr()->close();
+    }
+    else if (measure_index >= 11 && measure_index <= 19)    // sensor guassian output
+    {
+        std::string name = m_outputNames[measure_index - 11];
+        std::vector<double> coord = m_coordinates[measure_index - 11];
+        Feel::cout << "[Eye2brain] Output " << name << " at coord " << coord << std::endl;
+        node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
+        for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
+            n(i) = coord[i];
+        Feel::cout << n << std::endl;
+        double radius = 0.1;
+        auto s = std::make_shared<SensorGaussian<space_type>>(this->Xh, n, radius, name);
         out1 = form1(_test = this->Xh, _vector = s->containerPtr());
         out1.vectorPtr()->close();
     }
