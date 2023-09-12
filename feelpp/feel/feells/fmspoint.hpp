@@ -42,7 +42,7 @@ class FmsPoint
 {
 public:
     typedef T value_type;
-    static const uint16_type dim = Dim;
+    static inline const uint16_type dim = Dim;
     typedef boost::numeric::ublas::bounded_array<T, Dim> super;
     FmsPoint()
         : super( dim, value_type(0.0) ) {}

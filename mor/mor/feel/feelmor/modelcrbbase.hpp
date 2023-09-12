@@ -116,7 +116,14 @@ public :
 };
 
 
-
+/**
+ * @brief base class for finite element and reduced basis models
+ * 
+ * @tparam ParameterDefinition parameters definition type
+ * @tparam FunctionSpaceDefinition function space definition type
+ * @tparam _Options options
+ * @tparam EimDefinition if relevant, EIM definition type
+ */
 template <typename ParameterDefinition=ParameterDefinitionBase,
           typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase,
           int _Options = 0,
@@ -1610,6 +1617,27 @@ public :
         return dummy_bdf;
     }
 
+    void setTimeInitial( double const& timeInitial )
+    {
+        M_timeInitial = timeInitial;
+    }
+    double timeInitial() const { return M_timeInitial; }
+    void setTimeFinal( double const& timeFinal )
+    {
+        M_timeFinal = timeFinal;
+    }
+    double timeFinal() const { return M_timeFinal; }
+    void setTimeStep( double const& timeStep )
+    {
+        M_timeStep = timeStep;
+    }
+    double timeStep() const { return M_timeStep; }
+    void setTimeOrder( int const& timeOrder )
+    {
+        M_timeOrder = timeOrder;
+    }
+    int timeOrder() const { return M_timeOrder; }
+
     //initialize the field for transient problems
     virtual void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
     {
@@ -2300,8 +2328,34 @@ public:
     bool hasDisplacementField() const { return M_has_displacement_field; }
     void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
 
+    /**
+     * @brief get the plugin name
+     * 
+     * @return std::string the name of the plugin
+     */
+    std::string pluginName() const { return M_pluginName; }
+
+    /**
+     * @brief get the plugin library name
+     * 
+     * @return std::string the name of the plugin library
+     */
+    std::string pluginLibName() const { return M_pluginLibName; }
+
 protected:
+
+    /**
+     * @brief Set the Plugin Name object
+     * 
+     * @param name 
+     */
     void setPluginName( std::string const& name ) { M_pluginName = name; }
+
+    /**
+     * @brief Set the Plugin Lib Name object
+     * 
+     * @param libname 
+     */
     void setPluginLibName( std::string const& libname ) { M_pluginLibName = libname; }
 
 protected :
@@ -2325,6 +2379,11 @@ protected :
     sparse_matrix_ptrtype M;
     sparse_matrix_ptrtype M_energy_matrix;
     sparse_matrix_ptrtype M_mass_matrix;
+
+    double M_timeInitial;
+    double M_timeFinal;
+    double M_timeStep;
+    int M_timeOrder;
 
     operatorcomposite_ptrtype M_compositeA;
     operatorcomposite_ptrtype M_compositeM;

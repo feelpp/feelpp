@@ -1927,6 +1927,10 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
     {
         if ( Atrans->isInitialized() )
         {
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 18 )
+            ierr = MatTransposeSetPrecursor( M_mat, Atrans->M_mat );
+            CHKERRABORT( this->comm(), ierr );
+#endif
             ierr = MatTranspose( M_mat, MAT_REUSE_MATRIX,&Atrans->M_mat );
             CHKERRABORT( this->comm(),ierr );
         }

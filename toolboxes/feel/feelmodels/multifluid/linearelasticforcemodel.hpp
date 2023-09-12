@@ -36,7 +36,7 @@ public:
     typedef typename super_type::element_cauchygreen_invariant_type element_energyderivative_type;
     typedef typename super_type::element_cauchygreen_invariant_ptrtype element_energyderivative_ptrtype;
 
-    static const uint16_type Dim = levelset_type::nDim;
+    static inline const uint16_type Dim = levelset_type::nDim;
 
     //--------------------------------------------------------------------//
     // Construction

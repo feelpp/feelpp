@@ -84,8 +84,8 @@ class Mesh3D
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
 
   public:
-    static const uint16_type nDim = 3;
-    static const uint16_type nRealDim = 3;
+    static inline const uint16_type nDim = 3;
+    static inline const uint16_type nRealDim = 3;
 
     /** @name Typedefs
      */

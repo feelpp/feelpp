@@ -60,8 +60,8 @@ public:
     typedef T value_type;
     typedef ublas::matrix<value_type,ublas::row_major> matrix_type;
 #if 0
-    static const uint16_type nDim = PTraits::nDim;
-    static const uint16_type nOrder = PTraits::nOrder;
+    static inline const uint16_type nDim = PTraits::nDim;
+    static inline const uint16_type nOrder = PTraits::nOrder;
 
 
 

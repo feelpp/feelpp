@@ -62,8 +62,8 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -88,35 +88,35 @@ public:
     typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
 #endif
 
-    static const uint16_type nVertices = reference_convex_type::numVertices;
-    static const uint16_type nFaces = reference_convex_type::numFaces;
-    static const uint16_type nGeometricFaces = reference_convex_type::numFaces;
-    static const uint16_type nEdges = reference_convex_type::numEdges;
-    static const uint16_type nNormals = reference_convex_type::numNormals;
+    static inline const uint16_type nVertices = reference_convex_type::numVertices;
+    static inline const uint16_type nFaces = reference_convex_type::numFaces;
+    static inline const uint16_type nGeometricFaces = reference_convex_type::numFaces;
+    static inline const uint16_type nEdges = reference_convex_type::numEdges;
+    static inline const uint16_type nNormals = reference_convex_type::numNormals;
 
-    static const uint16_type nbPtsPerVertex = ( nDim+1 ); //reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = 0;//reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = ( nDim==2 )?1:0; //reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = 0;//reference_convex_type::nbPtsPerVolume;
-    static const uint16_type numPoints = nVertices*nbPtsPerVertex+nGeometricFaces*nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVertex = ( nDim+1 ); //reference_convex_type::nbPtsPerVertex;
+    static inline const uint16_type nbPtsPerEdge = 0;//reference_convex_type::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerFace = ( nDim==2 )?1:0; //reference_convex_type::nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVolume = 0;//reference_convex_type::nbPtsPerVolume;
+    static inline const uint16_type numPoints = nVertices*nbPtsPerVertex+nGeometricFaces*nbPtsPerFace;
 
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = nbPtsPerVertex;
+    static inline const uint16_type nDofPerVertex = nbPtsPerVertex;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge =  0;//(nDim+1)*nbPtsPerEdge;
+    static inline const uint16_type nDofPerEdge =  0;//(nDim+1)*nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace =  nbPtsPerFace;
+    static inline const uint16_type nDofPerFace =  nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume =  0;//(nDim+1)*nbPtsPerVolume;
+    static inline const uint16_type nDofPerVolume =  0;//(nDim+1)*nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof =  nDofPerVertex*nVertices + nDofPerFace*nGeometricFaces;
+    static inline const uint16_type nLocalDof =  nDofPerVertex*nVertices + nDofPerFace*nGeometricFaces;
 
-    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+    static inline const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                              mpl::int_<nVertices>,
                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
                              mpl::int_<nEdges>,
@@ -315,8 +315,8 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    static const uint16_type nOrder =  O;
+    static inline const uint16_type nDim = N;
+    static inline const uint16_type nOrder =  O;
     static const bool isTransformationEquivalent = false;
     static const bool isContinuous = true;
 
@@ -331,7 +331,7 @@ public:
     static const bool is_tensor2 = polyset_type::is_tensor2;
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
+    static inline const uint16_type nComponents = polyset_type::nComponents;
 
 
     typedef Hermite<N, O, Scalar, T, Convex,  Pts> component_basis_type;
@@ -348,13 +348,13 @@ public:
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
 
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    static inline const uint16_type numPoints = reference_convex_type::numPoints;
+    static inline const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    static inline const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
-    static const uint16_type nLocalDof = super::nLocalDof;
+    static inline const uint16_type nLocalDof = super::nLocalDof;
     //@}
 
     /** @name Constructors, destructor
@@ -528,7 +528,7 @@ public:
 
     typedef Hermite<Order,Scalar,Pts> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
+    static inline const uint16_type nOrder =  Order;
 
 };
 

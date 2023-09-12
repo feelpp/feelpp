@@ -48,7 +48,7 @@ public:
      */
     //@{
 
-    static const uint16_type Dim = SpaceType::nDim;
+    static inline const uint16_type Dim = SpaceType::nDim;
     typedef System<SpaceType> system_type;
 
     typedef typename SpaceType::value_type value_type;

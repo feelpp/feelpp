@@ -67,13 +67,13 @@ class DofFromElement
     using size_type = typename mesh_type::size_type;
     using mesh_marker_type = typename doftable_type::mesh_marker_type;
 
-    static const uint16_type nOrder = fe_type::nOrder;
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type Shape = mesh_type::Shape;
-    static const uint16_type nComponents = fe_type::nComponents;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type nOrder = fe_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type Shape = mesh_type::Shape;
+    static inline const uint16_type nComponents = fe_type::nComponents;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
 
     static const bool is_continuous = fe_type::isContinuous;
     static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
@@ -95,7 +95,7 @@ class DofFromElement
         else
             return fe_type::nLocalDof;
     }
-    static const uint16_type nDofPerElement = numberOfDofPerElement();
+    static inline const uint16_type nDofPerElement = numberOfDofPerElement();
 
     //@}
 

@@ -79,8 +79,8 @@ public:
     typedef std::shared_ptr<op_type> op_ptrtype;
 
 
-    static const uint16_type Dim = space_type::nDim;
-    static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
+    static inline const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
     OperatorPCD( space_ptrtype Qh,
                  backend_ptrtype b,
@@ -472,7 +472,7 @@ public:
     typedef OperatorBase<value_type> op_type;
     typedef std::shared_ptr<op_type> op_ptrtype;
 
-    static const uint16_type Dim = space_velocity_type::nDim;
+    static inline const uint16_type Dim = space_velocity_type::nDim;
 
     typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
 

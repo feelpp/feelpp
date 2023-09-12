@@ -83,8 +83,8 @@ class Mesh2D
      */
     //@{
 
-    static const uint16_type nDim = Shape::nRealDim;
-    static const uint16_type nRealDim = Shape::nRealDim;
+    static inline const uint16_type nDim = Shape::nRealDim;
+    static inline const uint16_type nRealDim = Shape::nRealDim;
 
     typedef typename VisitableBase<>::return_type return_type;
 

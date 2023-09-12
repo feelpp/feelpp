@@ -97,16 +97,16 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
     // basis
-    static const uint16_type nOrder = BasisDisplacementType::nOrder;
-    static const uint16_type nOrderDisplacement = nOrder;
-    static const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
+    static inline const uint16_type nOrder = BasisDisplacementType::nOrder;
+    static inline const uint16_type nOrderDisplacement = nOrder;
+    static inline const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
     typedef BasisDisplacementType basis_u_type;
     typedef Lagrange<nOrderPressure, Scalar,Continuous,PointSetFekete> basis_l_type;
     typedef Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
@@ -555,7 +555,7 @@ public :
             //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
             auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", field_p, "p", this->keyword() );
 
-            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
+            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -575,9 +575,11 @@ public :
 #if 1
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
 #endif
