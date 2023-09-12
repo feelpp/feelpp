@@ -43,7 +43,7 @@ template<int Dim = 1, typename IndexT = uint32_type>
 class SubFaceOfNone
 {
 public:
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
     using index_type = IndexT;
     using size_type = index_type;
     template<typename ET>
@@ -106,7 +106,7 @@ template<typename ElementType>
 class SubFaceOf : public SubFaceOfBase
 {
 public:
-    static const uint16_type nDim = ElementType::nDim;
+    static inline const uint16_type nDim = ElementType::nDim;
     using index_type = typename ElementType::index_type;
     using size_type = typename ElementType::size_type;
     template<typename ET>
@@ -368,8 +368,8 @@ template<typename ElementType>
 class SubFaceOfMany
 {
 public:
-    static const uint16_type nDim = ElementType::nDim;
-    static const uint16_type nRealDim = ElementType::nRealDim;
+    static inline const uint16_type nDim = ElementType::nDim;
+    static inline const uint16_type nRealDim = ElementType::nRealDim;
     template<typename ET>
     struct Element
     {

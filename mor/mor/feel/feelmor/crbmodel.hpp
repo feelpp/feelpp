@@ -117,7 +117,6 @@ public:
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
     typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
 
-
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
@@ -193,6 +192,8 @@ public:
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
+    using rbbdf_type = Bdf<rbfunctionspace_type>;
+    using rbbdf_ptrtype = std::shared_ptr<rbbdf_type>;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
     typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
@@ -330,6 +331,15 @@ public:
                 this->worldComm().barrier();
 
                 this->init();
+            }
+            if ( stage == crb::stage::online )
+            {
+                if ( !this->isSteady() )
+                {
+                    M_numberOfTimeStep = 1 + ( M_model->timeFinal() - M_model->timeInitial() ) / M_model->timeStep();
+                    LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps to store = {}, timeInitial = {}, timeFinal = {}, timeStep = {}", 
+                                              M_numberOfTimeStep, M_model->timeInitial(), M_model->timeFinal(), M_model->timeStep() );
+                }
             }
         }
 
@@ -490,6 +500,7 @@ public:
             for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
                 ++M_numberOfTimeStep;
         }
+        LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps = {}", M_numberOfTimeStep );
 
 
 
@@ -2893,28 +2904,28 @@ public:
     {
         double timestep = 1e30;
         if ( !this->isSteady() )
-            timestep = this->bdfModel()->timeStep();
+            timestep = this->model()->timeStep();
         return timestep;
     }
     double timeInitial() const override
     {
         double timeinitial = 0.;
         if ( !this->isSteady() )
-            timeinitial = this->bdfModel()->timeInitial();
+            timeinitial = this->model()->timeInitial();
         return timeinitial;
     }
     double timeFinal() const override
     {
         double timefinal=1e30;
         if ( !this->isSteady() )
-            timefinal = this->bdfModel()->timeFinal();
+            timefinal = this->model()->timeFinal();
         return timefinal;
     }
     int timeOrder() const
     {
         int order = 0;
         if ( !this->isSteady() )
-            order = this->bdfModel()->timeOrder();
+            order = this->model()->timeOrder();
         return order;
     }
 
@@ -3615,7 +3626,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3636,7 +3647,6 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         {
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs, _rebuild=true);
         }
-        mybdf->shiftRight(u);
     }
 
     return u;
@@ -3696,7 +3706,7 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     int iter=0;
     double norm=0;
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3724,8 +3734,6 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
             {
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
             }
-
-            mybdf->shiftRight(u);
 
             if( is_linear )
                 norm = 0;
@@ -3866,7 +3874,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
 
-    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -3901,7 +3909,6 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(u);
     }
     return u;
 }
@@ -4061,7 +4068,7 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         udu=*dual_initial_field;
     }
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(udu) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -4094,8 +4101,6 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         M_preconditioner_dual->setMatrix( Adu );
 
         M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
-
-        mybdf->shiftRight(udu);
     }
 
     return udu;
@@ -4230,7 +4235,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     }
 
 
-    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next(udu) )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -4271,7 +4276,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 norm = this->computeNormL2( uold , udu );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(udu);
     }
     return udu;
 }

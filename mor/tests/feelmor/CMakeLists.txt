@@ -41,7 +41,7 @@ feelpp_add_test( deim   LINK_LIBRARIES Feelpp::feelpp_mor NO_MPI_TEST CLI "--gms
 feelpp_add_test( rbspace LINK_LIBRARIES Feelpp::feelpp_mor  )
 feelpp_add_test( rbspacevector LINK_LIBRARIES Feelpp::feelpp_mor )
 
-feelpp_add_test( db CFG test_db.cfg LINK_LIBRARIES Feelpp::feelpp_mor CLI "-st_pc_factor_mat_solver_package mumps --gmsh.filename ${CMAKE_CURRENT_SOURCE_DIR}/test_db.geo" )
+feelpp_add_test(db CFG test_db.cfg LINK_LIBRARIES Feelpp::feelpp_mor )
 
 feelpp_add_test( parameterspace LINK_LIBRARIES Feelpp::feelpp_mor CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/parameterspace.cfg" )
 feelpp_add_test( reducedglobaldof LINK_LIBRARIES Feelpp::feelpp_mor )

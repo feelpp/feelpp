@@ -165,7 +165,7 @@ public:
         template<typename Func>
         static const bool has_trial_basis = true;
 
-        //static const uint16_type nComponents = return_value_type::nComponents;
+        //static inline const uint16_type nComponents = return_value_type::nComponents;
         using test_basis = test_fe_t;
         using trial_basis = trial_fe_t;
 

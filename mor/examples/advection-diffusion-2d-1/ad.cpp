@@ -59,7 +59,10 @@ AdvectionDiffusion::AdvectionDiffusion()
     meshSize( 0.01 ),
     M_do_export( true ),
     export_number( 0 )
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME));
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 
 
 AdvectionDiffusion::AdvectionDiffusion( po::variables_map const& vm )
@@ -69,7 +72,10 @@ AdvectionDiffusion::AdvectionDiffusion( po::variables_map const& vm )
     meshSize( vm["hsize"].as<double>() ),
     M_do_export( !vm.count( "no-export" ) ),
     export_number( 0 )
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME));
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+}
 void
 AdvectionDiffusion::initModel()
 {
@@ -84,7 +90,7 @@ AdvectionDiffusion::initModel()
     R.setMarker( _type="line",_name="Outflow",_marker2=true );
     R.setMarker( _type="surface",_name="Omega",_markerAll=true );
     mesh = R.createMesh( _mesh=new mesh_type, _name="Omega" );
-
+    
     /*
      * The function space and some associate elements are then defined
      */
@@ -96,11 +102,12 @@ AdvectionDiffusion::initModel()
     pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialisation de A1 et A2
+    auto mat_graph = stencil( _test=Xh,_trial=Xh)->graph();
     M_Aqm.resize( Qa() );
     for(int q=0; q<Qa(); q++)
     {
         M_Aqm[q].resize( 1 );
-        M_Aqm[q][0] = backend()->newMatrix( Xh, Xh );
+        M_Aqm[q][0] = backend()->newMatrix(0,0,0,0,mat_graph);
     }
 
     M_Fqm.resize( this->Nl() );
@@ -114,7 +121,7 @@ AdvectionDiffusion::initModel()
         }
     }
 
-    D = backend()->newMatrix( Xh, Xh );
+    D = backend()->newMatrix(0,0,0,0,mat_graph);
     F = backend()->newVector( Xh );
     Dmu->setDimension( 2 );
     auto mu_min = Dmu->element();
@@ -131,53 +138,53 @@ AdvectionDiffusion::initModel()
 
     // right hand side
     form1( _test=Xh, _vector=M_Fqm[0][0][0] )
-        = integrate( markedfaces( mesh, "Bottom" ), id( v ) );
+        = integrate( _range = markedfaces( mesh, "Bottom" ), _expr = id( v ) );
     M_Fqm[0][0][0]->close();
 
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )
-        = integrate( elements( mesh ), Py()*dxt( u )*id( v ) );
+        = integrate( _range = elements( mesh ), _expr = Py()*dxt( u )*id( v ) );
     M_Aqm[0][0]->close();
 
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )
-        = integrate( elements( mesh ), dxt( u )*dx( v ) );
+        = integrate( _range = elements( mesh ), _expr = dxt( u )*dx( v ) );
     M_Aqm[1][0]->close();
 
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        = integrate( elements( mesh ), dyt( u )*dy( v ) );
+        = integrate( _range = elements( mesh ), _expr = dyt( u )*dy( v ) );
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        += integrate( markedfaces( mesh,"Top" ),
-                      - dyt( u )*Ny()*id( v ) - dy( u )*Ny()*idt( v ) + 20*idt( u )*id( v )/hFace() );
+        += integrate( _range = markedfaces( mesh,"Top" ),
+                      _expr = - dyt( u )*Ny()*id( v ) - dy( u )*Ny()*idt( v ) + 20*idt( u )*id( v )/hFace() );
     M_Aqm[2][0]->close();
 
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] )
-        = integrate( markedfaces( mesh,"Inflow" ),
-                     - dxt( u )*Nx()*id( v ) - dx( u )*Nx()*idt( v ) );
+        = integrate( _range = markedfaces( mesh,"Inflow" ),
+                     _expr = - dxt( u )*Nx()*id( v ) - dx( u )*Nx()*idt( v ) );
     M_Aqm[3][0]->close();
 
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[4][0] )
-        = integrate( markedfaces( mesh,"Inflow" ),
-                     20*idt( u )*id( v )/hFace() );
+        = integrate( _range = markedfaces( mesh,"Inflow" ),
+                     _expr = 20*idt( u )*id( v )/hFace() );
     M_Aqm[4][0]->close();
 
-    M = backend()->newMatrix( Xh, Xh );
+    M = backend()->newMatrix(0,0,0,0,mat_graph);
 
     form2( _test=Xh, _trial=Xh, _matrix=M )
-        = integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
+        = integrate( _range = elements( mesh ), _expr = id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
 } // AdvectionDiffusion::run
 
-AdvectionDiffusion::sparse_matrix_ptrtype
-AdvectionDiffusion::newMatrix() const
-{
-    return backend()->newMatrix( Xh, Xh );
-}
+// AdvectionDiffusion::sparse_matrix_ptrtype
+// AdvectionDiffusion::newMatrix() const
+// {
+//     return backend()->newMatrix( Xh, Xh );
+// }
 
-AdvectionDiffusion::vector_ptrtype
-AdvectionDiffusion::newVector() const
-{
-    return backend()->newVector( Xh );
-}
+// AdvectionDiffusion::vector_ptrtype
+// AdvectionDiffusion::newVector() const
+// {
+//     return backend()->newVector( Xh );
+// }
 
 AdvectionDiffusion::affine_decomposition_type
 AdvectionDiffusion::computeAffineDecomposition()
@@ -255,6 +262,7 @@ AdvectionDiffusion::solve( parameter_type const& mu )
 
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
+    this->exportResults( *T, mu );
     return *T;
     //this->exportResults( *T );
 
@@ -341,7 +349,7 @@ AdvectionDiffusion::run( const double * X, unsigned long N, double * Y, unsigned
     this->solve( mu, pT );
 
 
-    Y[0]=M_betaFqm[0][0][0]*integrate( markedfaces( mesh, "Bottom" ), idv( *pT ) ).evaluate()( 0,0 );
+    Y[0]=M_betaFqm[0][0][0]*integrate( _range = markedfaces( mesh, "Bottom" ), _expr = idv( *pT ) ).evaluate()( 0,0 );
 }
 
 

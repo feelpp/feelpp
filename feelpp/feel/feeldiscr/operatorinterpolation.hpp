@@ -184,7 +184,7 @@ private:
 struct InterpolationNonConforming : public InterpolationTypeBase<false,interpolation_operand_type::ID>
 {
     using super = InterpolationTypeBase<false,interpolation_operand_type::ID>;
-    static const uint16_type value=super::isConforming();
+    static inline const uint16_type value=super::isConforming();
 
     constexpr InterpolationNonConforming() = default;
 
@@ -211,7 +211,7 @@ using InterpolationNonConforme = InterpolationNonConforming;
 struct InterpolationConforming : public InterpolationTypeBase<true,interpolation_operand_type::ID>
 {
     using super = InterpolationTypeBase<true,interpolation_operand_type::ID>;
-    static const uint16_type value=super::isConforming();
+    static inline const uint16_type value=super::isConforming();
 
     constexpr InterpolationConforming() = default;
 
@@ -1448,7 +1448,7 @@ public:
     typedef IteratorRange range_iterator;
 
 
-    static const uint16_type nLocalDofInDualImageElt = mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
+    static inline const uint16_type nLocalDofInDualImageElt = mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
                              mpl::int_< image_basis_type::nLocalDof > ,
                              mpl::int_< image_mesh_type::face_type::numVertices*dual_image_space_type::fe_type::nDofPerVertex +
                              image_mesh_type::face_type::numEdges*dual_image_space_type::fe_type::nDofPerEdge +

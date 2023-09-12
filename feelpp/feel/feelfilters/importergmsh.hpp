@@ -384,15 +384,15 @@ public:
     //@{
     /** @name Constants
      */
-    static const uint16_type npoints_per_edge = ( edge_type::numVertices*edge_type::nbPtsPerVertex+
+    static inline const uint16_type npoints_per_edge = ( edge_type::numVertices*edge_type::nbPtsPerVertex+
             edge_type::numEdges*edge_type::nbPtsPerEdge+
             edge_type::numFaces*edge_type::nbPtsPerFace );
 
-    static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
+    static inline const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
             face_type::numEdges*face_type::nbPtsPerEdge+
             face_type::numFaces*face_type::nbPtsPerFace );
 
-    static const uint16_type npoints_per_element = element_type::numPoints;
+    static inline const uint16_type npoints_per_element = element_type::numPoints;
     //@}
 
     /** @name Constructors, destructor

@@ -21,12 +21,16 @@
 //! @date 14 Jun 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#define PYBIND11_DETAILED_ERROR_MESSAGES 1
 #include <vector>
 
 #include <Eigen/Core>
 #include <boost/shared_ptr.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/functional.h>
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
 //#include <feel/feelpython/pybind11/eigen.h>
 //#include <feel/feelpython/pybind11/numpy.h>
 
@@ -39,6 +43,9 @@
 #include <feel/feelmor/crbplugin_interface.hpp>
 #include <feel/feelmor/options.hpp>
 #include <feel/feelmor/crbmodelproperties.hpp>
+#include <feel/feelmor/mormodels.hpp>
+#include <feel/feelmor/zip.hpp>
+
 
 namespace py = pybind11;
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
@@ -187,11 +194,29 @@ protected:
     void setName( std::string const& n ) override { PYBIND11_OVERLOAD_PURE(void, CRBPluginAPI, setName, n ); }
 };
 
+class PyMORObserver : public MORObserver
+{
+  public:
+    /* Inherit the constructors */
+    using MORObserver::MORObserver;
 
+    /* Trampoline (need one for each virtual function) */
+    void update( std::pair<int, ParameterSpaceX::Element> const& e, std::vector<CRBResults> const& results ) override
+    {
+            PYBIND11_OVERRIDE_PURE(
+                void, /* Return type */
+                MORObserver,      /* Parent class */
+                update,          /* Name of function in C++ (must match Python name) */
+                e, results      /* Argument(s) */
+            );
+    }
+};
 
 namespace py = pybind11;
 PYBIND11_MODULE( _mor, m )
 {
+    m.def("extractZipFile", &extractZipFile, "extract zip file", py::arg("file"), py::arg("dir") );
+    m.def("cleanupTemporaryDirectory", &cleanupTemporaryDirectory, "cleanup temporary directory", py::arg("dir") );
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
           py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir().string() );
@@ -205,13 +230,14 @@ PYBIND11_MODULE( _mor, m )
         .value("rb", crb::load::rb)
         .value("fe", crb::load::fe)
         .value("all", crb::load::all);
-    
-    py::class_<CRBResults>(m,"CRBResults")
-        .def("setParameter", &CRBResults::setParameter)
-        .def("parameter", &CRBResults::parameter)
-        .def("output", &CRBResults::output)
-        .def("errorBound", &CRBResults::errorbound)
-        ;
+
+    py::class_<CRBResults>( m, "CRBResults" )
+        .def( "setParameter", &CRBResults::setParameter )
+        .def( "parameter", &CRBResults::parameter )
+        .def( "output", &CRBResults::output )
+        .def( "errorBound", &CRBResults::errorbound )
+        .def( "outputs", &CRBResults::outputs )
+        .def( "errors", &CRBResults::errors );
 
     py::class_<std::vector<CRBResults>>(m,"VectorCRBResults")
         .def(py::init<>())
@@ -240,7 +266,8 @@ PYBIND11_MODULE( _mor, m )
             "loadDBMetaData", []( CRBModelDB& db, std::string const& from, std::string const& name )
             { return db.loadDBMetaData( from, name ); },
             py::arg( "attribute" ) = crb::attributeToString( crb::attribute::last_modified ), py::arg( "data" ) = std::nullopt )
-        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference );
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string const& ) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", "load DB plugin", pybind11::return_value_policy::reference )
+        .def( "loadDBPlugin", static_cast<std::shared_ptr<CRBPluginAPI> ( CRBModelDB::* )( CRBModelDB::MetaData const&, std::string const&, std::string const&) const>( &CRBModelDB::loadDBPlugin ), py::arg( "metadata" ), py::arg( "load" ) = "rb", py::arg( "pluginlibdir" ), "load DB plugin", pybind11::return_value_policy::reference );
     py::class_<CRBModelParameter>(m,"CRBModelParamater")
         .def(py::init<>())
         .def("name",&CRBModelParameter::name, "name of the parameter")
@@ -306,6 +333,9 @@ PYBIND11_MODULE( _mor, m )
         .def("setParameterNamed", static_cast<void (ElementP::*)(std::string, double)>(&ElementP::setParameterNamed), "set the named parameter to the value", py::arg("name"), py::arg("value"))
         .def("setParameters", static_cast<void (ElementP::*)(const std::vector<double> &param)>(&ElementP::setParameters), "set the parameter to the given list", py::arg("values"))
         .def("setParameters", static_cast<void (ElementP::*)(const std::map<std::string, double> &dict)>(&ElementP::setParameters), "set the parameter to the given dict with values", py::arg("values"))
+        .def("set", []( ElementP& e, std::vector<double> const& v ){ e.setParameters(v); return e; }, "set the parameter to the given list", py::arg("values"))
+        .def("set", []( ElementP& e, std::map<std::string, double> const& v ){ e.setParameters(v); return e; }, "set the parameter to the given dict with values", py::arg("values"))
+        .def("set", []( ElementP& e, std::string const& name, double v ){ e.setParameterNamed(name,v); return e; }, "set the named parameter to the value", py::arg("name"), py::arg("value"))
         ;
 
     //!
@@ -315,13 +345,20 @@ PYBIND11_MODULE( _mor, m )
 
     py::class_<ParameterSpaceX::Sampling, std::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
         .def(py::init<std::shared_ptr<ParameterSpaceX>,int,std::shared_ptr<ParameterSpaceX::Sampling>>())
-        .def("sampling",&ParameterSpaceX::Sampling::sampling, "create a sampling with global number of samples", py::arg("n"), py::arg("samplingMode"))
+        .def("sample",[]( ParameterSpaceX::Sampling& s, int N, std::string const& m  ) 
+                      { return s.sample( N, m ); }, "create a sampling with global number of samples", py::arg("n"), py::arg("samplingMode") = std::string("random") )
         .def("__getitem__", &std_item<ParameterSpaceX::Sampling>::get,py::return_value_policy::reference)
         .def("__setitem__", &std_item<ParameterSpaceX::Sampling>::set)
         .def("getVector", &std_item<ParameterSpaceX::Sampling>::getVector, "return list of parameters of the sample")
         .def("writeOnFile", &ParameterSpaceX::Sampling::writeOnFile, "write the sampling on file\nin the file we write :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]", py::arg("filename"))
         .def("readFromFile", &ParameterSpaceX::Sampling::readFromFile, "read the sampling from file\nin the file we expect :\nmu_0= [ value0 , value1 , ... ]\nmu_1= [ value0 , value1 , ... ]\nreturn the size of the sampling", py::arg("filename"))
         .def("__len__", &std_item<ParameterSpaceX::Sampling>::size)
+        //.def("set", []( ParameterSpaceX::Sampling& s, std::vector<ParameterSpaceX::Element> const& v ){ s.set(v); return s; }, "set the parameter to the given list", py::arg("values"))
+        .def("set", []( ParameterSpaceX::Sampling& s, std::vector<std::map<std::string, double>> const& v ){ s.set(v); return s; }, "set the parameter to the given dict with values", py::arg("values"))
+        .def("set", []( ParameterSpaceX::Sampling& s, std::vector<std::vector<double>> const& v ){ s.set(v); return s; }, "set the parameter to the given dict with values", py::arg("values"))
+        //.def("add", []( ParameterSpaceX::Sampling& s, ParameterSpaceX::Element const& v ){ s.add(v); return s; }, "add a parameter to the sampling", py::arg("values"))
+        .def("add", []( ParameterSpaceX::Sampling& s, std::vector<std::map<std::string, double>> const& v ){ s.add(v); return s; }, "add a vector of pair of names,values to the sampling", py::arg("values"))
+        .def("add", []( ParameterSpaceX::Sampling& s, std::vector<std::vector<double>> const& v ){ s.add(v); return s; }, "add a vector of parameter to the sampling", py::arg("values"))
         ;
 
     //!
@@ -334,8 +371,10 @@ PYBIND11_MODULE( _mor, m )
         .def("sampling", &ParameterSpaceX::sampling)
         .def("element", &ParameterSpaceX::element, "return a parameter from the space\n  - broadcast : share the parameter to all processors\n  - apply_log : log random chosen parameter",
             py::arg("broadcast")=true, py::arg("apply_log")=false)
-        .def("mumin", &ParameterSpaceX::min, "return mumin the 'minimal' parameter")
-        .def("mumax", &ParameterSpaceX::max, "return mubar the 'maximal' parameter")
+        .def("min", [](ParameterSpaceX const& X ){ return X.min(); }, "return the 'minimal' parameter")
+        .def("min", [](ParameterSpaceX const& X, int dir ){ return X.min(dir); }, "return the 'minimal' parameter in the direction dir", py::arg("dir"))
+        .def("max", [](ParameterSpaceX const& X ){ return X.max(); }, "return the 'maximal' parameter")
+        .def("max", [](ParameterSpaceX const& X, int dir ){ return X.max(dir); }, "return the 'maximal' parameter in the direction dir", py::arg("dir"))
         .def("dimension", &ParameterSpaceX::dimension, "get the dimension of the space")
         .def("parameterNames", &ParameterSpaceX::parameterNames, "get the list of all parameters")
         .def("parameterName", &ParameterSpaceX::parameterName, "return the i-th name ", py::arg("i"))
@@ -378,4 +417,71 @@ PYBIND11_MODULE( _mor, m )
             },"reset plugin");
         //.def("run",&CRBPluginAPI::run)
 
+    py::class_<MORModel, std::shared_ptr<MORModel>>( m, "MORModel" )
+        .def( py::init<>() )
+        .def_readwrite( "dbroot", &MORModel::dbroot )
+        .def_readwrite( "name", &MORModel::name )
+        .def_readwrite( "attribute", &MORModel::attribute )
+        .def_readwrite( "load", &MORModel::load )
+        .def_readwrite( "output", &MORModel::output )
+        .def( "initExporter", &MORModel::initExporter, "initialize exporter" )
+        .def( "run", []( std::shared_ptr<MORModel> const& m, ParameterSpaceX::Element const& mu, vectorN_type& time, double eps, int N, bool print_rb_matrix ){
+                            return m->run( mu, time, eps, N, print_rb_matrix );
+                        },
+              "run online model for a parameter mu", py::arg( "mu" ), py::arg( "time" ),py::arg( "eps" ) = 1e-6, py::arg( "N" ) = -1, py::arg( "print_reduced_matrix" ) = false )
+        .def( "loadPlugin", &MORModel::loadPlugin )
+        .def(
+            "refCount", []( std::shared_ptr<MORModel>& p )
+            { return p.use_count(); },
+            "reset plugin" )
+        .def(
+            "reset", []( std::shared_ptr<MORModel>& p )
+            {
+                p.reset();
+                std::cout << fmt::format("After reset(): use_count() = {}", p.use_count()) << std::endl; },
+            "reset plugin" );
+   
+    // Wrap the virtual function using a lambda function that calls the Python override
+    // Lambda function captures the Python-derived class instance and calls its overridden 'update' function
+    py::class_<MORObserver, PyMORObserver>( m, "MORObserver" )
+        .def( py::init<>() )
+        .def( "update", &MORObserver::update );
+    
+    py::class_<MORModels, std::shared_ptr<MORModels>>( m, "MORModels" )
+        .def( py::init<>() )
+        //.def( py::init<nl::json const&>() )
+        .def( py::init<fs::path const&>() )
+        .def( "load", &MORModels::load, "load the MOR models" )
+        .def( "parameterSpace", &MORModels::parameterSpace, "get the parameter space" )
+        .def( "sampling", &MORModels::sampling, "create a sampling with global number of samples" )
+        .def( "initExporter", &MORModels::initExporter, "initialize exporter" )
+        .def( "saveExporter", &MORModels::saveExporter, "save exporter" )
+        .def(
+            "run", []( MORModels const& m, std::shared_ptr<ParameterSpaceX::Sampling> const& sampling, nl::json const& data )
+            { return m.run( sampling, data ); },
+            "run online models for a sampling mu", py::arg( "sampling" ), py::arg( "data" ) = nl::json{} )
+        .def(
+            "refCount", []( std::shared_ptr<MORModels>& p )
+            { return p.use_count(); },
+            "reset plugin" )
+        .def(
+            "reset", []( std::shared_ptr<MORModels>& p )
+            {
+                  p.reset();
+                  std::cout << fmt::format("After reset(): use_count() = {}", p.use_count()) << std::endl; },
+            "reset plugin" );
+
+    py::class_<MORExporter, MORObserver>( m, "MORExporter" )
+        .def( py::init<MORModels&>(), py::arg( "models" ) );
+
+    // Expose the MORTable class
+    py::class_<MORTable, MORObserver>( m, "MORTable" )
+        .def( py::init<const MORModels&, bool, bool>(),
+              py::arg( "models" ),
+              py::arg( "print_to_screen" ) = false,
+              py::arg( "save_to_file" ) = true );
+
+        //.def("run",&CRBPluginAPI::run)
+
+    
 }

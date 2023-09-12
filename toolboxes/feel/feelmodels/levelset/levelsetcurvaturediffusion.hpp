@@ -41,8 +41,8 @@ public:
     typedef FunctionSpaceType functionspace_type;
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
-    static const uint16_type Dim = functionspace_type::nDim;
-    static const uint16_type Order = functionspace_type::basis_type::nOrder;
+    static inline const uint16_type Dim = functionspace_type::nDim;
+    static inline const uint16_type Order = functionspace_type::basis_type::nOrder;
 
     typedef typename functionspace_type::element_type element_type;
     typedef typename functionspace_type::element_ptrtype element_ptrtype;
