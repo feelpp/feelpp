@@ -634,8 +634,8 @@ public:
 
         }
     /**
-     * @brief Set the Output Name 
-     * 
+     * @brief Set the Output Name
+     *
      * @param oname name of the outout
      */
     void setOutputName( std::string const& oname )
@@ -2776,7 +2776,7 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] start of POD \n";
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
-            bool POD_WN = boption(_prefix=M_prefix,_name="crb.apply-POD-to-WN") ;
+            bool POD_WN = boption(_prefix=M_prefix, _name="crb.apply-POD-to-WN");
 
             if ( seek_mu_in_complement ) // M_mode_number == 1 )
             {
@@ -5986,7 +5986,7 @@ CRB<TruthModelType>::delta( size_type N,
         double dual_sum_eim=0;
 
         //vectors to store residual coefficients
-       
+
         primal_residual_coeffs.resize( K );
         dual_residual_coeffs.resize( K );
 
@@ -9490,7 +9490,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     tic();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     VLOG(3) << fmt::format( "[CRB::run] delta = {}", toc("[CRB::run] delta") );
-    
+
     double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
@@ -11604,7 +11604,7 @@ CRB<TruthModelType>::saveJson()
         // add functionspace file (useful when nproc offline != nproc online)
         std::string functionspaceFilename = fmt::format("{}_functionSpace_p{}.json", this->name(), this->worldComm().size());
         ptreeReducedBasisSpace.add( "functionspace-filename", functionspaceFilename );
-        
+
         ptreeReducedBasisSpace.add( "dimension", M_N );
         if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
         {
@@ -11640,7 +11640,7 @@ CRB<TruthModelType>::saveJson()
                 M_scmM->updatePropertyTree( ptreeParameterScmM );
                 ptree.add_child( "scmM", ptreeParameterScmM );
             }
-        }        
+        }
         write_json( filenameJson, ptree );
     }
 }
@@ -11781,7 +11781,7 @@ CRB<TruthModelType>::setupOfflineFromDB()
                     LOG(INFO) << "Database for basis functions in HDF5 available and loaded";
                 }
             }
-                
+
             auto basis_functions = M_elements_database.wn();
             M_model->rBFunctionSpace()->setBasis( basis_functions );
         }

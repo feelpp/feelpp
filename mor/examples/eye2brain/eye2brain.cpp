@@ -11,6 +11,7 @@ makeEye2BrainOptions()
     po::options_description eye2brainoptions( "Eye2Brain options" );
     eye2brainoptions.add_options()
         ( "measure-index", po::value<int>()->default_value( 1 ), "index of the output to be computed.\n\t          0 : mean over cornea,\n\tFrom 1 to 9 : corresponding point in {O, A, B, B1, C, D, D1, F, G}\n\tWARNING : do not confuse with the option crb.output-index" )
+        ( "radius", po::value<double>()->default_value( 0.1 ), "radius of the gaussian sensor" )
         ;
     return eye2brainoptions;
 }
@@ -33,6 +34,7 @@ Eye2Brain<Order, Dim>::Eye2Brain()
 {
     this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}D_P{}", Dim, Order) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+    m_radius = doption(_name = "radius");
 }
 
 template<int Order, int Dim>
@@ -75,7 +77,7 @@ Eye2Brain<Order, Dim>::initModel()
 {
 
     CHECK( this->is_linear && !this->is_time_dependent ) << "Invalid model is_linear:" << this->is_linear << " is_time_dependent:" << this->is_time_dependent << "\n";
-#if 1  
+#if 1
     LOG_IF( WARNING, ((this->Options & NonLinear) == NonLinear) ) << "Invalid model is_linear:" << this->is_linear << " is_time_dependent:" << this->is_time_dependent << "\n";
     LOG_IF( WARNING, ((this->Options & TimeDependent) == TimeDependent) ) << "Invalid model is_linear:" << this->is_linear << " is_time_dependent:" << this->is_time_dependent << "\n";
 #endif
@@ -200,13 +202,12 @@ Eye2Brain<Order, Dim>::initModel()
     {
         std::string name = m_outputNames[measure_index - 11];
         std::vector<double> coord = m_coordinates[measure_index - 11];
-        Feel::cout << "[Eye2brain] Output " << name << " at coord " << coord << std::endl;
+        Feel::cout << "[Eye2brain] Output " << name << " (regularized) at coord " << coord << std::endl;
         node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
         for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
             n(i) = coord[i];
         Feel::cout << n << std::endl;
-        double radius = 0.1;
-        auto s = std::make_shared<SensorGaussian<space_type>>(this->Xh, n, radius, name);
+        auto s = std::make_shared<SensorGaussian<space_type>>(this->Xh, n, m_radius, name);
         out1 = form1(_test = this->Xh, _vector = s->containerPtr());
         out1.vectorPtr()->close();
     }
@@ -219,7 +220,7 @@ Eye2Brain<Order, Dim>::initModel()
         out1 = integrate( _range = markedelements(mesh, "Cornea"), _expr = id( u )/cst(meas)) ;
     }
     else
-        throw std::logic_error( "[Eye2Brain::output] error with output_index : between 0 and 9 " );
+        throw std::logic_error( "[Eye2Brain::output] error with output_index : between 0 and 9 or 11 and 19" );
 
 
     this->addOutput( { out1, "1" } );
@@ -260,11 +261,23 @@ Eye2Brain<Order, Dim>::output( int output_index, parameter_type const& mu , elem
             out1.vectorPtr()->close();
             output = out1(u);
         }
+        else if (measure_index >= 11 && measure_index <= 19)
+        {
+            name = m_outputNames[measure_index-11];
+            std::vector<double> coord = m_coordinates[measure_index-11];
+            node_type n(Eye2BrainConfig<Order, Dim>::space_type::nDim);
+            for( int i = 0; i < Eye2BrainConfig<Order,Dim>::space_type::nDim; ++i )
+                n(i) = coord[i];
+            auto s = std::make_shared<SensorGaussian<space_type>>(this->Xh, n, m_radius, name);
+            auto out1 = form1(_test = this->Xh, _vector = s->containerPtr());
+            out1.vectorPtr()->close();
+            output = out1(u);
+        }
         else
-            throw std::logic_error( "[Eye2Brain::output] error with output_index : between 0 and 9 " );
+            throw std::logic_error( "[Eye2Brain::output] error with output_index : between 0 and 9" );
     }
     else
-        throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1 " );
+        throw std::logic_error( "[Eye2Brain::output] error with output_index : only 0 or 1" );
 
     if ( Environment::isMasterRank() )
         std::cout << " Eye2Brain::output " << std::setprecision(16) << output << "\n";
