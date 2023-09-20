@@ -106,12 +106,12 @@ CRBModelDB::updateId( crb::attribute from, std::optional<std::string> const& val
     {
         this->updateIdFromDBLast( crb::last::modified );
     }
-#if 0    
+#if 0
     else if ( from == crb::attribute::last_accessed )
     {
         this->updateIdFromDBLast( crb::last::accessed );
     }
-#endif    
+#endif
     else
     {
         CHECK( false ) << "invalid attribute given to select the database";
@@ -154,7 +154,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
     LOG(INFO) << "crb db model name : " << res.model_name;
     LOG(INFO) << "crb db plugin name : " << res.plugin_name;
     LOG(INFO) << "crb db plugin libname : " << res.plugin_libname;
-    
+
     return res;
 }
 
@@ -192,7 +192,7 @@ CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load, std::st
     }
     catch( std::runtime_error const& err )
     {
-        try 
+        try
         {
             auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname, pluginlibdir );
             p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );

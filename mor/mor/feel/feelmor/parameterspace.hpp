@@ -240,7 +240,7 @@ public:
                 throw std::invalid_argument( fmt::format( "Parameter named = {} with index = {} is out of range, cannot set to value = {}", name, index, value ) );
             }
         }
-    
+
         void setParameter( int i, double value)
         {
             element_type min = M_space->min(), max = M_space->max();
@@ -1730,7 +1730,7 @@ public:
 
     /**
      * @brief return the minimum element in direction d
-     * 
+     *
      * @param d direction
      * @return value_type min value
      */
@@ -1741,9 +1741,9 @@ public:
 
     /**
      * @brief return the minimum element of the parameter named name
-     * 
+     *
      * @param name name pof the parameter
-     * @return value_type 
+     * @return value_type
      */
     value_type min( std::string const& name ) const
     {
@@ -1763,9 +1763,9 @@ public:
 
     /**
      * @brief return the maximum element of the parameter named name
-     * 
+     *
      * @param name name pof the parameter
-     * @return value_type 
+     * @return value_type
      */
     value_type max( std::string const& name ) const
     {
@@ -1778,7 +1778,7 @@ public:
 
     /**
      * @brief return the maximum element in direction d
-     * 
+     *
      * @param d direction
      * @return value_type max value
      */

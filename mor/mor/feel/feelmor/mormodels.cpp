@@ -5,7 +5,7 @@
 namespace Feel
 {
 
-void 
+void
 MORModel::loadPlugin()
 {
     dbroot_path = fs::path( Environment::expand( this->dbroot ) );
@@ -34,7 +34,7 @@ MORModel::loadPlugin()
     if ( boption( _name = "export-solution" ) )
         p_ = crbmodelDB.loadDBPlugin( meta, "all" );
     else
-#endif    
+#endif
     p_ = crbmodelDB.loadDBPlugin( meta, this->load );
 }
 MORModels::MORModels( fs::path const& fpp )
@@ -84,8 +84,8 @@ MORModels::run( std::shared_ptr<ParameterSpaceX::Sampling> const& sampling, nl::
 
     auto N = data.value("N",-1);
     Eigen::VectorXd /*typename crb_type::vectorN_type*/ time_crb;
-    auto online_tol = data.value( "tolerance", 1e-2 );     
-    auto print_rb_matrix = data.value( "print_rb_matrix", false ); 
+    auto online_tol = data.value( "tolerance", 1e-2 );
+    auto print_rb_matrix = data.value( "print_rb_matrix", false );
 
     std::vector<std::vector<CRBResults>> results( sampling->size() );
     for ( auto const& [k, mu] : enumerate( *sampling ) )

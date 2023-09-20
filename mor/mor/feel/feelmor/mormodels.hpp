@@ -6,7 +6,6 @@
    Date: 2023-07-24
 
    Copyright (C) 2023-present Feel++ Consortium
-   
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -84,7 +83,7 @@ class MORModel
     }
     void
     loadPlugin();
-    
+
 private:
     std::shared_ptr<Feel::CRBPluginAPI> p_;
 };
@@ -113,7 +112,7 @@ class MORModels : public std::vector<MORModel>
     MORModels() = default;
     /**
      * @brief Construct a new MORModels object from a fpp file
-     * 
+     *
      * a .fpp file is a zip archive containing a plugin, a database and some metadata to run the MOR model.
      * @param fppfile .fpp file to unzip and read data from
      */
@@ -166,7 +165,7 @@ class MORModels : public std::vector<MORModel>
     {
         observers_.push_back( o );
     }
-private:    
+private:
     std::vector<std::shared_ptr<MORObserver>> observers_;
 };
 
