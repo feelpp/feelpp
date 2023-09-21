@@ -333,7 +333,7 @@ int main(int argc, char**argv )
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
-        std::ifstream is( Environment::expand( soption(_name="morjson" ) ) );                       
+        std::ifstream is( Environment::expand( soption(_name="morjson" ) ) );
         nl::json js = nl::json::parse(is);
         LOG(INFO) << "js = " << js.dump(4) << std::endl;
 
