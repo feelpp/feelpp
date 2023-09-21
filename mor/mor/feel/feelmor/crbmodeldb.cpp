@@ -52,7 +52,7 @@ CRBModelDB::jsonFilename() const
 
 std::string
 CRBModelDB::jsonFilename( std::string const& name )
-{ 
+{
     return fmt::format("{}.crb.json",name);
 }
 
