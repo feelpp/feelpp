@@ -548,7 +548,7 @@ public:
 
         /**
          * @brief get the parameter space
-         * 
+         *
          * @return the parameter space
          */
         auto parameterSpace() const { return M_space; }
@@ -1378,7 +1378,7 @@ public:
 
         /**
          * \brief add new parameter \p mu in sampling and store \p index in super sampling
-         * 
+         *
          * \param mu the new parameter
          * \param index the index in the super sampling if the super sampling is not null
          */
@@ -1390,12 +1390,12 @@ public:
                 super::push_back( mu );
                 return *this;
             }
-        
+
         /**
          * @brief set the sampling from a vector of vector of values
-         * 
+         *
          * @param data data to set the sampling
-         * @return Sampling& 
+         * @return Sampling&
          */
         Sampling& set( std::vector<std::vector<value_type>> const& data )
         {
@@ -1408,10 +1408,10 @@ public:
         }
 
         /**
-         * @brief add new parameter \p mu in sampling 
-         * 
-         * @param data 
-         * @return Sampling& 
+         * @brief add new parameter \p mu in sampling
+         *
+         * @param data
+         * @return Sampling&
          */
         Sampling& add( std::vector<std::vector<value_type>> const& data )
         {
@@ -1424,9 +1424,9 @@ public:
 
         /**
          * @brief set the sampling from a vector of map of pair of name and values
-         * 
+         *
          * @param data data to set the sampling
-         * @return Sampling& 
+         * @return Sampling&
          */
         Sampling& set( std::vector<std::map<std::string,value_type>> const& data )
         {
@@ -1439,10 +1439,10 @@ public:
         }
 
         /**
-         * @brief add new parameter \p mu in sampling 
-         * 
-         * @param data 
-         * @return Sampling& 
+         * @brief add new parameter \p mu in sampling
+         *
+         * @param data
+         * @return Sampling&
          */
         Sampling& add( std::vector<std::map<std::string,value_type>> const& data )
         {
