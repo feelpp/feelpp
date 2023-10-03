@@ -11,7 +11,6 @@ makeEye2BrainOptions()
     po::options_description eye2brainoptions( "Eye2Brain options" );
     eye2brainoptions.add_options()
         ( "measure-index", po::value<int>()->default_value( 1 ), "index of the output to be computed.\n\t          0 : mean over cornea,\n\tFrom 1 to 9 : corresponding point in {O, A, B, B1, C, D, D1, F, G}\n\tWARNING : do not confuse with the option crb.output-index" )
-        ( "radius", po::value<double>()->default_value( 0.1 ), "radius of the gaussian sensor" )
         ;
     return eye2brainoptions;
 }
@@ -34,7 +33,7 @@ Eye2Brain<Order, Dim>::Eye2Brain()
 {
     this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}D_P{}", Dim, Order) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
-    m_radius = doption(_name = "radius");
+    m_radius = 0.05; //doption(_name = "radius");
 }
 
 template<int Order, int Dim>
