@@ -38,3 +38,11 @@ feelpp_add_application( rht_several_enclosures_2d_p2p1 SRCS rht_several_enclosur
 feelpp_add_application( rht_several_enclosures_3d_p2p1 SRCS rht_several_enclosures.cpp LABELS doc DEFS FEELPP_DIM=3 FEELPP_ORDER=2 )
 add_dependencies(feelpp_doc_rht feelpp_doc_rht_2dp1 feelpp_doc_rht_3dp1)
 feelpp_add_testcase(cases PREFIX doc_heat)
+
+feelpp_add_application( cavity_radiation_jacobian SRCS cavity_radiation_jacobian.cpp LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
+feelpp_add_application( cavity_radiation_jacobian3 SRCS cavity_radiation_jacobian.cpp LABELS doc DEFS FEELPP_DIM=3 FEELPP_ORDER=1 )
+
+
+feelpp_add_application( rht_several_enclosures_trial_2d_p1p0 SRCS rht_several_enclosuresTrial.cpp LABELS doc DEFS FEELPP_DIM=2 FEELPP_ORDER=1 )
+feelpp_add_application( rht_several_enclosures_trial_3d_p1p0 SRCS rht_several_enclosuresTrial.cpp LABELS doc DEFS FEELPP_DIM=3 FEELPP_ORDER=1 )
+
