@@ -25,3 +25,5 @@ set_directory_properties(PROPERTIES LABEL heat )
 
 feelpp_add_test( heat NO_SEQ_TEST LINK_LIBRARIES Feelpp::feelpp_toolbox_heat_lib CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case2.cfg " )
 
+feelpp_add_test( cavity_triangular NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangular_cavity/triangular_cavity.cfg " DEFS FEELPP_DIM=2 FEELPP_ORDER=1  )
+feelpp_add_test( cavity_rectangular NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/rectangular_cavity/rectangular_cavity.cfg " DEFS FEELPP_DIM=2 FEELPP_ORDER=1  )
