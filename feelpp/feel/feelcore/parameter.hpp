@@ -337,6 +337,8 @@ using keyword = NA::named_argument_t<struct keyword_tag>;
 using repository = NA::named_argument_t<struct repository_tag>;
 using physic = NA::named_argument_t<struct physic_tag>;
 
+using quality = NA::named_argument_t<struct quality_tag>;
+
 
 } // namespace na
 
@@ -637,6 +639,8 @@ inline constexpr auto& _min = NA::identifier<na::min>;
 inline constexpr auto& _max = NA::identifier<na::max>;
 inline constexpr auto& _value = NA::identifier<na::value>;
 inline constexpr auto& _selector = NA::identifier<na::selector>;
+
+inline constexpr auto& _quality = NA::identifier<na::quality>;
 
 } // Feel
 

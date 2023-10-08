@@ -40,9 +40,9 @@ public:
     /** @name Constants
      */
     //@{
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
-    static const uint16_type nRealDim = RDim;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type nOrder = Order;
+    static inline const uint16_type nRealDim = RDim;
 
 
     //@}

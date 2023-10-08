@@ -96,7 +96,7 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Convex::nDim;
+    static inline const uint16_type nDim = Convex::nDim;
 
     //@}
 

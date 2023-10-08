@@ -867,6 +867,34 @@ if(FEELPP_ENABLE_EIGENRAND)
 endif()
 
 
+option(FEELPP_ENABLE_THIRDPARTY_BVH "Enable BVH" ON)
+if( FEELPP_ENABLE_THIRDPARTY_BVH )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring BVH")
+
+  set(FETCHCONTENT_SOURCE_DIR_BVH ${CMAKE_CURRENT_SOURCE_DIR}/bvh)
+  FetchContent_Declare(bvh GIT_REPOSITORY https://github.com/feelpp/bvh.git GIT_TAG 327b67b1d8d798e4dab1686b0dd022a1e0cbcefe)
+
+  FetchContent_MakeAvailable(bvh)
+  add_library(feelpp_bvh INTERFACE)
+
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_THIRDPARTY_BVH)
+  target_link_libraries(feelpp_bvh INTERFACE bvh )
+  add_library(Feelpp::feelpp_bvh ALIAS feelpp_bvh)
+
+  target_include_directories(feelpp_bvh INTERFACE
+    $<BUILD_INTERFACE:${bvh_SOURCE_DIR}/src>
+    #$<INSTALL_INTERFACE:include/feelpp>
+    $<INSTALL_INTERFACE:include/feelpp/bvh>)
+  install(TARGETS feelpp_bvh bvh EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_bvh )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} bvh")
+endif()
 
 
 # Add an info message to be displayed at the end of the cmake process.
