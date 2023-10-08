@@ -27,27 +27,77 @@
 namespace Feel
 {
 template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+NullSpace<double> qsNullSpace( SpaceType const& space )
 {
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( vec(Py(),-Px()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
-    return userNullSpace;
-}
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( oneZ() );
-    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
-    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
-    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
-    return userNullSpace;
+    if constexpr( decay_type<SpaceType>::nRealDim == 2 )
+    {
+        auto mode1 = space->element( oneX() );
+        auto mode2 = space->element( oneY() );
+        auto mode3 = space->element( vec(Py(),-Px()) );
+        NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
+        return userNullSpace;
+    }
+    else if constexpr ( decay_type<SpaceType>::nRealDim == 3 )
+    {
+        auto mode1 = space->element( oneX() );
+        auto mode2 = space->element( oneY() );
+        auto mode3 = space->element( oneZ() );
+        auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
+        auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
+        auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
+        NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
+        return userNullSpace;
+    }
 }
 
+/**
+ * @brief compute the rotation matrix for a rigid body
+ * 
+ * @param rigidRotationAngles vector of angles in Rad
+ * @return eigen_matrix_type<RealDim, RealDim> 
+ */
+template<int RealDim>
+eigen_matrix_type<RealDim, RealDim> 
+rigidRotationMatrix( eigen_matrix_type<RealDim, 1> const& rigidRotationAngles )
+{
+    constexpr int nRealDim = RealDim;
+    eigen_matrix_type<nRealDim, nRealDim> res;
+    if constexpr ( nRealDim == 2 )
+    {
+        double angle = rigidRotationAngles(0,0);
+        res <<   std::cos(angle), -std::sin(angle),
+            /**/ std::sin(angle),  std::cos(angle);
+    }
+    else
+    {
+        double angleZ = rigidRotationAngles(2);
+        double angleY = rigidRotationAngles(1);
+        double angleX = rigidRotationAngles(0);
+        eigen_matrix_type<3, 3> rotMatZ,rotMatY,rotMatX;
+        rotMatZ << std::cos(angleZ), -std::sin(angleZ), 0,
+            /**/   std::sin(angleZ),  std::cos(angleZ), 0,
+            /**/                  0,                 0, 1;
+        rotMatY << std::cos(angleY), 0, std::sin(angleY),
+            /**/                  0, 1,                0,
+            /**/  -std::sin(angleY), 0, std::cos(angleY);
+        rotMatX << 1,                0,                 0,
+            /**/   0, std::cos(angleX), -std::sin(angleX),
+            /**/   0, std::sin(angleX),  std::cos(angleX);
+        res = rotMatZ*rotMatY*rotMatX;
+    }
+    return res;
+}
+
+eigen_matrix_type<2, 2> 
+rigidRotationMatrix( eigen_matrix_type<1, 1> const& r )
+{
+    return rigidRotationMatrix<2>( eigen_matrix_type<2, 1>{r(0,0),r(0,0)} );
+}
+eigen_matrix_type<2, 2> 
+rigidRotationMatrix( double const& r )
+{
+    return rigidRotationMatrix<2>( eigen_matrix_type<2, 1>{r,r} );
+}
 }
 
 #endif

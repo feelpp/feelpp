@@ -7,31 +7,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vf.hpp>
-namespace Feel
-{
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( vec(Py(),-Px()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
-    return userNullSpace;
-}
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( oneZ() );
-    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
-    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
-    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
-    return userNullSpace;
-}
-
-}
+#include "nullspace-rigidbody.hpp"
 
 int main(int argc, char**argv )
 {
@@ -51,7 +27,7 @@ int main(int argc, char**argv )
 
         Environment env( _argc=argc, _argv=argv,
                     _desc=laplacianoptions,
-                    _about=about(_name="qs_elasticity",
+                    _about=about(_name="qs_elasticity_pure_traction",
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
@@ -73,6 +49,7 @@ int main(int argc, char**argv )
 
         auto u = Vh->element("u");
         auto v = Vh->element("v");
+        auto w = Vh->element("w");
         auto mv = V0hv->element("mv");
         auto nv = V0hv->element("nv");
         auto m = V0h->element("m");
@@ -100,17 +77,30 @@ int main(int argc, char**argv )
         auto l = blockform1( Xh, solve::strategy::monolithic, backend() );
         l(0_c) = integrate(_range=elements(mesh),
                         _expr=inner(f,id(v)));
-        l(0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
+        l(0_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=inner(g,id(v)));
 
         auto rigid_body_domain = (rigid_body_domain_name.empty())?elements(mesh):markedelements(mesh, rigid_body_domain_name );
         std::cout << "surface rigid domain=" << integrate( _range=rigid_body_domain, _expr=cst(1.0) ).evaluate() << std::endl; 
+        double meas = integrate( _range=elements(mesh), _expr=cst(1.0) ).evaluate()(0,0);
+        auto center_of_mass = integrate( _range=elements(mesh), _expr=P()/meas ).evaluate();
+        std::cout << fmt::format( "meas={}, center of mass={}", meas, center_of_mass ) << std::endl;
+        auto R = rigidRotationMatrix( omega.evaluate() );
+        std::cout << "R=" << R << std::endl;
+        v.on(_range=elements(mesh), _expr=constant(R)*(P()-constant(center_of_mass))+constant(center_of_mass)-P());
+        w.on(_range=elements(mesh), _expr=tau );
         // translation
         l(1_c) += integrate(_range=elements(mesh),
                             _expr=inner(tau,id(mv)));
         // rotation
+#if FEELPP_DIM == 2
         l(2_c) += integrate(_range=rigid_body_domain,
-                            _expr=inner(omega,id(m)));
+                                _expr=cst(0.)*id(m));
+#else
+        l(2_c) += integrate(_range=rigid_body_domain,
+                            _expr=inner(0*oneX(),id(m)));
+#endif
+
         toc("l");
 
         tic();
@@ -138,23 +128,25 @@ int main(int argc, char**argv )
         if ( !boption( "no-solve" ) )
         {
             tic();
-            std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
-            backend()->attachNearNullSpace( myNullSpace );
-            if ( boption(_name="nullspace") )
-                backend()->attachNearNullSpace( myNullSpace );
-
             auto U=Xh.element();
             a.solve(_rhs=l,_solution=U);
             u=U(0_c);
             //m=U(1_c);
             toc("a.solve");
+
+            auto rbtrans=integrate(_range=elements(mesh),_expr=idv(u)).evaluate();
+            auto rbrot = integrate(_range=elements(mesh),_expr=curlv(u)).evaluate();
+            std::cout << fmt::format( "rbtrans={}, rbrot={}", rbtrans, rbrot ) << std::endl;
             
         }
 
         tic();
         auto e = exporter( _mesh=mesh );
         e->addRegions();
-        e->add( "u", u );
+        e->add( "ue", u );
+        e->add( "u", u+v+w );
+        e->add( "rotation", v );
+        e->add( "translation", w );
         e->save();
         toc("Exporter");
         return 0;

@@ -290,7 +290,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
     {
         auto b = backend( _name="sc" );
-        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(b,qsNullSpace(Mh,mpl::int_<FEELPP_DIM>())) );
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(b,qsNullSpace(Mh)) );
         if ( boption( "use-near-null-space" ) )
             b->attachNearNullSpace( myNullSpace );
         if ( boption( "use-null-space" ) )

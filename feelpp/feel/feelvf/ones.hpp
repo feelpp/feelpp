@@ -364,6 +364,22 @@ constant( double value )
     return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Constant( value )) );
 }
 
+/**
+ * @brief build a constant matrix expression from an Eigen matrix
+ * 
+ * @tparam M number of rows, can be Eigen::Dynamic
+ * @tparam N number of columns, can be Eigen::Dynamic
+ * @param m eigen matrix
+ * @return Expr<vf::detail::Ones<M,N> >  Matrix Expression
+ */
+template<int M, int N=M>
+inline
+Expr<vf::detail::Ones<M,N> >
+constant( Eigen::Matrix<double,M,N> const& m )
+{
+    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>( m ) );
+}
+
 } // vf
 } // Feel
 #endif /* FEELPP_VF_ONES_H */
