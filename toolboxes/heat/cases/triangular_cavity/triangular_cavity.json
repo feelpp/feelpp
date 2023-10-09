@@ -25,7 +25,7 @@
     "Meshes": {
         "heat": {
             "Import": {
-                "filename": "$cfgdir/triangular_cavity_insulation2.geo"
+                "filename": "$cfgdir/triangular_cavity.geo"
             }
         }
     },

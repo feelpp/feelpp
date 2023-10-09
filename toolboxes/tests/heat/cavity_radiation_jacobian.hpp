@@ -4,25 +4,6 @@
 namespace Feel
 {      
 
-
-// Add options to the main file 
-    inline Feel::po::options_description
-    makeOptions()
-    {
-        Feel::po::options_description options( "rht options" );
-        options.add_options()
-            ( "specs", Feel::po::value<std::string>(),"json spec file for rht" )
-            ( "steady", Feel::po::value<bool>()->default_value( 1 ),"if 1: steady else unsteady" )
-            ("deactivate-exporters",Feel::po::value<bool>()->default_value( false ),"deactivate exporters");
-        options.add( Feel::backend_options("interp1"));
-        options.add( Feel::backend_options("interp2"));
-        options.add( Feel::backend_options("heatEq"));
-        options.add( Feel::backend_options("Modesteq"));
-
-        return options.add( Feel::feel_options() );
-    
-    } // end makeOptions
-
 // Build the time-invariant part of the heat equation
     template<int Dim, int Order>
     void RHT<Dim,Order>::initHeatEquation()
@@ -121,6 +102,19 @@ namespace Feel
         this->computeVF_and_save();        
         toc("Computation of view factors");  
               
+        int n_cavities = M_markers_map.size();
+        if(n_cavities != 0)
+        {
+            for(const auto& [cavity_name,markers]: M_markers_map)
+            {            
+                auto cavity_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,markers),_update=0);
+                
+                // Create a discontinuous space, linear per face, over the view-factor markers
+                M_Xhd0 = Pdh<Order-1>(cavity_submesh,true);
+                M_Xhd0_map.insert(std::make_pair(cavity_name,M_Xhd0));
+            }
+        }
+
         
         // Create the bdf structure
         M_bdf = bdf( _space = M_Xh );
@@ -323,7 +317,7 @@ namespace Feel
                                                         // Term sigma * epsilon * T^4 
                                                         lt += integrate( _range = markedfaces( M_mesh, mark ),
                                                                 _expr = sigma * expr( epsilon ) * idvu4 *id( v ));
-                                                                                                                
+
                                                         auto cavity_markers = M_markers_map[bc];   
 
                                                         int i_marker_to_bb=0;
