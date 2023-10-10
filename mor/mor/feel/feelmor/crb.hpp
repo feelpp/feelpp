@@ -634,8 +634,8 @@ public:
 
         }
     /**
-     * @brief Set the Output Name 
-     * 
+     * @brief Set the Output Name
+     *
      * @param oname name of the outout
      */
     void setOutputName( std::string const& oname )
@@ -2776,7 +2776,7 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] start of POD \n";
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
-            bool POD_WN = boption(_prefix=M_prefix,_name="crb.apply-POD-to-WN") ;
+            bool POD_WN = boption(_prefix=M_prefix, _name="crb.apply-POD-to-WN");
 
             if ( seek_mu_in_complement ) // M_mode_number == 1 )
             {
@@ -5776,13 +5776,13 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     matrix_info_tuple matrix_info;
     tic();
     matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
-    VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds",toc("CRB::fixedPoint() : fixedPointPrimal"));
+    LOG(INFO) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds", toc("CRB::fixedPoint() : fixedPointPrimal", false));
 
     if( M_solve_dual_problem )
     {
         tic();
         fixedPointDual( N, mu , uN, uNdu , uNduold , output_vector , K ) ;
-        VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds",toc("CRB::fixedPoint() : fixedPointDual"));
+        LOG(INFO) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds", toc("CRB::fixedPoint() : fixedPointDual", false));
 
         if ( computeOutput )
         {
@@ -5804,13 +5804,13 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                 double prevcorrection = 0;
                 for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
                 {
-                    double curcorrection = correctionTerms(mu, uN , uNdu, uNold, time_index, prevcorrection );
+                    double curcorrection = correctionTerms(mu, uN , uNdu, uNold, time_index, prevcorrection);
                     output_vector[time_index]+= curcorrection;
                     prevcorrection = curcorrection;
                     ++time_index;
                 }
             }
-            VLOG(3) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds",toc("CRB::fixedPoint() : correctionTerms"));
+            LOG(INFO) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds", toc("CRB::fixedPoint() : correctionTerms", false));
         }
     }
 
@@ -5823,7 +5823,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
-    VLOG(2) << fmt::format("CRB::lb() : Start lb functions with mu={}, N={}, print_rb_matrix={}, K={}, computeOutput={}",mu.toString(),N,print_rb_matrix,K,computeOutput);
+    VLOG(2) << fmt::format("CRB::lb() : Start lb functions with mu={}, N={}, print_rb_matrix={}, K={}, computeOutput={}", mu.toString(), N, print_rb_matrix, K, computeOutput);
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5850,7 +5850,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     tic();
     auto matrix_info = onlineSolve( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
-    VLOG(3) << fmt::format("CRB::lb() : onlineSolve took {} seconds",toc("CRB::lb() : onlineSolve"));
+    LOG(INFO) << fmt::format("CRB::lb() : onlineSolve took {} seconds", toc("CRB::lb() : onlineSolve", false));
 
     if ( M_compute_variance || M_save_output_behavior )
     {
@@ -5986,7 +5986,7 @@ CRB<TruthModelType>::delta( size_type N,
         double dual_sum_eim=0;
 
         //vectors to store residual coefficients
-       
+
         primal_residual_coeffs.resize( K );
         dual_residual_coeffs.resize( K );
 
@@ -6009,7 +6009,7 @@ CRB<TruthModelType>::delta( size_type N,
                     boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
-            VLOG(3) << fmt::format("CRB::delta() : scm took {} seconds",toc("CRB::delta() : scm"));
+            LOG(INFO) << fmt::format("CRB::delta() : scm took {} seconds", toc("CRB::delta() : scm", false));
         }
 
         //index associated to the output time
@@ -9480,7 +9480,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     Feel::Timer t1;
     tic();
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
-    VLOG(3) << fmt::format( "[CRB::run] lb = {}", toc("[CRB::run] lb") );
+    LOG(INFO) << fmt::format( "[CRB::run] lb = {}", toc("[CRB::run] lb", false) );
 
     double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
@@ -9489,8 +9489,8 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     t1.start();
     tic();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
-    VLOG(3) << fmt::format( "[CRB::run] delta = {}", toc("[CRB::run] delta") );
-    
+    LOG(INFO) << fmt::format( "[CRB::run] delta = {}", toc("[CRB::run] delta", false) );
+
     double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
@@ -9523,10 +9523,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     }
     tic();
     double delta_pr = error_estimation.template get<3>();
-    VLOG(3) << fmt::format( "[CRB::run] delta_pr = {}", toc("[CRB::run] delta_pr") );
+    LOG(INFO) << fmt::format( "[CRB::run] delta_pr = {}", toc("[CRB::run] delta_pr", false) );
     tic();
     double delta_du = error_estimation.template get<4>();
-    VLOG(3) << fmt::format( "[CRB::run] delta_du = {}", toc("[CRB::run] delta_du") );
+    LOG(INFO) << fmt::format( "[CRB::run] delta_du = {}", toc("[CRB::run] delta_du", false) );
 
     time.resize(2);
     time(0)=time_prediction;
@@ -9539,8 +9539,8 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
 
     CRBResults r(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
     r.setParameter( mu );
-    VLOG(3) << fmt::format( "[CRB::run] get results = {}", toc("[CRB::run] get results") );
-    VLOG(3) << fmt::format( "[CRB::run] total time = {}", toc("[CRB::run] total time") );
+    LOG(INFO) << fmt::format( "[CRB::run] get results = {}", toc("[CRB::run] get results", false) );
+    LOG(INFO) << fmt::format( "[CRB::run] total time = {}", toc("[CRB::run] total time", false) );
     return r;
 }
 
@@ -11604,7 +11604,7 @@ CRB<TruthModelType>::saveJson()
         // add functionspace file (useful when nproc offline != nproc online)
         std::string functionspaceFilename = fmt::format("{}_functionSpace_p{}.json", this->name(), this->worldComm().size());
         ptreeReducedBasisSpace.add( "functionspace-filename", functionspaceFilename );
-        
+
         ptreeReducedBasisSpace.add( "dimension", M_N );
         if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
         {
@@ -11640,7 +11640,7 @@ CRB<TruthModelType>::saveJson()
                 M_scmM->updatePropertyTree( ptreeParameterScmM );
                 ptree.add_child( "scmM", ptreeParameterScmM );
             }
-        }        
+        }
         write_json( filenameJson, ptree );
     }
 }
@@ -11781,7 +11781,7 @@ CRB<TruthModelType>::setupOfflineFromDB()
                     LOG(INFO) << "Database for basis functions in HDF5 available and loaded";
                 }
             }
-                
+
             auto basis_functions = M_elements_database.wn();
             M_model->rBFunctionSpace()->setBasis( basis_functions );
         }
