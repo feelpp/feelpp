@@ -5773,19 +5773,18 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
 {
-    double t;
     matrix_info_tuple matrix_info;
     tic();
     matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
-    t = toc("CRB::fixedPoint() : fixedPointPrimal", false);
-    VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds", t);
+    double t_fp = toc("CRB::fixedPoint() : fixedPointPrimal", false);
+    VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds", t_fp);
 
     if( M_solve_dual_problem )
     {
         tic();
         fixedPointDual( N, mu , uN, uNdu , uNduold , output_vector , K ) ;
-        t = toc("CRB::fixedPoint() : fixedPointDual", false);
-        VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds", t);
+        double t_fd = toc("CRB::fixedPoint() : fixedPointDual", false);
+        VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds", t_fd);
 
         if ( computeOutput )
         {
@@ -5813,8 +5812,8 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                     ++time_index;
                 }
             }
-            t = toc("CRB::fixedPoint() : correctionTerms", false);
-            VLOG(3) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds", t);
+            double t_fp = toc("CRB::fixedPoint() : correctionTerms", false);
+            VLOG(3) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds", t_fp);
         }
     }
 
@@ -9484,11 +9483,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         Nwn = M_N;
     }
     Feel::Timer t1;
-    double t;
     tic();
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
-    t = toc("[CRB::run] lb", false);
-    VLOG(3) << fmt::format("[CRB::run] lb = {}", t);
+    double t_run = toc("[CRB::run] lb", false);
+    VLOG(3) << fmt::format("[CRB::run] lb = {}", t_run);
 
     double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
@@ -9497,7 +9495,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     t1.start();
     tic();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
-    t = toc("[CRB::run] delta", false);
+    double t = toc("[CRB::run] delta", false);
     VLOG(3) << fmt::format("[CRB::run] delta = {}", t);
 
     double time_error_estimation=t1.elapsed();
@@ -9532,12 +9530,12 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
     }
     tic();
     double delta_pr = error_estimation.template get<3>();
-    t = toc("[CRB::run] delta_pr", false);
-    VLOG(3) << fmt::format("[CRB::run] delta_pr = {}", t);
+    double t_pr = toc("[CRB::run] delta_pr", false);
+    VLOG(3) << fmt::format("[CRB::run] delta_pr = {}", t_pr);
     tic();
     double delta_du = error_estimation.template get<4>();
-    t = toc("[CRB::run] delta_du", false);
-    VLOG(3) << fmt::format( "[CRB::run] delta_du = {}", t );
+    double t_du = toc("[CRB::run] delta_du", false);
+    VLOG(3) << fmt::format("[CRB::run] delta_du = {}", t_du);
 
     time.resize(2);
     time(0)=time_prediction;
