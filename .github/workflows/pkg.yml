@@ -1,0 +1,42 @@
+name: Feelpp PKG CI
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      parallel:
+        description: 'Number of parallel jobs'
+        required: false
+        default: "20"
+        type: string
+      skip:
+        description: 'Skip build'
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { distro: 'ubuntu/jammy', flavor: ubuntu, dist: jammy, version: '22.04', continue-on-error: 'false' }
+          - { distro: 'ubuntu/focal', flavor: ubuntu, dist: focal, version: '20.04', continue-on-error: 'false' }
+          - { distro: 'ubuntu/lunar', flavor: ubuntu, dist: lunar, version: '23.04', continue-on-error: 'true' }
+          - { distro: 'ubuntu/kinetic', flavor: ubuntu, dist: kinetic, version: '22.10', continue-on-error: 'true' }
+          - { distro: 'debian/bookwork', flavor: debian, dist: bookworm, version: '12', continue-on-error: 'false' }
+          - { distro: 'debian/bullseye', flavor: debian, dist: bullseye, version: '11', continue-on-error: 'false' }
+          - { distro: 'debian/testing', flavor: debian, dist: testing, version: '13', continue-on-error: 'true' }
+          - { distro: 'debian/sid', flavor: debian, dist: sid, version: 'unstable', continue-on-error: 'true' }
+    uses: ./.github/workflows/pkg-dist.yml
+    with:
+        dist: "${{ matrix.dist }}"
+        flavor: "${{ matrix.flavor }}"
+        parallel: "${{ inputs.parallel || '20' }}"
+        skip: "${{ inputs.skip || '' }}"
+        continue-on-error: "${{ matrix.continue-on-error }}"
+    secrets: inherit
+

@@ -75,9 +75,9 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nComponents = super::nComponents;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder = super::nOrder;
+    static inline const uint16_type nComponents = super::nComponents;
     static const bool is_product = true;
 
     RannacherTurekPolynomialSet()
@@ -115,8 +115,8 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -130,39 +130,39 @@ public:
     typedef PointSet<convex_type, value_type> pointset_type;
     typedef PointSetType<convex_type, 2, value_type> equispaced_pointset_type;
 
-    static const uint16_type nVertices = reference_convex_type::numVertices;
-    static const uint16_type nFaces = reference_convex_type::numFaces;
-    static const uint16_type nGeometricFaces = reference_convex_type::numFaces;
-    static const uint16_type nEdges = reference_convex_type::numEdges;
-    static const uint16_type nNormals = reference_convex_type::numNormals;
+    static inline const uint16_type nVertices = reference_convex_type::numVertices;
+    static inline const uint16_type nFaces = reference_convex_type::numFaces;
+    static inline const uint16_type nGeometricFaces = reference_convex_type::numFaces;
+    static inline const uint16_type nEdges = reference_convex_type::numEdges;
+    static inline const uint16_type nNormals = reference_convex_type::numNormals;
 
-    static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+    static inline const uint16_type nbPtsPerVertex = 0;
+    static inline const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
                              mpl::int_<reference_convex_type::nbPtsPerEdge>,
                              mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+    static inline const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                              mpl::int_<reference_convex_type::nbPtsPerFace>,
                              mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
+    static inline const uint16_type nbPtsPerVolume = 0;
+    static inline const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = nbPtsPerVertex;
+    static inline const uint16_type nDofPerVertex = nbPtsPerVertex;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static inline const uint16_type nDofPerEdge = nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace = nbPtsPerFace;
+    static inline const uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = nbPtsPerVolume;
+    static inline const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    static inline const uint16_type nLocalDof = numPoints;
 
-    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
+    static inline const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                              mpl::int_<nVertices>,
                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
                              mpl::int_<nEdges>,
@@ -284,8 +284,8 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    static const uint16_type nOrder =  super::nOrder;
+    static inline const uint16_type nDim = N;
+    static inline const uint16_type nOrder =  super::nOrder;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = true;
 
@@ -293,7 +293,7 @@ public:
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef Continuous continuity_type;
-    static const uint16_type TAG = TheTAG;
+    static inline const uint16_type TAG = TheTAG;
 
     /**
      * Polynomial Set type: scalar or vectorial
@@ -301,9 +301,9 @@ public:
     typedef typename super::polyset_type polyset_type;
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const uint16_type nComponents1 = polyset_type::nComponents1;
-    static const uint16_type nComponents2 = polyset_type::nComponents2;
+    static inline const uint16_type nComponents = polyset_type::nComponents;
+    static inline const uint16_type nComponents1 = polyset_type::nComponents1;
+    static inline const uint16_type nComponents2 = polyset_type::nComponents2;
     static const bool is_product = true;
 
     typedef CrouzeixRaviart<N, RealDim, Scalar, T, Convex> component_basis_type;
@@ -315,23 +315,23 @@ public:
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
 
-    static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+    static inline const uint16_type nbPtsPerVertex = 0;
+    static inline const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
                              mpl::int_<reference_convex_type::nbPtsPerEdge>,
                              mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+    static inline const uint16_type nbPtsPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                              mpl::int_<reference_convex_type::nbPtsPerFace>,
                              mpl::int_<0> >::type::value;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
+    static inline const uint16_type nbPtsPerVolume = 0;
+    static inline const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
 
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    static inline const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static inline const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static inline const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static inline const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static inline const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static inline const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
 
@@ -516,20 +516,6 @@ protected:
 private:
 
 };
-template<uint16_type N,
-         uint16_type RealDim,
-         template<uint16_type Dim> class PolySetType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         uint16_type TheTAG >
-const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex,TheTAG>::nDim;
-template<uint16_type N,
-         uint16_type RealDim,
-         template<uint16_type Dim> class PolySetType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         uint16_type TheTAG >
-const uint16_type CrouzeixRaviart<N,RealDim,PolySetType,T,Convex,TheTAG>::nOrder;
 
 } // fem
 
@@ -560,17 +546,10 @@ public:
 
     typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
-    static const uint16_type TAG = TheTAG;
+    static inline const uint16_type nOrder =  Order;
+    static inline const uint16_type TAG = TheTAG;
 
 };
-
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type CrouzeixRaviart<Order,PolySetType,Pts,TheTAG>::nOrder;
-
 
 } // Feel
 #endif /* __CrouzeixRaviart_H */

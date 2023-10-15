@@ -133,9 +133,9 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // trace mesh
@@ -146,8 +146,8 @@ public:
     //___________________________________________________________________________________//
     // basis fluid
     static const bool useMixedBasis = true;
-    static const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
-    static const uint16_type nOrderPressure = BasisPressureType::nOrder;
+    static inline const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
+    static inline const uint16_type nOrderPressure = BasisPressureType::nOrder;
     typedef BasisVelocityType basis_fluid_u_type;
     typedef BasisPressureType basis_fluid_p_type;
     typedef Lagrange<0, Scalar,Continuous> basis_l_type;

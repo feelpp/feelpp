@@ -59,7 +59,7 @@ class DistanceToRange
         typedef typename functionspace_distance_type::element_type element_distance_type;
         typedef typename functionspace_distance_type::element_ptrtype element_distance_ptrtype;
 
-        static const uint16_type nDofPerEltDistance = functionspace_distance_type::fe_type::nDof;
+        static inline const uint16_type nDofPerEltDistance = functionspace_distance_type::fe_type::nDof;
 
         typedef typename functionspace_distance_type::mesh_type mesh_distance_type;
         typedef typename functionspace_distance_type::mesh_ptrtype mesh_distance_ptrtype;

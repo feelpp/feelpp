@@ -76,8 +76,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = invalid_uint16_type_value;
-    static const uint32_type Npoints = 1;
+    static inline const uint16_type Degree = invalid_uint16_type_value;
+    static inline const uint32_type Npoints = 1;
 
     Gauss()
         :
@@ -105,8 +105,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree;
 
     typedef Gauss<Simplex<0,1>,Integration_Degree, T> face_quad_type;
 
@@ -150,8 +150,8 @@ public :
     typedef Gauss<Simplex<1,1>,Integration_Degree, T> face_quad_type;
 
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree;
 
     Gauss()
         :
@@ -230,8 +230,8 @@ public :
     typedef Gauss<Simplex<2,1>,Integration_Degree, T> face_quad_type;
 
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree*Degree;
 
     Gauss()
         :
@@ -299,8 +299,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree;
 
     typedef Gauss<Simplex<0,1>,Integration_Degree, T> face_quad_type;
 
@@ -360,8 +360,8 @@ public :
 
     typedef Gauss<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree;
 
     Gauss()
         :
@@ -419,8 +419,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
     typedef Gauss<Hypercube<2,1>,Integration_Degree, T> face_quad_type;
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree*Degree;
 
     Gauss()
         :
@@ -473,8 +473,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree*Degree*Degree;
 
     Gauss()
         :
@@ -525,8 +525,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree*Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree*Degree*Degree*Degree;
 
     Gauss()
         :

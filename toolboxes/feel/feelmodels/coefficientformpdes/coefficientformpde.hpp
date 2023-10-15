@@ -41,14 +41,14 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nRealDim = convex_type::nRealDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // basis
     typedef BasisUnknownType basis_unknown_type;
-    static const uint16_type nOrderUnknown = basis_unknown_type::nOrder;
+    static inline const uint16_type nOrderUnknown = basis_unknown_type::nOrder;
     // function space unknown
     typedef FunctionSpace<mesh_type, bases<basis_unknown_type> > space_unknown_type;
     typedef std::shared_ptr<space_unknown_type> space_unknown_ptrtype;

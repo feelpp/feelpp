@@ -1528,8 +1528,8 @@ template<uint16_type PN,
          uint16_type GN = 1>
 struct Order
 {
-    static const uint16_type PolynomialOrder = PN;
-    static const uint16_type GeometricOrder = GN;
+    static inline const uint16_type PolynomialOrder = PN;
+    static inline const uint16_type GeometricOrder = GN;
 
     static const bool is_isoparametric = ( PN == GN );
     static const bool is_subparametric = ( PN > GN );
