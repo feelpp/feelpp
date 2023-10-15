@@ -35,8 +35,8 @@
 #include <type_traits>
 #include <utility>
 #include <unordered_set>
-#include <boost/tuple/tuple.hpp>
 #include <any>
+#include <tuple>
 #include <boost/mp11/function.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
@@ -48,8 +48,16 @@
 #include <feel/feelmesh/detail/filters.hpp>
 #include <feel/feelvf/expr.hpp>
 
+namespace std
+{
+template< std::size_t I, class T >
+struct tuple_element;
+template <size_t I, typename Tuple>
+using tuple_element_t = typename tuple_element<I,Tuple>::type;
+}
 namespace Feel
 {
+#if 0   
 template <int I, typename Tuple>
 struct tuple_element;
 template <int I, typename Head, typename... Tail>
@@ -63,7 +71,7 @@ struct tuple_element<0, boost::tuple<Head, Tail...>>
     typedef Head type;
 };
 template <int I, typename Tuple>
-using tuple_element_t = typename tuple_element<I,Tuple>::type;
+using tuple_element_t = typename std::tuple_element<I,Tuple>::type;
 
 template <typename> struct is_tuple: std::false_type {};
 
@@ -71,6 +79,12 @@ template <typename ...T> struct is_tuple<boost::tuple<T...>>: std::true_type {};
 
 template <typename T> 
 inline constexpr bool is_tuple_v = is_tuple<T>::value;
+#else // 0
+template <typename> struct is_tuple: std::false_type {};
+template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
+template <typename T>
+inline constexpr bool is_tuple_v = is_tuple<T>::value;  
+#endif // 0
 
 template<typename MeshType>
 decltype(auto)
@@ -79,17 +93,21 @@ make_elements_wrapper()
     using elt_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
     return std::make_shared<elt_wrapper_t>();
 }
-template <typename RangeT>
-using range_elementtype_t = tuple_element_t<0, RangeT>;
-template <typename RangeT>
-constexpr size_type range_elementtype_v = range_elementtype_t<RangeT>::value;
-template <typename RangeT>//, std::enable_if_t < std::is_same_v < std::tuple_element<1, RangeT>,std::tuple_element<2, RangeT>>,int> = 0 >
-using range_iterators_t = tuple_element_t<1, RangeT>;
-template <typename RangeT>
-using range_container_t = tuple_element_t<3, RangeT>;
 
 template <typename RangeT>
-inline constexpr bool is_range_v = is_tuple_v<RangeT> || std::is_base_of_v<RangeBase,RangeT>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
+using range_elementtype_t = std::tuple_element_t<0, RangeT>;
+
+template <typename RangeT>
+constexpr size_type range_elementtype_v = range_elementtype_t<RangeT>::value;
+
+template <typename RangeT>//, std::enable_if_t < std::is_same_v < std::tuple_element<1, RangeT>,std::tuple_element<2, RangeT>>,int> = 0 >
+using range_iterators_t = std::tuple_element_t<1, RangeT>;
+
+template <typename RangeT>
+using range_container_t = std::tuple_element_t<3, RangeT>;
+
+template <typename RangeT>
+inline constexpr bool is_range_v = is_tuple_v<RangeT> || std::is_base_of_v<RangeBase<>,RangeT>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
 
 
 //!
@@ -982,15 +1000,15 @@ internalpoints( MeshType const& mesh )
  * \endcode
  *
  */
-template <typename RangeT, std::enable_if_t<is_range_v<RangeT>,int> = 0>
+template <typename RangeT, std::enable_if_t<is_filter_v<RangeT>,int> = 0>
 size_type
 nelements( RangeT const& r, bool global = false )
 {
-    auto is_ghost = []( auto const& cell )
+    auto is_ghost = [&r]( auto const& cell )
     {
-        if constexpr ( range_elementtype_v<RangeT> == ElementsType::MESH_FACES )
+        if constexpr ( RangeT::mesh_entities == ElementsType::MESH_FACES )
             return cell.isGhostFace();
-        else if constexpr ( range_elementtype_v<RangeT> == ElementsType::MESH_ELEMENTS )
+        else if constexpr ( RangeT::mesh_entities == ElementsType::MESH_ELEMENTS )
             return cell.isGhostCell();
         return false;
     };
@@ -1217,7 +1235,7 @@ elementsWithMarkedFaces( MeshType const& imesh, boost::any const& flag, EntityPr
     return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                                             myelts->begin(),
                                             myelts->end(),
-                                            myelts ), _mesh=mesh );
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
@@ -1265,7 +1283,7 @@ markedelements( MeshType const& imesh, boost::any const& flag, EntityProcessType
     return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                                             myelts->begin(),
                                             myelts->end(),
-                                            myelts ), _mesh=mesh );
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
@@ -1312,7 +1330,7 @@ marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessTyp
     return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                                             myelts->begin(),
                                             myelts->end(),
-                                            myelts ), _mesh=mesh );
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
@@ -1354,7 +1372,7 @@ faces( MeshType const& imesh, EntityProcessType entity )
     return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
                                             myelts->begin(),
                                             myelts->end(),
-                                            myelts ), _mesh=mesh );
+                                            myelts ), _mesh=mesh.shared_from_this() );
 
 }
 
@@ -1398,7 +1416,7 @@ boundaryfaces( MeshType const& imesh, EntityProcessType entity )
     return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
                                             myelts->begin(),
                                             myelts->end(),
-                                            myelts ), _mesh=mesh );
+                                            myelts ), _mesh=mesh.shared_from_this() );
 
 }
 
@@ -1440,10 +1458,11 @@ marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range = boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                                              myelts->begin(),
+                                              myelts->end(),
+                                              myelts ), 
+                  _mesh=mesh.shared_from_this(), _marker1=theflag );
 
 }
 
@@ -1503,10 +1522,11 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
         }
     }
     myedges->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              myedges->begin(),
-                              myedges->end(),
-                              myedges );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                                            myedges->begin(),
+                                            myedges->end(),
+                                            myedges ), 
+                  _mesh=mesh.shared_from_this() );
 
 }
 
@@ -1532,10 +1552,11 @@ idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
             myelts->push_back( boost::cref( mesh.element( eltId ) ) );
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range= boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                             myelts->begin(),
+                                             myelts->end(),
+                                             myelts ),
+                  _mesh=mesh.shared_from_this() );
 }
 //!
 //! build a list of elements based on a list of element ids \p l from a mesh \p imesh
@@ -1646,15 +1667,13 @@ elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& ra
             myelts->push_back(boost::cref(elt));
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(), myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=mesh.shared_from_this() );
 }
 
 //! \return a pair of iterators to iterate over all elements (not ghost) which
 //!  touch the range of faces or edges rangeEntity by a point/edge/faces (with respect to type arg)
 template<typename MeshType,typename EntityRangeType>
-elements_pid_t<MeshType>
+auto
 elements( MeshType const& mesh, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     return elements( mesh, elements(mesh), rangeEntity, type );
@@ -1672,7 +1691,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     using elements_reference_wrapper_type = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
     using marker_type = typename MeshTraits<MeshType>::element_type::marker_type;
 
-    std::map<int,std::tuple<elements_pid_t<MeshType>,marker_type,std::string>> res;
+    std::map<int,std::tuple<Range<MeshType,MESH_ELEMENTS>,marker_type,std::string>> res;
 
     auto const& imesh = Feel::unwrap_ptr( mesh );
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
@@ -1713,9 +1732,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     {
         auto & [myelts,fragmentId] = fragementData;
         myelts->shrink_to_fit();
-        auto range = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                        myelts->begin(), myelts->end(),
-                                        myelts );
+        auto therange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=imesh.shared_from_this() );
 
         std::string fragmentName;
         for ( auto mId : mIds )
@@ -1725,7 +1742,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
                 fragmentName += "_";
             fragmentName += mName;
         }
-        res.emplace( fragmentId, std::make_tuple( std::move( range ), mIds, fragmentName ) );
+        res.emplace( fragmentId, std::make_tuple( std::move( therange ), mIds, fragmentName ) );
     }
     return res;
 }

@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABEL testmesh )
-foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker partitioner_metis elementswithmarkedfaces meshmover convex meshfilters )
+foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker partitioner_metis elementswithmarkedfaces meshmover convex meshfilters ranges )
 
   if(THETEST MATCHES partitioner_metis)
     feelpp_get_compile_definition(Feelpp::feelpp_contrib FEELPP_HAS_METIS)

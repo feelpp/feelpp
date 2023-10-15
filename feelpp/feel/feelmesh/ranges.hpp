@@ -23,11 +23,15 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #pragma once
+#include <tuple>
 #include <type_traits>
 #include <boost/mp11/utility.hpp>
 
 #include <feel/feelcore/commobject.hpp>
+#include <feel/feelmesh/enums.hpp>
+#include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/meshbase.hpp>
+
 namespace Feel 
 {
 // clang-format off
@@ -51,7 +55,7 @@ using entities_reference_wrapper_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_EL
 template<typename IndexT = uint32_type>
 class FEELPP_EXPORT RangeBase : public CommObject 
 {
-    public:
+public:
     using index_t = IndexT;
     RangeBase() = default;
     RangeBase( RangeBase const& ) = default;
@@ -64,14 +68,14 @@ class FEELPP_EXPORT RangeBase : public CommObject
     std::shared_ptr<MeshBase<index_t>> meshBase() { return M_mesh_base; }
     std::shared_ptr<MeshBase<index_t>> meshBase() const { return M_mesh_base; }
 
-    protected:
+protected:
     std::shared_ptr<MeshBase<index_t>> M_mesh_base;
 
 };
 
 template <typename MeshType, int MESH_ENTITIES, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
 class FEELPP_EXPORT Range
-    : public entities_reference_wrapper_t<MeshType, MESH_ENTITIES>, RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
+    : public entities_reference_wrapper_t<MeshType, MESH_ENTITIES>, public RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
 {
     using super = entities_reference_wrapper_t<MeshType,MESH_ENTITIES>;
     using super_range = RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>;
@@ -94,6 +98,7 @@ class FEELPP_EXPORT Range
     Range( super && e ) : super( std::move( e ) ) {}
     ~Range() = default;
 
+    static constexpr int entities() { return MESH_ENTITIES; }
     static constexpr bool isOnElements() { return mesh_entities == MESH_ELEMENTS;  }
     static constexpr bool isOnFaces() { return mesh_entities == MESH_FACES;  }
     static constexpr bool isOnEdges() { return mesh_entities == MESH_EDGES;  }
@@ -159,7 +164,14 @@ range( Tv&&... v )
                                             args.get_else( _pid, -1 ) };
 }
 
-
+/**
+ * @brief get the begin iterator of a range
+ * 
+ * @tparam MeshType the mesh type
+ * @tparam MESH_ENTITIES the mesh entities
+ * @param range the range of elements
+ * @return auto 
+ */
 template<typename MeshType, int MESH_ENTITIES>
 auto begin( Range<MeshType,MESH_ENTITIES> &range )
 {
