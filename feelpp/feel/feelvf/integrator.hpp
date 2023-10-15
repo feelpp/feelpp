@@ -250,8 +250,8 @@ public:
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts(),
-        M_eltbegin( elts.template get<1>() ),
-        M_eltend( elts.template get<2>() ),
+        M_eltbegin( elts.begin() ),
+        M_eltend( elts.end() ),
         M_wc( elts.worldCommPtr() ),
         M_im( __im ),
         M_im2( __im2 ),
@@ -524,12 +524,10 @@ public:
     template<typename T,int M, int N=1>
     decltype(auto)
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v,
-              bool parallel=true,
-              WorldComm const& worldcomm = Environment::worldComm() ) const;
+              bool parallel=true ) const;
 
     matrix_type
-    evaluate( bool parallel=true,
-              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel=true ) const
      {
          typename eval::matrix_type loc = this->evaluateImpl();
 
@@ -4883,8 +4881,7 @@ generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, Ex
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
 decltype(auto)
-Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v,
-                                               bool parallel, WorldComm const& worldComm ) const
+Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v, bool parallel ) const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
