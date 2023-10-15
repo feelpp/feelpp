@@ -91,8 +91,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
 
-    static const uint16_type Degree = ( Integration_Degree+3 )/2+1;
-    static const uint32_type Npoints = Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+3 )/2+1;
+    static inline const uint32_type Npoints = Degree;
 
     GaussLobatto()
         :
@@ -127,9 +127,9 @@ public :
     typedef GaussLobatto<Simplex<1,1>,Integration_Degree, T> face_quad_type;
 
 
-    static const uint16_type DegreeX = ( Integration_Degree+3 )/2+1;
-    static const uint16_type DegreeY = ( Integration_Degree+2 )/2+1;
-    static const uint32_type Npoints = DegreeX*DegreeY;
+    static inline const uint16_type DegreeX = ( Integration_Degree+3 )/2+1;
+    static inline const uint16_type DegreeY = ( Integration_Degree+2 )/2+1;
+    static inline const uint32_type Npoints = DegreeX*DegreeY;
 
     GaussLobatto()
         :
@@ -191,10 +191,10 @@ public :
     typedef GaussLobatto<Simplex<2,1>,Integration_Degree, T> face_quad_type;
 
 
-    static const uint16_type DegreeX = ( Integration_Degree+3 )/2+1;
-    static const uint16_type DegreeY = ( Integration_Degree+2 )/2+1;
-    static const uint16_type DegreeZ = ( Integration_Degree+2 )/2+1;
-    static const uint32_type Npoints = DegreeX*DegreeY*DegreeZ;
+    static inline const uint16_type DegreeX = ( Integration_Degree+3 )/2+1;
+    static inline const uint16_type DegreeY = ( Integration_Degree+2 )/2+1;
+    static inline const uint16_type DegreeZ = ( Integration_Degree+2 )/2+1;
+    static inline const uint32_type Npoints = DegreeX*DegreeY*DegreeZ;
 
     GaussLobatto()
         :
@@ -267,8 +267,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
     typedef GaussLobatto<Hypercube<1,1>,Integration_Degree, T> face_quad_type;
-    static const uint16_type Degree = ( Integration_Degree+3 )/2+1;
-    static const uint32_type Npoints = Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+3 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree;
 
     GaussLobatto()
         :
@@ -317,8 +317,8 @@ public :
     typedef typename super::nodes_type nodes_type;
     typedef typename super::weights_type weights_type;
     typedef GaussLobatto<Hypercube<2,1>,Integration_Degree, T> face_quad_type;
-    static const uint16_type Degree = ( Integration_Degree+3 )/2+1;
-    static const uint32_type Npoints = Degree*Degree*Degree;
+    static inline const uint16_type Degree = ( Integration_Degree+3 )/2+1;
+    static inline const uint32_type Npoints = Degree*Degree*Degree;
 
     GaussLobatto()
         :
@@ -377,10 +377,10 @@ public:
 
     typedef T value_type;
 
-    static const uint32_type Dim = Convex::nDim;
-    static const uint32_type nPoints = Order+1;
-    static const uint32_type topological_dimension = Convex::topological_dimension;
-    static const uint32_type nRealDim = Convex::nRealDim;
+    static inline const uint32_type Dim = Convex::nDim;
+    static inline const uint32_type nPoints = Order+1;
+    static inline const uint32_type topological_dimension = Convex::topological_dimension;
+    static inline const uint32_type nRealDim = Convex::nRealDim;
 
     static const size_type Shape = Convex::Shape;
 
@@ -401,7 +401,7 @@ public:
     typedef typename Convex::face_to_edge_t face_to_edge_t;
 
     typedef Hypercube<Dim, Order, Dim> conv_order_type;
-    static const uint32_type numPoints = conv_order_type::numPoints;
+    static inline const uint32_type numPoints = conv_order_type::numPoints;
 
     reference_convex_type RefConv;
 

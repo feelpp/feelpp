@@ -19,15 +19,15 @@ public:
     typedef typename functionspace_levelset_type::value_type value_type;
     typedef value_type evaluate_type;
     // dim
-    static const uint16_type nDim = fe_levelset_type::nDim;
-    static const uint16_type nRealDim = fe_levelset_type::nRealDim;
+    static inline const uint16_type nDim = fe_levelset_type::nDim;
+    static inline const uint16_type nRealDim = fe_levelset_type::nRealDim;
 
     //--------------------------------------------------------------------//
     static const size_type context = vm::JACOBIAN;
     static const size_type context_levelset = context;
     static const bool is_terminal = true;
-    static const uint16_type orderlevelset = functionspace_levelset_type::basis_type::nOrder;
-    static const uint16_type imorder = orderlevelset;
+    static inline const uint16_type orderlevelset = functionspace_levelset_type::basis_type::nOrder;
+    static inline const uint16_type imorder = orderlevelset;
     static const bool imIsPoly = true;
 
     template<typename Func>

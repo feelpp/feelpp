@@ -94,9 +94,9 @@ public :
     typedef typename FunctionSpaceType::mesh_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename mesh_type::shape_type convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
 
     //--------------------------------------------------------------------//
     // Space advection
@@ -104,7 +104,7 @@ public :
     typedef std::shared_ptr<space_advection_type> space_advection_ptrtype;
 
     typedef typename space_advection_type::basis_type basis_advection_type;
-    static const uint16_type nOrder = basis_advection_type::nOrder;
+    static inline const uint16_type nOrder = basis_advection_type::nOrder;
 
     typedef typename boost::remove_reference<
         typename fusion::result_of::at_c<typename space_advection_type::periodicity_type, 0>::type
@@ -162,8 +162,8 @@ public :
     // Diffusion-reaction model
     typedef BasisDiffusionCoeffType basis_diffusioncoeff_type;
     typedef BasisReactionCoeffType basis_reactioncoeff_type;
-    static const uint16_type nOrderDiffusionCoeff = BasisDiffusionCoeffType::nOrder;
-    static const uint16_type nOrderReactionCoeff = BasisReactionCoeffType::nOrder;
+    static inline const uint16_type nOrderDiffusionCoeff = BasisDiffusionCoeffType::nOrder;
+    static inline const uint16_type nOrderReactionCoeff = BasisReactionCoeffType::nOrder;
     typedef FunctionSpace< mesh_type, bases<basis_diffusioncoeff_type> > space_diffusioncoeff_type;
     typedef std::shared_ptr<space_diffusioncoeff_type> space_diffusioncoeff_ptrtype;
     typedef FunctionSpace< mesh_type, bases<basis_reactioncoeff_type> > space_reactioncoeff_type;

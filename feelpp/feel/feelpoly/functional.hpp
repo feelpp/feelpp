@@ -72,7 +72,7 @@ public:
     typedef typename space_type::basis_type basis_type;
     typedef typename space_type::matrix_type matrix_type;
 
-    static const uint16_type nComponents = space_type::nComponents;
+    static inline const uint16_type nComponents = space_type::nComponents;
 
     // representation type for the functionals
     typedef ublas::matrix<value_type> rep_type;

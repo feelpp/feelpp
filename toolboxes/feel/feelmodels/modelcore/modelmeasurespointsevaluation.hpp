@@ -202,7 +202,7 @@ public :
             if ( evalPoints.includeCoordinates() )
             {
                 auto const& nodeIds = pointOnCtx.nodeIds();
-                static const uint16_type geoctxRealDim = std::decay_t<decltype(unwrap_ptr(M_geoContext))>::functionspace_type::mesh_type::nRealDim;
+                constexpr uint16_type geoctxRealDim = std::decay_t<decltype(unwrap_ptr(M_geoContext))>::functionspace_type::mesh_type::nRealDim;
                 std::vector<eigen_vector_type<geoctxRealDim>> coords;
                 coords.reserve( nodeIds.size() );
                 auto const& ptsFromGeoCtx = M_geoContext->points();

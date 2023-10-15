@@ -833,7 +833,68 @@ if ( FEELPP_ENABLE_SPECX )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} specx")
 endif()
 
+option(FEELPP_ENABLE_EIGENRAND "Enable EigenRand" ON)
 
+if(FEELPP_ENABLE_EIGENRAND)
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring EigenRand")
+
+  # set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/EIGENRAND)
+  # patch includes fix for 18.04 compilation
+  set(EIGENRAND_BUILD_TEST OFF)
+  set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
+  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
+
+  FetchContent_MakeAvailable(eigenrand)
+  add_library(feelpp_eigenrand INTERFACE)
+
+  # set_target_properties(eigenrand PROPERTIES OUTPUT_NAME "feelpp_eigenrand")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGENRAND)
+  target_link_libraries(feelpp_eigenrand INTERFACE eigenrand)
+  add_library(Feelpp::feelpp_eigenrand ALIAS feelpp_eigenrand)
+  target_include_directories(feelpp_eigenrand INTERFACE
+    $<BUILD_INTERFACE:${eigenrand_BINARY_DIR}/>
+    $<BUILD_INTERFACE:${eigenrand_SOURCE_DIR}/>
+    $<INSTALL_INTERFACE:include/feelpp>)
+  install(TARGETS feelpp_eigenrand eigenrand EXPORT feelpp-contrib-export-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+  target_link_libraries(feelpp_contrib INTERFACE feelpp_eigenrand)
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} eigenrand")
+endif()
+
+
+option(FEELPP_ENABLE_THIRDPARTY_BVH "Enable BVH" ON)
+if( FEELPP_ENABLE_THIRDPARTY_BVH )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring BVH")
+
+  set(FETCHCONTENT_SOURCE_DIR_BVH ${CMAKE_CURRENT_SOURCE_DIR}/bvh)
+  FetchContent_Declare(bvh GIT_REPOSITORY https://github.com/feelpp/bvh.git GIT_TAG 327b67b1d8d798e4dab1686b0dd022a1e0cbcefe)
+
+  FetchContent_MakeAvailable(bvh)
+  add_library(feelpp_bvh INTERFACE)
+
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_THIRDPARTY_BVH)
+  target_link_libraries(feelpp_bvh INTERFACE bvh )
+  add_library(Feelpp::feelpp_bvh ALIAS feelpp_bvh)
+
+  target_include_directories(feelpp_bvh INTERFACE
+    $<BUILD_INTERFACE:${bvh_SOURCE_DIR}/src>
+    #$<INSTALL_INTERFACE:include/feelpp>
+    $<INSTALL_INTERFACE:include/feelpp/bvh>)
+  install(TARGETS feelpp_bvh bvh EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_bvh )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} bvh")
+endif()
 
 
 # Add an info message to be displayed at the end of the cmake process.

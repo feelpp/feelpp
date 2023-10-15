@@ -43,7 +43,7 @@ template< typename space_type, typename coef_space_type >
     typedef Preconditioner<typename space_type::value_type> super;
 public:
 
-    static const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type Dim = space_type::nDim;
     typedef typename space_type::value_type value_type;
 
     enum Type

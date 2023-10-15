@@ -37,7 +37,7 @@ public:
     typedef typename fluidmechanics_type::DataUpdateResidual DataUpdateResidual;
     typedef typename fluidmechanics_type::DataUpdateLinear DataUpdateLinear;
 
-    static const uint16_type Dim = levelset_type::nDim;
+    static inline const uint16_type Dim = levelset_type::nDim;
 
     enum class HelfrichMethod {
         NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, DIFFUSION

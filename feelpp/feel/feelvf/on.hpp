@@ -149,7 +149,7 @@ public:
     static const size_type context = OnExpr::context|vm::POINT;
     static const size_type is_terminal = false;
 
-    //static const uint16_type imorder = OnExpr::imorder;
+    //static inline const uint16_type imorder = OnExpr::imorder;
     //static const bool imIsPoly = OnExpr::imIsPoly;
 
     using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
@@ -181,7 +181,7 @@ public:
     using trial_basis = typename element_type::functionspace_type::basis_type;
 
 
-    static const uint16_type nComponents = element_type::nComponents;
+    static inline const uint16_type nComponents = element_type::nComponents;
 
     //@}
 
@@ -483,7 +483,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     typedef std::shared_ptr<gm_type> gm_ptrtype;
     static const size_type gmc_v = is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ? context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL : context;
 
-    static const uint16_type nDim = geoshape_type::nDim;
+    constexpr uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;

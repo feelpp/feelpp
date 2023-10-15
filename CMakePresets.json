@@ -137,11 +137,13 @@
             "description": "Build only the Feel++ MOR Component in Debug",
             "binaryDir": "${sourceDir}/build/mor-dbg",
             "cacheVariables": {
+                "CMAKE_CXX_FLAGS_DEBUG": "-g -O0",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor-dbg/install/",
                 "FEELPP_COMPONENT": "mor",
                 "FEELPP_ENABLE_RESEARCH": "OFF",
                 "CMAKE_BUILD_TYPE": "Debug",
-                "FEELPP_ENABLE_OPENTURNS": "ON"
+                "FEELPP_ENABLE_OPENTURNS": "ON",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF"
             }
         },
         {
@@ -186,6 +188,19 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "FEELPP_COMPONENT": "python"
+            }
+        },
+        {
+            "name": "mor_python",
+            "inherits": "default",
+            "displayName": "mor_python",
+            "description": "Build the Feel++ MOR and Python Components",
+            "binaryDir": "${sourceDir}/build/mor_python",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor_python/install/",
+                "FEELPP_COMPONENT": "mor;python",
+                "FEELPP_ENABLE_RESEARCH": "OFF",
+                "FEELPP_ENABLE_OPENTURNS": "ON"
             }
         },
         {
@@ -302,16 +317,13 @@
         {
             "name": "mor",
             "inherits": "default",
-            "configurePreset": "mor",
-            "targets": [
-                "all",
-                "install"
-            ]
+            "configurePreset": "mor"
         },
         {
             "name": "mor-dbg",
             "inherits": "default",
-            "configurePreset": "mor-dbg"
+            "configurePreset": "mor-dbg",
+            "configuration": "Debug"
         },
         {
             "name": "feelpp-python",
@@ -331,6 +343,11 @@
                 "all",
                 "install"
             ]
+        },
+        {
+            "name": "mor_python",
+            "inherits": "default",
+            "configurePreset": "mor_python"
         },
         {
             "name": "testsuite",
@@ -391,6 +408,11 @@
         {
             "name": "feelpp-python",
             "configurePreset": "feelpp-python",
+            "inherits": "feelpp"
+        },
+        {
+            "name": "mor_python",
+            "configurePreset": "mor_python",
             "inherits": "feelpp"
         },
         {
