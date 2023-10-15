@@ -574,13 +574,13 @@ faces( MeshSupportType const& imesh )
     return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces ), _mesh=imesh->mesh() );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-auto const&
+auto
 boundaryfaces( MeshSupportType const& imesh )
 {
     return imesh->rangeBoundaryFaces();
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-auto const&
+auto
 internalfaces( MeshSupportType const& imesh )
 {
     return imesh->rangeInternalFaces();
@@ -588,7 +588,7 @@ internalfaces( MeshSupportType const& imesh )
 
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-auto const&
+auto
 markedfaces( MeshSupportType const& imesh, boost::any flag )
 {
     return imesh->rangeMarkedFaces( 1, flag );
