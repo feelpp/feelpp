@@ -41,8 +41,6 @@
 #include <boost/utility.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -69,7 +67,7 @@ enum TSStragegy { TS_STRATEGY_DT_CONSTANT,TS_STRATEGY_DT_ADAPTATIVE};
 /**
  * \ingroup SpaceTime
  * \brief base class for time sets
- * 
+ *
  */
 class TSBase
 {

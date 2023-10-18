@@ -136,7 +136,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             auto json_fname = mesh_name.stem().string()+".json";
             if( fs::exists(json_fname) )
             {
-                if ( verbose ) 
+                if ( verbose )
                     cout << "[loadMesh] Loading mesh in format json+h5: " << fs::absolute(json_fname) << "\n";
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
@@ -192,7 +192,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #else
     LOG(WARNING) << "Gmsh support not available: loading a .geo is not supported.";
 #endif
-    
+
     if ( ( mesh_name.extension() == ".msh"  ) ||
          ( mesh_name.extension() == ".bdf"  ) ||
          ( mesh_name.extension() == ".cgns"  ) ||
@@ -285,8 +285,8 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
     if ( mesh_name.extension() == ".dat"  )
     {
         if ( verbose )
-            cout << "[loadMesh] Loading mesh in format Samcef: " << fs::system_complete(mesh_name) << "\n";
-        LOG(INFO) << " Loading mesh in Samcef format " << fs::system_complete(mesh_name);
+            cout << "[loadMesh] Loading mesh in format Samcef: " << fs::canonical(mesh_name) << "\n";
+        LOG(INFO) << " Loading mesh in Samcef format " << fs::canonical(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
@@ -305,7 +305,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
 
-    if ( verbose) 
+    if ( verbose)
         cout << "[loadMesh] no file name or unrecognized extension provided\n"
              << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
              << mesh_name << ".geo\n";

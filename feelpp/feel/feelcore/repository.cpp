@@ -1,27 +1,27 @@
 //! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//! 
+//!
 //! This file is part of the Feel library
-//! 
+//!
 //! Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! Date: 2020-11-10
-//! 
+//!
 //! Copyright (C) 2020 Feel++ Consortium
-//! 
+//!
 //! This library is free software; you can redistribute it and/or
 //! modify it under the terms of the GNU Lesser General Public
 //! License as published by the Free Software Foundation; either
 //! version 2.1 of the License, or (at your option) any later version.
-//! 
+//!
 //! This library is distributed in the hope that it will be useful,
 //! but WITHOUT ANY WARRANTY; without even the implied warranty of
 //! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //! Lesser General Public License for more details.
-//! 
+//!
 //! You should have received a copy of the GNU Lesser General Public
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//! 
-//! 
+//!
+//!
 //! \file environment.hpp
 //! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! \date 2020-11-10
@@ -47,7 +47,7 @@ std::string findUser()
 fs::path findHome()
 {
     const char * home = getenv ("HOME");
-    if (home == NULL) 
+    if (home == NULL)
     {
         home = getpwuid( getuid() )->pw_dir;
     }
@@ -60,7 +60,7 @@ std::optional<fs::path> findGitDirectory( fs::path p )
         return p;
     else if ( !p.parent_path().empty() && (fs::status(p.parent_path()).permissions() & fs::perms::owner_all) != fs::perms::none )
         return findGitDirectory( p.parent_path() );
-    else 
+    else
         return {};
 }
 GithubUser::GithubUser()
@@ -103,7 +103,7 @@ Repository::Config::Config()
         jc.merge_patch( j );
         from_json( jc, *this );
     }
-    else 
+    else
     {
         if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
             global_root = home / "feel";
@@ -113,7 +113,7 @@ Repository::Config::Config()
         to_json( jc, *this );
     }
     VLOG(2) << fmt::format( "config: {}", jc.dump(1) ) << std::endl;
-#if 0    
+#if 0
     if ( owner.github )
     {
         owner.github->update();
@@ -125,7 +125,7 @@ Repository::Config::Config()
             i << j.dump(1);
         }
     }
-#endif    
+#endif
 }
 Repository::Config::Config( nl::json const& j ): Config()
 {
@@ -165,7 +165,7 @@ Repository::configure()
     if ( config_.directory.is_absolute() )
     {
         root_= config_.directory;
-        // force Location::given 
+        // force Location::given
         config_.location = Location::absolute;
     }
     else
@@ -197,7 +197,7 @@ Repository::configure()
                 bool created = fs::create_directories( d );
                 Feel::cout << fmt::format("[feelpp] create Feel++ {}: {}\n", str, d.string()) << std::endl;
             }
-            catch ( const boost::filesystem::filesystem_error& e )
+            catch ( const fs::filesystem_error& e )
             {
                 std::cerr << fmt::format("[feelpp.boost.filesystem.filesystem_error] cannot create directory {}: {}", str, d.string()) << std::endl;
                 throw;
@@ -243,20 +243,20 @@ Repository::cd()
 }
 
 fs::path
-Repository::directory() const 
-{ 
-    return  root() / relativeDirectory(); 
+Repository::directory() const
+{
+    return  root() / relativeDirectory();
 }
 fs::path
-Repository::directoryWithoutAppenders() const 
-{ 
+Repository::directoryWithoutAppenders() const
+{
     if ( isAbsolute() )
         return config_.directory;
     return root() / config_.directory;
 }
-fs::path 
-Repository::relativeDirectory() const 
-{ 
+fs::path
+Repository::relativeDirectory() const
+{
     fs::path p;
     if ( !isAbsolute() )
         p = config_.directory;
@@ -274,7 +274,7 @@ Repository::relativeDirectory() const
     {
         p /= fmt::format("np_{}", std::to_string( Environment::numberOfProcessors() ) );
     }
-    return p;        
+    return p;
 }
 
 } // namespace Feel
