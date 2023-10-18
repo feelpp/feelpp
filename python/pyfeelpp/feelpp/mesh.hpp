@@ -50,13 +50,6 @@ namespace py = pybind11;
 
 using namespace Feel;
 
-template<typename MeshT>
-std::shared_ptr<MeshT>
-loadmesh( std::shared_ptr<MeshT> const& m, std::string const& n, double h )
-{
-    
-    return loadMesh( _mesh=new MeshT, _filename=n, _h=h );
-}
 
 template<typename MeshT>
 elements_pid_t<MeshT>
@@ -93,6 +86,28 @@ nFacesTuple( faces_reference_wrapper_t<MeshT> const& r, bool global )
     return nelements( r, global );
 }
 
+/**
+ * @fn load(mesh, name, h, verbose)
+ * @brief load a geometry or a mesh from a file
+ * @ingroup pyfeelpp
+ *
+ * @param filename the filename
+ * @param h the characteristic length (only in the case of the geometry)
+ * @param verbose the verbosity level (0: no output, 1: output, >1: mesh generation information if available)
+ *
+ * @code
+ * import feelpp
+ * m = feelpp.load(mesh=feelpp.mesh(dim=2),name="square.geo",verbose=1)
+ * @endcode
+ */
+
+/**
+ * @fn _mesh
+ * @brief Python Mesh bindings
+ *
+ * @tparam MeshT
+ * @param m
+ */
 template<typename MeshT>
 void defMesh(py::module &m)
 {
@@ -135,7 +150,11 @@ void defMesh(py::module &m)
         .def("hMax",&mesh_t::hMax,"get the maximum edge length of the mesh")
         .def("updateMeasures",&mesh_t::updateMeasures,"update the measures of the mesh")
         .def("measure",&mesh_t::measure,py::arg("parallel") = true,"get the measure of the mesh")
-        .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh");
+        .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh")
+        .def("markerNames",[](mesh_ptr_t const& self ) {
+                return self->markerNames();
+            }, "get the list of marker names" )
+        ;
 
     pyclass_name = std::string("simplex_elements_reference_wrapper_")+suffix;
     py::class_<elements_reference_wrapper_t<mesh_ptr_t>>(m,pyclass_name.c_str())
@@ -153,16 +172,23 @@ void defMesh(py::module &m)
     pyclass_name = std::string("mesh_support_vector_")+suffix;
     py::class_<fusion::vector<std::shared_ptr<MeshSupport<mesh_t>>>>(m,pyclass_name.c_str())
         .def(py::init<>());
-        
 
-    // load mesh
-    m.def("load",&loadmesh<mesh_t>,"load a mesh from a file");
+    m.def(
+        "load", 
+        []( mesh_ptr_t m, std::string const& n, double h, int verbose )
+        { 
+            return loadMesh( _mesh=new mesh_t, _filename=n, _h=h, _verbose=verbose );
+        },
+        "load a mesh from a file", py::arg("mesh"), py::arg("name"), py::arg("h")=0.1, py::arg("verbose") = 1 );
 
+    
     m.def("elements", &elementsByPid<mesh_ptr_t>,"get iterator over the elements of the mesh", py::arg("mesh"));
     m.def("markedelements", &elementsByMarker<mesh_ptr_t>,"get iterator over the marked elements of the mesh", py::arg("mesh"),py::arg("tag"));
     m.def("boundaryfaces", &boundaryfacesByPid<mesh_ptr_t>,"get iterator over the boundary faces of the mesh", py::arg("mesh"));
-    m.def( "nelements", []( markedelements_t<mesh_ptr_t> const& range, bool global ) { return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
-    m.def( "nelements", []( markedfaces_t<mesh_ptr_t> const& range, bool global ) { return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( markedelements_t<mesh_ptr_t> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( markedfaces_t<mesh_ptr_t> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
 //    m.def("nfaces",(decltype(&nFacesTuple<mesh_ptr_t>))  &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
     m.def(

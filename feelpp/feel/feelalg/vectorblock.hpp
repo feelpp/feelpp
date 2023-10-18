@@ -210,8 +210,8 @@ template <int NR, typename T=double>
 class BlocksVector : public BlocksBaseVector<T>
 {
 public :
-    static const uint16_type NBLOCKROWS = NR;
-    static const uint16_type NBLOCKCOLS = 1;
+    static inline const uint16_type NBLOCKROWS = NR;
+    static inline const uint16_type NBLOCKCOLS = 1;
 
     typedef BlocksBaseVector<T> super_type;
 
@@ -390,7 +390,7 @@ class VectorBlock : public VectorBlockBase<T, SizeT>
 
 public:
 
-    static const uint16_type NBLOCKROWS = NR;
+    static inline const uint16_type NBLOCKROWS = NR;
 
     typedef typename super_type::value_type value_type;
     using size_type = typename super_type::size_type;

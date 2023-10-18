@@ -79,16 +79,16 @@ public:
     typedef LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
-    static const uint16_type Order = BasisType::nOrder;
+    static inline const uint16_type Order = BasisType::nOrder;
     using size_type = typename super_type::size_type;
     using value_type = typename super_type::value_type;
 
     //--------------------------------------------------------------------//
     // Mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mymesh_type;

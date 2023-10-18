@@ -47,7 +47,7 @@ public:
     typedef typename levelset_type::value_type value_type;
     //--------------------------------------------------------------------//
     // Mesh
-    static const uint16_type nDim = levelset_type::nDim;
+    static inline const uint16_type nDim = levelset_type::nDim;
     typedef typename levelset_type::mesh_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // Range types

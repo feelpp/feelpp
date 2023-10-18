@@ -772,6 +772,12 @@ public:
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
 
+    //! get the log verbosity level
+    static int logVerbosityLevel() { return FLAGS_v; }
+
+    //! set the verbosity level of the VLOG macro
+    static void setLogVerbosityLevel( int logVerbosity );
+
     //! 
     //!  set log files
     //!  \param prefix prefix for log filenames
@@ -914,6 +920,7 @@ private:
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
+    static inline bool S_initialized = false;
     static inline bool S_aborted = false;
     static inline bool S_init_python = true;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;

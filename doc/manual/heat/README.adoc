@@ -1,0 +1,64 @@
+:feelpp: Feel++
+= Heat examples
+:toc: macro
+
+toc:[]
+
+== Radiative heat transfer
+
+
+
+[source,shell]
+----
+# configure
+cmake --preset default
+
+# build
+cmake --build --preset default feelpp_doc_rht -j4
+
+# go in build directory
+cd build/default/doc/manual/heat
+
+# copy case files to current build directory
+make doc_heat_add_testcase_cases
+----
+
+=== 2D
+
+.2D one  thermal fin 
+[source,shell]
+----
+# in sequential
+./feelpp_doc_rht_2dp1 --config-file cases/rht/fin1/fin.cfg 
+# in parallel
+mpirun -np 2 ./feelpp_doc_rht_2dp1 --config-file cases/rht/fin1/fin.cfg
+----
+
+.3D 4 thermal fins
+[source,shell]
+----
+# in sequential
+./feelpp_doc_rht_2dp1 --config-file cases/rht/fin4/fin.cfg 
+# in parallel
+mpirun -np 2 ./feelpp_doc_rht_2dp1 --config-file cases/rht/fin4/fin.cfg
+----
+
+=== 3D
+
+.3D one  thermal fin 
+[source,shell]
+----
+# in sequential
+./feelpp_doc_rht_3dp1 --config-file cases/rht/fin1/fin3d.cfg
+# in parallel
+mpirun -np 2 ./feelpp_doc_rht_3dp1 --config-file cases/rht/fin1/fin3d.cfg
+----
+
+.3D 4 thermal fins
+[source,shell]
+----
+# in sequential
+./feelpp_doc_rht_3dp1 --config-file cases/rht/fin4/fin3d.cfg
+# in parallel
+mpirun -np 2 ./feelpp_doc_rht_3dp1 --config-file cases/rht/fin4/fin.cfg 
+----

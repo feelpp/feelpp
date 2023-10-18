@@ -278,7 +278,7 @@ class Mesh
     template <int TheTag>
     struct trace_trace_mesh
     {
-        static const uint16_type nDim = ( GeoShape::nDim == 1 ) ? GeoShape::nDim - 1 : GeoShape::nDim - 2;
+        static inline const uint16_type nDim = ( GeoShape::nDim == 1 ) ? GeoShape::nDim - 1 : GeoShape::nDim - 2;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
                                   mpl::identity<Mesh<Simplex<nDim, nOrder, GeoShape::nRealDim>, value_type, TheTag>>,
                                   mpl::identity<Mesh<Hypercube<nDim, nOrder, GeoShape::nRealDim>, value_type, TheTag>>>::type::type type;
@@ -426,9 +426,9 @@ class Mesh
         M_numGlobalElements = I[3];
     }
 
-    struct UpdateNumGlobalEntitiesForAllReduce : public std::binary_function<boost::tuple<std::vector<size_type>, std::vector<size_type>>,
-                                                                             boost::tuple<std::vector<size_type>, std::vector<size_type>>,
-                                                                             boost::tuple<std::vector<size_type>, std::vector<size_type>>>
+    struct UpdateNumGlobalEntitiesForAllReduce : public std::function<boost::tuple<std::vector<size_type>, std::vector<size_type>>(
+                                                                        boost::tuple<std::vector<size_type>, std::vector<size_type>> const&,
+                                                                        boost::tuple<std::vector<size_type>, std::vector<size_type>> const& )>
     {
         typedef boost::tuple<std::vector<size_type>, std::vector<size_type>> cont_type;
         cont_type operator()( cont_type const& x, cont_type const& y ) const
@@ -730,7 +730,7 @@ class Mesh
 
 
     template <typename ContType>
-    struct UpdateSetForAllReduce : public std::binary_function<ContType,ContType,ContType>
+    struct UpdateSetForAllReduce : public std::function<ContType(ContType const& ,ContType const&)>
     {
         using cont_type = ContType;
         cont_type operator()( cont_type const& x, cont_type const& y ) const
@@ -1128,7 +1128,7 @@ public:
 
     //!
     //!  creates a mesh by iterating over the elements between
-    //!  \p begin_elt and and \p end_elt and adding them the the mesh
+    //!  \p begin_elt and \p end_elt and adding them to the
     //!  \p mesh
     //!
     //!  \param mesh new mesh to construct
@@ -1348,7 +1348,7 @@ public:
     //! Private Methods
     //! @{
 
-    //! update informations for the current object
+    //! update information for the current object
     void updateInformationObject( nl::json& p ) const override;
 
 #if defined( FEELPP_HAS_HDF5 )
@@ -1706,7 +1706,7 @@ public:
 
   protected:
     //!
-    //!  update the adjacency graph elements (usefull if coDimensionOne not updated)
+    //!  update the adjacency graph elements (useful if coDimensionOne not updated)
     //!
     void updateAdjacencyElements();
 
@@ -2104,7 +2104,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
         new_mesh->addMarkerName( itMark.first, itMark.second[0], itMark.second[1] );
     }
 
-    //!  data usefull for parallism
+    //!  data useful for parallism
     std::map<int, std::set<boost::tuple<size_type, size_type>>> memoryGhostId;
     //! std::set< int > setOfRecvProc;
     std::vector<int> nbMsgToRecv( nProc, 0 );
@@ -2357,7 +2357,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
                          nbMsgToSend,
                          nbMsgToRecv2 );
         for ( int proc = 0; proc < nProc; ++proc )
-            CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "paritioning data incorect "
+            CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "partitioning data incorect "
                                                              << "myrank " << MeshBase<>::worldComm().localRank() << " proc " << proc
                                                              << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                              << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";

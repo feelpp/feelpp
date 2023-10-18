@@ -39,7 +39,7 @@ namespace ublas = boost::numeric::ublas;
  *
  * \param A square symmetric positive definite input matrix (only the lower triangle is accessed)
  * \param L lower triangular output matrix
- * \return nonzero if decompositon fails (the value ist 1 + the numer of the failing row)
+ * \return nonzero if decomposition fails (the value ist 1 + the numer of the failing row)
  */
 template < class MATRIX, class TRIA >
 size_t cholesky_decompose( const MATRIX& A, TRIA& L )

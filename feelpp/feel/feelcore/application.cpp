@@ -118,9 +118,9 @@ Application::initPETSc()
         int __argc = this->unknownArgc();
         char** __argv = this->unknownArgv();
 #if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize( &__argc,&__argv, PETSC_NULL, PETSC_NULL );
+        int ierr = SlepcInitialize( &__argc,&__argv, PETSC_IGNORE, PETSC_IGNORE );
 #else
-        int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
+        int ierr = PetscInitialize( &__argc, &__argv, PETSC_IGNORE, PETSC_IGNORE );
 #endif
         // make sure that petsc do not catch signals and hence do not print long
         //and often unuseful messages

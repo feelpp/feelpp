@@ -521,7 +521,7 @@ ModelBase::tabulateInformations() const
     auto tabInfo = this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
 
     auto tabRes = TabulateInformationsSections::New();
-    std::string title = (boost::format("Toolbox : %1%")%this->keyword()).str();
+    std::string title = fmt::format("Toolbox::{} - {} ",this->keyword(), "Use Case Study" );
     tabRes->add( title, tabInfo );
 
     return tabRes;
@@ -538,8 +538,8 @@ ModelBase::printInfo( tabulate_informations_ptr_t const& tabInfos ) const
 void
 ModelBase::saveInfo( tabulate_informations_ptr_t const& tabInfos ) const
 {
-    std::string filename_ascii = prefixvm(this->keyword(),"informations.txt");
-    std::string filename_adoc = prefixvm(this->keyword(),"informations.adoc");
+    std::string filename_ascii = fmt::format( "{}.information.txt",this->keyword() );
+    std::string filename_adoc = fmt::format( "{}.information.adoc",this->keyword() );
     std::string filepath_ascii = (fs::path(this->rootRepository())/filename_ascii).string();
     std::string filepath_adoc = (fs::path(this->rootRepository())/filename_adoc).string();
     if ( this->worldComm().isMasterRank() )

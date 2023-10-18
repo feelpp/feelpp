@@ -140,8 +140,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- freq save       : " << myexporterFreq
                << "\n     -- fields exported : " << doExport_str;
     *_ostr << "\n   Processors"
-           << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
-           << "\n     -- environement rank : " << Environment::worldComm().rank()
+           << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
+           << "\n     -- environment rank : " << Environment::worldComm().rank()
            << "\n     -- global rank : " << this->worldComm().globalRank()
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
@@ -641,7 +641,7 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
 {
     auto compSpace = uTensor2.compSpace();
     auto uComp = compSpace->elementPtr();
-    static const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
+    static inline const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
     auto dofTensor2 = uTensor2.functionSpace()->dof();
     auto dofComp = compSpace->dof();
     int nLocDofPerComp = dofTensor2->nLocalDof( true );

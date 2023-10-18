@@ -74,16 +74,16 @@ public:
 
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_electric_type;
 
     // function space electric-potential
     typedef BasisPotentialType basis_electricpotential_type;
-    static const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
+    static inline const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
@@ -224,7 +224,8 @@ public :
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -241,9 +242,11 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

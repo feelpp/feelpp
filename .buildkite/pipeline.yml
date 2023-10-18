@@ -9,6 +9,7 @@ steps:
        - "ubuntu:22.04"
        - "ubuntu:20.04"
        - "debian:11"
+       - "debian:12"
       if: build.message !~ /skip feelpp/ &&
           build.message !~ /skip components/ 
       agents:
@@ -42,6 +43,24 @@ steps:
         env:
           DIST: "focal"
     - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 22.10/kinetic Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "kinetic"
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 23.04/lunar Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "lunar"
+    - trigger: "pkg-feelpp"
       label: ":package: :debian: 11/bullseye Feel++ ${BUILDKITE_BRANCH}"
       async: true
       if: |
@@ -50,6 +69,33 @@ steps:
       build:
         env:
           DIST: "bullseye"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: 12/bookworm Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "bookworm"          
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: testing Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "testing"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: sid Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "sid"
  - wait
  - group: "feelpp-testsuite ${CXX} :hammer: :docker:"
    steps:
@@ -59,8 +105,8 @@ steps:
        TARGET: "{{matrix}}"
       matrix:
        - "ubuntu:22.04"
-       - "ubuntu:20.04"
-#       - "debian:11"
+#       - "ubuntu:20.04"
+       - "debian:12"
       if: |
         build.message !~ /skip tests/ &&
         build.message !~ /skip components/ 
@@ -74,8 +120,8 @@ steps:
        TARGET: "{{matrix}}"
       matrix:
        - "ubuntu:22.04"
-       - "ubuntu:20.04"
-#       - "debian:11"
+#       - "ubuntu:20.04"
+       - "debian:12"
       if: |
         build.message !~ /skip toolboxes/ &&
         build.message !~ /skip components/
@@ -90,8 +136,8 @@ steps:
        TARGET: "{{matrix}}"
       matrix:
        - "ubuntu:22.04"
-       - "ubuntu:20.04"
-#       - "debian:11"
+#       - "ubuntu:20.04"
+       - "debian:12"
       if: |
         (build.message !~ /skip mor/) &&
         (build.message !~ /skip components/)
@@ -106,8 +152,8 @@ steps:
        TARGET: "{{matrix}}"
       matrix:
        - "ubuntu:22.04"
-       - "ubuntu:20.04"   
-#       - "debian:11"
+#       - "ubuntu:20.04"   
+       - "debian:12"
       if: |
         (build.message !~ /skip python/) &&
         (build.message !~ /skip components/)

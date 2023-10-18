@@ -470,6 +470,23 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 # endif // FEELPP_DOXYGEN_INVOKED
 
+/**
+ * @brief enable reduce for mpi communication
+ */
+inline const bool do_reduce = true;
+/**
+ * @brief disable reduce for mpi communication
+ */
+inline const bool no_reduce = false;
+/**
+ * @brief enable communication for mpi communication
+ */
+inline const bool do_communication = true;
+/**
+ * @brief disable communication for mpi communication
+ */
+inline const bool no_communication = false;
+
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>
 #include <feel/feelcore/hashtables.hpp>

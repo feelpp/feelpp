@@ -70,10 +70,9 @@ void
 CRBDB::setDBDirectory( std::string const& name, uuids::uuid const& i )
 {
     M_uuid = i;
-    std::string database_subdir = ( boost::format( "%1%/%2%" )% name % uuids::to_string(M_uuid)).str();
-    M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
-                      % Feel::Environment::rootRepository()
-                      % database_subdir ).str();
+    std::string database_subdir = fmt::format( "{}/{}", name, uuids::to_string(M_uuid) );
+    M_dbDirectory = fmt::format( "{}/crbdb/{}", Feel::Environment::rootRepository(), database_subdir );
+    LOG(INFO) << fmt::format( "[CRBDB::setDBDirectory] database directory is {}, database_subdir = {}", M_dbDirectory, database_subdir );
 }
 //! destructor
 CRBDB::~CRBDB()
@@ -108,7 +107,7 @@ CRBDB::lookForDB() const
         return this->dbLocalPath() / this->dbFilename();
     }
 
-    return fs::path();
+    return fs::path();    
 }
 
 bool
@@ -149,6 +148,10 @@ bool
 CRBDB::loadDB()
 {
     return false;
+}
+void
+CRBDB::saveNewElementToDB()
+{
 }
 
 fs::path

@@ -152,9 +152,9 @@ public:
     typedef MatrixExpr expression_matrix_type;
     typedef Mat<M, N, expression_matrix_type> this_type;
 
-    static const uint16_type matrix_size1 = M;
-    static const uint16_type matrix_size2 = N;
-    static const uint16_type matrix_size  = M*N;
+    static inline const uint16_type matrix_size1 = M;
+    static inline const uint16_type matrix_size2 = N;
+    static inline const uint16_type matrix_size  = M*N;
 
     //typedef double value_type;
     using value_type = typename first_expression_type::value_type;

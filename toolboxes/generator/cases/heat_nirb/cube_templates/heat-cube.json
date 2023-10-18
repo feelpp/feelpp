@@ -1,0 +1,87 @@
+// -*- mode: javascript -*-
+// Source for the values of rho, Cp, h : https://docs.lib.purdue.edu/iracc/1338/
+{
+    "Name": "Heat Cube {{ dim }}d",
+    "ShortName":"heat-cube{{ dim }}d",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cube.geo",
+                "hsize": 0.1,
+                "partition": 1
+            }
+        }
+    },
+
+    "Parameters":
+    {
+        "k_1": 1,
+        {% for item in fins %}"k_{{ item }}": 0.1,
+        {% endfor %}"Bi": 0.1
+    },
+
+    "Materials":
+    {
+        {% for item in fins %}"mat_{{ item }}":
+        {
+            "k":"k_{{ item }}:k_{{ item }}",
+            "Cp":"1",
+            "rho":"1"
+        },
+        {% endfor %}"mat_1":
+        {
+            "k":"k_1:k_1",
+            "Cp":"1",
+            "rho":"1"
+        }
+    },
+
+    "InitialConditions":
+    {
+        "temperature": 
+        {
+            "Expression": 
+            {
+                "init": 
+                {
+                    "markers":[{% for item in fins %}"mat_{{ item }}", {% endfor %}"mat_1"], 
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "flux":
+            {
+                "Tflux": { "expr": "1" }
+            },
+            "convective_heat_flux":
+            {
+                "Tfourier":
+                {
+                    "h":"Bi:Bi",
+                    "Text":"0"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "heat" :
+        {
+            "Exports":
+            {
+                "fields": ["temperature", "pid", "marker"]
+            }
+        }
+    }
+}

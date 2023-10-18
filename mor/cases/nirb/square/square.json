@@ -1,0 +1,124 @@
+{
+    "Name": "Square thermal-fin splitted",
+    "ShortName": "SquareNIRB",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize": 0.1
+            }
+        }
+    },
+
+    "CRBParameters":
+    {
+        "k1":
+        {
+            "min": 0.1,
+            "max": 10
+        },
+        "k2":
+        {
+            "min": 0.1,
+            "max": 10
+        },
+        "k3":
+        {
+            "min": 0.1,
+            "max": 10
+        },
+        "Bi":
+        {
+            "min": 0.01,
+            "max": 1
+        }
+    },
+
+    "Parameters":
+    {
+        "k0": 1,
+        "k1": 0.1,
+        "k2": 0.5,
+        "k3": 0.1,
+        "Bi": 0.1
+    },
+
+    "Materials":
+    {
+        "Fin0":
+        {
+            "k":"k0:k0",
+            "rho":"1",
+            "Cp":"1"
+        },
+        "Fin1":
+        {
+            "k":"k1:k1",
+            "rho":"1",
+            "Cp":"1"
+        },
+        "Fin2":
+        {
+            "k":"k2:k2",
+            "rho":"1",
+            "Cp":"1"
+        },
+        "Fin3":
+        {
+            "k":"k3:k3",
+            "rho":"1",
+            "Cp":"1"
+        }
+    },
+
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "flux":
+            {
+                "Tflux": {
+                    "expr": "1"
+                }
+            },
+            "convective_heat_flux":
+            {
+                "Tfourier":
+                {
+                    "h":"Bi:Bi",
+                    "Text":"0"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "heat":{
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            }
+        }
+    },
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": 2,
+        "order": 1,
+        "toolboxType": "heat",
+        "finemesh_path": "$cfgdir/square.geo",
+        "model_path": "$cfgdir/square.json",
+        "doRectification": true,
+        "doBiorthonormal": false,
+        "nbSnapshots": 10,
+        "greedy-generation": true,
+        "outdir": "results/rect/greedy"
+    }
+}

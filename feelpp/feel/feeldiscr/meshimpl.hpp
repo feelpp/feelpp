@@ -1687,7 +1687,7 @@ Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
                 f2e[faceIdRegistered].reserve(2);
                 f2e[faceIdRegistered].push_back( std::make_tuple(eltId,eltPid,j) );
 
-                // erase face desc in map (maybe improve other acces)
+                // erase face desc in map (maybe improve other access)
                 //_faces.erase( _faceit );
             }
 
@@ -1806,7 +1806,7 @@ void Mesh<Shape, T, Tag, IndexT>::fixPointDuplicationInHOMesh( element_type& elt
         const uint16_type startPt = face_type::numVertices*face_type::nbPtsPerVertex + face_type::numEdges*face_type::nbPtsPerEdge;
         CHECK( startPt == 12 && face_type::numPoints==15 ) << "invalid case\n";
 
-        // get a correspondance between the face and elt point numbering
+        // get a correspondence between the face and elt point numbering
         std::set<uint16_type> idxDone;
         std::vector<uint16_type> idxDistribution(3,invalid_uint16_type_value);
         for ( uint16_type k = startPt; k < face_type::numPoints; ++k )
@@ -2081,7 +2081,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingBlock
                      nbMsgToRecv2 );
     for ( int proc = 0; proc < MeshBase<IndexT>::worldComm().localSize(); ++proc )
     {
-        CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "paritioning data incorect "
+        CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "partitioning data incorect "
                                                          << "myrank " << MeshBase<IndexT>::worldComm().localRank() << " proc " << proc
                                                          << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                          << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
@@ -3369,9 +3369,9 @@ void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
 namespace details
 {
 template<typename IndexT = uint32_type>
-struct RemoveMarkerNameWithoutEntityForAllReduce : std::binary_function<std::vector<std::vector<IndexT>>,
-                                                                        std::vector<std::vector<IndexT>>,
-                                                                        std::vector<std::vector<IndexT>>>
+struct RemoveMarkerNameWithoutEntityForAllReduce : std::function<std::vector<std::vector<IndexT>>(
+                                                                 std::vector<std::vector<IndexT>> const&,
+                                                                 std::vector<std::vector<IndexT>> const& )>
 {
     typedef std::vector<std::vector<IndexT>> cont_type;
     cont_type operator()( cont_type const& x, cont_type const& y ) const

@@ -26,6 +26,8 @@ BOOST_AUTO_TEST_SUITE( test_fmi )
 BOOST_AUTO_TEST_CASE( test_fmi2cs_fmi4cpp )
 {
     Environment::setOptionValue<std::string>( "fmu.filename", Environment::expand("${cfgdir}/fmi2cs/fmi2cs.fmu") );
+    BOOST_TEST_MESSAGE( "fmu.filename=" << soption("fmu.filename") );
+    BOOST_CHECK( fs::exists( soption("fmu.filename") ) );
     auto fmu = fmi2::fmu( soption("fmu.filename") ).as_cs_fmu();
     auto md = fmu->get_model_description();
     size_t numOutputs = 0;

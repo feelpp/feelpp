@@ -78,7 +78,7 @@ template <typename... Ts>
     auto&& type = args.get( _type );
     auto&& element = args.get( _element );
     auto&& pointset = args.get( _pointset );
-    auto&& context_at_compile_time = args.get_else( _context_at_compile_time, POINT );
+    constexpr size_type context_at_compile_time = args.get_else( _context_at_compile_time, POINT|NORMAL|JACOBIAN );
     auto&& context_at_run_time = args.get_else( _context, 0 );
     using gm_type = decay_type<decltype( geomap )>;
 

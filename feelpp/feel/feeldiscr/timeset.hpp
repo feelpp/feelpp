@@ -1633,7 +1633,7 @@ private:
         }
     }
 
-    //! delete all time next this __time (after a restart by exemple)
+    //! delete all time next this __time (after a restart by example)
     FEELPP_NO_EXPORT void resetPreviousTime( Real __time );
 
 public:

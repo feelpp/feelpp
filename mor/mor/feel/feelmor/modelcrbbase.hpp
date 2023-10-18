@@ -116,7 +116,14 @@ public :
 };
 
 
-
+/**
+ * @brief base class for finite element and reduced basis models
+ * 
+ * @tparam ParameterDefinition parameters definition type
+ * @tparam FunctionSpaceDefinition function space definition type
+ * @tparam _Options options
+ * @tparam EimDefinition if relevant, EIM definition type
+ */
 template <typename ParameterDefinition=ParameterDefinitionBase,
           typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase,
           int _Options = 0,
@@ -1165,30 +1172,19 @@ public :
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN )
     {
-        return eimInterpolationErrorEstimation( mu, uN,  mpl::bool_<is_time_dependent>() );
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( parameter_type const& mu , vectorN_type const& uN , mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        else
+            return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }
 
     virtual eim_interpolation_error_type eimInterpolationErrorEstimation( )
     {
-        return eimInterpolationErrorEstimation( mpl::bool_<is_time_dependent>() );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
+        else
+            return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
     }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_eim_error_mq , M_eim_error_aq, M_eim_error_fq);
-    }
-    eim_interpolation_error_type eimInterpolationErrorEstimation( mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_eim_error_aq, M_eim_error_fq);
-    }
-
 
     virtual std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA()
     {
@@ -1247,17 +1243,10 @@ public :
 
     virtual affine_decomposition_type computeAffineDecomposition()
     {
-        return computeAffineDecomposition( mpl::bool_< is_time_dependent >() );
-    }
-
-    affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_Mqm , M_Aqm , M_Fqm );
-    }
-
-    affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_Aqm , M_Fqm );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
+        else
+            return boost::make_tuple( M_Aqm, M_Fqm );
     }
 
     std::vector< std::vector<sparse_matrix_ptrtype> > getMqm()
@@ -1287,7 +1276,10 @@ public :
 
     virtual affine_decomposition_light_type computeAffineDecompositionLight()
     {
-        return computeAffineDecompositionLight( mpl::bool_< is_time_dependent >() );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_Mq , M_Aq , M_Fq );
+        else
+            return boost::make_tuple( M_Aq , M_Fq );
     }
     affine_decomposition_light_type computeAffineDecompositionLight( mpl::bool_<true> )
     {
@@ -1300,43 +1292,36 @@ public :
 
     virtual monolithic_type computeMonolithicFormulation( parameter_type const& mu )
     {
-        return computeMonolithicFormulation( mu , mpl::bool_< is_time_dependent >() );
-    }
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
-    }
-    monolithic_type computeMonolithicFormulation( parameter_type const& mu, mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_monoA , M_monoF );
+        if constexpr ( is_time_dependent )
+        {
+            return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+        }
+        else
+        {
+            return boost::make_tuple( M_monoA , M_monoF );
+        }
     }
 
     virtual monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u )
     {
-        return computeMonolithicFormulationU( mu , u, mpl::bool_< is_time_dependent >() );
-    }
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<true> )
-    {
-        return boost::make_tuple( M_monoM , M_monoA , M_monoF );
-    }
-    monolithic_type computeMonolithicFormulationU( parameter_type const& mu, element_type const& u, mpl::bool_<false> )
-    {
-        return boost::make_tuple( M_monoA , M_monoF );
+        if constexpr ( is_time_dependent )
+            return boost::make_tuple( M_monoM , M_monoA , M_monoF );
+        else
+            return boost::make_tuple( M_monoA , M_monoF );
     }
 
     virtual beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu ,  double time=0 )
     {
-        return computeBetaLinearDecompositionA( mu, mpl::bool_< is_time_dependent >(), time );
-    }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<true>, double time )
-    {
-        auto tuple = computeBetaQm( mu , time );
-        return tuple.template get<1>();
-    }
-    beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, mpl::bool_<false>, double time )
-    {
-        auto tuple = computeBetaQm( mu , time );
-        return tuple.template get<0>();
+        if constexpr ( is_time_dependent )
+        {
+            auto tuple = computeBetaQm( mu , time );
+            return tuple.template get<1>();
+        }
+        else
+        {
+            auto tuple = computeBetaQm( mu, time );
+            return tuple.template get<0>();
+        }
     }
 
     // Default updateResidual / updateJacobian functions
@@ -1631,6 +1616,27 @@ public :
         bdf_ptrtype dummy_bdf;
         return dummy_bdf;
     }
+
+    void setTimeInitial( double const& timeInitial )
+    {
+        M_timeInitial = timeInitial;
+    }
+    double timeInitial() const { return M_timeInitial; }
+    void setTimeFinal( double const& timeFinal )
+    {
+        M_timeFinal = timeFinal;
+    }
+    double timeFinal() const { return M_timeFinal; }
+    void setTimeStep( double const& timeStep )
+    {
+        M_timeStep = timeStep;
+    }
+    double timeStep() const { return M_timeStep; }
+    void setTimeOrder( int const& timeOrder )
+    {
+        M_timeOrder = timeOrder;
+    }
+    int timeOrder() const { return M_timeOrder; }
 
     //initialize the field for transient problems
     virtual void initializationField( element_ptrtype& initial_field,parameter_type const& mu )
@@ -2322,8 +2328,34 @@ public:
     bool hasDisplacementField() const { return M_has_displacement_field; }
     void setHasDisplacementField( bool const _hwf ) { M_has_displacement_field=_hwf; }
 
+    /**
+     * @brief get the plugin name
+     * 
+     * @return std::string the name of the plugin
+     */
+    std::string pluginName() const { return M_pluginName; }
+
+    /**
+     * @brief get the plugin library name
+     * 
+     * @return std::string the name of the plugin library
+     */
+    std::string pluginLibName() const { return M_pluginLibName; }
+
 protected:
+
+    /**
+     * @brief Set the Plugin Name object
+     * 
+     * @param name 
+     */
     void setPluginName( std::string const& name ) { M_pluginName = name; }
+
+    /**
+     * @brief Set the Plugin Lib Name object
+     * 
+     * @param libname 
+     */
     void setPluginLibName( std::string const& libname ) { M_pluginLibName = libname; }
 
 protected :
@@ -2347,6 +2379,11 @@ protected :
     sparse_matrix_ptrtype M;
     sparse_matrix_ptrtype M_energy_matrix;
     sparse_matrix_ptrtype M_mass_matrix;
+
+    double M_timeInitial;
+    double M_timeFinal;
+    double M_timeStep;
+    int M_timeOrder;
 
     operatorcomposite_ptrtype M_compositeA;
     operatorcomposite_ptrtype M_compositeM;

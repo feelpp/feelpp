@@ -22,7 +22,7 @@ class ModelGenericPDE : public ModelPhysics<Dim>
 {
     using super_type = ModelPhysics<Dim>;
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
-    inline static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
 public :
     using self_type = ModelGenericPDE<Dim>;
     using infos_type = typename ModelPhysicCoefficientFormPDE<Dim>::infos_type;

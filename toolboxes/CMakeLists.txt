@@ -46,7 +46,7 @@ if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STRE
   endif()
 else()
   feelpp_get_environment()
-  # usefull for pyfeelpp-toolboxes
+  # useful for pyfeelpp-toolboxes
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
   set(FEELPP_FOUND ON)
 endif()
@@ -95,6 +95,7 @@ INCLUDE(CTest)
 ENABLE_TESTING()
 
 add_subdirectory(cmake)
+add_subdirectory(tools/man)
 
 if ( FEELPP_FOUND )
 

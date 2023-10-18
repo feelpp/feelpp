@@ -133,9 +133,9 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // trace mesh
@@ -146,8 +146,8 @@ public:
     //___________________________________________________________________________________//
     // basis fluid
     static const bool useMixedBasis = true;
-    static const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
-    static const uint16_type nOrderPressure = BasisPressureType::nOrder;
+    static inline const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
+    static inline const uint16_type nOrderPressure = BasisPressureType::nOrder;
     typedef BasisVelocityType basis_fluid_u_type;
     typedef BasisPressureType basis_fluid_p_type;
     typedef Lagrange<0, Scalar,Continuous> basis_l_type;
@@ -1013,7 +1013,7 @@ public:
     };
 
     /**
-     * @brief Boudary Condition for a Body
+     * @brief Boundary Condition for a Body
      * @ingroup Fluid
      */
     class BodyBoundaryCondition
@@ -1727,7 +1727,7 @@ public:
     typedef std::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
     typedef typename space_scalar_visu_ho_type::element_type element_scalar_visu_ho_type;
     typedef std::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
-    // function space vectorial discontinuos
+    // function space vectorial discontinuous
     typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1, Vectorial,Discontinuous,PointSetFekete> > > space_vectorialdisc_visu_ho_type;
     typedef std::shared_ptr<space_vectorialdisc_visu_ho_type> space_vectorialdisc_visu_ho_ptrtype;
     typedef typename space_vectorialdisc_visu_ho_type::element_type element_vectorialdisc_visu_ho_type;
@@ -2099,7 +2099,7 @@ public :
             auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            auto sePhysics = this->symbolsExprPhysicsFromCurrentType();
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );//this->symbolsExprPhysicsFromCurrentType();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
@@ -2961,7 +2961,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     }
     else
     {
-        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity beacause canUpdateVelocity and canUpdateDisplacement are false";
+        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity because canUpdateVelocity and canUpdateDisplacement are false";
         if constexpr ( ElasticBehaviorType::hasDisplacement )
         {
             auto dn = spaceDisp->element();
@@ -2991,7 +2991,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     }
     else
     {
-        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement beacause canUpdateVelocity and canUpdateDisplacement are false";
+        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement because canUpdateVelocity and canUpdateDisplacement are false";
         if constexpr ( ElasticBehaviorType::hasVelocity )
         {
 #if 1

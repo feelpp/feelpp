@@ -1528,8 +1528,8 @@ template<uint16_type PN,
          uint16_type GN = 1>
 struct Order
 {
-    static const uint16_type PolynomialOrder = PN;
-    static const uint16_type GeometricOrder = GN;
+    static inline const uint16_type PolynomialOrder = PN;
+    static inline const uint16_type GeometricOrder = GN;
 
     static const bool is_isoparametric = ( PN == GN );
     static const bool is_subparametric = ( PN > GN );
@@ -2220,7 +2220,7 @@ public:
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
         /**
-         * usefull in // with composite case
+         * useful in // with composite case
          * store the off views
          */
         template<typename BasisType>
@@ -3247,7 +3247,7 @@ public:
          * 1 : Element
          *
          * \todo store a geometric mapping context to evaluate the real points
-         * from a set of point in the referene element, should probably done in
+         * from a set of point in the reference element, should probably done in
          * the real element (geond)
          */
         template<typename Context_t>
@@ -5488,7 +5488,7 @@ public:
     }
 
     /**
-     * @brief save on disk some informations in json + hdF5 files as doftable (require HDF5 support)
+     * @brief save on disk some information in json + hdF5 files as doftable (require HDF5 support)
      *
      * @param filepath path of the json files generated (extension can be automatically added if not given)
      */
@@ -5580,7 +5580,7 @@ public:
         }
 
     /**
-     * @brief get realtion with current doftable and one stored on disk (mesh points should be same)
+     * @brief get relation with current doftable and one stored on disk (mesh points should be same)
      *
      * @param filepath path of the json files on the disk
      */
@@ -5945,7 +5945,7 @@ private:
         mesh_ptrtype M_mesh;
     };
 public :
-    //! update informations for the current object
+    //! update information for the current object
     void updateInformationObject( nl::json & p ) const override;
 
 protected:

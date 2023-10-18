@@ -4,7 +4,8 @@ import sys
 import py
 import pytest
 import feelpp
-import gmsh 
+import feelpp.toolboxes.core as tb
+import gmsh
 
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
@@ -32,7 +33,8 @@ class InitFeelpp:
     def __init__(self,config):
         try:
             sys.argv=['test_feelpp']
-            self.feelpp_env = feelpp.Environment(sys.argv,config=config)
+            self.feelpp_env = feelpp.Environment(sys.argv,config=config, 
+                                                 opts= tb.toolboxes_options("heat"))
         except Exception:
             return 
 

@@ -653,7 +653,7 @@ public:
      */
     void setNumberOfNeighborPartitions( uint16_type nep )
     {
-        M_neighor_pids.size();
+        M_neighor_pids.resize( nep );
     }
 
     /**

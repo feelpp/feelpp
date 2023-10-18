@@ -106,7 +106,6 @@ gmsh_ptrtype geo( Ts && ... v )
 
                                      else if ( !fs::exists( cp / _filename )  )
                                          fs::copy_file( file_path, fs::path( _filename ), fs::copy_options::none );
-
                                  }
 
                                  catch ( const fs::filesystem_error& e )

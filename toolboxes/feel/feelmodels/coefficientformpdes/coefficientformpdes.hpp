@@ -51,8 +51,8 @@ public :
     using mesh_type = typename coefficient_form_pde_base_type::mesh_type;
     using mesh_ptrtype = typename coefficient_form_pde_base_type::mesh_ptrtype;
     using convex_type = typename coefficient_form_pde_base_type::convex_type;
-    static const uint16_type nDim = coefficient_form_pde_base_type::nDim;
-    static const uint16_type nOrderGeo = coefficient_form_pde_base_type::nOrderGeo;
+    static inline const uint16_type nDim = coefficient_form_pde_base_type::nDim;
+    static inline const uint16_type nOrderGeo = coefficient_form_pde_base_type::nOrderGeo;
 
     // materials properties
     typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
@@ -362,17 +362,17 @@ public :
     template <typename FilterBasisUnknownType = FilterBasisUnknownAll>
     auto modelFields( std::string const& prefix = "" ) const
         {
-            typename traits::template model_fields_type<FilterBasisUnknownType> res;
-            this->modelFieldsImpl<FilterBasisUnknownType>( prefix, std::move(res) );
-            return res;
+            typename traits::template model_fields_type<FilterBasisUnknownType> mfieldsSubEqs;
+            this->modelFieldsImpl<FilterBasisUnknownType>( prefix, std::move(mfieldsSubEqs) );
+            return Feel::FeelModels::modelFields( mfieldsSubEqs, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     template <typename FilterBasisUnknownType = FilterBasisUnknownAll>
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            typename traits::template model_fields_view_type<FilterBasisUnknownType> res;
-            this->modelFieldsImpl<FilterBasisUnknownType>( sol, rowStartInVector, prefix, std::move(res) );
-            return res;
+            typename traits::template model_fields_view_type<FilterBasisUnknownType> mfieldsSubEqs;
+            this->modelFieldsImpl<FilterBasisUnknownType>( sol, rowStartInVector, prefix, std::move(mfieldsSubEqs) );
+            return Feel::FeelModels::modelFields( mfieldsSubEqs, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     template <typename FilterBasisUnknownType = FilterBasisUnknownAll>
@@ -415,10 +415,11 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox,seParam,seMeshes,seMat,seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox,seParam,seMeshes,seMat,seFields,sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

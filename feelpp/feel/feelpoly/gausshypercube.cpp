@@ -44,8 +44,8 @@ public :
 
     typedef IMBase<T> super;
     
-    //static const uint16_type this->numberOfPoints() = ( Integration_this->numberOfPoints()+1 )/2+1;
-    //static const uint32_type Npoints = this->numberOfPoints();
+    //static inline const uint16_type this->numberOfPoints() = ( Integration_this->numberOfPoints()+1 )/2+1;
+    //static inline const uint32_type Npoints = this->numberOfPoints();
 
     GaussHypercube() = default;
     GaussHypercube( GaussHypercube const& ) = default;
