@@ -29,9 +29,6 @@
 
 #include <feel/feelcore/applicationxml.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 namespace Feel
 {
 namespace detail
@@ -187,4 +184,3 @@ ApplicationXML::postProcessing()
 
 
 }
-

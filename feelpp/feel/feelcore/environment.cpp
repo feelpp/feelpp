@@ -43,8 +43,6 @@ extern "C"
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -447,8 +445,8 @@ Environment::Environment( int argc, char** argv,
     if (S_initialized)
         return;
     S_initialized = true;
-    
-    if ( argc == 0 )    
+
+    if ( argc == 0 )
     {
 #if BOOST_VERSION >= 105500
         M_env = std::make_unique<boost::mpi::environment>(lvl, false);

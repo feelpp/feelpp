@@ -202,7 +202,7 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
         /* Either in a newly created file or in an existing file */
         /* check if the time file already exists */
         /* if so we update its data by adding a new DataSet node */
-        if(boost::filesystem::exists(xmlFilename))
+        if(fs::exists(xmlFilename))
         {
             doc = xmlReadFile(xmlFilename.c_str(), NULL, 0);
             if (doc == NULL) {
@@ -218,7 +218,7 @@ int ExporterVTK<MeshType,N>::writeTimePVD(std::string xmlFilename, double timest
                 node1 = root->children;
                 if(xmlStrncmp(node1->name, BAD_CAST "Collection", 10) != 0)
                 { node1 = NULL; retcode = 1; }
-            } 
+            }
             /* mark this as an error */
             else
             { retcode = 1; }
@@ -426,14 +426,14 @@ ExporterVTK<MeshType,N>::saveData( vtkSmartPointer<vtkMultiBlockDataSet> mbds, i
         lfile << "-" << this->worldComm().size() << "_" << this->worldComm().rank();
 #endif
         lfile << ".vtm";
-                
+
         /* check if we are on the initial timestep */
         /* if so, we delete the previous pvd file */
         /* otherwise we would append dataset to already existing data */
         std::string pvdFilename = this->path() + "/" + this->prefix() + ".pvd";
         if( (stepIndex - TS_INITIAL_INDEX) == 0 && fs::exists(pvdFilename.c_str()))
         {
-            fs::remove(pvdFilename.c_str()); 
+            fs::remove(pvdFilename.c_str());
         }
 #ifdef FEELPP_HAS_LIBXML2
 #if VTK_MAJOR_VERSION < 6 || !defined(VTK_HAS_PARALLEL)
@@ -699,7 +699,7 @@ ExporterVTK<MeshType,N>::visit( mesh_type* )
 {
 }
 
-#if defined(FEELPP_VTK_INSITU_ENABLED) 
+#if defined(FEELPP_VTK_INSITU_ENABLED)
 template<typename MeshType, int N>
 void
 ExporterVTK<MeshType,N>::updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const

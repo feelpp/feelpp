@@ -61,11 +61,7 @@ gmsh_ptrtype geo( Ts && ... v )
 
     gmsh_ptr->setCharacteristicLength( h );
 
-#if BOOST_FILESYSTEM_VERSION == 3
-        gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
-#elif BOOST_FILESYSTEM_VERSION == 2
-        gmsh_ptr->setPrefix( fs::path( filename ).stem() );
-#endif
+    gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
 
     if ( !desc.empty() )
     {
@@ -99,8 +95,6 @@ gmsh_ptrtype geo( Ts && ... v )
 
                                  try
                                  {
-                                     boost::system::error_code ec;
-
                                      if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
                                          std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
