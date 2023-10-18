@@ -37,8 +37,8 @@ template< class Convex >
 class MeshHighOrder
 {
     static const bool is_simplex = Convex::is_simplex;
-    static const uint16_type Dim = Convex::nDim;
-    static const uint16_type Order = Convex::nOrder;
+    static inline const uint16_type Dim = Convex::nDim;
+    static inline const uint16_type Order = Convex::nOrder;
 
 
     typedef typename mpl::if_< mpl::bool_< is_simplex >, Simplex<Dim, 1>, Hypercube<Dim, 1> >::type convex_type;

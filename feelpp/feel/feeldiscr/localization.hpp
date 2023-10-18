@@ -47,9 +47,9 @@ public:
     using node_type = typename MeshType::node_type;
     typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
     
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type nOrder = mesh_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type nOrder = mesh_type::nOrder;
     using value_type = typename mesh_type::value_type;
     typedef KDTree kdtree_type;
     typedef typename std::shared_ptr<KDTree> kdtree_ptrtype;
@@ -255,11 +255,11 @@ public:
         boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
 
         //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p
+         //!  Research only one element which contains the node p
          //!
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
         //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p
+         //!  Research only one element which contains the node p
          //!
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
                                                               const matrix_node_type & setPoints,
@@ -269,26 +269,26 @@ public:
         }
 
         //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
+         //!  Research only one element which contains the node p and which this elt have as geometric point contain setPoints
          //!
         boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
                                                                const matrix_node_type & setPoints,
                                                                mpl::int_<1> /**/ );
 
         //! ---------------------------------------------------------------
-         //!  Research all elements wich contains the node p
+         //!  Research all elements which contains the node p
          //!
         boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements( const node_type & p );
 
         //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
+         //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
                                                                 const size_type & eltHypothetical);
 
         //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
+         //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
         boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
@@ -300,7 +300,7 @@ public:
         }
 
         //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
+         //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
@@ -375,13 +375,6 @@ public:
         boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
         
     };
-
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nDim;
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nRealDim;
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nOrder;
 
 
 template<typename MeshType>
@@ -902,7 +895,7 @@ Localization<MeshType>::searchInKdTree( const node_type & p,
     typename std::list<size_type>::iterator itL_end;
 
     //ListTri will contain the indices of elements (size_type)
-    //and the number of occurence(uint)
+    //and the number of occurrence(uint)
     //std::list< std::pair<size_type, uint> > ListTri;
     typename std::list< std::pair<size_type, uint> >::iterator itLT;
     typename std::list< std::pair<size_type, uint> >:: iterator itLT_end;

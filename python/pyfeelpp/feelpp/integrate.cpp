@@ -25,7 +25,6 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/meshstructured.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <mpi4py/mpi4py.h>

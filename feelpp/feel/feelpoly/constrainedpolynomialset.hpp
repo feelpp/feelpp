@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-04-30
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -54,11 +54,11 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder = super::nOrder;
     static const bool is_vectorial = super::is_vectorial;
     static const bool is_scalar = super::is_scalar;
-    static const uint16_type nComponents = super::nComponents;
+    static inline const uint16_type nComponents = super::nComponents;
     //@}
 
     /** @name Typedefs

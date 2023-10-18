@@ -650,14 +650,14 @@ public:
     typedef typename functionspace_disp_type::gm_type gm_type;
     typedef typename functionspace_disp_type::value_type value_type;
     typedef value_type evaluate_type;
-    //static const uint16_type rank = fe_disp_type::rank;
-    //static const uint16_type nComponents1 = fe_disp_type::nComponents1;
-    //static const uint16_type nComponents2 = fe_disp_type::nComponents2;
+    //static inline const uint16_type rank = fe_disp_type::rank;
+    //static inline const uint16_type nComponents1 = fe_disp_type::nComponents1;
+    //static inline const uint16_type nComponents2 = fe_disp_type::nComponents2;
     static const bool is_terminal = true;
 
-    static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
-    static const uint16_type orderpressure = functionspace_pressure_type::basis_type::nOrder;
-    static const uint16_type nDim = functionspace_disp_type::nDim;
+    static inline const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
+    static inline const uint16_type orderpressure = functionspace_pressure_type::basis_type::nOrder;
+    static inline const uint16_type nDim = functionspace_disp_type::nDim;
     //------------------------------------------------------------------------------//
 
     template<typename Func>
@@ -1148,13 +1148,13 @@ public:
     typedef typename functionspace_disp_type::gm_type gm_type;
     typedef typename functionspace_disp_type::value_type value_type;
     typedef value_type evaluate_type;
-    //static const uint16_type rank = fe_disp_type::rank;
-    //static const uint16_type nComponents1 = fe_disp_type::nComponents1;
-    //static const uint16_type nComponents2 = fe_disp_type::nComponents2;
+    //static inline const uint16_type rank = fe_disp_type::rank;
+    //static inline const uint16_type nComponents1 = fe_disp_type::nComponents1;
+    //static inline const uint16_type nComponents2 = fe_disp_type::nComponents2;
     static const bool is_terminal = true;
 
-    static const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
-    static const uint16_type nDim = functionspace_disp_type::nDim;
+    static inline const uint16_type orderdisplacement = functionspace_disp_type::basis_type::nOrder;
+    static inline const uint16_type nDim = functionspace_disp_type::nDim;
     //------------------------------------------------------------------------------//
 
     template<typename Func>

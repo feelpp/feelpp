@@ -11,6 +11,7 @@
 #pragma once
 
 #include <tuple>
+#include <iterator>
 
 namespace Feel {
 

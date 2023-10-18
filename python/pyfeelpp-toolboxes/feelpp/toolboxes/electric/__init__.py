@@ -17,12 +17,15 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def electric(dim=2, orderPotential=1, worldComm=None, keyword="electric", subprefix="", modelRep=None):
+def electric(dim=2, orderPotential=1, worldComm=None, keyword="electric", prefix="electric", subprefix="", modelRep=None):
     """create a electric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderPotential -- the polynomial order for the potential (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    keyword -- the json keyword for the toolbox    (default: "electric")
+    prefix -- the prefix for the toolbox for the command line and .cfg options  (default: "electric")
+    subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if not has_electric:
         raise Exception('Electric toolbox is not enabled in Feel++')
@@ -35,4 +38,4 @@ def electric(dim=2, orderPotential=1, worldComm=None, keyword="electric", subpre
         raise RuntimeError('Electric solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _electrics[key]( prefix="electric", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep  )
+    return _electrics[key]( prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep  )

@@ -209,7 +209,7 @@
 
    Counterpart to #FEELPP_EXPORT.
  */
-#if __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2)
+#if ( __GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 > 2) ) && !defined(__APPLE__)
 #define FEELPP_EXPORT __attribute__ ((visibility("default")))
 #define FEELPP_NO_EXPORT __attribute__ ((visibility("hidden")))
 #else
@@ -235,7 +235,7 @@
 
 
    which means that GCC will not add any of the zero's for padding (for
-   memory alignement) and make variables or fields immediately next to
+   memory alignment) and make variables or fields immediately next to
    each other. For example, here are some things I tried out -- I created
    a C source file - \c test.c
 

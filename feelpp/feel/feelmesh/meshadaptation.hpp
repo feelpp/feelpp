@@ -823,7 +823,7 @@ namespace Feel
                 // Read the input geometry file
                 newGmshModel->readGEO(geofileNameWE);
 
-                // Retreive list of files
+                // Retrieve list of files
 #if 0
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
                     {

@@ -55,7 +55,6 @@ image:https://img.shields.io/github/contributors/feelpp/feelpp?logo=Draugiem.lv&
 image:https://img.shields.io/github/repo-size/feelpp/feelpp?color=009688&style=flat-square&logo=Hack The Box&logoColor=white[link=https://github.com/feelpp/feelpp]
 endif::[]
 
-
 toc::[]
 
 link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel. Checkout <<what-is-feel>>, {feelpp} <<features>> and some <<examples>>.

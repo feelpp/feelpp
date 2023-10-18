@@ -375,11 +375,11 @@ public:
 
 
 
-        static const uint16_type nDim = test_geometric_mapping_type::nDim;
+        static inline const uint16_type nDim = test_geometric_mapping_type::nDim;
 
-        static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
-        static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
-        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
+        static inline const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+        static inline const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+        static inline const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
 
         typedef ExprT expression_type;
 

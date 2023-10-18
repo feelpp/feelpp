@@ -1,0 +1,9 @@
+{
+    "viewfactor": {
+        "type": "UnobstructedPlanar",
+        "algorithm":"SingleAreaIntegration",
+        "quadrature_order":2,
+        "markers":["TopDisk","BottomDisk","LateralSurface"],
+        "description": "The viewfactor of a closed cavity."
+    }
+}

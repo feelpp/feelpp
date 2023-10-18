@@ -56,9 +56,9 @@ template<uint16_type Dim,
          template<class> class StoragePolicy = StorageUBlas>
 struct BoundaryAdaptedTraits
 {
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrderDiff = nDim+nOrder+1;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type nOrder = Degree;
+    static inline const uint16_type nConvexOrderDiff = nDim+nOrder+1;
     static const bool is_normalized = false;
 
 
@@ -98,8 +98,8 @@ struct BoundaryAdaptedTraits
             mpl::identity<PointSetWarpBlend<diff_convex_type,nConvexOrderDiff,value_type> >,
             mpl::identity<PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff,value_type> > >::type::type diff_pointset_type;
 
-    static const uint16_type numVertices = reference_convex_type::numVertices;
-    static const uint16_type numFaces = reference_convex_type::numFaces;
+    static inline const uint16_type numVertices = reference_convex_type::numVertices;
+    static inline const uint16_type numFaces = reference_convex_type::numFaces;
 
     /*
      * storage policy
@@ -133,7 +133,7 @@ struct BoundaryAdaptedTag
  *
  * The Boundary adapted basis is construct to preserve a part
  * of the Dubiner polynomials' orthogonality. However we need
- * to modify the basis in order to manage easily the boundary condtions.
+ * to modify the basis in order to manage easily the boundary conditions.
  *
  * \ingroup Polynomial
  * @author Gilles Steiner
@@ -151,12 +151,12 @@ class BoundaryAdapted : Basis<BoundaryAdaptedTag<Dim, Degree>, T>
 public:
     typedef BoundaryAdaptedTraits<Dim, Degree, T, StoragePolicy> traits_type;
 
-    static const uint16_type nDim = traits_type::nDim;
-    static const uint16_type nOrder = traits_type::nOrder;
-    static const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
+    static inline const uint16_type nDim = traits_type::nDim;
+    static inline const uint16_type nOrder = traits_type::nOrder;
+    static inline const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
     static const bool is_normalized = traits_type::is_normalized;
-    static const uint16_type numVertices = traits_type::numVertices;
-    static const uint16_type numFaces = traits_type::numFaces;
+    static inline const uint16_type numVertices = traits_type::numVertices;
+    static inline const uint16_type numFaces = traits_type::numFaces;
 
     /** @name Typedefs
      */
@@ -897,7 +897,7 @@ BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_express
     ublas::row( Jac,8 ) = ones; /** 1 **/
 
 
-    /** Usefull intermediate matrix to simplify the construction **/
+    /** Useful intermediate matrix to simplify the construction **/
 
     matrix_type d1 ( res[1].size1(), res[1].size2() );
     matrix_type d2 ( res[1].size1(), res[1].size2() );

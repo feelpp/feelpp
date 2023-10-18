@@ -68,7 +68,11 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
     PetscObjectGetComm((PetscObject)ksp,&comm);
     PetscViewerAndFormat *vf;
     PetscViewerAndFormatCreate( (comm == PETSC_COMM_SELF)? PETSC_VIEWER_STDOUT_SELF : PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_DEFAULT,&vf);
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,15,0)    
+    int ierr = KSPMonitorResidual( ksp,it,rnorm, vf );
+#else
     int ierr = KSPMonitorDefault( ksp,it,rnorm, vf );
+#endif    
     PetscViewerAndFormatDestroy( &vf );
 #endif
     return 0;
@@ -1156,7 +1160,7 @@ getOptionsDescML( std::string const& prefix, std::string const& sub )
         ( prefixvm( prefix,pcctx+"ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ),
           "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
         ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ),
-          "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+          "Allows the preconditioner to be reused, or auxiliary matrices to be generated" )
         ( prefixvm( prefix,pcctx+"ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ),
           "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
         ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ),
@@ -1437,9 +1441,9 @@ ConfigureKSP::run( KSP& ksp ) const
     if ( M_showMonitor )
     {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
-        this->check( KSPMonitorSet( ksp,__feel_petsc_prec_ksp_monitor,(void*) this,PETSC_NULL ) );
+        this->check( KSPMonitorSet( ksp,__feel_petsc_prec_ksp_monitor,(void*) this,PETSC_IGNORE ) );
 #else
-        this->check( KSPMonitorSet( ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL ) );
+        this->check( KSPMonitorSet( ksp,KSPMonitorDefault,PETSC_IGNORE,PETSC_IGNORE ) );
 #endif
     }
 
@@ -1447,7 +1451,7 @@ ConfigureKSP::run( KSP& ksp ) const
     if ( M_constantNullSpace )
     {
         MatNullSpace nullsp;
-        this->check( MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp ) );
+        this->check( MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_IGNORE, &nullsp ) );
 #if PETSC_VERSION_LESS_THAN( 3,5,4 )
         this->check( KSPSetNullSpace( ksp, nullsp ) );
 #else
@@ -2032,12 +2036,12 @@ ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double> * precFeel, 
     // To store array of local KSP contexts on this processor
     KSP* subksps;
     if ( M_subPCfromPCtype == "block_jacobi" || M_subPCfromPCtype == "bjacobi" )
-        this->check( PCBJacobiGetSubKSP( pc, &M_nBlock, PETSC_NULL, &subksps ) );
+        this->check( PCBJacobiGetSubKSP( pc, &M_nBlock, PETSC_IGNORE, &subksps ) );
     else if ( M_subPCfromPCtype == "asm" )
-        this->check( PCASMGetSubKSP( pc, &M_nBlock, PETSC_NULL, &subksps ) );
+        this->check( PCASMGetSubKSP( pc, &M_nBlock, PETSC_IGNORE, &subksps ) );
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     else if ( M_subPCfromPCtype == "gasm" )
-        this->check( PCGASMGetSubKSP( pc, &M_nBlock, PETSC_NULL, &subksps ) );
+        this->check( PCGASMGetSubKSP( pc, &M_nBlock, PETSC_IGNORE, &subksps ) );
 #endif
     else CHECK( false ) << "invalid pctype " << M_subPCfromPCtype << "\n";
 
@@ -2110,7 +2114,7 @@ ConfigurePCML::run( PC& pc )
 #if 0
     // Sets the number of levels to use with MG.
     // Must be called before any other MG routine
-    this->check( PCMGSetLevels( pc, M_nLevels, PETSC_NULL) );
+    this->check( PCMGSetLevels( pc, M_nLevels, PETSC_IGNORE) );
     if ( M_mgType=="multiplicative" ) this->check( PCMGSetType( pc, PC_MG_MULTIPLICATIVE ) );
     if ( M_mgType=="additive" ) this->check( PCMGSetType( pc, PC_MG_ADDITIVE ) );
     if ( M_mgType=="full" ) this->check( PCMGSetType( pc, PC_MG_FULL ) );
@@ -2479,7 +2483,7 @@ ConfigurePCMGLevels::run( PC& pc, int level )
     this->check( KSPSetNormType( levelksp, KSP_NORM_PRECONDITIONED ) );
     void *cctx;
     this->check( KSPDefaultConvergedCreate(&cctx) );
-    this->check( KSPSetConvergenceTest( levelksp, KSPDefaultConverged, cctx, PETSC_NULL ) );
+    this->check( KSPSetConvergenceTest( levelksp, KSPDefaultConverged, cctx, PETSC_IGNORE ) );
 #endif
     // setup coarse ksp
     this->check( KSPSetUp( levelksp ) );
@@ -2524,7 +2528,7 @@ ConfigurePCFieldSplit::run( PC& pc )
     }
     else
     {
-        // call necessary before next seting
+        // call necessary before next setting
         this->check( PCSetUp( pc ) );
         KSP* subksps;
         int nSplit;
@@ -2602,7 +2606,7 @@ ConfigurePCFieldSplit::runSchur( PC& pc )
     {
         // NOTE : this part was write initialy in order to take into account SIMPLE prec,
         // but now, PETSc take into account this code by using selfp options
-        // this user part should be removed and adpated to a real use precondtioner of schur complement
+        // this user part should be removed and adpated to a real use preconditioner of schur complement
 
         this->check( PCSetUp( pc ) );
 
@@ -2685,7 +2689,7 @@ ConfigurePCFieldSplit::runSchur( PC& pc )
     this->check( MatDestroy( &schurMatPrecond ) );
 #endif
 
-    // call necessary before next seting
+    // call necessary before next setting
     this->check( PCSetUp( pc ) );
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,10,0 )
@@ -3201,7 +3205,7 @@ ConfigurePCRedundant::run( PC& pc )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
 
-    // redifine PCSetUp for PCREDUNDANT because originaly KSPSetUp for innerksp is called in this function
+    // redefine PCSetUp for PCREDUNDANT because originally KSPSetUp for innerksp is called in this function
     this->check( PetscImpl::PCRedundantChangeSetup(pc) );
     // build operators
     this->check( PCSetUp( pc ) );

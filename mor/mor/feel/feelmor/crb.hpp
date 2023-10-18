@@ -484,9 +484,11 @@ public:
             {
                 M_rebuild = true;
                 this->worldComm().barrier();
+                LOG(INFO) << fmt::format("CRB::init() : rebuild database");
             }
             if ( !M_rebuild )
             {
+                LOG(INFO) << fmt::format("CRB::init() : load database from {}", (this->dbLocalPath()/fs::path(this->jsonFilename())).string() );
                 this->setupOfflineFromDB();
             }
             else
@@ -494,15 +496,17 @@ public:
                 M_scmM->setId( this->id() );
                 M_scmA->setId( this->id() );
                 M_elements_database.setId( this->id() );
+                LOG(INFO) << fmt::format("CRB::init() : build database, initialized SCM_M and SCM_A");
             }
             if( this->worldComm().isMasterRank() )
-                std::cout << "Use DB id " << this->id() << std::endl;
+                std::cout << "CRB::init() : Use DB id " << this->id() << std::endl;
+            LOG(INFO) << fmt::format("CRB::init() : Use DB id {}", this->id() );
 
             if ( M_N == 0 )
             {
                 if( this->worldComm().isMasterRank() )
-                    std::cout<< "Databases does not exist or incomplete -> Start from the begining\n";
-                LOG( INFO ) <<"Databases does not exist or incomplete -> Start from the begining";
+                    std::cout << "CRB::init() : Databases does not exist or incomplete -> Start from the begining\n";
+                LOG( INFO ) <<"CRB::init() : Databases does not exist or incomplete -> Start from the begining";
             }
 
             // fe vector is requiert in online : must not be TODO
@@ -560,6 +564,12 @@ public:
         {
             return M_output_index;
         }
+
+    //! \return the output name
+    std::string const& outputName() const
+    {
+        return M_output_name;
+    }
 
     //! \return the dimension of the reduced basis space
     int dimension() const override
@@ -623,7 +633,15 @@ public:
             //std::cout << "Database " << this->lookForDB() << " available and loaded\n";
 
         }
-
+    /**
+     * @brief Set the Output Name
+     *
+     * @param oname name of the outout
+     */
+    void setOutputName( std::string const& oname )
+    {
+        M_output_name = oname;
+    }
     //! set the crb error type
     void setCRBErrorType( CRBErrorType error )
         {
@@ -1413,7 +1431,7 @@ public:
      * \pram uNold : old primal solution
      * \param K : time index
      */
-    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0) const;
+    virtual double correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu , std::vector<vectorN_type> const & uNold,  int const K=0, double const prevcorrection  = 0 ) const;
 
     /*
      * build matrix to store functions used to compute the variance output
@@ -1428,7 +1446,7 @@ public:
             int rows=A.rows();
             int cols=A.cols();
             int N = rows;
-            std::string file_name = ( boost::format("RBmatrix-N%1%-mu-%2%") %N  %mu[0] ).str();
+            std::string file_name = fmt::format("RBmatrix-N{}-mu-{}", N, mu[0]);
             if( this->worldComm().isMasterRank() )
             {
                 std::ofstream file;
@@ -1514,6 +1532,7 @@ protected:
     backend_ptrtype M_backend_dual;
 
     int M_output_index;
+    std::string M_output_name;
 
     double M_tolerance;
 
@@ -1812,7 +1831,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
           !M_bdf_primal->isFinished() && !M_bdf_primal_save->isFinished();
-          M_bdf_primal->next() , M_bdf_primal_save->next() )
+          M_bdf_primal->next(u) , M_bdf_primal_save->next() )
     {
         int bdf_iter = M_bdf_primal->iteration();
 
@@ -1898,7 +1917,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
 
-        M_bdf_primal->shiftRight( u );
         if ( ! M_model->isSteady() )
         {
             u.close();
@@ -1917,7 +1935,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         }
 
         if( increment_norm > fixedpoint_critical_value )
-            throw std::logic_error( (boost::format("[CRB::offlineFixedPointPrimal]  at time %1% ERROR : increment > critical value " ) %M_bdf_primal->time() ).str() );
+            throw std::logic_error( fmt::format("[CRB::offlineFixedPointPrimal]  at time {} ERROR : increment > critical value ", M_bdf_primal->time() ) );
 
         for ( size_type l = 0; l < M_model->Nl(); ++l )
         {
@@ -2051,7 +2069,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     for ( M_bdf_dual->start(udu),M_bdf_dual_save->start(udu);
           !M_bdf_dual->isFinished() && !M_bdf_dual_save->isFinished();
-          M_bdf_dual->next() , M_bdf_dual_save->next() )
+          M_bdf_dual->next(udu) , M_bdf_dual_save->next() )
     {
 
         int bdf_iter = M_bdf_dual->iteration();
@@ -2135,8 +2153,6 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
 
-        M_bdf_dual->shiftRight( udu );
-
         //check dual property
         //double term1 = A->energy( udu, u );
         //double term2 = Adu->energy( u, udu );
@@ -2161,7 +2177,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         }
 
         if( increment_norm > fixedpoint_critical_value )
-            throw std::logic_error( (boost::format("[CRB::offlineFixedPointDual]  at time %1% ERROR : increment > critical value " ) %M_bdf_dual->time() ).str() );
+            throw std::logic_error( fmt::format("[CRB::offlineFixedPointDual]  at time {} ERROR : increment > critical value ", M_bdf_dual->time() ) );
 
     }//end of loop over time
 
@@ -2419,7 +2435,7 @@ CRB<TruthModelType>::offline()
     bool seek_mu_in_complement = M_seekMuInComplement;
 
     Feel::Timer ti;
-    LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
+    LOG(INFO)<< "[CRB::offline] Offline CRB starts, this may take a while until Database is computed...\n";
     //LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
     //LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
     M_model->init();
@@ -2550,11 +2566,20 @@ CRB<TruthModelType>::offline()
         // save mesh of rbspace
         if ( true )
         {
-            std::string meshFilenameBase = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+            std::string meshFilenameBase = fmt::format("{}_mesh_p{}.json",this->name(),this->worldComm().size());
             std::string meshFilename = (M_elements_database.dbLocalPath() / fs::path(meshFilenameBase)).string();
             if( this->worldComm().isMasterRank() )
                 std::cout << "save Mesh : " << meshFilename << std::endl;
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
+        }
+        // save the rb function space
+        if ( true )
+        {
+            std::string functionSpaceFilenameBase = fmt::format("{}_functionSpace_p{}.json",this->name(),this->worldComm().size());
+            std::string functionSpaceFilename = (M_elements_database.dbLocalPath() / fs::path(functionSpaceFilenameBase)).string();
+            if( this->worldComm().isMasterRank() )
+                std::cout << "save Function Space : " << functionSpaceFilename << std::endl;
+            M_model->rBFunctionSpace()->functionSpace()->save( functionSpaceFilename );
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
 
@@ -2670,7 +2695,7 @@ CRB<TruthModelType>::offline()
         tic();
         M_mode_number=1;
 
-        std::string pslogname = (boost::format("N-%1%") %M_N ).str();
+        std::string pslogname = fmt::format("N-{}",M_N );
         if( write_memory_evolution )
             ps.log(pslogname);
 
@@ -2693,8 +2718,8 @@ CRB<TruthModelType>::offline()
             LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << M_maxerror << " / "  << M_tolerance << "( nb proc : "<<worldComm().globalSize()<<")";
 
         // for a given parameter \p mu assemble the left and right hand side
-        u.setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
-        udu.setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
+        u.setName( fmt::format( "fem-primal-N{}-proc{}", M_N, proc_number ) );
+        udu.setName( fmt::format( "fem-dual-N{}-proc{}", M_N, proc_number) );
 
 #if !defined(NDEBUG)
         mu.check();
@@ -2751,7 +2776,7 @@ CRB<TruthModelType>::offline()
             LOG(INFO)<<"[CRB::offline] start of POD \n";
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
-            bool POD_WN = boption(_prefix=M_prefix,_name="crb.apply-POD-to-WN") ;
+            bool POD_WN = boption(_prefix=M_prefix, _name="crb.apply-POD-to-WN");
 
             if ( seek_mu_in_complement ) // M_mode_number == 1 )
             {
@@ -4108,7 +4133,7 @@ CRB<TruthModelType>::check( size_type N ) const
 
 template< typename TruthModelType>
 double
-CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k ) const
+CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vectorN_type > const & uN, std::vector< vectorN_type > const & uNdu,  std::vector<vectorN_type> const & /*uNold*/, int const k, double const prevcorrection ) const
 {
     int N = uN[0].size();
 
@@ -4172,7 +4197,10 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
         int primal_time_index;
         int dual_time_index;
         int kpd=0;//kp dual
-        for( int kp=1; kp<=k; kp++)
+        //for( int kp=k-1; kp<=k; kp++)
+        const int kp = k;
+        correction = prevcorrection;
+        if ( k >= 1 )
         {
 
             Aprdu.setZero( N , N );
@@ -5746,38 +5774,21 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix, bool computeOutput ) const
 {
     matrix_info_tuple matrix_info;
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-    if(boption(_name="parallel.opencl.enable"))
-    {
-        matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
-
-        if(ioption(_name="parallel.debug"))
-        {
-            this->dumpData("./out.gpu.dump", "[CPU] uN: ", uN[0].data(), N);
-        }
-    }
-    else
-    {
-#endif
-
-        matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
-
-#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
-        if(ioption(_name="parallel.debug"))
-        {
-            this->dumpData("./out.cpu.dump", "[CPU] uN: ", uN[0].data(), N);
-        }
-    }
-#endif
-
+    tic();
+    matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix, computeOutput ) ;
+    double t_fp = toc("CRB::fixedPoint() : fixedPointPrimal", false);
+    VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointPrimal took {} seconds", t_fp);
 
     if( M_solve_dual_problem )
     {
+        tic();
         fixedPointDual( N, mu , uN, uNdu , uNduold , output_vector , K ) ;
+        double t_fd = toc("CRB::fixedPoint() : fixedPointDual", false);
+        VLOG(3) << fmt::format("CRB::fixedPoint() : fixedPointDual took {} seconds", t_fd);
 
         if ( computeOutput )
         {
+            tic();
             // apply correction terms
             if ( M_model->isSteady() )
             {
@@ -5792,12 +5803,17 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
                     time_for_output = K*time_step;
 
                 int time_index=0;
+                double prevcorrection = 0;
                 for ( double time=0; math::abs(time-time_for_output-time_step)>1e-9; time+=time_step )
                 {
-                    output_vector[time_index]+=correctionTerms(mu, uN , uNdu, uNold, time_index );
+                    double curcorrection = correctionTerms(mu, uN , uNdu, uNold, time_index, prevcorrection);
+                    output_vector[time_index]+= curcorrection;
+                    prevcorrection = curcorrection;
                     ++time_index;
                 }
             }
+            double t_fp = toc("CRB::fixedPoint() : correctionTerms", false);
+            VLOG(3) << fmt::format("CRB::fixedPoint() : correctionTerms took {} seconds", t_fp);
         }
     }
 
@@ -5810,7 +5826,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K,
                          bool computeOutput ) const
 {
-    LOG(INFO) <<"CRB : Start lb functions with mu="<<mu.toString()<<", N="<<N;
+    VLOG(2) << fmt::format("CRB::lb() : Start lb functions with mu={}, N={}, print_rb_matrix={}, K={}, computeOutput={}", mu.toString(), N, print_rb_matrix, K, computeOutput);
     if ( N > M_N ) N = M_N;
 
     int number_of_time_step = M_model->numberOfTimeStep();
@@ -5835,7 +5851,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     // init by 1, the model could provide better init
     uN[0].setOnes(N);
 
+    tic();
     auto matrix_info = onlineSolve( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix, computeOutput );
+    double t = toc("CRB::lb() : onlineSolve", false);
+    VLOG(3) << fmt::format("CRB::lb() : onlineSolve took {} seconds", t);
 
     if ( M_compute_variance || M_save_output_behavior )
     {
@@ -5889,7 +5908,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             for ( int i=0; i<mu.size(); i++ )
             {
-                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                mu_str= mu_str +  fmt::format( "_{}" ,mu[i] ) ;
             }
 
             std::string name = "output-evolution" + mu_str;
@@ -5903,7 +5922,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             file_output.close();
         }
     }
-    LOG(INFO)<<"CBR : end of lb()";
+    VLOG(2) <<"CRB::lb() : end lb function";
     return boost::make_tuple( output_vector, matrix_info);
 
 }
@@ -5918,7 +5937,7 @@ CRB<TruthModelType>::delta( size_type N,
                             std::vector<vectorN_type> const& uNduold,
                             int k ) const
 {
-    LOG(INFO) << "CRB : Start delta with mu="<<mu.toString()<<", N="<<N;
+    VLOG(2) << "CRB::delta : Start compute delta with mu="<<mu.toString()<<", N="<<N;
     std::vector< std::vector<double> > primal_residual_coeffs;
     std::vector< std::vector<double> > dual_residual_coeffs;
     std::vector<double> output_upper_bound;
@@ -5927,7 +5946,7 @@ CRB<TruthModelType>::delta( size_type N,
 
     if( M_SER_errorEstimation && M_SER_useGreedyInRb ) // If SER is used : use Riesz residual norm as error indicator
     {
-        LOG(INFO) << "Use SER error estimation \n";
+        VLOG(2) << "CRB::delta : Use SER error estimation \n";
         output_upper_bound.resize(1);
         output_upper_bound[0] = computeRieszResidualNorm( mu, uN );
         return boost::make_tuple( output_upper_bound , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
@@ -5962,14 +5981,16 @@ CRB<TruthModelType>::delta( size_type N,
             shift=0;
             restart_time_index=0;
         }
-
-        double primal_sum=0;
-        double dual_sum=0;
+        int K = Tf/dt;
+        eigen_vector_x_col_type<> primal_sum(K);
+        primal_sum.setZero();
+        eigen_vector_x_col_type<> dual_sum(K);
+        dual_sum.setZero();
         double primal_sum_eim=0;
         double dual_sum_eim=0;
 
         //vectors to store residual coefficients
-        int K = Tf/dt;
+
         primal_residual_coeffs.resize( K );
         dual_residual_coeffs.resize( K );
 
@@ -5977,6 +5998,7 @@ CRB<TruthModelType>::delta( size_type N,
 
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
+            tic();
             double alphaA_up, lbti;
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
             if( M_scmA->useScm() )
@@ -5991,6 +6013,8 @@ CRB<TruthModelType>::delta( size_type N,
                     boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
+            double t = toc("CRB::delta() : scm", false);
+            VLOG(3) << fmt::format("CRB::delta() : scm took {} seconds", t);
         }
 
         //index associated to the output time
@@ -6014,18 +6038,21 @@ CRB<TruthModelType>::delta( size_type N,
             if( M_useAccurateApee )
             {
                 //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
-                for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                //for( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                double time = output_time;
                 {
-                    primal_sum += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
+                    primal_sum[time_index] += computeOnlinePrimalApee( N , mu , uN[time_index], uN[time_index]/*uNold[time_index]*/, dt, time );
                 }
             }
             else
             {
-                for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                //for ( double time=dt; math::abs(time-output_time-dt)>1e-9; time+=dt )
+                double time = output_time;
                 {
                     int time_old_index = ( M_model->isSteady() )? 0 : time_index-1;
                     auto pr = transientPrimalResidual( N, mu, uN[time_index], uN[time_old_index]/*uNold[time_index]*/, dt, time );
-                    primal_sum += pr.template get<0>();
+                    primal_sum(time_index) = pr.template get<0>();
+
                     if( global_time_index==K )
                     {
                         primal_residual_coeffs[time_index-shift].resize( pr.template get<1>().size() );
@@ -6053,17 +6080,19 @@ CRB<TruthModelType>::delta( size_type N,
                 if( M_useAccurateApee )
                 {
                     //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
-                    for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    //for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    double time = output_time;
                     {
-                        dual_sum += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
+                        dual_sum[time_index] += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
                     }
                 }
                 else
                 {
-                    for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    //for ( double time=output_time; math::abs(time - dt + dt) > 1e-9 ; time-=dt )
+                    double time = output_time;
                     {
                         auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
-                        dual_sum += du.template get<0>();
+                        dual_sum(time_index) += du.template get<0>();
                         if( global_time_index == K )
                         {
                             dual_residual_coeffs[time_index-shift].resize( du.template get<1>().size() );
@@ -6090,12 +6119,12 @@ CRB<TruthModelType>::delta( size_type N,
             {
                 if( model_has_eim_error )
                 {
-                    double r = math::sqrt( primal_sum );
+                    double r = math::sqrt( primal_sum.sum() );
                     double reim = math::sqrt( primal_sum_eim );
                     delta_pr =  ( r + reim ) /  alphaA ;
                     if( M_solve_dual_problem )
                     {
-                        double rdu = math::sqrt( dual_sum );
+                        double rdu = math::sqrt( dual_sum.sum() );
                         double rdueim = math::sqrt( dual_sum_eim );
                         delta_du =  ( rdu + rdueim ) / alphaA;
                     }
@@ -6105,9 +6134,9 @@ CRB<TruthModelType>::delta( size_type N,
                 }
                 else
                 {
-                    delta_pr = math::sqrt( primal_sum ) /  alphaA ;
+                    delta_pr = math::sqrt( primal_sum.sum() ) /  alphaA ;
                     if( M_solve_dual_problem )
-                        delta_du = math::sqrt( dual_sum ) / alphaA;
+                        delta_du = math::sqrt( dual_sum.sum() ) / alphaA;
                     else
                         delta_du = 1;
                     output_upper_bound[global_time_index] = alphaA * delta_pr * delta_du;
@@ -6117,9 +6146,9 @@ CRB<TruthModelType>::delta( size_type N,
             }
             else
             {
-                delta_pr = math::sqrt( dt/alphaA * primal_sum );
+                delta_pr = math::sqrt( dt/alphaA * primal_sum.sum() );
                 if( M_solve_dual_problem )
-                    delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+                    delta_du = math::sqrt( dt/alphaA * dual_sum.sum() + dual_residual/alphaM );
                 else
                     delta_du = 1;
                 output_upper_bound[global_time_index] = delta_pr * delta_du;
@@ -6480,13 +6509,13 @@ CRB<TruthModelType>::exportBasisFunctions( const export_vector_wn_type& export_v
         {
 
             std::string basis_name = vect_names[basis_number];
-            std::string number = ( boost::format( "%1%_with_parameters" ) %element_number ).str() ;
+            std::string number = fmt::format( "{}_with_parameters",element_number );
             mu = M_WNmu->at( element_number );
             std::string mu_str;
 
             for ( int i=0; i<mu.size(); i++ )
             {
-                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                mu_str= mu_str + fmt::format( "_{}",mu[i] ) ;
             }
 
             std::string name =   basis_name + number + mu_str;
@@ -6690,7 +6719,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,  vectorN_type const& Un ,vectorN_type const& Unold , double time_step, double time ) const
 {
-    LOG(INFO) << "CRB : Start transientPrimalresidual with mu="<<mu.toString() << ", N="<<Ncur;
+    VLOG(2) << fmt::format("CRB : Start transientPrimalresidual with mu={}, Ncur={}, Un.size={}, Unold.size={}, time_step={}, time={}",mu.toString(), Ncur, Un.size(), Unold.size(), time_step, time);
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     std::vector<beta_vector_type> betaFqm;
@@ -9433,6 +9462,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
 #endif
+    tic();
     M_model->countAffineDecompositionTerms();
 
     std::vector<vectorN_type> uN;
@@ -9453,13 +9483,21 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         Nwn = M_N;
     }
     Feel::Timer t1;
+    tic();
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
+    double t_run = toc("[CRB::run] lb", false);
+    VLOG(3) << fmt::format("[CRB::run] lb = {}", t_run);
+
     double time_prediction=t1.elapsed();
     auto output_vector=o.template get<0>();
     double output_vector_size=output_vector.size();
     double output = output_vector[output_vector_size-1];
     t1.start();
+    tic();
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
+    double t = toc("[CRB::run] delta", false);
+    VLOG(3) << fmt::format("[CRB::run] delta = {}", t);
+
     double time_error_estimation=t1.elapsed();
     auto vector_output_upper_bound = error_estimation.template get<0>();
     double output_upper_bound = vector_output_upper_bound[0];
@@ -9490,21 +9528,30 @@ CRB<TruthModelType>::run( parameter_type const& mu, vectorN_type & time, double 
         primal_residual_norm = math::sqrt( math::abs(primal_residual_norm) );
         dual_residual_norm = math::sqrt( math::abs(dual_residual_norm) );
     }
-
+    tic();
     double delta_pr = error_estimation.template get<3>();
+    double t_pr = toc("[CRB::run] delta_pr", false);
+    VLOG(3) << fmt::format("[CRB::run] delta_pr = {}", t_pr);
+    tic();
     double delta_du = error_estimation.template get<4>();
+    double t_du = toc("[CRB::run] delta_du", false);
+    VLOG(3) << fmt::format("[CRB::run] delta_du = {}", t_du);
 
     time.resize(2);
     time(0)=time_prediction;
     time(1)=time_error_estimation;
 
     int size = uN.size();
-
+    tic();
     auto upper_bounds = boost::make_tuple(vector_output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
     auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
 
     CRBResults r(boost::make_tuple( output_vector , Nwn , solutions, matrix_info , primal_residual_norm , dual_residual_norm, upper_bounds ));
     r.setParameter( mu );
+    double t_res = toc("[CRB::run] get results", false);
+    double t_total = toc("[CRB::run] total time", false);
+    LOG(INFO) << fmt::format( "[CRB::run] get results = {}", t_res );
+    LOG(INFO) << fmt::format( "[CRB::run] total time = {}", t_total );
     return r;
 }
 
@@ -10453,7 +10500,7 @@ saveRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& 
     ar & boost::serialization::make_nvp( (rbctxNameInDb+"_number_of_context").c_str(), numberOfCtx );
     for ( int k=0;k<numberOfCtx;++k )
     {
-        std::string rbctxNameInDb2 = (boost::format("%1%_%2%")%rbctxNameInDb %k).str();
+        std::string rbctxNameInDb2 = fmt::format("{}_{}",rbctxNameInDb,k);
         boost::fusion::for_each( rbSpace->rbfunctionspaces(), SaveRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb2, ctxRbAnyVec[k] ) );
     }
 }
@@ -10522,7 +10569,7 @@ loadRbSpaceCtx( TheRbSpaceType const& rbSpace, Archive & ar, std::string const& 
     ctxRbAny.resize( numberOfCtx );
     for ( int k=0;k<numberOfCtx;++k )
     {
-        std::string rbctxNameInDb2 = (boost::format("%1%_%2%")%rbctxNameInDb %k).str();
+        std::string rbctxNameInDb2 = fmt::format("{}_{}",rbctxNameInDb,k);
         int subspaceId = -1;
         ar & boost::serialization::make_nvp( (rbctxNameInDb2+"_spaceId").c_str(), subspaceId );
         boost::fusion::for_each( rbSpace->rbfunctionspaces(), LoadRbSpaceCtxComposite<Archive>( ar, rbctxNameInDb2, subspaceId, ctxRbAny[k] ) );
@@ -10653,7 +10700,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
         for ( std::string const& eimName : rbSpaceContextEimNames )
         {
-            std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
+            std::string rbctxNameInDb = fmt::format("rbSpaceContextEim_{}",eimName);
             Feel::detail::saveRbSpaceCtx( M_model->rBFunctionSpace(), ar, rbctxNameInDb, rbSpaceContextEim.find( eimName )->second );
         }
     }
@@ -10844,7 +10891,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             std::map<std::string,std::vector<boost::any> > rbSpaceContextEim;
             for ( std::string const& eimName : rbSpaceContextEimNames )
             {
-                std::string rbctxNameInDb = (boost::format("rbSpaceContextEim_%1%")%eimName).str();
+                std::string rbctxNameInDb = fmt::format("rbSpaceContextEim_{}",eimName);
                 Feel::detail::loadRbSpaceCtx( M_model->rBFunctionSpace(), ar, rbctxNameInDb, rbSpaceContextEim[eimName] );
             }
             M_model->model()->setRbSpaceContextEim( rbSpaceContextEim );
@@ -10870,14 +10917,14 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     for( int i = 0 ; i < M_N ; i++ )
     {
-        temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+        temp.setName( fmt::format( "fem-primal-{}", i  );
         ar & BOOST_SERIALIZATION_NVP( temp );
         M_WN[i] = temp;
     }
 
     for( int i = 0 ; i < M_N ; i++ )
     {
-        temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+        temp.setName( fmt::format( "fem-dual-{}", i ) );
         ar & BOOST_SERIALIZATION_NVP( temp );
         M_WNdu[i] = temp;
     }
@@ -10932,15 +10979,15 @@ CRB<TruthModelType>::generateSuperSampling()
 
     std::string file_name;
     if( all_proc_same_sampling )
-        file_name = ( boost::format("M_Xi_%1%_"+sampling_mode )% sampling_size ).str();
+        file_name = fmt::format("M_Xi_{}_{}", sampling_size, sampling_mode );
     else
-        file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
+        file_name = fmt::format("M_Xi_{}_{}-proc{}on{}", sampling_size, sampling_mode, proc_number, total_proc );
 
     std::ifstream file ( file_name );
 
     if ( !file )
     {
-        std::string supersamplingname =(boost::format("Dmu-%1%-generated-by-master-proc") %sampling_size ).str();
+        std::string supersamplingname =fmt::format("Dmu-{}-generated-by-master-proc",sampling_size );
         if( sampling_mode == "random" )
             this->M_Xi->randomize( sampling_size , all_proc_same_sampling, supersamplingname, false );
         else if( sampling_mode == "log-random" )
@@ -10975,7 +11022,7 @@ CRB<TruthModelType>::buildSampling()
     int N_equi = ioption(_prefix=M_prefix,_name="crb.use-equidistributed-WNmu");
     int N_random = ioption(_prefix=M_prefix,_name="crb.use-random-WNmu" );
 
-    std::string file_name = ( boost::format("SamplingWNmu") ).str();
+    std::string file_name = fmt::format("SamplingWNmu");
     std::ifstream file ( file_name );
 
     if ( use_predefined_WNmu ) // In this case we want to read the sampling
@@ -11490,9 +11537,8 @@ CRB<TruthModelType>::saveRB()
 {
     M_elements_database.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
 
-    M_elements_database.saveDB();
+    M_elements_database.saveNewElementToDB();
 }
-
 
 
 template<typename TruthModelType>
@@ -11563,9 +11609,13 @@ CRB<TruthModelType>::saveJson()
         ptree.add_child( "crbmodel", ptreeCrbModel );
 
         boost::property_tree::ptree ptreeReducedBasisSpace;
-        std::string meshFilename = (boost::format("%1%_mesh_p%2%.json")%this->name() %this->worldComm().size()).str();
+        std::string meshFilename = fmt::format("{}_mesh_p{}.json",this->name(),this->worldComm().size());
         ptreeReducedBasisSpace.add( "mesh-filename",meshFilename );
         ptreeReducedBasisSpace.add( "database-filename", M_elements_database.dbFilename() );
+        // add functionspace file (useful when nproc offline != nproc online)
+        std::string functionspaceFilename = fmt::format("{}_functionSpace_p{}.json", this->name(), this->worldComm().size());
+        ptreeReducedBasisSpace.add( "functionspace-filename", functionspaceFilename );
+
         ptreeReducedBasisSpace.add( "dimension", M_N );
         if ( M_model && M_model->rBFunctionSpace() && M_model->rBFunctionSpace()->functionSpace() )
         {
@@ -11586,6 +11636,7 @@ CRB<TruthModelType>::saveJson()
         ptreeCrb.add( "database-filename", this->dbFilename() );
         ptreeCrb.add( "has-solve-dual-problem",M_solve_dual_problem );
         ptreeCrb.add( "output-index", M_output_index );
+        ptreeCrb.add( "output-name", M_output_name );
         ptreeCrb.add( "error-type", M_error_type );
         ptree.add_child( "crb", ptreeCrb );
 
@@ -11601,7 +11652,6 @@ CRB<TruthModelType>::saveJson()
                 ptree.add_child( "scmM", ptreeParameterScmM );
             }
         }
-
         write_json( filenameJson, ptree );
     }
 }
@@ -11721,8 +11771,8 @@ CRB<TruthModelType>::setupOfflineFromDB()
     this->loadDB( (this->dbLocalPath()/fs::path(this->jsonFilename())).string(), crb::load::all );
 
     if( this->worldComm().isMasterRank() )
-        std::cout << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis\n";
-    LOG(INFO) << "Database CRB " << this->lookForDB() << " available and loaded with " << M_N <<" basis";
+        std::cout << "Database CRB available and loaded with " << M_N <<" basis\n";
+    LOG(INFO) << "Database CRB available and loaded with " << M_N <<" basis";
 
     M_elements_database.setMN( M_N );
     if( M_loadElementsDb )
@@ -11730,8 +11780,19 @@ CRB<TruthModelType>::setupOfflineFromDB()
         if( M_elements_database.loadDB() )
         {
             if( this->worldComm().isMasterRank() )
-                std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
-            LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+            {
+                if(M_elements_database.dbFileFormat()=="boost")
+                {
+                    std::cout<<"Database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
+                    LOG(INFO) << "Database for basis functions " << M_elements_database.lookForDB() << " available and loaded";
+                }
+                else
+                {
+                    std::cout<<"Database for basis functions in HDF5 available and loaded\n";
+                    LOG(INFO) << "Database for basis functions in HDF5 available and loaded";
+                }
+            }
+
             auto basis_functions = M_elements_database.wn();
             M_model->rBFunctionSpace()->setBasis( basis_functions );
         }

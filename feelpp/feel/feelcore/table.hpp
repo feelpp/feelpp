@@ -120,22 +120,10 @@ public :
     void resize( int nRow, int nCol );
 
     //! get cell at indices i,j in table
-    TableImpl::Cell const& operator()(int i,int j) const
-        {
-            if ( i < 0 || i >= M_nRow || j < 0 || j >= M_nCol )
-                throw std::out_of_range( fmt::format("indices i={},j={} are invalid, should respect : 0 <= i < {} and 0 <= j < {} ",i,j,M_nRow,M_nCol) );
-            int id = M_memoryLayout == MemoryLayout::RowMajor? i*M_nCol+j : i+j*M_nRow;
-            return M_cells.at(id);
-        }
+    TableImpl::Cell const& operator()(int i,int j) const;
 
     //! get cell at indices i,j in table
-    TableImpl::Cell & operator()(int i,int j)
-        {
-            if ( i < 0 || i >= M_nRow || j < 0 || j >= M_nCol )
-                throw std::out_of_range( fmt::format("indices i={},j={} are invalid, should respect : 0 <= i < {} and 0 <= j < {} ",i,j,M_nRow,M_nCol) );
-            int id = M_memoryLayout == MemoryLayout::RowMajor? i*M_nCol+j : i+j*M_nRow;
-            return M_cells.at(id);
-        }
+    TableImpl::Cell & operator()(int i,int j);
 
     //! add row in table ( size of \rowValues should be equal to M_nCol if table is non empty)
     void add_row( std::initializer_list<variant_value_type> && rowValues )
@@ -318,7 +306,7 @@ private:
 
 /**
  * Format of a Table
- * inherits of Cell::Format which define the defaut format of cell (can be override in each cell
+ * inherits of Cell::Format which define the default format of cell (can be override in each cell
  */
 struct Format : public Cell::Format
 {
@@ -443,5 +431,24 @@ Table::setRowOrColImpl( int i, T && values, int start_j )
 
 }
 
+//! get cell at indices i,j in table
+inline TableImpl::Cell const& 
+Table::operator()( int i, int j ) const
+{
+    if ( i < 0 || i >= M_nRow || j < 0 || j >= M_nCol )
+        throw std::out_of_range( fmt::format( "indices i={},j={} are invalid, should respect : 0 <= i < {} and 0 <= j < {} ", i, j, M_nRow, M_nCol ) );
+    int id = M_memoryLayout == MemoryLayout::RowMajor ? i * M_nCol + j : i + j * M_nRow;
+    return M_cells.at( id );
+}
+
+//! get cell at indices i,j in table
+inline TableImpl::Cell& 
+Table::operator()( int i, int j )
+{
+    if ( i < 0 || i >= M_nRow || j < 0 || j >= M_nCol )
+        throw std::out_of_range( fmt::format( "indices i={},j={} are invalid, should respect : 0 <= i < {} and 0 <= j < {} ", i, j, M_nRow, M_nCol ) );
+    int id = M_memoryLayout == MemoryLayout::RowMajor ? i * M_nCol + j : i + j * M_nRow;
+    return M_cells.at( id );
+}
 
 } // namespace Feel

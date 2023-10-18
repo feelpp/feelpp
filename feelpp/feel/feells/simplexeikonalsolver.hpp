@@ -44,7 +44,7 @@ class SimplexEikonalSolver
         // Functionspace and mesh
         typedef FunctionSpaceType functionspace_type;
         typedef std::shared_ptr< functionspace_type > functionspace_ptrtype;
-        static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
+        static inline const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
         typedef typename functionspace_type::element_type element_type;
         typedef typename functionspace_type::element_ptrtype element_ptrtype;
         //--------------------------------------------------------------------//

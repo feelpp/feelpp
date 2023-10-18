@@ -8,7 +8,8 @@ import feelpp.interpolation as I
 from feelpp.toolboxes.fluid import *
 
 
-@pytest.mark.order("first")
+#@pytest.mark.order("first")
+
 def test_fluid1():
     feelpp.Environment.setConfigFile('fluid/TurekHron/cfd1.cfg')
     # 2D fluid solver using P2P1G1 approximation

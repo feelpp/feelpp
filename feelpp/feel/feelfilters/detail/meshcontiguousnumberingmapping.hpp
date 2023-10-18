@@ -350,20 +350,20 @@ struct MeshContiguousNumberingMapping
     std::string const& name( int part ) const
         {
             auto itFindPart = M_partIdToRangeElement.find( part );
-            CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registerd";
+            CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registered";
             return std::get<0>( itFindPart->second );
         }
     range_element_type const& rangeElement( int part ) const
         {
             auto itFindPart = M_partIdToRangeElement.find( part );
-            CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registerd";
+            CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registered";
             return std::get<1>( itFindPart->second );
         }
 
     std::unordered_map<index_type,std::pair<index_type,point_ref_type>> const& pointIdToContiguous( int part ) const
         {
             auto itFindData = M_pointIdToContiguous.find( part );
-            CHECK( itFindData != M_pointIdToContiguous.end() ) << "part not registerd";
+            CHECK( itFindData != M_pointIdToContiguous.end() ) << "part not registered";
             return itFindData->second;
         }
     index_type pointIdToContiguous( int part, index_type ptId ) const
@@ -380,7 +380,7 @@ struct MeshContiguousNumberingMapping
     std::unordered_map<index_type,index_type> const& elementIdToContiguous( int part ) const
         {
             auto itFindData = M_elementIdToContiguous.find( part );
-            CHECK( itFindData == M_elementIdToContiguous.end() ) << "part not registerd";
+            CHECK( itFindData == M_elementIdToContiguous.end() ) << "part not registered";
             return itFindData->second;
         }
     index_type elementIdToContiguous( int part, index_type eltId ) const
@@ -397,13 +397,13 @@ struct MeshContiguousNumberingMapping
     std::vector<index_type> const& pointIdsInElements( int part ) const
         {
             auto itFindPointIdsInElements =  M_pointIdsInElements.find( part );
-            CHECK( itFindPointIdsInElements != M_pointIdsInElements.end() ) << "part not registerd";
+            CHECK( itFindPointIdsInElements != M_pointIdsInElements.end() ) << "part not registered";
             return itFindPointIdsInElements->second;
         }
     std::vector<storage_node_value_type> const& nodes( int part ) const
         {
             auto itFindNodes =  M_nodes.find( part );
-            CHECK( itFindNodes != M_nodes.end() ) << "part not registerd";
+            CHECK( itFindNodes != M_nodes.end() ) << "part not registered";
             return itFindNodes->second;
         }
 
@@ -518,7 +518,7 @@ struct MeshPoints
 //!  @param it Starting iterator over the faces/elements
 //!  @param en Endoing iterator over the faces/elements
 //!  @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
-//!  @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
+//!  @param renumber If true, the vertices will be renumbered with maps to keep the correspondence between the twoi, otherwise the original ids are kept
 //!  @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
 //!  @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
 //!
@@ -531,7 +531,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     auto elt_it = it;
 
     //!  Gather all the vertices of which the elements are made up with into a std::set */
-    //!  build up correspondance arrays between index in nodeset and previous id */
+    //!  build up correspondence arrays between index in nodeset and previous id */
     for ( auto eit = it; eit != en; ++eit )
     {
         auto const& elt = boost::unwrap_ref( *eit );
@@ -626,7 +626,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
                 coords[3 * i + 2] = ( T )( p.node()[2] );
             }
         }
-        //!  Fill 3nd components with 0 if told to do so */
+        //!  Fill 3rd components with 0 if told to do so */
         else
         {
             if ( fill )

@@ -1,4 +1,3 @@
-
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -22,6 +21,7 @@ feelpp_add_test( operatorinterpolation )
 feelpp_add_test( hypercubeinterpolation )
 feelpp_add_test( interpolation_grad )
 feelpp_add_test( interpolation_id )
+feelpp_add_test( operatorinterpolation_basisexpr CFG test_operatorinterpolation_basisexpr.cfg GEO test_operatorinterpolation_basisexpr_2d.geo )
 
 feelpp_add_test( interpolation_RT CFG test_interpolation_RT.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec CFG test_interpolation_Nedelec.cfg NO_MPI_TEST)
@@ -29,4 +29,3 @@ feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3d.cfg NO
 
 feelpp_add_test( darcy_on_2d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=2 CLI "--gmsh.hsize=0.1" )
 feelpp_add_test( darcy_on_3d SRCS test_darcy_on.cpp CFG test_darcy_on.cfg DEFS FEELPP_DIM=3  CLI "--gmsh.hsize=0.1" )
-

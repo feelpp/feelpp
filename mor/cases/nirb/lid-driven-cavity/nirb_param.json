@@ -1,0 +1,24 @@
+{
+    "CRBParameters":
+    {
+        "Re":
+        {
+            "min": 400,
+            "max": 20000
+        }
+    },
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": 2,
+        "order": 1,
+        "toolboxType": "fluid",
+        "geo_path": "$cfgdir/lid-driven-cavity/cfd2d.geo",
+        "model_path": "$cfgdir/lid-driven-cavity/cfd2d.json",
+        "doRectification": true,
+        "doBiorthogonalization": false,
+        "nbSnapshots": 10
+    }
+}

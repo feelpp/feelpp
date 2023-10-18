@@ -35,9 +35,17 @@ SET( CMAKE_MODULE_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
-if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "python" )
-  find_package(Feel++ COMPONENTS Toolboxes MOR PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
+list(FIND FEELPP_COMPONENT "mor" COMPONENT_MOR)
+list(FIND FEELPP_COMPONENT "python" COMPONENT_PYTHON )
+
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR COMPONENT_PYTHON GREATER -1 )
+  if ( COMPONENT_MOR GREATER -1 )
+    find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+    set(FEELPP_MOR_FOUND TRUE)
+  else()
+    find_package(Feel++ COMPONENTS Toolboxes MOR PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules)
+  endif()
+    if(NOT FEELPP_FOUND)
     message(FATAL_ERROR "[python] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   else()
     message(STATUS "[python] found Feel++ library")
@@ -50,7 +58,7 @@ if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STRE
     if (NOT FEELPP_MOR_FOUND)
     message(WARNING "[python] Feel++ was not installed with mor component")
   else()
-    message(STATUS "[python] found Feel++ toolboxes")
+    message(STATUS "[python] found Feel++ mor")
   endif()
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
@@ -61,10 +69,15 @@ else()
   feelpp_get_environment()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
    set(FEELPP_FOUND ON)
-  set(FEELPP_TOOLBOXES_FOUND ON)
-  set(FEELPP_MOR_FOUND ON)
+  set(FEELPP_TOOLBOXES_FOUND ${FEELPP_ENABLE_TOOLBOXES})
+  set(FEELPP_MOR_FOUND ${FEELPP_ENNABLE_MOR})
 endif()
 
+find_package(Python3 COMPONENTS Interpreter Development)
+message(STATUS "[feelpp/python] Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")
+message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
 
 if ( FEELPP_HAS_PYTHON )
   message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
@@ -72,11 +85,11 @@ if ( FEELPP_HAS_PYTHON )
   if ( MPI4PY_FOUND )
     message(STATUS "[feelpp-python] mpi4py header ${MPI4PY_INCLUDE_DIR}")
   endif()
-  find_package(PETSC4PY REQUIRED)
+  find_package(PETSC4PY)
   if ( PETSC4PY_FOUND )
     message(STATUS "[feelpp-python] petsc4py header ${PETSC4PY_INCLUDE_DIR}")
   endif()
-  find_package(SLEPC4PY REQUIRED)
+  find_package(SLEPC4PY)
   if ( SLEPC4PY_FOUND )
     message(STATUS "[feelpp-python] slepc4py header ${SLEPC4PY_INCLUDE_DIR}")
   endif()
@@ -107,9 +120,28 @@ macro(feelpp_add_pymodule)
   endif()
 endmacro(feelpp_add_pymodule)
 
+option(FEELPP_ENABLE_PYTHON3_VENV ON)
+if (FEELPP_ENABLE_PYTHON3_VENV)
+  set(REQUIREMENTS ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt)
+  set(VENV ${CMAKE_CURRENT_BINARY_DIR}/venv)
+  set(BIN_DIR ${VENV}/bin)
+  set(PYTHON ${BIN_DIR}/python)
+  
+  add_custom_command(
+    OUTPUT ${PYTHON}
+    DEPENDS venv requirements.txt
+    COMMAND ${Python3_EXECUTABLE} -m venv ${VENV}
+    COMMAND ${BIN_DIR}/pip install -r ${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt 
+    DEPENDS ${REQUIREMENTS}
+  )
+  add_custom_target(venv DEPENDS ${PYTHON})
+  #add_dependencies(test venv)
+endif(FEELPP_ENABLE_PYTHON3_VENV)
+
 #include(feelpp.module.pyfeelpp)
 if ( FEELPP_FOUND )
 add_subdirectory(pyfeelpp)
+add_subdirectory(notebooks)
 endif()
 
 # TOOLBOXES needs to be defined for pyfeelpp-toolboxes 

@@ -508,7 +508,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
         subPt.clear();
         subPt.emplace( "type", M_stabilizationGLSType );
         if ( M_stabilizationGLSParameter )
-            subPt.emplace( "paramter method", M_stabilizationGLSParameter->method() );
+            subPt.emplace( "parameter method", M_stabilizationGLSParameter->method() );
         p["Finite element stabilization"] = subPt;
     }
 
@@ -644,7 +644,7 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
         *_ostr << "\n   Finite element stabilization"
                << "\n     -- type : " << M_stabilizationGLSType;
         if ( M_stabilizationGLSParameter )
-            *_ostr << "\n     -- paramter method : " << M_stabilizationGLSParameter->method();
+            *_ostr << "\n     -- parameter method : " << M_stabilizationGLSParameter->method();
     }
     if ( this->algebraicFactory() )
         *_ostr << this->algebraicFactory()->getInfo()->str();

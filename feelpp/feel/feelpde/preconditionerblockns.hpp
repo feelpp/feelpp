@@ -74,9 +74,9 @@ public:
 
     typedef typename space_type::value_type value_type;
 
-    static const uint16_type Dim = space_type::nDim;
-    static const uint16_type uOrder = velocity_space_type::basis_type::nOrder;
-    static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
+    static inline const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type uOrder = velocity_space_type::basis_type::nOrder;
+    static inline const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
     typedef OperatorMatrix<value_type> op_mat_type;
     typedef std::shared_ptr<op_mat_type> op_mat_ptrtype;

@@ -257,14 +257,23 @@ using d_tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const double,2>
 template<int Dim,typename T=double>
 using eigen_vector_type = Eigen::Matrix<T,Dim,1>;
 
+template <typename T = double>
+using eigen_vector_x_col_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+
+template <int Dim, typename T = double>
+using eigen_vector_x_row_type = Eigen::Matrix<T, 1, Eigen::Dynamic>;
+
 template<int Dim,typename T=double>
 using vector_eigen_vector_type = std::vector<eigen_vector_type<Dim,T>,Eigen::aligned_allocator<eigen_vector_type<Dim,T>>>;
 
 template<int N = Eigen::Dynamic, int P = Eigen::Dynamic, typename T=double>
 using eigen_matrix_type = Eigen::Matrix<T,N,P>;
 
-template<typename T=double>
-using eigen_matrix_xx_col_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>;
+template <typename T = double>
+using eigen_matrix_xx_type = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+template <typename T = double>
+using eigen_matrix_xx_col_type = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 
 template<int N, int P,typename T=double>
 using vector_eigen_matrix_type = std::vector<eigen_matrix_type<N,P,T>,Eigen::aligned_allocator<eigen_matrix_type<N,P,T>>>;

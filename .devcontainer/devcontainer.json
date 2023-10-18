@@ -1,26 +1,33 @@
 {
 	"name": "Feel++",
-	"dockerFile": "Dockerfile",
-	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
 
-	// Use 'settings' to set *default* container specific settings.json values on container create. 
-	// You can edit these settings after create using File > Preferences > Settings > Remote.
-	"settings": { 
-		"terminal.integrated.shell.linux": "/bin/bash"
-	},
+	// feelpp-dev images are available for the following distributions:
+	//"image": "ghcr.io/feelpp/feelpp-dev:focal",
+	//"image": "ghcr.io/feelpp/feelpp-dev:jammy",
+	//"image": "ghcr.io/feelpp/feelpp-dev:kinetic",
+	//"image": "ghcr.io/feelpp/feelpp-dev:lunar",
+	//"image": "ghcr.io/feelpp/feelpp-dev:bookworm",
+	//"image": "ghcr.io/feelpp/feelpp-dev:sid",
+	//"image": "ghcr.io/feelpp/feelpp-dev:testing",
 
-	// Use 'appPort' to create a container with published ports. If the port isn't working, be sure
-	// your server accepts connections from all interfaces (0.0.0.0 or '*'), not just localhost.
-	// "appPort": [],
-
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "gcc -v",
-
-	// Comment out the next line if you want to run as root instead
-	"remoteUser": "vscode",
-
+	// feelpp-env images are available for the following distributions:
+	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-20.04",
+	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-22.04",
+	//"image": "ghcr.io/feelpp/feelpp-env:debian-11",
+	"image": "ghcr.io/feelpp/feelpp-env:debian-12",
+	//"image": "ghcr.io/feelpp/feelpp-env:debian-testing",
+	//"image": "ghcr.io/feelpp/feelpp-env:debian-sid",
+	//"image": "ghcr.io/feelpp/feelpp-env:fedora-36",
+	//"image": "ghcr.io/feelpp/feelpp-env:fedora-37",
+	
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
-		"ms-vscode.cpptools"
+		"ms-vscode.cpptools",
+		"ms-vscode.cmake-tools",
+		"josetr.cmake-language-support-vscode",
+		"asciidoctor.asciidoctor-vscode",
+		"ms-python.python",
+		"ms-toolsai.jupyter",
+		"ms-vsliveshare.vsliveshare"
 	]
 }

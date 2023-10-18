@@ -409,7 +409,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = PetscInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = PetscInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = PetscInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -426,7 +426,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = SlepcInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = SlepcInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -443,7 +443,12 @@ Environment::Environment( int argc, char** argv,
                           AboutData const& about,
                           Repository::Config const& config )
 {
-    if ( argc == 0 )
+    // we can initialized only once
+    if (S_initialized)
+        return;
+    S_initialized = true;
+    
+    if ( argc == 0 )    
     {
 #if BOOST_VERSION >= 105500
         M_env = std::make_unique<boost::mpi::environment>(lvl, false);
@@ -959,7 +964,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
     {
         for ( boost::shared_ptr<po::option_description> option : o.second )
         {
-            //Informations about the option
+            //Information about the option
             std::string optName = option->format_name().erase( 0,2 ); //Putting the option name in a variable for easier manipulations
             std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
             std::string desc=option->description(); // Option description
@@ -1247,6 +1252,12 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
 
 }
 
+void
+Environment::setLogVerbosityLevel( int v )
+{
+    LOG(INFO) << fmt::format( "set log verbosity level to {}, previously {}", v, Environment::logVerbosityLevel() );
+    FLAGS_v = v;
+}
 void
 Environment::processGenericOptions()
 {
@@ -1679,7 +1690,7 @@ Environment::setConfigFile( std::string const& cfgfile )
 bool
 Environment::initialized()
 {
-    return mpi::environment::initialized() ;
+    return S_initialized;
 }
 
 bool Environment::aborted()
@@ -1988,7 +1999,7 @@ Environment::updateInformationObject( nl::json & p ) const
                     { "number_of_processors", Environment::numberOfProcessors() }
                 } ) );
 
-        // Softwares
+        // Software
         p["/software/boost/version"_json_pointer] = BOOST_LIB_VERSION;
 #if BOOST_VERSION >= 106700
         std::stringstream mpi_version;

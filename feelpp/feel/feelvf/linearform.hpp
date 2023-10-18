@@ -191,7 +191,7 @@ public:
 
 #endif
 
-        static const uint16_type nDim = test_geometric_mapping_type::nDim;
+        static inline const uint16_type nDim = test_geometric_mapping_type::nDim;
 
         typedef ExprT expression_type;
 
@@ -577,24 +577,50 @@ public:
 
     /**
      * copy assignment operator
+     * \param lf the linear form to copy
+     * \return a reference to the current linear form
+     * \warning the linear form is cleared before the copy
+     * \warning the linear form is resized to the size of the linear form to copy if the spaces are not the same
+     * 
+     * \code
+     * auto Xh = space_type::New( mesh );
+     * auto Yh = space_type::New( mesh );
+     * auto lf1 = form1( _test=Xh );
+     * auto lf2 = form1( _test=Yh );
+     * // lf2 representation is resized to the size of lf1 representation and test space of lf2 is Xh
+     * // lf2 is cleared and lf1 is copied into lf2
+     * lf2 = lf1;
+     * auto lf3 = form1( _test=Xh );
+     * // lf3 is cleared and lf1 is copied into lf3
+     * lf3 = lf1;
+     * \endcode
      */
     LinearForm& operator=( LinearForm const& lf )
+    {
+        if ( this != &lf )
         {
-            if ( this != &lf )
+            
+            bool same_spaces = (M_X == lf.M_X);
+            if ( M_F && same_spaces )
+            {
+                M_F->zero();
+            }
+            else
             {
                 M_X = lf.M_X;
                 // clone the shared pointer vector, the clone is set to 0
                 M_F = lf.M_F->clone();
-                // add the vector contrib
-                *M_F += *lf.M_F;
-                M_lb = lf.M_lb;
-                M_row_startInVector = lf.M_row_startInVector;
-                M_do_threshold = lf.M_do_threshold;
-                M_threshold = lf.M_threshold;
-                M_dofIdToContainerId = lf.M_dofIdToContainerId;
             }
-            return *this;
+            // add the vector contrib
+            *M_F += *lf.M_F;
+            M_lb = lf.M_lb;
+            M_row_startInVector = lf.M_row_startInVector;
+            M_do_threshold = lf.M_do_threshold;
+            M_threshold = lf.M_threshold;
+            M_dofIdToContainerId = lf.M_dofIdToContainerId;
         }
+        return *this;
+    }
 
     /**
      * move assignment operator
