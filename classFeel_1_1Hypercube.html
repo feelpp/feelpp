@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.6</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.7</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -267,16 +267,16 @@ static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="m
 static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_simplex</b> = false</td></tr>
 <tr class="separator:a1207f08dc41adf102bd89966d85de607"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed4e4be4745330769782e51caddb5330"><td class="memItemLeft" align="right" valign="top"><a id="aed4e4be4745330769782e51caddb5330" name="aed4e4be4745330769782e51caddb5330"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerEdge</b> = ( nOrder==0 )?( ( nDim==1 )?1:0 ):mpl::at&lt;points_edge_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;nDim&gt; &gt;::type::value</td></tr>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerEdge</b> = ( nOrder==0 )?( ( nDim==1 )?1:0 ):(uint16_type)mpl::at&lt;points_edge_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;nDim&gt; &gt;::type::value</td></tr>
 <tr class="separator:aed4e4be4745330769782e51caddb5330"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a672ad7f308dbe775732ad23e8de22a1c"><td class="memItemLeft" align="right" valign="top"><a id="a672ad7f308dbe775732ad23e8de22a1c" name="a672ad7f308dbe775732ad23e8de22a1c"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerFace</b> = ( nOrder==0 )?( ( nDim==2 )?1:0 ):mpl::at&lt;points_face_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;nDim&gt; &gt;::type::value</td></tr>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerFace</b> = ( nOrder==0 )?( ( nDim==2 )?1:0 ):(uint16_type)mpl::at&lt;points_face_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;nDim&gt; &gt;::type::value</td></tr>
 <tr class="separator:a672ad7f308dbe775732ad23e8de22a1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a476ce934161386fcdd021fc9e0049bef"><td class="memItemLeft" align="right" valign="top"><a id="a476ce934161386fcdd021fc9e0049bef" name="a476ce934161386fcdd021fc9e0049bef"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerVertex</b> = ( nOrder==0 )?0:1</td></tr>
 <tr class="separator:a476ce934161386fcdd021fc9e0049bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3933c1c8b23577c5f77acd7617e0754b"><td class="memItemLeft" align="right" valign="top"><a id="a3933c1c8b23577c5f77acd7617e0754b" name="a3933c1c8b23577c5f77acd7617e0754b"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerVolume</b> = ( nOrder==0 )?( ( nDim==3 )?1:0 ):mpl::at&lt;points_volume_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;nDim&gt; &gt;::type::value</td></tr>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nbPtsPerVolume</b> = ( nOrder == 0 ) ? ( ( nDim == 3 ) ? 1 : 0 ) : (uint16_type)mpl::at&lt;points_volume_t, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;nDim&gt;&gt;::type::value</td></tr>
 <tr class="separator:a3933c1c8b23577c5f77acd7617e0754b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1183e8bc00eed5f65a6dba3c4a86273a"><td class="memItemLeft" align="right" valign="top"><a id="a1183e8bc00eed5f65a6dba3c4a86273a" name="a1183e8bc00eed5f65a6dba3c4a86273a"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nDim</b> = Dim</td></tr>
