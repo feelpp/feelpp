@@ -133,7 +133,7 @@ public :
 
     void setFilename( std::string const& s )
         {
-            fs::path pathJson = fs::system_complete( s );
+            fs::path pathJson = fs::canonical( s );
             M_dbFilenameJson = pathJson.filename().string();
             //std::cout << "M_dbFilenameJson : " << M_dbFilenameJson << "\n";
             M_dbRepository = pathJson.parent_path();
