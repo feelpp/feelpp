@@ -1248,8 +1248,7 @@ public:
                         else if ( mdata.template has<fs::path>() )
                         {
                             fs::path const& inputPath = mdata.template data<fs::path>();
-                            boost::system::error_code ec;
-                            fs::copy_file( inputPath, newFilePath, fs::copy_option::overwrite_if_exists, ec );
+                            fs::copy_file( inputPath, newFilePath, fs::copy_options::overwrite_existing );
                         }
                     }
                     mdata.setOnDisk();
