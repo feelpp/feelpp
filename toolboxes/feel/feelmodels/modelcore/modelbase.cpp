@@ -216,8 +216,8 @@ ModelBaseUpload::isOperational() const
 
 void
 ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
-                                   std::vector<std::tuple<std::string,std::time_t,std::string>> & resNewFile,
-                                   std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> & resReplaceFile ) const
+                                   std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string>> & resNewFile,
+                                   std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string,std::string>> & resReplaceFile ) const
 {
     fs::path dataFsPath( dataPath );
     // if dir, loop on all files/dir inside
@@ -242,8 +242,9 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
     fs::path folder = fs::path( relDataPath ).parent_path();
 
     //std::time_t dataLWT = fs::last_write_time( dataFsPath );
-    auto dataLastWriteTimePoint = fs::last_write_time( dataFsPath );
-    std::time_t dataLWT = decltype(dataLastWriteTimePoint)::clock::to_time_t( dataLastWriteTimePoint );
+    //auto dataLastWriteTimePoint = fs::last_write_time( dataFsPath );
+    //std::time_t dataLWT = decltype(dataLastWriteTimePoint)::clock::to_time_t( dataLastWriteTimePoint );
+    auto dataLWT = fs::last_write_time( dataFsPath );
 
     std::string parentId;
     auto itFindFolder = M_treeDataStructure.find( folder.string() );
@@ -277,7 +278,7 @@ ModelBaseUpload::uploadPreProcess( std::string const& dataPath,
             curFolderInTree = (k==0)? curFolderName : (fs::path(curFolderInTree)/curFolderName).string();
             auto itFindFolder2 = M_treeDataStructure.find( curFolderInTree );
             if ( itFindFolder2 == M_treeDataStructure.end() )
-                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::map<std::string,std::pair<std::string,std::time_t>>() );
+                M_treeDataStructure[ curFolderInTree ] = std::make_pair( curFolderId,std::map<std::string,std::pair<std::string,std::filesystem::file_time_type>>() );
         }
         resNewFile.push_back( std::make_tuple(dataPath, dataLWT, folder.string()/*parentId*/) );
     }
@@ -294,8 +295,8 @@ ModelBaseUpload::upload( std::string const& dataPath ) const
     if ( M_remoteData->worldComm().isMasterRank() )
     {
         // prepare datas to upload and create folders on remote server
-        std::vector<std::tuple<std::string,std::time_t,std::string>> dataPreProcessNewFile;
-        std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> dataPreProcessReplaceFile;
+        std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string>> dataPreProcessNewFile;
+        std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string,std::string>> dataPreProcessReplaceFile;
         this->uploadPreProcess( dataPath, dataPreProcessNewFile, dataPreProcessReplaceFile );
 
         if ( dataPreProcessNewFile.empty() && dataPreProcessReplaceFile.empty() )
@@ -327,7 +328,7 @@ ModelBaseUpload::upload( std::string const& dataPath ) const
             CHECK( resUpload[k].size() == 1 ) << "must be 1";
             std::string const& fileIdUploaded = resUpload[k][0];
             std::string const& dataPathUploaded = std::get<0>( dataPreProcessNewFile[k] );
-            std::time_t lwt = std::get<1>( dataPreProcessNewFile[k] );
+            std::filesystem::file_time_type lwt = std::get<1>( dataPreProcessNewFile[k] );
             std::string const& folder = std::get<2>( dataPreProcessNewFile[k] );
 
             std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
@@ -341,7 +342,7 @@ ModelBaseUpload::upload( std::string const& dataPath ) const
         for ( int k=0;k<dataPreProcessReplaceFile.size();++k )
         {
             std::string const& dataPathUploaded = std::get<0>( dataPreProcessReplaceFile[k] );
-            std::time_t lwt = std::get<1>( dataPreProcessReplaceFile[k] );
+            std::filesystem::file_time_type lwt = std::get<1>( dataPreProcessReplaceFile[k] );
             std::string const& folder = std::get<2>( dataPreProcessReplaceFile[k] );
 
             std::string relDataPathUploaded = this->relativePath( dataPathUploaded );
@@ -374,8 +375,8 @@ ModelBaseUpload::print() const
         auto const& folderData = folder.second;
         std::cout << folder.first << " [id=" << folderData.first << "]\n";
         auto const& files = folderData.second;
-        for ( auto const& fileData : files )
-            std::cout << "  -- " << fileData.first << " ["<< fileData.second << "]\n";
+        for ( auto const& [fileName,fileMeta] : files )
+            std::cout << "  -- " << fileName << " ["<< fileMeta.first << ","<< std::chrono::duration_cast<std::chrono::seconds>(fileMeta.second.time_since_epoch()).count() << "]\n";
     }
 }
 

@@ -84,7 +84,7 @@ private :
 /**
  * @brief Repository for Models
  * @ingroup ModelCore
- * 
+ *
  */
 struct ModelBaseRepository
 {
@@ -105,7 +105,7 @@ private :
 /**
  * @brief File upload helper class
  * @ingroup ModelCore
- * 
+ *
  */
 struct ModelBaseUpload
 {
@@ -124,20 +124,20 @@ struct ModelBaseUpload
     void print() const;
 private :
     void uploadPreProcess( std::string const& dataPath,
-                           std::vector<std::tuple<std::string,std::time_t,std::string>> & resNewFile,
-                           std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> & resReplaceFile ) const;
+                           std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string>> & resNewFile,
+                           std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string,std::string>> & resReplaceFile ) const;
 
 private :
     std::shared_ptr<RemoteData> M_remoteData;
     std::string M_basePath;
     // [ folder path -> ( folder id , [ filename -> file id, last write time ] ) ]
-    mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
+    mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::filesystem::file_time_type>>>> M_treeDataStructure;
 };
 
 /**
  * @brief Model base class
  * @ingroup ModelCore
- * 
+ *
  */
 class ModelBase : public JournalWatcher,
                   public std::enable_shared_from_this<ModelBase>
@@ -241,14 +241,14 @@ public :
 
     /**
      * @brief Set the Model Properties object from a filename
-     * 
+     *
      * @param filename file name
      */
     void setModelProperties( std::string const& filename );
 
     /**
      * @brief Set the Model Properties object from a json struct
-     * the json may come from python 
+     * the json may come from python
      * @param j json data structure
      */
     void setModelProperties( nl::json const& j );
