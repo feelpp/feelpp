@@ -107,7 +107,7 @@ CRBDB::lookForDB() const
         return this->dbLocalPath() / this->dbFilename();
     }
 
-    return fs::path();    
+    return fs::path();
 }
 
 bool
@@ -198,7 +198,7 @@ CRBDB::dbFromId( std::string const& id, std::string const& root )  const
     fs::path crbdb = fs::path(root) / "crbdb";
     if ( !fs::exists( crbdb ) )
         throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
-    
+
     fs::path dbbasedir = crbdb / fs::path(name()) ;
     if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
         throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
@@ -206,15 +206,15 @@ CRBDB::dbFromId( std::string const& id, std::string const& root )  const
     // try first full path
     typedef std::vector<fs::path> vec;
     vec d;
-    
+
     std::copy(fs::directory_iterator(dbbasedir), fs::directory_iterator(), std::back_inserter(d));
     std::sort(d.begin(), d.end());
-    
+
     //std::cout << "dbbasedir=" << dbbasedir.string()<< " id=" << id << std::endl;
     for( auto& dbdir : d )
     {
         //std::cout << "dbdir = " << dbdir.string() << std::endl;
-        
+
         if ( boost::ends_with( dbdir.string(), id ) )
         {
             fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
@@ -242,7 +242,8 @@ CRBDB::idFromDBLast( crb::last last ) const
         return uuids::nil_uuid();
 
     std::vector<fs::path> d;
-    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    //typedef std::multimap<std::time_t, fs::path> result_set_t;
+    typedef std::multimap<std::filesystem::file_time_type, fs::path> result_set_t;
     result_set_t result_set;
 
     for( auto const& dd: boost::make_iterator_range( fs::directory_iterator(dir),{} ) )
@@ -252,7 +253,7 @@ CRBDB::idFromDBLast( crb::last last ) const
         {
             if ( last == crb::last::created )
             {
-                result_set.insert(result_set_t::value_type(fs::last_write_time(dd.path()), dbfilename));
+                result_set.insert(result_set_t::value_type( fs::last_write_time(dd.path()), dbfilename));
             }
             else if ( last == crb::last::modified )
             {
@@ -285,7 +286,7 @@ CRBDB::dbLast( crb::last last, std::string const& root ) const
     // try first full path
     typedef std::vector<fs::path> vec;
     vec d;
-    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    typedef std::multimap<std::filesystem::file_time_type, fs::path> result_set_t;
     result_set_t result_set;
 
     for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )
@@ -313,7 +314,7 @@ CRBDB::dbLast( crb::last last, std::string const& root ) const
 }
 
 void
-CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root ) 
+CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root )
 {
     this->loadDB( dbLast( last, root ).string(), l );
 }

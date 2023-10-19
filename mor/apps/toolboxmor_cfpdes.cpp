@@ -4,7 +4,7 @@
 
 using namespace Feel;
 
-void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
+void writeErrors(std::ofstream& out, std::vector<std::vector<double> > const& err)
 {
     if( out && Environment::isMasterRank() )
     {
@@ -178,9 +178,9 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
         stdev[n] = accum/size;
     }
 
-    fs::ofstream cvgErr( "err.dat" );
-    fs::ofstream cvgErrR( "errR.dat" );
-    fs::ofstream cvgStat( "stat.dat" );
+    std::ofstream cvgErr( "err.dat" );
+    std::ofstream cvgErrR( "errR.dat" );
+    std::ofstream cvgStat( "stat.dat" );
     writeErrors(cvgErr, errs);
     writeErrors(cvgErrR, errsRel);
     if( cvgStat && Environment::isMasterRank() )
@@ -208,7 +208,7 @@ int runSimulation(std::shared_ptr<FeelModels::coefficient_form_PDEs_t<ConvexType
 
 int main( int argc, char** argv)
 {
-    try 
+    try
     {
         po::options_description opt("options");
         opt.add_options()

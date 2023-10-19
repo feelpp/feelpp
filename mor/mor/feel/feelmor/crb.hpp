@@ -11711,7 +11711,7 @@ CRB<TruthModelType>::saveDB()
 
     if ( this->worldComm().isMasterRank() )
     {
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
         if ( ofs )
         {
             // boost::archive::text_oarchive oa( ofs );
@@ -11747,7 +11747,7 @@ CRB<TruthModelType>::loadDB()
         return false;
     }
     //std::cout << "Loading " << db << "...\n";
-    fs::ifstream ifs( db );
+    std::ifstream ifs( db );
 
     if ( ifs )
     {
