@@ -1112,15 +1112,15 @@ IndexSplit::parseFieldsDef( std::string s )
                 if ( s.substr(index,1) == ")" )
                 {
                     ++nSplit;
-                    int splitId;                    
-                    
+                    int splitId;
+
                     // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
                     // or as in 2:12:3 -> {2,5,8,11}
                     if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
                     {
                         // Split the string using ":"
-                        auto interval_string = s.substr(index-indexLength,indexLength).c_str();
-                        std::vector<std::string> interval_list;                        
+                        std::string interval_string = s.substr(index-indexLength,indexLength);
+                        std::vector<std::string> interval_list;
                         boost::split(interval_list, interval_string, boost::is_any_of(":"));
 
                         if( interval_list.size() == 2 ) // insert all integers between the extrema
@@ -1138,7 +1138,7 @@ IndexSplit::parseFieldsDef( std::string s )
                             for(int i=left_extremum; i<right_extremum; i += step )
                                 res[fieldId].insert( i );
                         }
-                        
+
                         find=true;
                         index += 2;
                     }
@@ -1148,7 +1148,7 @@ IndexSplit::parseFieldsDef( std::string s )
                         res[fieldId].insert( splitId );
                         find=true;
                         index+=2;
-                    } 
+                    }
                 }
                 else
                 {
@@ -1156,14 +1156,14 @@ IndexSplit::parseFieldsDef( std::string s )
                     {
                         ++nSplit;
                         int splitId;
-                        
+
                         // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
                         // or as in 2:12:3 -> {2,5,8,11}
                         if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
                         {
                             // Split the string using ":"
-                            auto interval_string = s.substr(index-indexLength,indexLength).c_str();
-                            std::vector<std::string> interval_list;                            
+                            std::string interval_string = s.substr(index-indexLength,indexLength);
+                            std::vector<std::string> interval_list;
                             boost::split(interval_list, interval_string, boost::is_any_of(":"));
 
                             if( interval_list.size() == 2 ) // insert all integers between the extrema
@@ -1181,12 +1181,12 @@ IndexSplit::parseFieldsDef( std::string s )
                                 for(int i=left_extremum; i<right_extremum; i += step )
                                     res[fieldId].insert( i );
                             }
-                            
+
                             indexLength=0;
                         }
                         else // no colon in the string, hence it's only an integer
                         {
-                            splitId = boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );                            
+                            splitId = boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );
                             res[fieldId].insert( splitId );
                             indexLength=0;
                         }
