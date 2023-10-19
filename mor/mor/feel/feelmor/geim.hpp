@@ -439,7 +439,7 @@ GEIM<FunctionSpace>::saveDB()
         j["mesh"] = this->absoluteMeshFilename();
         std::ofstream o(this->absoluteJsonFilename());
         o << j.dump(2) << std::endl;
-        fs::ofstream ofs( this->absoluteDbFilename() );
+        std::ofstream ofs( this->absoluteDbFilename() );
         if ( ofs )
         {
             Feel::cout << "saving DB at " << this->absoluteDbFilename() << std::endl;
@@ -457,7 +457,7 @@ GEIM<FunctionSpace>::saveDB()
         Feel::cout << "Saving mesh to " << this->absoluteMeshFilename() << std::endl;
         M_Xh->mesh()->saveHDF5( this->absoluteMeshFilename() );
     }
-    fs::ofstream ofsp( this->absoluteDbFilenameProc() );
+    std::ofstream ofsp( this->absoluteDbFilenameProc() );
     if( ofsp )
     {
         boost::archive::binary_oarchive oa( ofsp );
@@ -476,7 +476,7 @@ GEIM<FunctionSpace>::loadDB( std::string const& filename, crb::load l )
     if( !fs::exists(filename) )
         return;
 
-    fs::ifstream ifs( filename );
+    std::ifstream ifs( filename );
     if ( ifs )
     {
         Feel::cout << "loading DB at " << filename << std::endl;
@@ -511,7 +511,7 @@ GEIM<FunctionSpace>::loadDB( std::string const& filename, crb::load l )
             auto mesh = loadMesh(_mesh=new mesh_type, _filename=meshfilename);
             M_Xh = functionspace_type::New(mesh);
         }
-        fs::ifstream ifsp( this->absoluteDbFilenameProc() );
+        std::ifstream ifsp( this->absoluteDbFilenameProc() );
         if( ifsp )
         {
             boost::archive::binary_iarchive ia( ifsp );

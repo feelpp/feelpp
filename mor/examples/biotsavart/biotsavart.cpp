@@ -219,7 +219,7 @@ void BiotSavartCRB<te_rb_model_type>::loadIntegrals()
         return;
     }
 
-    fs::ifstream ifs( db );
+    std::ifstream ifs( db );
     if ( ifs )
     {
         int M, N;
@@ -271,7 +271,7 @@ void BiotSavartCRB<te_rb_model_type>::saveIntegrals()
     }
     Environment::worldComm().barrier();
 
-    fs::ofstream ofs( db );
+    std::ofstream ofs( db );
     if ( ofs )
     {
         boost::archive::binary_oarchive oa( ofs );
@@ -580,7 +580,7 @@ template<typename te_rb_model_type>
 typename BiotSavartCRB<te_rb_model_type>::value_type
 BiotSavartCRB<te_rb_model_type>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
-    
+
 }
 
 using biotsavartcrbthermoelectric = BiotSavartCRB<ThermoElectric>;
