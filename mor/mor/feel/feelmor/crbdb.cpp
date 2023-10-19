@@ -71,7 +71,7 @@ CRBDB::setDBDirectory( std::string const& name, uuids::uuid const& i )
 {
     M_uuid = i;
     std::string database_subdir = fmt::format( "{}/{}", name, uuids::to_string(M_uuid) );
-    M_dbDirectory = fmt::format( "{}/crbdb/{}", Feel::Environment::rootRepository(), database_subdir );
+    M_dbDirectory = fmt::format( "{}/crbdb/{}", Feel::Environment::rootRepository().string(), database_subdir );
     LOG(INFO) << fmt::format( "[CRBDB::setDBDirectory] database directory is {}, database_subdir = {}", M_dbDirectory, database_subdir );
 }
 //! destructor
