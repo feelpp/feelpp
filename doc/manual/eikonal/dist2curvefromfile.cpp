@@ -33,7 +33,6 @@
 #include <feel/feells/reinit_fms.hpp>
 #include <feel/feells/disttocurve.hpp>
 #include <feel/feells/curveparametrizations.hpp>
-#include <boost/filesystem.hpp>
 #include <feel/feelvf/vf.hpp>
 
 
@@ -61,10 +60,10 @@ int main( int argc, char** argv )
   // fast marching
   auto fm = fms( Xh1 );
 
-  boost::filesystem::path fname( "/home/vinch/releasefeel/doc/manual/eikonal/feelCoords.particles" );
+  fs::path fname( "/home/vinch/releasefeel/doc/manual/eikonal/feelCoords.particles" );
 
-  CHECK( boost::filesystem::exists( fname ) )<<"file "
-                                             <<fname.c_str()<<" does not exist\n";
+  CHECK( fs::exists( fname ) )<<"file "
+                              <<fname.c_str()<<" does not exist\n";
   auto shape = disttocurve->fromCoordinateFile( fname );
 
   *shape = fm->march( shape, true );
