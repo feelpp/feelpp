@@ -166,11 +166,9 @@ CRBDB::db( std::string const& f )  const
 uuids::uuid
 CRBDB::idFromId( std::string const& id ) const
 {
-    auto dir = ( boost::format( "%1%/crbdb/%2%" )
-                 % Feel::Environment::rootRepository()
-                 % M_name ).str();
+    fs::path dir = Feel::Environment::rootRepository()/"crbdb"/M_name;
     if( !fs::exists(dir)  && !fs::is_directory(dir) )
-        throw std::invalid_argument(std::string("db directory ") + dir + " does not exist");
+        throw std::invalid_argument( fmt::format( "db directory {} does not exist", dir.string() ) );
 
     std::vector<fs::path> d;
 
@@ -235,9 +233,7 @@ CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root
 uuids::uuid
 CRBDB::idFromDBLast( crb::last last ) const
 {
-    auto dir = ( boost::format( "%1%/crbdb/%2%" )
-                 % Feel::Environment::rootRepository()
-                 % M_name ).str();
+    fs::path dir = Feel::Environment::rootRepository()/"crbdb"/M_name;
     if( !fs::exists(dir)  && !fs::is_directory(dir) )
         return uuids::nil_uuid();
 
