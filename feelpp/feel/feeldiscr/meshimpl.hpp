@@ -1910,7 +1910,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
     // first go through all the faces and set the points of the boundary
     // faces to be on the boundary
     LOG( INFO ) << "update boundary points...";
-    DVLOG( 2 ) << "Initially we have " << nelements( boundarypoints( this ) ) << " boundary points";
+    DVLOG( 2 ) << "Initially we have " << nelements( boundarypoints( this->shared_from_this() ) ) << " boundary points";
     for ( auto it = this->beginFace(), en = this->endFace(); it != en; ++it )
     {
         auto& face = it->second;
@@ -1928,7 +1928,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
             }
         }
     }
-    DVLOG( 2 ) << "We have now " << nelements( boundarypoints( this ) ) << " boundary points";
+    DVLOG( 2 ) << "We have now " << nelements( boundarypoints( this->shared_from_this() ) ) << " boundary points";
     LOG( INFO ) << "update boundary elements...";
     // loop through faces to set the elements having a face on the boundary
     for ( auto iv = this->beginElement(), en = this->endElement();
@@ -1972,7 +1972,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
         }
     } // loop over the elements
 #if !defined( NDEBUG )
-    DVLOG( 2 ) << "[updateOnBoundary] We have " << nelements( boundaryelements( this ) )
+    DVLOG( 2 ) << "[updateOnBoundary] We have " << nelements( boundaryelements( this->shared_from_this() ) )
                << " elements sharing a point, a edge or a face with the boundary in the database";
     // BOOST_FOREACH( auto const& e, this->boundaryElements( 0, 2, 0 ) )
     auto rangebe = this->boundaryElements( 0, 2, 0 );
@@ -3039,7 +3039,7 @@ void Mesh<Shape, T, Tag, IndexT>::encode()
     }
     M_enc_elts.clear();
 
-    auto allmarkedfaces = boundaryfaces( *this );
+    auto allmarkedfaces = boundaryfaces( this->shared_from_this() );
     auto face_it = allmarkedfaces.template get<1>();
     auto face_end = allmarkedfaces.template get<2>();
 

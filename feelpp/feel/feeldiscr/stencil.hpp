@@ -644,7 +644,7 @@ public :
         // typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
         //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
         //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
-        typedef elements_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
+        typedef Range<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type,MESH_ELEMENTS> defaultrange_type;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of

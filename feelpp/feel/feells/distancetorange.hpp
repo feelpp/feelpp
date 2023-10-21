@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feells/fastmarching_impl.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/ranges.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/cst.hpp>
@@ -67,7 +68,7 @@ class DistanceToRange
         typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_distance_ptrtype;
         typedef elements_reference_wrapper_t<mesh_distance_type> range_elements_distance_type;
 
-        typedef faces_reference_wrapper_t<mesh_distance_type> range_faces_type;
+        typedef Range<mesh_distance_type,MESH_FACES> range_faces_type;
 
         //--------------------------------------------------------------------//
         static constexpr uint16_type nRealDim = functionspace_distance_type::nRealDim;
@@ -120,9 +121,9 @@ class DistanceToRange
         //--------------------------------------------------------------------//
         // Result
         template< typename RangeType >
-        element_distance_type unsignedDistance( RangeType const& rangeFaces ) const;
+        element_distance_type unsignedDistance( RangeType && rangeFaces ) const;
         template< typename RangeType >
-        element_distance_type signedDistance( RangeType const& rangeFaces ) const;
+        element_distance_type signedDistance( RangeType && rangeFaces ) const;
 
     private:
         element_distance_type unsignedDistanceToFaces( range_faces_type const& rangeFaces ) const;
@@ -194,17 +195,17 @@ DistanceToRange< FunctionSpaceType >::distanceDofToFace( size_type dofId, size_t
 template< typename FunctionSpaceType >
 template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::unsignedDistance( RangeType const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::unsignedDistance( RangeType && rangeFaces ) const
 {
-    return this->unsignedDistanceToFaces( rangeFaces );
+    return this->unsignedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
 }
 
 template< typename FunctionSpaceType >
 template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::signedDistance( RangeType const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::signedDistance( RangeType && rangeFaces ) const
 {
-    return this->signedDistanceToFaces( rangeFaces );
+    return this->signedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
 }
 
 template< typename FunctionSpaceType >

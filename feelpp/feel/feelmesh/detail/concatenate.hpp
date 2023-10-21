@@ -36,11 +36,11 @@ namespace detail
 /**
  * implementation for faces
  */
-template<typename ContainerType, typename IteratorType>
+template<typename ContainerType, typename RangeType>
 void
-concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, IteratorType it )
+concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, RangeType it )
 {
-    using face_t = filter_entity_t<IteratorType>;
+    using face_t = filter_entity_t<RangeType>;
     auto append = [&elts,&idsIn]( face_t const& e )
         {
             size_type eid = e.id();
@@ -53,11 +53,11 @@ concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<s
     std::for_each( begin( it ), end( it ), append );
 }
 
-template<typename ContainerType, typename IteratorType, typename ...Args>
+template<typename ContainerType, typename RangeType, typename ...Args>
 void
-concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, IteratorType it, Args... args )
+concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, RangeType it, Args... args )
 {
-    using face_t = filter_entity_t<IteratorType>;
+    using face_t = filter_entity_t<RangeType>;
     auto append = [&elts,&idsIn]( face_t const& e )
         {
             size_type eid = e.id();
@@ -72,21 +72,21 @@ concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<s
 }
 
 
-template<typename IteratorType, typename ...Args>
-ext_entities_from_iterator_t<IteratorType>
-concatenate_impl( IteratorType it, Args... args )
+template<typename RangeType, typename ...Args>
+auto
+concatenate_impl( RangeType&& it, Args... args )
 {
-    using face_t = filter_entity_t<IteratorType>;
+    using face_t = filter_entity_t<RangeType>;
     typedef std::vector<boost::reference_wrapper<face_t const> > cont_range_type;
     std::shared_ptr<cont_range_type> myelts( new cont_range_type );
     std::unordered_set<size_type> idsIn;
     auto append = [&myelts,&idsIn]( face_t const& e ) { myelts->push_back( boost::cref(e) ); idsIn.insert( e.id() ); };
     std::for_each( begin( it ), end( it ), append );
     concatenate_entities( myelts, idsIn, args... );
-    return boost::make_tuple( filter_enum_t<IteratorType>(),
+    return range( _range = boost::make_tuple( filter_enum_t<RangeType>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ), _mesh = it.mesh() );
 }
 
 } // detail

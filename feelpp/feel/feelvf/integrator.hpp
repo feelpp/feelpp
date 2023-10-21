@@ -250,8 +250,9 @@ public:
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts(),
-        M_eltbegin( elts.template get<1>() ),
-        M_eltend( elts.template get<2>() ),
+        M_eltbegin( elts.begin() ),
+        M_eltend( elts.end() ),
+        M_wc( elts.worldCommPtr() ),
         M_im( __im ),
         M_im2( __im2 ),
         M_expr( __expr ),
@@ -262,6 +263,8 @@ public:
         M_partitioner( partitioner ),
         M_QPL( qpl )
     {
+        if ( !M_wc )
+            throw std::runtime_error( "Integrator: worldcomm is null" );
         M_elts.push_back( elts );
         DLOG(INFO) << "im quad order : " << M_im.order();
         DLOG(INFO) << "im quad1 order : " << M_im2.order();
@@ -278,6 +281,7 @@ public:
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts( elts ),
+        M_wc( Environment::worldCommPtr() ),
         M_im( __im ),
         M_im2( __im2 ),
         M_expr( __expr ),
@@ -293,6 +297,7 @@ public:
         {
             M_eltbegin = elts.begin()->template get<1>();
             M_eltend = elts.begin()->template get<2>();
+            M_wc = elts.begin()->worldCommPtr();
         }
     }
 
@@ -301,6 +306,7 @@ public:
         M_elts( __vfi.M_elts) ,
         M_eltbegin( __vfi.M_eltbegin ),
         M_eltend( __vfi.M_eltend ),
+        M_wc( __vfi.M_wc ),
         M_im( __vfi.M_im ),
         M_im2( __vfi.M_im2 ),
         M_expr( __vfi.M_expr ),
@@ -467,6 +473,11 @@ public:
         return M_eltend;
     }
 
+    worldcomm_t& worldComm() { return *M_wc; }
+    worldcomm_t const& worldComm() const { return *M_wc; }
+    worldcomm_ptr_t& worldCommPtr() { return M_wc; }
+    worldcomm_ptr_t const& worldCommPtr() const { return M_wc; }
+
     /**
      * tell whether the expression is symmetric or not
      *
@@ -515,12 +526,10 @@ public:
     template<typename T,int M, int N=1>
     decltype(auto)
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v,
-              bool parallel=true,
-              WorldComm const& worldcomm = Environment::worldComm() ) const;
+              bool parallel=parallelEvaluation ) const;
 
     matrix_type
-    evaluate( bool parallel=true,
-              worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel=parallelEvaluation ) const
      {
          typename eval::matrix_type loc = this->evaluateImpl();
 
@@ -535,9 +544,9 @@ public:
             // and thus argument worldComm can be remove
             // auto const& worldcomm = const_cast<MeshBase<>*>( this->beginElement()->mesh() )->worldComm();
 
-            if ( worldcomm->localSize() > 1 )
+            if ( M_wc->localSize() > 1 )
             {
-                mpi::all_reduce( worldcomm->localComm(),
+                mpi::all_reduce( M_wc->localComm(),
                                  loc,
                                  glo,
                                  [] ( matrix_type const& x, matrix_type const& y )
@@ -850,6 +859,7 @@ private:
     std::list<Elements> M_elts;
     element_iterator M_eltbegin;
     element_iterator M_eltend;
+    worldcomm_ptr_t M_wc;
     mutable im_type M_im;
     mutable im2_type M_im2;
     expression_type   M_expr;
@@ -4873,8 +4883,7 @@ generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, Ex
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename T, int M,int N>
 decltype(auto)
-Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v,
-                                               bool parallel, WorldComm const& worldComm ) const
+Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v, bool parallel ) const
 {
     DLOG(INFO)  << "integrating over "
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
@@ -5026,12 +5035,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
     }
 
 
-    if ( !parallel || ( worldComm.localSize() == 1 ) )
+    if ( !parallel || ( M_wc->localSize() == 1 ) )
         return res;
     else
     {
         std::vector<m_t> resGlob( res.size(), m_t::Zero() );
-        mpi::all_reduce( worldComm.localComm(),
+        mpi::all_reduce( M_wc->localComm(),
                          res,
                          resGlob,
                          [] ( std::vector<m_t> const& x, std::vector<m_t> const& y )
