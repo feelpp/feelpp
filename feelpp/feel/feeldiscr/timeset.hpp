@@ -612,7 +612,7 @@ public:
             {
                 this->add( __n, __n, expr, rep );
             }
-        template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
         void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
@@ -629,7 +629,7 @@ public:
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
             }
 
-        template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
         void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
@@ -650,7 +650,7 @@ public:
                         this->addExpr<true>( nameUsed,fnameUsed,expr,rangElt );
                 }
             }
-        template<bool IsNodal,typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        template<bool IsNodal,typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
         FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangeElt )
             {
                 tic();

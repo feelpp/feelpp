@@ -164,7 +164,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     // if same mesh but not same function space (different order)
     if ( f.functionSpace()->mesh()->isSameMesh( space->mesh() ) )
     {
-        elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
+        Range<typename FunctionType::functionspace_type::mesh_type,MESH_ELEMENTS> rangeElt;
         bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
         bool hasMeshSupportPartialImage = space->dof()->hasMeshSupport() && space->dof()->meshSupport()->isPartialSupport();
         if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )

@@ -735,10 +735,10 @@
             r_type M_right;                                            \
         }; /* tensor */                                                 \
         evaluate_type                                                   \
-            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
+            evaluate(bool p ) const  \
         {                                                               \
-            auto leval = M_left.evaluate(p,worldcomm).template cast<value_type>(); \
-            auto reval = M_right.evaluate(p,worldcomm).template cast<value_type>(); \
+            auto leval = M_left.evaluate(p).template cast<value_type>(); \
+            auto reval = M_right.evaluate(p).template cast<value_type>(); \
             if ( leval.rows() == 1 && leval.cols() == 1 )               \
             {                                                           \
                 if ( reval.rows() == 1 && reval.cols() == 1 )           \

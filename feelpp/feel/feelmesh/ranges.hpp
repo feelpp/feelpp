@@ -46,6 +46,8 @@ using entities_reference_wrapper_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_EL
                                                                                      > 
                                                                         > 
                                                           >;
+template <typename GeoShape, typename T, int Tag, typename IndexT>
+class Mesh;
 // clang-format on
 
 /**
@@ -63,13 +65,21 @@ public:
     RangeBase& operator=( RangeBase const& ) = default;
     RangeBase& operator=( RangeBase && ) = default;
     virtual ~RangeBase() = default;
-    RangeBase( std::shared_ptr<MeshBase<index_t>> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b ) {}
 
-    std::shared_ptr<MeshBase<index_t>> meshBase() { return M_mesh_base; }
-    std::shared_ptr<MeshBase<index_t>> meshBase() const { return M_mesh_base; }
+    template <typename GeoShape, typename T = double, int Tag = 0>
+    RangeBase( std::shared_ptr<Mesh<GeoShape,T,Tag,IndexT>> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
+
+    template <typename GeoShape, typename T = double, int Tag = 0>
+    RangeBase( std::shared_ptr<Mesh<GeoShape,T,Tag,IndexT> const> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
+
+    RangeBase( MeshBase<index_t> const* b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b ) {}
+
+    MeshBase<index_t> const* meshBase() const { return M_mesh_base; }
 
 protected:
-    std::shared_ptr<MeshBase<index_t>> M_mesh_base;
+    //std::weak_ptr<MeshBase<index_t>> M_mesh_base;
+    //std::weak_ptr<MeshBase<index_t> const> M_mesh_base;
+    MeshBase<index_t> const* M_mesh_base;
 
 };
 
@@ -85,18 +95,20 @@ class FEELPP_EXPORT Range
     using mesh_ptr_t = std::shared_ptr<const mesh_t>;
     using index_type = typename mesh_t::index_type;
     using index_t = index_type;
+    using idim_t = typename boost::tuples::template element<0, super>::type;
+    using iterator_t = typename boost::tuples::template element<1, super>::type;
 
-    static constexpr int mesh_entities = MESH_ENTITIES;
+    static constexpr int mesh_entities = MESH_ENTITIES; // idim_t
     static constexpr int nDim = mesh_t::nDim;
     static constexpr int nRealDim = mesh_t::nRealDim;
 
 
     Range() = default;
     Range( Range const& e ) = default;
-    Range( Range && e ) = default;
-    Range( super const& e ) : super( e ) {}
-    Range( super && e ) : super( std::move( e ) ) {}
+    Range( Range && e ) =  default;
     ~Range() = default;
+    template <typename OtherMeshType>
+    Range( Range<OtherMeshType, MESH_ENTITIES> const& other ) : super(other), super_range(other) {}
 
     static constexpr int entities() { return MESH_ENTITIES; }
     static constexpr bool isOnElements() { return mesh_entities == MESH_ELEMENTS;  }
@@ -105,29 +117,65 @@ class FEELPP_EXPORT Range
     static constexpr bool isOnFacets() { return mesh_entities == MESH_FACES; }
     static constexpr bool isOnPoints() { return mesh_entities == MESH_POINTS;  }
 
+    // Constructor for Mesh
     Range( super const& er, MeshType const& m, int marker, int pid )
-        : super( er ), M_mesh( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+        : super( er ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+    {}
+
+    // Constructor for Mesh*
+    Range( super const& er, MeshType* m, int marker, int pid )
+        : super( er ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+    {}
+
+    // Constructor for std::shared_ptr<Mesh>
+    Range( super const& er, std::shared_ptr<std::remove_const_t<MeshType>> const& m, int marker, int pid )
+        : super( er ), super_range( m ), M_marker( marker ), M_pid( pid )
+    {}
+
+    // Constructor for std::shared_ptr<const Mesh>
+    Range( super const& er, std::shared_ptr<const MeshType> const& m, int marker, int pid )
+        : super( er ), super_range( m ), M_marker( marker ), M_pid( pid )
+    {}
+
+#if 0
+    Range( super const& er, std::shared_ptr<MeshType> const& m, int marker, int pid )
+        : super( er ), super_range( m ), M_marker( marker ), M_pid( pid )
     {
     }
     Range( super const& er, std::shared_ptr<const MeshType> const& m, int marker, int pid )
-        : super( er ), M_mesh( m ), M_marker( marker ), M_pid( pid )
+        : super( er ), super_range( m ), M_marker( marker ), M_pid( pid )
     {
     }
-    Range( super const& er, std::shared_ptr<std::remove_const_t<MeshType>> const& m, int marker, int pid ): super( er ), M_mesh(m), M_marker(marker), M_pid(pid)
+
+    Range( super const& er, mesh_t const& m, int marker, int pid )
+        : super( er ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
     {
     }
-    Range( super && er, MeshType const& m, int marker, int pid )
-        : super( std::move( er ) ), M_mesh( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+    Range( super && er, mesh_t const& m, int marker, int pid )
+        : super( std::move(er) ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
     {
     }
+
+    Range( super const& er, MeshType const& m, int marker, int pid )
+        : super( er ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+    {
+    }
+#endif
+
+#if 0   
+    Range( super const& er, std::shared_ptr<std::remove_const_t<MeshType>> const& m, int marker, int pid ): super( er ), super_range(m), M_marker(marker), M_pid(pid)
+    {
+    }
+
     Range( super && er, std::shared_ptr<std::remove_const_t<MeshType>> const& m, int marker, int pid )
-        : super( std::move( er ) ), M_mesh( m ), M_marker( marker ), M_pid( pid )
+        : super( std::move( er ) ), super_range( m ), M_marker( marker ), M_pid( pid )
     {
     }
     Range( super && er, std::shared_ptr<const MeshType> const& m, int marker, int pid )
-        : super( std::move( er ) ), M_mesh( m ), M_marker( marker ), M_pid( pid )
+        : super( std::move( er ) ), super_range( m ), M_marker( marker ), M_pid( pid )
     {
     }
+#endif    
 
     Range& operator=( Range const& ) = default;
     Range& operator=( Range && ) = default;
@@ -145,8 +193,8 @@ class FEELPP_EXPORT Range
     int pid() const { return M_pid; }
     bool hasPid() const { return M_pid != -1; } 
 
+    mesh_t const& mesh() const { return  dynamic_cast<mesh_t const&>( *this->meshBase() ); }
 private:
-    mesh_ptr_t M_mesh;
     int M_marker;
     int M_pid;
 };

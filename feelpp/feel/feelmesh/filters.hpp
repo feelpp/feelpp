@@ -107,7 +107,7 @@ template <typename RangeT>
 using range_container_t = std::tuple_element_t<3, RangeT>;
 
 template <typename RangeT>
-inline constexpr bool is_range_v = is_tuple_v<RangeT> || std::is_base_of_v<RangeBase<>,RangeT>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
+inline constexpr bool is_range_v = is_tuple_v<decay_type<RangeT>> || std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
 
 
 //!
@@ -222,7 +222,7 @@ enum class select_elements_from_expression {
  *  verified expr > 0 for all nodes of the element
  */
 template <typename MeshType, typename ExprType, typename... Ts, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
-elements_pid_t<MeshType>
+Range<MeshType,MESH_ELEMENTS>
 elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -646,8 +646,8 @@ boundaryfaces( MeshType const& mesh  )
     return range( _range=Feel::detail::boundaryfaces( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
-boundaryfaces_t<MeshType>
-boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
+Range<MeshType,MESH_FACES>
+boundaryfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
 
@@ -665,10 +665,10 @@ boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ), _mesh=mesh );
 }
 
 /**
@@ -685,8 +685,8 @@ internalfaces( MeshType const& mesh )
 }
 
 template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
-internalfaces_t<MeshType>
-internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
+Range<MeshType,MESH_FACES>
+internalfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
     // store face ids to know if a face is already in the list
@@ -709,10 +709,10 @@ internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ), _mesh=mesh );
 }
 /**
  *
@@ -1572,8 +1572,8 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 //! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
 //!  touch the range of faces or edges \rangeEntity by a point/edge/faces (with respect to type arg)
 template<typename MeshType,typename EntityRangeType>
-elements_pid_t<MeshType>
-elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
+Range<MeshType,MESH_ELEMENTS>
+elements( MeshType const& mesh, Range<MeshType,ElementsType::MESH_ELEMENTS> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     std::unordered_set<size_type> entityIds;
     if constexpr ( std::is_same_v<EntityRangeType,faces_reference_wrapper_t<MeshType> > )
@@ -1691,7 +1691,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     using elements_reference_wrapper_type = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
     using marker_type = typename MeshTraits<MeshType>::element_type::marker_type;
 
-    std::map<int,std::tuple<Range<MeshType,MESH_ELEMENTS>,marker_type,std::string>> res;
+    std::map<int,std::tuple<Range<std::remove_pointer_t<std::remove_const_t<decay_type<MeshType>>>,MESH_ELEMENTS>,marker_type,std::string>> res;
 
     auto const& imesh = Feel::unwrap_ptr( mesh );
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
@@ -1732,7 +1732,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     {
         auto & [myelts,fragmentId] = fragementData;
         myelts->shrink_to_fit();
-        auto therange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=imesh.shared_from_this() );
+        auto therange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=mesh->shared_from_this() );
 
         std::string fragmentName;
         for ( auto mId : mIds )

@@ -121,9 +121,9 @@ class DistanceToRange
         //--------------------------------------------------------------------//
         // Result
         template< typename RangeType >
-        element_distance_type unsignedDistance( RangeType const& rangeFaces ) const;
+        element_distance_type unsignedDistance( RangeType && rangeFaces ) const;
         template< typename RangeType >
-        element_distance_type signedDistance( RangeType const& rangeFaces ) const;
+        element_distance_type signedDistance( RangeType && rangeFaces ) const;
 
     private:
         element_distance_type unsignedDistanceToFaces( range_faces_type const& rangeFaces ) const;
@@ -195,17 +195,17 @@ DistanceToRange< FunctionSpaceType >::distanceDofToFace( size_type dofId, size_t
 template< typename FunctionSpaceType >
 template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::unsignedDistance( RangeType const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::unsignedDistance( RangeType && rangeFaces ) const
 {
-    return this->unsignedDistanceToFaces( rangeFaces );
+    return this->unsignedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
 }
 
 template< typename FunctionSpaceType >
 template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::signedDistance( RangeType const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::signedDistance( RangeType && rangeFaces ) const
 {
-    return this->signedDistanceToFaces( rangeFaces );
+    return this->signedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
 }
 
 template< typename FunctionSpaceType >

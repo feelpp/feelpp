@@ -183,8 +183,8 @@ namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
 //namespace constants = boost::math::constants;
 //using boost::math::double_constants;
-const double pi = constants::pi<double>();
-const double two_pi = constants::two_pi<double>();
+inline const double pi = constants::pi<double>();
+inline const double two_pi = constants::two_pi<double>();
 
 namespace algorithm=boost::algorithm;
 using google::WARNING;
@@ -473,19 +473,29 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 /**
  * @brief enable reduce for mpi communication
  */
-inline const bool do_reduce = true;
+constexpr inline bool do_reduce = true;
 /**
  * @brief disable reduce for mpi communication
  */
-inline const bool no_reduce = false;
+constexpr inline bool no_reduce = false;
 /**
  * @brief enable communication for mpi communication
  */
-inline const bool do_communication = true;
+constexpr inline bool do_communication = true;
 /**
  * @brief disable communication for mpi communication
  */
-inline const bool no_communication = false;
+constexpr inline bool no_communication = false;
+
+/**
+ * @brief enable communication for mpi communication
+ */
+constexpr inline bool parallelEvaluation = true;
+
+/**
+ * @brief disable communication for mpi communication
+ */
+constexpr inline bool sequentialEvaluation = false;
 
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>

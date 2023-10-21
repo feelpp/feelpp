@@ -64,7 +64,7 @@ intersect_entities( std::shared_ptr<ContainerType> const& elts, IteratorType it,
 }
 
 template<typename IteratorType, typename ...Args>
-ext_entities_from_iterator_t<IteratorType>
+auto
 intersect_impl( IteratorType it, Args... args )
 {
     using entity_t = filter_entity_t<IteratorType>;
@@ -74,10 +74,11 @@ intersect_impl( IteratorType it, Args... args )
     auto append = [&firstelts]( entity_t const& e ) { firstelts->push_back( boost::cref(e) ); };
     std::for_each( begin( it ), end( it ), append );
     auto myelts = intersect_entities( firstelts, args... );
-    return boost::make_tuple( filter_enum_t<IteratorType>(),
+    return range( _range=boost::make_tuple( filter_enum_t<IteratorType>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ),
+                  _mesh=it.mesh() );
 }
 
 } // detail
