@@ -263,6 +263,8 @@ public:
         M_partitioner( partitioner ),
         M_QPL( qpl )
     {
+        if ( !M_wc )
+            throw std::runtime_error( "Integrator: worldcomm is null" );
         M_elts.push_back( elts );
         DLOG(INFO) << "im quad order : " << M_im.order();
         DLOG(INFO) << "im quad1 order : " << M_im2.order();
@@ -524,10 +526,10 @@ public:
     template<typename T,int M, int N=1>
     decltype(auto)
     evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v,
-              bool parallel=true ) const;
+              bool parallel=parallelEvaluation ) const;
 
     matrix_type
-    evaluate( bool parallel=true ) const
+    evaluate( bool parallel=parallelEvaluation ) const
      {
          typename eval::matrix_type loc = this->evaluateImpl();
 

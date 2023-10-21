@@ -88,18 +88,19 @@ BOOST_AUTO_TEST_CASE( test_range1 )
 
     Feel::detail::MeshContiguousNumberingMapping<decay_type<decltype(mesh)>,float> mcnm( mesh.get() );
     BOOST_TEST_MESSAGE( "test_range1 done" );
-}
 
+}
+#if 1
 BOOST_AUTO_TEST_CASE( test_range2 )
 {
     using namespace Feel;
     BOOST_TEST_MESSAGE( "test_range2" );
     
     auto mesh = unitSquare();
-    double area = integrate( _range=elements(mesh), _expr=constant(1.) ).evaluate()(0,0);
+    double area = integrate( _range=elements(mesh), _expr=expr("1")).evaluate()(0,0);
     BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     BOOST_TEST_MESSAGE( "test_range1 done" );
 }
-
+#endif
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -1376,7 +1376,7 @@ struct createMeshSupport
                 this->updateImpl<T,useMeshesList>( t );
             }
         template<typename T,bool _UseMeshesList >
-        void updateImpl( T const& t, typename std::enable_if< !_UseMeshesList >::type* = nullptr ) const
+        void updateImpl( T const& t, std::enable_if_t< !_UseMeshesList >* = nullptr ) const
             {
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
@@ -1385,7 +1385,7 @@ struct createMeshSupport
                 meshSupport = M_cms.M_meshSupport0;
             }
         template<typename T,bool _UseMeshesList >
-        void updateImpl( T const& t, typename std::enable_if< _UseMeshesList >::type* = nullptr ) const
+        void updateImpl( T const& t, std::enable_if_t< _UseMeshesList >* = nullptr ) const
             {
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
@@ -1407,11 +1407,12 @@ struct createMeshSupport
         {
             this->init<useMeshesList>(mesh);
         }
-    createMeshSupport( mesh_ptrtype const& mesh, range_elements_type const& rangeMeshElt )
+    template<typename RangeType, typename std::enable_if_t<is_range_v<RangeType>,int> = 0 >
+    createMeshSupport( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
         :
         M_mesh( mesh )
         {
-            this->init2<useMeshesList>(mesh,rangeMeshElt);
+            this->init2<useMeshesList>(mesh,std::forward<RangeType>(rangeMeshElt));
         }
     createMeshSupport( mesh_ptrtype const& mesh, mesh_support_ptrtype const& meshSupport )
         :
@@ -1439,19 +1440,19 @@ struct createMeshSupport
             mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
             boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
         }
-    template<bool _UseMeshesList >
-    void init2( mesh_ptrtype const& mesh, range_elements_type const& rangeMeshElt, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
+    template<bool _UseMeshesList, typename RangeType >
+    void init2( mesh_ptrtype const& mesh, RangeType && rangeMeshElt, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
         {
             if ( boost::get<3>( rangeMeshElt ) )
-                M_meshSupport0.reset( new mesh_support_type(mesh,rangeMeshElt) );
+                M_meshSupport0.reset( new mesh_support_type(mesh,std::forward<RangeType>(rangeMeshElt) ) );
             else
                 M_meshSupport0.reset( new mesh_support_type(mesh) );
 
             mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
             boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
         }
-    template<bool _UseMeshesList >
-    void init2( mesh_ptrtype const& mesh, range_elements_type const& rangeMeshElt, typename std::enable_if< _UseMeshesList >::type* = nullptr )
+    template<bool _UseMeshesList, typename RangeType >
+    void init2( mesh_ptrtype const& mesh, RangeType && rangeMeshElt, typename std::enable_if< _UseMeshesList >::type* = nullptr )
         {
             CHECK( false ) << "not allowed";
         }

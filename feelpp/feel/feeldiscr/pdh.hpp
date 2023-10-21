@@ -62,13 +62,13 @@ Pdh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
  Given a \p mesh, build a function space of discontinuous function which are
  piecewise polynomial of degree (total or in each variable) less than k.
  */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType>
+template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,typename RangeType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false )
+Pdh( std::shared_ptr<MeshType> mesh, RangeType && rangeElt, bool buildExtendedDofTable=false )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
-                                              _range=rangeElt,
+                                              _range=std::forward<RangeType>(rangeElt),
                                               _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                               _extended_doftable=buildExtendedDofTable );
 }

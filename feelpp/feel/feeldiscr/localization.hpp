@@ -40,7 +40,7 @@ public:
 
     using mesh_type = MeshType;
     typedef std::weak_ptr<mesh_type> mesh_ptrtype;
-    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
 
     using index_type = typename MeshType::index_type;
     using size_type = typename MeshType::size_type;
