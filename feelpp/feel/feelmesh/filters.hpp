@@ -35,8 +35,8 @@
 #include <type_traits>
 #include <utility>
 #include <unordered_set>
-#include <boost/tuple/tuple.hpp>
 #include <any>
+#include <tuple>
 #include <boost/mp11/function.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
@@ -44,11 +44,20 @@
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
+#include <feel/feelmesh/ranges.hpp>
 #include <feel/feelmesh/detail/filters.hpp>
 #include <feel/feelvf/expr.hpp>
 
+namespace std
+{
+template< std::size_t I, class T >
+struct tuple_element;
+template <size_t I, typename Tuple>
+using tuple_element_t = typename tuple_element<I,Tuple>::type;
+}
 namespace Feel
 {
+#if 0   
 template <int I, typename Tuple>
 struct tuple_element;
 template <int I, typename Head, typename... Tail>
@@ -62,7 +71,7 @@ struct tuple_element<0, boost::tuple<Head, Tail...>>
     typedef Head type;
 };
 template <int I, typename Tuple>
-using tuple_element_t = typename tuple_element<I,Tuple>::type;
+using tuple_element_t = typename std::tuple_element<I,Tuple>::type;
 
 template <typename> struct is_tuple: std::false_type {};
 
@@ -70,6 +79,12 @@ template <typename ...T> struct is_tuple<boost::tuple<T...>>: std::true_type {};
 
 template <typename T> 
 inline constexpr bool is_tuple_v = is_tuple<T>::value;
+#else // 0
+template <typename> struct is_tuple: std::false_type {};
+template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
+template <typename T>
+inline constexpr bool is_tuple_v = is_tuple<T>::value;  
+#endif // 0
 
 template<typename MeshType>
 decltype(auto)
@@ -78,17 +93,21 @@ make_elements_wrapper()
     using elt_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
     return std::make_shared<elt_wrapper_t>();
 }
-template <typename RangeT>
-using range_elementtype_t = tuple_element_t<0, RangeT>;
-template <typename RangeT>
-constexpr size_type range_elementtype_v = range_elementtype_t<RangeT>::value;
-template <typename RangeT>//, std::enable_if_t < std::is_same_v < std::tuple_element<1, RangeT>,std::tuple_element<2, RangeT>>,int> = 0 >
-using range_iterators_t = tuple_element_t<1, RangeT>;
-template <typename RangeT>
-using range_container_t = tuple_element_t<3, RangeT>;
 
 template <typename RangeT>
-inline constexpr bool is_range_v = is_tuple_v<RangeT>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
+using range_elementtype_t = std::tuple_element_t<0, RangeT>;
+
+template <typename RangeT>
+constexpr size_type range_elementtype_v = range_elementtype_t<RangeT>::value;
+
+template <typename RangeT>//, std::enable_if_t < std::is_same_v < std::tuple_element<1, RangeT>,std::tuple_element<2, RangeT>>,int> = 0 >
+using range_iterators_t = std::tuple_element_t<1, RangeT>;
+
+template <typename RangeT>
+using range_container_t = std::tuple_element_t<3, RangeT>;
+
+template <typename RangeT>
+inline constexpr bool is_range_v = is_tuple_v<decay_type<RangeT>> || std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
 
 
 //!
@@ -167,10 +186,10 @@ struct marked3elements
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-allelements_t<MeshType>
+auto
 allelements( MeshType const& mesh   )
 {
-    return Feel::detail::allelements( mesh );
+    return range( _range=Feel::detail::allelements( mesh ), _mesh = mesh );
 }
 
 /**
@@ -179,10 +198,10 @@ allelements( MeshType const& mesh   )
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,decay_type<std::remove_pointer_t<MeshType>>>,int> = 0>
-elements_pid_t<MeshType>
+auto
 elements( MeshType const& mesh )
 {
-    return Feel::detail::elements( mesh, rank( mesh ) );
+    return range( _range=Feel::detail::elements( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
 /**
@@ -203,7 +222,7 @@ enum class select_elements_from_expression {
  *  verified expr > 0 for all nodes of the element
  */
 template <typename MeshType, typename ExprType, typename... Ts, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
-elements_pid_t<MeshType>
+Range<MeshType,MESH_ELEMENTS>
 elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -293,9 +312,9 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(), myelts->end(),
-                              myelts );
+
+    auto r = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts );
+    return range( _range=r, _mesh=mesh, _pid=pid);
 }
 
 /**
@@ -305,10 +324,10 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
  * which share a face with the boundary
  */
 template<typename MeshType>
-boundaryelements_t<MeshType>
+auto
 boundaryelements( MeshType const& mesh, uint16_type entity_min_dim = 0, uint16_type entity_max_dim = 2 )
 {
-    return Feel::detail::boundaryelements( mesh, entity_min_dim, entity_max_dim, rank( mesh ) );
+    return range(_range=Feel::detail::boundaryelements( mesh, entity_min_dim, entity_max_dim, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
 
@@ -320,10 +339,10 @@ boundaryelements( MeshType const& mesh, uint16_type entity_min_dim = 0, uint16_t
  * share a face with the boundary
  */
 template<typename MeshType>
-internalelements_t<MeshType>
+auto
 internalelements( MeshType const& mesh )
 {
-    return Feel::detail::internalelements( mesh, rank( mesh ) );
+    return range(_range=Feel::detail::internalelements( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
 /**
@@ -333,10 +352,10 @@ internalelements( MeshType const& mesh )
  * mesh with marker \p flag
  */
 template<typename MeshType>
-markedelements_t<MeshType>
+auto
 markedelementsByType( MeshType const& mesh, uint16_type markerType )
 {
-    return Feel::detail::markedelements( mesh, markerType, rank( mesh ) );
+    return range(_range=Feel::detail::markedelements( mesh, markerType, rank( mesh ) ), _marker_type=markerType, _mesh=mesh, _pid=rank(mesh) );
 }
 /**
  *
@@ -345,12 +364,12 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType )
  * mesh with marker \p flag
  */
 template<typename MeshType>
-markedelements_t<MeshType>
+auto
 markedelementsByType( MeshType const& mesh, uint16_type markerType,
                       boost::any const& markersFlag )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( mesh ).markersId( markersFlag );
-    return Feel::detail::markedelements( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range=Feel::detail::markedelements( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh, _marker_type=markerType, _pid=rank( mesh ) );
 }
 /**
  *
@@ -359,7 +378,7 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType,
  * mesh with marker \p flag
  */
 template<typename MeshType>
-markedelements_t<MeshType>
+auto
 markedelementsByType( MeshType const& mesh, uint16_type markerType,
                       std::initializer_list<boost::any> const& markersFlag )
 {
@@ -370,7 +389,7 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType,
         VLOG(2) << "[markedfacesByType] flag: " << theflag << "\n";
         markerFlagSet.insert( theflag );
     }
-    return Feel::detail::markedelements( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range=Feel::detail::markedelements( mesh, markerType, markerFlagSet, rank( mesh ) ), _marker_type=markerType, _mesh=mesh, _pid=rank( mesh ) );
 }
 
 /**
@@ -380,7 +399,7 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType,
  * mesh with marker
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markedelements_t<MeshType>
+auto
 markedelements( MeshType const& mesh )
 {
     return markedelementsByType( mesh, 1 );
@@ -393,13 +412,13 @@ markedelements( MeshType const& mesh )
  * mesh with marker \p flag
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markedelements_t<MeshType>
+auto
 markedelements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 1, markersFlag );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markedelements_t<MeshType>
+auto
 markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedelementsByType( mesh, 1, markersFlag );
@@ -411,13 +430,13 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& m
  * mesh with \c Marker2 string
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked2elements_t<MeshType>
+auto
 marked2elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 2, markersFlag );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked2elements_t<MeshType>
+auto
 marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedelementsByType( mesh, 2, markersFlag );
@@ -429,13 +448,13 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * mesh with \c Marker3 string
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked3elements_t<MeshType>
+auto
 marked3elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 3, markersFlag );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked3elements_t<MeshType>
+auto
 marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedelementsByType( mesh, 3, markersFlag );
@@ -450,7 +469,7 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * mesh with marker \p flag
  */
 template<typename MeshType>
-std::map<int,markedelements_t<MeshType> >
+std::map<int, Range<MeshType, MESH_ELEMENTS>>
 collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMarkersFlag )
 {
     return Feel::detail::collectionOfMarkedelements<0>( mesh,collectionOfMarkersFlag );
@@ -475,10 +494,10 @@ collectionOfMarkedelementsWithGhostsSplitted( MeshType const& mesh, std::any con
  * \return a pair of iterators to iterate over elements with id \p flag
  */
 template<typename MeshType>
-idelements_t<MeshType>
+auto
 idedelements( MeshType const& mesh, flag_type flag )
 {
-    return Feel::detail::idedelements( mesh, flag );
+    return range( _range=Feel::detail::idedelements( mesh, flag ), _mesh=mesh );
 }
 
 /**
@@ -493,10 +512,10 @@ idedelements( MeshType const& mesh, flag_type flag )
  * @return a pair of face iterators (begin,end)
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-faces_pid_t<MeshType>
+auto
 faces( MeshType const& mesh )
 {
-    return Feel::detail::faces( mesh, rank( mesh ) );
+    return range(_range=Feel::detail::faces( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
 /**
@@ -505,32 +524,32 @@ faces( MeshType const& mesh )
  * \return a pair of iterators to iterate over elements with id \p id
  */
 template<typename MeshType>
-idfaces_t<MeshType>
+auto
 idedfaces( MeshType const& mesh, size_type id )
 {
-    return Feel::detail::idedfaces( mesh, id );
+    return range(_range=Feel::detail::idedfaces( mesh, id ), _mesh=mesh );
 }
 
 
 
 template<typename MeshType>
-markedfaces_t<MeshType>
+auto
 markedfacesByType( MeshType const& mesh, uint16_type markerType )
 {
-    return Feel::detail::markedfaces( mesh, markerType, rank( mesh ) );
+    return range( _range=Feel::detail::markedfaces( mesh, markerType, rank( mesh ) ), _mesh=mesh, _marker_type=markerType, _pid=rank(mesh) );
 }
 
 template<typename MeshType>
-markedfaces_t<MeshType>
+auto
 markedfacesByType( MeshType const& mesh, uint16_type markerType,
                    boost::any const& __marker )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( mesh ).markersId( __marker );
-    return Feel::detail::markedfaces( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range=Feel::detail::markedfaces( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh, _marker_type=markerType, _pid=rank(mesh) );
 }
 
 template<typename MeshType>
-markedfaces_t<MeshType>
+auto
 markedfacesByType( MeshType const& mesh, uint16_type markerType,
                    std::initializer_list<boost::any> const& markersFlag )
 {
@@ -541,7 +560,7 @@ markedfacesByType( MeshType const& mesh, uint16_type markerType,
         VLOG(2) << "[markedfacesByType] flag: " << theflag << "\n";
         markerFlagSet.insert( theflag );
     }
-    return Feel::detail::markedfaces( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range=Feel::detail::markedfaces( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh, _marker_type=markerType, _pid=rank(mesh) );
 }
 
 /**
@@ -556,7 +575,7 @@ markedfacesByType( MeshType const& mesh, uint16_type markerType,
  * @return a pair of iterators (begin,end) for the set of marked faces
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markedfaces_t<MeshType>
+auto
 markedfaces( MeshType const& mesh )
 {
     return markedfacesByType( mesh, 1 );
@@ -574,26 +593,26 @@ markedfaces( MeshType const& mesh )
  * @return a pair of iterators (begin,end) for the set of marked faces
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markedfaces_t<MeshType>
+auto
 markedfaces( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedfacesByType( mesh, 1, markersFlag );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markedfaces_t<MeshType>
+auto
 markedfaces( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedfacesByType( mesh, 1, markersFlag );
 }
 
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked2faces_t<MeshType>
+auto
 marked2faces( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedfacesByType( mesh, 2, markersFlag );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked2faces_t<MeshType>
+auto
 marked2faces( MeshType const& mesh,
               std::initializer_list<boost::any> const& markersFlag )
 {
@@ -601,13 +620,13 @@ marked2faces( MeshType const& mesh,
 }
 
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked3faces_t<MeshType>
+auto
 marked3faces( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedfacesByType( mesh, 3, markersFlag );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-marked3faces_t<MeshType>
+auto
 marked3faces( MeshType const& mesh,
               std::initializer_list<boost::any> markersFlag )
 {
@@ -621,14 +640,14 @@ marked3faces( MeshType const& mesh,
  * mesh
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-boundaryfaces_t<MeshType>
+auto
 boundaryfaces( MeshType const& mesh  )
 {
-    return Feel::detail::boundaryfaces( mesh, rank( mesh ) );
+    return range( _range=Feel::detail::boundaryfaces( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
-boundaryfaces_t<MeshType>
-boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
+Range<MeshType,MESH_FACES>
+boundaryfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
 
@@ -646,10 +665,10 @@ boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ), _mesh=mesh );
 }
 
 /**
@@ -659,15 +678,15 @@ boundaryfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
  * mesh belong to process domain \p __pid
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-internalfaces_t<MeshType>
+auto
 internalfaces( MeshType const& mesh )
 {
-    return Feel::detail::internalfaces( mesh, rank( mesh ) );
+    return range( _range=Feel::detail::internalfaces( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
 template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
-internalfaces_t<MeshType>
-internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
+Range<MeshType,MESH_FACES>
+internalfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
     // store face ids to know if a face is already in the list
@@ -690,10 +709,10 @@ internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ), _mesh=mesh );
 }
 /**
  *
@@ -702,10 +721,10 @@ internalfaces( MeshType const& mesh, elements_pid_t<MeshType> const& r )
  * mesh belonging to process \p __pid
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-interprocessfaces_t<MeshType>
+auto
 interprocessfaces( MeshType const& mesh )
 {
-    return Feel::detail::interprocessfaces( mesh, invalid_rank_type_value );
+    return range( _range=Feel::detail::interprocessfaces( mesh, invalid_rank_type_value ),  _mesh=mesh );
 }
 
 
@@ -716,10 +735,10 @@ interprocessfaces( MeshType const& mesh )
  * mesh belonging to process \p __pid
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-interprocessfaces_t<MeshType>
+auto
 interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
 {
-    return Feel::detail::interprocessfaces( mesh, neighbor_pid );
+    return range( _range=Feel::detail::interprocessfaces( mesh, neighbor_pid ), _mesh=mesh );
 }
 
 
@@ -735,10 +754,10 @@ interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
  * @return a pair of edge iterators (begin,end)
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-pid_edges_t<MeshType>
+auto
 edges( MeshType const& mesh )
 {
-    return Feel::detail::edges( mesh, rank( mesh ) );
+    return range( _range = Feel::detail::edges( mesh, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh) );
 }
 
 
@@ -755,30 +774,30 @@ edges( MeshType const& mesh )
  * @return a pair of iterators (begin,end) for the set of marked edges
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-markededges_t<MeshType>
+auto
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
 {
-    return Feel::detail::markededges( mesh, markerType, rank( mesh ) );
+    return range( _range = Feel::detail::markededges( mesh, markerType, rank( mesh ) ), _mesh=mesh, _marker_type=markerType );
 }
 template<typename MeshType>
-markedfaces_t<MeshType>
+auto
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
 {
     return markedfacesByType( mesh,markerType );
 }
 template<typename MeshType>
-markededges_t<MeshType>
+auto
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    boost::any const& __marker,
                    typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( mesh ).markersId( __marker );
-    return Feel::detail::markededges( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range = Feel::detail::markededges( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh, _marker_type=markerType );
 }
 template<typename MeshType>
-markedfaces_t<MeshType>
+auto
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    boost::any const& markersFlag,
                    typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
@@ -786,7 +805,7 @@ markededgesByType( MeshType const& mesh, uint16_type markerType,
     return markedfacesByType( mesh,markerType,markersFlag );
 }
 template<typename MeshType>
-markededges_t<MeshType>
+auto
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    std::initializer_list<boost::any> const& markersFlag,
                    typename std::enable_if<is_3d<MeshType>::value>::type* = nullptr )
@@ -798,10 +817,10 @@ markededgesByType( MeshType const& mesh, uint16_type markerType,
         VLOG(2) << "[markededgesByType] flag: " << theflag << "\n";
         markerFlagSet.insert( theflag );
     }
-    return Feel::detail::markededges( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range = Feel::detail::markededges( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh, _pid=rank(mesh), _marker_type=markerType );
 }
 template<typename MeshType>
-markedfaces_t<MeshType>
+auto
 markededgesByType( MeshType const& mesh, uint16_type markerType,
                    std::initializer_list<boost::any> const& markersFlag,
                    typename std::enable_if<is_2d<MeshType>::value>::type* = nullptr )
@@ -810,20 +829,21 @@ markededgesByType( MeshType const& mesh, uint16_type markerType,
 }
 
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-decltype(auto) //markededges_t<MeshType>
+auto
 markededges( MeshType const& mesh )
 {
     return markededgesByType( mesh, 1 );
 }
 
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-decltype(auto) //markededges_t<MeshType>
+auto
 markededges( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markededgesByType( mesh, 1, markersFlag );
 }
+
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-decltype(auto) //markededges_t<MeshType>
+auto
 markededges( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markededgesByType( mesh, 1, markersFlag );
@@ -837,10 +857,10 @@ markededges( MeshType const& mesh, std::initializer_list<boost::any> const& mark
  * mesh
  */
 template<typename MeshType>
-boundaryedges_t<MeshType>
+auto
 boundaryedges( MeshType const& mesh )
 {
-    return Feel::detail::boundaryedges( mesh );
+    return range( _range = Feel::detail::boundaryedges( mesh ), _mesh = mesh );
 }
 
 
@@ -851,10 +871,10 @@ boundaryedges( MeshType const& mesh )
  * mesh
  */
 template<typename MeshType>
-internaledges_t<MeshType>
+auto
 internaledges( MeshType const& mesh )
 {
-    return Feel::detail::internaledges( mesh );
+    return range( _range=Feel::detail::internaledges( mesh ), _mesh=mesh );
 }
 
 /**
@@ -863,31 +883,31 @@ internaledges( MeshType const& mesh )
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
-points_pid_t<MeshType>
+auto
 points( MeshType const& mesh )
 {
-    return Feel::detail::points( mesh );
+    return range( _range = Feel::detail::points( mesh ), _mesh=mesh );
 }
 
 
 template<typename MeshType>
-markedpoints_t<MeshType>
+auto
 markedpointsByType( MeshType const& mesh, uint16_type markerType )
 {
-    return Feel::detail::markedpoints( mesh, markerType, rank( mesh ) );
+    return range( _range = Feel::detail::markedpoints( mesh, markerType, rank( mesh ) ), _mesh = mesh, _marker_type = markerType );
 }
 
 template<typename MeshType>
-markedpoints_t<MeshType>
+auto
 markedpointsByType( MeshType const& mesh, uint16_type markerType,
                    boost::any const& __marker )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( mesh ).markersId( __marker );
-    return Feel::detail::markedpoints( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range=Feel::detail::markedpoints( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh, _marker_type=markerType );
 }
 
 template<typename MeshType>
-markedpoints_t<MeshType>
+auto
 markedpointsByType( MeshType const& mesh, uint16_type markerType,
                    std::initializer_list<boost::any> const& markersFlag )
 {
@@ -898,7 +918,7 @@ markedpointsByType( MeshType const& mesh, uint16_type markerType,
         VLOG(2) << "[markedpointsByType] flag: " << theflag << "\n";
         markerFlagSet.insert( theflag );
     }
-    return Feel::detail::markedpoints( mesh, markerType, markerFlagSet, rank( mesh ) );
+    return range( _range=Feel::detail::markedpoints( mesh, markerType, markerFlagSet, rank( mesh ) ), _mesh=mesh );
 }
 
 /**
@@ -913,7 +933,7 @@ markedpointsByType( MeshType const& mesh, uint16_type markerType,
  * @return a pair of iterators (begin,end) for the set of marked points
  */
 template<typename MeshType>
-markedpoints_t<MeshType>
+auto
 markedpoints( MeshType const& mesh )
 {
     return markedpointsByType( mesh, 1 );
@@ -929,13 +949,13 @@ markedpoints( MeshType const& mesh )
  *
  */
 template<typename MeshType>
-markedpoints_t<MeshType>
+auto
 markedpoints( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedpointsByType( mesh, 1, markersFlag );
 }
 template<typename MeshType>
-markedpoints_t<MeshType>
+auto
 markedpoints( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedpointsByType( mesh, 1, markersFlag );
@@ -947,10 +967,10 @@ markedpoints( MeshType const& mesh, std::initializer_list<boost::any> const& mar
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
-boundarypoints_t<MeshType>
+auto
 boundarypoints( MeshType const& mesh )
 {
-    return Feel::detail::boundarypoints( mesh );
+    return range( _range=Feel::detail::boundarypoints( mesh ), _mesh=mesh );
 }
 
 /**
@@ -959,10 +979,10 @@ boundarypoints( MeshType const& mesh )
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
-internalpoints_t<MeshType>
+auto
 internalpoints( MeshType const& mesh )
 {
-    return Feel::detail::internalpoints( mesh );
+    return range( _range=Feel::detail::internalpoints( mesh ), _mesh=mesh );
 }
 
 /**
@@ -980,15 +1000,15 @@ internalpoints( MeshType const& mesh )
  * \endcode
  *
  */
-template <typename RangeT, std::enable_if_t<is_range_v<RangeT>,int> = 0>
+template <typename RangeT, std::enable_if_t<is_filter_v<RangeT>,int> = 0>
 size_type
-nelements( RangeT const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
+nelements( RangeT const& r, bool global = false )
 {
-    auto is_ghost = []( auto const& cell )
+    auto is_ghost = [&r]( auto const& cell )
     {
-        if constexpr ( range_elementtype_v<RangeT> == ElementsType::MESH_FACES )
+        if constexpr ( RangeT::mesh_entities == ElementsType::MESH_FACES )
             return cell.isGhostFace();
-        else if constexpr ( range_elementtype_v<RangeT> == ElementsType::MESH_ELEMENTS )
+        else if constexpr ( RangeT::mesh_entities == ElementsType::MESH_ELEMENTS )
             return cell.isGhostCell();
         return false;
     };
@@ -1005,15 +1025,20 @@ nelements( RangeT const& its, bool global = false, worldcomm_t const& worldComm 
     {
         return ++x;
     };
-    size_type d = std::accumulate( begin( its ), end( its ), 0, count_without_ghost );
+    size_type d = std::accumulate( r.begin(), r.end(), 0, count_without_ghost );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(worldComm,
+        mpi::all_reduce(r.worldComm(),
                         d,
                         gd,
                         std::plus<size_type>());
     return gd;
-
+}
+template<typename MeshType, int Entities>
+FEELPP_DEPRECATED size_type
+nelements( std::list<Range<MeshType,Entities>> const& r, bool global, worldcomm_t const& worldComm )
+{
+   return nelements(r, global);
 }
 
 /**
@@ -1072,13 +1097,13 @@ element( ElementType const& elt  )
 
 
 template<typename MeshType>
-ext_elements_t<MeshType>
+auto
 elements( MeshType const& imesh, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
-        for ( auto const& elt : elements(mesh) )
+        for ( auto const& elt : elements(mesh.shared_from_this()) )
         {
             myelts->push_back( boost::cref( boost::unwrap_ref( elt ) ) );
         }
@@ -1107,21 +1132,21 @@ elements( MeshType const& imesh, EntityProcessType entity )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
-ext_elements_t<MeshType>
+auto
 boundaryelements( MeshType const& imesh, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
 
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
-        for ( auto const& elt : boundaryelements(mesh) )
+        for ( auto const& elt : boundaryelements(mesh.shared_from_this()) )
         {
             myelts->push_back( boost::cref( boost::unwrap_ref( elt ) ) );
         }
@@ -1153,14 +1178,14 @@ boundaryelements( MeshType const& imesh, EntityProcessType entity )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
-ext_elements_t<MeshType>
+auto
 elementsWithMarkedFaces( MeshType const& imesh, boost::any const& flag, EntityProcessType entity = EntityProcessType::LOCAL_ONLY )
 {
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
@@ -1207,14 +1232,14 @@ elementsWithMarkedFaces( MeshType const& imesh, boost::any const& flag, EntityPr
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
-ext_elements_t<MeshType>
+auto
 markedelements( MeshType const& imesh, boost::any const& flag, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
@@ -1255,14 +1280,14 @@ markedelements( MeshType const& imesh, boost::any const& flag, EntityProcessType
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
-ext_elements_t<MeshType>
+auto
 marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
@@ -1302,14 +1327,14 @@ marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessTyp
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 }
 
 template<typename MeshType>
-ext_faces_t<MeshType>
+auto
 faces( MeshType const& imesh, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
@@ -1344,16 +1369,16 @@ faces( MeshType const& imesh, EntityProcessType entity )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 
 }
 
 template<typename MeshType>
 //std::enable_if_t<std::is_base_of_v<MeshBase,unwrap_ptr_t<MeshType>>,ext_faces_t<MeshType>>
-ext_faces_t<MeshType>
+auto
 boundaryfaces( MeshType const& imesh, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
@@ -1388,10 +1413,10 @@ boundaryfaces( MeshType const& imesh, EntityProcessType entity )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                                            myelts->begin(),
+                                            myelts->end(),
+                                            myelts ), _mesh=mesh.shared_from_this() );
 
 }
 
@@ -1433,10 +1458,11 @@ marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
         }
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range = boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                                              myelts->begin(),
+                                              myelts->end(),
+                                              myelts ), 
+                  _mesh=mesh.shared_from_this(), _marker1=theflag );
 
 }
 
@@ -1496,10 +1522,11 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
         }
     }
     myedges->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              myedges->begin(),
-                              myedges->end(),
-                              myedges );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_EDGES>(),
+                                            myedges->begin(),
+                                            myedges->end(),
+                                            myedges ), 
+                  _mesh=mesh.shared_from_this() );
 
 }
 
@@ -1525,10 +1552,11 @@ idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
             myelts->push_back( boost::cref( mesh.element( eltId ) ) );
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    return range( _range= boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                             myelts->begin(),
+                                             myelts->end(),
+                                             myelts ),
+                  _mesh=mesh.shared_from_this() );
 }
 //!
 //! build a list of elements based on a list of element ids \p l from a mesh \p imesh
@@ -1544,8 +1572,8 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 //! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
 //!  touch the range of faces or edges \rangeEntity by a point/edge/faces (with respect to type arg)
 template<typename MeshType,typename EntityRangeType>
-elements_pid_t<MeshType>
-elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
+Range<MeshType,MESH_ELEMENTS>
+elements( MeshType const& mesh, Range<MeshType,ElementsType::MESH_ELEMENTS> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     std::unordered_set<size_type> entityIds;
     if constexpr ( std::is_same_v<EntityRangeType,faces_reference_wrapper_t<MeshType> > )
@@ -1639,15 +1667,13 @@ elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& ra
             myelts->push_back(boost::cref(elt));
     }
     myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelts->begin(), myelts->end(),
-                              myelts );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=mesh.shared_from_this() );
 }
 
 //! \return a pair of iterators to iterate over all elements (not ghost) which
 //!  touch the range of faces or edges rangeEntity by a point/edge/faces (with respect to type arg)
 template<typename MeshType,typename EntityRangeType>
-elements_pid_t<MeshType>
+auto
 elements( MeshType const& mesh, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     return elements( mesh, elements(mesh), rangeEntity, type );
@@ -1665,7 +1691,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     using elements_reference_wrapper_type = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
     using marker_type = typename MeshTraits<MeshType>::element_type::marker_type;
 
-    std::map<int,std::tuple<elements_pid_t<MeshType>,marker_type,std::string>> res;
+    std::map<int,std::tuple<Range<std::remove_pointer_t<std::remove_const_t<decay_type<MeshType>>>,MESH_ELEMENTS>,marker_type,std::string>> res;
 
     auto const& imesh = Feel::unwrap_ptr( mesh );
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
@@ -1706,9 +1732,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     {
         auto & [myelts,fragmentId] = fragementData;
         myelts->shrink_to_fit();
-        auto range = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                        myelts->begin(), myelts->end(),
-                                        myelts );
+        auto therange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=mesh->shared_from_this() );
 
         std::string fragmentName;
         for ( auto mId : mIds )
@@ -1718,7 +1742,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
                 fragmentName += "_";
             fragmentName += mName;
         }
-        res.emplace( fragmentId, std::make_tuple( std::move( range ), mIds, fragmentName ) );
+        res.emplace( fragmentId, std::make_tuple( std::move( therange ), mIds, fragmentName ) );
     }
     return res;
 }

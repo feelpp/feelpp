@@ -27,6 +27,7 @@
 
 #include <feel/feelmesh/meshsupportbase.hpp>
 #include <feel/feelmesh/traits.hpp>
+#include <feel/feelmesh/ranges.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/localization.hpp>
 
@@ -44,8 +45,8 @@ public :
     using super_type = MeshSupportBase;
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
-    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
-    using range_faces_type = faces_reference_wrapper_t<mesh_type>;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
+    using range_faces_type = Range<mesh_type,MESH_FACES>;
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
     static constexpr int nDim = mesh_type::nDim;
@@ -218,7 +219,7 @@ private :
             typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype myipfaces( new typename MeshTraits<mesh_type>::faces_reference_wrapper_type );
             if ( M_mesh->worldComm().localSize() == 1 )
             {
-                M_rangeInterProcessFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myipfaces->begin(),myipfaces->end(),myipfaces );
+                M_rangeInterProcessFaces = range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(), myipfaces->begin(),myipfaces->end(),myipfaces ), _mesh=M_mesh );
                 return;
             }
             // prepare data to send with mpi
@@ -305,7 +306,7 @@ private :
                     myipfaces->push_back( boost::cref( face ) );
                 }
             }
-            M_rangeInterProcessFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myipfaces->begin(),myipfaces->end(),myipfaces );
+            M_rangeInterProcessFaces = range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(), myipfaces->begin(),myipfaces->end(),myipfaces ), _mesh=M_mesh );
         }
 
     void updateBoundaryInternalFacesFullSupport() const
@@ -405,8 +406,8 @@ private :
             }
 
 
-            M_rangeBoundaryFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),mybfaces->begin(),mybfaces->end(),mybfaces );
-            M_rangeInternalFaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),myifaces->begin(),myifaces->end(),myifaces );
+            M_rangeBoundaryFaces = range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),mybfaces->begin(),mybfaces->end(),mybfaces ), _mesh=M_mesh );
+            M_rangeInternalFaces = range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),myifaces->begin(),myifaces->end(),myifaces ), _mesh=M_mesh );
         }
 
     void resetLocalizationTool() override
@@ -469,7 +470,7 @@ MeshSupport<MeshType>::rangeElements( EntityProcessType entity ) const
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
-    range_elements_type rangeExtendedElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), myExtendedElements->begin(), myExtendedElements->end(), myExtendedElements );
+    range_elements_type rangeExtendedElements = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), myExtendedElements->begin(), myExtendedElements->end(), myExtendedElements ), _mesh=M_mesh );
     return rangeExtendedElements;
 }
 
@@ -502,7 +503,7 @@ MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any fla
     {
         insertMarkedElements( eltWrap );
     }
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelements->begin(),myelements->end(),myelements );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelements->begin(),myelements->end(),myelements ), _mesh=M_mesh );
 }
 
 template<typename MeshType>
@@ -538,26 +539,26 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     {
         insertMarkedFace( eltWrap );
     }
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces ), _mesh=M_mesh );
 }
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 using support_mesh_t = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-elements_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
+auto
 elements( MeshSupportType const& imesh )
 {
     return imesh->rangeElements();
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-elements_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
+auto
 markedelements( MeshSupportType const& imesh, boost::any flag )
 {
     return imesh->rangeMarkedElements( 1, flag );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-faces_reference_wrapper_t<support_mesh_t<MeshSupportType>>
+auto
 faces( MeshSupportType const& imesh )
 {
     using mesh_type = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
@@ -570,16 +571,16 @@ faces( MeshSupportType const& imesh )
     {
         myfaces->push_back( eltWrap );
     }
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces );
+    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),myfaces->begin(),myfaces->end(),myfaces ), _mesh=imesh->mesh() );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+auto
 boundaryfaces( MeshSupportType const& imesh )
 {
     return imesh->rangeBoundaryFaces();
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> const&
+auto
 internalfaces( MeshSupportType const& imesh )
 {
     return imesh->rangeInternalFaces();
@@ -587,7 +588,7 @@ internalfaces( MeshSupportType const& imesh )
 
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
-faces_reference_wrapper_t<support_mesh_t<MeshSupportType>> 
+auto
 markedfaces( MeshSupportType const& imesh, boost::any flag )
 {
     return imesh->rangeMarkedFaces( 1, flag );

@@ -93,14 +93,14 @@ Pchv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
  */
 template<int Order,
          template<class, uint16_type, class> class Pts = PointSetFekete,
-         typename MeshType,
+         typename MeshType,typename RangeType,
          int Tag = 0>
 inline
 Pchv_ptrtype<MeshType,Order,Pts,Tag>
-Pchv( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false  )
+Pchv( MeshType&& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false  )
 {
-    return Pchv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _range=rangeElt,
+    return Pchv_type<MeshType,Order,Pts,Tag>::New( _mesh=std::forward<MeshType>(mesh),
+                                                   _range=std::forward<RangeType>(rangeElt),
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=buildExtendedDofTable );
 }

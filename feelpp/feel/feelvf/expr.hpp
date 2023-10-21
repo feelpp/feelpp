@@ -317,7 +317,7 @@ constexpr bool is_vf_expr_v = is_vf_expr<T>::value;
 template <typename T, typename = void>
 struct has_evaluate_without_context : std::false_type {};
 template <typename T>
-struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true,Feel::worldcomm_ptr_t{} )) >>
+struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true )) >>
     : std::true_type {};
 template <typename T>
 constexpr bool has_evaluate_without_context_v = has_evaluate_without_context<T>::value;
@@ -948,10 +948,12 @@ public :
         return M_expr.evaluate( mp );
     }
     evaluate_type
-    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel = true ) const
     {
         if constexpr ( has_evaluate_without_context_v<expression_type> )
-                         return M_expr.evaluate( parallel,worldcomm );
+        {
+            return M_expr.evaluate( parallel );
+        }
         else
         {
             CHECK( false ) << "expression can not be evaluated without context";
@@ -960,10 +962,10 @@ public :
     }
     template<typename T, int M, int N=1>
     decltype(auto)
-    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
-        {
-            return M_expr.evaluate( v, true, worldcomm );
-        }
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true ) const
+    {
+        return M_expr.evaluate( v, true );
+    }
     typename expression_type::value_type
     evaluateAndSum() const
     {

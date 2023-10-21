@@ -36,6 +36,7 @@
 #include <feel/feelmesh/hypercube.hpp>
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <boost/mp11/utility.hpp>
 
 namespace Feel
 {
@@ -199,17 +200,24 @@ template <typename T> struct is_geoelement: std::false_type {};
 template <typename... T>
 inline constexpr bool is_geoelement_v = is_geoelement<T...>::value;
 
-
-
+template<typename T> class RangeBase;
+template<typename T>
+using has_base_rangebase_32 = std::is_base_of<RangeBase<uint32_type>, T>;
+template<typename T>
+const bool has_base_rangebase_32_v = has_base_rangebase_32<T>::value;
+template<typename T>
+using has_base_rangebase_64 = std::is_base_of<RangeBase<uint64_type>, T>;
+template<typename T>
+const bool has_base_rangebase_64_v = has_base_rangebase_64<T>::value;
 
 
 /**
  * Filters
  */
-
-template <typename T> struct is_filter: std::false_type {};
+template <typename T> struct is_filter: boost::mp11::mp_if_c<has_base_rangebase_32_v<T> || has_base_rangebase_64_v<T>, std::true_type, std::false_type>  {};
 
 template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
+
 template <typename... T>
 constexpr bool is_filter_v = is_filter<T...>::value;
 
