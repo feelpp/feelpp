@@ -32,7 +32,7 @@
 #include <feel/feelpython/pybind11/stl.h>
 #include <feel/feelpython/pybind11/stl_bind.h>
 #include <feel/feelpython/pybind11/mpi.h>
-
+#include <pybind11/stl/filesystem.h>
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 
