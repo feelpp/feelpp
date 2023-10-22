@@ -1558,29 +1558,26 @@ typedef parameter::parameters<
  */
 //template<typename MeshType, typename Basis_t, typename T_type = double, typename PeriodicityType = NoPeriodicity>
 template<
-typename A0,
-         typename A1 = parameter::void_,
-         typename A2 = parameter::void_,
-         typename A3 = parameter::void_,
-         typename A4 = parameter::void_>
+    typename MeshTypes,
+    typename BasisTypes = Feel::bases<Lagrange<1,Scalar> >,
+    typename T = double,
+    typename PeriodicityType = Periodicity<NoPeriodicity>,
+    typename MortarType = mortars<NoMortar>>
 class FunctionSpace
     :
-public FunctionSpaceBase,
-public std::enable_shared_from_this<FunctionSpace<A0,A1,A2,A3,A4> >
+    public FunctionSpaceBase,
+    public std::enable_shared_from_this<FunctionSpace<MeshTypes,BasisTypes,T,PeriodicityType,MortarType> >
 {
 public:
-    template<typename FA0,typename FA1,typename FA2,typename FA3,typename FA4>
-    friend class FunctionSpace;
 
-    typedef typename functionspace_signature::bind<A0,A1,A2,A3,A4>::type args;
+    using meshes_list = MeshTypes;
+    using bases_list = BasisTypes;
+    using value_type = T;
+    using periodicity_type = PeriodicityType;
+    using mortar_list = MortarType;
+    using mortar_type = mortar_list;
 
-    typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
-    typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::mortar_type, mortars<NoMortar> >::type mortar_list;
-    typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
-    typedef typename parameter::binding<args, tag::bases_list, Feel::bases<Lagrange<1,Scalar> > >::type bases_list;
-
-    BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
+    static_assert(!mp11::mp_same<mp11::mp_at_c<bases_list, 0>, void>::value, "The first type in bases_list should not be void");
 
 public:
 
@@ -1809,7 +1806,7 @@ public:
     typedef typename node<value_type>::type node_type;
 
 
-    typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
+    typedef FunctionSpace<MeshTypes,BasisTypes,T,PeriodicityType,MortarType> functionspace_type;
     typedef functionspace_type space_type;
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef std::shared_ptr<functionspace_type> pointer_type;
@@ -1846,13 +1843,10 @@ public:
     /**
      * interpolate type if available
      */
-    typedef typename mpl::if_<mpl::bool_<is_modal>,
-                              mpl::identity<mpl::identity<boost::none_t>>,
-                              mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
+    using local_interpolant_type = mp11::mp_if_c<is_modal, boost::none_t, local_interpolant_t<basis_0_type>>;
 
-    typedef typename mpl::if_<mpl::bool_<is_modal>,
-                              mpl::identity<mpl::identity<boost::none_t>>,
-                              mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
+    using local_interpolants_type = mp11::mp_if_c<is_modal, boost::none_t, local_interpolants_t<basis_0_type>>;
+
     // component basis
 #if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -1869,28 +1863,21 @@ public:
     typedef std::shared_ptr<component_basis_type> component_basis_ptrtype;
 
     // trace space
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
-            mpl::identity<typename mesh_type::trace_mesh_type>,
-            mpl::identity<mpl::void_> >::type::type trace_mesh_type;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
-            mpl::identity<typename mesh_type::trace_mesh_ptrtype>,
-            mpl::identity<mpl::void_> >::type::type trace_mesh_ptrtype;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
-            mpl::identity<FunctionSpace<trace_mesh_type, bases_list> >,
-            mpl::identity<mpl::void_> >::type::type trace_functionspace_type;
-    typedef typename std::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
+    using is_trace_applicable = mp11::mp_bool<(nDim > 1)>;
+
+    using trace_mesh_type = mp11::mp_if<is_trace_applicable, typename mesh_type::trace_mesh_type, void>;
+    using trace_mesh_ptrtype = mp11::mp_if<is_trace_applicable, typename mesh_type::trace_mesh_ptrtype, void>;
+    using trace_functionspace_type = mp11::mp_if<is_trace_applicable, FunctionSpace<trace_mesh_type, bases_list>, void>;
+    using trace_functionspace_ptrtype = std::shared_ptr<trace_functionspace_type>;
+
 
     // wirebasket
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<2> >,
-            mpl::identity<typename mesh_type::trace_trace_mesh_type>,
-            mpl::identity<mpl::void_> >::type::type trace_trace_mesh_type;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<2> >,
-            mpl::identity<typename mesh_type::trace_trace_mesh_ptrtype>,
-            mpl::identity<mpl::void_> >::type::type trace_trace_mesh_ptrtype;
-    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<2> >,
-            mpl::identity<FunctionSpace<trace_trace_mesh_type, bases_list> >,
-            mpl::identity<mpl::void_> >::type::type trace_trace_functionspace_type;
-    typedef typename std::shared_ptr<trace_trace_functionspace_type> trace_trace_functionspace_ptrtype;
+    using is_trace_trace_applicable = mp11::mp_bool<(nDim > 2)>;
+
+    using trace_trace_mesh_type = mp11::mp_if<is_trace_trace_applicable, typename mesh_type::trace_trace_mesh_type, void>;
+    using trace_trace_mesh_ptrtype = mp11::mp_if<is_trace_trace_applicable, typename mesh_type::trace_trace_mesh_ptrtype, void>;
+    using trace_trace_functionspace_type = mp11::mp_if<is_trace_trace_applicable, FunctionSpace<trace_trace_mesh_type, bases_list>, void>;
+    using trace_trace_functionspace_ptrtype = std::shared_ptr<trace_trace_functionspace_type>;
 
 #if 0
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
@@ -2188,30 +2175,33 @@ public:
     /**
      * \class Element
      */
-    template<typename T = double,  typename Cont = VectorUblas<T> >
+    template<typename TT = double,  typename Cont = VectorUblas<TT> >
     class Element
         :
-        public Cont, boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
+        public Cont, boost::addable<Element<TT,Cont> >, boost::subtractable<Element<TT,Cont> >, FunctionSpaceBase::ElementBase, basis_0_type::polyset_type
     {
     public:
-        typedef T value_type;
+        typedef TT value_type;
+
+        using functionspace_type = FunctionSpace<MeshTypes,BasisTypes,T,PeriodicityType,MortarType>;
+        friend class FunctionSpace<MeshTypes,BasisTypes,T,PeriodicityType,MortarType>;
 
         template<typename BasisType,typename keyType>
         struct ChangeElement
         {
-            typedef T value_type;
+            typedef TT value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
             //typedef typename fs_type::template Element<value_type, typename Cont::range::type > element_type;
             typedef typename fs_type::template Element<value_type, Cont > element_type;
             typedef std::pair< keyType, std::shared_ptr<element_type> > the_type;
 
-            typedef typename mpl::if_<mpl::bool_<FunctionSpace<A0,A1,A2,A3,A4>::is_composite>,
+            typedef typename mpl::if_<mpl::bool_<functionspace_type::is_composite>,
                                       mpl::identity<the_type>,
                                       mpl::identity<boost::none_t> >::type::type type;
         };
 
-        typedef mpl::range_c<int,0, FunctionSpace<A0,A1,A2,A3,A4>::nSpaces> rangeElementStorageType;
+        typedef mpl::range_c<int,0, functionspace_type::nSpaces> rangeElementStorageType;
         typedef typename mpl::transform<bases_list, rangeElementStorageType, ChangeElement<mpl::_1,mpl::_2>, mpl::back_inserter<fusion::vector<> > >::type element_vector_type;
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
@@ -2233,8 +2223,6 @@ public:
         typedef typename mpl::transform<bases_list, AddOffContainer<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type container_vector_type;
 
 
-
-        typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
         using mesh_type = typename functionspace_type::mesh_type;
         using mesh_ptrtype = typename functionspace_type::mesh_ptrtype;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -2270,33 +2258,22 @@ public:
         typedef Cont container_type;
         typedef container_type vector_temporary_type;
 
-        typedef typename mpl::if_<mpl::bool_<is_composite>,
-                mpl::identity<boost::none_t>,
-                mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
+        using polyset_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::polyset_type>;
 
-        typedef typename mpl::if_<mpl::bool_<is_composite>,
-                mpl::identity<boost::none_t>,
-                mpl::identity<typename basis_0_type::PreCompute> >::type::type pc_type;
-        typedef std::shared_ptr<pc_type> pc_ptrtype;
+        using pc_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::PreCompute>;
+        using pc_ptrtype = std::shared_ptr<pc_type>;
+
         //typedef typename basis_type::polyset_type return_value_type;
         typedef typename functionspace_type::return_type return_type;
 
         typedef typename matrix_node<value_type>::type matrix_node_type;
 
-        typedef typename mpl::if_<mpl::bool_<is_composite>,
-                mpl::identity<boost::none_t>,
-                mpl::identity<typename basis_0_type::polynomial_type> >::type::type polynomial_view_type;
+        using polynomial_view_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::polynomial_type>;
 
-        /**
-         * interpolate type if available
-         */
-        typedef typename mpl::if_<mpl::bool_<is_modal>,
-                                  mpl::identity<mpl::identity<boost::none_t>>,
-                                  mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
+        using local_interpolant_type = mp11::mp_if_c<is_modal, boost::none_t, local_interpolant_t<basis_0_type>>;
 
-        typedef typename mpl::if_<mpl::bool_<is_modal>,
-                                  mpl::identity<mpl::identity<boost::none_t>>,
-                                  mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
+        using local_interpolants_type = mp11::mp_if_c<is_modal, boost::none_t, local_interpolants_t<basis_0_type>>;
+
 
         typedef Element<T,Cont> this_type;
         using self_t = this_type;
@@ -2351,7 +2328,7 @@ public:
         Element( Element&& ) = default;
         Element( Element const& __e );
 
-        friend class FunctionSpace<A0,A1,A2,A3,A4>;
+
 
 
         Element( functionspace_ptrtype const& __functionspace,
@@ -2407,7 +2384,7 @@ public:
 #endif
 
         template<typename ContOtherType>
-        Element& operator=( Element<T,ContOtherType> const& v );
+        Element& operator=( Element<TT,ContOtherType> const& v );
 
         template<typename VectorExpr>
         Element& operator=( VectorExpr const& v );
@@ -5912,15 +5889,16 @@ private:
     class ComponentSpace
     {
     public:
-        typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
-        typedef functionspace_type* functionspace_ptrtype;
-        typedef functionspace_type const* functionspace_cptrtype;
+        using functionspace_type = FunctionSpace<MeshTypes, BasisTypes, T, PeriodicityType, MortarType>;
+        using functionspace_ptrtype = functionspace_type*;
+        using functionspace_cptrtype = functionspace_type const*;
 
-        typedef typename FunctionSpace<A0,A1,A2,A3,A4>::component_functionspace_type component_functionspace_type;
-        typedef typename FunctionSpace<A0,A1,A2,A3,A4>::component_functionspace_ptrtype component_functionspace_ptrtype;
-        typedef component_functionspace_type const* component_functionspace_cptrtype;
+        using component_functionspace_type = typename functionspace_type::component_functionspace_type;
+        using component_functionspace_ptrtype = typename functionspace_type::component_functionspace_ptrtype;
+        using component_functionspace_cptrtype = component_functionspace_type const*;
 
-        ComponentSpace( FunctionSpace<A0,A1,A2,A3,A4> * __functionspace,
+
+        ComponentSpace( functionspace_ptrtype  __functionspace,
                         mesh_ptrtype __m )
             :
             M_functionspace( __functionspace ),
@@ -5943,7 +5921,7 @@ private:
 
     private:
 
-        FunctionSpace<A0,A1,A2,A3,A4> * M_functionspace;
+        functionspace_ptrtype  M_functionspace;
         mesh_ptrtype M_mesh;
     };
 public :
