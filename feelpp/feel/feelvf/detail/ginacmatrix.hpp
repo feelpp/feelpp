@@ -1294,7 +1294,7 @@ private :
                                     auto const& theexprBase = e.expr();
                                     auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))> const&>(M_expandSymbolsExpr[k2]);
 
-                                    x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
+                                    x[idx] = theexpr.evaluate( parallel )(0,0);
                                 }
                                 else
                                 {
@@ -1311,7 +1311,7 @@ private :
                                         {
                                             uint16_type c1 = compArray[0];
                                             uint16_type c2 = compArray[1];
-                                            x[idx] = theexpr.evaluate( parallel, worldcomm )(c1,c2);
+                                            x[idx] = theexpr.evaluate( parallel )(c1,c2);
                                         }
                                     }
                                 }

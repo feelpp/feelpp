@@ -106,10 +106,6 @@ using range_iterators_t = std::tuple_element_t<1, RangeT>;
 template <typename RangeT>
 using range_container_t = std::tuple_element_t<3, RangeT>;
 
-template <typename RangeT>
-inline constexpr bool is_range_v = is_tuple_v<decay_type<RangeT>> || std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
-
-
 //!
 //! @return the worldcomm associated to the mesh stored in the range
 //! @ingroup Mesh
@@ -985,102 +981,7 @@ internalpoints( MeshType const& mesh )
     return range( _range=Feel::detail::internalpoints( mesh ), _mesh=mesh );
 }
 
-/**
- * \ingroup MeshIterators
- * \return the number of elements given element iterators constructed
- * using custom range
- * \param its the mesh iterators
- * \param global all reduce number of elements if set to true
- *
- * The following code prints in the logfile the number of elements in
- * the mesh that are marked with marker1 equal to 1:
- *
- * \code
- * LOG(INFO) << "number of elements = " << nelements( myCustomRange ) << "\n";
- * \endcode
- *
- */
-template <typename RangeT, std::enable_if_t<is_filter_v<RangeT>,int> = 0>
-size_type
-nelements( RangeT const& r, bool global = false )
-{
-    auto is_ghost = [&r]( auto const& cell )
-    {
-        if constexpr ( RangeT::mesh_entities == ElementsType::MESH_FACES )
-            return cell.isGhostFace();
-        else if constexpr ( RangeT::mesh_entities == ElementsType::MESH_ELEMENTS )
-            return cell.isGhostCell();
-        return false;
-    };
-    auto count_without_ghost = [&is_ghost]( int x, auto const& c )
-    {
-            auto const& cell = unwrap_ref( c );
-            if ( !is_ghost( cell ) )
-            {
-                return ++x;
-            }
-            return x; 
-    };
-    auto count_all = []( int x, auto const& f )
-    {
-        return ++x;
-    };
-    size_type d = std::accumulate( r.begin(), r.end(), 0, count_without_ghost );
-    size_type gd = d;
-    if ( global )
-        mpi::all_reduce(r.worldComm(),
-                        d,
-                        gd,
-                        std::plus<size_type>());
-    return gd;
-}
-template<typename MeshType, int Entities>
-FEELPP_DEPRECATED size_type
-nelements( std::list<Range<MeshType,Entities>> const& r, bool global, worldcomm_t const& worldComm )
-{
-   return nelements(r, global);
-}
 
-/**
- * \ingroup MeshIterators
- * \return the number of elements given element iterators constructed
- * using custom range
- * \param a collection of mesh iterators (eg std::list or std::vector)
- * \param global all reduce number of elements if set to true
- *
- * The following code prints in the logfile the number of elements in
- * the mesh that are marked with marker1 equal to 1:
- *
- * \code
- * LOG(INFO) << "number of elements = " << nelements( markedelements(mesh,{1,2,3}) ) << "\n";
- * \endcode
- *
- */
-template <typename CollectionOfRangeT, std::enable_if_t<is_range_v<typename CollectionOfRangeT::value_type>,int> = 0>
-size_type
-nelements( CollectionOfRangeT const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
-{
-    size_type d = 0;
-    std::for_each( its.begin(), its.end(),
-                   [&d, &worldComm]( auto const& t )
-                   {
-                       d+=nelements( t, false, worldComm );
-                   } );
-    size_type gd = d;
-    if ( global )
-        mpi::all_reduce(worldComm,
-                        d,
-                        gd,
-                        std::plus<size_type>());
-    return gd;
-}
-
-template <typename RangeT, std::enable_if_t<is_range_v<RangeT>,int> = 0>
-size_type
-nelements( RangeT const& its, Zone const& z, worldcomm_t const& worldComm = Environment::worldComm() )
-{
-    return nelements( its, ( z == Zone::GLOBAL ), worldComm );
-}
 
 template<typename ElementType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,

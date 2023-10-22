@@ -65,7 +65,7 @@ template<typename MeshType, typename RangeType, typename = std::enable_if_t<is_m
 std::tuple<value_t<MeshType>, value_t<MeshType>, value_t<MeshType>>
 hMeasures( std::shared_ptr<MeshType> const& m, RangeType r )
 {
-    return hMeasures( m, elements( m ), nelements( r, Zone::GLOBAL, m->worldComm() ) );
+    return hMeasures( m, elements( m ), nelements( r, Zone::GLOBAL ) );
 }
 
 /**
