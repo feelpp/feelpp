@@ -1323,7 +1323,7 @@ boundaryfaces( MeshType const& imesh, EntityProcessType entity )
 
 
 template<typename MeshType>
-ext_faces_t<MeshType>
+auto
 marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
 {
     typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
@@ -1370,7 +1370,7 @@ marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
 
 
 template<typename MeshType>
-ext_edges_t<MeshType>
+auto
 interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_type_value, EntityProcessType entity = EntityProcessType::ALL )
 {
     typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype myedges( new typename MeshTraits<MeshType>::edges_reference_wrapper_type );
@@ -1436,7 +1436,7 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
 //! @ingroup Mesh
 //!
 template<typename MeshType, typename IteratorType>
-ext_elements_t<MeshType>
+auto
 idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
 {
     //auto myelts = make_elements_wrapper<MeshType>();
@@ -1463,7 +1463,7 @@ idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
 //! build a list of elements based on a list of element ids \p l from a mesh \p imesh
 //!
 template<typename MeshType, typename T>
-ext_elements_t<MeshType>
+auto
 idelements( MeshType const& imesh, std::vector<T> const& l )
 {
     return idelements( imesh, l.begin(), l.end() );

@@ -37,13 +37,13 @@ namespace Feel {
 namespace meta {
 template<typename MeshType,
          int Order,
-         typename Scalar = double,
+         typename T = double,
          int Tag = 0>
 struct Odh
 {
     typedef FunctionSpace<MeshType,
                           bases<OrthonormalPolynomialSet<Order,Scalar>>,
-                          Scalar,
+                          T,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
@@ -53,26 +53,26 @@ struct Odh
 
 template<typename MeshType,
          int Order,
-         typename Scalar = double,
+         typename T = double,
          int Tag = 0>
-using Odh_type = typename meta::Odh<MeshType,Order,Scalar,Tag>::type;
+using Odh_type = typename meta::Odh<MeshType,Order,T,Tag>::type;
 template<typename MeshType,
          int Order,
-         typename Scalar = double,
+         typename T = double,
          int Tag = 0>
-using Odh_ptrtype = typename meta::Odh<MeshType,Order,Scalar,Tag>::ptrtype;
+using Odh_ptrtype = typename meta::Odh<MeshType,Order,T,Tag>::ptrtype;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are
   piecewise polynomial of degree and \f$L_2\f$ Orthonormal
  */
-template<int Order,typename MeshType, typename Scalar = double, int Tag = 0>
+template<int Order,typename MeshType, typename T = double, int Tag = 0>
 inline
-Odh_ptrtype<MeshType,Order,Scalar,Tag>
+Odh_ptrtype<MeshType,Order,T,Tag>
 Odh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 {
     
-    return Odh_type<MeshType,Order,Scalar,Tag>::New( _mesh=mesh,
+    return Odh_type<MeshType,Order,T,Tag>::New( _mesh=mesh,
                                               _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
                                               _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
