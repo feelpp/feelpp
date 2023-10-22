@@ -1348,9 +1348,15 @@ public:
 
             if ( this->worldComm().localSize()>1 && this->buildDofTableMPIExtended() )
             {
-                auto rangeExtendedElements = (this->hasMeshSupport())?
-                    this->meshSupport()->rangeElements( EntityProcessType::GHOST_ONLY ) :
-                    elements( M, EntityProcessType::GHOST_ONLY );
+                Range<mesh_type,MESH_ELEMENTS> rangeExtendedElements;
+                if (this->hasMeshSupport())
+                {
+                    rangeExtendedElements = this->meshSupport()->rangeElements( EntityProcessType::GHOST_ONLY );
+                }
+                else
+                {
+                    rangeExtendedElements =  elements( M, EntityProcessType::GHOST_ONLY );
+                }
                 this->generateDofPoints( rangeExtendedElements );
                 //this->generateDofPointsExtendedGhostMap(M);
             }
@@ -2025,9 +2031,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     toc("DofTable::reordering global id in doftable", FLAGS_v>1);
     tic();
     EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    auto rangeMeshElt = (this->hasMeshSupport())?
-        this->meshSupport()->rangeElements( entityProcess ) :
-        elements( M, entityProcess );
+    Range<mesh_type,MESH_ELEMENTS> rangeMeshElt;
+    if ( this->hasMeshSupport() )
+        rangeMeshElt = this->meshSupport()->rangeElements( entityProcess );
+    else
+        rangeMeshElt = elements( M, entityProcess );
+
     for ( auto const& eltWrap : rangeMeshElt )
     {
         auto const& elt = boost::unwrap_ref(eltWrap);
