@@ -535,7 +535,7 @@ public:
         }
 
 
-        /**
+    /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p markerFlags on processor \p p
      *  - TheType=0 : only actives elements

@@ -39,12 +39,13 @@ namespace meta
 {
 
 template<typename MeshType,
-         int Order,
+         int Order,         
          template<class, uint16_type, class> class Pts = PointSetFekete,
+         typename T = double,
          int Tag = 0>
 struct Pchv
 {
-    using type = FunctionSpace<MeshType, bases<Lagrange<Order, Vectorial, Continuous, Pts, Tag>>>;
+    using type = FunctionSpace<MeshType, bases<Lagrange<Order, Vectorial, Continuous, Pts, Tag>>,T>;
     typedef std::shared_ptr<type> ptrtype;
 };
 
@@ -53,19 +54,21 @@ struct Pchv
 template<typename MeshType,
          int Order,
          template<class, uint16_type, class> class Pts = PointSetFekete,
+         typename T = double,
          int Tag = 0>
-using Pchv_type = typename meta::Pchv<MeshType,Order,Pts,Tag>::type;
+using Pchv_type = typename meta::Pchv<MeshType,Order,Pts,T,Tag>::type;
 template<typename MeshType,
          int Order,
          template<class, uint16_type, class> class Pts = PointSetFekete,
+         typename T = double,
          int Tag = 0>
-using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,Tag>::ptrtype;
+using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,T,Tag>::ptrtype;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
-using Pchv_element_t=typename Pchv_type<MeshType,Order,Pts>::element_type;
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
+using Pchv_element_t=typename Pchv_type<MeshType,Order,Pts,T,Tag>::element_type;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
-using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts>;
+template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
+using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts,T,Tag>;
 
 
 /**
@@ -76,12 +79,13 @@ using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts>;
 template<int Order,
          template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
+         typename T=double,
          int Tag = 0>
 inline
-Pchv_ptrtype<MeshType,Order,Pts,Tag>
-Pchv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
+Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
+Pchv( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false  )
 {
-    return Pchv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
+    return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
                                                    _worldscomm=makeWorldsComm(1,mesh->worldComm() ),
                                                    _extended_doftable=buildExtendedDofTable );
 }
@@ -94,12 +98,13 @@ Pchv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
 template<int Order,
          template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,typename RangeType,
+         typename T=double,
          int Tag = 0>
 inline
-Pchv_ptrtype<MeshType,Order,Pts,Tag>
-Pchv( MeshType&& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false  )
+Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
+Pchv( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false  )
 {
-    return Pchv_type<MeshType,Order,Pts,Tag>::New( _mesh=std::forward<MeshType>(mesh),
+    return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
                                                    _range=std::forward<RangeType>(rangeElt),
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=buildExtendedDofTable );

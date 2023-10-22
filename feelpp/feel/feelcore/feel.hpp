@@ -80,6 +80,11 @@
 #include <boost/mpl/begin_end.hpp>
 #include <boost/mpl/comparison.hpp>
 
+#include <boost/mp11/integral.hpp>
+#include <boost/mp11/utility.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/function.hpp>
+
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -171,6 +176,7 @@ namespace Feel
 namespace assign = boost::assign;
 namespace fs = boost::filesystem;
 namespace mpl = boost::mpl;
+namespace mp11 = boost::mp11;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
 using namespace boost::hana::literals;
