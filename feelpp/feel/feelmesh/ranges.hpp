@@ -60,6 +60,8 @@ using entities_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_ELEMENTS,
                                         >;
 template <typename GeoShape, typename T, int Tag, typename IndexT>
 class Mesh;
+template <typename GeoShape, typename T, typename IndexT>
+class MeshStructured;
 // clang-format on
 
 /**
@@ -83,6 +85,12 @@ public:
 
     template <typename GeoShape, typename T = double, int Tag = 0>
     RangeBase( std::shared_ptr<Mesh<GeoShape,T,Tag,IndexT> const> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
+
+    template <typename GeoShape, typename T = double>
+    RangeBase( std::shared_ptr<MeshStructured<GeoShape,T,IndexT> const> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
+
+    template <typename GeoShape, typename T = double>
+    RangeBase( std::shared_ptr<MeshStructured<GeoShape,T,IndexT>> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
 
     RangeBase( MeshBase<index_t> const* b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b ) {}
 

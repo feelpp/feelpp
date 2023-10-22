@@ -67,14 +67,14 @@ template <typename... Ts>
 
     auto choose_ctx_type = []()
     {
-        if constexpr ( r.isOnFaces() )
+        if constexpr ( range_t::isOnFaces() )
             return on_facets_t();
         else
             return on_elements_t();
     };
     auto pts = [&e,&r]( auto f, auto p )
     {
-        if constexpr ( r.isOnFaces() )
+        if constexpr ( range_t::isOnFaces() )
             return e.functionSpace()->fe()->points(f);
         else
             return e.functionSpace()->fe()->points();
@@ -107,7 +107,7 @@ template <typename... Ts>
         {
             auto const& meshElt = boost::unwrap_ref( rangeElt );
 
-            if constexpr ( r.isOnFaces() )
+            if constexpr ( range_t::isOnFaces() )
             {
                 auto [facet_connection_id, facet_id] = facetGlobalToLocal( meshElt, e.functionSpace()->dof() );
                 ctx->template update<POINT>( meshElt.element( facet_connection_id ), facet_id );
