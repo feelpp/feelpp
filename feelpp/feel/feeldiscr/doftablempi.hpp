@@ -1258,7 +1258,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_elements_t<mesh_type> const& myrange ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( Range<mesh_type,MESH_ELEMENTS> const& myrange ) const
 {
     if ( fe_type::is_modal )
         return;
@@ -1627,8 +1627,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
         else
         {
             CHECK( !hasMeshSupportPartial ) << "TODO";
-            auto myrangeActive = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                                    myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess );
+            auto myrangeActive = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                                    myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess ),
+                                        _mesh=mesh );
 
             typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
             auto rangeGhostElement = mesh.ghostElements();
@@ -1938,10 +1939,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
             dofdoneGhost.insert( eltOffProc.id() );
         }
     }
-    auto myrangeActive = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                            myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess );
-    auto myrangeGhost = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                                            myGhostEltsExtended->begin(),myGhostEltsExtended->end(),myGhostEltsExtended );
+    auto myrangeActive = range(_range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess ),
+                               _mesh=mesh );
+    auto myrangeGhost = range(_range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                            myGhostEltsExtended->begin(),myGhostEltsExtended->end(),myGhostEltsExtended ),
+                              _mesh=mesh );
 
     this->buildGhostDofMapExtended( mesh, myrangeGhost, myrangeActive );
 
@@ -1951,8 +1954,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtended( mesh_type& mesh,
-                                                                                   ext_elements_t<mesh_type> const& ghostEltRange,
-                                                                                   ext_elements_t<mesh_type> const& activeEltTouchInterProcessRange )
+                                                                                   Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange,
+                                                                                   Range<mesh_type,MESH_ELEMENTS> const& activeEltTouchInterProcessRange )
 {
     DVLOG(2) << "[buildGhostDofMap] call buildGhostDofMapExtended on rank "<<  this->worldComm().rank() << "\n";
 
