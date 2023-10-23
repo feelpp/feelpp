@@ -67,7 +67,7 @@ public :
 
 
 #if 0
-    typedef elements_reference_wrapper_t<mesh_type> range_elt_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elt_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt_type> op_interpolation2dTo1d_normalstress_type;
     typedef std::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 #endif
@@ -204,7 +204,7 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // mesh
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     // function space
     space_displacement_component_ptrtype M_spaceDisp;

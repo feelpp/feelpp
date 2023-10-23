@@ -263,8 +263,8 @@ public:
     typedef std::shared_ptr<bdf_trace_p0c_vectorial_type> bdf_trace_p0c_vectorial_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
-    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
+    typedef Range<mesh_type,MESH_FACES> range_faces_type;
     //___________________________________________________________________________________//
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
@@ -1824,7 +1824,7 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
     std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > rangeDistributionByMaterialName() const { return M_rangeDistributionByMaterialName; }
 
      // mesh motion
@@ -2166,11 +2166,11 @@ public :
             auto const& p = this->fieldPressure();
 
             typedef decltype(curlv(u)) _expr_vorticity_type;
-            std::map<std::string,std::vector<std::tuple< _expr_vorticity_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVorticity;
+            std::map<std::string,std::vector<std::tuple< _expr_vorticity_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprVorticity;
             mapExprVorticity[prefixvm(prefix,"vorticity")].push_back( std::make_tuple( curlv(u), M_rangeMeshElements, "element" ) );
 
             using _expr_meshdisp_type = std::decay_t<decltype(idv(this->meshMotionTool()->displacement()))>;
-            std::map<std::string,std::vector<std::tuple< _expr_meshdisp_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprMeshDisp;
+            std::map<std::string,std::vector<std::tuple< _expr_meshdisp_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprMeshDisp;
             if ( this->hasMeshMotion() )
                 mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), elements(support(this->meshMotionTool()->displacement()->functionSpace())), "nodal" ) );
 
@@ -2178,11 +2178,11 @@ public :
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
 
             using _expr_normalstresstensor_type = std::decay_t<decltype(sigmaExpr*N())>;
-            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, faces_reference_wrapper_t<mesh_type>, std::string > > > mapExprNormalStressTensor;
+            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, Range<mesh_type,MESH_FACES>, std::string > > > mapExprNormalStressTensor;
             mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( sigmaExpr*N(), rangeTrace, "element" ) );
 
             auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
-            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , faces_reference_wrapper_t<mesh_type>, std::string > > > mapExprWallShearStress;
+            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , Range<mesh_type,MESH_FACES>, std::string > > > mapExprWallShearStress;
             mapExprWallShearStress[prefixvm(prefix,"trace.wall-shear-stress")].push_back( std::make_tuple( wssExpr, rangeTrace, "element" ) );
 
             return hana::make_tuple( mapExprVorticity, mapExprMeshDisp, mapExprNormalStressTensor, mapExprWallShearStress );
@@ -2511,7 +2511,7 @@ private :
 
     //----------------------------------------------------
     // mesh
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
     trace_mesh_ptrtype M_meshTrace;
     // fluid space and solution
@@ -2545,7 +2545,7 @@ private :
     //---------------------------------------------------
     std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > M_rangeDistributionByMaterialName;
     // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
-    //std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
+    //std::map<std::string,std::map<std::string,Range<mesh_type,MESH_FACES>>> M_rangeMeshFacesByMaterial;
     //---------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;

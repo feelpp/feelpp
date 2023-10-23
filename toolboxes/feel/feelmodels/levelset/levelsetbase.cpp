@@ -1486,7 +1486,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    elements_reference_wrapper_t<mesh_type> myrange = boost::make_tuple(
+    Range<mesh_type,MESH_ELEMENTS> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
@@ -1524,7 +1524,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    elements_reference_wrapper_t<mesh_type> myrange = boost::make_tuple(
+    Range<mesh_type,MESH_ELEMENTS> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 

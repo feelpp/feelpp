@@ -79,7 +79,7 @@ public :
     //___________________________________________________________________________________//
     // mesh
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //___________________________________________________________________________________//
@@ -118,7 +118,7 @@ protected :
 
 protected :
 
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;

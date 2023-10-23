@@ -33,7 +33,7 @@ public :
     RangeDistributionByMaterialName( RangeDistributionByMaterialName && ) = default;
 
     //! init material range of elements
-    void init( std::map<std::string, std::tuple<elements_reference_wrapper_t<MeshType>,elements_reference_wrapper_t<MeshType>> > const& rangeMeshElementsByMaterial )
+    void init( std::map<std::string, std::tuple<Range<mesh_type,MESH_ELEMENTS>,Range<mesh_type,MESH_ELEMENTS>> > const& rangeMeshElementsByMaterial )
         {
             for ( auto const& rangeMat : rangeMeshElementsByMaterial )
             {
