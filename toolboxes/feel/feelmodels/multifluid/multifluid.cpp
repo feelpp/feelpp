@@ -492,8 +492,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
             diracElts->push_back( boost::cref(elt) );
     }
 
-    M_rangeInextensibilityLM = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-            diracElts->begin(), diracElts->end(), diracElts );
+    M_rangeInextensibilityLM = range(_range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+            diracElts->begin(), diracElts->end(), diracElts ), _mesh=this->mesh() );
 
     // Lagrange-multiplier inextensibility space
     M_spaceInextensibilityLM = space_inextensibilitylm_type::New(

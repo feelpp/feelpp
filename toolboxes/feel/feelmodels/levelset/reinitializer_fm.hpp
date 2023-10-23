@@ -82,7 +82,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Range
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//

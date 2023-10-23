@@ -1146,7 +1146,7 @@ public :
         }
 
     std::map<std::string, std::tuple<Range<mesh_type,MESH_ELEMENTS>,Range<mesh_type,MESH_ELEMENTS>>> const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-    Ranges<mesh_type,MESH_ELEMENTS> const& rangeMeshElementsByMaterial( std::string const& matName ) const
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElementsByMaterial( std::string const& matName ) const
         {
             // CHECK( this->materialsProperties()->hasMaterial(matName) ) << "no material with name " << matName;
             auto itFindMat = M_rangeMeshElementsByMaterial.find( matName );

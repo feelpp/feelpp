@@ -433,7 +433,7 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
 
     std::set<std::string> /*const&*/ fieldsNamesToExport = this->postProcessExportsFields( tag );
 #if 1
-    std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<typename ExporterType::mesh_type>, std::set<std::string> > > > mapExportsExpr;
+    std::map<std::string,std::vector<std::tuple<ModelExpression, Range<typename ExporterType::mesh_type,MESH_ELEMENTS>, std::set<std::string> > > > mapExportsExpr;
     if ( this->hasModelProperties() )
     {
         auto mesh = exporter->defaultTimeSet()->mesh();

@@ -165,8 +165,8 @@ public:
     };
 
 protected:
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
-    faces_reference_wrapper_t<mesh_type> M_gammaMinusIntegral;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
+    Range<mesh_type,MESH_FACES> M_gammaMinusIntegral;
 
     space_flux_ptrtype M_Vh; // flux
     space_potential_ptrtype M_Wh; // potential
@@ -248,7 +248,7 @@ public:
     std::string fluxKey() const { return M_fluxKey; }
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_flux_ptrtype const& spaceFlux() const { return M_Vh; }
     element_flux_ptrtype const& fieldFluxPtr() const { return M_up; }
