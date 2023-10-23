@@ -1843,9 +1843,9 @@ public:
     /**
      * interpolate type if available
      */
-    using local_interpolant_type = mp11::mp_if_c<is_modal, mp11::mp_identity<std::monostate>, mp11::mp_identity<local_interpolant_t<basis_0_type>>>;
+    using local_interpolant_type = local_interpolant_t<basis_0_type>;
 
-    using local_interpolants_type = mp11::mp_if_c<is_modal, mp11::mp_identity<std::monostate>, mp11::mp_identity<local_interpolants_t<basis_0_type>>>;
+    using local_interpolants_type = local_interpolants_t<basis_0_type>;
 
     // component basis
 #if 0

@@ -309,39 +309,6 @@ sum( std::shared_ptr<FunctionSpaceType> const& __functionspace, Expr<ExprT> cons
     return sum( __functionspace, elements( __functionspace->mesh() ), __expr, geomap, parallelSync );
 }
 
-/**
- * \brief nodal projection of \p __expr onto the space \p __functionspace
- *
- * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr
- */
-template<typename FunctionSpaceType, typename ExprT>
-typename FunctionSpaceType::element_type
-project( FunctionSpaceType const& __functionspace, Expr<ExprT> const& __expr,
-         GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
-{
-    typedef __typeof__( __functionspace->mesh()->elementsRange() ) IteratorRange;
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, __functionspace->mesh()->elementsRange(), __expr, geomap );
-    return p();
-}
-
-/**
- * \brief nodal projection of \p __expr onto the subspace of \p __functionspace described by the range \p range_it
- *
- * \return the element of the space \p __functionspace resulting from the nodal projection of \p __expr over the range \p __range_it
- */
-template<typename FunctionSpaceType, typename IteratorRange, typename ExprT>
-typename FunctionSpaceType::element_type
-project( FunctionSpaceType const& __functionspace,
-         IteratorRange const& range_it,
-         Expr<ExprT> const& __expr,
-         GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
-{
-    typedef details::Projector<NODAL, FunctionSpaceType, IteratorRange, Expr<ExprT> > proj_t;
-    proj_t p( __functionspace, range_it, __expr, geomap );
-    return p();
-}
-
 /// \cond DETAIL
 namespace detail
 {

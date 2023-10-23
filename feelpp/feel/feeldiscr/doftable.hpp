@@ -1118,7 +1118,7 @@ public:
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostDofMapExtended( mesh_type& mesh );
-    void buildGhostDofMapExtended( mesh_type& mesh, ext_elements_t<mesh_type> const& ghostEltRange, ext_elements_t<mesh_type> const& activeEltTouchInterProcessRange );
+    void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange, Range<mesh_type,MESH_ELEMENTS> const& activeEltTouchInterProcessRange );
     void buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
                                                                            std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend );
@@ -1522,7 +1522,7 @@ private:
     void generateDofPoints( mesh_type& M, bool buildMinimalParallel = false ) const;
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_periodic_points_type& periodic_dof_points );
     void generateDofPointsExtendedGhostMap( mesh_type& M ) const;
-    void generateDofPoints( ext_elements_t<mesh_type> const& range ) const;
+    void generateDofPoints( Range<mesh_type,MESH_ELEMENTS> const& range ) const;
 
 private:
     //void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
