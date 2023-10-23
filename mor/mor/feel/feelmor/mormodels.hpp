@@ -165,6 +165,17 @@ class MORModels : public std::vector<MORModel>
     {
         observers_.push_back( o );
     }
+
+    std::vector<std::string>
+    outputNames() const
+    {
+        std::vector<std::string> names;
+        for ( auto const& m : *this )
+        {
+            names.push_back( m.output );
+        }
+        return names;
+    }
 private:
     std::vector<std::shared_ptr<MORObserver>> observers_;
 };
@@ -246,7 +257,7 @@ class MORTable : public MORObserver
             table_.exportCSV( ofs );
         }
     }
-private:    
+private:
     MORModels const& models_;
     Table table_;
     bool print_to_screen_;
