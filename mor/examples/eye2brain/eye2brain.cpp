@@ -33,7 +33,7 @@ Eye2Brain<Order, Dim>::Eye2Brain()
 {
     this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) + fmt::format("{}D_P{}", Dim, Order) );
     this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
-    m_radius = 0.05; //doption(_name = "radius");
+    m_radius = 0.00046941219303323484; //doption(_name = "radius");
 }
 
 template<int Order, int Dim>
