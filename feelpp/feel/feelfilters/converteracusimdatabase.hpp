@@ -78,7 +78,7 @@ public :
 
     void setAcusimRepository( std::string const& idir )
         {
-            M_acusimRepository = fs::system_complete( idir );
+            M_acusimRepository = fs::canonical( idir );
         }
     void setAcusimProblemName(std::string const& name )
         {
