@@ -42,7 +42,7 @@ void checkMarker(mesh_ptrtype mesh)
 void
 run()
 {
-    boost::filesystem::path p(
+    fs::path p(
 #if CHECKH5_DIM==2
         "markerhdf5_2D.geo"
 #else
@@ -57,7 +57,7 @@ run()
     p.replace_extension("msh");
     std::cout << "Check with " << p << std::endl;
     auto mesh2 = loadMesh(_mesh = new mesh_type, _filename=(boost::format( "%1%/%2%" )
-                                                                          % boost::filesystem::current_path().string()
+                                                                          % fs::current_path().string()
                                                                           % p.string()
                                                                           ).str());
     checkMarker(mesh2);
@@ -65,7 +65,7 @@ run()
     p.replace_extension("json");
     std::cout << "Check with " << p << std::endl;
     auto mesh3 = loadMesh(_mesh = new mesh_type, _filename=(boost::format( "%1%/%2%" )
-                                                                          % boost::filesystem::current_path().string()
+                                                                          % fs::current_path().string()
                                                                           % p.string()
                                                                           ).str());
     checkMarker(mesh3);
