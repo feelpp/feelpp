@@ -232,7 +232,8 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
                                    mpl::identity<std::list<RangeType> > >::type::type::value_type;
 
 template <typename RangeType>
-using entity_range_t = typename  boost::unwrap_reference<typename boost::tuples::template element<1,range_t<RangeType> >::type::value_type>::type;
+using entity_range_t = typename decay_type<RangeType>::element_t;
+
 
 template<typename MeshType>
 using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
@@ -354,23 +355,21 @@ template<typename IteratorRangeT>
 using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
 
 
-template<typename IteratorType>
-using filter_enum_t = typename boost::tuples::element<0,typename meta::remove_all<IteratorType>::type >::type;
-template<typename IteratorType>
-using filter_iterator_t = typename boost::tuples::element<1,typename meta::remove_all<IteratorType>::type >::type;
-template<typename IteratorType>
-using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
-template<typename IteratorType>
-using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
-                                                  >;
+template<typename RangeType>
+using filter_enum_t = typename RangeType::idim_t;
+template<typename RangeType>
+using filter_iterator_t = typename RangeType::iterator_t;
+template<typename RangeType>
+using filter_entity_t = typename RangeType::element_t;
+template<typename RangeType>
+using ext_entities_from_iterator_t = RangeType;
 
 template<typename MeshType>
 using elements_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
 template<typename MeshType>
 using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
+
+
 
 
 
