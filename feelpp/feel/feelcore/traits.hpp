@@ -134,5 +134,19 @@ using remove_std_vector_t = typename remove_std_vector<T>::type;
 template <typename T>
 inline constexpr bool is_eigen_matrix_v = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>,std::decay_t<T> >;
 
+/**
+ * @brief Utility class to get the element type contained in ObjectType
+ * 
+ * @tparam ObjectType class
+ */
+template <typename ObjectType, typename = void>
+struct element_type_helper;  // Primary template left undefined on purpose.
+
+template <typename ObjectType>
+using element_t = typename element_type_helper<ObjectType>::type;
+
+template <typename ObjectType>
+using element_ptr_t = typename element_type_helper<ObjectType>::ptrtype;
+
 } // namespace Feel
 #endif
