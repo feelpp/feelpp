@@ -2407,9 +2407,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     toc( "DofTable buildDofMap allocation", FLAGS_v > 1 );
     tic();
     // compute the number of dof on current processor
-    auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = boost::get<1>( rangeElements );
-    auto en_elt = boost::get<2>( rangeElements );
+    Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
     bool hasNoElt = ( it_elt == en_elt );
 
     //size_type n_elts = std::distance( it_elt, en_elt);
@@ -2732,8 +2732,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     auto en_elt = std::get<1>( rangeElements );
 #else
     auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = boost::get<1>( rangeElements );
-    auto en_elt = boost::get<2>( rangeElements );
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
 #endif
 
     if ( it_elt == en_elt )
@@ -2864,12 +2864,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
 #if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
-    auto it_elt = std::get<0>( rangeElements );
-    auto en_elt = std::get<1>( rangeElements );
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
 #else
     auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = boost::get<1>( rangeElements );
-    auto en_elt = boost::get<2>( rangeElements );
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
 #endif
 
     if ( it_elt == en_elt )

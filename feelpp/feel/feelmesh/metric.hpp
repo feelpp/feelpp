@@ -43,7 +43,10 @@ namespace Feel
  * @param cst real between 0 and 1 providing  where the gradation is constant
  * @return Pch_element_type<MeshT, 1> continuous piecewise P1 function representing the metric
  */
-template <typename SpaceT, typename RangeType, std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceT> && RangeType::mesh_entities == MESH_FACES,SpaceT>* = nullptr>
+template <typename SpaceT, typename RangeType, 
+          std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceT> && 
+                           is_range_v<decay_type<RangeType>> &&
+                           decay_type<RangeType>::entities() == MESH_FACES,SpaceT>* = nullptr>
 typename SpaceT::element_type
 gradedfromls( std::shared_ptr<SpaceT> const& Xh, RangeType&& facets, double hclose, double hfar, double cst = 0. )
 {
@@ -153,4 +156,5 @@ expr( std::shared_ptr<MeshT> const& mesh, ExprT && e )
     g.on( _range = elements( Xh->mesh() ), _expr = std::forward<ExprT>(e) );
     return g;
 }
-}
+
+} // namespace Feel

@@ -133,7 +133,7 @@ public:
     using test_basis = typename Expr::test_basis;
     using trial_basis = typename Expr::trial_basis;
 
-    static const Feel::size_type iDim = boost::tuples::template element<0, Elements>::type::value;
+    static const Feel::size_type iDim = Elements::entities();
     //@}
 
     /** @name Typedefs
@@ -142,7 +142,7 @@ public:
 
     typedef Integrator<Elements, Im, Expr, Im2> self_type;
 
-    typedef typename boost::tuples::template element<1, Elements>::type element_iterator;
+    using element_iterator = typename Elements::iterator_t;
 
     typedef Expr expression_type;
     typedef typename expression_type::value_type expression_value_type;
@@ -153,7 +153,7 @@ public:
         //
         // some typedefs
         //
-        using range_entity_type = std::remove_cv_t<std::remove_reference_t<typename boost::unwrap_reference<typename element_iterator::value_type>::type>>;
+        using range_entity_type = std::remove_cv_t<std::remove_reference_t<typename Elements::element_t>>;
         using the_element_type = typename range_entity_type::super2::template Element<range_entity_type>::type;
 
         using im_type = im_t<the_element_type,expression_value_type>;
@@ -295,8 +295,8 @@ public:
         DLOG(INFO) << "Integrator constructor from expression\n";
         if ( !elts.empty() )
         {
-            M_eltbegin = elts.begin()->template get<1>();
-            M_eltend = elts.begin()->template get<2>();
+            M_eltbegin = elts.begin()->begin();
+            M_eltend = elts.begin()->end();
             M_wc = elts.begin()->worldCommPtr();
         }
     }
@@ -900,8 +900,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        it = lit->template get<1>();
-        en = lit->template get<2>();
+        it = lit->begin();
+        en = lit->end();
 
         // check that we have elements to iterate over
         if ( it == en )
@@ -949,8 +949,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        it = lit->template get<1>();
-        en = lit->template get<2>();
+        it = lit->begin();
+        en = lit->end();
 
         // check that we have elements to iterate over
         if ( it == en )
@@ -1030,8 +1030,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
             for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
             {
-                element_iterator it = lit->template get<1>();
-                element_iterator en = lit->template get<2>();
+                element_iterator it = lit->begin();
+                element_iterator en = lit->end();
                 DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
 
                 // check that we have elements to iterate over
@@ -1350,7 +1350,7 @@ struct ManageRelationDifferentMeshType
     using element_mesh_trial_type = typename MeshTraits<typename SpaceTrialType::mesh_type>::element_type;
     using element_wrapper_test_type = typename MeshTraits<typename SpaceTestType::mesh_type>::elements_reference_wrapper_type::value_type;
     using element_wrapper_trial_type = typename MeshTraits<typename SpaceTrialType::mesh_type>::elements_reference_wrapper_type::value_type;
-    static const int range_idim_type = boost::tuples::template element<0,range_t<RangeType> >::type::value;
+    static const int range_idim_type = RangeType::entities();
 
     ManageRelationDifferentMeshType( std::shared_ptr<SpaceTestType> const& spaceTest, std::shared_ptr<SpaceTrialType> const& spaceTrial, RangeType const& range )
         :
@@ -1720,7 +1720,7 @@ struct ManageRelationDifferentMeshTypeLinearForm
 
     using element_mesh_test_type = typename MeshTraits<typename SpaceTestType::mesh_type>::element_type;
     using element_wrapper_test_type = typename MeshTraits<typename SpaceTestType::mesh_type>::elements_reference_wrapper_type::value_type;
-    static const int range_idim_type = boost::tuples::template element<0,range_t<RangeType> >::type::value;
+    static const int range_idim_type = RangeType::entities();
 
     ManageRelationDifferentMeshTypeLinearForm( std::shared_ptr<SpaceTestType> const& spaceTest, RangeType const& range )
         :
@@ -2112,8 +2112,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
         {
-            auto elt_it = lit->template get<1>();
-            auto const elt_en = lit->template get<2>();
+            auto elt_it = lit->begin();
+            auto const elt_en = lit->end();
             DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
             // check that we have elements to iterate over
@@ -2343,8 +2343,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
         {
-            auto elt_it = lit->template get<1>();
-            auto const elt_en = lit->template get<2>();
+            auto elt_it = lit->begin();
+            auto const elt_en = lit->end();
             DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
             // check that we have elements to iterate over
@@ -2556,8 +2556,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        elt_it = lit->template get<1>();
-        elt_en = lit->template get<2>();
+        elt_it = lit->begin();
+        elt_en = lit->end();
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
@@ -2736,8 +2736,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        elt_it = lit->template get<1>();
-        elt_en = lit->template get<2>();
+        elt_it = lit->begin();
+        elt_en = lit->end();
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
@@ -2947,8 +2947,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        elt_it = lit->template get<1>();
-        elt_en = lit->template get<2>();
+        elt_it = lit->begin();
+        elt_en = lit->end();
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
@@ -3299,8 +3299,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
-        auto it = lit->template get<1>();
-        auto en = lit->template get<2>();
+        auto it = lit->begin();
+        auto en = lit->end();
 
         DLOG(INFO) << "Standard integration over "
                    << std::distance( it, en )  << " faces\n";
@@ -3835,8 +3835,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
-        auto elt_it = lit->template get<1>();
-        auto const elt_en = lit->template get<2>();
+        auto elt_it = lit->begin();
+        auto const elt_en = lit->end();
         DLOG(INFO) << "face/element integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
         auto mrdmt = Feel::vf::detail::manageRelationDifferentMeshType( __form.testSpace(),__form.trialSpace(), *lit );
@@ -4047,8 +4047,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
-        auto elt_it = lit->template get<1>();
-        auto const elt_en = lit->template get<2>();
+        auto elt_it = lit->begin();
+        auto const elt_en = lit->end();
         DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
         auto mrdmt = Feel::vf::detail::manageRelationDifferentMeshType( __form.testSpace(), *lit );
@@ -4206,8 +4206,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        elt_it = lit->template get<1>();
-        elt_en = lit->template get<2>();
+        elt_it = lit->begin();
+        elt_en = lit->end();
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
@@ -4438,8 +4438,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        elt_it = lit->template get<1>();
-        elt_en = lit->template get<2>();
+        elt_it = lit->begin();
+        elt_en = lit->end();
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
@@ -4699,8 +4699,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     bool findEltForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
     {
-        elt_it = lit->template get<1>();
-        elt_en = lit->template get<2>();
+        elt_it = lit->begin();
+        elt_en = lit->end();
 
         // check that we have elements to iterate over
         if ( elt_it == elt_en )
@@ -4895,8 +4895,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
-        auto it = lit->template get<1>();
-        auto en = lit->template get<2>();
+        auto it = lit->begin();
+        auto en = lit->end();
 
         // make sure that we have elements to iterate over (return 0
         // otherwise)
@@ -5193,8 +5193,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
             for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
             {
                 /* set the iterator at the beginning of the elements */
-                auto sit = lit->template get<1>();
-                auto eit = lit->template get<2>();
+                auto sit = lit->begin();
+                auto eit = lit->end();
                 auto cit = sit;
 
                 /* get number of elements */
@@ -5441,8 +5441,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                 for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit)
                 {
                     /* set the iterator at the beginning of the elements */
-                    auto sit = lit->template get<1>();
-                    auto eit = lit->template get<2>();
+                    auto sit = lit->begin();
+                    auto eit = lit->end();
                     auto cit = sit;
 
                     /* get number of elements */
@@ -5587,8 +5587,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
                     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
                     {
-                        auto it = lit->template get<1>();
-                        auto en = lit->template get<2>();
+                        auto it = lit->begin();
+                        auto en = lit->end();
 
                         // make sure that we have elements to iterate over (return 0
                         // otherwise)
@@ -5745,8 +5745,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     bool findFaceForInit = false;
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findFaceForInit; ++lit )
     {
-        face_it = lit->template get<1>();
-        face_en = lit->template get<2>();
+        face_it = lit->begin();
+        face_en = lit->end();
 
         // check that we have elements to iterate over
         if ( face_it == face_en )
@@ -5818,8 +5818,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
-        auto it = lit->template get<1>();
-        auto en = lit->template get<2>();
+        auto it = lit->begin();
+        auto en = lit->end();
 
         //
         // start the real intensive job:
@@ -5945,8 +5945,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
      for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
      {
-         auto it = lit->template get<1>();
-         auto en = lit->template get<2>();
+         auto it = lit->begin();
+         auto en = lit->end();
 
 
          // make sure that we have elements to iterate over (return 0
@@ -6047,8 +6047,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
      for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
      {
-         auto it = lit->template get<1>();
-         auto en = lit->template get<2>();
+         auto it = lit->begin();
+         auto en = lit->end();
 
          // make sure that we have elements to iterate over (return 0
          // otherwise)
@@ -6223,8 +6223,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
      typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
 
-     typedef typename boost::tuples::template element<1,range_type>::type element_iterator;
-     static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
+     using element_iterator = typename range_type::iterator_t; 
+     static constexpr uint16_type geoOrder = range_type::element_t::nOrder;
      LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
      return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
  }

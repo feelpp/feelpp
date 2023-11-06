@@ -385,8 +385,8 @@ void ExporterXDMF<MeshType, N>::saveFields( std::string const& fieldsfilename, s
             if ( M_mapNodalArrayToDofId.find( part ) == M_mapNodalArrayToDofId.end() )
             {
                 auto const& r =  mp.rangeElement( part );
-                auto elt_it = r.template get<1>();
-                auto elt_en = r.template get<2>();
+                auto elt_it = r.begin();
+                auto elt_en = r.end();
 
                 nValuesPerComponent = localDims[0];
                 size_type realBufferSize = localDims[0]*localDims[1];
@@ -437,8 +437,8 @@ void ExporterXDMF<MeshType, N>::saveFields( std::string const& fieldsfilename, s
         if ( M_mapElementArrayToDofId.find( part ) == M_mapElementArrayToDofId.end() )
         {
             auto const& r = mp.rangeElement( part );
-            auto elt_it = r.template get<1>();
-            auto elt_en = r.template get<2>();
+            auto elt_it = r.begin();
+            auto elt_en = r.end();
 
             nValuesPerComponent = localDims[0];
             size_type realBufferSize = localDims[0]*localDims[1];

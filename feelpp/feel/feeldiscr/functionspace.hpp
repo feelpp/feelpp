@@ -1443,7 +1443,7 @@ struct createMeshSupport
     template<bool _UseMeshesList, typename RangeType >
     void init2( mesh_ptrtype const& mesh, RangeType && rangeMeshElt, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
         {
-            if ( boost::get<3>( rangeMeshElt ) )
+            if ( !rangeMeshElt.isEmpty() )
                 M_meshSupport0.reset( new mesh_support_type(mesh,std::forward<RangeType>(rangeMeshElt) ) );
             else
                 M_meshSupport0.reset( new mesh_support_type(mesh) );
@@ -1865,8 +1865,8 @@ public:
     // trace space
     using is_trace_applicable = mp11::mp_bool<(nDim > 1)>;
 
-    using trace_mesh_type = mp11::mp_if<is_trace_applicable, typename mesh_type::trace_mesh_type, void>;
-    using trace_mesh_ptrtype = mp11::mp_if<is_trace_applicable, typename mesh_type::trace_mesh_ptrtype, void>;
+    using trace_mesh_type = mp11::mp_if<is_trace_applicable, typename mesh_type::template trace_mesh_type<>, void>;
+    using trace_mesh_ptrtype = mp11::mp_if<is_trace_applicable, typename mesh_type::template trace_mesh_ptrtype<>, void>;
     using trace_functionspace_type = mp11::mp_if<is_trace_applicable, FunctionSpace<trace_mesh_type, bases_list>, void>;
     using trace_functionspace_ptrtype = std::shared_ptr<trace_functionspace_type>;
 
@@ -1874,8 +1874,8 @@ public:
     // wirebasket
     using is_trace_trace_applicable = mp11::mp_bool<(nDim > 2)>;
 
-    using trace_trace_mesh_type = mp11::mp_if<is_trace_trace_applicable, typename mesh_type::trace_trace_mesh_type, void>;
-    using trace_trace_mesh_ptrtype = mp11::mp_if<is_trace_trace_applicable, typename mesh_type::trace_trace_mesh_ptrtype, void>;
+    using trace_trace_mesh_type = mp11::mp_if<is_trace_trace_applicable, typename mesh_type::template trace_trace_mesh_type<>, void>;
+    using trace_trace_mesh_ptrtype = mp11::mp_if<is_trace_trace_applicable, typename mesh_type::template trace_trace_mesh_ptrtype<>, void>;
     using trace_trace_functionspace_type = mp11::mp_if<is_trace_trace_applicable, FunctionSpace<trace_trace_mesh_type, bases_list>, void>;
     using trace_trace_functionspace_ptrtype = std::shared_ptr<trace_trace_functionspace_type>;
 
@@ -4394,15 +4394,13 @@ public:
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImplBase( RangeType const& rList, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::true_ )
         {
-            const int iDim = boost::tuples::template element<0, typename RangeType::value_type>::type::value;
             for ( auto const& r : rList )
-                onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
+                onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<RangeType::iDim()>() );
         }
         template<typename RangeType, typename ExprType>
         FEELPP_NO_EXPORT void onImplBase( RangeType const& r, ExprType const& e, std::string const& prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::false_ )
         {
-            const int iDim = boost::tuples::template element<0, RangeType>::type::value;
-            onImpl( std::make_pair( r.template get<1>(), r.template get<2>()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<iDim>() );
+            onImpl( std::make_pair( r.begin(), r.end()), e, prefix, geomap_strategy, accumulate, verbose, mpl::int_<RangeType::iDim()>() );
         }
 
         template<typename IteratorType, typename ExprType>

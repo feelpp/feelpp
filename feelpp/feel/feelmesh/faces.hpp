@@ -705,8 +705,8 @@ public:
     template<typename IteratorRange>
     void updateMarkerWithRangeFaces( uint16_type markerType, IteratorRange const& range, flag_type flag )
     {
-        auto it = boost::get<1>( range );
-        auto en = boost::get<2>( range );
+        auto it = range.begin();
+        auto en = range.end();
         for (  ; it != en; ++it )
         {
             auto & faceModified = this->faceIterator( boost::unwrap_ref( *it ).id() )->second;

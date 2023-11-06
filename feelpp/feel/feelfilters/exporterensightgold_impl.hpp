@@ -1733,8 +1733,8 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         //const int np = __step->mesh()->numLocalVertices();
 
                         auto const& r =  mp.rangeElement( part );
-                        auto elt_it = r.template get<1>();
-                        auto elt_en = r.template get<2>();
+                        auto elt_it = r.begin();
+                        auto elt_en = r.end();
                         for ( ; elt_it != elt_en; ++elt_it )
                         {
                             auto const& elt = unwrap_ref( *elt_it );
@@ -1787,8 +1787,8 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                     VLOG(1) << "field size=" << __field_size;
                     __field = Eigen::VectorXf::Zero( __field_size );
                     auto const& r =  mp.rangeElement( part );
-                    auto elt_it = r.template get<1>();
-                    auto elt_en = r.template get<2>();
+                    auto elt_it = r.begin();
+                    auto elt_en = r.end();
                     for ( ; elt_it != elt_en; ++elt_it )
                     {
                         auto const& elt = unwrap_ref( *elt_it );

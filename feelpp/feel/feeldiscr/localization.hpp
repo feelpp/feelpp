@@ -438,8 +438,8 @@ Localization<MeshType>::initBoundaryFaces()
     // typename mesh_type::location_face_iterator face_en;
     // boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
     auto rangeBoundaryFaces = Feel::boundaryfaces( mesh );
-    auto face_it = boost::get<1>( rangeBoundaryFaces );
-    auto face_en = boost::get<2>( rangeBoundaryFaces );
+    auto face_it = rangeBoundaryFaces.begin();
+    auto face_en = rangeBoundaryFaces.end();
     bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {

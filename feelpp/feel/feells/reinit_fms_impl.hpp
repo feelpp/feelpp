@@ -119,7 +119,7 @@ createPeriodicCorrespondanceTable()
     idCoord_type idsTag1;
     std::set< size_type > dofTag1Done;
     auto rg1 = markedfaces( M_functionspace->mesh(), M_periodicity.tag1() );
-    for ( auto it = rg1.template get<1>(), en = rg1.template get<2>(); it!=en; ++it)
+    for ( auto it = rg1.begin(), en = rg1.end(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
                 const size_type index = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
@@ -162,7 +162,7 @@ createPeriodicCorrespondanceTable()
     std::set< size_type > dofTag2Done;
 
     auto rg2 = markedfaces( M_functionspace->mesh(), M_periodicity.tag2() );
-    for (auto it = rg2.template get<1>(), en=rg2.template get<2>(); it!=en; ++it)
+    for (auto it = rg2.begin(), en=rg2.end(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
                 const size_type indexTag2 = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();

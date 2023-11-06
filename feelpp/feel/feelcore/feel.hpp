@@ -507,4 +507,13 @@ constexpr inline bool sequentialEvaluation = false;
 #include <feel/feelcore/range.hpp>
 #include <feel/feelcore/hashtables.hpp>
 
+/**
+ * @brief boolean to enable shared_from_this
+ */
+inline constexpr bool EnableSharedFromThis = true;
+/**
+ * @brief boolean to disable shared_from_this
+ */
+inline constexpr bool DisableSharedFromThis = false;
+
 #endif
