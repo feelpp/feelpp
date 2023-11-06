@@ -83,14 +83,14 @@ void defToolbox(py::module &m)
             py::arg( "disp" ), py::arg( "range" ),
             "update ALE map from imposed displacement on a range of elements" )
         .def(
-            "updateDisplacementImposed", []( std::shared_ptr<toolbox_t>& t, ale_map_element_t const& d, faces_reference_wrapper_t<mesh_ptr_t> const& r )
+            "updateDisplacementImposed", []( std::shared_ptr<toolbox_t>& t, ale_map_element_t const& d, Range<mesh_t,MESH_FACES> const& r )
             { t->updateDisplacementImposed( idv(d), r ); },
             py::arg( "disp" ), py::arg( "range" ),
             "update ALE map from imposed displacement on a range of faces" )
 
         .def( "setDisplacementImposedOnInitialDomainOverElements", &toolbox_t::setDisplacementImposedOnInitialDomainOverElements, py::arg( "keyword" ), py::arg("markers"), "defined element markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)" )
         .def( "setDisplacementImposedOnInitialDomainOverFaces", &toolbox_t::setDisplacementImposedOnInitialDomainOverFaces, py::arg( "keyword" ), py::arg("markers"), "defined face markers where disp imposed is given on initial mesh (not necessarly equal to ref mesh when we apply remesh)" )
-        .def( "updateDisplacementImposedOnInitialDomain", []( std::shared_ptr<toolbox_t>& t, std::string keyword, ale_map_element_t const& d, faces_reference_wrapper_t<mesh_ptr_t> const& r  ){
+        .def( "updateDisplacementImposedOnInitialDomain", []( std::shared_ptr<toolbox_t>& t, std::string keyword, ale_map_element_t const& d, Range<mesh_t,MESH_FACES> const& r  ){
                 t->updateDisplacementImposedOnInitialDomain( keyword, idv(d), r );
             } , py::arg( "keyword" ), py::arg( "disp" ), py::arg("range"), "" )
 

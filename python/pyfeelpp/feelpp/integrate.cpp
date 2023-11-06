@@ -43,13 +43,13 @@ void defIntegrate( py::module& m )
     constexpr int RealDim = MeshT::nRealDim;
 
     m.def(
-        "integrate", []( elements_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order )
+        "integrate", []( Range<mesh_t,MESH_ELEMENTS> const& r, std::string const& e, int quad_order )
         { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
         py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of elements" );
     if constexpr ( mesh_t::nDim > 1 )
     {
         m.def(
-            "integrate", []( faces_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order )
+            "integrate", []( Range<mesh_t,MESH_FACES> const& r, std::string const& e, int quad_order )
             { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
             py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of facets" );
     }
@@ -57,7 +57,7 @@ void defIntegrate( py::module& m )
     if constexpr ( mesh_t::nDim == 3 )
     {
         m.def(
-            "Integrate", []( edges_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order )
+            "Integrate", []( Range<mesh_t,MESH_EDGES> const& r, std::string const& e, int quad_order )
             { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
             py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of edges" );
     }

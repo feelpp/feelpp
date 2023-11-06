@@ -60,7 +60,7 @@ void defInterpolate( py::module& m )
         suffix = std::string("Pdhv");
     std::string pyclass_name = fmt::format( "OperatorInterpolation_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
-    using iterator_range_t = elements_reference_wrapper_t<mesh_t>;
+    using iterator_range_t = Range<mesh_t,MESH_ELEMENTS>;
     using interp_t = decltype(InterpolationNonConforming());
     using Iop_t = OperatorInterpolation<space_t,space_t,iterator_range_t,interp_t>;
     using matrix_setup_t = OperatorInterpolationMatrixSetup<double>;
