@@ -97,6 +97,7 @@ BOOST_AUTO_TEST_CASE( test_range2 )
     BOOST_TEST_MESSAGE( "test_range2" );
     
     auto mesh = unitSquare();
+    BOOST_TEST_MESSAGE("number of elements " << nelements(elements(mesh)) );
     double area = integrate( _range=elements(mesh), _expr=expr("1")).evaluate()(0,0);
     BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     BOOST_TEST_MESSAGE( "test_range1 done" );

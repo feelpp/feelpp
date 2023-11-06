@@ -277,7 +277,7 @@ test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type
     // a13
     // mesh for the Lagrange multiplier
     //typedef Simplex<1,1,2> face_convex_type;
-    typedef /*Mesh<face_convex_type>*/typename mesh_type::trace_mesh_type face_mesh_type;
+    using face_mesh_type = trace_mesh_t<mesh_type>;
     using Mh_t = Pdhv_type<face_mesh_type, 2>;
     using Mh_ptr_t = Pdhv_ptrtype<face_mesh_type, 2>;
 

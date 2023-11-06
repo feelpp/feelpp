@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh_view, T, dim2_types )
     }
 
     std::vector<Range<mesh_type,MESH_FACES>> rangeSubmesh;
-    std::vector< typename mesh_type::trace_mesh_ptrtype> submesh;
+    std::vector< typename mesh_type::template trace_mesh_ptrtype<>> submesh;
     std::vector<double> measureInitial;
     for (int k=0;k<nBoundaryMarker;++k)
     {
