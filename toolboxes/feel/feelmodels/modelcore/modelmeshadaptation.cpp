@@ -32,7 +32,7 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
         if ( j_metric.is_string() || j_metric.is_number() )
             M_metric.setExpr( j_metric, mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
         else
-            throw std::runtime_error(  fmt::format("invalid metric type {}", j_metric ) );
+            throw std::runtime_error(  fmt::format("invalid metric type {}", j_metric.dump() ) );
     }
 
     for ( std::string const& keepMarkerKey : { "required_markers" } )
@@ -85,14 +85,14 @@ ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const
                 else if ( j_ets_frequency.is_string() )
                     M_eventEachTimeStep_frequency = std::stoi( j_ets_frequency.template get<std::string>() );
                 else
-                    throw std::runtime_error( fmt::format("invalid frequency type {}", j_ets_frequency ) );
+                    throw std::runtime_error( fmt::format("invalid frequency type {}", j_ets_frequency.dump() ) );
             }
             if ( j_eventval.contains( "condition" ) )
             {
                 auto const& j_ets_condition = j_eventval.at( "condition" );
                 M_eventEachTimeStep_condition.setExpr( j_ets_condition, mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
                 if ( !M_eventEachTimeStep_condition.template hasExpr<1,1>() )
-                    throw std::runtime_error( fmt::format("invalid condition {}, should be a boolean scalar expr", j_ets_condition ) );
+                    throw std::runtime_error( fmt::format("invalid condition {}, should be a boolean scalar expr", j_ets_condition.dump() ) );
             }
         }
         else

@@ -190,8 +190,8 @@ public :
 
     class DisplacementImposedOnInitialDomainOverFaces
     {
-        using trace_mesh_type = typename mesh_type::trace_mesh_type;
-        using trace_mesh_ptrtype = std::shared_ptr<trace_mesh_type>;
+        using trace_mesh_type = trace_mesh_t<mesh_type>;
+        using trace_mesh_ptrtype = trace_mesh_ptr_t<mesh_type>;
         using trace_functionspace_type = typename ale_map_functionspace_type::trace_functionspace_type;
         using trace_functionspace_ptrtype = std::shared_ptr<trace_functionspace_type>;
         using trace_element_type = typename trace_functionspace_type::element_type;

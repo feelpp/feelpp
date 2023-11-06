@@ -139,8 +139,8 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // trace mesh
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
+    using trace_mesh_ptrtype = std::shared_ptr<trace_mesh_type>;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -1195,7 +1195,7 @@ public:
         eigen_vector_type<nRealDim> fluidForces() const
             {
                 eigen_vector_type<nRealDim> res = eigen_vector_type<nRealDim>::Zero();
-                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(this->fieldTranslationalVelocityPtr())-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(this->fieldTranslationalVelocityPtr())-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true);
                 if ( this->gravityForceEnabled() )
                     res -= this->gravityForceWithMass();
                 return res;
@@ -1208,7 +1208,7 @@ public:
         evaluate_torques_type fluidTorques() const
             {
                 // WARNING : is the case of  isInNBodyArticulated, this torque is related to nNBodyArticulated object (else we need compute momentOfInertia of this body)
-                evaluate_torques_type res = this->momentOfInertia_inertialFrame()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                evaluate_torques_type res = this->momentOfInertia_inertialFrame()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true);
                 return res;
             }
         //---------------------------------------------------------------------------//

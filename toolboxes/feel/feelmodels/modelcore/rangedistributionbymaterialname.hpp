@@ -33,7 +33,7 @@ public :
     RangeDistributionByMaterialName( RangeDistributionByMaterialName && ) = default;
 
     //! init material range of elements
-    void init( std::map<std::string, std::tuple<Range<mesh_type,MESH_ELEMENTS>,Range<mesh_type,MESH_ELEMENTS>> > const& rangeMeshElementsByMaterial )
+    void init( std::map<std::string, std::tuple<Range<MeshType,MESH_ELEMENTS>,Range<MeshType,MESH_ELEMENTS>> > const& rangeMeshElementsByMaterial )
         {
             for ( auto const& rangeMat : rangeMeshElementsByMaterial )
             {
@@ -49,7 +49,7 @@ public :
 
 
     //! return map of range of faces by material for a given type
-    std::map<std::string,faces_reference_wrapper_t<MeshType>> const& rangeMeshFacesByMaterial( std::string const& type ) const
+    std::map<std::string, Range<MeshType,MESH_FACES>> const& rangeMeshFacesByMaterial( std::string const& type ) const
         {
             auto itFindType = M_rangeMeshFacesByMaterial.find( type );
             CHECK( itFindType != M_rangeMeshFacesByMaterial.end() ) << "type does not find " << type;
@@ -57,7 +57,7 @@ public :
         }
 
     //! update map of range of faces by material for a given type
-    void update( std::string const& type, faces_reference_wrapper_t<MeshType> const& rangeFaces )
+    void update( std::string const& type, Range<MeshType,MESH_FACES> const& rangeFaces )
         {
             auto & rangeMatFaces = M_rangeMeshFacesByMaterial[type];
             for ( std::string const& matName : M_matNames )
@@ -96,7 +96,7 @@ private :
 
     std::set<std::string> M_matNames;
     std::unordered_map<size_type,std::string> M_mapEltIdToMatName;
-    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<MeshType>>> M_rangeMeshFacesByMaterial;
+    std::map<std::string,std::map<std::string,Range<MeshType,MESH_FACES>>> M_rangeMeshFacesByMaterial;
 
 };
 
