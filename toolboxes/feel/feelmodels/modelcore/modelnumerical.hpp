@@ -404,7 +404,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
 
                     if constexpr ( !is_hcurl_conforming_v<typename std::decay_t<decltype(u)>::functionspace_type::fe_type> )
                     {
-                        if constexpr (RangeTraits<RangeType>::element_type::nDim > 2 )
+                        if constexpr (element_t<RangeType>::nDim > 2 )
                         {
                             if ( !listMarkerEdges.empty() )
                                 u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
