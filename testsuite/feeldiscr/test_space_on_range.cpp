@@ -209,16 +209,16 @@ BOOST_AUTO_TEST_CASE( test_composite_meshes_list_2d )
     BOOST_CHECK_SMALL( err_u2,1e-12 );
 
     auto r = elements(mesh);
-    auto rSize = r.get<3>()->size();
-    auto r1Size = r1.get<3>()->size();
-    auto r2Size = r2.get<3>()->size();
+    auto rSize = r.size();
+    auto r1Size = r1.size();
+    auto r2Size = r2.size();
     BOOST_TEST_MESSAGE( "r size : " << rSize );
     BOOST_TEST_MESSAGE( "r1 size : " << r1Size );
     BOOST_TEST_MESSAGE( "r2 size : " << r2Size );
     auto VhPS1 = VhPS->template functionSpace<0>();
-    auto fsSize = VhFS->rangeElements<0>().get<3>()->size(); // no meshsupport
-    auto ps1Size = VhPS1->rangeElements<0>().get<3>()->size(); // no composite
-    auto ps2Size = VhPS->rangeElements<1>().get<3>()->size(); // composite
+    auto fsSize = VhFS->rangeElements<0>().size(); // no meshsupport
+    auto ps1Size = VhPS1->rangeElements<0>().size(); // no composite
+    auto ps2Size = VhPS->rangeElements<1>().size(); // composite
     BOOST_CHECK_EQUAL( rSize,fsSize);
     BOOST_CHECK_EQUAL( r1Size,ps1Size);
     BOOST_CHECK_EQUAL( r2Size,ps2Size);
