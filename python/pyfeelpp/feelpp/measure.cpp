@@ -49,19 +49,19 @@ void defMeasure(py::module &m)
     suffix += std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
     pyclass_name += suffix;
 
-    m.def("measure",[]( elements_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order ){
+    m.def("measure",[]( Range<mesh_t,MESH_ELEMENTS> const& r, std::string const& e, int quad_order ){
             return measure( _range=r, _expr=expr(e), _quad=quad_order );
         }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
     if constexpr ( mesh_t::nDim > 1 )        
     { 
-        m.def("measure",[]( faces_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order ){
+        m.def("measure",[]( Range<mesh_t,MESH_FACES> const& r, std::string const& e, int quad_order ){
                 return measure( _range=r, _expr=expr(e), _quad=quad_order );
             }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
     }        
 #if 0
     if constexpr ( mesh_t::nDim == 3 )
     {
-        m.def("measure",[]( edges_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order ){
+        m.def("measure",[]( Range<mesh_t,MESH_EDGES> const& r, std::string const& e, int quad_order ){
                 return measure( _range=r, _expr=expr(e), _quad=quad_order );
             }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
 
