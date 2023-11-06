@@ -134,9 +134,9 @@ public:
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p) const
         {
-            auto a = M_expr.evaluate(p,worldcomm);
+            auto a = M_expr.evaluate(p);
             auto at = a.transpose();
             if constexpr ( Part == 1 )
                 return 0.5*( a+at );

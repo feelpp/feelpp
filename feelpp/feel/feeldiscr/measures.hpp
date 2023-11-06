@@ -25,56 +25,67 @@
 
 namespace Feel
 {
-template<typename MeshType>
-using value_t = typename MeshType::value_type;
-template<typename MeshType>
-using index_t = typename MeshType::index_type;
+template<typename RangeType>
+using value_t = typename decay_type<RangeType>::value_t;
 
 /**
  * compute h measure statistics over a range of elements or facets
  */
-template<typename MeshType, typename RangeType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
-std::tuple<value_t<MeshType>, value_t<MeshType>, value_t<MeshType>>
-hMeasures( std::shared_ptr<MeshType> const& m, RangeType r, typename MeshType::size_type nEntityInRange )
+template<typename RangeType, typename = std::enable_if_t<is_range_v<RangeType>>>
+std::tuple<value_t<RangeType>, value_t<RangeType>, value_t<RangeType>>
+hMeasures( RangeType && r, size_t nEntityInRange )
 {
-    using value_type=value_t<MeshType>;
+    using value_type=value_t<RangeType>;
     value_type h_avg = 0;
     value_type h_min = std::numeric_limits<value_type>::max();
     value_type h_max = 0;
-    for ( auto const& eltWrap : r )
-    {
-        auto const& elt = unwrap_ref( eltWrap );
-        h_avg += elt.h();
-        h_min = std::min( h_min, elt.h() );
-        h_max = std::max( h_max, elt.h() );
-    }
-    h_avg /= nEntityInRange;
+    std::for_each( std::forward<RangeType>(r).begin(), std::forward<RangeType>(r).end(), 
+        [&]( element_t<RangeType> const& elt ) {
+                h_avg += elt.h();
+                h_min = std::min( h_min, elt.h() );
+                h_max = std::max( h_max, elt.h() );
+        } );
+
     value_type reduction[3] = {h_avg, h_min, h_max};
     MPI_Op op;
     MPI_Op_create( (MPI_User_function*)(Functor::AvgMinMax<value_type, WorldComm::communicator_type>), 1, &op );
-    MPI_Allreduce( MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, m->worldComm() );
+    MPI_Allreduce( MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, std::forward<RangeType>(r).worldComm() );
     MPI_Op_free( &op );
 
-    h_avg = reduction[0];
+    h_avg = reduction[0]/nEntityInRange;
     h_min = reduction[1];
     h_max = reduction[2];
     return std::tuple{ h_avg, h_min, h_max };
 }
 
-template<typename MeshType, typename RangeType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
-std::tuple<value_t<MeshType>, value_t<MeshType>, value_t<MeshType>>
-hMeasures( std::shared_ptr<MeshType> const& m, RangeType r )
+template<typename RangeType, typename = std::enable_if_t<is_mesh_v<RangeType>>>
+std::tuple<value_t<RangeType>, value_t<RangeType>, value_t<RangeType>>
+hMeasures( RangeType && r )
 {
-    return hMeasures( m, elements( m ), nelements( r, Zone::GLOBAL ) );
+    return hMeasures( std::forward<RangeType>(r), nelements( std::forward<RangeType>(r), Zone::GLOBAL ) );
 }
 
 /**
  * compute h measures statistics over all elements of a mesh
  */
 template<typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
-std::tuple<value_t<MeshType>, value_t<MeshType>, value_t<MeshType>>
+auto
+hMeasures( MeshType&& m )
+{
+    return hMeasures( elements( std::forward<MeshType>(m) ), std::forward<MeshType>(m).numGlobalElements() );
+}
+
+/**
+ * @brief compute h measures statistics over all elements of a shared_ptr<mesh>
+ * 
+ * @tparam MeshType type of the mesh
+ * @param m shared_ptr<mesh>
+ * @return auto 
+ */
+template<typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+auto
 hMeasures( std::shared_ptr<MeshType> const& m )
 {
-    return hMeasures( m, elements( m ), m->numGlobalElements() );
+    return hMeasures( elements( m ), m->numGlobalElements() );
 }
 }

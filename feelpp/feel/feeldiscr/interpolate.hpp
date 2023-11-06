@@ -335,7 +335,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         array_type fvalues( f.idExtents( *fectx ) );
 
         using index_type = typename domain_mesh_type::index_type;
-        typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
+        MeshInverse<domain_mesh_type> meshinv( f.functionSpace()->mesh() );
 
         /* initialisation of the mesh::inverse data structure */
         typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();

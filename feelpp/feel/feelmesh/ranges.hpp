@@ -26,12 +26,15 @@
 #include <tuple>
 #include <type_traits>
 #include <boost/mp11/utility.hpp>
+#include <iostream>
+#include <fmt/ostream.h>
 
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelcore/enums.hpp>
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/meshbase.hpp>
+#include <feel/feeldiscr/mesh_fwd.hpp>
 
 namespace Feel
 {
@@ -48,6 +51,17 @@ using entities_reference_wrapper_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_EL
                                                                         >
                                                           >;
 template<typename MeshType, int MESH_ENTITIES,std::enable_if_t<std::is_base_of_v<MeshBase<>,decay_type<std::remove_pointer_t<MeshType>>>,int> = 0>
+using container_reference_wrapper_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_ELEMENTS,
+                                                          typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype,
+                                                          boost::mp11::mp_if_c<MESH_ENTITIES==MESH_FACES,
+                                                                        typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype,
+                                                                        boost::mp11::mp_if_c<MESH_ENTITIES==MESH_EDGES,
+                                                                                      typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype,
+                                                                                      typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype
+                                                                                     >
+                                                                        >
+                                                          >;                                                          
+template<typename MeshType, int MESH_ENTITIES,std::enable_if_t<std::is_base_of_v<MeshBase<>,decay_type<std::remove_pointer_t<MeshType>>>,int> = 0>
 using entities_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_ELEMENTS,
                                         typename MeshTraits<MeshType>::element_type,
                                         boost::mp11::mp_if_c<MESH_ENTITIES==MESH_FACES,
@@ -58,10 +72,6 @@ using entities_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_ELEMENTS,
                                                                                >
                                                             >
                                         >;
-template <typename GeoShape, typename T, int Tag, typename IndexT>
-class Mesh;
-template <typename GeoShape, typename T, typename IndexT>
-class MeshStructured;
 // clang-format on
 
 /**
@@ -80,6 +90,7 @@ public:
     RangeBase& operator=( RangeBase && ) = default;
     virtual ~RangeBase() = default;
 
+#if 0
     template <typename GeoShape, typename T = double, int Tag = 0>
     RangeBase( std::shared_ptr<Mesh<GeoShape,T,Tag,IndexT>> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
 
@@ -91,10 +102,44 @@ public:
 
     template <typename GeoShape, typename T = double>
     RangeBase( std::shared_ptr<MeshStructured<GeoShape,T,IndexT>> const& b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b.get() ) {}
+#else
 
+    template <typename MeshType>
+    RangeBase(std::shared_ptr<MeshType> const& b)
+        : CommObject(b->worldCommPtr()),
+          M_mesh_base(b.get())
+    {}
+
+    template <typename MeshType>
+    RangeBase(std::shared_ptr<const MeshType> const& b)
+        : CommObject(b->worldCommPtr()),
+          M_mesh_base(b.get())
+    {}
+
+    template <typename MeshType, std::enable_if_t<!std::is_pointer_v<MeshType>, int> = 0>
+    RangeBase(MeshType const& b)
+        : CommObject(b.worldCommPtr()),
+          M_mesh_base(&b)
+    {}
+
+    template <typename MeshType, std::enable_if_t<std::is_pointer_v<MeshType>, int> = 0>
+    RangeBase(MeshType const b)
+        : CommObject(b->worldCommPtr()),
+          M_mesh_base(b)
+    {}
+
+#endif
     RangeBase( MeshBase<index_t> const* b ) : CommObject( b->worldCommPtr() ), M_mesh_base( b ) {}
 
     MeshBase<index_t> const* meshBase() const { return M_mesh_base; }
+
+    template<typename MeshType>
+    void setMesh( std::shared_ptr<MeshType> const& m )
+    {
+        this->setWorldCommPtr( m->worldCommPtr() );
+        M_mesh_base = m.get();
+    }
+
 
 protected:
     //std::weak_ptr<MeshBase<index_t>> M_mesh_base;
@@ -103,34 +148,61 @@ protected:
 
 };
 
+template<typename MeshType>
+std::shared_ptr<MeshType> shared_from_this( std::shared_ptr<MeshType> const& m )
+{
+    return m;
+}
+template<typename MeshType, typename = std::enable_if_t<std::is_base_of_v<std::enable_shared_from_this<MeshType>,MeshType>>>
+std::shared_ptr<MeshType const> shared_from_this( MeshType const& m )
+{
+    return m.shared_from_this();
+}
+template<typename MeshType, typename = std::enable_if_t<!std::is_base_of_v<std::enable_shared_from_this<MeshType>,MeshType>>>
+MeshType const* shared_from_this( MeshType const& m )
+{
+    return &m;
+}
 template <typename MeshType, int MESH_ENTITIES, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
 class FEELPP_EXPORT Range
-    : public entities_reference_wrapper_t<MeshType, MESH_ENTITIES>, public RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
+    : public RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
+    //public entities_reference_wrapper_t<MeshType, MESH_ENTITIES>, public RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
 {
     using super = entities_reference_wrapper_t<MeshType,MESH_ENTITIES>;
     using super_range = RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>;
   public:
 
-    using mesh_t = decay_type<std::remove_pointer_t<MeshType>>;
-    using mesh_ptr_t = std::shared_ptr<const mesh_t>;
+    using mesh_non_const_t = std::remove_const_t<decay_type<std::remove_pointer_t<MeshType>>>;
+    using mesh_t = mesh_non_const_t;
+    using mesh_const_t = std::add_const_t<mesh_t>;
+    using mesh_ptr_non_const_t = std::shared_ptr<mesh_non_const_t>;
+    using mesh_ptr_const_t = std::shared_ptr<const mesh_non_const_t>;
+    using mesh_ptr_t = std::shared_ptr<mesh_t>;
     using index_type = typename mesh_t::index_type;
     using index_t = index_type;
+    using container_t = typename boost::tuples::element<3,super>::type::element_type;
+    using container_ptr_t = typename boost::tuples::element<3,super>::type;
     using idim_t = typename boost::tuples::template element<0, super>::type;
     using iterator_t = typename boost::tuples::template element<1, super>::type;
-    using element_t = entities_t<mesh_t, MESH_ENTITIES>;
+    using element_t = typename  boost::unwrap_reference<typename iterator_t::value_type>::type;
+    using value_t = typename mesh_t::value_type;
 
     static constexpr int mesh_entities = MESH_ENTITIES; // idim_t
     static constexpr int nDim = mesh_t::nDim;
     static constexpr int nRealDim = mesh_t::nRealDim;
 
 
-    Range() = default;
+    Range()  : super_range(), cont_( std::make_shared<container_t>() )
+    {
+    }
     Range( Range const& e ) = default;
     Range( Range && e ) =  default;
     ~Range() = default;
     template <typename OtherMeshType>
-    Range( Range<OtherMeshType, MESH_ENTITIES> const& other ) : super(other), super_range(other) {}
+    Range( Range<OtherMeshType, MESH_ENTITIES> const& other ) : super_range(other.mesh()), cont_( other.container() ) {}
 
+    static constexpr idim_t idim() { return idim_t(); }
+    static constexpr int iDim() { return idim_t::value; }
     static constexpr int entities() { return MESH_ENTITIES; }
     static constexpr bool isOnElements() { return mesh_entities == MESH_ELEMENTS;  }
     static constexpr bool isOnFaces() { return mesh_entities == MESH_FACES;  }
@@ -138,53 +210,82 @@ class FEELPP_EXPORT Range
     static constexpr bool isOnFacets() { return mesh_entities == MESH_FACES; }
     static constexpr bool isOnPoints() { return mesh_entities == MESH_POINTS;  }
 
+    // Constructors handling both MeshType and MeshType const
+    Range(mesh_non_const_t const& m) : Range(shared_from_this(m)), mesh_(&m)
+    {}
+
+    Range(mesh_ptr_non_const_t const& m) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>())
+    {}
+
+    Range(mesh_ptr_const_t const& m) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>())
+    {}
+
+    Range(mesh_non_const_t const* m) : super_range(m), mesh_(m), cont_(std::make_shared<container_t>())
+    {}
+
     // Constructor for Mesh
-    Range( super const& er, MeshType const& m, int marker, int pid )
-        : super( er ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+    Range( super const& er, mesh_non_const_t const& m )
+        : super_range( unwrap_ptr(m).shared_from_this() ), mesh_(&m), cont_( er.template get<3>() )
     {}
 
     // Constructor for Mesh*
-    Range( super const& er, MeshType* m, int marker, int pid )
-        : super( er ), super_range( unwrap_ptr(m).shared_from_this() ), M_marker( marker ), M_pid( pid )
+    Range( super const& er, mesh_non_const_t const* m)
+        : super_range( unwrap_ptr(m).shared_from_this() ), mesh_(m), cont_( er.template get<3>() )
     {}
 
     // Constructor for std::shared_ptr<Mesh>
-    Range( super const& er, std::shared_ptr<std::remove_const_t<MeshType>> const& m, int marker, int pid )
-        : super( er ), super_range( m ), M_marker( marker ), M_pid( pid )
+    Range( super const& er, std::shared_ptr<std::remove_const_t<MeshType>> const& m )
+        : super_range( m ), mesh_(m.get()), cont_( er.template get<3>() )
     {}
 
     // Constructor for std::shared_ptr<const Mesh>
-    Range( super const& er, std::shared_ptr<const MeshType> const& m, int marker, int pid )
-        : super( er ), super_range( m ), M_marker( marker ), M_pid( pid )
+    Range( super const& er, std::shared_ptr<const MeshType> const& m)
+        : super_range( m ), mesh_(m.get()), cont_( er.template get<3>() )
     {}
 
     Range& operator=( Range const& ) = default;
     Range& operator=( Range && ) = default;
 
-    bool isEmpty() const { return begin() == end(); }
+    bool isEmpty() const { return cont_->empty(); }
 
-    auto begin() { return this->template get<1>(); }
-    auto end() { return this->template get<2>(); }
-    auto const& begin() const { return this->template get<1>(); }
-    auto const& end() const { return this->template get<2>(); }
+    template<int N>
+    auto get() 
+    { 
+        if constexpr ( N==1 ) 
+            return cont_->begin();
+        else 
+            return cont_->end();
+    }
+    auto begin() { return cont_->begin(); }
+    auto end() { return cont_->end(); }
+    auto begin() const { return cont_->begin(); }
+    auto end() const { return cont_->end(); }
 
-    element_t const& front() const { return *begin(); }
-    element_t const& back() const { return *std::prev( end() ); }
+    element_t const& front() const { return boost::unwrap_ref(cont_->front()); }
+    element_t const& back() const { return boost::unwrap_ref(cont_->back()); }
 
+    int size() const { return cont_->size(); }
+    
+    container_ptr_t const& container() const { return cont_; }
+    container_ptr_t container() { return cont_; }
+    void clear()
+    {
+        this->container()->clear();
+    }
+    void push_back( element_t const& e )
+    {
+        this->container()->push_back( boost::cref( e ) );
+    }
+    void shrink_to_fit() { this->container()->shrink_to_fit(); }
 
-    int marker() const { return M_marker; }
-    void setMarker( int m ) { M_marker = m; }
-    bool hasMarker() const { return M_marker != -1; }
-
-    void setProcessId( int id ) { M_pid = id; }
-    int pid() const { return M_pid; }
-    bool hasPid() const { return M_pid != -1; }
-
-    mesh_t const& mesh() const { return  dynamic_cast<mesh_t const&>( *this->meshBase() ); }
+    auto mesh() const { return mesh_; }
 private:
-    int M_marker;
-    int M_pid;
+    mesh_non_const_t const* mesh_;
+    container_ptr_t cont_;
 };
+
+
+
 
 template <typename... Tv>
 auto
@@ -194,15 +295,26 @@ range( Tv&&... v )
     using mesh_t = decay_type<decltype( args.get( _mesh ) )>;
     using entities_t = typename boost::tuples::element<0,decay_type<decltype( args.get( _range ) )>>::type;
     return Range<mesh_t,entities_t::value>{ args.get( _range ),
-                                            args.get( _mesh ),
-                                            args.get_else( _marker1, -1 ),
-                                            args.get_else( _pid, -1 ) };
+                                            args.get( _mesh ) };
 }
+
 
 template <typename RangeT>
 inline constexpr bool is_range_v = std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;
 //inline constexpr bool is_range_v = is_tuple_v<decay_type<RangeT>> || std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
 
+
+
+/**
+ * @brief Specialization for Range
+ * 
+ * @tparam RangeType 
+ */
+template <typename RangeType>
+struct element_type_helper<RangeType, std::enable_if_t<is_range_v<RangeType>>> {
+    using type = typename decay_type<RangeType>::element_t;
+    using ptrtype = std::shared_ptr<type>;
+};
 
 /**
  * @brief get the begin iterator of a range
@@ -366,5 +478,11 @@ nelements(RangeT const& its, Zone const& z)
     return nelements(its, (z == Zone::GLOBAL));
 }
 
+template <typename MeshType, int MESH_ENTITIES, typename = std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int>>
+std::ostream& operator<<(std::ostream& os, const Range<MeshType, MESH_ENTITIES>& range)
+{
+    os << "Range of " << MESH_ENTITIES << " entities with " << nelements( range) << " elements.";
+    return os;
+}
 
 } // namespace Feel

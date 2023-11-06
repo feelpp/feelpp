@@ -142,9 +142,9 @@ public:
     }
 
     evaluate_type
-    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool p ) const
         {
-            return evaluate_type::Constant( M_expr.evaluate( p, worldcomm )(M_c1,M_c2) );
+            return evaluate_type::Constant( M_expr.evaluate( p )(M_c1,M_c2) );
         }
 
     void setParameterValues( std::map<std::string,double> const& mp )
@@ -956,8 +956,7 @@ public :
         }
         else
         {
-            CHECK( false ) << "expression can not be evaluated without context";
-            return evaluate_type{};
+            throw std::invalid_argument( "expression can not be evaluated without context" );
         }
     }
     template<typename T, int M, int N=1>
@@ -1046,12 +1045,16 @@ extern Expr<LambdaExpr3V> _e3v;
 template<typename IntElts,typename ExprT>
 struct ExpressionOrder
 {
-
+    using element_iterator_type = typename IntElts::iterator_t;
+    using the_face_element_type = typename IntElts::element_t;
+    using the_element_type = typename the_face_element_type::super2::template Element<the_face_element_type>::type;
+#if 0    
     typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
+
     typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
-
+#endif
     static inline const uint16_type nOrderGeo = the_element_type::nOrder;
 #if 0
     static const bool is_polynomial = ExprT::imIsPoly;

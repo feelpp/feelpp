@@ -104,9 +104,9 @@ struct MeshTraits
 };
 
 template<typename T>
-struct dimension_t : mpl::int_<decay_type<T>::nDim> {};
+using dimension_t = mp11::mp_size_t<decay_type<T>::nDim>;
 template<typename T>
-constexpr uint16_type dimension_v = dimension_t<T>::value;
+inline constexpr uint16_type dimension_v = dimension_t<T>::value;
 /**
  * @return topological dimension of a type T
  */
@@ -117,7 +117,7 @@ inline constexpr int dimension( T const& t )
 }
 
 template<typename T>
-struct real_dimension_t : mpl::int_<decay_type<T>::nRealDim> {};
+using real_dimension_t = boost::mp11::mp_size_t<decay_type<T>::nRealDim>;
 template<typename T>
 constexpr uint16_type real_dimension_v = real_dimension_t<T>::value;
 
@@ -130,16 +130,28 @@ inline constexpr int real_dimension( T const& t )
   return real_dimension_v<T>;
 }
 
+template<typename T>
+using is_3d = mp11::mp_bool<decay_type<T>::nDim == 3>;
 
+template<typename T>
+using is_2d = mp11::mp_bool<decay_type<T>::nDim == 2>;
 
 template<typename T>
-struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 /*|| decay_type<T>::nRealDim ==3*/> {};
+using is_1d = mp11::mp_bool<decay_type<T>::nDim == 1>;
+
 template<typename T>
-struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 /*|| decay_type<T>::nRealDim ==2*/> {};
+using is_0d = mp11::mp_bool<decay_type<T>::nDim == 0>;
+
+// now define the _v variants
 template<typename T>
-struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 /*|| decay_type<T>::nRealDim ==1*/> {};
+inline constexpr bool is_3d_v = is_3d<T>::value;
 template<typename T>
-struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 /*|| decay_type<T>::nRealDim ==0*/> {};
+inline constexpr bool is_2d_v = is_2d<T>::value;
+template<typename T>
+inline constexpr bool is_1d_v = is_1d<T>::value;
+template<typename T>
+inline constexpr bool is_0d_v = is_0d<T>::value;
+
 
 template<typename T>
 struct is_3d_real : mpl::bool_< decay_type<T>::nRealDim ==3 > {};
@@ -204,11 +216,11 @@ template<typename T> class RangeBase;
 template<typename T>
 using has_base_rangebase_32 = std::is_base_of<RangeBase<uint32_type>, T>;
 template<typename T>
-const bool has_base_rangebase_32_v = has_base_rangebase_32<T>::value;
+constexpr bool has_base_rangebase_32_v = has_base_rangebase_32<T>::value;
 template<typename T>
 using has_base_rangebase_64 = std::is_base_of<RangeBase<uint64_type>, T>;
 template<typename T>
-const bool has_base_rangebase_64_v = has_base_rangebase_64<T>::value;
+constexpr bool has_base_rangebase_64_v = has_base_rangebase_64<T>::value;
 
 
 /**

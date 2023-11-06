@@ -596,11 +596,18 @@ namespace meta
 template<typename MeshType, int N = 1>
 struct Exporter
 {
-    typedef Feel::Exporter<MeshType,N> type;
+    typedef Feel::Exporter<decay_type<MeshType>,N> type;
     typedef std::shared_ptr<type> ptrtype;
 };
 
 }
+
+template<typename MeshType, int N = 1>
+using exporter_t = typename meta::Exporter<MeshType,N>::type;
+
+template<typename MeshType, int N = 1>
+using exporter_ptr_t = typename meta::Exporter<MeshType,N>::ptrtype;
+
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )

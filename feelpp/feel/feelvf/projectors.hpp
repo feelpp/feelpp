@@ -69,12 +69,8 @@ public:
     typedef typename expression_type::value_type value_type;
 
     typedef IteratorRange range_iterator;
-    typedef typename mpl::if_< boost::is_std_list<range_iterator>,
-                               mpl::identity<range_iterator>,
-                               mpl::identity<std::list<range_iterator> > >::type::type::value_type range_iterator_type;
-    typedef typename boost::tuples::template element<0, range_iterator_type>::type idim_type;
-    typedef typename boost::tuples::template element<1, range_iterator_type>::type iterator_type;
-
+    using  idim_type = typename IteratorRange::idim_t;
+    using iterator_type = typename IteratorRange::iterator_t;
 
     //@}
 

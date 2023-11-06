@@ -30,6 +30,7 @@
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
+#include <feel/feeldiscr/mesh_fwd.hpp>
 
 namespace Feel {
 
@@ -200,10 +201,6 @@ struct element_type_helper<SpaceType, std::enable_if_t<is_functionspace_v<SpaceT
 };
 
 
-// forward declaration of Mesh class
-template <typename GeoShape, typename T, int Tag, typename IndexT>
-class Mesh;
-
 /**
  * @brief Specialization for Meshes
  * 
@@ -271,8 +268,8 @@ struct faces_mesh
     static constexpr int nOrder = MeshType::nOrder;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
-        Mesh<Simplex<2, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t>,
-        Mesh<Hypercube<2, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t>
+        Mesh<Simplex<2, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
+        Mesh<Hypercube<2, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>
     >;
     using ptrtype = std::shared_ptr<type>;
     using const_ptrtype = std::shared_ptr<const type>;
@@ -320,8 +317,8 @@ struct facets_mesh
     static constexpr int d = MeshType::nDim-1;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
-        Mesh<Simplex<d, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t>,
-        Mesh<Hypercube<d, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t>
+        Mesh<Simplex<d, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
+        Mesh<Hypercube<d, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>
     >;
     using ptrtype = std::shared_ptr<type>;
     using const_ptrtype = std::shared_ptr<const type>;
@@ -367,8 +364,8 @@ struct edges_mesh
     static constexpr int nOrder = MeshType::nOrder;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
-        Mesh<Simplex<1, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t>,
-        Mesh<Hypercube<1, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t>
+        Mesh<Simplex<1, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
+        Mesh<Hypercube<1, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>
     >;
     using ptrtype = std::shared_ptr<type>;
     using const_ptrtype = std::shared_ptr<const type>;

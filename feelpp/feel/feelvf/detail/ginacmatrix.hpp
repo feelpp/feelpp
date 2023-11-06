@@ -732,13 +732,13 @@ public:
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
-        return this->evaluateImpl( true, Environment::worldCommPtr() );
+        return this->evaluateImpl( true );
     }
 
     Eigen::MatrixXd
-    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel = true ) const
     {
-        return this->evaluateImpl( parallel, worldcomm );
+        return this->evaluateImpl( parallel );
     }
 
     //@}
@@ -1264,7 +1264,7 @@ private :
     }
 
     evaluate_type
-    evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluateImpl( bool parallel) const
     {
         if ( M_isNumericExpression )
             return M_numericValue;
@@ -1276,7 +1276,7 @@ private :
             x[k] = M_params[k];
 
         int k2 = 0;
-        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel,&worldcomm,&k2]( auto seId )
+        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel,&k2]( auto seId )
                         {
                             auto const& evec = hana::at( this->symbolsExpression().tuple(), hana::int_c<seId> );
                             //auto const& evecExpand = hana::at(M_expandSymbolsExpr, hana::int_c<seId> );
