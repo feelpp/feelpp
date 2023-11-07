@@ -1800,7 +1800,7 @@ template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::saveDB()
 {
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
     if ( this->worldComm().isMasterRank() )
         std::cout << "CRBSCM SaveDB: " << (this->dbLocalPath() / this->dbFilename()).string() << std::endl;
     if ( ofs )
@@ -1827,7 +1827,7 @@ CRBSCM<TruthModelType>::loadDB()
         return false;
 
     LOG( INFO ) << "Loading " << db << "...";
-    fs::ifstream ifs( db );
+    std::ifstream ifs( db );
     if ( ifs )
     {
         boost::archive::text_iarchive ia( ifs );

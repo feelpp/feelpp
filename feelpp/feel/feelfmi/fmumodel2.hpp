@@ -26,8 +26,6 @@
 
 #include <fmilib.h>
 
-#include <boost/filesystem.hpp>
-
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfmi/fmumodelbase.hpp>
 
