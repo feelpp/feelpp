@@ -198,15 +198,15 @@ int runSimulation()
         ++j;
     }
 
-    fs::ofstream cvgErr( "err.dat" );
+    std::ofstream cvgErr( "err.dat" );
     writeErrors(cvgErr, errs);
     cvgErr.close();
-    fs::ofstream cvgErrR( "errR.dat" );
+    std::ofstream cvgErrR( "errR.dat" );
     writeErrors(cvgErrR, errsRel);
     cvgErrR.close();
 
     auto [min,max,mean,stdev] = computeStats(errsRel);
-    fs::ofstream cvgStat( "stat.dat" );
+    std::ofstream cvgStat( "stat.dat" );
     writeStats(cvgStat, min, mean, max, stdev);
     cvgStat.close();
     Feel::cout << "stats on field over size of RB" << std::endl;
@@ -218,14 +218,14 @@ int runSimulation()
     int k = 0;
     for( auto const& [name,output] : outputs)
     {
-        fs::ofstream cvgErrO( "err_"+name+".dat" );
+        std::ofstream cvgErrO( "err_"+name+".dat" );
         writeErrors(cvgErrO, errsOutput[k]);
         cvgErrO.close();
-        fs::ofstream cvgErrOR( "errR_"+name+".dat" );
+        std::ofstream cvgErrOR( "errR_"+name+".dat" );
         writeErrors(cvgErrOR, errsOutputRel[k]);
         cvgErrOR.close();
         auto [minO,maxO,meanO,stdevO] = computeStats(errsOutputRel[k]);
-        fs::ofstream cvgStatO( "stat_"+name+".dat" );
+        std::ofstream cvgStatO( "stat_"+name+".dat" );
         writeStats(cvgStatO, minO, meanO, maxO, stdevO);
         cvgStatO.close();
         Feel::cout << "stats on output " << name << " over size of RB" << std::endl;

@@ -7,7 +7,7 @@
 
  Copyright (C) 2009-2012 Université Joseph Fourier (Grenoble I)
  Copyright (C) 2011-present Feel++ Consortium
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -761,10 +761,10 @@ CRBSaddlePoint<TruthModelType>::offlineResidualSP( int Ncur , int number_of_adde
     {
         if ( Row==0 && Environment::isMasterRank() )
         {
-            boost::filesystem::path dir("Riesz");
-            if ((boost::filesystem::exists(dir)))
-                boost::filesystem::remove_all(dir);
-            boost::filesystem::create_directory(dir);
+            fs::path dir("Riesz");
+            if ((fs::exists(dir)))
+                fs::remove_all(dir);
+            fs::create_directory(dir);
         }
 
         tic();

@@ -29,12 +29,8 @@
 
 #include <feel/feelcore/applicationxml.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 namespace Feel
 {
-namespace fs = boost::filesystem;
 namespace detail
 {
 po::options_description
@@ -188,4 +184,3 @@ ApplicationXML::postProcessing()
 
 
 }
-

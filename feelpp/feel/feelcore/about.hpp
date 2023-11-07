@@ -34,6 +34,7 @@
 #include <string>
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/info.hpp>
 
 
 

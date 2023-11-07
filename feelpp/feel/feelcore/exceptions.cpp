@@ -65,7 +65,7 @@ template <typename E>
 void
 print_and_trace( std::string const& s, E const& e )
 {
-    
+
     const boost::stacktrace::stacktrace* st = boost::get_error_info<traced>( e );
     if ( st )
     {
@@ -81,22 +81,22 @@ void handleExceptions()
 
     try
     {
-        throw; // re-throw exception already in flight } 
+        throw; // re-throw exception already in flight }
     }
     catch( boost::bad_lexical_cast const& e )
     {
-        print_and_trace( fmt::format( "[feel++.boost.bad_lexical_cast] {}, source type: {}, target type: {}", 
-                                        e.what(), 
-                                        boost::core::demangle(e.source_type().name()), 
+        print_and_trace( fmt::format( "[feel++.boost.bad_lexical_cast] {}, source type: {}, target type: {}",
+                                        e.what(),
+                                        boost::core::demangle(e.source_type().name()),
                                         boost::core::demangle(e.target_type().name())), e );
     }
     catch ( const pybind11::error_already_set& e )
     {
         print_and_trace( fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}\n", e.what() ), e );
     }
-    catch(const boost::filesystem::filesystem_error& e)
+    catch(const fs::filesystem_error& e)
     {
-        if ( e.code() == boost::system::errc::permission_denied )
+        if ( e.code() == std::errc::permission_denied )
             print_and_trace( fmt::format( "[feel++.boost.filesystem.filesystem_error.permission_denied] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() ), e );
         else
             print_and_trace( fmt::format( "[feel++.boost.filesystem.filesystem_error] {}, path1: {}, path2: {}\n", e.what(), e.path1().string(), e.path2().string() ), e );
@@ -109,7 +109,7 @@ void handleExceptions()
     {
         print_and_trace( fmt::format( "[feelpp.std.invalid_argument] {}\n",e.what()), e );
     }
-    catch (const std::runtime_error & e) 
+    catch (const std::runtime_error & e)
     {
         print_and_trace( fmt::format( "[feel++.std.runtime_error] {}\n", e.what() ), e );
     }
@@ -125,6 +125,6 @@ void handleExceptions()
     {
         fmt::print( "[feel++.unknown.exception] caught unknown exception\n" );
     }
-}    
+}
 
 } // namespace Feel
