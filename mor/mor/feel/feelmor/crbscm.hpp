@@ -1801,7 +1801,8 @@ void
 CRBSCM<TruthModelType>::saveDB()
 {
     std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-    std::cout << "CRBSCM SaveDB: " << (this->dbLocalPath() / this->dbFilename()).string() << std::endl;
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "CRBSCM SaveDB: " << (this->dbLocalPath() / this->dbFilename()).string() << std::endl;
     if ( ofs )
     {
         boost::archive::text_oarchive oa( ofs );
