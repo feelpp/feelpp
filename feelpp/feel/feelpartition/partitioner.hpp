@@ -49,10 +49,10 @@ public:
     using partitioner_type = Partitioner<mesh_type>;
     using clone_ptrtype = std::unique_ptr<partitioner_type>;
 
-    using element_type = typename mesh_type::element_type;
+    using element_type = element_t<mesh_type>;
     using face_type = typename mesh_type::face_type;
     using point_type = typename mesh_type::point_type;
-    using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using range_element_type = Range<mesh_type,MESH_ELEMENTS>;
     /**
      * Constructor.
      */
