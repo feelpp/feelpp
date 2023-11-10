@@ -62,6 +62,17 @@ unwrap_ptr( C * c )
     return *c;
 }
 
+template<typename C>
+unwrap_ptr_t<C>&&
+unwrap_ptr( C && c )
+{
+    if constexpr ( is_ptr_or_shared_ptr<std::decay_t<C>>() )
+        return *std::forward<C>(c);
+    else
+        return std::forward<C>(c);
+}
+
+
 
 } // Feel
 #endif

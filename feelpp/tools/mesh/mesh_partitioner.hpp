@@ -115,7 +115,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
         fs::path inputDir = inputPathMesh.parent_path();
         std::string inputFilenameWithoutExt = inputPathMesh.stem().string();
 
-        std::vector<elements_reference_wrapper_t<mesh_type>> partitionByRange;
+        std::vector<Range<mesh_type,MESH_ELEMENTS>> partitionByRange;
         if ( Environment::vm().count("by-markers-desc") )
         {
             std::vector<std::string> inputMarkers = Environment::vm()["by-markers-desc"].template as<std::vector<std::string> >();

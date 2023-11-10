@@ -72,7 +72,7 @@ template<typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
 auto
 hMeasures( MeshType&& m )
 {
-    return hMeasures( elements( std::forward<MeshType>(m) ), std::forward<MeshType>(m).numGlobalElements() );
+    return hMeasures( elements( std::forward<MeshType>(m) ), unwrap_ptr(std::forward<MeshType>(m)).numGlobalElements() );
 }
 
 /**
