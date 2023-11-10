@@ -178,9 +178,9 @@ class FEELPP_EXPORT VectorUblas : public Vector<T>
         //void checkInvariants() const { DCHECK( M_vectorImpl ) << "vector impl not initialized"; if( M_vectorImpl ) M_vectorImpl->checkInvariants(); }
 
         // Operators API
-        virtual value_type operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
+        virtual const value_type& operator()( size_type i ) const override { return M_vectorImpl->operator()( i ); }
         virtual value_type& operator()( size_type i ) override { return M_vectorImpl->operator()( i ); }
-        value_type operator[]( size_type i ) const { return this->operator()( i ); }
+        const value_type& operator[]( size_type i ) const { return this->operator()( i ); }
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
@@ -480,9 +480,9 @@ class FEELPP_EXPORT VectorUblasBase: public Vector<T>
         void outdateGlobalValues() { }
 
         // Operators API
-        virtual value_type operator()( size_type i ) const override = 0;
+        virtual const value_type& operator()( size_type i ) const override = 0;
         virtual value_type& operator()( size_type i ) override = 0;
-        value_type operator[]( size_type i ) const { return this->operator()( i ); }
+        const value_type& operator[]( size_type i ) const { return this->operator()( i ); }
         value_type& operator[]( size_type i ) { return this->operator()( i ); }
 
         Vector<T>& operator+=( const Vector<T>& v ) override { this->add( v ); return *this; }
@@ -735,7 +735,7 @@ class VectorUblasContiguousGhostsBase:
         virtual vector_cstptr_variant_type vec() const = 0;
 
         // Operators API
-        virtual value_type operator()( size_type i ) const override = 0;
+        virtual const value_type& operator()( size_type i ) const override = 0;
         virtual value_type& operator()( size_type i ) override = 0;
 
         // Setters API
@@ -862,7 +862,7 @@ class VectorUblasContiguousGhosts: public VectorUblasContiguousGhostsBase<T>
         virtual vector_cstptr_variant_type vec() const override { return &M_vec; }
 
         // Operators API
-        virtual value_type operator()( size_type i ) const override;
+        virtual const value_type& operator()( size_type i ) const override;
         virtual value_type& operator()( size_type i ) override;
         
         // Iterators API
@@ -1002,7 +1002,7 @@ class VectorUblasNonContiguousGhostsBase:
         virtual vector_cstptr_variant_type vecNonContiguousGhosts() const = 0;
 
         // Operators API
-        virtual value_type operator()( size_type i ) const override = 0;
+        virtual const value_type& operator()( size_type i ) const override = 0;
         virtual value_type& operator()( size_type i ) override = 0;
 
         // Setters API
@@ -1133,7 +1133,7 @@ class VectorUblasNonContiguousGhosts: public VectorUblasNonContiguousGhostsBase<
         virtual vector_cstptr_variant_type vecNonContiguousGhosts() const override { return &M_vecNonContiguousGhosts; }
 
         // Operators API
-        virtual value_type operator()( size_type i ) const override;
+        virtual const value_type& operator()( size_type i ) const override;
         virtual value_type& operator()( size_type i ) override;
         
         // Iterators API

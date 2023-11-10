@@ -326,7 +326,7 @@ public:
      */
     //@{
 
-    value_type operator() ( const size_type i ) const override;
+    const value_type& operator() ( const size_type i ) const override;
     value_type& operator() ( const size_type i ) override;
 
     /**
@@ -875,7 +875,7 @@ public:
      */
     void init( datamap_ptrtype const& dm ) override;
 
-    value_type operator() ( const size_type i ) const override;
+    const value_type& operator() ( const size_type i ) const override;
     value_type& operator() ( const size_type i ) override;
 
     /**
@@ -1019,7 +1019,7 @@ public:
      */
     void clear() override;
 
-    value_type operator() ( const size_type i ) const override;
+    const value_type& operator() ( const size_type i ) const override;
     value_type& operator() ( const size_type i ) override;
 
     /**

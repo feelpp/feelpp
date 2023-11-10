@@ -294,7 +294,7 @@ public:
 
     Vector<T>& operator= ( const Vector<value_type> &V ) override { return M_vec->operator=( V ); }
     T& operator() ( const size_type i ) override { return M_vec->operator()( i ); }
-    T operator() ( const size_type i ) const override { return M_vec->operator()( i ); }
+    const T& operator() ( const size_type i ) const override { return M_vec->operator()( i ); }
     Vector<T> & operator += ( const Vector<value_type> &V ) override { return M_vec->operator+=( V ); }
     Vector<T> & operator -= ( const Vector<value_type> &V ) override { return M_vec->operator-=( V ); }
     //@}

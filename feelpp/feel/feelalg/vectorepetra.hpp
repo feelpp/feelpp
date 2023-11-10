@@ -167,21 +167,20 @@ public:
 
 
 
-    value_type operator() ( const size_type i ) const
+    const value_type& operator() ( const size_type i ) const
     {
         checkInvariants();
         FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
         FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
                           ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
 
-        value_type value=0.;
         int ierr=0, dummy;
         double* values;
 
         ierr = M_vec.ExtractView( &values, &dummy );
 
-        value = values[i - this->firstLocalIndex()];
-        return static_cast<value_type>( value );
+        const value_type& value = values[i - this->firstLocalIndex()];
+        return value;
 
     }
 

@@ -160,7 +160,7 @@ public:
     /**
      * Access components, returns \p u(i).
      */
-    T operator()( size_type i ) const override
+    const T& operator()( size_type i ) const override
     {
         FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
         FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&
@@ -189,7 +189,7 @@ public:
     /**
      * Access components, returns \p u(i).
      */
-    T operator[]( size_type i ) const
+    const T& operator[]( size_type i ) const
     {
         FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
         FEELPP_ASSERT ( ( i >= this->firstLocalIndex() ) &&

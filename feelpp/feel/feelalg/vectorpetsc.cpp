@@ -188,7 +188,7 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type
     CHKERRABORT( this->comm(),ierr );
 }
 template <typename T>
-typename VectorPetsc<T>::value_type
+const typename VectorPetsc<T>::value_type &
 VectorPetsc<T>::operator() ( const size_type i ) const
 {
     DCHECK( this->isInitialized() ) << "VectorPETSc not initialized";
@@ -198,18 +198,18 @@ VectorPetsc<T>::operator() ( const size_type i ) const
                                                    << " last local index:  " << this->lastLocalIndex();
 
     int ierr=0;
-    PetscScalar *values, value=0.;
+    const PetscScalar *values;
 
 
-    ierr = VecGetArray( M_vec, &values );
+    ierr = VecGetArrayRead( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
 
-    value = values[i - this->firstLocalIndex()];
+    const PetscScalar& value = values[i - this->firstLocalIndex()];
 
-    ierr = VecRestoreArray ( M_vec, &values );
+    ierr = VecRestoreArrayRead ( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
 
-    return static_cast<value_type>( value );
+    return static_cast<const value_type&>( value );
 }
 template <typename T>
 typename VectorPetsc<T>::value_type&
@@ -1093,7 +1093,7 @@ VectorPetscMPI<T>::initImpl( const bool fast )
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
-typename VectorPetscMPI<T>::value_type
+const typename VectorPetscMPI<T>::value_type&
 VectorPetscMPI<T>::operator() ( const size_type i ) const
 {
     int ierr=0;
@@ -1107,15 +1107,15 @@ VectorPetscMPI<T>::operator() ( const size_type i ) const
     CHKERRABORT( this->comm(),ierr );
     CHECK( hola ) << "is not a GhostGetLocalForm2";
 #endif
-    PetscScalar *values;
-    ierr = VecGetArray(lx,&values);
+    const PetscScalar *values;
+    ierr = VecGetArrayRead(lx,&values);
     CHKERRABORT( this->comm(),ierr );
-    PetscScalar& value =  values[i];
-    ierr = VecRestoreArray( lx, &values );
+    const PetscScalar& value =  values[i];
+    ierr = VecRestoreArrayRead( lx, &values );
     CHKERRABORT( this->comm(),ierr );
     ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
-    return static_cast<value_type>( value );
+    return static_cast<const value_type&>( value );
 }
 template <typename T>
 typename VectorPetscMPI<T>::value_type&
@@ -2282,28 +2282,28 @@ VectorPetscMPIRange<T>::clear()
 }
 
 template <typename T>
-typename VectorPetscMPIRange<T>::value_type
+const typename VectorPetscMPIRange<T>::value_type&
 VectorPetscMPIRange<T>::operator() ( const size_type i ) const
 {
     int ierr=0;
-    PetscScalar *values;
+    const PetscScalar *values;
     if ( i < this->map().nLocalDofWithoutGhost() )
     {
-        ierr = VecGetArray( this->vec(), &values );
+        ierr = VecGetArrayRead( this->vec(), &values );
         CHKERRABORT( this->comm(),ierr );
-        PetscScalar value =  values[i];
-        ierr = VecRestoreArray( this->vec(), &values );
+        const PetscScalar& value =  values[i];
+        ierr = VecRestoreArrayRead( this->vec(), &values );
         CHKERRABORT( this->comm(),ierr );
-        return static_cast<value_type>( value );
+        return static_cast<const value_type&>( value );
     }
     else
     {
-        ierr = VecGetArray( M_vecGhost, &values );
+        ierr = VecGetArrayRead( M_vecGhost, &values );
         CHKERRABORT( this->comm(),ierr );
         PetscScalar value =  values[i-this->map().nLocalDofWithoutGhost()];
-        ierr = VecRestoreArray( M_vecGhost, &values );
+        ierr = VecRestoreArrayRead( M_vecGhost, &values );
         CHKERRABORT( this->comm(),ierr );
-        return static_cast<value_type>( value );
+        return static_cast<const value_type&>( value );
     }
 }
 

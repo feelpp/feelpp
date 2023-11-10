@@ -727,7 +727,7 @@ void VectorUblasContiguousGhosts<T, Storage>::clear( )
 }
         
 template< typename T, typename Storage >
-typename VectorUblasContiguousGhosts<T, Storage>::value_type VectorUblasContiguousGhosts<T, Storage>::operator()( size_type i ) const
+const typename VectorUblasContiguousGhosts<T, Storage>::value_type& VectorUblasContiguousGhosts<T, Storage>::operator()( size_type i ) const
 {
     return M_vec.operator()( i-this->firstLocalIndex() );
 }
@@ -1509,7 +1509,7 @@ void VectorUblasNonContiguousGhosts<T, Storage>::clear( )
 }
         
 template< typename T, typename Storage >
-typename VectorUblasNonContiguousGhosts<T, Storage>::value_type VectorUblasNonContiguousGhosts<T, Storage>::operator()( size_type i ) const
+const typename VectorUblasNonContiguousGhosts<T, Storage>::value_type& VectorUblasNonContiguousGhosts<T, Storage>::operator()( size_type i ) const
 {
     const size_type nLocalActiveDof = this->map().nLocalDofWithoutGhost();
     if ( i < nLocalActiveDof )

@@ -412,7 +412,7 @@ public:
     /**
      * Access components, returns \p U(i).
      */
-    virtual T operator() ( const size_type i ) const = 0;
+    virtual const T& operator() ( const size_type i ) const = 0;
 
     virtual T& operator() ( const size_type i ) = 0;
 
