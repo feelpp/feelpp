@@ -812,7 +812,7 @@ if ( FEELPP_ENABLE_SPECX )
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
 
-  # set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
