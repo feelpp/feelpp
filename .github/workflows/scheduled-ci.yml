@@ -30,7 +30,7 @@ jobs:
         include:
           - {flavor: ubuntu, version: "20.04", dotw: '0'}
           - {flavor: ubuntu, version: "22.04", dotw: '1'}
-          - {flavor: ubuntu, version: "22.10", dotw: '2'}
+#          - {flavor: ubuntu, version: "23.10", dotw: '2'}
           - {flavor: debian, version: "testing", dotw: '3'}
           - {flavor: debian, version: "sid", dotw: '4'}
           - {flavor: fedora, version: "36", dotw: '5'}
