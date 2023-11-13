@@ -2291,7 +2291,7 @@ VectorPetscMPIRange<T>::operator() ( const size_type i ) const
     {
         ierr = VecGetArrayRead( this->vec(), &values );
         CHKERRABORT( this->comm(),ierr );
-        const PetscScalar& value =  values[i];
+        const PetscScalar& value = values[i];
         ierr = VecRestoreArrayRead( this->vec(), &values );
         CHKERRABORT( this->comm(),ierr );
         return static_cast<const value_type&>( value );
@@ -2300,7 +2300,7 @@ VectorPetscMPIRange<T>::operator() ( const size_type i ) const
     {
         ierr = VecGetArrayRead( M_vecGhost, &values );
         CHKERRABORT( this->comm(),ierr );
-        PetscScalar value =  values[i-this->map().nLocalDofWithoutGhost()];
+        const PetscScalar& value = values[i-this->map().nLocalDofWithoutGhost()];
         ierr = VecRestoreArrayRead( M_vecGhost, &values );
         CHKERRABORT( this->comm(),ierr );
         return static_cast<const value_type&>( value );
