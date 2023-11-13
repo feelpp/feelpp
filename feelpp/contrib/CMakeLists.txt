@@ -794,7 +794,7 @@ endif()
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
 # endif(FEELPP_ENABLE_SPDLOG)
 #
-option( FEELPP_ENABLE_SPECX "Enable specx" OFF )
+option( FEELPP_ENABLE_SPECX "Enable specx" ON )
 if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring specx")
