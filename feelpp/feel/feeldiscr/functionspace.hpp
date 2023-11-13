@@ -5285,17 +5285,17 @@ public:
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
 #if FEELPP_HAS_PETSC
-        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
-        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        //VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+        VectorPetsc<value_type> const* vecPetsc = dynamic_cast< VectorPetsc<value_type> const*>( &vec );
         CHECK( vecPetsc ) << "only petsc vector";
 
         auto const& dmVec = vec.map();
         CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
-        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
+        value_type* arrayActiveDof = const_cast<value_type*>( (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr );
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
-        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        value_type* arrayGhostDof = const_cast<value_type*>( (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr );
         element_type u( this->shared_from_this(),
                 nActiveDof, arrayActiveDof,
                 nGhostDof, arrayGhostDof );
@@ -5315,17 +5315,17 @@ public:
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
 #if FEELPP_HAS_PETSC
-        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
-        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+        //VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
+        VectorPetsc<value_type> const* vecPetsc = dynamic_cast< VectorPetsc<value_type> const*>( &vec );
         CHECK( vecPetsc ) << "only petsc vector";
 
         auto const& dmVec = vec.map();
         CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
-        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
+        value_type* arrayActiveDof = const_cast<value_type*>( (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr );
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
-        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        value_type* arrayGhostDof = const_cast<value_type*> ( (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr );
         element_ptrtype u( new element_type(
                     this->shared_from_this(),
                     nActiveDof, arrayActiveDof,
