@@ -4,7 +4,7 @@
 	// feelpp-dev images are available for the following distributions:
 	//"image": "ghcr.io/feelpp/feelpp-dev:focal",
 	//"image": "ghcr.io/feelpp/feelpp-dev:jammy",
-	//"image": "ghcr.io/feelpp/feelpp-dev:kinetic",
+	//"image": "ghcr.io/feelpp/feelpp-dev:mantic",
 	//"image": "ghcr.io/feelpp/feelpp-dev:lunar",
 	//"image": "ghcr.io/feelpp/feelpp-dev:bookworm",
 	//"image": "ghcr.io/feelpp/feelpp-dev:sid",
