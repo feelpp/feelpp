@@ -281,15 +281,18 @@ message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Feelpp Metis")
 option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_METIS)
-  add_subdirectory(metis)
-  #SET(FEELPP_HAS_METIS 1)
-  #SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
-  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_METIS )
-  TARGET_INCLUDE_DIRECTORIES(feelpp_contrib INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/metis/include>
-    $<INSTALL_INTERFACE:include/feelpp/metis>)
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_metis)
-  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Metis/Contrib" )
+    if(NOT PETSC_HAVE_METIS)
+        set(FEELPP_USE_INTERNAL_METIS 1)
+        add_subdirectory(metis)
+        #SET(FEELPP_HAS_METIS 1)
+        #SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
+        TARGET_INCLUDE_DIRECTORIES(feelpp_contrib INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/metis/include>
+            $<INSTALL_INTERFACE:include/feelpp/metis>)
+        target_link_libraries(feelpp_contrib INTERFACE feelpp_metis)
+        SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Metis/Contrib" )
+    endif(NOT PETSC_HAVE_METIS)
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_METIS )
 endif( FEELPP_ENABLE_METIS )
 
 
