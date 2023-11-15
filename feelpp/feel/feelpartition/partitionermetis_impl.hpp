@@ -26,8 +26,11 @@
 
 namespace Metis {
 extern "C" {
-    //#include <metis.h>
+#if defined(FEELPP_USE_INTERNAL_METIS)
     #include <feelmetis.h>
+#else
+    #include <metis.h>
+#endif
 } //"C"
 }
 #include <feel/feelpartition/csrgraphmetis.hpp>
@@ -236,15 +239,31 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 
         // Use recursive if the number of partitions is less than or equal to 8
         if (np <= 8)
+        {
+#if defined(FEELPP_USE_INTERNAL_METIS)
             Metis::Feel_METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
                                                  NULL, &nparts, NULL, NULL, NULL,
                                                  &edgecut, &part[0]);
+#else
+            Metis::METIS_PartGraphRecursive(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
+                                                 NULL, &nparts, NULL, NULL, NULL,
+                                                 &edgecut, &part[0]);
+#endif
+        }
 
         // Otherwise  use kway
         else
+        {
+#if defined(FEELPP_USE_INTERNAL_METIS)
             Metis::Feel_METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
                                             NULL, &nparts, NULL, NULL, NULL,
                                             &edgecut, &part[0]);
+#else
+            Metis::METIS_PartGraphKway(&n, &ncon, &csr_graph.offsets[0], &csr_graph.vals[0], &vwgt[0], NULL,
+                                            NULL, &nparts, NULL, NULL, NULL,
+                                            &edgecut, &part[0]);
+#endif
+        }
 
     } // end processor 0 part
 
