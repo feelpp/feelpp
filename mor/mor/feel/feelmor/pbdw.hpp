@@ -247,7 +247,7 @@ PBDWOnline::loadDB( std::string const& filename, crb::load l )
     if( !fs::exists(filename) )
         return;
 
-    fs::ifstream ifs( filename );
+    std::ifstream ifs( filename );
     if ( ifs )
     {
         Feel::cout << "loading DB at " << filename << std::endl;
@@ -522,7 +522,7 @@ PBDW<RBSpace>::saveDB()
         std::ofstream o(this->absoluteJsonFilename());
         o << j.dump(2) << std::endl;
 
-        fs::ofstream ofs( this->absoluteDbFilename() );
+        std::ofstream ofs( this->absoluteDbFilename() );
         if ( ofs )
         {
             Feel::cout << "saving DB at " << this->absoluteDbFilename() << std::endl;
@@ -541,7 +541,7 @@ PBDW<RBSpace>::saveDB()
         Feel::cout << "Saving mesh to " << this->absoluteMeshFilename() << std::endl;
         M_XR->functionSpace()->mesh()->saveHDF5( this->absoluteMeshFilename() );
     }
-    fs::ofstream ofsp( this->absoluteDbFilenameProc() );
+    std::ofstream ofsp( this->absoluteDbFilenameProc() );
     if( ofsp )
     {
         boost::archive::binary_oarchive oa( ofsp );
@@ -578,7 +578,7 @@ PBDW<RBSpace>::loadDB( std::string const& filename, crb::load l )
         else
             Xh = space_type::New(_mesh=mesh, _range=markedelements(mesh, M_markers));
         M_XR = std::make_shared<reducedspace_type>(Xh);
-        fs::ifstream ifsp( this->absoluteDbFilenameProc() );
+        std::ifstream ifsp( this->absoluteDbFilenameProc() );
         if( ifsp )
         {
             boost::archive::binary_iarchive ia( ifsp );

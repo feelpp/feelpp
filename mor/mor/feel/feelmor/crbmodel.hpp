@@ -337,7 +337,7 @@ public:
                 if ( !this->isSteady() )
                 {
                     M_numberOfTimeStep = 1 + ( M_model->timeFinal() - M_model->timeInitial() ) / M_model->timeStep();
-                    LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps to store = {}, timeInitial = {}, timeFinal = {}, timeStep = {}", 
+                    LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps to store = {}, timeInitial = {}, timeFinal = {}, timeStep = {}",
                                               M_numberOfTimeStep, M_model->timeInitial(), M_model->timeFinal(), M_model->timeStep() );
                 }
             }
@@ -1242,14 +1242,13 @@ public:
                         if ( mdata.template has<nl::json>() )
                         {
                             auto const& jsonData = mdata.template data<nl::json>();
-                            fs::ofstream o(newFilePath);
+                            std::ofstream o(newFilePath);
                             o << jsonData.dump(/*1*/);
                         }
                         else if ( mdata.template has<fs::path>() )
                         {
                             fs::path const& inputPath = mdata.template data<fs::path>();
-                            boost::system::error_code ec;
-                            fs::copy_file( inputPath, newFilePath, fs::copy_option::overwrite_if_exists, ec );
+                            fs::copy_file( inputPath, newFilePath, fs::copy_options::overwrite_existing );
                         }
                     }
                     mdata.setOnDisk();

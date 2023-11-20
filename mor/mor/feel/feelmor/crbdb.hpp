@@ -26,14 +26,11 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-15
  */
-#ifndef __CRBDB_H
-#define __CRBDB_H 1
+#ifndef FEELPP_MOR_CRBDB_H
+#define FEELPP_MOR_CRBDB_H 1
 
 #include <string>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/version.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -74,17 +71,17 @@ public:
     //@{
 
     CRBDB() = delete;
-    
+
     //! default constructor
     CRBDB( std::string const& name,
-           std::string const& ext, 
+           std::string const& ext,
            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     CRBDB( std::string const& name,
            std::string const& ext,
            uuids::uuid const& i,
            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    
+
     //! copy constructor
     CRBDB( CRBDB const & ) = default;
     //! destructor
@@ -115,7 +112,7 @@ public:
     //! return extension
     //!
     std::string const& extension() const { return M_ext; }
-    
+
     //!
     //! @return the uuid of the CRBDB
     //!
@@ -133,16 +130,16 @@ public:
     //! @return the string representation of the uuid
     //!
     std::string idStr() const { return boost::lexical_cast<std::string>( M_uuid ); }
-    
+
     //!
-    //! set UUID 
+    //! set UUID
     //!
     void setId( uuids::uuid const& i )
         {
             M_uuid = i;
             this->setDBDirectory( M_uuid );
-        } 
-        
+        }
+
     //! \return the DB json filename
     std::string jsonFilename() const
         {
@@ -332,7 +329,7 @@ public:
     virtual bool loadDB();
 
     //!
-    //! 
+    //!
     //!
     virtual void loadDB( std::string const& filename, crb::load l ) = 0;
 
@@ -367,7 +364,7 @@ public:
     //! @param root root repository for CRB DB
     //!
     fs::path dbFromId( std::string const& id, std::string const& root = Environment::rootRepository() ) const;
-    
+
     /**
      * check existence of db file
      * @param[in] last What last file type
@@ -376,18 +373,18 @@ public:
     uuids::uuid idFromDBLast( crb::last last = crb::last::modified ) const;
 
     //!
-    //! 
+    //!
     //!
     virtual void loadDBLast( crb::last last = crb::last::modified, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() );
 
     //!
     //! @return fs::path from DB \p last
     //! check existence of json metadata file
-    //! @param last what last file type 
+    //! @param last what last file type
     //! @param root root repository for CRB DB
     //!
     fs::path dbLast( crb::last last = crb::last::modified, std::string const& root = Environment::rootRepository() ) const;
-    
+
     //@}
 
 protected:

@@ -10,7 +10,7 @@ namespace Feel
 {
 /**
  * @brief Extract a zip file to a directory
- * 
+ *
  * @param zipFilePath path to the zip file
  * @param extractionDir directory where to extract the zip file
  * @return true if the extraction was successful
@@ -41,7 +41,7 @@ bool extractZipFile( const std::string& zipFilePath, const std::string& extracti
         fs::path extractionPath = fs::path(extractionDir) / fs::path( entryName );
         VLOG(2) << fmt::format( "Extracting {} to {}", entryName, extractionPath.string() ) << std::endl;
         VLOG(2) << fmt::format( "has {} a filename : {}", entryName, fs::path( entryName ).has_filename() ) << std::endl;
-        if ( !fs::path( entryName ).has_filename() || fs::path( entryName ).filename_is_dot() )
+        if ( !fs::path( entryName ).has_filename() || fs::path( entryName ) == fs::path(".") )
         {
             VLOG(2) << fmt::format( "Creating directory {}", extractionPath.string() ) << std::endl;
             fs::create_directories( extractionPath );
@@ -90,7 +90,7 @@ bool extractZipFile( const std::string& zipFilePath, const std::string& extracti
 
 /**
  * @brief Remove all files and directories in a directory
- * 
+ *
  * @param extractionDir directory to clean up
  */
 void cleanupTemporaryDirectory( const std::string& extractionDir )

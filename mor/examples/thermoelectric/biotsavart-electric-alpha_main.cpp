@@ -60,7 +60,7 @@ computeStats(std::vector<std::vector<double> > const& err)
     return std::make_tuple(min,max,mean,stdev);
 }
 
-void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
+void writeErrors(std::ofstream& out, std::vector<std::vector<double> > const& err)
 {
     if( out && Environment::isMasterRank() )
     {
@@ -199,9 +199,9 @@ int main(int argc, char**argv )
 
         auto stats = computeStats(errsRel);
 
-        fs::ofstream cvgErr( "err.dat" );
-        fs::ofstream cvgErrR( "errR.dat" );
-        fs::ofstream cvgStat( "stat.dat" );
+        std::ofstream cvgErr( "err.dat" );
+        std::ofstream cvgErrR( "errR.dat" );
+        std::ofstream cvgStat( "stat.dat" );
         writeErrors(cvgErr, errs);
         writeErrors(cvgErrR, errsRel);
         if( cvgStat )
@@ -214,9 +214,9 @@ int main(int argc, char**argv )
 
         auto statsV = computeStats(errsRelV);
 
-        fs::ofstream cvgErrV( "errV.dat" );
-        fs::ofstream cvgErrRV( "errRV.dat" );
-        fs::ofstream cvgStatV( "statV.dat" );
+        std::ofstream cvgErrV( "errV.dat" );
+        std::ofstream cvgErrRV( "errRV.dat" );
+        std::ofstream cvgStatV( "statV.dat" );
         writeErrors(cvgErrV, errsV);
         writeErrors(cvgErrRV, errsRelV);
         if( cvgStatV )
