@@ -109,18 +109,23 @@ public:
         // Create faces range: Iterate on selected elements, select only
         // boundary faces, add them in a vector.
         Range<mesh_type,MESH_FACES> r(M_mesh);
-        for( auto const& eltWrap : therange )
+        for( auto& eltWrap : therange )
         {
-            auto const& elt = boost::unwrap_ref( eltWrap );
+            auto& elt = boost::unwrap_ref( eltWrap );
             for( uint16_type f=0;f<elt.numTopologicalFaces; ++f )
             {
-                auto face = elt.face(f);
+                auto& face = elt.face(f);
                 if ( face.isOnBoundary() )
                     r.push_back(face);
             }
         }
+
         M_mesh->updateMarker2WithRangeFaces( r, 666 );
         M_mesh->addMarkerName( "select_faces", 666, DIM-1 );
+
+        int n1 = nelements( marked2faces(M_mesh,"select_faces") );
+        int n2 = nelements( r );
+        BOOST_MESSAGE( fmt::format( "nelts faces, n1={}, m2={} ", n1, n2 ) ); 
 
         test_boundary.on( _range=boundaryelements(M_mesh), _expr=cst(42) );
         test_elements0.on( _range=marked2elements(M_mesh,"select_elements"), _expr=cst(42) );
