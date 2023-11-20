@@ -143,7 +143,7 @@ public:
 
     //! constructor with model
     CRBSCM( std::string const& name,
-            std::string const& ext, 
+            std::string const& ext,
             truth_model_ptrtype const & model ,
             bool scm_for_mass_matrix = false )
         :
@@ -457,10 +457,10 @@ public:
     bool loadDB() override;
 
     //!
-    //! 
+    //!
     //!
     void loadDB( std::string const& filename, crb::load l ) override {}
-    
+
     /**
      * \brief update scm description in property_tree
      * \param ptree to update
@@ -1800,8 +1800,9 @@ template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::saveDB()
 {
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-    std::cout << "CRBSCM SaveDB: " << (this->dbLocalPath() / this->dbFilename()).string() << std::endl;
+    std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "CRBSCM SaveDB: " << (this->dbLocalPath() / this->dbFilename()).string() << std::endl;
     if ( ofs )
     {
         boost::archive::text_oarchive oa( ofs );
@@ -1826,7 +1827,7 @@ CRBSCM<TruthModelType>::loadDB()
         return false;
 
     LOG( INFO ) << "Loading " << db << "...";
-    fs::ifstream ifs( db );
+    std::ifstream ifs( db );
     if ( ifs )
     {
         boost::archive::text_iarchive ia( ifs );

@@ -61,7 +61,7 @@ struct traits<ParameterSpaceX::Element>: traits<Eigen::VectorXd>
 }
 
 using VectorXr=Eigen::Matrix<Real,Eigen::Dynamic,1>;
-    
+
 template <class T>
 void vector_setitem(std::vector<T>& v, int index, T value)
 {
@@ -121,7 +121,6 @@ struct std_item
         {
             return v;
         }
-    
 };
 template<class T>
 struct str_item
@@ -157,7 +156,7 @@ public:
         {
             PYBIND11_OVERLOAD_PURE(std::string const&, CRBPluginAPI, name, );
         }
-    
+
     void loadDB( std::string const& db, crb::load l ) override
         {
             PYBIND11_OVERLOAD_PURE( void, CRBPluginAPI, loadDB, db, l );
@@ -170,15 +169,15 @@ public:
         {
             PYBIND11_OVERLOAD_PURE(std::shared_ptr<ParameterSpaceX>, CRBPluginAPI, parameterSpace,  );
         }
-    CRBResults run( ParameterSpaceX::Element const& mu, 
+    CRBResults run( ParameterSpaceX::Element const& mu,
                     double eps , int N, bool print_rb_matrix ) const override
         {
-            PYBIND11_OVERLOAD(CRBResults, CRBPluginAPI, run, mu, eps, N, print_rb_matrix ); 
+            PYBIND11_OVERLOAD(CRBResults, CRBPluginAPI, run, mu, eps, N, print_rb_matrix );
         }
-    std::vector<CRBResults> run( std::vector<ParameterSpaceX::Element> const& S, 
+    std::vector<CRBResults> run( std::vector<ParameterSpaceX::Element> const& S,
                                  double eps , int N, bool print_rb_matrix ) const override
         {
-            PYBIND11_OVERLOAD(std::vector<CRBResults>, CRBPluginAPI, run, S, eps, N, print_rb_matrix ); 
+            PYBIND11_OVERLOAD(std::vector<CRBResults>, CRBPluginAPI, run, S, eps, N, print_rb_matrix );
         }
     void initExporter() override
         {
@@ -187,7 +186,7 @@ public:
     void exportField( std::string const & name, CRBResults const& results ) override
         {
             PYBIND11_OVERLOAD_PURE(void, CRBPluginAPI, exportField, name, results );
-            
+
         }
     void saveExporter() const override { PYBIND11_OVERLOAD_PURE(void, CRBPluginAPI, saveExporter,  ); }
 protected:
@@ -275,7 +274,7 @@ PYBIND11_MODULE( _mor, m )
         .def("min",&CRBModelParameter::min, "minimum of the parameter")
         .def("max",&CRBModelParameter::max, "maximum of the parameter")
         .def("description",&CRBModelParameter::description, "description of the parameter");
-    
+
     py::class_<CRBModelParameters>(m,"CRBModelParameters")
         .def(py::init<worldcomm_ptr_t const&>(),
              py::arg("worldComm"))
@@ -345,7 +344,7 @@ PYBIND11_MODULE( _mor, m )
 
     py::class_<ParameterSpaceX::Sampling, std::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
         .def(py::init<std::shared_ptr<ParameterSpaceX>,int,std::shared_ptr<ParameterSpaceX::Sampling>>())
-        .def("sample",[]( ParameterSpaceX::Sampling& s, int N, std::string const& m  ) 
+        .def("sample",[]( ParameterSpaceX::Sampling& s, int N, std::string const& m  )
                       { return s.sample( N, m ); }, "create a sampling with global number of samples", py::arg("n"), py::arg("samplingMode") = std::string("random") )
         .def("__getitem__", &std_item<ParameterSpaceX::Sampling>::get,py::return_value_policy::reference)
         .def("__setitem__", &std_item<ParameterSpaceX::Sampling>::set)
@@ -402,7 +401,7 @@ PYBIND11_MODULE( _mor, m )
         .def("initExporter",&CRBPluginAPI::initExporter)
         .def("saveExporter",&CRBPluginAPI::saveExporter)
         .def("exportField",&CRBPluginAPI::exportField)
-        
+
         .def("parameterSpace",&CRBPluginAPI::parameterSpace)
         .def("run",py::overload_cast<ParameterSpaceX::Element const&,double,int,bool>(&CRBPluginAPI::run, py::const_),
              "run online code for a parameter mu", py::arg("mu"),py::arg("eps")=1e-6,py::arg("N")=-1,py::arg("print_reduced_matrix")=false)
@@ -440,13 +439,13 @@ PYBIND11_MODULE( _mor, m )
                 p.reset();
                 std::cout << fmt::format("After reset(): use_count() = {}", p.use_count()) << std::endl; },
             "reset plugin" );
-   
+
     // Wrap the virtual function using a lambda function that calls the Python override
     // Lambda function captures the Python-derived class instance and calls its overridden 'update' function
     py::class_<MORObserver, PyMORObserver>( m, "MORObserver" )
         .def( py::init<>() )
         .def( "update", &MORObserver::update );
-    
+
     py::class_<MORModels, std::shared_ptr<MORModels>>( m, "MORModels" )
         .def( py::init<>() )
         //.def( py::init<nl::json const&>() )
@@ -469,7 +468,8 @@ PYBIND11_MODULE( _mor, m )
             {
                   p.reset();
                   std::cout << fmt::format("After reset(): use_count() = {}", p.use_count()) << std::endl; },
-            "reset plugin" );
+            "reset plugin" )
+        .def( "outputNames", &MORModels::outputNames, "get the output names" );
 
     py::class_<MORExporter, MORObserver>( m, "MORExporter" )
         .def( py::init<MORModels&>(), py::arg( "models" ) );
@@ -483,5 +483,4 @@ PYBIND11_MODULE( _mor, m )
 
         //.def("run",&CRBPluginAPI::run)
 
-    
 }

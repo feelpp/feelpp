@@ -23,6 +23,7 @@
 //!
 #pragma once
 #include <optional>
+#include <feel/feelcore/feel.hpp>
 #define JSON_DIAGNOSTICS FEELPP_ENABLE_JSON_DIAGNOSTICS
 #include <feel/feelcore/_json.hpp>
 namespace Feel
@@ -31,19 +32,18 @@ namespace Feel
     using json = nl::json;
 }
 
-#include <boost/filesystem.hpp>
 // partial specialization (full specialization works too)
 namespace nlohmann
 {
 template<>
-struct adl_serializer<boost::filesystem::path>
+struct adl_serializer<Feel::fs::path>
 {
-    static void to_json( json& j, const boost::filesystem::path& p )
+    static void to_json( json& j, const Feel::fs::path& p )
     {
         j=p.string();
     }
 
-    static void from_json( const json& j, boost::filesystem::path& p )
+    static void from_json( const json& j, Feel::fs::path& p )
     {
         p = j.get<std::string>();
     }

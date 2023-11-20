@@ -240,7 +240,7 @@ public:
                 throw std::invalid_argument( fmt::format( "Parameter named = {} with index = {} is out of range, cannot set to value = {}", name, index, value ) );
             }
         }
-    
+
         void setParameter( int i, double value)
         {
             element_type min = M_space->min(), max = M_space->max();
@@ -548,7 +548,7 @@ public:
 
         /**
          * @brief get the parameter space
-         * 
+         *
          * @return the parameter space
          */
         auto parameterSpace() const { return M_space; }
@@ -1378,7 +1378,7 @@ public:
 
         /**
          * \brief add new parameter \p mu in sampling and store \p index in super sampling
-         * 
+         *
          * \param mu the new parameter
          * \param index the index in the super sampling if the super sampling is not null
          */
@@ -1390,12 +1390,12 @@ public:
                 super::push_back( mu );
                 return *this;
             }
-        
+
         /**
          * @brief set the sampling from a vector of vector of values
-         * 
+         *
          * @param data data to set the sampling
-         * @return Sampling& 
+         * @return Sampling&
          */
         Sampling& set( std::vector<std::vector<value_type>> const& data )
         {
@@ -1408,10 +1408,10 @@ public:
         }
 
         /**
-         * @brief add new parameter \p mu in sampling 
-         * 
-         * @param data 
-         * @return Sampling& 
+         * @brief add new parameter \p mu in sampling
+         *
+         * @param data
+         * @return Sampling&
          */
         Sampling& add( std::vector<std::vector<value_type>> const& data )
         {
@@ -1424,9 +1424,9 @@ public:
 
         /**
          * @brief set the sampling from a vector of map of pair of name and values
-         * 
+         *
          * @param data data to set the sampling
-         * @return Sampling& 
+         * @return Sampling&
          */
         Sampling& set( std::vector<std::map<std::string,value_type>> const& data )
         {
@@ -1439,10 +1439,10 @@ public:
         }
 
         /**
-         * @brief add new parameter \p mu in sampling 
-         * 
-         * @param data 
-         * @return Sampling& 
+         * @brief add new parameter \p mu in sampling
+         *
+         * @param data
+         * @return Sampling&
          */
         Sampling& add( std::vector<std::map<std::string,value_type>> const& data )
         {
@@ -1730,7 +1730,7 @@ public:
 
     /**
      * @brief return the minimum element in direction d
-     * 
+     *
      * @param d direction
      * @return value_type min value
      */
@@ -1741,9 +1741,9 @@ public:
 
     /**
      * @brief return the minimum element of the parameter named name
-     * 
+     *
      * @param name name pof the parameter
-     * @return value_type 
+     * @return value_type
      */
     value_type min( std::string const& name ) const
     {
@@ -1763,9 +1763,9 @@ public:
 
     /**
      * @brief return the maximum element of the parameter named name
-     * 
+     *
      * @param name name pof the parameter
-     * @return value_type 
+     * @return value_type
      */
     value_type max( std::string const& name ) const
     {
@@ -1778,7 +1778,7 @@ public:
 
     /**
      * @brief return the maximum element in direction d
-     * 
+     *
      * @param d direction
      * @return value_type max value
      */

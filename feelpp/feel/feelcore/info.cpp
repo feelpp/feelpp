@@ -35,7 +35,6 @@
 #include <feel/feelconfig.h>
 #include <feel/feelinfo.h>
 #include <feel/feelcore/info.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #undef linux
 #undef gnu
@@ -92,7 +91,7 @@ Info::versionString()
 fs::path
 Info::prefix()
 {
-    return fs::path{stringize( FEELPP_PREFIX )}; 
+    return fs::path{stringize( FEELPP_PREFIX )};
 }
 
 fs::path

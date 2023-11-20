@@ -32,7 +32,6 @@
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 
 template<typename MeshType, int N>
 ExporterXDMF<MeshType,N>::ExporterXDMF( worldcomm_ptr_t const& worldComm )
