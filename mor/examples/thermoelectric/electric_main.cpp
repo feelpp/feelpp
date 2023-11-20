@@ -76,7 +76,7 @@ int main( int argc, char** argv)
     auto VFE = model->solve(mu);
     auto normV = normL2( elements(model->mesh()), idv(VFE) );
     boost::format fmter("%1% %|14t|%2% %|28t|%3%\n");
-    fs::ofstream file( "cvg.dat" );
+    std::ofstream file( "cvg.dat" );
     if( file && Environment::isMasterRank() )
     {
         file << fmter % "N" % "errV" % "relErrV";

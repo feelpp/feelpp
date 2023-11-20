@@ -34,7 +34,6 @@
 #include <algorithm>
 #endif
 #include<boost/range/algorithm/max_element.hpp>
-#include<boost/filesystem.hpp>
 
 /** use Feel namespace */
 using namespace Feel;

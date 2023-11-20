@@ -881,7 +881,7 @@ template<typename TruthModelType>
 void
 CRBBlock<TruthModelType>::saveDB()
 {
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
     if ( ofs )
     {
@@ -909,7 +909,7 @@ CRBBlock<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    fs::ifstream ifs( db );
+    std::ifstream ifs( db );
 
     if ( ifs )
     {

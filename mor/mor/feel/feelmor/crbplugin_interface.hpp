@@ -91,7 +91,7 @@ public:
     //! return true if all the DB data is loaded
     //!
     virtual bool isAllLoaded() const = 0;
-    
+
     //!
     //! @return the parameter space
     //!

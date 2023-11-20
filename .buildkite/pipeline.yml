@@ -43,14 +43,14 @@ steps:
         env:
           DIST: "focal"
     - trigger: "pkg-feelpp"
-      label: ":package: :ubuntu: 22.10/kinetic Feel++ ${BUILDKITE_BRANCH}"
+      label: ":package: :ubuntu: 23.10/mantic Feel++ ${BUILDKITE_BRANCH}"
       async: true
       if: |
         ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
         build.message !~ /skip pkg/
       build:
         env:
-          DIST: "kinetic"
+          DIST: "mantic"
     - trigger: "pkg-feelpp"
       label: ":package: :ubuntu: 23.04/lunar Feel++ ${BUILDKITE_BRANCH}"
       async: true
