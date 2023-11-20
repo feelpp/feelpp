@@ -102,6 +102,27 @@ BOOST_AUTO_TEST_CASE( test_range2 )
     BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     BOOST_TEST_MESSAGE( "test_range1 done" );
 }
+BOOST_AUTO_TEST_CASE( test_range3 )
+{
+    using namespace Feel;
+
+    auto mesh = unitSquare();
+    BOOST_TEST_MESSAGE("number of elements " << nelements(elements(mesh)) );
+    for(int nparts = 2; nparts < 7; ++nparts )
+    {
+        auto vparts = partitionRange(elements(mesh),nparts);
+        double area = integrate( _range=elements(mesh), _expr=expr("1")).evaluate()(0,0);
+        std::vector<double> areas(nparts);
+        double sum = 0;
+        for( int j = 0; j < nparts; ++j)
+        {
+            areas[j] = integrate( _range=vparts[j].second, _expr=expr("1")).evaluate()(0,0);
+            sum+=areas[j];
+        }
+        BOOST_MESSAGE( fmt::format("nparts={}, area={}, areas={}", nparts, area, areas ) );
+        BOOST_CHECK_CLOSE( area, sum, 1e-10 );
+    }
+}
 #endif
 BOOST_AUTO_TEST_SUITE_END()
 

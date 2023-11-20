@@ -242,6 +242,18 @@ class FEELPP_EXPORT Range
     Range( super const& er, std::shared_ptr<const MeshType> const& m)
         : super_range( m ), mesh_(m.get()), cont_( er.template get<3>() )
     {}
+    Range( mesh_non_const_t const& m, iterator_t beg, iterator_t end )
+        : Range(shared_from_this(m)), mesh_(&m), cont_(std::make_shared<container_t>(beg,end))
+    {}
+    Range(mesh_ptr_non_const_t const& m, iterator_t beg, iterator_t end) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>(beg,end))
+    {}
+
+    Range(mesh_ptr_const_t const& m, iterator_t beg, iterator_t end) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>(beg,end))
+    {}
+
+    Range(mesh_non_const_t const* m, iterator_t beg, iterator_t end) : super_range(m), mesh_(m), cont_(std::make_shared<container_t>(beg,end))
+    {}
+
 
     Range& operator=( Range const& ) = default;
     Range& operator=( Range && ) = default;
@@ -484,5 +496,31 @@ std::ostream& operator<<(std::ostream& os, const Range<MeshType, MESH_ENTITIES>&
     os << "Range of " << MESH_ENTITIES << " entities with " << nelements( range) << " elements.";
     return os;
 }
+
+/**
+ * @brief 
+ */
+template <typename RangeType, std::enable_if_t<is_range_v<RangeType>,int> = 0>
+std::vector<std::pair<int,RangeType>> 
+partitionRange(RangeType&& range, int nParts) 
+{
+    std::vector<std::pair<int,RangeType>> partitions;
+    partitions.reserve(nParts);
+
+    auto partSize = std::forward<RangeType>(range).size() / nParts;
+    auto partBegin = std::forward<RangeType>(range).begin();
+
+    for (int i = 0; i < nParts; ++i) 
+    {
+        auto start = partBegin;
+        std::advance(partBegin, partSize); // Advance partBegin for the next iteration
+        auto end = (i == nParts - 1) ? std::forward<RangeType>(range).end() : partBegin;
+        
+        partitions.emplace_back(std::pair{i*partSize,RangeType(range.mesh(), start, end)});
+    }
+
+    return partitions;
+}
+
 
 } // namespace Feel
