@@ -49,6 +49,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
 
     auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    BOOST_MESSAGE( fmt::format("nr1={}, nr2={}",nelements(r1), nelements(r2)));
     auto therange = concatenate(r1,r2);
 
     auto VhPS = space_type::New(_mesh=mesh,_range=therange);
