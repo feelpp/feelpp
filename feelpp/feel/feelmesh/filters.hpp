@@ -240,7 +240,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
     auto && max = args.get_else(_max, 1 );
     using expr_t = decay_type<decltype( expr )>;
     rank_type pid = rank( mesh );
-    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    Range<MeshType,MESH_ELEMENTS> myelts(mesh);
     auto const& imesh = Feel::unwrap_ptr( mesh );
     typedef typename MeshTraits<MeshType>::mesh_type mesh_type;
     auto it = imesh.beginOrderedElement();
@@ -298,30 +298,29 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
             }
             if ( ( selector == select_elements_from_expression::with_positive_values ) && elt_count_positive > 0 )
             {
-                myelts->push_back(boost::cref(elt));
+                myelts.push_back(elt);
             }
             else if ( ( selector == select_elements_from_expression::with_negative_values ) && elt_count_negative > 0 )
             {
-                myelts->push_back(boost::cref(elt));
+                myelts.push_back(elt);
             }
             else if ( ( selector == select_elements_from_expression::with_changing_sign ) && ( elt_count_positive > 0 && elt_count_negative > 0 ) )
             {
-                myelts->push_back(boost::cref(elt));
+                myelts.push_back(elt);
             }
             else if ( ( selector == select_elements_from_expression::with_value ) && elt_count_positive > 0 )
             {
-                myelts->push_back(boost::cref(elt));
+                myelts.push_back(elt);
             }
             else if ( ( selector == select_elements_from_expression::with_value_range ) && elt_count_positive > 0 )
             {
-                myelts->push_back(boost::cref(elt));
+                myelts.push_back(elt);
             }
         }
     }
-    myelts->shrink_to_fit();
+    myelts.shrink_to_fit();
 
-    auto r = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts );
-    return range( _range=r, _mesh=mesh, _pid=pid);
+    return myelts;
 }
 
 /**
