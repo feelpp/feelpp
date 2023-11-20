@@ -143,7 +143,37 @@ auto elasticity( std::shared_ptr<SpaceType>& Vh )
     else if constexpr ( c_impl == ConstraintImplType::Nodal )
     {
         auto [trans,rot] = rigidBodyMotion( mesh, omega, tau, rigid_body_domain_name );
+#if 0      
+#if 0
+        //auto pts = getPoints();
+        //std::vector<Eigen::>
+        auto dofmap = Vh->dof()->dofPoints();
 
+        auto const& [i0, pt0]  = *dofmap.begin();
+        auto [n0, n1, n2] = pt0;
+        auto eigen_n0 = emap(n0);
+        std::cout << fmt::format( "i={}, n0={}", i, n0 ) << std::endl;
+
+        // compute p1 such that (p1-p0) x \tau_1 is maximal
+        for(auto const& [i,pt]: dofmap )
+        {
+
+        }
+#endif        
+        for( auto & [i, pt]: enumerate(pts))
+        {
+            pt.setTag({100+i}); 
+            mesh->addMarkerName( fmt::format("p{}", 100+i, 0 );
+        }
+        // translation
+        a(0_c,0_c) += on( _range=markedpoints( "p0" ), _rhs=l, _element=u, _expr=cst(0.)*oneX() );
+        // rotation
+        for( auto [i,pt] : enumerate(getBasis) )
+        {
+            a(0_c,0_c) += on( _range=markedpoints( fmt::format("p{}",i+1 ) ), _rhs=l, _element=u, _comp=i, _expr=cst(0.)*oneX() );
+        }
+
+#endif        
     }
     else
     {
