@@ -1,11 +1,6 @@
 #define BOOST_TEST_MODULE test_specx
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelvf/vf.hpp>
-
 #include <specx/Data/SpDataAccessMode.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
 #include <specx/Task/SpPriority.hpp>
