@@ -501,10 +501,11 @@ std::ostream& operator<<(std::ostream& os, const Range<MeshType, MESH_ENTITIES>&
  * @brief 
  */
 template <typename RangeType, std::enable_if_t<is_range_v<RangeType>,int> = 0>
-std::vector<std::pair<int,RangeType>> 
+std::vector<decay_type<RangeType>>
 partitionRange(RangeType&& range, int nParts) 
 {
-    std::vector<std::pair<int,RangeType>> partitions;
+    using range_t = decay_type<RangeType>;
+    std::vector<range_t> partitions;
     partitions.reserve(nParts);
 
     auto partSize = std::forward<RangeType>(range).size() / nParts;
@@ -516,7 +517,7 @@ partitionRange(RangeType&& range, int nParts)
         std::advance(partBegin, partSize); // Advance partBegin for the next iteration
         auto end = (i == nParts - 1) ? std::forward<RangeType>(range).end() : partBegin;
         
-        partitions.emplace_back(std::pair{i*partSize,RangeType(range.mesh(), start, end)});
+        partitions.emplace_back( std::forward<RangeType>(range).mesh(), start, end );
     }
 
     return partitions;
