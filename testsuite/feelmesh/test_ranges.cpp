@@ -27,6 +27,7 @@
 
 #include <feel/feelmesh/ranges.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelcore/enumerate.hpp>
 #include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -108,15 +109,15 @@ BOOST_AUTO_TEST_CASE( test_range3 )
 
     auto mesh = unitSquare();
     BOOST_TEST_MESSAGE("number of elements " << nelements(elements(mesh)) );
-    for(int nparts = 2; nparts < 7; ++nparts )
+    for( int nparts : {1,2,4,8,16} )
     {
         auto vparts = partitionRange(elements(mesh),nparts);
         double area = integrate( _range=elements(mesh), _expr=expr("1")).evaluate()(0,0);
         std::vector<double> areas(nparts);
         double sum = 0;
-        for( int j = 0; j < nparts; ++j)
+        for ( auto [j, rj] : enumerate(vparts) )
         {
-            areas[j] = integrate( _range=vparts[j].second, _expr=expr("1")).evaluate()(0,0);
+            areas[j] = integrate( _range=rj, _expr=expr("1")).evaluate()(0,0);
             sum+=areas[j];
         }
         BOOST_MESSAGE( fmt::format("nparts={}, area={}, areas={}", nparts, area, areas ) );
