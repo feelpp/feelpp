@@ -200,6 +200,7 @@ BOOST_AUTO_TEST_CASE( test_specx_5 )
     {
         runtime.task(SpPotentialWrite(val), [](int&) -> bool 
         {
+            usleep(1000);  //<== simply to see the task boxes better on the graph.
             return true;
         }).setTaskName("Uncertain task -- " + std::to_string(idx));
      }
@@ -208,6 +209,7 @@ BOOST_AUTO_TEST_CASE( test_specx_5 )
     {
         runtime.task(SpWrite(val), [](int&)  
         {
+            usleep(2000);  //<== simply to see the task boxes better on the graph.
             //...
         }).setTaskName("Certain task -- " + std::to_string(idx));
     }
