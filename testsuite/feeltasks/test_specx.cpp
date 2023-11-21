@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_CASE( test_specx_8 )
     std::array<unsigned int,3> SleepTimes{0, 500,1000};
     int const NumThreads = 10;
     SpTimer T0;
-        
+
     auto start_time= std::chrono::steady_clock::now();
 
     for(auto SleepTime : SleepTimes){   
@@ -658,7 +658,7 @@ BOOST_AUTO_TEST_CASE( test_specx_9 )
 
 BOOST_AUTO_TEST_CASE( test_specx_10 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T9>\n";
+    std::cout<<"[INFO SPECX] : Execution of <T10>\n";
     auto start_time= std::chrono::steady_clock::now();
     int  nbObjects = 12;
     
@@ -706,16 +706,110 @@ BOOST_AUTO_TEST_CASE( test_specx_10 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T9> in ms since start :"<<run_time.count()<<"\n";
+	std::cout<<"[INFO SPECX] : Execution Time <T10> in ms since start :"<<run_time.count()<<"\n";
 
     // We generate the task graph corresponding to the execution 
-    runtime.generateDot("test_specx_9.dot", true);
+    runtime.generateDot("test_specx_10.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_9.dot");   
+    runtime.generateTrace("test_specx_10.dot");   
 }
 
 
+BOOST_AUTO_TEST_CASE( test_specx_11 )
+{
+    //PARALLEL_WRITE WITH ATOMIC
+    std::cout<<"[INFO SPECX] : Execution of <T11>\n";
+    auto start_time= std::chrono::steady_clock::now();
+    int NumThreads = std::min(6,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(NumThreads);
+    std::atomic<int> initVal(0);
+    int nbTh=3;
+    int val0=20;
+    for(int idxTh = 0 ; idxTh < nbTh; ++idxTh){
+        runtime.task(SpParallelWrite(initVal),
+            [&](std::atomic<int>& initValParam){
+                initValParam += 1;
+                val0++;
+                //std::cout<<idxTh<<" "<<initValParam<<"...."<<val0<<"\n";
+                while(initValParam != nbTh){
+                    usleep(10000); //<== simply to see the task boxes better on the graph.
+                } 
+                //std::cout<<"<OK>\n";
+            }).setTaskName("OpPW("+std::to_string(idxTh)+")");
+
+        runtime.task(SpRead(val0),
+            [&](const int& valParam0)
+            {
+                usleep(40000); //<== simply to see the task boxes better on the graph.
+                //...
+                //std::cout<<"- val0="<<valParam0<<"\n";
+            }).setTaskName("OpR("+std::to_string(idxTh)+")");
+    }
+
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	std::cout<<"[INFO SPECX] : Execution Time <T11> in ms since start :"<<run_time.count()<<"\n";
+
+    // We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_11.dot", true);
+    
+    // We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_11.dot");   
+}
+
+
+BOOST_AUTO_TEST_CASE( test_specx_12 )
+{
+    //PARALLEL_WRITE WITH ATOMIC
+    std::cout<<"[INFO SPECX] : Execution of <T12>\n";
+    auto start_time= std::chrono::steady_clock::now();
+    int NumThreads = std::min(6,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(NumThreads);
+    int nbTh=3;
+    int val0=30;
+    std::promise<long int> promises[5];
+    int dumbVal = 0;
+
+    for(int idxTh = 0 ; idxTh < nbTh ; ++idxTh){
+        runtime.task(SpParallelWrite(dumbVal),
+            [&,idxTh](int&){
+            promises[idxTh].set_value(idxTh);
+            const long int res = promises[(idxTh+1)%nbTh].get_future().get();
+        }).setTaskName("OpPW("+std::to_string(idxTh)+")");
+
+        runtime.task(SpRead(val0),
+            [&](const int& valParam0){
+                usleep(40000); //<== simply to see the task boxes better on the graph.
+                //...
+                //std::cout<<"- val0="<<valParam0<<"\n";
+        }).setTaskName("OpR("+std::to_string(idxTh)+")");
+    }
+  
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	std::cout<<"[INFO SPECX] : Execution Time <T12> in ms since start :"<<run_time.count()<<"\n";
+
+    // We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_12.dot", true);
+    
+    // We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_12.dot");   
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()
