@@ -1544,14 +1544,8 @@ public:
         this->updateForUse();
     }
 
-    template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 0>* = nullptr );
-    template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 1>* = nullptr );
-    template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 2>* = nullptr );
-    template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 3>* = nullptr );
+    //! remove marker names that are not used by the mesh (e.g after a create submesh)
+     void removeMarkerNameWithoutEntity();
 
   private:
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
@@ -1817,7 +1811,7 @@ public:
     //! 4: boundary layer
     //!
     std::bitset<5> M_structure_property;
-    
+
     //!
     //!  The processors who neighbor the current
     //!  processor
@@ -2077,7 +2071,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
          return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=elements(this->shared_from_this()), _context=ctxExtraction, _update=ctxMeshUpdate );
     else
     {
-    
+
     std::shared_ptr<SubMeshData<>> smd;
     Context c( ctxExtraction );
     bool keepMeshRelation = c.test( EXTRACTION_KEEP_MESH_RELATION );
@@ -2089,7 +2083,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
     //!  How the nodes on this mesh will be renumbered to nodes on the new_mesh.
     std::unordered_map<size_type, size_type> new_node_numbers;
     std::unordered_map<size_type, int> new_vertex;
-    std::unordered_map<size_type, size_type> new_element_numbers; 
+    std::unordered_map<size_type, size_type> new_element_numbers;
 
     const int nProc = new_mesh->worldComm().localSize();
 
