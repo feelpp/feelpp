@@ -34,11 +34,11 @@ BOOST_AUTO_TEST_CASE( test_specx_1 )
     SpRuntime runtime( 2 );
     runtime.task([]()
                     {
-                        std::cout << "Hello World!\n";
+                       BOOST_MESSAGE("Hello World!\n");
                     }).setTaskName("hello");
     runtime.task([]()
                     {
-                        std::cout << "Howdi!\n";
+                       BOOST_MESSAGE("Howdi!\n");
                     }).setTaskName("howdi");
     runtime.waitAllTasks();
     runtime.stopAllThreads();
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE( test_specx_1 )
 
 BOOST_AUTO_TEST_CASE( test_specx_2 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T2>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T2>\n");
     const int NumThreads = SpUtils::DefaultNumThreads();
     SpRuntime runtime(NumThreads);
     auto start_time= std::chrono::steady_clock::now();
@@ -75,19 +75,25 @@ BOOST_AUTO_TEST_CASE( test_specx_2 )
     //We stop the completion of all tasks.
     runtime.stopAllThreads();
 
-    std::cout<<"[INFO SPECX] : CTRL VALUES initval="<<initVal<<" writeVal="<<writeVal<<" res="<<res<<"\n";
+    BOOST_MESSAGE("[INFO SPECX] : CTRL VALUES initval="<<initVal<<" writeVal="<<writeVal<<" res="<<res<<"\n");
     
     //We calculate the time frame with the “SPECX” clock in ms
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T2> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T2> in ms since start :"<<run_time.count()<<"\n");
+
+        // We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_2.dot", true);
+    
+    // We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_2.dot");   
 }
 
 
 
 BOOST_AUTO_TEST_CASE( test_specx_3 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T3>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T3>\n");
     const int NumThreads = 6;
     SpRuntime runtime(NumThreads);
     auto start_time= std::chrono::steady_clock::now();
@@ -123,7 +129,7 @@ BOOST_AUTO_TEST_CASE( test_specx_3 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T3> in ms since start :"<<run_time.count()<<"\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution Time <T3> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_3.dot");
@@ -134,7 +140,7 @@ BOOST_AUTO_TEST_CASE( test_specx_3 )
 
 BOOST_AUTO_TEST_CASE( test_specx_4 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T4>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T4>\n");
     const int NumThreads = SpUtils::DefaultNumThreads();
     SpRuntime runtime(NumThreads);
     auto start_time= std::chrono::steady_clock::now();
@@ -170,19 +176,19 @@ BOOST_AUTO_TEST_CASE( test_specx_4 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T4> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T4> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_4.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_4.dot");
+    runtime.generateTrace("test_specx_4.svg");
 
 }
 
 BOOST_AUTO_TEST_CASE( test_specx_5 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T5>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T5>\n");
     // We instantiate a runtime object and we specify that the
     // runtime should use speculation model 2.
     SpRuntime<SpSpeculativeModel::SP_MODEL_2> runtime;
@@ -245,20 +251,20 @@ BOOST_AUTO_TEST_CASE( test_specx_5 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T5> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T5> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_5.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_5.dot");
+    runtime.generateTrace("test_specx_5.svg");
  
 }
 
 
 BOOST_AUTO_TEST_CASE( test_specx_6 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T6>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T6>\n");
     const int NumThreads = SpUtils::DefaultNumThreads();
     SpRuntime runtime(NumThreads);
     auto start_time= std::chrono::steady_clock::now();
@@ -291,7 +297,7 @@ BOOST_AUTO_TEST_CASE( test_specx_6 )
             averageToExecute += viewer.getValue()/double(NbTasksToSubmit*NbLoops);
     }
 
-    std::cout << "[INFO SPECX] : Average time <T6> for a task to be executed without pressure = " << averageToExecute << "s" << std::endl;
+    BOOST_MESSAGE("[INFO SPECX] : Average time <T6> for a task to be executed without pressure = " << averageToExecute << "s\n");
 
     //We are waiting for all tasks to complete
     runtime.waitAllTasks();
@@ -301,20 +307,20 @@ BOOST_AUTO_TEST_CASE( test_specx_6 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T6> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T6> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_6.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_6.dot");
+    runtime.generateTrace("test_specx_6.svg");
 }
 
 
 
 BOOST_AUTO_TEST_CASE( test_specx_7 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T7>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T7>\n");
     [[maybe_unused]] const size_t seedSpeculationSuccess = 42;
     [[maybe_unused]] const size_t seedSpeculationFailure = 0;
     const size_t seed = seedSpeculationSuccess;
@@ -394,19 +400,19 @@ BOOST_AUTO_TEST_CASE( test_specx_7 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T7> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T7> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_7.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_7.dot");
+    runtime.generateTrace("test_specx_7.svg");
 }
 
 
 BOOST_AUTO_TEST_CASE( test_specx_8 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T8>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T8>\n");
     //Small Thread Race
     std::array<unsigned int,3> SleepTimes{0, 500,1000};
     int const NumThreads = 10;
@@ -485,17 +491,24 @@ BOOST_AUTO_TEST_CASE( test_specx_8 )
         runtime.waitAllTasks();
         //We stop the completion of all tasks.
         runtime.stopAllThreads();
+
+        // We generate the task graph corresponding to the execution 
+        runtime.generateDot("test_specx_8.dot", true);
+    
+        // We generate an Svg trace of the execution
+        runtime.generateTrace("test_specx_8.svg");   
     }
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T8> in ms since start :"<<run_time.count()<<"\n";    
-}
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T8> in ms since start :"<<run_time.count()<<"\n"); 
+}   
+
 
 
 BOOST_AUTO_TEST_CASE( test_specx_9 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T9>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T9>\n");
     SpRuntime runtime(2);
     auto start_time= std::chrono::steady_clock::now();
 
@@ -645,20 +658,20 @@ BOOST_AUTO_TEST_CASE( test_specx_9 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T9> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T9> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_9.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_9.dot");   
+    runtime.generateTrace("test_specx_9.svg");   
 }
 
 
 
 BOOST_AUTO_TEST_CASE( test_specx_10 )
 {
-    std::cout<<"[INFO SPECX] : Execution of <T10>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T10>\n");
     auto start_time= std::chrono::steady_clock::now();
     int  nbObjects = 12;
     
@@ -706,7 +719,7 @@ BOOST_AUTO_TEST_CASE( test_specx_10 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T10> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T10> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_10.dot", true);
@@ -719,7 +732,7 @@ BOOST_AUTO_TEST_CASE( test_specx_10 )
 BOOST_AUTO_TEST_CASE( test_specx_11 )
 {
     //PARALLEL_WRITE WITH ATOMIC
-    std::cout<<"[INFO SPECX] : Execution of <T11>\n";
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T11>\n");
     auto start_time= std::chrono::steady_clock::now();
     int NumThreads = std::min(6,SpUtils::DefaultNumThreads());
     SpRuntime runtime(NumThreads);
@@ -756,20 +769,20 @@ BOOST_AUTO_TEST_CASE( test_specx_11 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T11> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T11> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_11.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_11.dot");   
+    runtime.generateTrace("test_specx_11.svg");   
 }
 
 
 BOOST_AUTO_TEST_CASE( test_specx_12 )
 {
-    //PARALLEL_WRITE WITH ATOMIC
-    std::cout<<"[INFO SPECX] : Execution of <T12>\n";
+    //PARALLEL_WRITE WITH PROMISE
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T12>\n");
     auto start_time= std::chrono::steady_clock::now();
     int NumThreads = std::min(6,SpUtils::DefaultNumThreads());
     SpRuntime runtime(NumThreads);
@@ -802,13 +815,80 @@ BOOST_AUTO_TEST_CASE( test_specx_12 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	std::cout<<"[INFO SPECX] : Execution Time <T12> in ms since start :"<<run_time.count()<<"\n";
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T12> in ms since start :"<<run_time.count()<<"\n");
 
     // We generate the task graph corresponding to the execution 
     runtime.generateDot("test_specx_12.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_12.dot");   
+    runtime.generateTrace("test_specx_12.svg");   
+
+    
+}
+
+BOOST_AUTO_TEST_CASE( test_specx_13 )
+{
+    //std::cout<<"Start 13\n";
+    //MERGE
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T12>\n");
+    auto start_time= std::chrono::steady_clock::now();
+    
+    int NumThreads = std::min(25,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(NumThreads);
+
+    runtime.setSpeculationTest([](const int, const SpProbability&) -> bool {
+        return true;
+    });
+            
+    int a=0, b=0, c=0, d=0;
+
+    std::promise<bool> promise1;
+
+    runtime.task(SpWrite(a), [&promise1](int& param_a){
+        param_a = 1;
+        usleep(100000);
+        promise1.get_future().get();
+    });
+
+    runtime.task(SpRead(a), SpPotentialWrite(b), 
+        []([[maybe_unused]] const int& a_param, [[maybe_unused]] int&) -> bool {
+            usleep(200000);
+            return false;
+    });
+
+    runtime.task(SpRead(b), SpPotentialWrite(c), 
+        [](const int& param_b, [[maybe_unused]] int&) -> bool {
+        bool res = false;
+        if(param_b != 0) {
+            res = true;
+        }
+        usleep(300000);
+        return res;
+    });
+            
+    runtime.task(SpRead(c), SpWrite(d), [](const int& param_c, int&param_d){
+        if (param_c == 0) { param_d = 1; }
+        usleep(400000);
+    });
+    
+    promise1.set_value(true);
+    
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T13> in ms since start :"<<run_time.count()<<"\n");
+
+    // We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_13.dot", true);
+    
+    // We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_13.svg");   
 }
 
 
