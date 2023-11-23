@@ -828,8 +828,7 @@ BOOST_AUTO_TEST_CASE( test_specx_12 )
 
 BOOST_AUTO_TEST_CASE( test_specx_13 )
 {
-    //std::cout<<"Start 13\n";
-    //MERGE
+    //MERGE DEMO
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T12>\n");
     auto start_time= std::chrono::steady_clock::now();
     
@@ -890,6 +889,75 @@ BOOST_AUTO_TEST_CASE( test_specx_13 )
     // We generate an Svg trace of the execution
     runtime.generateTrace("test_specx_13.svg");   
 }
+
+
+BOOST_AUTO_TEST_CASE( test_specx_14 )
+{
+    
+    //Calculation of PI value estimate
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T14>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    int nbThreads = std::min(8,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(nbThreads);
+
+    long int nbN=1000000;
+    int sizeBlock=nbN/nbThreads;
+    int diffBlock=nbN-sizeBlock*nbThreads;
+    double h=1.0/double(nbN);
+    double integralValue=0.0;
+    std::vector<double> valuesVec(nbThreads+1,double(0.0));
+ 
+    for(int k1 = 0 ; k1 < nbThreads ; ++k1){
+        int vkBegin=k1*sizeBlock;
+        int vkEnd=(k1+1)*sizeBlock;
+        if ((k1==nbThreads-1) && (k1>0) && (diffBlock>0)) { vkEnd=vkBegin+diffBlock; }
+        int threadid = k1;
+        runtime.task(
+            SpWrite(valuesVec.at(threadid)),
+                [h,vkBegin,vkEnd](double& s) -> bool {
+                    double sum=0.0; double x;
+                    for(int j=vkBegin;j<vkEnd;j++)
+                    {
+                        x=h*double(j);
+                        sum+=4.0/(1.0+x*x);
+                    }
+                    s=sum;
+                    return true;
+                }
+            ).setTaskName("Op("+std::to_string(k1)+")");
+    }
+
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+     // We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_14.dot", true);
+    
+    // We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_14.svg");   
+
+    //Sum of vector elements
+    integralValue=h*std::reduce(valuesVec.begin(),valuesVec.end());
+    //std::cout<<"PI Value= "<<integralValue<<"\n";
+    BOOST_MESSAGE("[INFO SPECX] : PI Value= "<<integralValue<<"\n");
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T14> in ms since start :"<<run_time.count()<<"\n");
+}
+
+BOOST_AUTO_TEST_CASE( test_specx_15 )
+{
+    //std::cout<<"Start 15\n";
+    //calculation of PI value estimate with range
+    //auto ranges = partitionRange( therange, NumThreads );
+}
+
 
 
 BOOST_AUTO_TEST_SUITE_END()
