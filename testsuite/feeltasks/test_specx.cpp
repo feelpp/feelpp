@@ -25,6 +25,7 @@
 #include <specx/Utils/SpBufferDataView.hpp>
 #include <specx/Utils/SpHeapBuffer.hpp>
 #include <specx/Utils/SpUtils.hpp>
+#include <specx/Utils/SpConsumerThread.hpp>
 
 #include <specx/Legacy/SpRuntime.hpp>
 
@@ -1046,8 +1047,206 @@ BOOST_AUTO_TEST_CASE( test_specx_15 )
 
 BOOST_AUTO_TEST_CASE( test_specx_16 )
 {
-    //Example big Parallelisation...
+    //An example to see the difference, whether qWaitTask is activated or not.
+    //look at the graph "test_specx_16.svg" to understand the difference...
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T16>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    int nbThreads = std::min(6,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(nbThreads);
+    int  nbObjects = 12;
+    
+    int nbTasksToSubmit = runtime.getNbThreads();
+    int nbLoops=std::max(1,nbObjects/nbTasksToSubmit);
+    int nbCoor=round((float(nbObjects)/float(nbTasksToSubmit)-float(nbObjects/nbTasksToSubmit))*float(nbTasksToSubmit));
+    int nbidx=nbTasksToSubmit;
+    
+
+    bool qWaitTask=true;
+
+    for(int qi = 0 ; qi < 2 ; ++qi)
+    {
+        qWaitTask=qi;
+        int  initVal = 1;
+        int  it=0;
+        for(int idxLoop = 0 ; idxLoop < nbLoops ; ++idxLoop)
+        {
+            if (idxLoop==nbLoops-1) 
+            { 
+                nbidx=nbidx+nbCoor;
+            }
+
+            for(int idx = 0 ; idx < nbidx ; ++idx){
+                    auto returnValue=runtime.task( SpRead(initVal),
+                        [](const int& value)-> double {
+                            usleep(10000); //<== simply to see the task boxes better on the graph.
+                            return true;
+                        }
+                    );
+                it++;
+                if (qWaitTask) { returnValue.wait(); }
+            }
+        }
+
+        usleep(100000);
+    }
+
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_16.dot", true);
+    
+    //We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_16.svg");   
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T16> in ms since start :"<<run_time.count()<<"\n");
+
 }
+
+
+BOOST_AUTO_TEST_CASE( test_specx_17 )
+{
+    //Discovering another function.
+    //An example using the consum function
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T17>\n");
+    auto start_time= std::chrono::steady_clock::now();
+    SpConsumerThread cs;
+    int Sum=0;
+    cs.submitJob([&](){
+        Sum++; 
+        BOOST_MESSAGE(" 1 Sum="<<Sum<<"\n");
+    });
+
+    cs.submitJob([&](){ 
+        Sum++; 
+        BOOST_MESSAGE(" 2 Sum2="<<Sum<<"\n");
+    });
+
+    cs.submitJobAndWait([&](){
+        Sum++; 
+        BOOST_MESSAGE(" 3 Sum2="<<Sum<<"\n");
+    });
+
+    cs.submitJob([&](){
+        Sum++; 
+        BOOST_MESSAGE(" 4 Su2="<<Sum<<"\n");
+    });
+
+    cs.submitJobAndWait([&](){
+        Sum++;  
+        BOOST_MESSAGE(" 5 Sum="<<Sum<<"\n");
+    });
+    cs.stop();
+    
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T16> in ms since start :"<<run_time.count()<<"\n");
+
+}
+
+
+BOOST_AUTO_TEST_CASE( test_specx_18 )
+{
+    //Speculative write
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T18>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    int nbThreads = std::min(6,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(nbThreads);
+
+
+    runtime.setSpeculationTest([](const int /*inNbReadyTasks*/, const SpProbability& /*inProbability*/) -> bool {
+        return true;
+    });
+
+    int val = 0;
+    std::promise<int> promise1;
+
+    runtime.task(SpRead(val), [](const int& /*valParam*/){ });
+    // val is 0
+
+    runtime.task(SpRead(val), [&promise1](const int& /*valParam*/){
+        promise1.get_future().get();
+    });
+    // val is 0
+
+    runtime.task(SpPotentialWrite(val), [](int& /*valParam*/) -> bool {
+        BOOST_MESSAGE("Maybe task will return false\n");
+        //std::cout.flush();
+        return false;
+    });
+    // val is 0
+
+    std::atomic_int counterFirstSpec(0);
+
+    runtime.task(SpWrite(val), [&val,&counterFirstSpec](int& valParam){
+        BOOST_MESSAGE("Speculative task, valParam is "<< valParam<<" at "<< &valParam <<"\n");
+        BOOST_MESSAGE("Speculative task, val is "<<val<<" at "<<&val<<"\n");
+        valParam += 1;
+        BOOST_MESSAGE("Speculative task, valParam is "<< valParam<<" at "<<&valParam <<"\n");
+        BOOST_MESSAGE("Speculative task, val is "<<val<<" at "<<&val<<"\n");
+        //std::cout.flush();
+        counterFirstSpec += 1;
+    });
+    // val is 1
+
+
+    runtime.task(SpPotentialWrite(val), [](int& valParam) -> bool {
+        // valParam should be 1
+        BOOST_MESSAGE("Maybe task 2, valParam is "<< valParam<<" at "<< &valParam<<"\n");
+        //std::cout.flush();
+        valParam += 2;
+        BOOST_MESSAGE("Maybe task 2, return true with valParam is "<<valParam<<" at "<<&valParam <<"\n");
+        return true;
+    });
+    // val is 3
+
+    std::atomic_int counterSecondSpec(0);
+
+    runtime.task(SpWrite(val), [&val,&counterSecondSpec](int& valParam){
+        BOOST_MESSAGE("Speculative last write, valParam is "<< valParam<< " at "<<&valParam<<"\n");
+        BOOST_MESSAGE("Speculative last write, val is "<<val<< " at "<<&val<<"\n");
+        valParam *= 2;
+        BOOST_MESSAGE("Speculative last write, valParam is "<< valParam << " at "<< &valParam<<"\n");
+        BOOST_MESSAGE("Speculative last write, val is "<< val<<" at "<< &val<<"\n");
+        //std::cout.flush();
+        counterSecondSpec += 1;
+    });
+    // val is 6
+
+    promise1.set_value(0);
+
+
+     //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_18.dot", true);
+    
+    //We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_18.svg");   
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T18> in ms since start :"<<run_time.count()<<"\n");
+
+
+
+}
+
+
 
 
 BOOST_AUTO_TEST_SUITE_END()
