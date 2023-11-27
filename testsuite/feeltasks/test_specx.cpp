@@ -68,12 +68,14 @@ BOOST_AUTO_TEST_CASE( test_specx_2 )
     runtime.task(SpRead(initVal), SpWrite(writeVal),
         [](const int& initValParam, int& writeValParam){
         writeValParam += initValParam;
+        usleep(10000); //<== simply to see the task boxes better on the graph.
     });
 
     // Create a task with lambda function (that returns a bool)
     auto returnValue = runtime.task(SpRead(initVal), SpWrite(writeVal),
         [](const int& initValParam, int& writeValParam) -> bool {
         writeValParam += initValParam;
+        usleep(20000); //<== simply to see the task boxes better on the graph.
         return true;
     });
 
@@ -97,7 +99,7 @@ BOOST_AUTO_TEST_CASE( test_specx_2 )
     runtime.generateDot("test_specx_2.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_2.dot");   
+    runtime.generateTrace("test_specx_2.svg");   
 }
 
 
@@ -215,7 +217,7 @@ BOOST_AUTO_TEST_CASE( test_specx_5 )
     int val = 0;
     std::promise<int> promise1;
 
-    runtime.task(SpRead(val), [&promise1](const int&){
+    runtime.task(SpRead(val), [&promise1](const int&) {
         promise1.get_future().get();
     }).setTaskName("First-task");
         
@@ -276,19 +278,20 @@ BOOST_AUTO_TEST_CASE( test_specx_5 )
 BOOST_AUTO_TEST_CASE( test_specx_6 )
 {
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T6>\n");
-    const int NumThreads = SpUtils::DefaultNumThreads();
-    SpRuntime runtime(NumThreads);
+    //const int numThreads = SpUtils::DefaultNumThreads();
+    int numThreads = std::min(10,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(numThreads);
     auto start_time= std::chrono::steady_clock::now();
-    const int NbTasksToSubmit = runtime.getNbThreads();
-    static const int NbLoops = 1;
+    const int nbTasksToSubmit = runtime.getNbThreads();
+    static const int nbLoops = 10;
     int initVal = 1;
 
     small_vector<SpAbstractTaskWithReturn<double>::SpTaskViewer> elapsed;
-    elapsed.reserve(NbTasksToSubmit*NbLoops);
+    elapsed.reserve(nbTasksToSubmit*nbLoops);
 
 
-    for(int idxLoop = 0 ; idxLoop < NbLoops ; ++idxLoop){
-            for(int idx = 0 ; idx < NbTasksToSubmit ; ++idx){
+    for(int idxLoop = 0 ; idxLoop < nbLoops ; ++idxLoop){
+            for(int idx = 0 ; idx < nbTasksToSubmit ; ++idx){
                 SpTimer timerTask;
                 elapsed.emplace_back( 
                     runtime.task(SpRead(initVal),
@@ -305,7 +308,7 @@ BOOST_AUTO_TEST_CASE( test_specx_6 )
 
     double averageToExecute = 0;
     for(const SpAbstractTaskWithReturn<double>::SpTaskViewer& viewer : elapsed){
-            averageToExecute += viewer.getValue()/double(NbTasksToSubmit*NbLoops);
+            averageToExecute += viewer.getValue()/double(nbTasksToSubmit*nbLoops);
     }
 
     BOOST_MESSAGE("[INFO SPECX] : Average time <T6> for a task to be executed without pressure = " << averageToExecute << "s\n");
@@ -346,6 +349,7 @@ BOOST_AUTO_TEST_CASE( test_specx_7 )
     runtime.setSpeculationTest(
     []([[maybe_unused]] const int nbReadyTasks,
     [[maybe_unused]] const SpProbability& meanProbability) -> bool {
+        usleep(1000);  //<== simply to see the task boxes better on the graph.
         return true; // Here we always return true, this basically means
                      // that we always allow speculative tasks to run
                      // regardless of runtime conditions.
@@ -353,6 +357,7 @@ BOOST_AUTO_TEST_CASE( test_specx_7 )
 
     int a = 41, b = 0, c = 0;
     auto task1 = runtime.task(SpRead(a), [](const int& inA) -> int {
+        usleep(2000);  //<== simply to see the task boxes better on the graph.
         return inA + 1;
     });
     task1.setTaskName("First-task");
@@ -368,14 +373,14 @@ BOOST_AUTO_TEST_CASE( test_specx_7 )
     
     runtime.task(SpPriority(0), SpProbability(0.5), SpRead(b),
     SpPotentialWrite(a),
-    [dis01, mtEngine] (const int &inB, int &inA) mutable -> bool{
+    [dis01, mtEngine] (const int &inB, int &inA) mutable -> bool {
         double val = dis01(mtEngine);
         
         if(inB == 42  && val < 0.5) {
             inA = 43;
             return true;
         }
-        
+        usleep(3000);  //<== simply to see the task boxes better on the graph.
         return false;
         
     }).setTaskName("Second-task");
@@ -392,6 +397,7 @@ BOOST_AUTO_TEST_CASE( test_specx_7 )
         } else {
             inC = 2;
         }
+        usleep(4000);  //<== simply to see the task boxes better on the graph.
     }).setTaskName("Final-task");
 
     // We wait for all tasks to finish
@@ -504,10 +510,10 @@ BOOST_AUTO_TEST_CASE( test_specx_8 )
         runtime.stopAllThreads();
 
         // We generate the task graph corresponding to the execution 
-        runtime.generateDot("test_specx_8.dot", true);
+        runtime.generateDot("test_specx_8_SleepTime"+std::to_string(SleepTime)+".dot", true);
     
         // We generate an Svg trace of the execution
-        runtime.generateTrace("test_specx_8.svg");   
+        runtime.generateTrace("test_specx_8_SleepTime"+std::to_string(SleepTime)+".svg");   
     }
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
@@ -736,7 +742,7 @@ BOOST_AUTO_TEST_CASE( test_specx_10 )
     runtime.generateDot("test_specx_10.dot", true);
     
     // We generate an Svg trace of the execution
-    runtime.generateTrace("test_specx_10.dot");   
+    runtime.generateTrace("test_specx_10.svg");   
 }
 
 
@@ -754,18 +760,18 @@ BOOST_AUTO_TEST_CASE( test_specx_11 )
         runtime.task(SpParallelWrite(initVal),
             [&](std::atomic<int>& initValParam){
                 initValParam += 1;
-                val0++;
+                //val0++;
                 //std::cout<<idxTh<<" "<<initValParam<<"...."<<val0<<"\n";
                 while(initValParam != nbTh){
-                    usleep(10000); //<== simply to see the task boxes better on the graph.
+                    usleep(60000); //<== simply to see the task boxes better on the graph.
                 } 
-                //std::cout<<"<OK>\n";
+               usleep(1000);  //<== simply to see the task boxes better on the graph.
             }).setTaskName("OpPW("+std::to_string(idxTh)+")");
 
         runtime.task(SpRead(val0),
             [&](const int& valParam0)
             {
-                usleep(40000); //<== simply to see the task boxes better on the graph.
+                usleep(20000); //<== simply to see the task boxes better on the graph.
                 //...
                 //std::cout<<"- val0="<<valParam0<<"\n";
             }).setTaskName("OpR("+std::to_string(idxTh)+")");
