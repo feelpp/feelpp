@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"structFeel_1_1vf_1_1UnaryPlus_1_1Lambda.html":[5,0,1,13,48,2],
+"structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html":[4,0,1,13,48,3],
 "structFeel_1_1vf_1_1UnaryPlus_1_1tensor.html":[5,0,1,13,48,3],
 "structFeel_1_1vf_1_1UnaryPlus_1_1tensor_1_1is__zero.html":[4,0,1,13,48,3,0],
 "structFeel_1_1vf_1_1UnaryPlus_1_1tensor_1_1is__zero.html":[5,0,1,13,48,3,0],
@@ -57,8 +59,8 @@ var NAVTREEINDEX23 =
 "structnlohmann_1_1adl__serializer.html#abdae6028cdef1bf1838b47eeb7022ebc":[4,0,3,2,0],
 "structnlohmann_1_1adl__serializer.html#afdcc8f0204ce8ac7d28a5403f6e1f0e7":[5,0,2,2,2],
 "structnlohmann_1_1adl__serializer.html#afdcc8f0204ce8ac7d28a5403f6e1f0e7":[4,0,3,2,2],
-"structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html":[5,0,2,3],
-"structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html":[4,0,3,3],
+"structnlohmann_1_1adl__serializer_3_01Feel_1_1fs_1_1path_01_4.html":[5,0,2,3],
+"structnlohmann_1_1adl__serializer_3_01Feel_1_1fs_1_1path_01_4.html":[4,0,3,3],
 "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html":[5,0,2,4],
 "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html":[4,0,3,4],
 "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1item__accessor_01_4.html":[4,0,3,5],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "structnlohmann_1_1detail_1_1is__getable.html":[5,0,2,0,69],
 "structnlohmann_1_1detail_1_1is__iterator__of__multibyte.html":[4,0,3,0,70],
 "structnlohmann_1_1detail_1_1is__iterator__of__multibyte.html":[5,0,2,0,70],
-"structnlohmann_1_1detail_1_1is__iterator__traits.html":[4,0,3,0,71],
-"structnlohmann_1_1detail_1_1is__iterator__traits.html":[5,0,2,0,71],
-"structnlohmann_1_1detail_1_1is__iterator__traits_3_01iterator__traits_3_01T_01_4_01_4.html":[4,0,3,0,72]
+"structnlohmann_1_1detail_1_1is__iterator__traits.html":[4,0,3,0,71]
 };

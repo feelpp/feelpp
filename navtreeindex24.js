@@ -1,5 +1,7 @@
 var NAVTREEINDEX24 =
 {
+"structnlohmann_1_1detail_1_1is__iterator__traits.html":[5,0,2,0,71],
+"structnlohmann_1_1detail_1_1is__iterator__traits_3_01iterator__traits_3_01T_01_4_01_4.html":[4,0,3,0,72],
 "structnlohmann_1_1detail_1_1is__iterator__traits_3_01iterator__traits_3_01T_01_4_01_4.html":[5,0,2,0,72],
 "structnlohmann_1_1detail_1_1is__json__ref.html":[4,0,3,0,73],
 "structnlohmann_1_1detail_1_1is__json__ref.html":[5,0,2,0,73],

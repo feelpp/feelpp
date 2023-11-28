@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.7</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.8</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -403,8 +403,8 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:a9b4fd6aec8923b20258015b1f4da9dfe"><td class="memTemplItemLeft" align="right" valign="top">static void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>changeRepository</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:a9b4fd6aec8923b20258015b1f4da9dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd49f17202ebc86ad12e811d939bf662"><td class="memItemLeft" align="right" valign="top">static std::string const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#afd49f17202ebc86ad12e811d939bf662">rootRepository</a> ()</td></tr>
-<tr class="separator:afd49f17202ebc86ad12e811d939bf662"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3fcdb34cb5b56d7b7a7db716a90ca7c"><td class="memItemLeft" align="right" valign="top">static fs::path const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#ae3fcdb34cb5b56d7b7a7db716a90ca7c">rootRepository</a> ()</td></tr>
+<tr class="separator:ae3fcdb34cb5b56d7b7a7db716a90ca7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace781e8da2c930e0297dd005cf5ddbbf"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">findFile</a> (std::string const &amp;filename, std::vector&lt; std::string &gt; paths={})</td></tr>
 <tr class="memdesc:ace781e8da2c930e0297dd005cf5ddbbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a file.  <a href="classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf">More...</a><br /></td></tr>
 <tr class="separator:ace781e8da2c930e0297dd005cf5ddbbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -473,7 +473,7 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <div class="line">   <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
 <div class="line">   <a class="code hl_function" href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Environment</a> env(argc, argv);</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a2f72ceaafeecd718e9089c5d16322cfd"><div class="ttname"><a href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Feel::Environment::Environment</a></div><div class="ttdeci">Environment()</div><div class="ttdoc">Initialize the Feel environment.</div><div class="ttdef"><b>Definition:</b> environment.cpp:300</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a2f72ceaafeecd718e9089c5d16322cfd"><div class="ttname"><a href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Feel::Environment::Environment</a></div><div class="ttdeci">Environment()</div><div class="ttdoc">Initialize the Feel environment.</div><div class="ttdef"><b>Definition:</b> environment.cpp:298</div></div>
 <div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:37</div></div>
 </div><!-- fragment --><p> or more commonly </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[])</div>
 <div class="line">{</div>
@@ -797,7 +797,7 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <li>exprdbdir : top level directory of ginac expression ($repository/exprDB)</li>
 <li>home : $HOME directory The paths can be used in filename string and expanded using this function by prefixing them by $ <div class="fragment"><div class="line">std::string topsrcdir = <a class="code hl_function" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Environment::expand</a>( <span class="stringliteral">&quot;$top_srcdir&quot;</span>);</div>
 <div class="line">std::string topbuilddir = <a class="code hl_function" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Environment::expand</a>( <span class="stringliteral">&quot;$top_builddir&quot;</span>);</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2465</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2464</div></div>
 </div><!-- fragment --> They can be used in config files or in the command line <div class="fragment"><div class="line">feelpp_qs_laplacian --gmsh.filename=\$home/mesh.geo</div>
 </div><!-- fragment --></li>
 </ul>
@@ -1272,8 +1272,8 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 
 </div>
 </div>
-<a id="afd49f17202ebc86ad12e811d939bf662" name="afd49f17202ebc86ad12e811d939bf662"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd49f17202ebc86ad12e811d939bf662">&#9670;&nbsp;</a></span>rootRepository()</h2>
+<a id="ae3fcdb34cb5b56d7b7a7db716a90ca7c" name="ae3fcdb34cb5b56d7b7a7db716a90ca7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3fcdb34cb5b56d7b7a7db716a90ca7c">&#9670;&nbsp;</a></span>rootRepository()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1282,7 +1282,7 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::string const  &amp; Feel::Environment::rootRepository </td>
+          <td class="memname">fs::path const  &amp; Feel::Environment::rootRepository </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1422,8 +1422,8 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <div class="fragment"><div class="line"><a class="code hl_function" href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Environment::startLogging</a>();</div>
 <div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;Feel++ uses logging&quot;</span>;</div>
 <div class="line"><a class="code hl_function" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Environment::stopLogging</a>();</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2113</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2058</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2112</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2057</div></div>
 </div><!-- fragment --> 
 </div>
 </div>

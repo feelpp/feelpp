@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[5,0,1,4,0,3],
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[4,0,1,4,0,3],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet.html":[5,0,1,4,0,4],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet.html":[4,0,1,4,0,4],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisPolySet_3_01NewPolySetType_00_01BasisType_3_01Od3c3455f9581e098fbbc9c6e4e32dd82.html":[4,0,1,4,0,5],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "structFeel_1_1detail_1_1Curl.html":[5,0,1,1,13],
 "structFeel_1_1detail_1_1Curl_1_1result.html":[4,0,1,1,13,0],
 "structFeel_1_1detail_1_1Curl_1_1result.html":[5,0,1,1,13,0],
-"structFeel_1_1detail_1_1D.html":[5,0,1,1,14],
-"structFeel_1_1detail_1_1D.html":[4,0,1,1,14],
-"structFeel_1_1detail_1_1DD.html":[5,0,1,1,15]
+"structFeel_1_1detail_1_1D.html":[5,0,1,1,14]
 };

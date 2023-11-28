@@ -1,6 +1,8 @@
 var NAVTREEINDEX19 =
 {
+"norm_8hpp.html":[6,0,0,0,4,36],
 "norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc":[6,0,0,0,4,36,0],
+"norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc":[4,0,1,13,50],
 "norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850":[4,0,1,13,82],
 "norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850":[6,0,0,0,4,36,1],
 "normh1_8hpp.html":[6,0,0,0,4,37],
@@ -9,12 +11,12 @@ var NAVTREEINDEX19 =
 "odh_8hpp.html":[6,0,0,0,1,38],
 "odh_8hpp.html#a17f18ff761e5bd2f0993491ca46b6ec6":[6,0,0,0,1,38,1],
 "on_8hpp.html":[6,0,0,0,4,40],
-"on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc":[4,0,1,13,77],
 "on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc":[6,0,0,0,4,40,0],
+"on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc":[4,0,1,13,77],
 "one_8hpp.html":[6,0,0,0,4,41],
 "ones_8hpp.html":[6,0,0,0,4,42],
-"ones_8hpp.html#a4bf25ae0ee2497a5aae867115f43c756":[4,0,1,13,78],
 "ones_8hpp.html#a4bf25ae0ee2497a5aae867115f43c756":[6,0,0,0,4,42,0],
+"ones_8hpp.html#a4bf25ae0ee2497a5aae867115f43c756":[4,0,1,13,78],
 "operations_8hpp.html":[6,0,0,0,4,43],
 "operator_8hpp.html":[6,0,0,0,1,39],
 "operatorinterpolation_8hpp.html":[6,0,0,0,1,40],
@@ -22,8 +24,8 @@ var NAVTREEINDEX19 =
 "operatorlinear_8hpp.html":[6,0,0,0,1,41],
 "operatorlinearfree_8hpp.html":[6,0,0,0,1,42],
 "operators2_8hpp.html":[6,0,0,0,4,45],
-"operators2_8hpp.html#a1413d2aecd521fe0dc8b64f7bc5e1bf3":[4,0,1,13,73],
 "operators2_8hpp.html#a1413d2aecd521fe0dc8b64f7bc5e1bf3":[6,0,0,0,4,45,0],
+"operators2_8hpp.html#a1413d2aecd521fe0dc8b64f7bc5e1bf3":[4,0,1,13,73],
 "operators3_8hpp.html":[6,0,0,0,4,46],
 "operators_8hpp.html":[6,0,0,0,4,44],
 "oseen_8hpp.html":[6,0,0,0,1,43],
@@ -247,7 +249,5 @@ var NAVTREEINDEX19 =
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html":[4,0,1,4,0,1],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisContinuity_3_01NewContinuityType_00_01BasisType85014e0d1b1b40793cb205341b8ed0a9.html":[5,0,1,4,0,1],
 "structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html":[5,0,1,4,0,2],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html":[4,0,1,4,0,2],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[5,0,1,4,0,3],
-"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder_3_01NewOrder_00_01BasisType_3_01Order_00_86e9208bf6efe5ef93da29d48907e576.html":[4,0,1,4,0,3]
+"structFeel_1_1FeelModels_1_1detail_1_1ChangeBasisOrder.html":[4,0,1,4,0,2]
 };

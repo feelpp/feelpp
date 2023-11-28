@@ -1086,7 +1086,7 @@ var hierarchy =
       [ "Feel::VisitorList< TList, R >", "classFeel_1_1VisitorList.html", null ]
     ] ],
     [ "nlohmann::adl_serializer< ValueType, typename >", "structnlohmann_1_1adl__serializer.html", null ],
-    [ "nlohmann::adl_serializer< boost::filesystem::path >", "structnlohmann_1_1adl__serializer_3_01boost_1_1filesystem_1_1path_01_4.html", null ],
+    [ "nlohmann::adl_serializer< Feel::fs::path >", "structnlohmann_1_1adl__serializer_3_01Feel_1_1fs_1_1path_01_4.html", null ],
     [ "nlohmann::adl_serializer< py::bool_ >", "structnlohmann_1_1adl__serializer_3_01py_1_1bool___01_4.html", null ],
     [ "nlohmann::adl_serializer< py::detail::item_accessor >", "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1item__accessor_01_4.html", null ],
     [ "nlohmann::adl_serializer< py::detail::list_accessor >", "structnlohmann_1_1adl__serializer_3_01py_1_1detail_1_1list__accessor_01_4.html", null ],

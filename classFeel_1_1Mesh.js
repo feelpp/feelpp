@@ -53,6 +53,7 @@ var classFeel_1_1Mesh =
     [ "realDimension", "classFeel_1_1Mesh.html#af1f5a398f67a6483ea6f1b8fc9c9cbd1", null ],
     [ "recv", "classFeel_1_1Mesh.html#ac7a45d6e69ef6fae1b7294df78817018", null ],
     [ "referenceConvex", "classFeel_1_1Mesh.html#a9540dadf37092e95fa69309ee9fd5306", null ],
+    [ "removeMarkerNameWithoutEntity", "classFeel_1_1Mesh.html#a19e2c1d386dca245fada767b2b00b316", null ],
     [ "renumber", "classFeel_1_1Mesh.html#ac091bef47ae6e5958e4158a0e48b95cf", null ],
     [ "send", "classFeel_1_1Mesh.html#a616cfab432a337b84898481e982423ab", null ],
     [ "setNumGlobalElements", "classFeel_1_1Mesh.html#a9f26257d9f11c2944356588070577e41", null ],

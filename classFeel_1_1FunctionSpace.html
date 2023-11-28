@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.7</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.8</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -164,7 +164,7 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:ab416b767c777ca4b5b9756d79edc1967"><td class="memItemLeft" align="right" valign="top"><a id="ab416b767c777ca4b5b9756d79edc1967" name="ab416b767c777ca4b5b9756d79edc1967"></a>enum &#160;</td><td class="memItemRight" valign="bottom">{ <b>mpl_assertion_in_line_1582</b> = sizeof( boost::mpl::assertion_failed&lt;false&gt;( boost::mpl::assert_not_arg( (void (*) ( boost::is_same&lt;mpl::at&lt;bases_list,mpl::int_&lt;0&gt; &gt;, mpl::void_&gt; ))0, 1 ) ) )
+<tr class="memitem:ab416b767c777ca4b5b9756d79edc1967"><td class="memItemLeft" align="right" valign="top"><a id="ab416b767c777ca4b5b9756d79edc1967" name="ab416b767c777ca4b5b9756d79edc1967"></a>enum &#160;</td><td class="memItemRight" valign="bottom">{ <b>mpl_assertion_in_line_1581</b> = sizeof( boost::mpl::assertion_failed&lt;false&gt;( boost::mpl::assert_not_arg( (void (*) ( boost::is_same&lt;mpl::at&lt;bases_list,mpl::int_&lt;0&gt; &gt;, mpl::void_&gt; ))0, 1 ) ) )
  }</td></tr>
 <tr class="separator:ab416b767c777ca4b5b9756d79edc1967"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59c9133c635219a7b12c443d91928ea4"><td class="memItemLeft" align="right" valign="top"><a id="a59c9133c635219a7b12c443d91928ea4" name="a59c9133c635219a7b12c443d91928ea4"></a>
@@ -926,8 +926,7 @@ template&lt;typename SimilarSpaceType &gt; </td></tr>
 <tr class="memdesc:a3125708860e1a8486623a61835c28365"><td class="mdescLeft">&#160;</td><td class="mdescRight">copy shared_ptr pointers of a <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a> but not totally a view : must be use we caution <br /></td></tr>
 <tr class="separator:a3125708860e1a8486623a61835c28365"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f637459586d6ad3b61830242e0cbf25"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a8f637459586d6ad3b61830242e0cbf25">init</a> (mesh_ptrtype const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#aec17243b6983c993a10c1a6cbb190bf2">mesh</a>, mesh_support_vector_type const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a422b158f6c507d63fbc8de656beaf098">meshSupport</a>, size_type mesh_components, std::vector&lt; <a class="el" href="classFeel_1_1Dof.html">Dof</a>&lt; typename mesh_type::size_type &gt; &gt; const &amp;dofindices, periodicity_type periodicity=periodicity_type())</td></tr>
-<tr class="memdesc:a8f637459586d6ad3b61830242e0cbf25"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize the function space <br  />
-  <a href="classFeel_1_1FunctionSpace.html#a8f637459586d6ad3b61830242e0cbf25">More...</a><br /></td></tr>
+<tr class="memdesc:a8f637459586d6ad3b61830242e0cbf25"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize the function space  <a href="classFeel_1_1FunctionSpace.html#a8f637459586d6ad3b61830242e0cbf25">More...</a><br /></td></tr>
 <tr class="separator:a8f637459586d6ad3b61830242e0cbf25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a579328c64f638e4c43ab75ef8c59b4"><td class="memItemLeft" align="right" valign="top"><a id="a8a579328c64f638e4c43ab75ef8c59b4" name="a8a579328c64f638e4c43ab75ef8c59b4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (mesh_ptrtype const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#aec17243b6983c993a10c1a6cbb190bf2">mesh</a>, mesh_support_vector_type const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a422b158f6c507d63fbc8de656beaf098">meshSupport</a>, size_type mesh_components=MESH_RENUMBER|MESH_CHECK, periodicity_type periodicity=periodicity_type())</td></tr>
@@ -1906,8 +1905,7 @@ template&lt;typename A0 , typename A1 , typename A2 , typename A3 , typename A4 
       </table>
 </div><div class="memdoc">
 
-<p>initialize the function space <br  />
- </p>
+<p>initialize the function space </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">mesh</td><td>mesh data </td></tr>
@@ -2306,8 +2304,6 @@ template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; !TT::is_comp
   </table>
   </dd>
 </dl>
-
-<p class="reference">References <a class="el" href="trace_8hpp.html#a63271d11f31a90d805f14f9128986e22">Feel::vf::trace()</a>.</p>
 
 </div>
 </div>
