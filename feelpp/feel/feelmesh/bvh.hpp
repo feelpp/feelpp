@@ -152,6 +152,8 @@ public:
     };
     using rayintersection_result_type = BVHRayIntersectionResult;
 
+    enum class IntersectContext{ all=0, closest, hasIntersection };
+
     BVH( BVHEnum::Quality quality = BVHEnum::Quality::High, worldcomm_ptr_t worldComm = Environment::worldCommPtr() )
         :
         CommObject( worldComm ),
@@ -168,11 +170,17 @@ public:
     BVHPrimitiveInfo const& primitiveInfo( index_type i ) const { return M_primitiveInfo.at( i ); }
 
     //! compute intersection(s) with a ray from the BVH built and return a vector of intersection result
-    std::vector<rayintersection_result_type> intersect( ray_type const& rayon, bool useRobustTraversal = true )
+    template<typename... Ts>
+    std::vector<rayintersection_result_type> intersect( Ts && ... v )
         {
-            bool parallel = true && this->worldComm().size() > 1;
-            bool closestOnly = false;
-            auto resSeq = intersectSequential( rayon,useRobustTraversal );
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && ray = args.get(_ray);
+            bool useRobustTraversal = args.get_else(_robust,true);
+            IntersectContext ctx = args.get_else(_context,IntersectContext::all);
+            bool parallel = args.get_else(_parallel,this->worldComm().size() > 1);
+
+            bool closestOnly = ctx == IntersectContext::closest;
+            auto resSeq = intersectSequential( ray,useRobustTraversal );
             if ( closestOnly && resSeq.size() > 1 )
                 resSeq.resize(1);
             if ( !parallel )
@@ -328,7 +336,7 @@ private:
             bvh::v2::SmallStack<typename backend_bvh_type::Index, stack_size> stack;
             std::vector<rayintersection_result_type> res;
             M_bvh->template intersect<isAnyHit, UseRobustTraversal>( rayBackend, M_bvh->get_root().index, stack,
-                                                                     [&] (std::size_t begin, std::size_t end) {
+                                                                     [this,&res,&rayBackend] (std::size_t begin, std::size_t end) {
                                                                          std::size_t previousResultSize = res.size();
                                                                          for (std::size_t i = begin; i < end; ++i)
                                                                          {

@@ -71,10 +71,10 @@ void test2D( RangeType const& range )
     bvh_ray_type ray_2(origin,direction_perp_2);
 
     auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
-    auto rayIntersectionResult1 = bvhInHouse->intersect(ray_1) ;
+    auto rayIntersectionResult1 = bvhInHouse->intersect(_ray=ray_1) ;
     BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
     printRayIntersectionResults( bvhInHouse,rayIntersectionResult1 );
-    auto rayIntersectionResult2 = bvhInHouse->intersect(ray_2) ;
+    auto rayIntersectionResult2 = bvhInHouse->intersect(_ray=ray_2) ;
     BOOST_CHECK_MESSAGE(!rayIntersectionResult2.empty(), fmt::format("Intersection between ray2 and BVH tree has been found"));
     printRayIntersectionResults( bvhInHouse,rayIntersectionResult2 );
 }
@@ -99,10 +99,10 @@ void test3D( RangeType const& range )
     auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::Low);
     for ( auto bvhCurrent : {bvhInHouse.get(),bvhThirdParty.get(),bvhThirdPartyLow.get()} )
     {
-        auto rayIntersectionResult1 = bvhCurrent->intersect(ray_1) ;
+        auto rayIntersectionResult1 = bvhCurrent->intersect(_ray=ray_1) ;
         BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
         printRayIntersectionResults( bvhCurrent,rayIntersectionResult1 );
-        auto rayIntersectionResult2 = bvhCurrent->intersect(ray_2) ;
+        auto rayIntersectionResult2 = bvhCurrent->intersect(_ray=ray_2) ;
         BOOST_CHECK_MESSAGE(!rayIntersectionResult2.empty(), fmt::format("Intersection between ray2 and BVH tree has been found"));
         printRayIntersectionResults( bvhCurrent,rayIntersectionResult2 );
     }
