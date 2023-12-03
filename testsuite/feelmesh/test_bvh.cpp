@@ -36,14 +36,22 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( bvh_intersection_tests )
 
 
-template <typename RayIntersectionResultType>
-void printRayIntersectionResults( std::vector<RayIntersectionResultType> const& rirs )
+template <typename BvhType,typename RayIntersectionResultType>
+void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs )
 {
     BOOST_TEST_MESSAGE( "Number of intersection: " << rirs.size() );
     for ( auto const& rir : rirs )
     {
-        BOOST_TEST_MESSAGE( " --  Mesh entity id: " << rir.primitive().meshEntity().id() );
-        BOOST_TEST_MESSAGE( " --  Mesh entity barycenter: " << rir.primitive().meshEntity().barycenter() );
+        BOOST_TEST_MESSAGE( " --  ProcessId: " << rir.processId() );
+        BOOST_TEST_MESSAGE( " --  PrimitiveId: " << rir.primitiveId() );
+        BOOST_TEST_MESSAGE( " --  Distance: " << rir.distance() );
+
+        if ( rir.processId()  == bvh->worldComm().rank() )
+        {
+            auto const& prim = bvh->primitiveInfo( rir.primitiveId() );
+            BOOST_TEST_MESSAGE( " --  Mesh entity id: " << prim.meshEntity().id() );
+            BOOST_TEST_MESSAGE( " --  Mesh entity barycenter: " << prim.meshEntity().barycenter() );
+        }
         BOOST_TEST_MESSAGE( " ---------------------------------" );
     }
 }
@@ -65,10 +73,10 @@ void test2D( RangeType const& range )
     auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
     auto rayIntersectionResult1 = bvhInHouse->intersect(ray_1) ;
     BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
-    printRayIntersectionResults( rayIntersectionResult1 );
+    printRayIntersectionResults( bvhInHouse,rayIntersectionResult1 );
     auto rayIntersectionResult2 = bvhInHouse->intersect(ray_2) ;
     BOOST_CHECK_MESSAGE(!rayIntersectionResult2.empty(), fmt::format("Intersection between ray2 and BVH tree has been found"));
-    printRayIntersectionResults( rayIntersectionResult2 );
+    printRayIntersectionResults( bvhInHouse,rayIntersectionResult2 );
 }
 
 template <typename RangeType>
@@ -93,13 +101,12 @@ void test3D( RangeType const& range )
     {
         auto rayIntersectionResult1 = bvhCurrent->intersect(ray_1) ;
         BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray1 and BVH tree has been found"));
-        printRayIntersectionResults( rayIntersectionResult1 );
+        printRayIntersectionResults( bvhCurrent,rayIntersectionResult1 );
         auto rayIntersectionResult2 = bvhCurrent->intersect(ray_2) ;
         BOOST_CHECK_MESSAGE(!rayIntersectionResult2.empty(), fmt::format("Intersection between ray2 and BVH tree has been found"));
-        printRayIntersectionResults( rayIntersectionResult2 );
+        printRayIntersectionResults( bvhCurrent,rayIntersectionResult2 );
     }
 }
-
 
 BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
 {
@@ -109,6 +116,7 @@ BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"RequiredBoundaryOfRequiredElements"}));
     test2D( elements(submesh) );
 }
+
 BOOST_AUTO_TEST_CASE( intersection_bvh_3D )
 {
     using mesh_type = Mesh<Simplex<3,1,3>>;
