@@ -99,8 +99,8 @@ public:
 
         typedef typename l_type::return_value_type return_value_type;
 
-        static const uint16_type rank = return_value_type::rank+1;
-        static const uint16_type nComponents = return_value_type::nComponents;
+        static inline const uint16_type rank = return_value_type::rank+1;
+        static inline const uint16_type nComponents = return_value_type::nComponents;
         static const bool do_reduction =  ( !boost::is_same<return_value_type,typename Basis_i_t::polyset_type>::value||
                                             !boost::is_same<return_value_type,typename Basis_j_t::polyset_type>::value );
         tensor( this_type const& expr,

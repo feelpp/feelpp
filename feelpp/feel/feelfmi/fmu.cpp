@@ -24,9 +24,9 @@ FMU::FMU( std::string prefix ) :
     M_tmp_dir = Environment::appRepository() + "/fmu_tmpdir/";
     if ( M_prefix!="" )
         M_tmp_dir += M_prefix+"/";
-    boost::filesystem::path dir( M_tmp_dir );
-    if ( !(boost::filesystem::exists(dir)) )
-        boost::filesystem::create_directory(dir);
+    fs::path dir( M_tmp_dir );
+    if ( !(fs::exists(dir)) )
+        fs::create_directory(dir);
 
     M_export_directory = soption( _name="fmu.export-directory", _prefix=M_prefix);
     if ( M_export_directory!="" )
@@ -54,7 +54,7 @@ int FMU::load( std::string _path )
         std::string fmuname = Environment::findFileRemotely(soption( _name="fmu.filename", _prefix=M_prefix ), "fmus"  );
         path = Environment::expand( fmuname );
     }
-        
+
     CHECK( path!="" ) << "No filename specified to load FMU. Either pass argument to the function load() or set the option fmu.filename\n";
 
     // Read fmu version

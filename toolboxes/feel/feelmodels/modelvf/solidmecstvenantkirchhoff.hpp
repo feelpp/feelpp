@@ -68,12 +68,12 @@ public:
     typedef value_type evaluate_type;
 
 
-    static const uint16_type rank = fe_type::rank;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type rank = fe_type::rank;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
     static const bool is_terminal = true;
 
-    static const uint16_type orderdisplacement = functionspace_type::basis_type::nOrder;
+    static inline const uint16_type orderdisplacement = functionspace_type::basis_type::nOrder;
     //------------------------------------------------------------------------------//
     // lamecoeff functionspace
     typedef typename element_lamecoeff_type::functionspace_type functionspace_lamecoeff_type;

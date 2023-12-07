@@ -539,15 +539,15 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::run()
     {
         if ( this->worldComm().isMasterRank() )
         {
-            boost::filesystem::path dir( M_write_nl_directory );
-            if ( boost::filesystem::exists(dir) && M_clean_nl_directory )
+            fs::path dir( M_write_nl_directory );
+            if ( fs::exists(dir) && M_clean_nl_directory )
             {
-                boost::filesystem::remove_all(dir);
-                boost::filesystem::create_directory(dir);
+                fs::remove_all(dir);
+                fs::create_directory(dir);
             }
-            else if ( !boost::filesystem::exists(dir) )
+            else if ( !fs::exists(dir) )
             {
-                boost::filesystem::create_directory(dir);
+                fs::create_directory(dir);
             }
         }
     }
@@ -1083,7 +1083,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::saveDB()
             saveGMSHMesh( _mesh=Rh->mesh(), _filename=filename.string() );
         }
 
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
         boost::archive::binary_oarchive oa( ofs );
         oa << *this;
     }
@@ -1106,7 +1106,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::loadDB()
         return false;
     }
 
-    fs::ifstream ifs( db );
+    std::ifstream ifs( db );
     if ( ifs )
     {
         fs::path mesh_name( this->name(true)+"-submesh.msh" );

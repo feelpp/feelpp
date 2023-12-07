@@ -680,17 +680,17 @@ public:
     typedef typename functionspace_phi_type::geoelement_type geoelement_type;
     typedef typename functionspace_phi_type::value_type value_type;
     typedef value_type evaluate_type;
-    static const uint16_type nDim = fe_phi_type::nDim;
-    static const uint16_type nRealDim = fe_phi_type::nRealDim;
-    static const uint16_type rank = fe_phi_type::rank;
-    static const uint16_type nComponents1 = fe_phi_type::nComponents1;
-    static const uint16_type nComponents2 = fe_phi_type::nComponents2;
+    static inline const uint16_type nDim = fe_phi_type::nDim;
+    static inline const uint16_type nRealDim = fe_phi_type::nRealDim;
+    static inline const uint16_type rank = fe_phi_type::rank;
+    static inline const uint16_type nComponents1 = fe_phi_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_phi_type::nComponents2;
     static const bool is_terminal = false;
 
-    static const uint16_type orderphi = functionspace_phi_type::basis_type::nOrder;
+    static inline const uint16_type orderphi = functionspace_phi_type::basis_type::nOrder;
 
     // imorder
-    static const uint16_type imorderAuto = 6*orderphi - 4;
+    static inline const uint16_type imorderAuto = 6*orderphi - 4;
 
     static const bool imIsPoly = false;
 

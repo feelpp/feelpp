@@ -641,7 +641,7 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
 {
     auto compSpace = uTensor2.compSpace();
     auto uComp = compSpace->elementPtr();
-    static const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
+    static inline const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
     auto dofTensor2 = uTensor2.functionSpace()->dof();
     auto dofComp = compSpace->dof();
     int nLocDofPerComp = dofTensor2->nLocalDof( true );

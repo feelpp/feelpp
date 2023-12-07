@@ -1050,7 +1050,7 @@ struct ExpressionOrder
     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
 
-    static const uint16_type nOrderGeo = the_element_type::nOrder;
+    static inline const uint16_type nOrderGeo = the_element_type::nOrder;
 #if 0
     static const bool is_polynomial = ExprT::imIsPoly;
 #if 0
@@ -1062,8 +1062,8 @@ struct ExpressionOrder
                      boost::mpl::int_<10> >::type::value;
 #else
     // this is a very rough approximation
-    static const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
+    static inline const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
+    static inline const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
 #else
     static bool isPolynomial( ExprT const& expr ) { return expr.isPolynomial(); }
@@ -1096,9 +1096,9 @@ public:
     typedef typename functionspace_type::geoelement_type geoelement_type;
     typedef typename functionspace_type::gm_type gm_type;
     typedef typename functionspace_type::value_type value_type;
-    static const uint16_type rank = fe_type::rank;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type rank = fe_type::rank;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
     typedef std::map<size_type,std::vector<element_ptrtype> > basis_type;
 
     template<typename Func>

@@ -40,7 +40,7 @@ enum TheShape { LINE = 1, TRIANGLE = 2, TETRAHEDRON = 3 };
 template<TheShape sh>
 struct DimFromShape
 {
-    static const uint16_type value = mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<LINE> >,
+    static inline const uint16_type value = mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<LINE> >,
                              mpl::int_<1>,
                              typename mpl::if_<mpl::equal_to<mpl::int_<sh>, mpl::int_<TRIANGLE> >,
                              mpl::int_<2>,

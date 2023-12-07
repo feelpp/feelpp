@@ -65,3 +65,8 @@ if ( TARGET  Feelpp::feelpp_toolbox_hdg_lib )
   add_subdirectory( hdg )
   add_dependencies(pyfeelpptoolboxes _hdg)
 endif()
+
+# if ( TARGET  Feelpp::feelpp_toolbox_fsi_lib )
+#   add_subdirectory( fsi )
+#   add_dependencies(pyfeelpptoolboxes _fsi)
+# endif()

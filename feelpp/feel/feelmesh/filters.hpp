@@ -126,7 +126,7 @@ namespace meta
 template<typename MeshType>
 struct elements
 {
-    static const uint16_type nDim = MeshType::nDim;
+    static inline const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                          typename MeshTraits<MeshType>::element_const_iterator,
                          typename MeshTraits<MeshType>::element_const_iterator> type;
@@ -135,7 +135,7 @@ struct elements
 template<typename MeshType>
 struct markedelements
 {
-    static const uint16_type nDim = MeshType::nDim;
+    static inline const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                          typename MeshTraits<MeshType>::marker_element_const_iterator,
                          typename MeshTraits<MeshType>::marker_element_const_iterator> type;
@@ -144,7 +144,7 @@ struct markedelements
 template<typename MeshType>
 struct marked2elements
 {
-    static const uint16_type nDim = MeshType::nDim;
+    static inline const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                          typename MeshTraits<MeshType>::marker2_element_const_iterator,
                          typename MeshTraits<MeshType>::marker2_element_const_iterator> type;
@@ -153,7 +153,7 @@ struct marked2elements
 template<typename MeshType>
 struct marked3elements
 {
-    static const uint16_type nDim = MeshType::nDim;
+    static inline const uint16_type nDim = MeshType::nDim;
     typedef boost::tuple<mpl::size_t<MESH_ELEMENTS>,
                          typename MeshTraits<MeshType>::marker3_element_const_iterator,
                          typename MeshTraits<MeshType>::marker3_element_const_iterator> type;

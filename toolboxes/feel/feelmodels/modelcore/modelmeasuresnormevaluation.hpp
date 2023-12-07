@@ -146,7 +146,7 @@ measureNormEvaluation( RangeType const& range,
                        SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     typedef typename RangeTraits<RangeType>::element_type element_type;
-    static const uint16_type nRealDim = element_type::nRealDim;
+    constexpr uint16_type nRealDim = element_type::nRealDim;
 
     if ( ppNorm.hasField() )
     {
