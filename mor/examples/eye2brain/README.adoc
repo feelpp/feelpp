@@ -14,42 +14,52 @@
 ./feelpp_mor_eye2brainapp_3d --config-file eye2brain/eye2brain-3d.cfg
 ----
 
-[cols="1,2"]
+[cols="2,1,1"]
 |===
-|`measure-index`
 |Output name
+|Punctual `measure-index`
+|Gaussian `measure-index`
 
-|`0`
 |Mean over cornea
+2+|`0`
 
-|`1`
 |Point `O`
+|`1`
+|`11`
 
-|`2`
 |Point `A`
+|`2`
+|`12`
 
-|`3`
 |Point `B`
+|`3`
+|`13`
 
-|`4`
 |Point `B1`
+|`4`
+|`14`
 
-|`5`
 |Point `C`
+|`5`
+|`15`
 
-|`6`
 |Point `D`
+|`6`
+|`16`
 
-|`7`
 |Point `D1`
+|`7`
+|`17`
 
-|`8`
 |Point `F`
+|`8`
+|`18`
 
-|`9`
 |Point `G`
+|`9`
+|`19`
 
-|=== 
+|===
 
 
 

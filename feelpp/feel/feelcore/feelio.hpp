@@ -25,6 +25,7 @@
 #define FEELPP_FEELIO_HPP 1
 
 #include <iostream>
+#include <fstream>
 #include <feel/feelcore/environment.hpp>
 
 

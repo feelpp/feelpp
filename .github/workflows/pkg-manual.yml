@@ -1,0 +1,54 @@
+name: Feelpp PKG Manual CI
+run-name: "PKG Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
+on:
+  workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Flavor to build'
+        required: true
+        default: 'ubuntu'
+        type: choice
+        options:
+        - 'ubuntu'
+        - 'debian'
+      dist:
+        description: 'Distribution to build'
+        required: true
+        default: 'jammy'
+        type: choice
+        options:
+        - 'jammy'
+        - 'focal'
+        - 'lunar'
+#        - 'mantic'
+        - 'bullseye'
+        - 'bookworm'
+        - 'testing'
+        - 'sid'
+      parallel:
+        description: 'Number of parallel jobs'
+        required: false
+        default: "20"
+        type: string
+      skip:
+        description: 'Skip build'
+        required: false
+        default: ""
+        type: string
+
+
+env:
+  DEB_BUILD_OPTIONS: parallel=${{ inputs.parallel || 20 }}
+  CXX: clang++
+  CC: clang
+
+jobs:
+  build:
+    uses: ./.github/workflows/pkg-dist.yml
+    with:
+        dist: ${{ inputs.dist }}
+        flavor: ${{ inputs.flavor }}
+        parallel: ${{ inputs.parallel }}
+        skip: ${{ inputs.skip }}
+    secrets: inherit
+

@@ -191,7 +191,7 @@ public:
 
 #endif
 
-        static const uint16_type nDim = test_geometric_mapping_type::nDim;
+        static inline const uint16_type nDim = test_geometric_mapping_type::nDim;
 
         typedef ExprT expression_type;
 

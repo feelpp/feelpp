@@ -1,0 +1,209 @@
+{
+    "Name": "Rectangular cavity 2D RHT",
+    "ShortName": "rectangle2d",
+    "Models": {
+        "heat": {
+                "name": "heat",
+                "materials": [
+                    "Rectangle1",
+                    "Rectangle2",
+                    "Rectangle3",
+                    "Rectangle4",
+                    "Insulation1",
+                    "Insulation2",
+                    "Insulation3",
+                    "Insulation4",
+                    "Insulation5",
+                    "Insulation6",
+                    "Insulation7",
+                    "Insulation8"
+                    
+                ]
+            }
+    },
+    "Parameters": {        
+        "sigma": 5.67e-8, // W⋅m-2⋅K−4
+        "Tinit_C":1700
+    },
+    "Meshes": {
+        "heat": {
+            "Import": {
+                "filename": "$cfgdir/rectangular_cavity.geo"            
+            }
+        }
+    },
+    "Materials": {
+        "Rectangle1": {
+            "k": "1400", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Rectangle2": {
+            "k": "1400", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Rectangle3": {
+            "k": "1400", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Rectangle4": {
+            "k": "1400", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation1": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation2": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation3": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation4": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation5": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation6": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation7": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        },
+        "Insulation8": {
+            "k": "0.01", // W/(m⋅K)
+            "Cp": "0", // J/(kg⋅K)
+            "rho": "8700" // kg/m3
+        }
+
+    },
+    "Coating":{
+        "Top": {
+            "markers": [
+                "RadiativeSurface3"
+            ],
+            "epsilon": "0.5"
+        },
+        "Bottom": {
+            "markers": [
+                "RadiativeSurface1"
+            ],
+            "epsilon": "0.5" 
+        },
+        "LeftRight": {
+            "markers": [
+                "RadiativeSurface2","RadiativeSurface4"
+            ],
+            "epsilon": "0.5"
+        }
+    },
+    "InitialConditions": {
+        "heat": {
+            "temperature": {
+                "Expression": {
+                    "Tini": {
+                        "markers":["Rectangle1",
+                        "Rectangle2",
+                        "Rectangle3",
+                        "Rectangle4",
+                        "Insulation1",
+                        "Insulation2",
+                        "Insulation3",
+                        "Insulation4",
+                        "Insulation5",
+                        "Insulation6",
+                        "Insulation7",
+                        "Insulation8"],
+                        "expr":"Tinit_C:Tinit_C"
+                    }
+                }
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "heat": { 
+            "temperature":
+            {
+                "ExternalSurface3":{
+                    "expr":"1400"
+                },
+                "ExternalSurface1":{
+                    "expr":"600"
+                },
+                "ExternalSurface4":{
+                    "expr":"1700"
+                },
+                "ExternalSurface2":{
+                    "expr":"1700"
+                }
+            },
+            "radiative_enclosure_heat_flux": {
+                "Cavity_1": {
+                    "enclosure": "closed",
+                    "markers": ["RadiativeSurface1", "RadiativeSurface2","RadiativeSurface3","RadiativeSurface4"],
+                    "sigma": "sigma:sigma",
+                    "viewfactors": {
+                        // "status":"load",
+                        // "filename":"$cfgdir/VF_Matrix_Cavity_1.csv"
+                        "status":"compute",
+                        "filename":"$cfgdir/rectangular_cavity_vf.json"                        
+                    }
+                }
+            }
+        }
+    },
+    "Checker":
+    {
+        "RadiativeSurface3_q":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface3"],
+            "quantity":"flux-from-temperature",
+            "exact_value":-35767,
+            "rel_tolerance":0.1
+        },
+        "RadiativeSurface1_q":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface1"],
+            "quantity":"flux-from-temperature",
+            "exact_value":-159040,
+            "rel_tolerance":0.1
+        },
+        "RadiativeSurface4_q":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface4"],
+            "quantity":"flux-from-temperature",
+            "exact_value":97403,
+            "rel_tolerance":0.1
+        },
+        "RadiativeSurface2_q":
+        {
+            "type":"average",
+            "markers":["RadiativeSurface2"],
+            "quantity":"flux-from-temperature",
+            "exact_value":97403,
+            "rel_tolerance":0.1
+        }
+        
+    }
+}

@@ -85,7 +85,7 @@ int main(int argc, char**argv )
         BS->computeFE(mu);
 
         boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
-        fs::ofstream file( "cvg.dat" );
+        std::ofstream file( "cvg.dat" );
         if( file && Environment::isMasterRank() )
             file << fmter % "M" % "errV" % "relErrV" % "errB" % "relErrB";
 

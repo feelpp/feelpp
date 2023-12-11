@@ -51,8 +51,8 @@ public :
     using mesh_type = typename coefficient_form_pde_base_type::mesh_type;
     using mesh_ptrtype = typename coefficient_form_pde_base_type::mesh_ptrtype;
     using convex_type = typename coefficient_form_pde_base_type::convex_type;
-    static const uint16_type nDim = coefficient_form_pde_base_type::nDim;
-    static const uint16_type nOrderGeo = coefficient_form_pde_base_type::nOrderGeo;
+    static inline const uint16_type nDim = coefficient_form_pde_base_type::nDim;
+    static inline const uint16_type nOrderGeo = coefficient_form_pde_base_type::nOrderGeo;
 
     // materials properties
     typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;

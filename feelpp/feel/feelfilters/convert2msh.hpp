@@ -50,11 +50,7 @@ gmsh_ptrtype convert2msh( Ts && ... v )
     int order = args.get_else(_order,3);
 
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
-#if BOOST_FILESYSTEM_VERSION == 3
     gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
-#elif BOOST_FILESYSTEM_VERSION == 2
-    gmsh_ptr->setPrefix( fs::path( filename ).stem() );
-#endif
 
     // first try in the current path
     if ( fs::exists( filename ) )

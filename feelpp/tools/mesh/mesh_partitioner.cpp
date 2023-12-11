@@ -43,7 +43,7 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
     using Feel::cout;
-    
+
 	po::options_description meshpartoptions( "Mesh Partitioner options" );
 	meshpartoptions.add_options()
         ( "dim", po::value<int>()->default_value( 3 ), "mesh dimension" )
@@ -77,7 +77,7 @@ int main( int argc, char** argv )
     if ( Environment::vm().count("realdim"))
     {
         realdim = ioption(_name="realdim");
-        CHECK( realdim >= dim && realdim <=3 ) << "Realdim must be larger thank dim and at most 3";     
+        CHECK( realdim >= dim && realdim <=3 ) << "Realdim must be larger thank dim and at most 3";
     }
     else
     {
@@ -112,7 +112,7 @@ int main( int argc, char** argv )
     }
     Feel::cout << "json config: " << partconfig.dump(1) << std::endl;
 
-    fs::path pathInputMesh = fs::system_complete( soption("ifile") );
+    fs::path pathInputMesh = fs::canonical( soption("ifile") );
     if ( !fs::exists( pathInputMesh ) )
     {
         if ( Environment::isMasterRank() )
@@ -170,4 +170,3 @@ int main( int argc, char** argv )
     return 0;
 
 }
-

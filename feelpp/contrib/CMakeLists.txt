@@ -489,6 +489,9 @@ if ( FEELPP_ENABLE_FMI4CPP )
   message(STATUS "Configuring FMI4CPP")
   set( USE_SYSTEM_CURL ON )
   set( BUILD_FMI4CPP_TESTS ON )
+  if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
+    set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
+  endif()
   set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
   set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
@@ -499,6 +502,9 @@ if ( FEELPP_ENABLE_FMI4CPP )
   FetchContent_MakeAvailable(fmi4cpp)
   add_library(feelpp_fmi4cpp INTERFACE)
   set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+  if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
+    target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
+  endif()
   target_link_libraries(feelpp_fmi4cpp INTERFACE fmi4cpp)
   target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
   add_library(Feelpp::feelpp_fmi4cpp ALIAS feelpp_fmi4cpp)
@@ -794,7 +800,7 @@ endif()
 #   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SPDLOG")
 # endif(FEELPP_ENABLE_SPDLOG)
 #
-option( FEELPP_ENABLE_SPECX "Enable specx" OFF )
+option( FEELPP_ENABLE_SPECX "Enable specx" ON )
 if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring specx")
@@ -805,14 +811,14 @@ if ( FEELPP_ENABLE_SPECX )
   set(SPECX_DO_INSTALL ON)
   set(SPECX_COMPILE_WITH_MPI OFF)
   set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/specx)
-  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG e092e061ec17afd42374041cccfa6f44b939b19c)
+  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG eaf74013246099470404ae5b8fd8c7c5b6ad1c5e)
 
   set(SPECX_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   message(STATUS "[feelpp-specx] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
 
-  # set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
@@ -867,6 +873,34 @@ if(FEELPP_ENABLE_EIGENRAND)
 endif()
 
 
+option(FEELPP_ENABLE_THIRDPARTY_BVH "Enable BVH" ON)
+if( FEELPP_ENABLE_THIRDPARTY_BVH )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring BVH")
+
+  set(FETCHCONTENT_SOURCE_DIR_BVH ${CMAKE_CURRENT_SOURCE_DIR}/bvh)
+  FetchContent_Declare(bvh GIT_REPOSITORY https://github.com/feelpp/bvh.git GIT_TAG 327b67b1d8d798e4dab1686b0dd022a1e0cbcefe)
+
+  FetchContent_MakeAvailable(bvh)
+  add_library(feelpp_bvh INTERFACE)
+
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_THIRDPARTY_BVH)
+  target_link_libraries(feelpp_bvh INTERFACE bvh )
+  add_library(Feelpp::feelpp_bvh ALIAS feelpp_bvh)
+
+  target_include_directories(feelpp_bvh INTERFACE
+    $<BUILD_INTERFACE:${bvh_SOURCE_DIR}/src>
+    #$<INSTALL_INTERFACE:include/feelpp>
+    $<INSTALL_INTERFACE:include/feelpp/bvh>)
+  install(TARGETS feelpp_bvh bvh EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+  target_link_libraries( feelpp_contrib INTERFACE feelpp_bvh )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} bvh")
+endif()
 
 
 # Add an info message to be displayed at the end of the cmake process.

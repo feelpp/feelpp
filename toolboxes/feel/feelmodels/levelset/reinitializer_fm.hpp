@@ -51,7 +51,7 @@ public:
     typedef typename functionspace_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
 
-    static const uint16_type nOrder = functionspace_type::fe_type::nOrder;
+    static inline const uint16_type nOrder = functionspace_type::fe_type::nOrder;
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename functionspace_type::value_type value_type;
 
