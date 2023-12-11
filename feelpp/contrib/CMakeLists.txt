@@ -602,7 +602,7 @@ add_subdirectory( boost )
 #include(feelpp.module.paralution)
 #include(feelpp.module.jsonlab)
 
-option( FEELPP_ENABLE_SIMPLE_WEB_SERVER "Enable Simple Web Server" OFF )
+option( FEELPP_ENABLE_SIMPLE_WEB_SERVER "Enable Simple Web Server" ON )
 if ( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring Simplee Web Server")
@@ -610,9 +610,13 @@ if ( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(BUILD_TESTING OFF)
     add_subdirectory( simple-web-server )
+    add_library(feelpp_sws INTERFACE)
+    set_target_properties(simple-web-server PROPERTIES OUTPUT_NAME "feelpp_sws")
+    target_link_libraries(feelpp_sws INTERFACE simple-web-server)
+
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
-    target_link_libraries(feelpp_contrib INTERFACE simple-web-server )
-    target_include_directories(feelpp_contrib INTERFACE
+
+    target_include_directories(feelpp_sws INTERFACE
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/simple-web-server/>
       $<INSTALL_INTERFACE:include/feelpp> )
     set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SimpleWebServer/Contrib")
