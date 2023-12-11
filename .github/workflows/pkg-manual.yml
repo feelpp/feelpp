@@ -20,7 +20,7 @@ on:
         - 'jammy'
         - 'focal'
         - 'lunar'
-        - 'kinetic'
+#        - 'mantic'
         - 'bullseye'
         - 'bookworm'
         - 'testing'

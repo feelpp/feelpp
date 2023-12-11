@@ -51,11 +51,7 @@ void saveGMSHMesh( Ts && ... v )
 
     using _mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
 
-#if BOOST_FILESYSTEM_VERSION == 3
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  mesh->worldCommPtr() );
-#elif BOOST_FILESYSTEM_VERSION == 2
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
-#endif
     exporter.saveMesh( filename, mesh, parametricnodes );
 
 }
@@ -71,11 +67,7 @@ void saveGeoEntityAsGMSHMesh( Ts && ... v )
 
     using _mesh_type = typename meshFromGeoEntity_helper_type::type;
 
-#if BOOST_FILESYSTEM_VERSION == 3
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  Environment::worldComm().subWorldCommSeq() );
-#elif BOOST_FILESYSTEM_VERSION == 2
-    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
-#endif
     exporter.gmshSaveOneElementAsMesh( filename, geoentity, pointset );
 }
 

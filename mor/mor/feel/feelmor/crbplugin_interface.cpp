@@ -38,7 +38,7 @@ class CRBPluginManagerImpl:
 public:
     using value_type = crbpluginapi_create_ft;
     using key_type = std::string;
-    
+
     using crbplugin_manager_type = std::map<key_type, value_type>;
 
 };
@@ -64,13 +64,13 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
         fs::path pname = ( fs::path( dirname ) / libname ).make_preferred();
         LOG(INFO) << fmt::format("[feelpp.mor.factoryCRBPlugin] loading plugin: {}...", pname.string());google::FlushLogFiles(google::GLOG_INFO);
 
-        Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) = 
-                 boost::dll::import_alias<crbpluginapi_create_t>(pname, 
+        Feel::detail::CRBPluginManager::instance().operator[]( pluginname ) =
+            boost::dll::import_alias<crbpluginapi_create_t>(pname.string(),
                                                                  "create_crbplugin_"+pluginname,
                                                                  dll::load_mode::append_decorations );
 
         auto p = Feel::detail::CRBPluginManager::instance().find( pluginname );
-        try 
+        try
         {
             auto plugin = p->second();
             LOG( INFO ) << fmt::format( "[feelpp.mor.factoryCRBPlugin] loaded plugin: {}", pname.string() );

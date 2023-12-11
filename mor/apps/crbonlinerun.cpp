@@ -285,7 +285,7 @@ int main(int argc, char**argv )
         crbonlinerunoptions.add_options()
             ( "plugin.dir", po::value<std::string>()->default_value( Info::libdir().string() ) , "plugin directory" )
             ( "morjson", po::value<std::string>(), "filename describing the mor models associated to the case study" )
-# if 0            
+# if 0
             ( "crbmodel.root", po::value<std::string>(), "CRB online code root repository" )
             ( "crbmodel.name", po::value<std::string>(), "CRB online code name" )
             ( "crbmodel.attribute", po::value<std::string>()->default_value( "last_modified" ), "last_created, last_modified, id, name" )
@@ -326,14 +326,14 @@ int main(int argc, char**argv )
             .add(backend_options("backend-l2"))
             ;
     #endif
-        Environment env( _argc=argc, _argv=argv,
+        Environment env(_argc=argc, _argv=argv,
                         _desc=crbonlinerunoptions,
                         _desc_lib=crbonlinerunliboptions.add( feel_options() ),
                         _about=about(_name="crbonlinerun",
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
-        std::ifstream is( Environment::expand( soption(_name="morjson" ) ) );                       
+        std::ifstream is( Environment::expand( soption(_name="morjson" ) ) );
         nl::json js = nl::json::parse(is);
         LOG(INFO) << "js = " << js.dump(4) << std::endl;
 
@@ -354,7 +354,7 @@ int main(int argc, char**argv )
             return 0;
         }
         if ( Environment::vm().count( "query" ) == 0 )
-        {       
+        {
             std::vector<std::shared_ptr<Feel::CRBPluginAPI>> plugins;
             for( auto const& j : jmodels )
             {

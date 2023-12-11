@@ -1582,7 +1582,7 @@ public :
         }
 
         std::string feDbFilename = ( boost::format( "%1%_p%2%.crbdb" ) %dbName %worldComm.globalRank() ).str();
-        fs::ifstream ifs( fs::path(dbDir) / feDbFilename );
+        std::ifstream ifs( fs::path(dbDir) / feDbFilename );
         if ( ifs )
         {
             //boost::archive::text_iarchive ia( ifs );
@@ -1597,7 +1597,7 @@ public :
     void save( std::string const& dbName, std::string const& dbDir, WorldComm const& worldComm )
     {
         std::string feDbFilename = ( boost::format( "%1%_p%2%.crbdb" ) %dbName %worldComm.globalRank() ).str();
-        fs::ofstream ofs( fs::path(dbDir) / feDbFilename );
+        std::ofstream ofs( fs::path(dbDir) / feDbFilename );
         if ( ofs )
         {
             boost::archive::binary_oarchive oa( ofs );
@@ -1901,15 +1901,15 @@ public:
             {
                 if ( this->worldComm().isMasterRank() )
                 {
-                    boost::filesystem::path dir( M_write_nl_directory );
-                    if ( boost::filesystem::exists(dir) && boption(_prefix=this->M_prefix, _name="eim.elements.clean-directory" ) )
+                    fs::path dir( M_write_nl_directory );
+                    if ( fs::exists(dir) && boption(_prefix=this->M_prefix, _name="eim.elements.clean-directory" ) )
                     {
-                        boost::filesystem::remove_all(dir);
-                        boost::filesystem::create_directory(dir);
+                        fs::remove_all(dir);
+                        fs::create_directory(dir);
                     }
-                    else if ( !boost::filesystem::exists(dir) )
+                    else if ( !fs::exists(dir) )
                     {
-                        boost::filesystem::create_directory(dir);
+                        fs::create_directory(dir);
                     }
                 }
             }
@@ -2002,7 +2002,7 @@ public:
     {
         if ( this->worldComm().isMasterRank() )
         {
-            fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+            std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
             if ( ofs )
             {
                 //boost::archive::text_oarchive oa( ofs );
@@ -2035,7 +2035,7 @@ public:
         // if ( !fs::exists( db ) )
         //     return false;
 
-        fs::ifstream ifs( db );
+        std::ifstream ifs( db );
         if ( ifs )
         {
             //boost::archive::text_iarchive ia( ifs );

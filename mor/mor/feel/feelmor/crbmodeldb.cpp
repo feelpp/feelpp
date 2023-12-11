@@ -44,7 +44,7 @@ CRBModelDB::CRBModelDB( std::string const& name, uuids::uuid const& uid, std::st
 std::string
 CRBModelDB::jsonFilename() const
 {
-    std::string model_name = fs::path( this->rootRepository() ).parent_path().rbegin()->string();
+    std::string model_name = fs::path( this->rootRepository() ).parent_path().filename().string();
     VLOG(2) << fmt::format( "[CRBModelDB::jsonFilename] model_name={}", model_name ) << std::endl;
     return CRBModelDB::jsonFilename( model_name );
     //return CRBModelDB::jsonFilename( this->name() );
@@ -52,7 +52,7 @@ CRBModelDB::jsonFilename() const
 
 std::string
 CRBModelDB::jsonFilename( std::string const& name )
-{ 
+{
     return fmt::format("{}.crb.json",name);
 }
 
@@ -106,12 +106,12 @@ CRBModelDB::updateId( crb::attribute from, std::optional<std::string> const& val
     {
         this->updateIdFromDBLast( crb::last::modified );
     }
-#if 0    
+#if 0
     else if ( from == crb::attribute::last_accessed )
     {
         this->updateIdFromDBLast( crb::last::accessed );
     }
-#endif    
+#endif
     else
     {
         CHECK( false ) << "invalid attribute given to select the database";
@@ -124,7 +124,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
     this->updateId( from, value );
 
     MetaData res;
-    std::string model_name = fs::path( this->rootRepository() ).parent_path().rbegin()->string();
+    std::string model_name = fs::path( this->rootRepository() ).parent_path().filename().string();
     VLOG(2) << fmt::format( "model_name={}", model_name ) << std::endl;
     res.json_path = fs::path( this->dbRepository() ) / fmt::format( "{}.crb.json", model_name);
     std::string jsonPathStr = res.json_path.string();
@@ -154,7 +154,7 @@ CRBModelDB::loadDBMetaData( crb::attribute from, std::optional<std::string> cons
     LOG(INFO) << "crb db model name : " << res.model_name;
     LOG(INFO) << "crb db plugin name : " << res.plugin_name;
     LOG(INFO) << "crb db plugin libname : " << res.plugin_libname;
-    
+
     return res;
 }
 
@@ -192,7 +192,7 @@ CRBModelDB::loadDBPlugin( MetaData const& meta, std::string const& load, std::st
     }
     catch( std::runtime_error const& err )
     {
-        try 
+        try
         {
             auto p = factoryCRBPlugin( meta.plugin_name, meta.plugin_libname, pluginlibdir );
             p->loadDB( meta.json_path.string(), crb::loadFromString( load ) );
@@ -237,7 +237,7 @@ CRBModelDB::idFromDBLast( std::string const& name, crb::last last, std::string c
     if ( !fs::exists( root ) )
         return uuids::nil_uuid();
 
-    std::string model_name = fs::path( root ).parent_path().rbegin()->string();
+    std::string model_name = fs::path( root ).parent_path().filename().string();
     VLOG(3) << fmt::format( "[CRBModelDB::idFromDBLast] model_name={}", model_name ) << std::endl;
 
     fs::path crbdb = fs::path(root) / "crbdb";
@@ -254,7 +254,7 @@ CRBModelDB::idFromDBLast( std::string const& name, crb::last last, std::string c
     // try first full path
     typedef std::vector<fs::path> vec;
     vec d;
-    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    typedef std::multimap<std::filesystem::file_time_type, fs::path> result_set_t;
     result_set_t result_set;
 
     for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )

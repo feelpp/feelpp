@@ -93,7 +93,7 @@ int main( int argc, char** argv)
     eM->save();
 
     boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6% %|84t|%7%\n");
-    fs::ofstream file( "cvg.dat" );
+    std::ofstream file( "cvg.dat" );
     if( file && Environment::isMasterRank() )
     {
         file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT" % "errB" % "relErrB";

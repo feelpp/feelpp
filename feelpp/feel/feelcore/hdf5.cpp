@@ -79,7 +79,7 @@ void Feel::HDF5::openFile( const std::string& fileName,
          * this is an error case: The user marked the file as existing
          * and it does not exists. Create the file so we don't get this error
          */
-        if( !boost::filesystem::exists( fileName ) )
+        if( !fs::exists( fileName ) )
         { M_fileId = H5Fcreate (fileName.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, plistId); }
         /* Case where the file exists */
         else
