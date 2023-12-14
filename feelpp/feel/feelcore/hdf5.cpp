@@ -39,8 +39,19 @@
 // Constructor
 // ===================================================
 
+Feel::HDF5::HDF5()
+    : 
+    useCollectiveMetadataOps_(false),
+    useCollMetadataWrite_(false)
+{
+
+}
+
 Feel::HDF5::HDF5( const std::string& fileName, const comm_type& comm,
-                  const bool& existing )
+                  const bool& existing, bool useCollectiveMetadataOps, bool useCollMetadataWrite )
+    :
+    useCollectiveMetadataOps_(useCollectiveMetadataOps),
+    useCollMetadataWrite_(useCollMetadataWrite)
 {
     openFile (fileName, comm, existing);
 }
@@ -71,6 +82,17 @@ void Feel::HDF5::openFile( const std::string& fileName,
     // Set up file access property list with parallel I/O access
     plistId = H5Pcreate (H5P_FILE_ACCESS);
     H5Pset_fapl_mpio (plistId, mpiComm, info);
+
+    // Set properties based on member variables
+    if (useCollectiveMetadataOps_) 
+    {
+        H5Pset_all_coll_metadata_ops(plistId, true);
+    }
+    if (useCollMetadataWrite_) 
+    {
+        H5Pset_coll_metadata_write(plistId, true);
+    }
+
 
     // Create/open a file collectively and release property list identifier.
     if (existing)
