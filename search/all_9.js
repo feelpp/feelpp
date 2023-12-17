@@ -75,7 +75,7 @@ var searchData=
   ['interpolationtypebasebase_72',['InterpolationTypeBaseBase',['../classFeel_1_1InterpolationTypeBaseBase.html',1,'Feel']]],
   ['interpolationtypebasebase_3c_20is_5fconforming_3c_20c_20_3e_2c_20interpolation_5foperand_5ftype_3a_3aexpr_20_3e_73',['InterpolationTypeBaseBase&lt; is_conforming&lt; C &gt;, interpolation_operand_type::EXPR &gt;',['../classFeel_1_1InterpolationTypeBaseBase.html',1,'Feel']]],
   ['interprocessfaces_74',['interprocessfaces',['../namespaceFeel.html#a3c16116d0a2516f96a0f88956fe3d5cc',1,'Feel::interprocessfaces(MeshType const &amp;mesh)'],['../namespaceFeel.html#aa502df5149bfecd3c524fa2635dcf7c5',1,'Feel::interprocessfaces(MeshType const &amp;mesh, rank_type neighbor_pid)']]],
-  ['intersect_75',['intersect',['../namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836',1,'Feel::intersect()'],['../classFeel_1_1BVH.html#a24419732fac6b56d00bf15eff9d785e8',1,'Feel::BVH::intersect()']]],
+  ['intersect_75',['intersect',['../namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836',1,'Feel::intersect()'],['../classFeel_1_1BVH.html#aaa2a1dc17d82d05f5f0e57c6d83df258',1,'Feel::BVH::intersect()']]],
   ['intersects_76',['intersects',['../classFeel_1_1Sphere.html#a9a91c6f9b10ce7402fc707423f9d28f9',1,'Feel::Sphere']]],
   ['inv_77',['inv',['../inv_8hpp.html#afe1d2129e9a63c6672e7a94df659803e',1,'Feel::vf']]],
   ['inv_2ehpp_78',['inv.hpp',['../inv_8hpp.html',1,'']]],

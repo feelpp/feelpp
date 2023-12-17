@@ -1,4 +1,5 @@
 <map id="Feel::BVH_ThirdParty&lt; MeshEntityType &gt;" name="Feel::BVH_ThirdParty&lt; MeshEntityType &gt;">
-<area shape="rect" id="node1" title="implementation of BVH tool with an external third party" alt="" coords="35,248,194,384"/>
-<area shape="rect" id="node2" href="$classFeel_1_1BVH.html" title="BVH base class." alt="" coords="5,5,224,200"/>
+<area shape="rect" id="node1" title="implementation of BVH tool with an external third party" alt="" coords="35,491,194,612"/>
+<area shape="rect" id="node2" href="$classFeel_1_1BVH.html" title="BVH base class." alt="" coords="5,204,224,443"/>
+<area shape="rect" id="node3" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="43,5,186,156"/>
 </map>

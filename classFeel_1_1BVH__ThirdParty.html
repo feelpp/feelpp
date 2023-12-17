@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.8</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.9</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -115,7 +115,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1BVH__ThirdParty.html','')
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1BVH__ThirdParty__inherit__graph.svg" width="230" height="390"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classFeel_1_1BVH__ThirdParty__inherit__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -136,6 +136,14 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>ray_type</b> = typen
 using&#160;</td><td class="memItemRight" valign="bottom"><b>rayintersection_result_type</b> = typename <a class="el" href="structFeel_1_1BVH_1_1BVHRayIntersectionResult.html">super_type::rayintersection_result_type</a></td></tr>
 <tr class="separator:af217fc467a5059178f3bc436cc8f0ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classFeel_1_1BVH"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1BVH')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1BVH.html">Feel::BVH&lt; MeshEntityType &gt;</a></td></tr>
+<tr class="memitem:aa74a13b252fa92f0483878058ba27abd inherit pub_types_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="aa74a13b252fa92f0483878058ba27abd" name="aa74a13b252fa92f0483878058ba27abd"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename mesh_entity_type::index_type</td></tr>
+<tr class="separator:aa74a13b252fa92f0483878058ba27abd inherit pub_types_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4562491f929da4c3e39aa7e1413f5b4a inherit pub_types_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a4562491f929da4c3e39aa7e1413f5b4a" name="a4562491f929da4c3e39aa7e1413f5b4a"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>IntersectContext</b> { <b>anyHint</b> =0
+, <b>closest</b>
+, <b>all</b>
+ }</td></tr>
+<tr class="separator:a4562491f929da4c3e39aa7e1413f5b4a inherit pub_types_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19fffbd040a95d8a820989013aca6fc6 inherit pub_types_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a19fffbd040a95d8a820989013aca6fc6" name="a19fffbd040a95d8a820989013aca6fc6"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_entity_type</b> = std::decay_t&lt; MeshEntityType &gt;</td></tr>
 <tr class="separator:a19fffbd040a95d8a820989013aca6fc6 inherit pub_types_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,11 +165,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac39aa9535eb0f0f0126e56acaacf66a4"><td class="memItemLeft" align="right" valign="top"><a id="ac39aa9535eb0f0f0126e56acaacf66a4" name="ac39aa9535eb0f0f0126e56acaacf66a4"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BVH_ThirdParty</b> (<a class="el" href="classFeel_1_1BVH__ThirdParty.html">BVH_ThirdParty</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:ac39aa9535eb0f0f0126e56acaacf66a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ce2b08bb4db239e691f056db453b808"><td class="memItemLeft" align="right" valign="top"><a id="a7ce2b08bb4db239e691f056db453b808" name="a7ce2b08bb4db239e691f056db453b808"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BVH_ThirdParty</b> (BVHEnum::Quality quality)</td></tr>
-<tr class="separator:a7ce2b08bb4db239e691f056db453b808"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c8bdd842ff672da84e874ae338962fe"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structFeel_1_1BVH_1_1BVHRayIntersectionResult.html">rayintersection_result_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1BVH__ThirdParty.html#a9c8bdd842ff672da84e874ae338962fe">intersect</a> (<a class="el" href="classFeel_1_1BVHRay.html">ray_type</a> const &amp;ray, <a class="el" href="classbool.html">bool</a> useRobustTraversal=true) override</td></tr>
-<tr class="separator:a9c8bdd842ff672da84e874ae338962fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a0a47843a606f9cc7b894514fe42154"><td class="memItemLeft" align="right" valign="top"><a id="a1a0a47843a606f9cc7b894514fe42154" name="a1a0a47843a606f9cc7b894514fe42154"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BVH_ThirdParty</b> (BVHEnum::Quality quality, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> <a class="el" href="classFeel_1_1CommObject.html#ac4dc3a64dfa57eae395d7dc4cc111480">worldComm</a>)</td></tr>
+<tr class="separator:a1a0a47843a606f9cc7b894514fe42154"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa546ef68d32cdbe4e8d94bf4b520fd7e"><td class="memTemplParams" colspan="2"><a id="aa546ef68d32cdbe4e8d94bf4b520fd7e" name="aa546ef68d32cdbe4e8d94bf4b520fd7e"></a>
 template&lt;typename RangeType &gt; </td></tr>
 <tr class="memitem:aa546ef68d32cdbe4e8d94bf4b520fd7e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateForUse</b> (RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>)</td></tr>
@@ -173,13 +179,67 @@ template&lt;typename RangeType &gt; </td></tr>
 <tr class="memitem:a6182701dd03a1ce26736816aafc712d6 inherit pub_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a6182701dd03a1ce26736816aafc712d6" name="a6182701dd03a1ce26736816aafc712d6"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BVH</b> (<a class="el" href="classFeel_1_1BVH.html">BVH</a> const &amp;)=default</td></tr>
 <tr class="separator:a6182701dd03a1ce26736816aafc712d6 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a104b2a7cc67997ebb8b845009eb51b84 inherit pub_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a104b2a7cc67997ebb8b845009eb51b84" name="a104b2a7cc67997ebb8b845009eb51b84"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BVH</b> (BVHEnum::Quality quality=BVHEnum::Quality::High)</td></tr>
-<tr class="separator:a104b2a7cc67997ebb8b845009eb51b84 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24419732fac6b56d00bf15eff9d785e8 inherit pub_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a24419732fac6b56d00bf15eff9d785e8" name="a24419732fac6b56d00bf15eff9d785e8"></a>
-virtual std::vector&lt; <a class="el" href="structFeel_1_1BVH_1_1BVHRayIntersectionResult.html">rayintersection_result_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>intersect</b> (<a class="el" href="classFeel_1_1BVHRay.html">ray_type</a> const &amp;rayon, <a class="el" href="classbool.html">bool</a> useRobustTraversal=true)=0</td></tr>
-<tr class="memdesc:a24419732fac6b56d00bf15eff9d785e8 inherit pub_methods_classFeel_1_1BVH"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute intersection(s) with a ray from the <a class="el" href="classFeel_1_1BVH.html" title="BVH base class.">BVH</a> built and return a vector of intersection result <br /></td></tr>
-<tr class="separator:a24419732fac6b56d00bf15eff9d785e8 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3deeab4e1d4a65fc4c841383a315c856 inherit pub_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a3deeab4e1d4a65fc4c841383a315c856" name="a3deeab4e1d4a65fc4c841383a315c856"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BVH</b> (BVHEnum::Quality quality=BVHEnum::Quality::High, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> <a class="el" href="classFeel_1_1CommObject.html#ac4dc3a64dfa57eae395d7dc4cc111480">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#a57b323455dd9412c293d662ee9f394b8">Environment::worldCommPtr</a>())</td></tr>
+<tr class="separator:a3deeab4e1d4a65fc4c841383a315c856 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa2a1dc17d82d05f5f0e57c6d83df258 inherit pub_methods_classFeel_1_1BVH"><td class="memTemplParams" colspan="2"><a id="aaa2a1dc17d82d05f5f0e57c6d83df258" name="aaa2a1dc17d82d05f5f0e57c6d83df258"></a>
+template&lt;typename... Ts&gt; </td></tr>
+<tr class="memitem:aaa2a1dc17d82d05f5f0e57c6d83df258 inherit pub_methods_classFeel_1_1BVH"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>intersect</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="memdesc:aaa2a1dc17d82d05f5f0e57c6d83df258 inherit pub_methods_classFeel_1_1BVH"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute intersection(s) with a ray from the <a class="el" href="classFeel_1_1BVH.html" title="BVH base class.">BVH</a> built and return a vector of intersection result <br /></td></tr>
+<tr class="separator:aaa2a1dc17d82d05f5f0e57c6d83df258 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29eac217d6e829d211ed00a2c7cfe902 inherit pub_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a29eac217d6e829d211ed00a2c7cfe902" name="a29eac217d6e829d211ed00a2c7cfe902"></a>
+std::vector&lt; <a class="el" href="structFeel_1_1BVH_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>primitiveInfo</b> () const noexcept</td></tr>
+<tr class="memdesc:a29eac217d6e829d211ed00a2c7cfe902 inherit pub_methods_classFeel_1_1BVH"><td class="mdescLeft">&#160;</td><td class="mdescRight">return all primitive info <br /></td></tr>
+<tr class="separator:a29eac217d6e829d211ed00a2c7cfe902 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac8e1ba9fd4a75acb914798113e75194 inherit pub_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="aac8e1ba9fd4a75acb914798113e75194" name="aac8e1ba9fd4a75acb914798113e75194"></a>
+<a class="el" href="structFeel_1_1BVH_1_1BVHPrimitiveInfo.html">BVHPrimitiveInfo</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>primitiveInfo</b> (index_type i) const</td></tr>
+<tr class="memdesc:aac8e1ba9fd4a75acb914798113e75194 inherit pub_methods_classFeel_1_1BVH"><td class="mdescLeft">&#160;</td><td class="mdescRight">return primitive info at index i <br /></td></tr>
+<tr class="separator:aac8e1ba9fd4a75acb914798113e75194 inherit pub_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classFeel_1_1CommObject"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1CommObject')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1CommObject.html">Feel::CommObject</a></td></tr>
+<tr class="memitem:a2878303384e7e2ac71a2001d09b151f1 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a2878303384e7e2ac71a2001d09b151f1">comm</a> () const</td></tr>
+<tr class="separator:a2878303384e7e2ac71a2001d09b151f1 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff5127f0182a5ba1e59a7c0ab56d676d inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="aff5127f0182a5ba1e59a7c0ab56d676d" name="aff5127f0182a5ba1e59a7c0ab56d676d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:aff5127f0182a5ba1e59a7c0ab56d676d inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c6981c30773b85b5b9352e23e50541d inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a1c6981c30773b85b5b9352e23e50541d" name="a1c6981c30773b85b5b9352e23e50541d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> const &amp;)=default</td></tr>
+<tr class="separator:a1c6981c30773b85b5b9352e23e50541d inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a131c0e0f9c06e2d7205d91cb0b02d6d3 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a131c0e0f9c06e2d7205d91cb0b02d6d3" name="a131c0e0f9c06e2d7205d91cb0b02d6d3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;w)</td></tr>
+<tr class="separator:a131c0e0f9c06e2d7205d91cb0b02d6d3 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="aff9016eecf0278f21aa0fc6623af0843" name="aff9016eecf0278f21aa0fc6623af0843"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
+<tr class="separator:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a5fb26839b00f17ba7163062bbde02868" name="a5fb26839b00f17ba7163062bbde02868"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasWorldComm</b> () const</td></tr>
+<tr class="memdesc:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns true if worldcomm is allocated, false othewise <br /></td></tr>
+<tr class="separator:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4550541da35c492dbe497ab64b6ab5f inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="ab4550541da35c492dbe497ab64b6ab5f" name="ab4550541da35c492dbe497ab64b6ab5f"></a>
+<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:ab4550541da35c492dbe497ab64b6ab5f inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43abd1e23d2d8b45b44976f462e8ae88 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a43abd1e23d2d8b45b44976f462e8ae88" name="a43abd1e23d2d8b45b44976f462e8ae88"></a>
+<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1CommObject.html">CommObject</a> const &amp;)=default</td></tr>
+<tr class="separator:a43abd1e23d2d8b45b44976f462e8ae88 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a028f41fa1573ce8ab23ca3d4b58f2787 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a028f41fa1573ce8ab23ca3d4b58f2787" name="a028f41fa1573ce8ab23ca3d4b58f2787"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
+<tr class="separator:a028f41fa1573ce8ab23ca3d4b58f2787 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4706cd3988d7e89eb589e4d8550f027 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="af4706cd3988d7e89eb589e4d8550f027" name="af4706cd3988d7e89eb589e4d8550f027"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a">worldcomm_t</a> &amp;w)</td></tr>
+<tr class="separator:af4706cd3988d7e89eb589e4d8550f027 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57ce9a3c8ce878aad44af453e9a86cd5 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a57ce9a3c8ce878aad44af453e9a86cd5" name="a57ce9a3c8ce878aad44af453e9a86cd5"></a>
+<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldCommSeqPtr</b> ()</td></tr>
+<tr class="separator:a57ce9a3c8ce878aad44af453e9a86cd5 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84c90797789f314e68decd8067472004 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a84c90797789f314e68decd8067472004">subWorldCommSeqPtr</a> () const</td></tr>
+<tr class="separator:a84c90797789f314e68decd8067472004 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4dc3a64dfa57eae395d7dc4cc111480 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#ac4dc3a64dfa57eae395d7dc4cc111480">worldComm</a> ()</td></tr>
+<tr class="separator:ac4dc3a64dfa57eae395d7dc4cc111480 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10eb9eb25801238fd8e7b7c5a8a56226 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a10eb9eb25801238fd8e7b7c5a8a56226">worldComm</a> () const</td></tr>
+<tr class="separator:a10eb9eb25801238fd8e7b7c5a8a56226 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a88a2438cc2106e4f02b16a773f131d64 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a88a2438cc2106e4f02b16a773f131d64" name="a88a2438cc2106e4f02b16a773f131d64"></a>
+<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>worldCommPtr</b> ()</td></tr>
+<tr class="separator:a88a2438cc2106e4f02b16a773f131d64 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09b9bc17f193940eb257daaf001b2d8c inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a09b9bc17f193940eb257daaf001b2d8c">worldCommPtr</a> () const</td></tr>
+<tr class="separator:a09b9bc17f193940eb257daaf001b2d8c inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -191,6 +251,9 @@ static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom">
 static constexpr uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nRealDim</b> = mesh_entity_type::nRealDim</td></tr>
 <tr class="separator:a3541be40f44756341b153ac6b93b3e3c inherit pub_static_attribs_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classFeel_1_1BVH"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classFeel_1_1BVH')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classFeel_1_1BVH.html">Feel::BVH&lt; MeshEntityType &gt;</a></td></tr>
+<tr class="memitem:a2642b40aef80cff9e0a96fb80bf1361f inherit pro_methods_classFeel_1_1BVH"><td class="memItemLeft" align="right" valign="top"><a id="a2642b40aef80cff9e0a96fb80bf1361f" name="a2642b40aef80cff9e0a96fb80bf1361f"></a>
+virtual std::vector&lt; <a class="el" href="structFeel_1_1BVH_1_1BVHRayIntersectionResult.html">rayintersection_result_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>intersectSequential</b> (<a class="el" href="classFeel_1_1BVHRay.html">ray_type</a> const &amp;rayon, <a class="el" href="classbool.html">bool</a> useRobustTraversal=true)=0</td></tr>
+<tr class="separator:a2642b40aef80cff9e0a96fb80bf1361f inherit pro_methods_classFeel_1_1BVH"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6216ad64f19945737d8adb2149766d0 inherit pro_methods_classFeel_1_1BVH"><td class="memTemplParams" colspan="2"><a id="ae6216ad64f19945737d8adb2149766d0" name="ae6216ad64f19945737d8adb2149766d0"></a>
 template&lt;typename RangeType &gt; </td></tr>
 <tr class="memitem:ae6216ad64f19945737d8adb2149766d0 inherit pro_methods_classFeel_1_1BVH"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateForUse</b> (RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>)</td></tr>
@@ -206,48 +269,7 @@ BVHEnum::Quality&#160;</td><td class="memItemRight" valign="bottom"><b>M_quality
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename MeshEntityType&gt;<br />
 class Feel::BVH_ThirdParty&lt; MeshEntityType &gt;</div><p >implementation of <a class="el" href="classFeel_1_1BVH.html" title="BVH base class.">BVH</a> tool with an external third party </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a9c8bdd842ff672da84e874ae338962fe" name="a9c8bdd842ff672da84e874ae338962fe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c8bdd842ff672da84e874ae338962fe">&#9670;&nbsp;</a></span>intersect()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename MeshEntityType &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="structFeel_1_1BVH_1_1BVHRayIntersectionResult.html">rayintersection_result_type</a> &gt; <a class="el" href="classFeel_1_1BVH__ThirdParty.html">Feel::BVH_ThirdParty</a>&lt; MeshEntityType &gt;::intersect </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1BVHRay.html">ray_type</a> const &amp;&#160;</td>
-          <td class="paramname"><em>ray</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
-          <td class="paramname"><em>useRobustTraversal</em> = <code>true</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implements <a class="el" href="classFeel_1_1BVH.html#a24419732fac6b56d00bf15eff9d785e8">Feel::BVH&lt; MeshEntityType &gt;</a>.</p>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

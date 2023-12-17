@@ -34,7 +34,7 @@ var searchData=
   ['interpolant_31',['interpolant',['../structFeel_1_1detail_1_1PrecomputeDomainBasisFunction.html#af7c3dd32a1c401deec8513889855223c',1,'Feel::detail::PrecomputeDomainBasisFunction']]],
   ['interpolate_32',['interpolate',['../namespaceFeel.html#a9ab6977c9bfb2fcfadab4fa236d3f39d',1,'Feel']]],
   ['interprocessfaces_33',['interprocessfaces',['../namespaceFeel.html#aa502df5149bfecd3c524fa2635dcf7c5',1,'Feel::interprocessfaces(MeshType const &amp;mesh, rank_type neighbor_pid)'],['../namespaceFeel.html#a3c16116d0a2516f96a0f88956fe3d5cc',1,'Feel::interprocessfaces(MeshType const &amp;mesh)']]],
-  ['intersect_34',['intersect',['../namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836',1,'Feel::intersect()'],['../classFeel_1_1BVH.html#a24419732fac6b56d00bf15eff9d785e8',1,'Feel::BVH::intersect()']]],
+  ['intersect_34',['intersect',['../namespaceFeel.html#aca803a191f8742d8bbd3a165cac73836',1,'Feel::intersect()'],['../classFeel_1_1BVH.html#aaa2a1dc17d82d05f5f0e57c6d83df258',1,'Feel::BVH::intersect()']]],
   ['intersects_35',['intersects',['../classFeel_1_1Sphere.html#a9a91c6f9b10ce7402fc707423f9d28f9',1,'Feel::Sphere']]],
   ['inv_36',['inv',['../inv_8hpp.html#afe1d2129e9a63c6672e7a94df659803e',1,'Feel::vf']]],
   ['ipow_37',['ipow',['../namespaceFeel.html#aeae4be2a1bdc7033742a68a8574cf194',1,'Feel']]],

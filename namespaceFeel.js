@@ -349,6 +349,7 @@ var namespaceFeel =
     [ "BVH_ThirdParty", "classFeel_1_1BVH__ThirdParty.html", null ],
     [ "BVHEnum", "structFeel_1_1BVHEnum.html", null ],
     [ "BVHRay", "classFeel_1_1BVHRay.html", null ],
+    [ "BVHRaysDistributed", "classFeel_1_1BVHRaysDistributed.html", "classFeel_1_1BVHRaysDistributed" ],
     [ "Checker", "classFeel_1_1Checker.html", "classFeel_1_1Checker" ],
     [ "CheckerConvergenceFailed", "structFeel_1_1CheckerConvergenceFailed.html", null ],
     [ "CheckerExactFailed", "structFeel_1_1CheckerExactFailed.html", null ],

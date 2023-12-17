@@ -1,5 +1,6 @@
 <map id="Feel::BVH&lt; MeshEntityType &gt;" name="Feel::BVH&lt; MeshEntityType &gt;">
-<area shape="rect" id="node1" title="BVH base class." alt="" coords="65,5,283,200"/>
-<area shape="rect" id="node2" href="$classFeel_1_1BVH__InHouse.html" title="in house implementation of BVH tool" alt="" coords="5,255,161,377"/>
-<area shape="rect" id="node3" href="$classFeel_1_1BVH__ThirdParty.html" title="implementation of BVH tool with an external third party" alt="" coords="185,248,344,384"/>
+<area shape="rect" id="node1" title="BVH base class." alt="" coords="65,204,283,443"/>
+<area shape="rect" id="node3" href="$classFeel_1_1BVH__InHouse.html" title="in house implementation of BVH tool" alt="" coords="5,498,161,605"/>
+<area shape="rect" id="node4" href="$classFeel_1_1BVH__ThirdParty.html" title="implementation of BVH tool with an external third party" alt="" coords="185,491,344,612"/>
+<area shape="rect" id="node2" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="103,5,245,156"/>
 </map>

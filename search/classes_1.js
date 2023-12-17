@@ -43,5 +43,6 @@ var searchData=
   ['bvhprimitiveinfo_40',['BVHPrimitiveInfo',['../structFeel_1_1BVH_1_1BVHPrimitiveInfo.html',1,'Feel::BVH']]],
   ['bvhray_41',['BVHRay',['../classFeel_1_1BVHRay.html',1,'Feel']]],
   ['bvhrayintersectionresult_42',['BVHRayIntersectionResult',['../structFeel_1_1BVH_1_1BVHRayIntersectionResult.html',1,'Feel::BVH']]],
-  ['byte_5fcontainer_5fwith_5fsubtype_43',['byte_container_with_subtype',['../classnlohmann_1_1byte__container__with__subtype.html',1,'nlohmann']]]
+  ['bvhraysdistributed_43',['BVHRaysDistributed',['../classFeel_1_1BVHRaysDistributed.html',1,'Feel']]],
+  ['byte_5fcontainer_5fwith_5fsubtype_44',['byte_container_with_subtype',['../classnlohmann_1_1byte__container__with__subtype.html',1,'nlohmann']]]
 ];
