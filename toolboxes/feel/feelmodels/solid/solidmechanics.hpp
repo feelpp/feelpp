@@ -178,7 +178,7 @@ public:
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     //___________________________________________________________________________________//
     // trace mesh
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
     typedef std::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     typedef Lagrange<nOrderGeo, Vectorial,Continuous> basis_tracemesh_disp_type;
     typedef FunctionSpace<trace_mesh_type, bases<basis_tracemesh_disp_type> > space_tracemesh_disp_type;
@@ -758,7 +758,7 @@ private :
     // mesh
     Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
     MeshMover<mesh_type> M_meshMover;
-    MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
+    MeshMover<trace_mesh_t<mesh_type>> M_meshMoverTrace;
     // function space
     space_displacement_ptrtype M_XhDisplacement;
     element_displacement_ptrtype M_fieldDisplacement, M_fieldVelocity, M_fieldAcceleration;

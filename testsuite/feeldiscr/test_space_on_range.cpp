@@ -295,18 +295,26 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
 {
     using namespace Feel;
     auto mesh = unitCube();
-    auto Vh = Pdhv<1>(mesh,elements(mesh, Px() < cst(0.5), _selector=select_elements_from_expression::with_value, _value=1 ), true );
+    BOOST_TEST_MESSAGE(fmt::format("mesh built"));
+    auto selected = elements(mesh, Px() < cst(0.5), _selector=select_elements_from_expression::with_value, _value=1 );
+    //wc(mesh)->print( fmt::format("number of selected elements local : {}",nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
+    //wc(mesh)->print( fmt::format("number of selected elements global: {} local: {}", nelements(selected, true),nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
+
+    BOOST_TEST_MESSAGE(fmt::format("elements selected"));
+    auto Vh = Pdhv<1>(mesh, selected , true );
+    BOOST_TEST_MESSAGE(fmt::format("Vh built"));
     //auto Vh = Pdhv<1>(mesh);
     auto submesh = createSubmesh(_mesh=mesh, _range=faces(support(Vh)),_update=0);
     //auto submesh = createSubmesh(_mesh=mesh, _range=boundaryfaces(support(Vh)));
     auto Xh = Pdh<1>(submesh,true);
-
+    BOOST_TEST_MESSAGE(fmt::format("Xh built"));
     auto u = Vh->element();
     auto v = Xh->element();
     v.setConstant(2.);
     u.setConstant(3.);
 
     auto rangeIntegrateBoundary = intersect(boundaryfaces(support(Vh)),boundaryfaces(mesh)); // there is a problem
+    BOOST_TEST_MESSAGE(fmt::format("intersect ranges done"));
     auto a = form2(_test=Xh, _trial=Vh);
     //a = integrate(_range=boundaryfaces(mesh), _expr=idt(v)*normal(u));
     //a = integrate(_range=boundaryfaces(mesh), _expr=id(v)*inner(idt(u),N()));

@@ -1479,12 +1479,12 @@ idelements( MeshType const& imesh, std::vector<T> const& l )
 
 //! \return a pair of iterators to iterate over a range of elements 'rangeElt' which
 //!  touch the range of faces or edges \rangeEntity by a point/edge/faces (with respect to type arg)
-template<typename MeshType,typename EntityRangeType>
+template<typename MeshType,typename RangeType, typename EntityRangeType>
 Range<MeshType,MESH_ELEMENTS>
-elements( MeshType const& mesh, Range<MeshType,ElementsType::MESH_ELEMENTS> const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
+elements( MeshType const& mesh, RangeType const& rangeElt, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {
     std::unordered_set<size_type> entityIds;
-    if constexpr ( std::is_same_v<EntityRangeType,faces_reference_wrapper_t<MeshType> > )
+    if constexpr ( std::is_same_v<EntityRangeType,Range<MeshType,MESH_FACES> > )
     {
         for( auto const& faceWrap : rangeEntity )
         {
@@ -1507,7 +1507,7 @@ elements( MeshType const& mesh, Range<MeshType,ElementsType::MESH_ELEMENTS> cons
                 CHECK( false ) << "invalid type " << type;
         }
     }
-    else if constexpr ( std::is_same_v<EntityRangeType,edges_reference_wrapper_t<MeshType> > )
+    else if constexpr ( std::is_same_v<EntityRangeType,Range<MeshType,MESH_EDGES> > )
         {
             for( auto const& edgeWrap : rangeEntity )
             {
@@ -1530,7 +1530,7 @@ elements( MeshType const& mesh, Range<MeshType,ElementsType::MESH_ELEMENTS> cons
         CHECK( false ) << "invalid range";
     }
 
-    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
+    Range<MeshType, MESH_ELEMENTS> myelts( mesh );
 
     for ( auto const& eltWrap : rangeElt )
     {
@@ -1572,10 +1572,10 @@ elements( MeshType const& mesh, Range<MeshType,ElementsType::MESH_ELEMENTS> cons
         else
             CHECK( false ) << "invalid type " << type;
         if ( addElt )
-            myelts->push_back(boost::cref(elt));
+            myelts.push_back(elt);
     }
-    myelts->shrink_to_fit();
-    return range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=mesh.shared_from_this() );
+    myelts.shrink_to_fit();
+    return myelts;
 }
 
 //! \return a pair of iterators to iterate over all elements (not ghost) which

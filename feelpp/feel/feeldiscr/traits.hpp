@@ -542,8 +542,24 @@ using trace_trace_mesh_ptr_t = typename trace_trace_mesh<MeshType, TheTag>::ptrt
  */
 template<typename MeshType, int TheTag = 0>
 using trace_trace_mesh_cptr_t = typename trace_trace_mesh<MeshType, TheTag>::const_ptrtype;
+
+
+
+template <typename Type>
+struct value_type_trait<Type, std::enable_if_t<is_mesh_v<Type>>> {
+    using type = typename decay_type<Type>::value_type;
+};
+
+template <typename Type>
+struct value_type_trait<Type, std::enable_if_t<is_functionspace_v<Type>>> {
+    using type = typename decay_type<Type>::value_type;
+};
+
 /**
  * @} // end Traits group
  */
+
+
 }
+
 #endif
