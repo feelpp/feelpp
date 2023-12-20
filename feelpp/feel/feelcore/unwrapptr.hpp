@@ -61,7 +61,7 @@ unwrap_ptr( C * c )
 {
     return *c;
 }
-
+#if 0
 template<typename C>
 unwrap_ptr_t<C>&&
 unwrap_ptr( C && c )
@@ -71,7 +71,7 @@ unwrap_ptr( C && c )
     else
         return std::forward<C>(c);
 }
-
+#endif
 
 
 } // Feel

@@ -36,6 +36,7 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/traits.hpp>
 
 namespace Feel
 {
@@ -358,6 +359,17 @@ public:
      * @return tuple containing the current color and current worldcomm as well as the global worldcomm
      */
     std::tuple<int,worldcomm_ptr_t,worldcomm_ptr_t> split( int n ) const;
+
+    /**
+     * @brief print text on the worldcomm
+     * 
+     * @param text text to print
+     * @param sync whether to synchronize the worldcomm before printing and after
+     * @param print_to_cout print to standard output
+     * @param flush flush log files
+     */
+    void print( std::string const& text, bool sync = false, bool print_to_cout = false, bool flush = false );
+
 private :
 
     FEELPP_NO_EXPORT void initSubWorldCommSeq();
@@ -419,6 +431,14 @@ inline worldscomm_ptr_t makeWorldsComm( int n, worldcomm_ptr_t const& wc )
     return r;
 }
 
+template<typename T>
+worldcomm_ptr_t wc( T&& t )
+{
+    if constexpr ( is_shared_ptr_v<T>||std::is_pointer_v<T> )
+        return std::forward<T>(t)->worldCommPtr();
+    else
+        return std::forward<T>(t).worldCommPtr();
+}
 } //namespace Feel
 
 #endif // __worldcomm_H

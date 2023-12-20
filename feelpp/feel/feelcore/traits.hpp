@@ -148,5 +148,15 @@ using element_t = typename element_type_helper<ObjectType>::type;
 template <typename ObjectType>
 using element_ptr_t = typename element_type_helper<ObjectType>::ptrtype;
 
+// Trait to get the value type for a mesh
+template <typename Type, typename Enable = void>
+struct value_type_trait
+{
+}; // The default case is empty.
+
+// Helper type alias to extract the value type
+template <typename Type>
+using value_t = typename value_type_trait<Type>::type;
+
 } // namespace Feel
 #endif
