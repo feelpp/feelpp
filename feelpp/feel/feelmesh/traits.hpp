@@ -382,8 +382,5 @@ template<typename MeshType>
 using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
 
 
-
-
-
 } // Feel
 #endif /* __Traits_H */

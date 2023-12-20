@@ -78,8 +78,8 @@ public:
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     // face mesh
-    using face_mesh_type = typename mesh_type::trace_mesh_type;
-    using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
+    using face_mesh_type = trace_mesh_t<mesh_type>;
+    using face_mesh_ptrtype = trace_mesh_ptr_t<mesh_type>;
 
     static inline const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 

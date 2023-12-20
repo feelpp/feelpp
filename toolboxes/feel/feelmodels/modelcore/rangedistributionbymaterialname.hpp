@@ -64,10 +64,7 @@ public :
             {
                 if ( rangeMatFaces.find( matName ) == rangeMatFaces.end() )
                 {
-                    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
-                    rangeMatFaces[matName] = boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                                                                myfaces->begin(), myfaces->end(),
-                                                                myfaces );
+                    rangeMatFaces[matName] = Range<MeshType,MESH_FACES>(rangeFaces.mesh());
                 }
             }
 
@@ -86,9 +83,7 @@ public :
                         continue;
                     std::string const& matName = itFindEltId->second;
                     CHECK( rangeMatFaces.find( matName ) != rangeMatFaces.end() ) << "invalid matName " << matName;
-                    boost::get<3>( rangeMatFaces[matName] )->push_back( faceWrap );
-                    boost::get<1>( rangeMatFaces[matName] ) = boost::get<3>( rangeMatFaces[matName] )->begin();
-                    boost::get<2>( rangeMatFaces[matName] ) = boost::get<3>( rangeMatFaces[matName] )->end();
+                    rangeMatFaces[matName].push_back( faceWrap );
                 }
             }
         }

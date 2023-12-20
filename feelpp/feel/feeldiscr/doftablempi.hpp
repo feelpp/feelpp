@@ -31,6 +31,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_type& mesh )
 {
+    wc(mesh)->print(fmt::format("[DofTable::buildGhostDofMap rank={}] starts. hasMeshSupport: {}", rank(mesh), this->hasMeshSupport()), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
     if ( this->hasMeshSupport() )
         this->meshSupport()->updateParallelData();
 

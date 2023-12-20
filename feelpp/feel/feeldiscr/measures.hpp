@@ -25,9 +25,6 @@
 
 namespace Feel
 {
-template<typename RangeType>
-using value_t = typename decay_type<RangeType>::value_t;
-
 /**
  * compute h measure statistics over a range of elements or facets
  */
@@ -58,7 +55,7 @@ hMeasures( RangeType && r, size_t nEntityInRange )
     return std::tuple{ h_avg, h_min, h_max };
 }
 
-template<typename RangeType, typename = std::enable_if_t<is_mesh_v<RangeType>>>
+template<typename RangeType, typename = std::enable_if_t<is_range_v<RangeType>>>
 std::tuple<value_t<RangeType>, value_t<RangeType>, value_t<RangeType>>
 hMeasures( RangeType && r )
 {

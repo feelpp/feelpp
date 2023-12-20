@@ -315,7 +315,11 @@ template <typename RangeT>
 inline constexpr bool is_range_v = std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;
 //inline constexpr bool is_range_v = is_tuple_v<decay_type<RangeT>> || std::is_base_of_v<RangeBase<>,decay_type<RangeT>>;//std::is_base_of_v<std::input_iterator_tag, typename std::iterator_traits<range_iterators_t<RangeT>>::iterator_category>;
 
-
+template <typename Type>
+struct value_type_trait<Type, std::enable_if_t<is_range_v<Type>>>
+{
+    using type = typename decay_type<Type>::value_t;
+};
 
 /**
  * @brief Specialization for Range

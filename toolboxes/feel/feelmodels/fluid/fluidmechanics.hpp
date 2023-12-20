@@ -2724,10 +2724,11 @@ namespace FluidToolbox_detail
 {
 
 template <typename MeshType,typename RangeType>
-faces_reference_wrapper_t<MeshType>
+Range<MeshType,MESH_FACES>
 removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const& r )
 {
-    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    Range<MeshType,MESH_FACES> myelts(ms);
+
      if ( !ms->isPartialSupport() )
         return r;
     for ( auto const& faceWrap : r )
@@ -2748,13 +2749,10 @@ removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const
             }
 
         }
-        myelts->push_back( boost::cref( theface ) );
+        myelts.push_back( theface );
     }
-    myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    myelts.shrink_to_fit();
+    return myelts;
 }
 }
 
