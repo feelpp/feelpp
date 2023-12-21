@@ -31,4 +31,4 @@ if ( FEELPP_HAS_PARMMG OR FEELPP_HAS_MMG )
     TIMEOUT 500)
 endif()
 
-feelpp_add_test(bvh SRCS test_bvh.cpp CFG test_bvh.cfg GEO domain_2d.geo cubic_cavity.geo NO_MPI_TEST )
+feelpp_add_test(bvh SRCS test_bvh.cpp CFG test_bvh.cfg GEO domain_2d.geo cubic_cavity.geo )#NO_MPI_TEST )
