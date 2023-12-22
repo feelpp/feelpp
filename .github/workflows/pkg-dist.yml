@@ -1,0 +1,149 @@
+name: Feelpp PKG Reusable Workflow
+on:
+    workflow_call:
+        inputs:
+            dist: 
+                required: true
+                type: string
+                default: "jammy"
+            flavor: 
+                required: true
+                type: string 
+                default: "ubuntu"
+            parallel:
+                required: false
+                type: string
+                default: "20"
+            skip:
+                required: false
+                type: string
+                default: ""
+            continue-on-error:
+                required: false
+                type: string
+                default: "false"
+
+jobs:
+    activate:
+        runs-on: self-pkg
+        steps:
+        - name: how
+          run: |
+            echo "  flavor: ${{ inputs.flavor }}"
+            echo "    dist: ${{ inputs.dist }}"
+            echo "    skip: ${{ inputs.skip }}"
+            echo "parallel: ${{ inputs.parallel }}"
+          shell: bash
+          env:
+            DIST: ${{ inputs.dist }}
+            FLAVOR: ${{ inputs.flavor }}
+    pkg:
+        if: ${{ inputs.flavor == 'ubuntu' || inputs.flavor == 'debian' }}
+        needs: activate
+        runs-on: self-pkg
+        continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+        timeout-minutes: 600
+        env:
+            DIST: ${{ inputs.dist }}
+            FLAVOR: ${{ inputs.flavor }}
+            DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+          with: 
+            submodules: true
+        - name: Build Feelpp package
+          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' ) }}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp
+
+        - name: Publish Feelpp package
+          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip publish' )}}
+          run: |
+            echo "Publishing Feelpp packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+        - name: Build  Feelpp toolboxes package
+          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip toolboxes' ) }}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp-toolboxes
+
+        - name: Publish Feelpp toolboxes package
+          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip publish' )}}
+          run: |
+            echo "Publishing Feelpp toolboxes packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp-toolboxes
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+        - name: Build Feelpp MOR package
+          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip mor' )}}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp-mor
+
+        - name: Publish Feelpp MOR package
+          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip publish' )}}
+          run: |
+            echo "Publishing Feelpp MOR packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp-mor
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+        - name: Build Feelpp Python package
+          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip python' ) }}
+          run: |
+            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+          env:
+            COMPONENT: feelpp-python
+
+        - name: Publish Feelpp Python package
+          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip publish' )  }}
+          run: |
+            echo "Publishing Feelpp Python packages"
+            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
+          env:
+            COMPONENT: feelpp-python
+            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    pkg-docker-dbg:
+      needs: pkg
+      runs-on: self-docker
+      steps:
+        - name: Show
+          run: |
+            echo "message: ${{ github.event.head_commit.message }}"
+            echo "inputs: ${{ inputs.skip }}"
+            echo "skip commit: ${{ contains( github.event.head_commit.message, 'skip docker' ) }}"
+            echo "skip inputs: ${{ contains( inputs.skip, 'skip docker' ) }}"
+            echo "skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}"
+
+    pkg-docker:
+      needs: pkg-docker-dbg
+      uses: ./.github/workflows/pkg-docker.yml
+      with:
+        dist: ${{ inputs.dist }}
+        flavor: ${{ inputs.flavor }}
+        version: ${{ inputs.parallel }}
+        skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}
+        continue-on-error: ${{ inputs.continue-on-error }}
+      secrets: inherit
+

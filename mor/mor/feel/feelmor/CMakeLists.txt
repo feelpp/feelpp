@@ -1,9 +1,9 @@
-###  CMakeLists.txt ---
+# ##  CMakeLists.txt ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-13
+# Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# Date: 2013-11-13
 #
-#  Copyright (C) 2009 Universit� Joseph Fourier (Grenoble I)
+# Copyright (C) 2013-2023 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -23,13 +23,25 @@
 #
 # set(CMAKE_CXX_FLAGS "-g -O0" )
 
-set(SRC toolboxmor.cpp crbdb.cpp crbmodeldb.cpp pfemapp.cpp opusapp.cpp crbplugin_interface.cpp crbmodelproperties.cpp crbmodelparameters.cpp crbmodeloutputs.cpp )
+set(SRC toolboxmor.cpp
+  crbdb.cpp 
+  crbmodeldb.cpp 
+  pfemapp.cpp 
+  opusapp.cpp 
+  crbplugin_interface.cpp 
+  crbmodelproperties.cpp 
+  crbmodelparameters.cpp 
+  crbmodeloutputs.cpp
+  mormodels.cpp zip.cpp )
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LibZip REQUIRED libzip)
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 add_library( feelpp_mor SHARED ${SRC} )
 add_library(Feelpp::feelpp_mor ALIAS feelpp_mor )
 set_target_properties(feelpp_mor PROPERTIES VERSION 1 SOVERSION 1)
-target_link_libraries( feelpp_mor PUBLIC Feelpp::feelpp   )
+target_link_libraries(feelpp_mor PUBLIC Feelpp::feelpp ${LibZip_LIBRARIES})
 target_include_directories(feelpp_mor PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/mor>
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/mor>

@@ -32,7 +32,7 @@ public:
     typedef typename levelset_type::element_levelset_type element_levelset_type;
     typedef typename levelset_type::element_levelset_ptrtype element_levelset_ptrtype;
 
-    static const uint16_type Dim = levelset_type::nDim;
+    static inline const uint16_type Dim = levelset_type::nDim;
 
     //--------------------------------------------------------------------//
     // Construction

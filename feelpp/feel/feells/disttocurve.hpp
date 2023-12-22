@@ -256,7 +256,7 @@ public :
         }
 
 
-    // TFilename = boost::filesystem::path or std::string
+    // TFilename = fs::path or std::string
     template< class TFilename, class TList = std::vector<node_type> >
     element_ptrtype fromCoordinateFile( TFilename filename, TList insidePoints = std::vector<node_type>() )
         {

@@ -563,8 +563,8 @@ struct evaluate
     typedef details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type> > eval_t;
     typedef typename eval_t::mesh_element_type mesh_element_type;
     typedef typename eval_t::eval_element_type element_type;
-    static const uint16_type nDim = mesh_element_type::nDim;
-    static const uint16_type nRealDim = mesh_element_type::nRealDim;
+    static inline const uint16_type nDim = mesh_element_type::nDim;
+    static inline const uint16_type nRealDim = mesh_element_type::nRealDim;
 };
 }
 /// \endcond

@@ -43,7 +43,7 @@ struct integrate_type
      using _range_type = typename Feel::detail::quadptlocrangetype< std::decay_t<ArgRangeType> >::type;
 
      typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
-     static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
+     static inline const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
      using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
 
      using expr_order_t = Feel::vf::ExpressionOrder<_range_type,_expr_type>;

@@ -47,9 +47,9 @@ public:
     using node_type = typename MeshType::node_type;
     typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
     
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type nOrder = mesh_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type nOrder = mesh_type::nOrder;
     using value_type = typename mesh_type::value_type;
     typedef KDTree kdtree_type;
     typedef typename std::shared_ptr<KDTree> kdtree_ptrtype;
@@ -375,13 +375,6 @@ public:
         boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
         
     };
-
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nDim;
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nRealDim;
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nOrder;
 
 
 template<typename MeshType>

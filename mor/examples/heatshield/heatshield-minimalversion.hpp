@@ -82,8 +82,8 @@ public:
     typedef typename super_type::bdf_ptrtype bdf_ptrtype;
 
     HeatShieldMinimalVersion() : super_type( "thermalblockminver" ) {}
-        
-    
+
+
     //! initialization of the model
     void initModel();
 
@@ -162,9 +162,9 @@ void HeatShieldMinimalVersion<Order>::initModel()
 
     auto energy = form2( _trial=this->Xh, _test=this->Xh);
     energy =
-        integrate( _range=elements( mesh ), _expr = gradt( u )*trans( grad( v ) ) ) +
-        integrate(  _range=markedfaces( mesh, "left" ), _expr = 0.01 * idt( u )*id( v ) ) +
-        integrate(  _range=markedfaces( mesh, "gamma_holes" ), _expr = 0.001 * idt( u )*id( v ) )
+        integrate(  _range=elements( mesh ),                   _expr=gradt( u )*trans( grad( v ) ) ) +
+        integrate(  _range=markedfaces( mesh, "left" ),        _expr=0.01 * idt( u )*id( v ) ) +
+        integrate(  _range=markedfaces( mesh, "gamma_holes" ), _expr=0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( energy );
     this->addMassMatrix(mass);

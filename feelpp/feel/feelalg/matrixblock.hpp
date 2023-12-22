@@ -537,9 +537,9 @@ class MatrixBlock : public MatrixBlockBase<T>
     typedef MatrixBlockBase<T> super_type;
 
   public:
-    static const uint16_type NBLOCKROWS = NR;
-    static const uint16_type NBLOCKCOLS = NC;
-    static const uint16_type NBLOCKSIZE = NR * NC;
+    static inline const uint16_type NBLOCKROWS = NR;
+    static inline const uint16_type NBLOCKCOLS = NC;
+    static inline const uint16_type NBLOCKSIZE = NR * NC;
 
     typedef typename super_type::value_type value_type;
     typedef typename super_type::matrix_ptrtype matrix_ptrtype;
