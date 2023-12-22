@@ -357,8 +357,8 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     std::set<size_type> done;
     auto status = vf::project( _space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=vf::cst(FAR) );
 
-    auto it_marked = boost::get<1>(rangeInitialElts);
-    auto en_marked = boost::get<2>(rangeInitialElts);
+    auto it_marked = rangeInitialElts.begin();
+    auto en_marked = rangeInitialElts.end();
 
     for ( ; it_marked!=en_marked ; ++it_marked )
     {
@@ -500,7 +500,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     auto it = mesh->beginOrderedElement();
     auto en = mesh->endOrderedElement();
 
-    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+    Range<mesh_type, MESH_ELEMENTS> rangeInterfaceElts( mesh );
 
     for ( ; it!=en ; it++ )
     {
@@ -534,16 +534,8 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
             }
         }
         if( mark_elt )
-            interfaceElts->push_back( boost::cref(elt) );
+            rangeInterfaceElts.push_back( elt );
     }
-
-    range_elements_type rangeInterfaceElts = boost::make_tuple( 
-            mpl::size_t<MESH_ELEMENTS>(),
-            interfaceElts->begin(),
-            interfaceElts->end(),
-            interfaceElts
-            );
-
     return this->operator()( phi, rangeInterfaceElts );
 } // operator()
 
