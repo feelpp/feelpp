@@ -36,8 +36,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 
 #include <boost/concept_check.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -88,7 +86,6 @@ void PrintParserSymbols(bool help, std::vector<std::string> &vec);
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 
 
 #if !defined( FEELPP_HAS_GMSH_API )
@@ -114,7 +111,7 @@ ParseGeoFromMemory( GModel* model, std::string const& name, std::string const& g
         }
     }
     fclose(gmsh_yyin);
-#if GMSH_VERSION_LESS_THAN( 3,0,0 ) 
+#if GMSH_VERSION_LESS_THAN( 3,0,0 )
     int imported = model->importGEOInternals();
 #else // Gmsh 3
     LOG(ERROR) << "Invalid call: Feel++ does not support in memory Gmsh 3 mesh generation.";
@@ -254,7 +251,7 @@ Gmsh::prefix( std::string const& __name, uint16_type __N ) const
 }
 
 void
-Gmsh::setVerbosity( int val ) 
+Gmsh::setVerbosity( int val )
 {
     LOG( INFO ) << fmt::format( "[gmsh::setVerbosity] old Verbosity : {}, new Verbosity : {} ", M_verbosity, val ) << std::endl;
     M_verbosity = val;
@@ -571,16 +568,12 @@ Gmsh::refine( std::string const& name, int /*level*/, bool parametric  ) const
 #else
 
         std::ostringstream filename;
-#if BOOST_FILESYSTEM_VERSION == 3
+
 		filename << fs::path( name ).stem().string() << "-refine-" << M_refine_levels << ".msh";
 		boost::system::error_code ec;
         auto na = fs::path( name );
         auto fi= fs::path( filename.str() );
 		fs::copy_file( na, fi, fs::copy_option::overwrite_if_exists, ec );
-#elif BOOST_FILESYSTEM_VERSION == 2
-		filename << fs::path( name ).stem() << "-refine-" << M_refine_levels << ".msh";
-		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
-#endif
 
 		M_gmodel->readMSH(filename.str());
 
@@ -684,7 +677,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     gmsh::open( __geoname );
 
     // some options
-    
+
     gmsh::option::setNumber( "Mesh.ElementOrder",(double)M_order );
     gmsh::option::setNumber( "Mesh.Algorithm", (double)GMSH_ALGORITHM_2D::FRONTAL );
     gmsh::option::setNumber( "Mesh.Algorithm3D", (double)GMSH_ALGORITHM_3D::DELAUNAY );
@@ -864,11 +857,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( this->worldComm().isMasterRank() )
     {
-#if BOOST_FILESYSTEM_VERSION == 3
-		_name = fs::path( nameMshOutput ).stem().string();
-#elif BOOST_FILESYSTEM_VERSION == 2
-        _name = fs::path( nameMshOutput ).stem();
-#endif
+        _name = fs::path( nameMshOutput ).stem().string();
         fs::path directory = fs::path(nameMshOutput).parent_path();
         if ( !directory.empty() && !fs::exists(directory) )
             fs::create_directories( directory );

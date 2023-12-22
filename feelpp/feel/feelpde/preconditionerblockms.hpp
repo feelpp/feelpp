@@ -51,7 +51,7 @@ class PreconditionerBlockMS : public Preconditioner<typename space_type::value_t
 {
     typedef Preconditioner<typename space_type::value_type,typename space_type::size_type> super;
 public:
-    static const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type Dim = space_type::nDim;
     typedef typename space_type::value_type value_type;
     typedef typename space_type::size_type size_type;
 

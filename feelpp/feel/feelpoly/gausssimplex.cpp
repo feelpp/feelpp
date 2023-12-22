@@ -34,8 +34,8 @@ class GaussSimplex
 public :
     typedef T value_type;
     using super = IMBase<T>;
-    //static const uint16_type Degree = ( Integration_Degree+1 )/2+1;
-    //static const uint32_type Npoints = Degree;
+    //static inline const uint16_type Degree = ( Integration_Degree+1 )/2+1;
+    //static inline const uint32_type Npoints = Degree;
 
     typedef Gauss<Simplex<D-1,1>,invalid_uint16_type_value, T> face_quad_type;
 

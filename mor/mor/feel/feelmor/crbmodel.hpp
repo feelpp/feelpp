@@ -117,7 +117,6 @@ public:
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
     typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
 
-
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
@@ -193,6 +192,8 @@ public:
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
+    using rbbdf_type = Bdf<rbfunctionspace_type>;
+    using rbbdf_ptrtype = std::shared_ptr<rbbdf_type>;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
     typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
@@ -330,6 +331,15 @@ public:
                 this->worldComm().barrier();
 
                 this->init();
+            }
+            if ( stage == crb::stage::online )
+            {
+                if ( !this->isSteady() )
+                {
+                    M_numberOfTimeStep = 1 + ( M_model->timeFinal() - M_model->timeInitial() ) / M_model->timeStep();
+                    LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps to store = {}, timeInitial = {}, timeFinal = {}, timeStep = {}",
+                                              M_numberOfTimeStep, M_model->timeInitial(), M_model->timeFinal(), M_model->timeStep() );
+                }
             }
         }
 
@@ -490,6 +500,7 @@ public:
             for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
                 ++M_numberOfTimeStep;
         }
+        LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps = {}", M_numberOfTimeStep );
 
 
 
@@ -1231,14 +1242,13 @@ public:
                         if ( mdata.template has<nl::json>() )
                         {
                             auto const& jsonData = mdata.template data<nl::json>();
-                            fs::ofstream o(newFilePath);
+                            std::ofstream o(newFilePath);
                             o << jsonData.dump(/*1*/);
                         }
                         else if ( mdata.template has<fs::path>() )
                         {
                             fs::path const& inputPath = mdata.template data<fs::path>();
-                            boost::system::error_code ec;
-                            fs::copy_file( inputPath, newFilePath, fs::copy_option::overwrite_if_exists, ec );
+                            fs::copy_file( inputPath, newFilePath, fs::copy_options::overwrite_existing );
                         }
                     }
                     mdata.setOnDisk();
@@ -2893,28 +2903,28 @@ public:
     {
         double timestep = 1e30;
         if ( !this->isSteady() )
-            timestep = this->bdfModel()->timeStep();
+            timestep = this->model()->timeStep();
         return timestep;
     }
     double timeInitial() const override
     {
         double timeinitial = 0.;
         if ( !this->isSteady() )
-            timeinitial = this->bdfModel()->timeInitial();
+            timeinitial = this->model()->timeInitial();
         return timeinitial;
     }
     double timeFinal() const override
     {
         double timefinal=1e30;
         if ( !this->isSteady() )
-            timefinal = this->bdfModel()->timeFinal();
+            timefinal = this->model()->timeFinal();
         return timefinal;
     }
     int timeOrder() const
     {
         int order = 0;
         if ( !this->isSteady() )
-            order = this->bdfModel()->timeOrder();
+            order = this->model()->timeOrder();
         return order;
     }
 

@@ -63,8 +63,8 @@ public :
 
     typedef T value_type;
 
-    static const uint32_type Dim = Convex::nDim;
-    static const uint16_type nPoints1D = Order+1;
+    static inline const uint32_type Dim = Convex::nDim;
+    static inline const uint16_type nPoints1D = Order+1;
 
     static const size_type Shape = Convex::Shape;
 
@@ -75,14 +75,14 @@ public :
 
     typedef ublas::vector<value_type> vector_type;
 
-    static const uint32_type topological_dimension = Convex::topological_dimension;
-    static const uint32_type numPoints = super::numPoints;
+    static inline const uint32_type topological_dimension = Convex::topological_dimension;
+    static inline const uint32_type numPoints = super::numPoints;
 
     typedef Reference<Convex, Dim, Convex::nOrder, Dim, value_type> reference_convex_type;
 
     typedef typename reference_convex_type::points_type points_type;
 
-    static const uint32_type nbPtsPerFace = super::nbPtsPerFace;
+    static inline const uint32_type nbPtsPerFace = super::nbPtsPerFace;
 
     typedef std::vector<uint16_type> orbits_type;
 

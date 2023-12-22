@@ -71,7 +71,6 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 
-//#include<boost/filesystem.hpp>
 
 
 #include <stdexcept>
@@ -1528,8 +1527,8 @@ template<uint16_type PN,
          uint16_type GN = 1>
 struct Order
 {
-    static const uint16_type PolynomialOrder = PN;
-    static const uint16_type GeometricOrder = GN;
+    static inline const uint16_type PolynomialOrder = PN;
+    static inline const uint16_type GeometricOrder = GN;
 
     static const bool is_isoparametric = ( PN == GN );
     static const bool is_subparametric = ( PN > GN );
@@ -2238,7 +2237,7 @@ public:
         using mesh_ptrtype = typename functionspace_type::mesh_ptrtype;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
         using index_type = typename mesh_type::index_type;
-        
+
         static constexpr uint16_type nDim = mesh_type::nDim;
         static constexpr uint16_type nRealDim = mesh_type::nRealDim;
         static constexpr bool is_composite = functionspace_type::is_composite;
@@ -2333,13 +2332,13 @@ public:
         template <size_type CTX=DefaultCTX>
         using gmc_ptr_t = std::shared_ptr<gmc_t<CTX>>;
 #endif
-        
+
         using fe_type = typename functionspace_type::fe_type;
         template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
         using fec_t = typename basis_0_type::template Context<FECTX, fe_type, gm_type, geoelement_type,GEOCTX>;
         template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
         using fec_ptr_t = std::shared_ptr<fec_t<FECTX,GEOCTX>>;
-        
+
         //@}
 
         /** @name Constructors, destructor
@@ -2609,7 +2608,7 @@ public:
 
         using p0dh_t =  FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>;
         using p0dh_element_t =  typename FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>::template Element<value_type>;
-        
+
         template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
         Element& plusAssign( elt_t const& _e, const value_type sign = 1. )
             {
@@ -2639,7 +2638,7 @@ public:
             {
                 return plusAssign( _e, -1. );
             }
-        
+
         Element& operator-=( Element const& _e )
         {
             for ( index_type i=0; i < _e.nLocalDof(); ++i )
@@ -2826,7 +2825,7 @@ public:
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
             {
                 const auto [ eid,edgeid_in_element ]  = eltsInfo;
-                
+
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
@@ -4078,14 +4077,14 @@ public:
 
                 if ( typeUsed == "binary" )
                 {
-                    fs::ofstream ofs( p );
+                    std::ofstream ofs( p );
                     boost::archive::binary_oarchive oa( ofs );
                     oa << *this;
                 }
 
                 else if ( typeUsed == "text" )
                 {
-                    fs::ofstream ofs( p );
+                    std::ofstream ofs( p );
                     boost::archive::text_oarchive oa( ofs );
                     oa << *this;
                 }
@@ -4186,7 +4185,7 @@ public:
 
             if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                fs::ifstream ifs( p );
+                std::ifstream ifs( p );
                 if ( typeUsed == "binary" )
                 {
                     boost::archive::binary_iarchive ia( ifs );
@@ -4605,9 +4604,9 @@ public:
 
 
     /**
-     * initialize the function space  
+     * initialize the function space
      * \param mesh mesh data
-     * \param meshSupport 
+     * \param meshSupport
      * \param mesh_components
      */
     void init( mesh_ptrtype const& mesh,
@@ -4615,7 +4614,7 @@ public:
                size_type mesh_components,
                std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                periodicity_type periodicity = periodicity_type() );
-    
+
     void init( mesh_ptrtype const& mesh,
                mesh_support_vector_type const& meshSupport,
                size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
@@ -4624,7 +4623,7 @@ public:
         this->init( mesh, meshSupport, mesh_components, std::vector<Dof<typename mesh_type::size_type> >(), periodicity );
     }
 
-    
+
 
 
     //! destructor: do nothing thanks to shared_ptr<>
@@ -4745,7 +4744,7 @@ public:
      */
     size_type nLocalDof() const
     {
-        if constexpr( is_composite ) 
+        if constexpr( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
             size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
@@ -4756,7 +4755,7 @@ public:
         {
             //return M_dof->nLocalDof();
             return M_dof->nLocalDofWithGhost();
-        }        
+        }
     }
 
     size_type nLocalDofWithGhost() const
@@ -4786,7 +4785,7 @@ public:
         else
         {
             return M_dof->nLocalDofWithoutGhost();
-        }        
+        }
     }
 
     size_type nLocalDofWithGhostOnProc( const int proc ) const
@@ -4801,7 +4800,7 @@ public:
         else
         {
             return M_dof->nLocalDofWithGhost(proc);
-        }        
+        }
      }
 
     size_type nLocalDofWithoutGhostOnProc(const int proc) const
@@ -5297,7 +5296,7 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        element_type u( this->shared_from_this(), 
+        element_type u( this->shared_from_this(),
                 nActiveDof, arrayActiveDof,
                 nGhostDof, arrayGhostDof );
 #else
@@ -5327,10 +5326,10 @@ public:
         size_type nGhostDof = this->dof()->nLocalGhosts();
         size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
         value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
-        element_ptrtype u( new element_type( 
+        element_ptrtype u( new element_type(
                     this->shared_from_this(),
                     nActiveDof, arrayActiveDof,
-                    nGhostDof, arrayGhostDof ) 
+                    nGhostDof, arrayGhostDof )
                 );
 #else
         LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
@@ -5411,7 +5410,7 @@ public:
     {
         if constexpr ( nDim > 2 )
             return trace_trace_functionspace_type::New( mesh()->wireBasket( range ) );
-        return trace_trace_functionspace_ptrtype{};            
+        return trace_trace_functionspace_ptrtype{};
     }
 
 
@@ -5515,7 +5514,7 @@ public:
             this->updateInformationObject( jdata["info"] );
             if ( this->worldComm().isMasterRank() )
             {
-                fs::ofstream ojson( jsonfilepath );
+                std::ofstream ojson( jsonfilepath );
                 ojson << jdata.dump(/*1*/);
             }
 
@@ -6009,17 +6008,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     {
         DVLOG(2) << "calling init(<space>) begin\n";
         DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
-    
+
         M_mesh = __m;
         M_periodicity = periodicity;
         VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
-    
+
         if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
         {
-        
+
             if ( basis_type::nDofPerEdge || nDim >= 3 )
                 mesh_components |= MESH_UPDATE_EDGES;
-    
+
             /*
              * update faces info in mesh only if dofs exists on faces or the
              * expansion is continuous between elements. This case handles strong
@@ -6027,7 +6026,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
              */
             if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
                 mesh_components |= MESH_UPDATE_FACES;
-    
+
             if ( !M_mesh->isUpdatedForUse() )
             {
                 M_mesh->components().set( mesh_components );
@@ -6038,9 +6037,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         {
             M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
         }
-    
+
         M_ref_fe = std::make_shared<basis_type>();
-    
+
         tic();
         tic();
         M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
@@ -6081,7 +6080,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 #endif
     }
     else if constexpr ( is_composite )
-    { 
+    {
         M_mesh = __m;
 
         // todo : check worldsComm size and M_functionspaces are the same!
@@ -6232,7 +6231,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
     BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
     typedef typename mesh_type::element_iterator mesh_element_iterator;
-#if 0    
+#if 0
     mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
     mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
 #else
@@ -6368,7 +6367,7 @@ struct UpdateInformationObject
 };
 
 template <typename A0, typename A1, typename A2, typename A3, typename A4>
-void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) const 
+void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) const
 {
     if constexpr ( !is_composite )
     {

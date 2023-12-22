@@ -34,7 +34,6 @@
 
 #include <boost/type_traits.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 #include <boost/icl/type_traits/is_map.hpp>
@@ -282,7 +281,7 @@ public:
             return M_geoParamMap;
         }
 
-    std::map<std::string, std::string>& geoParameters() 
+    std::map<std::string, std::string>& geoParameters()
         {
             return M_geoParamMap;
         }

@@ -41,7 +41,7 @@ public:
     static const size_type context = TimeExprT::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = TimeExprT::imorder;
+    static inline const uint16_type imorder = TimeExprT::imorder;
     static const bool imIsPoly = TimeExprT::imIsPoly;
 
     template<typename Func>

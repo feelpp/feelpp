@@ -1,0 +1,9 @@
+{
+    "viewfactor": {
+        "type": "UnobstructedPlanar",
+        "algorithm":"DoubleAreaIntegration",
+        "quadrature_order":2,
+        "markers":["RadiativeSurface1", "RadiativeSurface2","RadiativeSurface3"],        
+        "description": "The viewfactor of a closed triangular cavity."
+    }
+}

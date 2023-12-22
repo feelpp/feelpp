@@ -60,8 +60,8 @@ public PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType >
     typedef PolynomialSet<BoundaryAdapted<Dim, Order, T>, PolySetType > super;
 public:
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type nOrder = Order;
 
     typedef BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Simplex> self_type;
     typedef self_type component_basis_type;
@@ -74,7 +74,7 @@ public:
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const bool is_modal = true;
-    static const uint16_type nComponents = polyset_type::nComponents;
+    static inline const uint16_type nComponents = polyset_type::nComponents;
     typedef typename super::component_type component_type;
 
     typedef T value_type;
@@ -92,20 +92,20 @@ public:
     typedef typename super::polynomial_type polynomial_type;
 
     //!< Number of degrees of freedom per vertex
-    static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
+    static inline const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
     //!< Number of degrees  of freedom per edge
-    static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
+    static inline const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
     //!< Number of degrees  of freedom per face
-    static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
+    static inline const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
     //!< Number of degrees  of freedom per volume
-    static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
+    static inline const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
 
-    static const uint16_type nLocalDof = convex_type::numPoints;
+    static inline const uint16_type nLocalDof = convex_type::numPoints;
 
-    static const uint16_type nDof = nLocalDof;
-    static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static inline const uint16_type nDof = nLocalDof;
+    static inline const uint16_type nNodes = nDof;
+    static inline const uint16_type nDofGrad = super::nDim*nDof;
+    static inline const uint16_type nDofHess = super::nDim*super::nDim*nDof;
 
     BoundaryAdaptedPolynomialSet()
         :
@@ -167,8 +167,8 @@ public PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType >
     typedef PolynomialSet<TensorisedBoundaryAdapted<Dim, Order, T>, PolySetType > super;
 public:
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type nOrder = Order;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type nOrder = Order;
 
     typedef BoundaryAdaptedPolynomialSet<Dim, Order, PolySetType, T, Hypercube> self_type;
     typedef self_type component_basis_type;
@@ -179,7 +179,7 @@ public:
     static const bool is_vectorial = polyset_type::is_vectorial;
     static const bool is_scalar = polyset_type::is_scalar;
     static const bool is_modal = true;
-    static const uint16_type nComponents = polyset_type::nComponents;
+    static inline const uint16_type nComponents = polyset_type::nComponents;
     typedef typename super::component_type component_type;
 
     typedef T value_type;
@@ -198,15 +198,15 @@ public:
 
 
     //!< Number of degrees of freedom per vertex
-    static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
+    static inline const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
     //!< Number of degrees  of freedom per edge
-    static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
+    static inline const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
     //!< Number of degrees  of freedom per face
-    static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
+    static inline const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
 
 
     //!< Number of degrees  of freedom per volume
-    static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
+    static inline const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
 
     /** mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
         mpl::identity<typename mpl::max<mpl::int_<0>,mpl::int_<(nOrder-1)*(nOrder-1)*(nOrder-1)> >::type >,
@@ -214,12 +214,12 @@ public:
     **/
 
     //!< Total number of degrees of freedom
-    static const uint16_type nLocalDof = convex_type::numPoints;
+    static inline const uint16_type nLocalDof = convex_type::numPoints;
 
-    static const uint16_type nDof = nLocalDof;
-    static const uint16_type nNodes = nDof;
-    static const uint16_type nDofGrad = super::nDim*nDof;
-    static const uint16_type nDofHess = super::nDim*super::nDim*nDof;
+    static inline const uint16_type nDof = nLocalDof;
+    static inline const uint16_type nNodes = nDof;
+    static inline const uint16_type nDofGrad = super::nDim*nDof;
+    static inline const uint16_type nDofHess = super::nDim*super::nDim*nDof;
 
     BoundaryAdaptedPolynomialSet()
         :

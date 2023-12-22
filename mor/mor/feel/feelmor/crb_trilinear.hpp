@@ -328,10 +328,10 @@ public:
     bool loadDB() override;
 
     //!
-    //! 
+    //!
     //!
     void loadDB( std::string const& filename, crb::load l ) override { super_crb::loadDB( filename, l ); }
-    
+
     //@}
 
 
@@ -1162,7 +1162,7 @@ template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::saveDB()
 {
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
     if ( ofs )
     {
@@ -1189,7 +1189,7 @@ CRBTrilinear<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    fs::ifstream ifs(db );
+    std::ifstream ifs(db );
 
     if ( ifs )
     {

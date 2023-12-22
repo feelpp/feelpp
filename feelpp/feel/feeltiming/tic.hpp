@@ -49,10 +49,11 @@ struct FEELPP_NO_EXPORT SecondBasedTimer
     {
         if ( Environment::isMasterRank() )
         {
+            int cols = (val.second < 15) ? val.second : 15;
             if ( !msg.empty() )
-                std::cout << std::setw(1+val.second) << "[" << msg << "] Time : " << val.first << "s\n";
+                std::cout << std::setw(1+cols) << "[" << msg << "] Time : " << val.first << "s\n";
             else
-                std::cout << std::setw(7+val.second) << "Time : " << val << "s\n";
+                std::cout << std::setw(7+cols) << "Time : " << val << "s\n";
         }
     }
     static inline time_point  time()

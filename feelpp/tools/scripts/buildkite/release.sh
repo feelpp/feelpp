@@ -12,7 +12,6 @@ source $(dirname $0)/common.sh
     
 
 build="$(basename "$0")"
-BRANCH=${BUILDKITE_BRANCH:-develop}
 VERSION=${FEELPP_VERSION}
 if [ -z ${TARGET:-""} ]; then
     TARGET=ubuntu:17.04

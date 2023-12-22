@@ -65,15 +65,15 @@ public:
 
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // function space magnetic-potential
     // typedef BasisPotentialType basis_magneticpotential_type;
     using basis_magneticpotential_type = Nedelec<0, NedelecKind::NED1>;
-    static const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
+    static inline const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_magneticpotential_type> > space_magneticpotential_type;
     typedef std::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_type element_magneticpotential_type;

@@ -111,7 +111,7 @@ OpusApp<ModelType,RM,Model>::run()
         boost::split( str, string_parameters, boost::is_any_of(" "), boost::token_compress_on );
         double user_parameter_size = str.size();
         double mu_size = user_mu_onefeel.size();
-        CHECK( user_parameter_size == mu_size )<<"[OpusApp] Error : parameters must have "<<mu_size<<" components and "<<user_parameter_size<<" have been given by the user \n";
+        CHECK( user_parameter_size == mu_size )<<"[OpusApp] Error : parameters must have "<<mu_size<<" components and "<<user_parameter_size<<" have been given by the user\n";
         for(int i=0; i<mu_size; i++)
         {
             double mu = boost::lexical_cast<double>( str[i] );
@@ -865,7 +865,7 @@ OpusApp<ModelType,RM,Model>::run()
                         if (crb->errorType() != 2)
                             Feel::cout << " (error estimation on this output : " << output_estimated_error << ")";
                         Feel::cout << std::endl;
-                        
+
                         printEntry( file_summary_of_simulations, mu, v );
                         printEntry( ostr, mu, v );
                         //file_summary_of_simulations.close();

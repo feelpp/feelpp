@@ -65,13 +65,13 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type M = 1;
-    static const uint16_type N = 1;
-    static const uint16_type O = 1;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type M = 1;
+    static inline const uint16_type N = 1;
+    static inline const uint16_type O = 1;
     static const bool is_transposed = transpose;
     static const bool is_diagonalized = diag;
-    static const uint16_type rank = Scalar<nDim>::rank;
+    static inline const uint16_type rank = Scalar<nDim>::rank;
 
     static const bool is_scalar = Scalar<nDim>::is_scalar;
     static const bool is_vectorial = Scalar<nDim>::is_vectorial;
@@ -104,14 +104,14 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type M = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >,
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type M = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >,
                              mpl::int_<1>, mpl::int_<nDim> >::type::value;
-    static const uint16_type N = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >, mpl::int_<nDim>, mpl::int_<1> >::type::value;
-    static const uint16_type O = 1;
+    static inline const uint16_type N = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >, mpl::int_<nDim>, mpl::int_<1> >::type::value;
+    static inline const uint16_type O = 1;
     static const bool is_transposed = transpose;
     static const bool is_diagonalized = diag;
-    static const uint16_type rank = Vectorial<nDim>::rank;
+    static inline const uint16_type rank = Vectorial<nDim>::rank;
 
     static const bool is_scalar = Vectorial<nDim>::is_scalar;
     static const bool is_vectorial = Vectorial<nDim>::is_vectorial;
@@ -143,13 +143,13 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type M = nDim;
-    static const uint16_type N = nDim;
-    static const uint16_type O = 1;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type M = nDim;
+    static inline const uint16_type N = nDim;
+    static inline const uint16_type O = 1;
     static const bool is_transposed = transpose;
     static const bool is_diagonalized = diag;
-    static const uint16_type rank = Tensor2<nDim>::rank;
+    static inline const uint16_type rank = Tensor2<nDim>::rank;
 
     static const bool is_scalar = Tensor2<nDim>::is_scalar;
     static const bool is_vectorial = Tensor2<nDim>::is_vectorial;
@@ -181,13 +181,13 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type M = nDim;
-    static const uint16_type N = nDim;
-    static const uint16_type O = nDim;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type M = nDim;
+    static inline const uint16_type N = nDim;
+    static inline const uint16_type O = nDim;
     static const bool is_transposed = transpose;
     static const bool is_diagonalized = diag;
-    static const uint16_type rank = Tensor3<nDim>::rank;
+    static inline const uint16_type rank = Tensor3<nDim>::rank;
 
     static const bool is_scalar = Tensor3<nDim>::is_scalar;
     static const bool is_vectorial = Tensor3<nDim>::is_vectorial;
@@ -219,10 +219,10 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Dim;
-    static const uint16_type M = _M;
-    static const uint16_type N = _N;
-    static const uint16_type O = _O;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type M = _M;
+    static inline const uint16_type N = _N;
+    static inline const uint16_type O = _O;
 
     static const bool is_scalar = M==1 && N==1 && O==1;
     static const bool is_vectorial = ((M>1 && N==1) || (M==1 && N>1)) && O == 1;
@@ -231,7 +231,7 @@ public:
 
     static const bool is_transposed = is_vectorial && N>1;
     static const bool is_diagonalized = false;
-    static const uint16_type rank = is_scalar? 0 : is_vectorial? 1 : is_tensor2? 2 : 3;
+    static inline const uint16_type rank = is_scalar? 0 : is_vectorial? 1 : is_tensor2? 2 : 3;
     //@}
 
     /** @name Typedefs
@@ -308,7 +308,7 @@ struct shape_op_samerank
                             Left, Right ) );
 
 
-    static const uint16_type nDim = Left::nDim;
+    static inline const uint16_type nDim = Left::nDim;
     static const bool is_diagonalized = Left::is_diagonalized && Right::is_diagonalized;
     static const bool is_transposed = Left::is_transposed && Right::is_transposed;
 
@@ -335,7 +335,7 @@ struct shape_op_samerank
 template<typename Left, typename Right>
 struct shape_op_id
 {
-    static const uint16_type nDim = Left::nDim;
+    static inline const uint16_type nDim = Left::nDim;
     static const bool is_diagonalized = Left::is_diagonalized && Right::is_diagonalized;
     static const bool is_transposed = Left::is_transposed && Right::is_transposed;
 

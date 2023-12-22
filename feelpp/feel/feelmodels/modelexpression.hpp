@@ -34,7 +34,7 @@ class FEELPP_EXPORT ModelExpression
 {
 public :
 
-    static const uint16_type expr_order = 2;
+    static inline const uint16_type expr_order = 2;
     typedef scalar_field_expression<expr_order> expr_scalar_type;
     typedef vector_field_expression<2,1,expr_order> expr_vectorial2_type;
     typedef vector_field_expression<3,1,expr_order> expr_vectorial3_type;
@@ -406,7 +406,7 @@ class FEELPP_EXPORT ModelExpressionScalar : private ModelExpression
 {
     typedef ModelExpression super_type;
 public :
-    static const uint16_type expr_order = super_type::expr_order;
+    static inline const uint16_type expr_order = super_type::expr_order;
     typedef typename super_type::expr_scalar_type expr_scalar_type;
 
     ModelExpressionScalar() = default;
@@ -439,7 +439,7 @@ class ModelExpressionMatrix : private ModelExpression
 {
     typedef ModelExpression super_type;
 public :
-    static const uint16_type expr_order = super_type::expr_order;
+    static inline const uint16_type expr_order = super_type::expr_order;
     typedef typename mpl::if_<mpl::bool_< M==2 && N==2 >,
                               typename super_type::expr_matrix22_type,
                               typename super_type::expr_matrix33_type>::type expr_matrix_type;

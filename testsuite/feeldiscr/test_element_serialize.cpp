@@ -136,7 +136,7 @@ TestElementSerialize<Dim,Order>::create_database( double meshSize )
     if ( !fs::exists( M_dbDirectory ) )
         fs::create_directories( M_dbDirectory );
 
-    fs::ofstream ofs ( this->dbPath() );
+    std::ofstream ofs ( this->dbPath() );
     CHECK( ofs ) << "can't write the db";
     boost::archive::text_oarchive oa( ofs );
     oa << *this;
@@ -155,7 +155,7 @@ TestElementSerialize<Dim,Order>::load_database()
     M_element = M_functionSpace->element();
 
 
-    fs::ifstream ifs( this->dbPath() );
+    std::ifstream ifs( this->dbPath() );
     CHECK( ifs ) << "can't read the db";
     boost::archive::text_iarchive ia( ifs );
     ia >> *this;
@@ -246,5 +246,3 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( MyElementSerializeCase, T, dim_types )
     compareDatabases( dbc, dbl );
 }
 BOOST_AUTO_TEST_SUITE_END()
-
-

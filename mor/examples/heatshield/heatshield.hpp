@@ -436,7 +436,7 @@ void HeatShield<Order>::initModel()
             std::string mshfile_complete = soption(_name="mshfile");
             auto pos = mshfile.find(".msh");
             mshfile.erase( pos , 4);
-            std::string filename = (boost::format(mshfile+"-np%1%.msh") %N ).str();
+            std::string filename = fmt::format("{}-np{}.msh", mshfile, N);
             if( !fs::exists( filename ) )
             {
                 super_type::partitionMesh( mshfile_complete, filename , 2 , 1 );
@@ -466,8 +466,8 @@ void HeatShield<Order>::initModel()
 
     if( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "Number of local dof " << this->Xh->nLocalDof() << "\n";
-        std::cout << "Number of dof " << this->Xh->nDof() << "\n";
+        std::cout << "[HeatShield<Order>::initModel()] Number of local dof " << this->Xh->nLocalDof() << "\n";
+        std::cout << "[HeatShield<Order>::initModel()] Number of dof " << this->Xh->nDof() << "\n";
     }
 
     surface = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
@@ -510,8 +510,6 @@ void HeatShield<Order>::initModel()
     mu_max << /* Bi_out*/0.5   ,  /*Bi_in*/0.1;
     this->Dmu->setMax( mu_max );
 
-    LOG(INFO) << "Number of dof " << this->Xh->nLocalDof() << "\n";
-
     assemble();
 
 
@@ -528,12 +526,12 @@ void HeatShield<Order>::assemble()
 
     if( boption(_name="do-not-use-operators-free") )
     {
-        this->M_Aq[0] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
-        this->M_Aq[1] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
-        this->M_Aq[2] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
-        this->M_Mq[0] = backend()->newMatrix( _test = this->Xh, _trial = this->Xh );
-        this->M_Fq[0][0] = backend()->newVector( this->Xh );
-        this->M_Fq[1][0] = backend()->newVector( this->Xh );
+        this->M_Aq[0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Aq[1] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Aq[2] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Mq[0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
+        this->M_Fq[0][0] = backend()->newVector( _test=this->Xh );
+        this->M_Fq[1][0] = backend()->newVector( _test=this->Xh );
         form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[0]) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
         form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[1]) = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
         form2(_test=this->Xh, _trial=this->Xh, _matrix=this->M_Aq[2]) = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
@@ -575,9 +573,9 @@ void HeatShield<Order>::assemble()
     //for scalarProduct
     auto M = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
     form2( _test=this->Xh, _trial=this->Xh, _matrix=M ) =
-        integrate( _range = elements( mesh ), _expr = gradt( u )*trans( grad( v ) ) ) +
-        integrate(_range =  markedfaces( mesh, "left" ),_expr =  0.01 * idt( u )*id( v ) ) +
-        integrate( _range = markedfaces( mesh, "gamma_holes" ), _expr = 0.001 * idt( u )*id( v ) )
+    integrate( _range=elements( mesh ),                   _expr=gradt( u )*trans( grad( v ) ) ) +
+    integrate( _range=markedfaces( mesh, "left" ),        _expr=0.01 * idt( u )*id( v ) ) +
+    integrate( _range=markedfaces( mesh, "gamma_holes" ), _expr=0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( M );
 

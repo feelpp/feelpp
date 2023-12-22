@@ -5,8 +5,8 @@
 int main( int argc, char** argv )
 {
     using namespace Feel;
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=opusapp_options("thermalbuilding")
+    Feel::Environment env( _argc = argc, _argv = argv,
+                           _desc = opusapp_options("thermalbuilding")
                            .add(crbOptions())
                            .add(crbSEROptions())
                            .add(makeThermalBuildingOptions())
@@ -16,7 +16,7 @@ int main( int argc, char** argv )
                            .add(backend_options("backend-dual"))
                            .add(backend_options("backend-l2"))
                            .add(bdf_options("ThermalBuilding")),
-                           _about=makeThermalBuildingAbout( "thermalbuilding" ) );
+                           _about = makeThermalBuildingAbout( "thermalbuilding" ) );
 
     Feel::OpusApp<Feel::ThermalBuilding > app;
     app.run();
