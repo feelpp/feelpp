@@ -43,8 +43,12 @@ public:
         M_distanceMin( dmin ),
         M_distanceMax( dmax )
         {}
+    BVHRay() : BVHRay(vec_t::Zero(),vec_t::Zero()) {}
+
     BVHRay( BVHRay const& ) = default;
     BVHRay( BVHRay &&) = default;
+    BVHRay& operator=( BVHRay && ) = default;
+    BVHRay& operator=( BVHRay const& ) = default;
 
     vec_t const& origin() const noexcept { return M_origin; }
     vec_t const& dir() const noexcept { return M_dir; }
@@ -61,8 +65,35 @@ public:
     }
 #endif
 private:
+    friend class boost::serialization::access;
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
+        {
+            ar & M_origin;
+            ar & M_dir;
+            ar & M_distanceMin;
+            ar & M_distanceMax;
+        }
+private:
     vec_t M_origin, M_dir;  // ray origin and dir
     double M_distanceMin, M_distanceMax;
+};
+
+template <int RealDim>
+class BVHRaysDistributed
+{
+public:
+    using ray_type = BVHRay<RealDim>;
+    BVHRaysDistributed() = default;
+    BVHRaysDistributed( BVHRaysDistributed && ) = default;
+    std::vector<ray_type> const& rays() const { return M_rays; }
+    //! return number of local ray
+    std::size_t numberOfLocalRay() const { return M_rays.size(); }
+
+    template <typename T>
+    void push_back( T && ray ) { M_rays.push_back( std::forward<T>( ray ) ); }
+private:
+    std::vector<ray_type> M_rays;
 };
 
 struct BVHEnum
@@ -71,10 +102,11 @@ struct BVHEnum
 };
 //! @brief BVH base class
 template <typename MeshEntityType>
-class BVH
+class BVH : public CommObject
 {
 public:
     using mesh_entity_type = std::decay_t<MeshEntityType>;
+    using index_type = typename mesh_entity_type::index_type;
     static constexpr uint16_type nDim = mesh_entity_type::nDim;
     static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
     using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
@@ -119,9 +151,11 @@ public:
     //! @brief Data returned after apply an intersection with a ray
     struct BVHRayIntersectionResult
     {
-        BVHRayIntersectionResult( BVHPrimitiveInfo const& primitive, double dist )
+        BVHRayIntersectionResult() = default;
+        BVHRayIntersectionResult( rank_type processId, index_type primitiveId, double dist )
             :
-            M_primitive( primitive ),
+            M_processId( processId ),
+            M_primitiveId( primitiveId ),
             M_distance( dist )
             {}
         BVHRayIntersectionResult( BVHRayIntersectionResult && ) = default;
@@ -129,26 +163,170 @@ public:
         BVHRayIntersectionResult& operator=( BVHRayIntersectionResult && ) = default;
         BVHRayIntersectionResult& operator=( BVHRayIntersectionResult const& ) = default;
 
-        BVHPrimitiveInfo const& primitive() const { return M_primitive.get(); }
+        rank_type processId() const noexcept { return M_processId; }
+        index_type primitiveId() const noexcept { return M_primitiveId; }
         double distance() const noexcept { return M_distance; }
     private:
-        std::reference_wrapper<BVHPrimitiveInfo const> M_primitive;
-        double M_distance;
+        friend class boost::serialization::access;
+        template <class Archive>
+        void serialize( Archive& ar, const unsigned int version )
+            {
+                ar & M_processId;
+                ar & M_primitiveId;
+                ar & M_distance;
+            }
+    private:
+        rank_type M_processId = invalid_v<rank_type>;
+        index_type M_primitiveId = invalid_v<index_type>;
+        double M_distance = std::numeric_limits<double>::max();
         //std::array<double,2> M_coordinates;
     };
     using rayintersection_result_type = BVHRayIntersectionResult;
 
-    BVH( BVHEnum::Quality quality = BVHEnum::Quality::High )
+    enum class IntersectContext{ anyHint=0, closest, all };
+
+    BVH( BVHEnum::Quality quality = BVHEnum::Quality::High, worldcomm_ptr_t worldComm = Environment::worldCommPtr() )
         :
+        CommObject( worldComm ),
         M_quality( quality )
         {}
     BVH( BVH && ) = default;
     BVH( BVH const& ) = default;
     virtual ~BVH() {}
 
+    //! return all primitive info
+    std::vector<BVHPrimitiveInfo> const& primitiveInfo() const noexcept { return M_primitiveInfo; }
+
+    //! return primitive info at index i
+    BVHPrimitiveInfo const& primitiveInfo( index_type i ) const { return M_primitiveInfo.at( i ); }
+
     //! compute intersection(s) with a ray from the BVH built and return a vector of intersection result
-    virtual std::vector<rayintersection_result_type> intersect( ray_type const& rayon, bool useRobustTraversal = true ) = 0;
+    template<typename... Ts>
+    auto intersect( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && ray = args.get(_ray);
+            bool useRobustTraversal = args.get_else(_robust,true);
+            IntersectContext ctx = args.get_else(_context,IntersectContext::closest);
+            bool parallel = args.get_else(_parallel,this->worldComm().size() > 1);
+
+            bool closestOnly = ctx == IntersectContext::closest;
+            using napp_ray_type = std::decay_t<decltype(ray)>;
+            if constexpr( std::is_same_v<BVHRaysDistributed<nRealDim>,napp_ray_type> ) // case rays distributed on process
+            {
+                // WARNING: this algo is not good (all_gather of rays then all run bvh), just a quick version for test
+                auto const& localRays = ray.rays();
+                std::vector<int> resLocalSize( this->worldComm().size() );
+                mpi::all_gather( this->worldComm(), (int)localRays.size(), resLocalSize );
+
+                std::vector<ray_type> raysGathered;
+                if ( this->worldComm().isMasterRank() )
+                {
+                    int gatherRaySize = std::accumulate( resLocalSize.begin(), resLocalSize.end(), 0 );
+                    raysGathered.resize( gatherRaySize );
+                }
+                mpi::gatherv( this->worldComm(), localRays, raysGathered.data(), resLocalSize, this->worldComm().masterRank() );
+                mpi::broadcast( this->worldComm(), raysGathered, this->worldComm().masterRank() );
+
+                auto intersectGlobal = this->intersect(_ray=raysGathered,_robust=useRobustTraversal,_context=ctx,_parallel=true);
+
+                std::vector<std::vector<rayintersection_result_type>> res;
+                res.resize( ray.numberOfLocalRay() );
+                std::size_t startRayIndexInThisProcess = 0;
+                for ( int p=0;p<this->worldComm().rank();++p )
+                    startRayIndexInThisProcess += resLocalSize[p];
+                std::copy_n(intersectGlobal.cbegin()+startRayIndexInThisProcess, localRays.size(), res.begin());
+                return res;
+            }
+            else if constexpr ( is_iterable_v<std::decay_t<decltype(ray)>> ) // case rays container are identical all on process (TODO: internal case)
+            {
+                std::vector<std::vector<rayintersection_result_type>> resSeq;
+                resSeq.reserve( ray.size() );
+                for ( auto const& currentRay : ray )
+                {
+                    auto currentResSeq = this->intersectSequential( currentRay,useRobustTraversal );
+                    if ( closestOnly && currentResSeq.size() > 1 )
+                        currentResSeq.resize(1);
+                    resSeq.push_back( std::move( currentResSeq ) );
+                }
+                if ( !parallel )
+                    return resSeq;
+
+                mpi::all_reduce( this->worldComm(), mpi::inplace( resSeq ), [](auto const& x, auto const& y) -> std::vector<std::vector<rayintersection_result_type>> {
+                        std::size_t retSize = x.size();
+                        std::vector<std::vector<rayintersection_result_type>> ret;
+                        DCHECK( x.size() == y.size() ) << "not same size x:" << x.size() << " y:" << y.size();
+                        ret.reserve( retSize );
+                        for ( int k = 0; k < retSize ; ++k )
+                        {
+                            auto const& a = x[k];
+                            auto const& b = y[k];
+                            if ( a.empty() )
+                                ret.push_back( b );
+                            else if ( b.empty() )
+                                ret.push_back( a );
+                            else
+                            {
+                                // WARNING only return one intersection (closest or anyhint)
+                                if ( a.front().distance() < b.front().distance() )
+                                    ret.push_back( a );
+                                else
+                                    ret.push_back( b );
+                            }
+                        }
+                        return ret;
+                    } );
+                return resSeq;
+            }
+            else // only one ray (all process should have the same ray if parallel=true)
+            {
+                auto resSeq = this->intersectSequential( ray,useRobustTraversal );
+                if ( closestOnly && resSeq.size() > 1 )
+                    resSeq.resize(1);
+                if ( !parallel )
+                    return resSeq;
+
+#if 1
+                mpi::all_reduce( this->worldComm(), mpi::inplace( resSeq ), [](auto const& a, auto const& b) -> std::vector<rayintersection_result_type> {
+                        if ( a.empty() )
+                            return b;
+                        else if ( b.empty() )
+                            return a;
+                        else
+                        {
+                            // WARNING only return one intersection (closest or anyhint)
+                            if ( a.front().distance() < b.front().distance() )
+                                return { a.front() };
+                            else
+                                return { b.front() };
+                        }
+                    } );
+                return resSeq;
+#else
+                std::vector<int> resLocalSize( this->worldComm().size() );
+                mpi::gather( this->worldComm(), (int)resSeq.size(), resLocalSize, this->worldComm().masterRank() );
+                std::vector<rayintersection_result_type> resPar;
+                if ( this->worldComm().isMasterRank() )
+                {
+                    int gatherOutputSize = std::accumulate( resLocalSize.begin(), resLocalSize.end(), 0 );
+                    resPar.resize( gatherOutputSize );
+                }
+                mpi::gatherv( this->worldComm(), resSeq, resPar.data(), resLocalSize, this->worldComm().masterRank() );
+                if ( this->worldComm().isMasterRank() )
+                {
+                    std::sort( resPar.begin(), resPar.end(), [](auto const& res0,auto const& res1){ return res0.distance() < res1.distance(); } );
+                    if ( closestOnly && resPar.size() > 1 )
+                        resPar.resize(1);
+                }
+                mpi::broadcast( this->worldComm(), resPar, this->worldComm().masterRank() );
+                return resPar;
+#endif
+            }
+        }
 protected:
+
+    virtual std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, bool useRobustTraversal = true ) = 0;
+
     template <typename RangeType>
     void
     updateForUse( RangeType const& range )
@@ -189,7 +367,7 @@ public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
 
-    BVH_ThirdParty( BVHEnum::Quality quality ) : super_type( quality ) {}
+    BVH_ThirdParty( BVHEnum::Quality quality, worldcomm_ptr_t worldComm ) : super_type( quality,worldComm ) {}
     BVH_ThirdParty( BVH_ThirdParty && ) = default;
 
     template <typename RangeType>
@@ -252,8 +430,9 @@ public:
             }
         }
 
+private:
 
-    std::vector<rayintersection_result_type> intersect( ray_type const& ray, bool useRobustTraversal = true ) override
+    std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, bool useRobustTraversal = true ) override
         {
             auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
@@ -265,7 +444,6 @@ public:
             else
                 return this->intersectImpl<false>( rayBackend );
         };
-private:
 
     template <bool UseRobustTraversal>
     std::vector<rayintersection_result_type> intersectImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend )
@@ -277,7 +455,7 @@ private:
             bvh::v2::SmallStack<typename backend_bvh_type::Index, stack_size> stack;
             std::vector<rayintersection_result_type> res;
             M_bvh->template intersect<isAnyHit, UseRobustTraversal>( rayBackend, M_bvh->get_root().index, stack,
-                                                                     [&] (std::size_t begin, std::size_t end) {
+                                                                     [this,&res,&rayBackend] (std::size_t begin, std::size_t end) {
                                                                          std::size_t previousResultSize = res.size();
                                                                          for (std::size_t i = begin; i < end; ++i)
                                                                          {
@@ -291,7 +469,7 @@ private:
                                                                                  if (auto hit = M_precomputeTriangle[j].intersect(rayBackend))
                                                                                  {
                                                                                      //std::tie(u, v) = *hit;
-                                                                                     res.push_back( rayintersection_result_type{this->M_primitiveInfo[M_bvh->prim_ids[i]], rayBackend.tmax} );
+                                                                                     res.push_back( rayintersection_result_type(this->worldComm().rank(), M_bvh->prim_ids[i], rayBackend.tmax) );
                                                                                      if constexpr ( isAnyHit )
                                                                                           return true;
                                                                                  }
@@ -490,7 +668,7 @@ public:
         vector_realdim_type M_bounds_min, M_bounds_max;
     };
 
-    BVH_InHouse() = default;
+    BVH_InHouse( worldcomm_ptr_t worldComm ) : super_type( BVHEnum::Quality::High, worldComm ) {}
 
     template <typename RangeType>
     void
@@ -502,16 +680,18 @@ public:
             this->buildTree();
         }
 
-
+private:
     // Verify if the ray intersects the whole bounding structure
     // Returns the integer corresponding to the intersected element
     // If no element is intersected, return -1
-    std::vector<rayintersection_result_type> intersect( ray_type const& rayon, bool useRobustTraversal = true ) override
+    std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, bool useRobustTraversal = true ) override
         {
             M_intersected_leaf = {};
             M_lengths = {};
             if ( !M_rootNode )
                 buildTree();
+            if ( this->M_primitiveInfo.empty() )
+                return {};
 
             std::vector<rayintersection_result_type> res;
             if ( M_rootNode->checkIntersection(rayon) )
@@ -521,13 +701,10 @@ public:
             if ( !M_intersected_leaf.empty() )
             {
                 int argmin_lengths = std::distance(M_lengths.begin(), std::min_element(M_lengths.begin(), M_lengths.end()));
-                //int closer_intersection_element = M_intersected_leaf[argmin_lengths];
-                res.push_back( rayintersection_result_type{this->M_primitiveInfo[ M_intersected_leaf[argmin_lengths] ], M_lengths[argmin_lengths] } );
-                //return closer_intersection_element;
+                res.push_back( rayintersection_result_type(this->worldComm().rank(), M_intersected_leaf[argmin_lengths], M_lengths[argmin_lengths] ) );
             }
             return res;
         }
-private:
 
     void buildTree()
         {
@@ -538,17 +715,16 @@ private:
 
             std::stack<std::tuple<BVHNode*,int,int,int>> stack;
             stack.push( std::make_tuple(M_rootNode.get(),0,0,this->M_primitiveInfo.size()) );
+            // TODO case only one 1 element
             while ( !stack.empty() )
             {
                 auto [currentNode,cut_dimension,start_index_primitive,end_index_primitive] = stack.top();
                 stack.pop();
 
                 int nPrimitives = end_index_primitive - start_index_primitive;
-                DCHECK( nPrimitives>0 ) << nPrimitives;
+                auto [bound_min_node,bound_max_node] = nPrimitives > 0 ? this->bounds( start_index_primitive,end_index_primitive ) : std::make_tuple( vector_realdim_type{}, vector_realdim_type{});
 
-                auto [bound_min_node,bound_max_node] = this->bounds( start_index_primitive,end_index_primitive );
-
-                if ( nPrimitives == 1 )
+                if ( nPrimitives <= 1 )
                 {
                     // Create a leaf, since there is only one primitive in the list
                     int firstPrimOffset = M_orderedPrims.size();
@@ -605,6 +781,16 @@ private:
     void traverse_stackless( BVH_InHouse::BVHNode * tree, ray_type const& rayon )
         {
             auto current_node = M_rootNode->nearChild(rayon);
+            if ( !current_node ) // case where root is leaf
+            {
+                auto [has_intersected_leaf,distance] = M_rootNode->checkLeafIntersection(rayon,this->M_primitiveInfo);
+                if ( has_intersected_leaf )
+                {
+                    M_intersected_leaf.push_back(M_rootNode->firstPrimOffset());
+                    M_lengths.push_back(distance);
+                }
+                return;
+            }
             char state = 'P'; // the current node is being traversed from its Parent ('P')
 
             while(true)
@@ -715,6 +901,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     using mesh_entity_type = std::remove_const_t<entity_range_t<std::decay_t<decltype(range)>>>;
     std::string const& kind = args.get_else(_kind, mesh_entity_type::nRealDim == 3 ? "third-party" : "in-house");
     BVHEnum::Quality quality = args.get_else(_quality, BVHEnum::Quality::High );
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr()); // TODO : use default worldcomm from range
 
     using bvh_type = BVH<mesh_entity_type>;
     std::unique_ptr<bvh_type> bvh;
@@ -722,7 +909,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     if ( kind == "in-house" )
     {
         using bvh_inhouse_type = BVH_InHouse<mesh_entity_type>;
-        auto bvhInHouse = std::make_unique<bvh_inhouse_type>();
+        auto bvhInHouse = std::make_unique<bvh_inhouse_type>(worldcomm);
         bvhInHouse->updateForUse(range);
         bvh = std::move( bvhInHouse );
     }
@@ -730,7 +917,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     {
         if constexpr ( mesh_entity_type::nRealDim != 3 )
             throw std::invalid_argument("third-party only implement with triangle in 3D");
-        auto bvhThirdParty = std::make_unique<BVH_ThirdParty<mesh_entity_type>>( quality );
+        auto bvhThirdParty = std::make_unique<BVH_ThirdParty<mesh_entity_type>>( quality, worldcomm );
         bvhThirdParty->updateForUse(range);
         bvh = std::move( bvhThirdParty );
     }
