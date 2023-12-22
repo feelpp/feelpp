@@ -75,7 +75,7 @@ void defToolbox(py::module &m)
         .def( "exportResults", &toolbox_t::exportResults, "export results" )
         .def( "updateMovingMesh", &toolbox_t::updateMovingMesh, "update the moving mesh by using displacement imposed given" )
         .def(
-            "updateDisplacementImposed", []( std::shared_ptr<toolbox_t>& t, ale_map_element_t const& d, elements_reference_wrapper_t<mesh_ptr_t> const& r )
+            "updateDisplacementImposed", []( std::shared_ptr<toolbox_t>& t, ale_map_element_t const& d, Range<mesh_ptr_t,MESH_ELEMENTS> const& r )
             {
                 //t->updateDisplacementImposed( print(idv(d),"disp: "), r ); 
                 t->updateDisplacementImposed( idv(d), r ); 
