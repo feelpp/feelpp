@@ -14,6 +14,8 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang",
                 "FEELPP_STD_CPP": "17",
                 "FEELPP_ENABLE_TOOLBOXES": "ON",
                 "FEELPP_ENABLE_MOR": "ON",
