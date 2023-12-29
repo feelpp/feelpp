@@ -29,7 +29,7 @@
 #ifndef FEELPP_HEATSHIELD_HPP
 #define FEELPP_HEATSHIELD_HPP 1
 
-#include <boost/timer.hpp>
+
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
