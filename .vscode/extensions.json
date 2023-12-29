@@ -7,6 +7,8 @@
 		"formulahendry.github-actions",
 		"ms-vscode.cmake-tools",
 		"ms-vscode.cpptools",
+		"ms-vscode-remote.remote-containers",
+		"ms-vscode-remote.vscode-remote-extensionpack",
 		"bbenoist.doxygen",
 		"ms-python.python",
 		"github.vscode-pull-request-github",
