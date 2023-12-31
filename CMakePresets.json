@@ -22,9 +22,11 @@
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "ON",
-                "FEELPP_USE_EXTERNAL_EIGEN3": "OFF"
+                "FEELPP_USE_EXTERNAL_EIGEN3": "OFF",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE"
             },
             "environment": {
+                "LDFLAGS": "-Wl,--copy-dt-needed-entries",
                 "NINJA_STATUS": "[run %r|beg %s|fin %f|tot %t|rate %o|time %e]:"
             },
             "vendor": {
@@ -560,6 +562,12 @@
         {
             "name": "release-cmake",
             "configurePreset": "release-cmake",
+            "configuration": "Release",
+            "inherits": "default"
+        },
+        {
+            "name": "release-clang-cmake",
+            "configurePreset": "release-clang-cmake",
             "configuration": "Release",
             "inherits": "default"
         },
