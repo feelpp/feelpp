@@ -1991,7 +1991,7 @@ template <typename Shape, typename T, int Tag, typename IndexT>
 void Mesh<Shape, T, Tag, IndexT>::removeFacesFromBoundary( std::initializer_list<uint16_type> markers )
 {
     std::for_each( markers.begin(), markers.end(),
-                   [=,this]( uint16_type marker ) {
+                   [this]( uint16_type marker ) {
                        auto range = markedfaces( this->shared_from_this(), boost::any( marker ) );
                        LOG( INFO ) << "removing " << nelements( range ) << " faces marked " << marker << " from boundary faces\n";
 
