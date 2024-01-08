@@ -88,10 +88,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_timeSteppingUseMixedFormulation = false;
     M_genAlpha_alpha_m=1.0;
     M_genAlpha_alpha_f=1.0;
+
+    M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
+    M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
+
+
     if ( M_timeStepping == "Newmark" )
     {
         M_genAlpha_alpha_m=1.0;
         M_genAlpha_alpha_f=1.0;
+        M_genAlpha_gamma = doption(_name="ts.newmark.gamma",_prefix=this->prefix());
+        M_genAlpha_beta = doption(_name="ts.newmark.beta",_prefix=this->prefix());
+        std::cout << fmt::format("Newmark gamma : {}, beta: {}", M_genAlpha_gamma, M_genAlpha_beta) << std::endl;
     }
     else if ( M_timeStepping == "Generalized-Alpha" )
     {
@@ -108,8 +116,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     }
     else CHECK( false ) << "time stepping not supported : " << M_timeStepping << "\n";
 
-    M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
-    M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
+    //M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
+    //M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
 
     M_useMassMatrixLumped = false;
 
@@ -684,6 +692,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     {
         if ( M_timeStepping == "Newmark" )
         {
+            
+            double gamma = 0;
+            double beta = 0;
+            gamma = doption(_prefix=this->prefix(),_name="ts.newmark.gamma");
+            beta =  doption(_prefix=this->prefix(),_name="ts.newmark.beta");
+            std::cout << fmt::format("Newmark gamma : {}, beta: {}", gamma, beta) << std::endl;
+            
+
             M_timeStepNewmark = newmark( _space=M_XhDisplacement,
                                          _name="displacement"+suffixName,
                                          _prefix=this->prefix(),

@@ -310,6 +310,9 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "struct solver")
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+        ( prefixvm( prefix, "ts.newmark.gamma" ).c_str(), Feel::po::value<double>()->default_value( 0.5 ), "newmark gamma" )
+        ( prefixvm( prefix, "ts.newmark.beta" ).c_str(), Feel::po::value<double>()->default_value( 0.25 ), "newmark beta" )
+
 
         //(prefixvm(prefix,"time-rho").c_str(), Feel::po::value< double >()->default_value(0.8), " Generalized-Alpha parameter")
 

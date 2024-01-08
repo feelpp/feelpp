@@ -288,6 +288,8 @@ using space_path = NA::named_argument_t<struct space_path_tag>;
 using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
 using min_theta = NA::named_argument_t<struct min_theta_tag>;
 using forceRelaxation = NA::named_argument_t<struct forceRelaxation_tag>;
+using newmark_gamma = NA::named_argument_t<struct newmark_gamma_tag>;
+using newmark_beta = NA::named_argument_t<struct newmark_beta_tag>;
 
 using use_tbb = NA::named_argument_t<struct use_tbb_tag>;
 using use_harts = NA::named_argument_t<struct use_harts_tag>;
@@ -588,6 +590,8 @@ inline constexpr auto& _space_path = NA::identifier<na::space_path>;
 inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;
 inline constexpr auto& _min_theta = NA::identifier<na::min_theta>;
 inline constexpr auto& _forceRelaxation = NA::identifier<na::forceRelaxation>;
+inline constexpr auto& _newmark_gamma = NA::identifier<na::newmark_gamma>;
+inline constexpr auto& _newmark_beta = NA::identifier<na::newmark_beta>;
 
 inline constexpr auto& _use_tbb = NA::identifier<na::use_tbb>;
 inline constexpr auto& _use_harts = NA::identifier<na::use_harts>;

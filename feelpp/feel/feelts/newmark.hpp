@@ -186,6 +186,11 @@ public:
     double gamma() const { return M_gamma; }
     double beta() const { return M_beta; }
 
+    // Set the coefficients \f$ \gamma \f$ and \f$ \beta \f$ of the time newmark discretization
+    void setGamma(double gamma) { M_gamma = gamma; }
+    void setBeta(double beta) {M_beta = beta; }
+    
+
 
     double polyDerivCoefficient() const { return this->polySecondDerivCoefficient(); }
     double polyFirstDerivCoefficient() const
@@ -766,10 +771,13 @@ auto newmark( Ts && ... v )
     auto && space = args.get(_space);
     po::variables_map const& vm = args.get_else(_vm,Environment::vm());
     std::string const& prefix = args.get_else(_prefix,"");
+    std::cout << "Prefix : " << prefix << std::endl;
     std::string const& name = args.get_else(_name,"newmark");
     double initial_time = args.get_else_invocable( _initial_time, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.time-initial",_vm=vm); } );
     double final_time = args.get_else_invocable( _final_time, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.time-final",_vm=vm); } );
     double time_step = args.get_else_invocable( _time_step, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.time-step",_vm=vm); } );
+    double gamma = args.get_else_invocable( _newmark_gamma, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.newmark.gamma",_vm=vm); } );
+    double beta = args.get_else_invocable( _newmark_beta, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.newmark.beta",_vm=vm); } );
     bool steady = args.get_else_invocable( _steady, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.steady",_vm=vm); } );
     bool restart = args.get_else_invocable( _restart, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.restart",_vm=vm); } );
     std::string const& restart_path = args.get_else_invocable( _restart_path, [&prefix,&vm](){ return soption(_prefix=prefix,_name="ts.restart.path",_vm=vm); } );
@@ -778,10 +786,14 @@ auto newmark( Ts && ... v )
     int freq = args.get_else_invocable( _freq, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="ts.save.freq",_vm=vm); } );
     std::string const& format = args.get_else_invocable( _format, [&prefix,&vm](){ return soption(_prefix=prefix,_name="ts.file-format",_vm=vm); } );
     bool rank_proc_in_files_name = args.get_else_invocable( _rank_proc_in_files_name, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.rank-proc-in-files-name",_vm=vm); } );
-
+     
     using _space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
     auto thenewmark = std::make_shared<Newmark<_space_type>>( space,name,prefix );
     thenewmark->setTimeInitial( initial_time );
+    thenewmark->setGamma(gamma);
+    thenewmark->setBeta(beta);
+    std::cout << fmt::format("Newmark gamma : {}, beta: {}", gamma, beta) << std::endl;
+    std::cout << fmt::format("Newmark gamma : {}, beta: {}", thenewmark->gamma(), thenewmark->beta()) << std::endl;
     thenewmark->setTimeFinal( final_time );
     thenewmark->setTimeStep( time_step );
     thenewmark->setSteady( steady );
