@@ -191,3 +191,4 @@ mor/examples/heat3d/heat3dapp.cpp
 **/feelppdb
 conftest.o
 python/notebooks/feelpp-python/
+install/
