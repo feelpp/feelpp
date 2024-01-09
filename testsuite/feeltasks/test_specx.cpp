@@ -1271,7 +1271,6 @@ BOOST_AUTO_TEST_CASE( test_specx_19 )
     std::vector<double> valuesVec(size,0.0);
     int deltaTimeSleepBetweenTasks=200000; //break time between tasks in order to better see the graphic representation.
 
-
     runtime.task(
             SpWrite(valueS),
                 [valueA](double& s) -> bool {
@@ -1335,11 +1334,93 @@ BOOST_AUTO_TEST_CASE( test_specx_19 )
     //We generate an Svg trace of the execution
     runtime.generateTrace("test_specx_19.svg");   
     
-    //std::cout<<"PI Value= "<<integralValue<<"\n";
-    BOOST_MESSAGE("[INFO SPECX] : Value S= "<<valueS<<"\n");
-    
+    BOOST_MESSAGE("[INFO SPECX] : Value S= "<<valueS<<"\n"); 
 
-    //std::cout<<"[INFO SPECX] : Value S= "<<valueS<<"\n";
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T19> in ms since start :"<<run_time.count()<<"\n");
+
+}
+
+
+
+
+BOOST_AUTO_TEST_CASE( test_specx_20 )
+{
+    //Demo to see the average time to insert a task with pressure 
+    
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T20>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    //int nbThreads = std::min(96,SpUtils::DefaultNumThreads());
+    //int nbThreads = 6;
+    int nbThreads = SpUtils::DefaultNumThreads();
+    SpRuntime runtime(nbThreads);
+    std::vector<int> valuesVec(nbThreads,0);
+    
+    int initVal = 1;
+    int nVal=0;
+    int nbLoops=1;
+    int deltaTimeSleepBetweenTasks=10000; //break time between tasks in order to better see the graphic representation.
+    bool QViewInfo=false;
+    
+    small_vector<SpAbstractTaskWithReturn<double>::SpTaskViewer> elapsed;
+    elapsed.reserve(nbThreads*nbLoops);
+    for(int idxLoop = 0 ; idxLoop < nbLoops ; ++idxLoop){
+        for(int idx = 0 ; idx < nbThreads; ++idx){
+            SpTimer timerTask;
+            elapsed.emplace_back(     
+                runtime.task(SpRead(idx),SpWrite(valuesVec.at(idx)),
+                    [timerTask](const int& id,int& writeValParam) mutable -> double {
+                        timerTask.stop();
+                        usleep(1000);
+                        writeValParam=sched_getcpu(); //returns the processor number on which the calling process is currently running.
+                        return timerTask.getElapsed();
+                    }
+                )
+            );
+        }
+        runtime.waitAllTasks();
+        usleep(deltaTimeSleepBetweenTasks); 
+    }
+
+    double MeanTime = 0.0;
+    int k=0;
+    for(const SpAbstractTaskWithReturn<double>::SpTaskViewer& dt : elapsed) {
+        if (QViewInfo) { std::cout<<"[INFO SPECX] : ["<<k<<"] dtime = "<<dt.getValue()<<" Num CPU="<<valuesVec[k]<<"\n"; }
+        k++;
+        MeanTime += dt.getValue();
+    }
+    MeanTime=MeanTime/double(nbThreads*nbLoops);
+    
+    double Variance=0.0;  
+    for(const SpAbstractTaskWithReturn<double>::SpTaskViewer& dt : elapsed) {
+        Variance+=(dt.getValue()-MeanTime)*(dt.getValue()-MeanTime);    
+    }
+    Variance=Variance/double(nbThreads*nbLoops);
+
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_20.dot", true);
+    
+    //We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_20.svg");   
+    
+    BOOST_MESSAGE("[INFO SPECX] : Value= "<<MeanTime<<"\n");    
+    BOOST_MESSAGE("[INFO SPECX] : Variance= "<<Variance<<"\n");   
+
+    if (QViewInfo) {
+        std::cout<<"[INFO SPECX] : nbThreads= "<<nbThreads<<"\n";
+        std::cout<<"[INFO SPECX] : Mean= "<<MeanTime<<"\n";
+        std::cout<<"[INFO SPECX] : Variance= "<<Variance<<"\n";
+        std::cout<<"[INFO SPECX] : Ecart-Type= "<<std::sqrt(Variance)<<"\n";
+    }
 
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
