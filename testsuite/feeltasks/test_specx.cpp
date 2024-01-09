@@ -754,8 +754,8 @@ BOOST_AUTO_TEST_CASE( test_specx_11 )
     int NumThreads = std::min(6,SpUtils::DefaultNumThreads());
     SpRuntime runtime(NumThreads);
     std::atomic<int> initVal(0);
-    int nbTh=3;
-    int val0=20;
+    int nbTh=4;
+    int val0=5;
     for(int idxTh = 0 ; idxTh < nbTh; ++idxTh){
         runtime.task(SpParallelWrite(initVal),
             [&](std::atomic<int>& initValParam){
@@ -763,18 +763,19 @@ BOOST_AUTO_TEST_CASE( test_specx_11 )
                 //val0++;
                 //std::cout<<idxTh<<" "<<initValParam<<"...."<<val0<<"\n";
                 while(initValParam != nbTh){
-                    usleep(60000); //<== simply to see the task boxes better on the graph.
+                    usleep(1000); //<== simply to see the task boxes better on the graph.
                 } 
-               usleep(1000);  //<== simply to see the task boxes better on the graph.
+               usleep(2000);  //<== simply to see the task boxes better on the graph.
             }).setTaskName("OpPW("+std::to_string(idxTh)+")");
 
-        runtime.task(SpRead(val0),
-            [&](const int& valParam0)
+        runtime.task(SpParallelWrite(val0),
+            [&](int& valParam0)
             {
-                usleep(20000); //<== simply to see the task boxes better on the graph.
+                valParam0++;
+                usleep(valParam0*1000); //<== simply to see the task boxes better on the graph.
                 //...
                 //std::cout<<"- val0="<<valParam0<<"\n";
-            }).setTaskName("OpR("+std::to_string(idxTh)+")");
+            }).setTaskName("OpPW("+std::to_string(idxTh)+")");
     }
 
     //We are waiting for all tasks to complete
@@ -1231,7 +1232,7 @@ BOOST_AUTO_TEST_CASE( test_specx_18 )
     promise1.set_value(0);
 
 
-     //We are waiting for all tasks to complete
+    //We are waiting for all tasks to complete
     runtime.waitAllTasks();
 
     //We stop the completion of all tasks.
@@ -1247,11 +1248,105 @@ BOOST_AUTO_TEST_CASE( test_specx_18 )
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
 	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T18> in ms since start :"<<run_time.count()<<"\n");
-
-
-
 }
 
+
+
+
+BOOST_AUTO_TEST_CASE( test_specx_19 )
+{
+    //Demo to see communications between tasks and see the dependencies
+    
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T19>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    int nbThreads = std::min(6,SpUtils::DefaultNumThreads());
+    SpRuntime runtime(nbThreads);
+
+    double valueA=1.0;
+    double valueS=0;
+    double valueS1=0;
+    double valueS2=0;
+    int size=6;
+    std::vector<double> valuesVec(size,0.0);
+    int deltaTimeSleepBetweenTasks=200000; //break time between tasks in order to better see the graphic representation.
+
+
+    runtime.task(
+            SpWrite(valueS),
+                [valueA](double& s) -> bool {
+                    s=valueA;
+                    usleep(100000);
+                    return true;
+                }
+            ).setTaskName("Op(1)");
+
+    usleep(deltaTimeSleepBetweenTasks); //break time 
+ 
+
+    for(int k1 = 0 ; k1 < size ; ++k1){
+        int threadid = k1;
+        runtime.task(SpRead(valueS),SpWrite(valuesVec.at(threadid)), 
+            [size](const double& a_param,double& writeValParam) -> bool {
+                writeValParam = (1.0/size)*a_param;
+                usleep(writeValParam*100000);
+                return true;
+        }).setTaskName("OpExp("+std::to_string(k1)+")");
+    }
+
+    runtime.waitAllTasks();
+    usleep(deltaTimeSleepBetweenTasks); //break time 
+
+
+    runtime.task(SpRead(valuesVec),SpWrite(valueS1), 
+        [](const std::vector<double> v,double& writeValParam) -> bool {
+                writeValParam = std::reduce(v.begin(),v.begin()+v.size()/2);
+                usleep(writeValParam*100000);
+                return true;
+    }).setTaskName("Op(1)");
+
+     runtime.task(SpRead(valuesVec),SpWrite(valueS2), 
+        [](const std::vector<double> v,double& writeValParam) -> bool {
+                writeValParam = std::reduce(v.begin()+v.size()/2,v.end());
+                usleep(writeValParam*100000);
+                return true;
+    }).setTaskName("Op(2)");
+
+    runtime.waitAllTasks();
+    usleep(deltaTimeSleepBetweenTasks); //break time 
+
+    runtime.task(SpRead(valueS1),SpRead(valueS2),SpWrite(valueS), 
+            [](const double& a_param1,const double& a_param2,double& writeValParam) -> bool {
+                writeValParam = a_param1+a_param2;
+                usleep(writeValParam*100000);
+                return true;
+    }).setTaskName("OpSum(1)");
+
+
+    //We are waiting for all tasks to complete
+    runtime.waitAllTasks();
+
+    //We stop the completion of all tasks.
+    runtime.stopAllThreads();
+
+    //We generate the task graph corresponding to the execution 
+    runtime.generateDot("test_specx_19.dot", true);
+    
+    //We generate an Svg trace of the execution
+    runtime.generateTrace("test_specx_19.svg");   
+    
+    //std::cout<<"PI Value= "<<integralValue<<"\n";
+    BOOST_MESSAGE("[INFO SPECX] : Value S= "<<valueS<<"\n");
+    
+
+    //std::cout<<"[INFO SPECX] : Value S= "<<valueS<<"\n";
+
+    //We calculate the time frame with the “SPECX” clock
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T19> in ms since start :"<<run_time.count()<<"\n");
+
+}
 
 
 
