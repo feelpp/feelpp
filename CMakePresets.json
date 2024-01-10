@@ -257,7 +257,7 @@
                 "clang",
                 "release-cmake"
             ],
-            "displayName": "feelpp",
+            "displayName": "feelpp|clang|release|cmake package manager",
             "description": "Build only the Feel++ library Component",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
@@ -275,7 +275,7 @@
                 "usrlocal",
                 "feelpp"
             ],
-            "displayName": "feelpp-usrlocal",
+            "displayName": "feelpp|usrlocal|clang|release|cmake package manager",
             "description": "Build only the Feel++ library Component and install in /usr/local"
         },
         {
