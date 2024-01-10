@@ -521,6 +521,15 @@
             ]
         },
         {
+            "name": "feelpp-usrlocal",
+            "configurePreset": "feelpp-usrlocal",
+            "inherits": "default",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
             "name": "toolboxes",
             "inherits": "default",
             "configurePreset": "toolboxes",
