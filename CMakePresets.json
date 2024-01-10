@@ -45,11 +45,27 @@
             }
         },
         {
+            "name": "usrlocal",
+            "hidden": true,
+            "description": "Install in /usr/local",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX:": "/usr/local"
+            }
+        },
+        {
             "name": "cpp20",
             "hidden": true,
             "description": "Enable compiler C++20",
             "cacheVariables": {
                 "FEELPP_STD_CPP": "20"
+            }
+        },
+        {
+            "name": "cpp23",
+            "hidden": true,
+            "description": "Enable compiler C++23",
+            "cacheVariables": {
+                "FEELPP_STD_CPP": "23"
             }
         },
         {
@@ -125,6 +141,16 @@
             ]
         },
         {
+            "name": "release-cpp23-cmake",
+            "displayName": "Release|c++23|cmake package manager",
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "inherits": [
+                "release",
+                "cpp23",
+                "default"
+            ]
+        },
+        {
             "name": "release-gcc-cmake",
             "displayName": "Release|gcc|cmake package manager",
             "inherits": [
@@ -155,6 +181,24 @@
             "inherits": [
                 "clang",
                 "cpp20",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-gcc-cpp23-cmake",
+            "displayName": "Release|gcc|c++23|cmake package manager",
+            "inherits": [
+                "gcc",
+                "cpp23",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cpp23-cmake",
+            "displayName": "Release|clang|c++23|cmake package manager",
+            "inherits": [
+                "clang",
+                "cpp23",
                 "release-cmake"
             ]
         },
@@ -209,13 +253,13 @@
         },
         {
             "name": "feelpp",
-            "inherits": "default",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
             "displayName": "feelpp",
             "description": "Build only the Feel++ library Component",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/feelpp",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/feelpp/install/",
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
@@ -224,6 +268,15 @@
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "OFF"
             }
+        },
+        {
+            "name": "feelpp-usrlocal",
+            "inherits": [
+                "usrlocal",
+                "feelpp"
+            ],
+            "displayName": "feelpp-usrlocal",
+            "description": "Build only the Feel++ library Component and install in /usr/local"
         },
         {
             "name": "feelpp+specx",
@@ -586,7 +639,10 @@
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
-            "inherits":"default"
+            "inherits":"default",
+            "execution": {
+                "timeout": 10
+            }
         },
         {
             "name": "toolboxes",
