@@ -31,6 +31,7 @@
 		"ms-toolsai.jupyter",
 		"ms-vsliveshare.vsliveshare",
 		"asciidoctor.asciidoctor-vscode",
-		"shardulm94.trailing-spaces"
+		"shardulm94.trailing-spaces",
+		"redhat.vscode-yaml"
 	]
 }
