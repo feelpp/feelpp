@@ -49,7 +49,7 @@
             "hidden": true,
             "description": "Install in /usr/local",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX:": "/usr/local"
+                "CMAKE_INSTALL_PREFIX": "/usr/local"
             }
         },
         {
