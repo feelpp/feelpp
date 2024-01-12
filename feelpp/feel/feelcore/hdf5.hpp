@@ -79,7 +79,7 @@ public:
     //! @name Constructors and Destructor
     //@{
     //! Default empty constructor
-    HDF5() = default;
+    HDF5();
 
     //! Constructor
     /*!
@@ -88,9 +88,11 @@ public:
      * \param comm pointer to Epetra_Comm
      * \param existing boolean flag indicating whether the file exists already
      *        or not. If it exists, data is appended
+     * \param useCollectiveMetadataOps enable or disable collective metadata opts
+     * \param useCollMetadataWrite enable or disable collective metadata write
      */
     HDF5( const std::string& fileName, const comm_type& comm,
-          const bool& existing = false );
+          const bool& existing = false, bool useCollectiveMetadataOps = true, bool useCollMetadataWrite = true );
 
     // Copy constructor and assignment operator are disabled
     HDF5 (const HDF5&) = delete;
@@ -102,6 +104,16 @@ public:
 
     //! @name Public Methods
     //@{
+
+    void enableCollectiveMetadataOps(bool enable = true) 
+    {
+        useCollectiveMetadataOps_ = enable;
+    }
+
+    void enableCollMetadataWrite(bool enable = true) 
+    {
+        useCollMetadataWrite_ = enable;
+    }
 
     //! Check if group exist.
     /*!
@@ -275,6 +287,10 @@ public:
     //@}
 
 private:
+    
+    bool useCollectiveMetadataOps_;
+    bool useCollMetadataWrite_;
+
     // typedef for internal use
     typedef struct
     {
