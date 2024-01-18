@@ -26,7 +26,6 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 #include "contactforce.hpp"
-
 namespace py = pybind11;
 using namespace Feel;
 
@@ -90,6 +89,7 @@ void defSM(py::module &m)
         .def("exportResults",static_cast<void (sm_t::*)()>(&sm_t::exportResults), "export the results of the solid mechanics problem")
         .def("exportResults",static_cast<void (sm_t::*)( double )>(&sm_t::exportResults), "export the results of the solid mechanics problem", py::arg("time"))
         
+        
         // add contact force
         .def(
             "setWalls",[](const sm_t& t)
@@ -132,6 +132,14 @@ void defSM(py::module &m)
         )
 
         .def(
+            "energy",[](const sm_t& t)
+            {
+                energy<nDim>(t);
+            },
+            "compute energies"
+        )
+
+        .def(
             "addContactForceModel",[](const sm_t& t)
             {
                 auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
@@ -144,7 +152,7 @@ void defSM(py::module &m)
             },
             "add function linear assembly"
         ) 
-
+        
         ;
         
 }
