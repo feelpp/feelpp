@@ -525,6 +525,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
         // update parameters values
         this->modelProperties().parameters().updateParameterValues();
+        
+        
+        // update initial conditions
+        std::cout << "Update initial conditions" << std::endl;
+        this->updateInitialConditions( this->symbolsExpr() );
+        
+        
         // init post-processinig (exporter, measure at point, ...)
         this->initPostProcess();
     }
@@ -545,7 +552,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     // update constant parameters
     this->updateParameterValues();
-
+    
 
     if ( M_solverName == "automatic" )
     {

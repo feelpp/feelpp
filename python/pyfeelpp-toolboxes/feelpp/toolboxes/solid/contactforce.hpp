@@ -822,8 +822,8 @@ SingleUnilateralDynamicIterRaytracing( SolidMechanics t, DataType & data, std::v
                 unew1 = u;
 
                 double error = integrate(_range=elements(t.mesh()), _expr = norm2( idv(unew)-idv(unew1))).evaluate()(0,0); 
-                //double norm = integrate(_range=elements(t.mesh()), _expr =norm2(idv(unew))).evaluate()(0,0);
-                double norm = 1.;
+                double norm = integrate(_range=elements(t.mesh()), _expr =norm2(idv(unew))).evaluate()(0,0);
+                //double norm = 1.;
 
 
                 while (((error/norm) > tolerance) || (iteration < 1))
@@ -892,7 +892,7 @@ SingleUnilateralDynamicIterRaytracing( SolidMechanics t, DataType & data, std::v
                     iteration++;
                     error = integrate(_range=elements(t.mesh()), _expr = norm2( idv(unew)-idv(unew1))).evaluate()(0,0); 
                     //norm = integrate(_range=elements(t.mesh()), _expr =norm2(idv(unew))).evaluate()(0,0);
-                    norm = 1.;
+                    //norm = 1.;
 
                     if (iteration == 10)
                         break;
