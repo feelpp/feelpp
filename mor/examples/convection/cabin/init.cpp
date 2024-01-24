@@ -51,7 +51,7 @@ void ConvectionCrb::initModel()
     // lhs
     M_Aqm.resize( Qa() );
     M_Aqm[0].resize(1);
-    M_Aqm[0][0] = M_backend->newMatrix( Xh, Xh );
+    M_Aqm[0][0] = M_backend->newMatrix( _trial = Xh, _test =  Xh );
 
     // rhs
     M_Fqm.resize( Nl() );
@@ -65,96 +65,96 @@ void ConvectionCrb::initModel()
         }
     }
     // others
-    D = M_backend->newMatrix( Xh, Xh );
+    D = M_backend->newMatrix( _trial = Xh, _test = Xh );
     F = M_backend->newVector( Xh );
-    M_A_tril = M_backend->newMatrix( Xh , Xh );
+    M_A_tril = M_backend->newMatrix( _trial = Xh, _test = Xh );
 
     // -- BUILD MATRIX -- //
     // fluid diffusion
     auto f2 = form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] );
 
-    f2 += integrate( elements( mesh ),
-                    nu*trace( gradt( u )*trans( grad( v ) ) )  );
+    f2 += integrate( _range = elements( mesh ),
+                    _expr = nu*trace( gradt( u )*trans( grad( v ) ) )  );
     // pressure-velocity terms
-    f2 += integrate ( elements( mesh ),
-                      - 1./rho*idt( p )*div( v )
+    f2 += integrate ( _range = elements( mesh ),
+                      _expr = - 1./rho*idt( p )*div( v )
                       + 1./rho*divt( u )*id( q ) );
     // heat diffusion
-    f2 += integrate( elements( mesh ),
-                     k*gradt( t )*trans( grad( s ) ) );
+    f2 += integrate( _range = elements( mesh ),
+                     _expr = k*gradt( t )*trans( grad( s ) ) );
 
     // buyoancy forces c(theta,v)
-    f2 +=integrate( elements( mesh ),
-                    -expansion*idt( t )*( trans( oneY() )*id( v ) ) );
+    f2 +=integrate( _range = elements( mesh ),
+                    _expr = -expansion*idt( t )*( trans( oneY() )*id( v ) ) );
 
     // multipliers for zero-mean pressure (not use in this case)
-    f2 += integrate ( elements( mesh ),
-                      idt( xi )*id( eta ) );
+    f2 += integrate ( _range = elements( mesh ),
+                      _expr = idt( xi )*id( eta ) );
 
     // -- BOUNDARY CONDITIONS -- //
     auto SigmaNt = ( -1./rho*idt( p )*N() + nu*gradt( u )*N() );
     auto SigmaN = ( -1./rho*id( q )*N() + nu*grad( v )*N() );
 
     // weak Dirichlet condition on the walls (u=0)
-    f2 += integrate ( markedfaces( mesh, "walls" ),
-                      - trans( SigmaNt )*id(v)
+    f2 += integrate ( _range = markedfaces( mesh, "walls" ),
+                      _expr = - trans( SigmaNt )*id(v)
                       - trans( SigmaN )*idt(u)
                       + nu*penalbc*trans( idt(u) )*id(v)/hFace() );
-    f2 += integrate ( markedfaces( mesh, "passengers" ),
-                      - trans( SigmaNt )*id(v)
+    f2 += integrate ( _range = markedfaces( mesh, "passengers" ),
+                      _expr = - trans( SigmaNt )*id(v)
                       - trans( SigmaN )*idt(u)
                       + nu*penalbc*trans( idt(u) )*id(v)/hFace() );
-    f2 += integrate ( markedfaces( mesh, "floor" ),
-                      - trans( SigmaNt )*id(v)
+    f2 += integrate ( _range = markedfaces( mesh, "floor" ),
+                      _expr = - trans( SigmaNt )*id(v)
                       - trans( SigmaN )*idt(u)
                       + nu*penalbc*trans( idt(u) )*id(v)/hFace() );
 
     // weak Dirichlet on inlet (u=U0)
-    f2 += integrate ( markedfaces( mesh, "inlet" ),
-                      - trans( SigmaNt )*id(v)
+    f2 += integrate ( _range = markedfaces( mesh, "inlet" ),
+                      _expr = - trans( SigmaNt )*id(v)
                       - trans( SigmaN )*idt(u)
                        + nu*penalbc*trans( idt(u) )*id(v)/hFace() );
     auto poiseuille = -(0.05-Px())*(Px()+0.05)*400*oneY();
-    form1( Xh, _vector=M_Fqm[0][1][0] )
-        = integrate ( markedfaces( mesh, "inlet"),
-                      - trans( SigmaN )*poiseuille
+    form1( _test = Xh, _vector=M_Fqm[0][1][0] )
+        = integrate ( _range = markedfaces( mesh, "inlet"),
+                      _expr = - trans( SigmaN )*poiseuille
                       + nu*penalbc/hFace()*trans(poiseuille)*id(v) );
 
     // weak Dirichlet on temperature inlet
-    f2 += integrate ( markedfaces( mesh, "inlet" ),
-                      - k*gradt( t )*N()*id( s )
+    f2 += integrate ( _range = markedfaces( mesh, "inlet" ),
+                      _expr = - k*gradt( t )*N()*id( s )
                       - k*grad( s )*N()*idt( t )
                       + k*penalbc*idt( t )*id( s )/hFace() );
-    form1( Xh, _vector=M_Fqm[0][0][0] )
-        = integrate ( markedfaces( mesh, "inlet"),
-                      - k*grad(s)*N()
+    form1( _test = Xh, _vector=M_Fqm[0][0][0] )
+        = integrate ( _range = markedfaces( mesh, "inlet"),
+                      _expr = - k*grad(s)*N()
                       + k*penalbc*id(s)/hFace()  );
 
 
     // weak Dirichlet on temperature passengers
     double flux = doption( "passengers-flux" );
-    form1( Xh, _vector=M_Fqm[0][2][0] )
-        = integrate ( markedfaces( mesh, "passengers"),
-                      flux*id(s)/rho/Cp );
+    form1( _test = Xh, _vector=M_Fqm[0][2][0] )
+        = integrate ( _range = markedfaces( mesh, "passengers"),
+                      _expr = flux*id(s)/rho/Cp );
 
 
     for (int i=0 ; i<Ql(0) ; i++ )
         M_Fqm[0][i][0]->close();
 
 
-    M = M_backend->newMatrix( Xh, Xh );
+    M = M_backend->newMatrix( _trial = Xh, _test = Xh);
     form2( _test=Xh, _trial=Xh, _matrix=M ) =
-        integrate( elements( mesh ),
-                   trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) )
+        integrate( _range = elements( mesh ),
+                   _expr = trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) )
                    + id( q )*idt( p ) + grad( q )*trans( gradt( p ) )
                    + id( s )*idt( t ) + grad( s )*trans( gradt( t ) ) );
     M->close();
 
     // Output 1 : mean temperature in cabin
-    double domain = integrate( elements(mesh), cst(1.) ).evaluate()(0,0);
+    double domain = integrate( _range = elements(mesh), _expr = cst(1.) ).evaluate()(0,0);
     form1( _test=Xh, _vector=M_Fqm[1][0][0] ) =
-        integrate( elements(mesh),
-                   id(s)/domain );
+        integrate( _range = elements(mesh),
+                   _expr = id(s)/domain );
     M_Fqm[1][0][0]->close();
 
     LOG(INFO) << "Natural Convection : Cabin Model is initilized";
