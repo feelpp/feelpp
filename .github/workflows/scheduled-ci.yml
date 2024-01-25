@@ -42,7 +42,7 @@ jobs:
       - 
         if: ${{ github.event.schedule == format('30 0 * * {0}', matrix.dotw ) }}
         name: "Trigger build [${{ github.event.schedule }}] ${{ matrix.flavor }}-${{ matrix.version }}"
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CR_PAT }}
           repository: feelpp/feelpp
