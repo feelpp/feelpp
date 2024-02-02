@@ -90,15 +90,6 @@ void defSM(py::module &m)
         .def("exportResults",static_cast<void (sm_t::*)( double )>(&sm_t::exportResults), "export the results of the solid mechanics problem", py::arg("time"))
         
         
-        // add contact force
-        .def(
-            "setWalls",[](const sm_t& t)
-            {
-                setWalls<nDim>(t);
-            },
-            "load mesh of contact walls"
-        )
-
         .def(
             "init_Measures",[](const sm_t& t)
             {
@@ -128,7 +119,7 @@ void defSM(py::module &m)
             {
                 error<nDim>(t);
             },
-            "read data and compute error"
+            "compute error"
         )
 
         .def(
