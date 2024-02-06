@@ -27,6 +27,11 @@
 
 namespace Feel {
 
+Heat1D::Heat1D() : super_type( "Heat1D" ) {
+        this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME) );
+        this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+    }
+
 void
 Heat1D::initBetaQ()
 {

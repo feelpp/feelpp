@@ -22,13 +22,14 @@
 #
 #
 
-mor_add_library( stokesdeim SRCS stokesdeim.cpp  EXEC CRB_LIB_STOKESDEIM )
+mor_add_library( stokesdeim SRCS stokesdeim.cpp  EXEC CRB_LIB_STOKESDEIM PLUGIN )
+target_compile_definitions(${CRB_LIB_STOKESDEIM} PRIVATE FEELPP_MOR_PLUGIN_NAME=stokesdeim FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_STOKESDEIM})
 install(FILES stokesdeim.hpp DESTINATION include/feelpp/crb/stokesdeim COMPONENT Devel)
 
 set(FEELPP_CRB_STOKESDEIM_LIBRARIES ${CRB_LIB_STOKESDEIM} PARENT_SCOPE)
-set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_STKOKESDEIM_LIBRARIES PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_STOKESDEIM_LIBRARIES PARENT_SCOPE)
 
-#mor_add_model(stokesdeim StokesDeim HDRS stokesdeim.hpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
-feelpp_add_application( stokesdeimapp SRCS stokesdeimapp.cpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
+mor_add_model(stokesdeim StokesDeim HDRS stokesdeim.hpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
+# feelpp_add_application( stokesdeimapp SRCS stokesdeimapp.cpp  LINK_LIBRARIES ${CRB_LIB_STOKESDEIM} )
 
 feelpp_add_testcase(stokesdeim PREFIX feelpp_crb CATEGORY CRB)

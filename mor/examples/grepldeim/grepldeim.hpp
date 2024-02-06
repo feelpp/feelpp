@@ -37,6 +37,23 @@
 
 using namespace Feel;
 
+inline po::options_description makeGreplDEIMOptions()
+{
+    po::options_description grepldeimoptions( "GREPL DEIM options");
+    grepldeimoptions.add_options()
+        ( "trainset-deim-size", Feel::po::value<int>()->default_value( 40 ), "EIM trainset is built using a equidistributed grid 40 * 40 by default")
+        ( "gamma", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
+        ( "cvg-study", Feel::po::value<int>()->default_value( 0 ), "size of the sampling for the convergence study. If 0 : no cvg study" )
+        ;
+   return grepldeimoptions.add( feel_options());
+}
+
+inline AboutData
+makeGreplDEIMAbout( std::string const& app_name)
+{
+    AboutData about( app_name.c_str() );
+    return about;
+}
 class ParameterDefinition
 {
 public :
@@ -66,7 +83,8 @@ public :
 
 };
 
-
+namespace Feel
+{
 template<int Order, int Dim>
 class GreplDEIM :
     public ModelCrbBase< ParameterDefinition,
@@ -123,7 +141,7 @@ public :
         vector_ptrtype V = this->M_backend->newVector(Xh);
         auto temp = Xh->element(V,0);
         mesh = Xh->mesh();
-        temp.on( elements(mesh), cst(mu(0))/cst(mu(1))*( exp( cst(mu(1))*idv(u) ) - 1  ) );
+        temp.on( _range = elements(mesh), _expr = cst(mu(0))/cst(mu(1))*( exp( cst(mu(1))*idv(u) ) - 1  ) );
         return V;
     }
 
@@ -339,8 +357,13 @@ void GreplDEIM<Order,Dim>::initModel()
         Pset->readFromFile(samplingname);
     }
 
-    auto d = deim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
+    auto d = deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                          _sampling=Pset );
+
+    d->onlineModel()->setAssembleDEIMnl([this,d]( parameter_type const& mu, element_type const& u ) {
+                                                        return this->assembleForDEIMnl( mu, u, false );
+                                                    });
+
     this->addDeim( d );
     this->deim()->run();
     int M = this->deim()->size();
@@ -636,7 +659,7 @@ template<int Order, int Dim>
 typename GreplDEIM<Order,Dim>::element_type
 GreplDEIM<Order,Dim>::solve( parameter_type const& mu )
 {
-    sparse_matrix_ptrtype J = backend()->newMatrix( Xh, Xh);
+    sparse_matrix_ptrtype J = backend()->newMatrix( _test = Xh, _trial = Xh);
     vector_ptrtype R = backend()->newVector( Xh );
     backend()->nlSolver()->jacobian = std::bind( &self_type::updateJacobianMonolithic,
                                                    std::ref( *this ), std::placeholders::_1, std::placeholders::_2, mu );
@@ -657,7 +680,7 @@ GreplDEIM<Order,Dim>::computeMonolithicFormulationU( parameter_type const& mu , 
     auto v=Xh->element();
     double gamma = doption(_name="gamma");
 
-    M_monoA = backend()->newMatrix( Xh, Xh );
+    M_monoA = backend()->newMatrix( _test = Xh, _trial = Xh );
     M_monoF.resize(2);
     M_monoF[0] = backend()->newVector( this->functionSpace() );
     M_monoF[1] = backend()->newVector( Xh );
@@ -709,10 +732,10 @@ GreplDEIM<Order,Dim>::computeLinearDecompositionA()
 
     this->M_linearAqm.resize(1);
     this->M_linearAqm[0].resize(1);
-    this->M_linearAqm[0][0] = backend()->newMatrix( Xh, Xh );
+    this->M_linearAqm[0][0] = backend()->newMatrix( _test = Xh, _trial = Xh );
     form2( _test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0] ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
-        integrate( boundaryfaces( mesh ), gamma*idt( u )*id( v )/h()
+        integrate( _range=boundaryfaces( mesh ), _expr = gamma*idt( u )*id( v )/h()
                    -gradt( u )*vf::N()*id( v )
                    -grad( v )*vf::N()*idt( u )
                    );
@@ -767,11 +790,11 @@ GreplDEIM<Order,Dim>::output( int output_index, parameter_type const& mu, elemen
     }
     if( output_index==1 )
     {
-        s = integrate( elements( mesh ), idv( solution ) ).evaluate()( 0,0 );
+        s = integrate( _range = elements( mesh ), _expr = idv( solution ) ).evaluate()( 0,0 );
     }
 
     return s ;
 }
 
-
+}
 #endif

@@ -210,7 +210,7 @@ private:
     element_ptrtype pT;
 
     // Timers
-    std::map<std::string,std::pair<boost::timer,double> > timers;
+    std::map<std::string,std::pair<boost::mpi::timer,double> > timers;
 
     backend_ptrtype M_backend;
 
