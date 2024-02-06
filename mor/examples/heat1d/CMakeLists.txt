@@ -22,8 +22,12 @@
 #
 #
 
-mor_add_library( heat1d SRCS heat1d.cpp EXEC CRB_LIB_HEAT1D EXPORT feelpp-mor-export-targets )
+mor_add_library( heat1d SRCS heat1d.cpp EXEC CRB_LIB_HEAT1D PLUGIN EXPORT feelpp-mor-export-targets )
+target_compile_definitions(${CRB_LIB_HEAT1D} PRIVATE FEELPP_MOR_PLUGIN_NAME=heat1d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_HEAT1D})
 install(FILES heat1d.hpp DESTINATION include/feelpp/mor/heat1d COMPONENT Devel)
+set(FEELPP_CRB_HEAT1D_LIBRARIES ${CRB_LIB_HEAT1D} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_HEAT1D_LIBRARIES PARENT_SCOPE)
+
 
 #mor_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG heat1dpfem.cfg )
 #mor_add_executable(heat1dpfem heat1dpfem.cpp LINK_LIBRARIES feel++_crb_crb CFG heat1dpfem.cfg )

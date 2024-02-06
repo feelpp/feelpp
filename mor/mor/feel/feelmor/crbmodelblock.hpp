@@ -34,15 +34,15 @@ public:
     static const int n_block = space_type::nSpaces;
     typedef typename mpl::range_c< int, 0, n_block > rangespace_type;
 
-    CRBModelBlock( crb::stage stage, int level = 0 ) :
-        super ( stage, level ),
+    CRBModelBlock( std::string modelName, crb::stage stage, int level = 0 ) :
+        super ( modelName, stage, level ),
         M_block_initialized( false )
         {
             this->initBlocks();
         }
 
-    CRBModelBlock( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
-        super ( model, stage, level ),
+    CRBModelBlock( std::string modelName, model_ptrtype const& model , crb::stage stage, int level = 0 ) :
+        super ( modelName, model, stage, level ),
         M_block_initialized( false )
         {
             this->initBlocks();
@@ -129,7 +129,7 @@ struct InitEnergtMatrixByBlock
             auto u = Xh->element();
             m_mats[T::value] = backend()->newMatrix( _test=Xh, _trial= Xh );
             form2( _test=Xh, _trial=Xh, _matrix=m_mats[T::value] )
-                = integrate( elements(Xh->mesh()), inner(id(u),idt(u)) );
+                = integrate( _range = elements(Xh->mesh()), _expr = inner(id(u),idt(u)) );
             m_mats[T::value]->close();
         }
 

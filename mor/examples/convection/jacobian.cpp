@@ -23,22 +23,22 @@ void ConvectionCrb ::updateJ( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
     auto f2 = form2( _test=Xh,_trial=Xh, _matrix=J );
 
     // -- Fluid NL terms : 2 terms !!! -- //
-     f2 += integrate( elements(mesh),
-                      trans( id(v) )*gradv(u)*idt(u)
+     f2 += integrate( _range = elements(mesh),
+                      _expr = trans( id(v) )*gradv(u)*idt(u)
                       +trans( id(v) )*gradt(u)*idv(u) );
 
     // -- Temperature NL terms : 2 terms !!! -- //
-    f2 += integrate ( elements(mesh),
-                      id(s)*(gradv(t)*idt(u))
+    f2 += integrate ( _range = elements(mesh),
+                      _expr = id(s)*(gradv(t)*idt(u))
                       +id(s)*(gradt(t)*idv(u)) );
 
     if ( M_psiT )
     {
         auto norm_u=max(1e-12,sqrt(inner(idv(u),idv(u))));
-        f2 += integrate( elements(mesh),
-                         norm_u/hMin()/(M_delta)*inner(idt(u),id(u)) );
-        f2 += integrate( elements(mesh),
-                         norm_u/hMin()/(M_delta)*inner(idt(t),id(s)) );
+        f2 += integrate( _range = elements(mesh),
+                         _expr = norm_u/hMin()/(M_delta)*inner(idt(u),id(u)) );
+        f2 += integrate( _range = elements(mesh),
+                         _expr = norm_u/hMin()/(M_delta)*inner(idt(t),id(s)) );
     }
 
 

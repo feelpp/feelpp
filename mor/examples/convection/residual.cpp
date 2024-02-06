@@ -18,14 +18,14 @@ ConvectionCrb::updateR( const vector_ptrtype& X, vector_ptrtype& R)
 
     R->zero();
     // -- NS Convection -- //
-    form1( Xh, _vector=R ) =
-        integrate ( elements(mesh),
-                    trans( gradv(u)*idv(u) )*id( v ) );
+    form1( _test = Xh, _vector=R ) =
+        integrate ( _range = elements(mesh),
+                    _expr = trans( gradv(u)*idv(u) )*id( v ) );
 
     // -- Heat Convection -- //
-    form1( Xh, _vector=R ) +=
-        integrate ( elements(mesh),
-                    id(s)*(gradv(t)*idv(u)) );
+    form1( _test = Xh, _vector=R ) +=
+        integrate ( _range = elements(mesh),
+                    _expr = id(s)*(gradv(t)*idv(u)) );
 
     R->close();
     // add the linear part

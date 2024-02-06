@@ -59,13 +59,13 @@ public :
     template<int T>
     using subelement_type = typename subspace_type<T>::element_type;
 
-    CRBModelSaddlePoint( crb::stage stage, int level = 0 ) :
-        super ( stage, level ),
+    CRBModelSaddlePoint( std::string modelName, crb::stage stage, int level = 0 ) :
+        super ( modelName, stage, level ),
         M_addSupremizer(boption(_prefix=this->M_prefix,_name="crb.saddlepoint.add-supremizer"))
     {}
 
-    CRBModelSaddlePoint( model_ptrtype const& model , crb::stage stage, int level = 0 ) :
-        super ( model, stage, level ),
+    CRBModelSaddlePoint( std::string modelName, model_ptrtype const& model , crb::stage stage, int level = 0 ) :
+        super ( modelName, model, stage, level ),
         M_addSupremizer(boption(_prefix=this->M_prefix,_name="crb.saddlepoint.add-supremizer"))
     {}
 
