@@ -46,7 +46,7 @@ void ConvectionCrb::initModel()
     for (int ii=0; ii<Qa(); ii++)
     {
         M_Aqm[ii].resize(1);
-        M_Aqm[ii][0] = M_backend->newMatrix( Xh, Xh );
+        M_Aqm[ii][0] = M_backend->newMatrix( _test = Xh, _trial= Xh );
     }
     // rhs
     M_Fqm.resize( Nl() );
@@ -60,9 +60,9 @@ void ConvectionCrb::initModel()
         }
     }
     // others
-    D = M_backend->newMatrix( Xh, Xh );
+    D = M_backend->newMatrix(  _test = Xh, _trial= Xh);
     F = M_backend->newVector( Xh );
-    M_A_tril = M_backend->newMatrix( Xh , Xh );
+    M_A_tril = M_backend->newMatrix(  _test = Xh, _trial= Xh );
 
     // -- BUILD MATRIX -- //
     // fluid diffusion
@@ -87,69 +87,69 @@ void ConvectionCrb::initModel()
 
     // buyoancy forces c(theta,v)
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        +=integrate( elements( mesh ),
-                     -expansion*idt( t )*( trans( oneY() )*id( v ) ) );
+        +=integrate( _range = elements( mesh ),
+                     _expr = -expansion*idt( t )*( trans( oneY() )*id( v ) ) );
 
     // multipliers for zero-mean pressure
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        += integrate ( elements( mesh ),
-                       id( q )*idt( xi )
+        += integrate ( _range = elements( mesh ),
+                       _expr = id( q )*idt( xi )
                        +idt( p )*id( eta ) );
 
     // weak Dirichlet condition at the walls (u=0)
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )
-        += integrate ( markedfaces( mesh, "wallInsulated" ),
-                       -trans( gradt( u )*N() )*id( v )
+        += integrate ( _range = markedfaces( mesh, "wallInsulated" ),
+                       _expr = -trans( gradt( u )*N() )*id( v )
                        -trans( grad( v )*N() )*idt( u )
                        +gamma*trans( idt( u ) )*id( v )/hFace() );
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        += integrate ( markedfaces( mesh, "wallInsulated" ),
-                       -trans( -idt( p )*N() )*id( v )
+        += integrate ( _range = markedfaces( mesh, "wallInsulated" ),
+                       _expr = -trans( -idt( p )*N() )*id( v )
                        -trans( -id( q )*N() )*idt( u ) );
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )
-        += integrate ( markedfaces( mesh, "wallRight" ),
-                       -trans( gradt( u )*N() )*id( v )
+        += integrate ( _range = markedfaces( mesh, "wallRight" ),
+                       _expr = -trans( gradt( u )*N() )*id( v )
                        -trans( grad( v )*N() )*idt( u )
                        +gamma*trans( idt( u ) )*id( v )/hFace() );
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        += integrate ( markedfaces( mesh, "wallRight" ),
-                       -trans( -idt( p )*N() )*id( v )
+        += integrate ( _range = markedfaces( mesh, "wallRight" ),
+                       _expr = -trans( -idt( p )*N() )*id( v )
                        -trans( -id( q )*N() )*idt( u ) );
    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] )
-        += integrate ( markedfaces( mesh, "wallLeft" ),
-                       -trans( gradt( u )*N() )*id( v )
+        += integrate ( _range = markedfaces( mesh, "wallLeft" ),
+                       _expr = -trans( gradt( u )*N() )*id( v )
                        -trans( grad( v )*N() )*idt( u )
                        +gamma*trans( idt( u ) )*id( v )/hFace() );
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )
-        += integrate ( markedfaces( mesh, "wallLeft" ),
-                       -trans( -idt( p )*N() )*id( v )
+        += integrate ( _range = markedfaces( mesh, "wallLeft" ),
+                       _expr = -trans( -idt( p )*N() )*id( v )
                        -trans( -id( q )*N() )*idt( u ) );
 
 
     // weak Dirichlet on temperature (T=0|left wall)
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )
-        += integrate ( markedfaces( mesh, "wallLeft" ),
-                       - gradt( t )*N()*id( s )
+        += integrate ( _range = markedfaces( mesh, "wallLeft" ),
+                       _expr = - gradt( t )*N()*id( s )
                        - grad( s )*N()*idt( t )
                        + gamma*idt( t )*id( s )/hFace() );
 
-    M = M_backend->newMatrix( Xh, Xh );
+    M = M_backend->newMatrix(  _test = Xh, _trial= Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) =
-        integrate( elements( mesh ),
-                   trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) )
+        integrate( _range = elements( mesh ),
+                   _expr = trans( id( v ) )*idt( u ) + trace( grad( v )*trans( gradt( u ) ) )
                    + id( q )*idt( p ) + grad( q )*trans( gradt( p ) )
                    + id( s )*idt( t ) + grad( s )*trans( gradt( t ) ) );
     M->close();
 
-    form1( Xh, _vector=M_Fqm[0][0][0] ) =
-        integrate ( markedfaces( mesh, "wallRight"),
-                    id( s )  );
+    form1( _test = Xh, _vector=M_Fqm[0][0][0] ) =
+        integrate (_range =  markedfaces( mesh, "wallRight"),
+                   _expr =  id( s )  );
     M_Fqm[0][0][0]->close();
 
     //output : \int_{\Omega} T
     form1( _test=Xh, _vector=M_Fqm[1][0][0] ) =
-        integrate( markedfaces( mesh,"wallRight" ),
-                   id(s) );//*(1.0/area) ) ;
+        integrate( _range = markedfaces( mesh,"wallRight" ),
+                   _expr = id(s) );//*(1.0/area) ) ;
     M_Fqm[1][0][0]->close();
 
     LOG(INFO) << "Natural Convection : Cavity Model is initilized";

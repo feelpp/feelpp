@@ -110,7 +110,7 @@ endmacro(mor_add_executable)
 macro(mor_add_library)
 
   PARSE_ARGUMENTS(mor_LIB
-    "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN;EXPORT"
+    "SRCS;LINK_LIBRARIES;PROJECT;DEFS;EXEC;MAN;EXPORT"
     "TEST;NOHEADER;PLUGIN"
     ${ARGN}
     )
@@ -138,6 +138,9 @@ macro(mor_add_library)
   add_library(${execname}  SHARED  ${mor_LIB_SRCS} )
   if ( NOT mor_LIB_PLUGIN )
     set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
+  endif()
+  if ( mor_LIB_DEFS )
+    set_target_properties(${execname} PROPERTIES COMPILE_DEFINITIONS ${mor_LIB_DEFS})
   endif()
   # -fvisibility=hidden not always work (macos, toolbox_heat...)
   #target_compile_options(${execname} PRIVATE -fvisibility=hidden)

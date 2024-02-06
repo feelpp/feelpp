@@ -43,6 +43,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
+#include <feel/feelfilters/geotool.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -70,7 +71,7 @@ po::options_description
 makeGeoHeatDiffusionOptions()
 {
     po::options_description options( "geoHeatDiffusion options" );
-    return options.add( bdf_options( "geoheatdiffusion" ) );
+    return options.add( bdf_options( "geoheatdiffusion" ) ).add( ts_options( "geoheatdiffusion" ) );
 }
 AboutData
 makeGeoHeatDiffusionAbout( std::string const& str = "GeoHeatDiffusion" )
@@ -171,7 +172,7 @@ public:
 
     void assemble();
 
-    bool referenceParametersGivenByUser() { return true; }
+    bool referenceParametersGivenByUser() { return false; }
 
     parameter_type refParameter()
     {
@@ -202,16 +203,6 @@ private:
     double surface;
     bdf_ptrtype M_bdf;
 };
-
-GeoHeatDiffusion::GeoHeatDiffusion()
-    :
-    super_type( "geoheatdiffusion" )
-{}
-
-GeoHeatDiffusion::GeoHeatDiffusion( po::variables_map const& vm )
-    :
-    super_type( "geoheatdiffusion" )
-{}
 
 void GeoHeatDiffusion::initModel()
 {
@@ -262,50 +253,50 @@ void GeoHeatDiffusion::assemble()
     double ucool=0;
     double k=1;
     auto a0 = form2( _trial=Xh, _test=Xh);
-    a0 = integrate( elements( mesh ),k* dxt(u)*dx(v) ) ;
+    a0 = integrate( _range = elements( mesh ), _expr= k* dxt (u)*dx(v) ) ;
     this->addLhs( { a0 , "1.0/mu0" } );
 
     auto a1 = form2( _trial=Xh, _test=Xh);
-    a1 = integrate( elements( mesh ), k*dyt(u)*dy(v) );
+    a1 = integrate( _range = elements( mesh ), _expr= k*dyt(u )*dy(v) );
     this->addLhs( { a1 , "mu0" } );
 
     auto a2 = form2( _trial=Xh, _test=Xh);
-    a2 = integrate( markedfaces( mesh,"heat" ), idt( u )*id( v ) ) ;
+    a2 = integrate( _range = markedfaces( mesh,"heat" ), _expr=  idt( u )*id( v ) ) ;
     this->addLhs( { a2 , "mu0*mu1" } );
 
     auto a3 = form2( _trial=Xh, _test=Xh);
-    a3 = integrate( markedfaces( mesh,"cool" ), idt( u )*id( v ) ) ;
+    a3 = integrate( _range = markedfaces( mesh,"cool" ),  _expr= idt( u )*id( v ) ) ;
     this->addLhs( { a3 , "mu0*mu2" } );
 
     auto m = form2( _trial=Xh, _test=Xh);
-    m = integrate ( elements( mesh ), idt( u )*id( v ) );
+    m = integrate ( _range = elements( mesh ), _expr= idt( u  )*id( v ) );
     this->addMass( { m , "1" } );
 
     //rhs
     auto f0 = form1( _test=Xh );
-    f0 = integrate( markedfaces( mesh,"heat" ), uair*id( v ) );
+    f0 = integrate( _range = markedfaces( mesh,"heat" ),  _expr= uair*id( v ) );
     this->addRhs( { f0 , "mu0*mu1" } );
     auto f1 = form1( _test=Xh );
-    f1 = integrate( markedfaces( mesh,"cool" ), ucool*id( v ) );
+    f1 = integrate( _range = markedfaces( mesh,"cool" ),  _expr= ucool*id( v ) );
     this->addRhs( { f1 , "mu0*mu2" } );
 
     //output
     auto out = form1( _test=Xh );
-    out = integrate( elements( mesh ), id( v ) ) ;
+    out = integrate( _range = elements( mesh ), _expr= id( v  ) ) ;
     //surface = mu(0) * 1 = mu(0)
     this->addOutput( { out , "1.0/mu0" } );
 
     //energy matrix
     auto energy = form2( _trial=Xh, _test=Xh);
     energy=
-        integrate( elements( mesh ), 1 * dxt(u)*dx(v) ) +
-        integrate( elements( mesh ), 1 * dyt(u)*dy(v) ) +
-        integrate( markedfaces( mesh,"heat" ), 1 * idt( u )*id( v ) )+
-        integrate( markedfaces( mesh,"cool" ), 1 * idt( u )*id( v ) );
+        integrate( _range = elements( mesh ), _expr= 1 * dxt (u)*dx(v) ) +
+        integrate( _range = elements( mesh ), _expr= 1 * dyt (u)*dy(v) ) +
+        integrate( _range = markedfaces( mesh,"heat" ),  _expr= 1 * idt( u )*id( v ) )+
+        integrate( _range = markedfaces( mesh,"cool" ),  _expr= 1 * idt( u )*id( v ) );
     this->addEnergyMatrix( energy );
 
     auto mass = form2( _trial=Xh, _test=Xh);
-    mass = integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
+    mass = integrate( _range=elements( mesh ), _expr = idt( u ) * id( v ) ) ;
     this->addMassMatrix( mass );
 
 }
@@ -320,12 +311,12 @@ double GeoHeatDiffusion::output( int output_index, parameter_type const& mu, ele
     double output=0;
     if ( output_index == 0 )
     {
-        output  = integrate( markedfaces( mesh,"heat" ), mu(0)*mu(1) * idv( u ) ).evaluate()( 0,0 );
+        output  = integrate( _range = markedfaces( mesh,"heat" ), _expr= mu(0)*mu(1) * idv( u ) ).evaluate()( 0,0 );
     }
     if ( output_index == 1 )
     {
         surface = mu(0);
-        output = integrate( elements( mesh ), idv( u )/surface ).evaluate()( 0,0 );
+        output = integrate( _range = elements( mesh ), _expr= idv( u )/surface ).evaluate()( 0,0 );
     }
     if ( output_index>=2 )
     {

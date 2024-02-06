@@ -21,4 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-mor_add_model(geoheatdiffusion GeoHeatDiffusion HDRS geoheatdiffusion.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG geoheatdiffusion.cfg XML geoheatdiffusion.xml )
+mor_add_library( geoheatdiffusion SRCS geoheatdiffusion.cpp EXEC CRB_LIB_GEOHEAT PLUGIN)
+target_compile_definitions(${CRB_LIB_GEOHEAT} PRIVATE FEELPP_MOR_PLUGIN_NAME=geoheatdiffusion FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_GEOHEAT})
+install(FILES geoheatdiffusion.hpp DESTINATION include/feelpp/crb/geoheatdiffusion COMPONENT Devel)
+set(FEELPP_CRB_GEOHEAT_LIBRARIES ${CRB_LIB_GEOHEAT} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_GEOHEAT_LIBRARIES PARENT_SCOPE)
+
+mor_add_model(geoheatdiffusion GeoHeatDiffusion HDRS geoheatdiffusion.hpp LINK_LIBRARIES ${CRB_LIB_GEOHEAT})
+
+feelpp_add_testcase(geoheatdiffusion PREFIX feelpp_crb CATEGORY CRB)

@@ -573,9 +573,9 @@ void HeatShield<Order>::assemble()
     //for scalarProduct
     auto M = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
     form2( _test=this->Xh, _trial=this->Xh, _matrix=M ) =
-        integrate( _range=elements( mesh ),                   _expr=gradt( u )*trans( grad( v ) ) ) +
-        integrate( _range=markedfaces( mesh, "left" ),        _expr=0.01 * idt( u )*id( v ) ) +
-        integrate( _range=markedfaces( mesh, "gamma_holes" ), _expr=0.001 * idt( u )*id( v ) )
+    integrate( _range=elements( mesh ),                   _expr=gradt( u )*trans( grad( v ) ) ) +
+    integrate( _range=markedfaces( mesh, "left" ),        _expr=0.01 * idt( u )*id( v ) ) +
+    integrate( _range=markedfaces( mesh, "gamma_holes" ), _expr=0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( M );
 

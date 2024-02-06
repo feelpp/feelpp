@@ -27,5 +27,4 @@ install(FILES unsteadyheat1d.hpp DESTINATION include/feelpp/mor/unsteadyheat1d C
 
 mor_add_model(unsteadyHeat1d UnsteadyHeat1D HDRS unsteadyheat1d.hpp
   LINK_LIBRARIES ${CRB_LIB_UNSTEADYHEAT1D}
-  CFG unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)
-
+  CFG unsteadyheat/unsteadyHeat1d.cfg XML unsteadyHeat1d.xml SCRIPTS unsteadyHeat1d.m)

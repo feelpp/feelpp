@@ -179,7 +179,7 @@ void HeatSink2D::initModel()
     for(int q=0; q<Qa(); q++)
     {
         M_Aqm[q].resize( 1 );
-        M_Aqm[q][0] = backend()->newMatrix(Xh,Xh);
+        M_Aqm[q][0] = backend()->newMatrix(_test = Xh,_trial = Xh);
     }
     M_Mqm.resize( this->Qm() );
     for(int q=0; q<Qm(); q++)
@@ -196,7 +196,7 @@ void HeatSink2D::initModel()
     M_Fqm[1][0].resize(1);
     M_Fqm[1][0][0] = backend()->newVector( Xh );
 
-    D = backend()->newMatrix( Xh, Xh );
+    D = backend()->newMatrix( _test = Xh,_trial = Xh );
     F = backend()->newVector( Xh );
 
     Dmu->setDimension( 3 );
@@ -267,13 +267,13 @@ void HeatSink2D::assemble()
     //for scalarProduct
     M = backend()->newMatrix( _test=Xh, _trial=Xh );
     form2( _test=Xh, _trial=Xh, _matrix=M ) =
-        integrate( elements( mesh ), idt( u )*id( v ) + gradt( u )*trans( grad( v ) ) );
+        integrate( _range = elements( mesh ), _expr = idt( u )*id( v ) + gradt( u )*trans( grad( v ) ) );
     M->close();
     addEnergyMatrix( M );
 
     Mpod = backend()->newMatrix( _test=Xh, _trial=Xh );
     form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
-        integrate( elements( mesh ), idt( u )*id( v ) );
+        integrate( _range = elements( mesh ), _expr = idt( u )*id( v ) );
     Mpod->close();
     addMassMatrix( Mpod );
 }
@@ -282,13 +282,13 @@ void HeatSink2D::assemble()
 typename HeatSink2D::sparse_matrix_ptrtype
 HeatSink2D::newMatrix() const
 {
-    return backend()->newMatrix( Xh, Xh );
+    return backend()->newMatrix( _test = Xh, _trial = Xh );
 }
 
 typename HeatSink2D::vector_ptrtype
 HeatSink2D::newVector() const
 {
-    return backend()->newVector( Xh );
+    return backend()->newVector( _test = Xh );
 }
 
 
@@ -511,7 +511,7 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 
     this->solve( mu, pT );
 
-    double mean = integrate( elements( mesh ),idv( *pT ) ).evaluate()( 0,0 );
+    double mean = integrate( _range = elements( mesh ), _expr = idv( *pT ) ).evaluate()( 0,0 );
     Y[0]=mean;
 }
 
