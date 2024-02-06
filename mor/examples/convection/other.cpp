@@ -95,13 +95,13 @@ ConvectionCrb::computeTrilinearForm( const element_type& X )
 
     // -- Fluid Convection -- //
     form2( _test=Xh, _trial=Xh, _matrix=M_A_tril ) =
-        integrate ( elements(mesh),
-                    trans( id(v) )*gradt(v)*idv(u)  );
+        integrate ( _range = elements(mesh),
+                    _expr = trans( id(v) )*gradt(v)*idv(u)  );
 
     // -- Heat Convection -- //
     form2( _test=Xh, _trial=Xh, _matrix=M_A_tril ) +=
-        integrate ( elements(mesh),
-                    idv(t)*(gradt(s)*id(v)) );
+        integrate ( _range = elements(mesh),
+                    _expr = idv(t)*(gradt(s)*id(v)) );
 
     return M_A_tril;
 }

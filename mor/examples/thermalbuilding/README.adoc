@@ -1,0 +1,26 @@
+:toc:
+:math:
+:latex:
+
+= CRB application : thermalbuilding 
+
+== run offline
+
+If the reduced basis needs to be computed
+```
+./feelpp_mor_thermalbuildingapp --config-file thermalbuilding/thermalbuilding.cfg --crb.rebuild-database=1
+```
+If the database exists and one wants to export FEM solution, RB solution and error between the two for a sample of parameters
+```
+./feelpp_mor_thermalbuildingapp --config-file thermalbuilding/thermalbuilding.cfg --thermalbuilding.export-solution=1
+```
+== run online
+
+evaluate outputs from a sampling
+```
+feelpp_mor_onlinerun --crbmodel.name thermalbuilding --plugin.dir <PATH_TO_BUILD_FOLDER>/mor/examples/thermalbuilding/  --sampling.size=64
+```
+evaluate outputs from a sampling and export fields for visualisation
+```
+feelpp_mor_onlinerun --crbmodel.name thermalbuilding --plugin.dir <PATH_TO_BUILD_FOLDER>/mor/examples/thermalbuilding/  --sampling.size=64 --export-solution=true
+```

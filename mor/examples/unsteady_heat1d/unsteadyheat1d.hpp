@@ -93,10 +93,10 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class FEELPP_EXPORT UnsteadyHeat1D : public ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition>
+class FEELPP_EXPORT UnsteadyHeat1D : public ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition, TimeDependent>
 {
 public:
-    typedef ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterSpaceX,FunctionSpaceDefinition, TimeDependent> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
     typedef typename super_type::beta_vector_light_type beta_vector_light_type;
