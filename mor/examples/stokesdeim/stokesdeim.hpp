@@ -5,7 +5,7 @@
 #include <feel/feelmor/modelcrbbase.hpp>
 #include <feel/feelmor/crbsaddlepoint.hpp>
 #include <feel/feelmor/crbmodelsaddlepoint.hpp>
-
+#include <feel/feeldiscr/thch.hpp>
 
 
 namespace Feel
@@ -13,6 +13,13 @@ namespace Feel
 
 FEELPP_EXPORT AboutData
     makeStokesDeimAbout( std::string const& str = "stokesdeim" );
+
+FEELPP_EXPORT po::options_description
+makeStokesDeimOptions()
+{
+    po::options_description stokesDeimOptions( "StokesDeim options" );
+    return stokesDeimOptions;
+}
 
 struct FEELPP_EXPORT StokesDeimConfig
 {

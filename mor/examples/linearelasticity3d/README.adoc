@@ -5,14 +5,22 @@
 = CRB application : linearelasticity3d 
 
 == run offline
-```
-./bin/crb_linearelasticity3dapp --config-file share/feel/testcases/CRB/linearelasticity3d/linearelasticity3d.cfg 
-```
 
+If the reduced basis needs to be computed
+```
+./feelpp_mor_linearelasticity3dapp --config-file linearelasticity3d/linearelasticity3d.cfg --crb.rebuild-database=1
+```
+else
+```
+./feelpp_mor_linearelasticity3dapp --config-file linearelasticity3d/linearelasticity3d.cfg
+```
 == run online
 
 evaluate outputs from a sampling
 ```
-./bin/feelpp_crb_onlinerun --db.filename $HOME/feel/db/crb/LinearElasticity3d/np_1/linearelasticity3d-0-1-1.crb.json  \
-                           --sampling.size=64
+feelpp_mor_onlinerun --crbmodel.name linearelasticity3d_tripod --plugin.dir <PATH_TO_BUILD_FOLDER>/mor/examples/linearelasticity3d/  --sampling.size=64
+```
+evaluate outputs from a sampling and export fields for visualisation
+```
+feelpp_mor_onlinerun --crbmodel.name linearelasticity3d_tripod --plugin.dir <PATH_TO_BUILD_FOLDER>/mor/examples/linearelasticity3d/  --sampling.size=64 --export-solution=true
 ```
