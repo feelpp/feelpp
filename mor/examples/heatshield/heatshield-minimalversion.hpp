@@ -81,8 +81,8 @@ public:
     typedef typename super_type::bdf_ptrtype bdf_ptrtype;
 
     HeatShieldMinimalVersion() : super_type( "thermalblockminver" ) {}
-        
-    
+
+
     //! initialization of the model
     void initModel();
 
