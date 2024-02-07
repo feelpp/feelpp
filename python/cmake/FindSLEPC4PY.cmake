@@ -8,10 +8,11 @@
 
 if(NOT SLEPC4PY_INCLUDE_DIR)
   execute_process(COMMAND
-    ${PYTHON_EXECUTABLE} -c "import slepc4py; print(slepc4py.get_include())"
+    ${Python3_EXECUTABLE} -c "import slepc4py; print(slepc4py.get_include())"
     OUTPUT_VARIABLE SLEPC4PY_INCLUDE_DIR
     RESULT_VARIABLE SLEPC4PY_COMMAND_RESULT
     OUTPUT_STRIP_TRAILING_WHITESPACE)
+  message(STATUS "SLEPC4PY_INCLUDE_DIR: ${SLEPC4PY_INCLUDE_DIR} command result: ${SLEPC4PY_COMMAND_RESULT}")
   if(SLEPC4PY_COMMAND_RESULT)
     message("[feelpp-python]: SLEPC4PY not found ${SLEPC4PY_COMMAND_RESULT}")
     set(SLEPC4PY_FOUND FALSE)
