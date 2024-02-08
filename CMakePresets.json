@@ -86,7 +86,6 @@
             "displayName": "Debug|no package manager",
             "description": "Plain debug build without dependency handling.",
             "inherits": [
-                "warnings",
                 "default"
             ],
             "cacheVariables": {
