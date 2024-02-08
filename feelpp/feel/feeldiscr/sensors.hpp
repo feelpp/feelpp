@@ -121,9 +121,10 @@ public:
     using fe_type = typename space_type::fe_type;
 
     SensorPointwise() = default;
-    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
+    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise", std::string const& scale = "1"):
         super_type( space, n, "pointwise" ),
-        M_position(p)
+        M_position(p),
+        scale_expr_( scale )
     {
         this->init();
     }
@@ -143,10 +144,22 @@ public:
         geospacectx->updateForUse();
 
         auto u = space->element();
-        auto expr = id(u);
-        geospacectx->template updateGmcContext<std::decay_t<decltype(expr)>::context>();
+        auto scaling = [this]() {
+            if constexpr ( space_type::is_scalar )
+                return expr(this->scale_expr_);
+            else
+                return expr<dimension_v<mesh_type>,1>( this->scale_expr_ );
+        };
+        auto dirac_expr_fn = [this,&u,&scaling](){
+            if constexpr ( space_type::is_scalar )
+                return scaling()*id(u);
+            else
+                return trans(scaling())*id(u);
+        };
+        auto dirac_expr = dirac_expr_fn();
+        geospacectx->template updateGmcContext<std::decay_t<decltype(dirac_expr)>::context>();
 
-        using expr_type = std::decay_t<decltype(expr)>;
+        using expr_type = std::decay_t<decltype(dirac_expr)>;
         using expr_basis_t = typename expr_type::test_basis;
         static constexpr size_type expr_context = expr_type::context;
         // fe context
@@ -162,14 +175,14 @@ public:
             auto fec = std::make_shared<fecontext_type>( space->fe(), gmc, fepc );
             auto mapgmc = Feel::vf::mapgmc( gmc );
             auto mapfec = Feel::vf::mapfec( fec );
-            auto tExpr = expr.evaluator(mapgmc, mapfec);
+            auto tExpr = dirac_expr.evaluator(mapgmc, mapfec);
 
             // TODO check if next lines are really useful?
             fec->update( gmc );
             tExpr.update( mapgmc, mapfec );
 
-            //Eigen::MatrixXd M_IhLoc = Vh->fe()->localInterpolants(1);
-            Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof,gmc->nPoints());
+            Eigen::MatrixXd IhLoc = space->fe()->localInterpolants(curCtxIdToPointIds.size(),1);
+            //Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof*dimension_v<mesh_type>,gmc->nPoints());
             space->fe()->interpolateBasisFunction( tExpr, IhLoc );
 
 
@@ -207,6 +220,7 @@ private:
 
 
     node_t M_position;
+    std::string scale_expr_;
 };
 
 
