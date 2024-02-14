@@ -496,6 +496,16 @@
             "inherits": "release"
         },
         {
+            "name": "debug",
+            "configurePreset": "debug",
+            "inherits": "default"
+        },
+        {
+            "name": "debug-clang-cmake",
+            "configurePreset": "debug-clang-cmake",
+            "inherits": "debug"
+        },
+        {
             "name": "dbg",
             "configurePreset": "dbg",
             "jobs": 10,
