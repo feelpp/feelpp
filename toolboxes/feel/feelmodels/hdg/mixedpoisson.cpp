@@ -364,6 +364,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->setPostProcessExportsAllFieldsAvailable( {M_potentialKey, M_fluxKey, "post"+M_potentialKey} );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
+    this->setPostProcessSaveAllFieldsAvailable( {M_potentialKey } );
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
