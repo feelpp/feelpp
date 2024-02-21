@@ -106,7 +106,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     using Feel::cout;
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
-    int tau_order =  ioption("hdg.tau.order");
+    int tau_order = ioption("hdg.tau.order");
     auto mu = expr("1");//locals.at("mu"));
 
 #if 0
@@ -121,7 +121,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 #endif
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
-    
+
     tic();
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
@@ -175,13 +175,13 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
     // Building the RHS
     auto M0h = Pdh<0>( face_mesh,true );
-    auto H     = M0h->element( "H" );
+    auto H   = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
-        H.on( _range=elements(face_mesh), _expr=pow(mesh->hMax(),tau_order) );
+        H.on( _range=elements(face_mesh), _expr=pow(mesh->hMax(), tau_order) );
     else if ( ioption("hface" ) == 1 )
-        H.on( _range=elements(face_mesh), _expr=pow(mesh->hMin(),tau_order) );
+        H.on( _range=elements(face_mesh), _expr=pow(mesh->hMin(), tau_order) );
     else if ( ioption("hface" ) == 2 )
-        H.on( _range=elements(face_mesh), _expr=pow(mesh->hAverage(),tau_order) );
+        H.on( _range=elements(face_mesh), _expr=pow(mesh->hAverage(), tau_order) );
     else
         H.on( _range=elements(face_mesh), _expr=pow(h(),tau_order) );
 
@@ -189,10 +189,10 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     tic();
     rhs( 1_c ) += integrate( _range = elements( mesh ), _quad = ioption( "quad" ),
                              _expr = trans( rhs_f ) * id( v ) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),_quad=ioption("quad"),
-                          _expr= (-1)*inner(stressn,id(m)) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),_quad=ioption("quad"),
-                          _expr=trans(velocity)*id(m) );
+    rhs( 3_c ) += integrate(_range=markedfaces(mesh, "Neumann"),_quad=ioption("quad"),
+                            _expr= (-1)*inner(stressn,id(m)) );
+    rhs( 3_c ) += integrate(_range=markedfaces(mesh, "Dirichlet"),_quad=ioption("quad"),
+                            _expr=trans(velocity)*id(m) );
     rhs( 4_c ) += integrate( _range = elements(mesh),
                              _expr = 0 * id( qm ) );
     toc("rhs",true);
@@ -207,64 +207,64 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(gamma)) );
     toc("a(0,1)", true);
     tic();
-    a( 0_c, 3_c) += integrate(_range=internalfaces(mesh),
+    a( 0_c, 3_c ) += integrate(_range=internalfaces(mesh),
                               _expr=-(trans(idt(uhat))*leftface((id(gamma)*N()))+
                                       trans(idt(uhat))*rightface((id(gamma)*N())) ));
-    a( 0_c, 3_c) += integrate(_range=boundaryfaces(mesh),
+    a( 0_c, 3_c ) += integrate(_range=boundaryfaces(mesh),
                               _expr=-trans(idt(uhat))*(id(gamma)*N()) );
     toc("a(0,3)", true);
     tic();
-    a( 1_c, 0_c) += integrate(_range=elements(mesh),
+    a( 1_c, 0_c ) += integrate(_range=elements(mesh),
                               _expr=2*mu*inner(idt(delta),grad(v)));
-    a( 1_c, 0_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-2*mu*(trans(leftface(id(v)))*leftfacet((idt(delta)*N()))+
+    a( 1_c, 0_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=-2*mu*(trans(leftface(id(v)))*leftfacet((idt(delta)*N()))+
                                          trans(rightface(id(v)))*rightfacet((idt(delta)*N())) ));
-    a( 1_c, 0_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-2*mu*trans(id(v))*(idt(delta)*N()) );                 
+    a( 1_c, 0_c ) += integrate(_range=boundaryfaces(mesh),
+                               _expr=-2*mu*trans(id(v))*(idt(delta)*N()) );
     toc("a(1,0)", true);
 
-    a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=mu*tau_constant*trans(id(v))*idt(u) );
-    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=mu*tau_constant*(trans(leftface(id(v)))*leftfacet(idt(u))+
-                                                     trans(rightface(id(v)))*rightfacet(idt(u))) );
+    a( 1_c, 1_c ) += integrate(_range=boundaryfaces(mesh),
+                               _expr=mu*tau_constant*trans(id(v))*idt(u) );
+    a( 1_c, 1_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=mu*tau_constant*(trans(leftface(id(v)))*leftfacet(idt(u))+
+                                                      trans(rightface(id(v)))*rightfacet(idt(u))) );
 
     tic();
-    a( 1_c, 2_c) += integrate(_range=elements(mesh),
-                              _expr=(-1)*idt(p)*div(v) );
-    a( 1_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=inner(jumpt(idt(p)),id(v)) );
-    a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=normal(v)*idt(p) );
+    a( 1_c, 2_c ) += integrate(_range=elements(mesh),
+                               _expr=(-1)*idt(p)*div(v) );
+    a( 1_c, 2_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=inner(jumpt(idt(p)),id(v)) );
+    a( 1_c, 2_c ) += integrate(_range=boundaryfaces(mesh),
+                               _expr=normal(v)*idt(p) );
     toc("a(1,2)", true);
     tic();
-    a( 1_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-mu*tau_constant*(trans(leftface(id(v)))*idt(uhat)+
-                                                   trans(rightface(id(v)))*idt(uhat)) );
-    a( 1_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-mu*tau_constant*(trans(id(v))*idt(uhat)) );
+    a( 1_c, 3_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=-mu*tau_constant*(trans(leftface(id(v)))*idt(uhat) +
+                                                       trans(rightface(id(v)))*idt(uhat)) );
+    a( 1_c, 3_c ) += integrate(_range=boundaryfaces(mesh),
+                               _expr=-mu*tau_constant*(trans(id(v))*idt(uhat)) );
     toc("a(1,3)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=elements(mesh),
                               _expr=(-1)*grad(q)*idt(u) );
     toc("a(2,1)", true);
     tic();
-    a( 2_c, 3_c) += integrate(_range=internalfaces(mesh),
-                              _expr=inner(jump(id(q)),idt(uhat)) );
-    a( 2_c, 3_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=id(q)*(trans(idt(uhat))*N()) );
+    a( 2_c, 3_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=inner(jump(id(q)), idt(uhat)) );
+    a( 2_c, 3_c ) += integrate(_range=boundaryfaces(mesh),
+                               _expr=id(q)*(trans(idt(uhat))*N()) );
     if ( bc_only_dirichlet )
     {
-        a( 2_c, 4_c) += integrate(_range=elements(mesh),
-                                  _expr=idt(qm)*id(q) );       
-        a( 4_c, 2_c) += integrate(_range=elements(mesh),
-                                  _expr=id(qm)*idt(q) ); 
+        a( 2_c, 4_c ) += integrate(_range=elements(mesh),
+                                   _expr=idt(qm)*id(q) );
+        a( 4_c, 2_c ) += integrate(_range=elements(mesh),
+                                   _expr=id(qm)*idt(q) );
     }
     else
     {
-        a( 4_c, 4_c) += integrate(_range=elements(mesh),
-                              _expr=id(qm)*idt(qm) );
-    } 
+        a( 4_c, 4_c ) += integrate(_range=elements(mesh),
+                                   _expr=id(qm)*idt(qm) );
+    }
     toc("a(2,3)", true);
     tic();
     a( 3_c, 0_c) += integrate(_range=internalfaces(mesh),
@@ -276,9 +276,9 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
                                _expr = -2*mu * trans(id(m))*(idt(delta)*N() ));
     toc("a(3,0)", true);
     tic();
-    a( 3_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=mu*tau_constant*(trans(leftfacet(idt(u)))*id(m)+
-                                                   trans(rightfacet(idt(u)))*id(m)) );
+    a( 3_c, 1_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=mu*tau_constant*(trans(leftfacet(idt(u)))*id(m)+
+                                                      trans(rightfacet(idt(u)))*id(m)) );
     a( 3_c, 1_c ) += integrate( _range = markedfaces( mesh, "Neumann" ),
                                 _expr = mu * tau_constant * ( trans( idt( u ) ) * id( m ) ) );
     toc("a(3,1)", true);
@@ -289,9 +289,9 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
                               _expr=idt(p)*trans(id(m))*N() );
     toc("a(3,2)", true);
     tic();
-    a( 3_c, 3_c) += integrate(_range=internalfaces(mesh),                  
-                              _expr=-sc_param*mu*tau_constant*trans(idt(uhat))*id(m) );
-    a( 3_c, 3_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),                  
+    a( 3_c, 3_c ) += integrate(_range=internalfaces(mesh),
+                               _expr=-sc_param*mu*tau_constant*trans(idt(uhat))*id(m) );
+    a( 3_c, 3_c ) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                               _expr=trans(idt(uhat))*id(m) );
     a( 3_c, 3_c ) += integrate( _range = markedfaces( mesh, "Neumann" ),
                                 _expr = -mu*tau_constant*trans( idt( uhat ) ) * id( m ) );
@@ -345,7 +345,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
             Ue(2_c).printMatlab("pe");
             Ue(3_c).printMatlab("uhate");
         }
-        
+
         auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap),_quad=ioption("quad") );
         auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up),_quad=ioption("quad") );
         auto mean_pe = mean( _range = elements( mesh ), _expr = pressure_exact,_quad=ioption("quad") )(0,0);
@@ -361,14 +361,14 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "mean pressure", mean_p ) << std::endl;
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 error pressure", l2err_pres ) << std::endl;
         toc("error");
-                    
+
         // CHECKER
         auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
                 double l2 = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap) );
                 toc("L2 stress error norm");
-                
+
                 return { { "L2", l2 } };
             };
         // compute l2 and h1 norm of u-u_h where u=solution
@@ -387,14 +387,14 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 #if 0
         status_velocity = checker("L2/H1 velocity norms",velocity_exact).runOnce( norms_velocity, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
         status_stress = checker("L2 stress norms",velocity_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-#endif        
+#endif
         delta.on( _range=elements(mesh), _expr=delta_exact );
         u.on( _range=elements(mesh), _expr=velocity_exact );
         p.on( _range=elements(mesh), _expr=pressure_exact );
     }
 
     tic();
-    std::string exportName =  "hdg_stokes";
+    std::string exportName = "hdg_stokes";
     std::string deltaName = "stress";
     std::string delta_exName = "stress-ex";
     std::string uName = "velocity";
@@ -411,7 +411,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     e->add( "vonmises", vonmises(idv(deltap)), reps );
     e->add( "principal_stress", eig(idv(deltap)), reps );
     e->add( "magnitude_stress", sqrt(inner(idv(deltap))), reps );
-    
+
     if ( boption("exact" ) )
     {
         e->add( delta_exName, delta, "nodal" );
@@ -446,7 +446,7 @@ int main( int argc, char** argv )
         // Exact solutions
         std::map<std::string,std::string> locals{
             {"dim",std::to_string(FEELPP_DIM)},
-            {"exact",std::to_string(boption("exact"))}, 
+            {"exact",std::to_string(boption("exact"))},
             {"mu",soption("mu")},
             {"potential",soption("potential")},
             {"velocity", soption("velocity")},

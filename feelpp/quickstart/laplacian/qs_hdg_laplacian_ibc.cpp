@@ -54,7 +54,7 @@ makeOptions()
         ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
         ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/feelpp/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
-        ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
+        ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )
 #if (FEELPP_DIM==2)
         ( "solution.u", po::value<std::string>()->default_value( "{0,0}" ), "solution u exact" )
 #else
@@ -69,7 +69,7 @@ makeOptions()
         ;
     return hdgoptions;
 }
- 
+
 inline
 AboutData
 makeAbout()
@@ -117,7 +117,7 @@ int hdg_laplacian()
     std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"J",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
-    auto thechecker = checker( _name= "L2/H1 convergence", 
+    auto thechecker = checker( _name= "L2/H1 convergence",
                                _solution_key="p",
                                _gradient_key="grad_p",
                                _inputs=inputs
@@ -134,7 +134,7 @@ int hdg_laplacian()
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") ); 
+    auto r_2 = expr( locals.at("r_2") );
     auto J_exact = expr( locals.at("J") );
 #else
     std::string p_exact_str = soption("solution.p");
@@ -191,7 +191,7 @@ int hdg_laplacian()
 
     cout << "#elts: " << mesh->numGlobalElements() << std::endl
          << "#faces: " << mesh->numGlobalFaces() << std::endl
-        
+
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
          << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
          << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
@@ -200,7 +200,7 @@ int hdg_laplacian()
         cout << "Ch<0> : " << Ch->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << " "
-         << cgXh->nDof() << std::endl;  
+         << cgXh->nDof() << std::endl;
 
     int status_cg = 0;
     if ( boption( "solvecg" ) == true )
@@ -209,8 +209,8 @@ int hdg_laplacian()
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
         auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
-        if ( u )        
-            status_cg = check( checker( _name= "L2/H1 convergence cG", 
+        if ( u )
+            status_cg = check( checker( _name= "L2/H1 convergence cG",
                                         _solution_key="p",
                                         _gradient_key="grad_p",
                                         _inputs=locals
@@ -342,21 +342,21 @@ int hdg_laplacian()
         if ( ibc_type == "Ibc" )
             a(1_c,3_c,0,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
                                                        _expr=-tau_constant*idt(mu)*id(w) );
-        
+
     }
     toc("a(1,3)", FLAGS_v>0);
 
     //
     // Third row a(2_c,:)
-    // 
+    //
     tic();
     a(2_c,0_c) += integrate(_range=internalfaces(mesh),
                             _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u))))
                             //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
                             );
-        
+
     toc("a(2,0).1",FLAGS_v>0);
-        
+
     tic();
     // BC
     a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
@@ -404,7 +404,7 @@ int hdg_laplacian()
     //
     // Fourth row a(3_c,:)
     //
-    
+
     for( auto const& [ibc_type,ibc_data]  : ibcs )
     {
         auto const& [ibc_space_index,ibc_marker] = ibc_data;
@@ -424,7 +424,7 @@ int hdg_laplacian()
         if ( ibc_type == "Ode" )
             a(3_c,3_c,ibc_space_index-1,ibc_space_index) += integrate( _range=markedfaces(mesh,ibc_marker),
                                                                        _expr=-id(nu)*idt(mu) );
-        
+
         tic();
         double c = 1.;
         if ( ibc_type == "Ibc" )
@@ -442,12 +442,12 @@ int hdg_laplacian()
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
 
-    
+
     // ****** Compute error ******
     auto up = U(0_c);
     auto pp = U(1_c);
 
-    
+
     tic();
     tic();
     auto Whp = Pdh<OrderP+1>( mesh, true );
@@ -465,7 +465,7 @@ int hdg_laplacian()
     ell(0_c) = integrate( _range=elements(mesh), _expr=-lambda*grad(ppp)*idv(up));
     toc("postprocessing.assembly.l",FLAGS_v>0);
     toc("postprocessing.assembly",FLAGS_v>0);
-    
+
     tic();
     tic();
     b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true);
@@ -486,7 +486,7 @@ int hdg_laplacian()
     v.on( _range=elements(mesh), _expr=u_exact );
     q.on( _range=elements(mesh), _expr=p_exact );
 
-    
+
     double I1 = integrate( _range=elements(mesh), _expr=k*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
     double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
     double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
@@ -512,7 +512,7 @@ int hdg_laplacian()
     Feel::cout << "umin= " << umin << ", umax=" << umax << " vmin= " << vmin << ", vmax=" << vmax << std::endl;
     Feel::cout << "pmin= " << pmin << ", pmax=" << pmax << " qmin= " << qmin << ", qmax=" << qmax << std::endl;
 
-    
+
     auto e = exporter( _mesh=mesh );
     e->setMesh( mesh );
     e->addRegions();
@@ -531,21 +531,21 @@ int hdg_laplacian()
     // tag::check[]
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
     solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-    status1 = check( checker( _name= "L2/H1 convergence of potential", 
+    status1 = check( checker( _name= "L2/H1 convergence of potential",
                               _solution_key="p",
                               _gradient_key="grad_p",
                               _inputs=locals
                               ), pp, s_t );
-    status2 = check( checker( _name= "L2 convergence of the flux", 
+    status2 = check( checker( _name= "L2 convergence of the flux",
                               _solution_key="u",
                               _inputs=locals
                               ), up );
-    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential",
                               _solution_key="p",
                               _gradient_key="grad_p",
                               _inputs=locals
-                              ), ppp, s_t );    
-    
+                              ), ppp, s_t );
+
     // end::check[]
 #endif
     return status_cg || status1 || status2 || status3;

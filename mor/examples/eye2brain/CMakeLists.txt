@@ -90,3 +90,31 @@ foreach( ORDER 1 2 )
 
 endforeach()
 #]==]
+
+
+
+
+
+## Stokes model
+mor_add_library( eye2brain-stokes SRCS stokes.cpp EXEC CRB_LIB_EYE2BRAIN_STOKES PLUGIN )
+target_compile_definitions(${CRB_LIB_EYE2BRAIN_STOKES} PRIVATE FEELPP_MOR_PLUGIN_NAME=eye2brain-stokes FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_EYE2BRAIN_STOKES})
+# install(FILES eye2brain.hpp DESTINATION include/feelpp/crb/eye2brain COMPONENT Devel)
+
+set(FEELPP_CRB_EYE2BRAINSTOKES_LIBRARIES ${CRB_LIB_EYE2BRAIN_STOKES} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_EYE2BRAINSTOKES_LIBRARIES PARENT_SCOPE)
+
+
+foreach( ORDER 1 2 )
+foreach( DIM 3 )
+    # configure_file( eye2brain_${D}d.cfg.in eye2brain_${D}d.cfg @ONLY )
+    mor_add_model(
+        stokes_${DIM}dP${ORDER}
+        Eye2Brain_Stokes
+        CLASS Eye2BrainStokes<${ORDER}, ${DIM}>
+        HDRS stokes.hpp
+        OPT eye2brain-stokes
+        LINK_LIBRARIES ${CRB_LIB_EYE2BRAIN_STOKES}
+    )
+    add_dependencies(feelpp_mor_eye2brain feelpp_mor_stokes_${DIM}dP${ORDER}app)
+endforeach()
+endforeach()

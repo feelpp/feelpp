@@ -2,3 +2,4 @@ eye2brain*app.cpp
 eye2brain/*D
 *.err
 *.out
+stokes*app.cpp
