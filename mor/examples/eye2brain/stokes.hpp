@@ -131,7 +131,6 @@ public:
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
 
-    void decomposition();
 
     beta_vector_type computeBetaInitialGuess( parameter_type const& mu ) override;
     beta_type computeBetaQm( element_type const& T, parameter_type const& mu ) override;
