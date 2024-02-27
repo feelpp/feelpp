@@ -61,6 +61,7 @@ __pycache__
 *.sw?
 \#*
 \.\#*
+np_*/
 /applications/crb/GeoHeatDiffusion/geoheatdiffusionapp.cpp
 /applications/crb/heatshield/heatshieldminimalversion1.cfg
 /applications/crb/heatshield/heatshieldminimalversion1.xml.in
