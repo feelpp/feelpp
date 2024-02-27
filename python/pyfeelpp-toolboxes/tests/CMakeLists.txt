@@ -15,14 +15,14 @@ foreach(toolbox in fluid cfpdes heat electric thermoelectric heatfluid )
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
           PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-          ${PYTHON_EXECUTABLE} -m pytest -k ${toolbox} -s ${CMAKE_CURRENT_SOURCE_DIR}
+          ${Python3_EXECUTABLE} -m pytest -k ${toolbox} -s ${CMAKE_CURRENT_SOURCE_DIR}
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
   add_test (NAME feelpp_toolbox_python-tests-mpi-${toolbox}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
           PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-          mpirun -np 2 ${PYTHON_EXECUTABLE} -m pytest -k ${toolbox} -s ${CMAKE_CURRENT_SOURCE_DIR}
+          mpirun -np 2 ${Python3_EXECUTABLE} -m pytest -k ${toolbox} -s ${CMAKE_CURRENT_SOURCE_DIR}
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 endforeach()
