@@ -98,7 +98,7 @@
                 "H5PP_ENABLE_PCH": "FALSE",
                 "H5PP_ENABLE_CCACHE": "FALSE",
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
-                "CMAKE_COMPILE_WARNING_AS_ERROR": "TRUE"
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE"
             },
             "environment": {
                 "VERBOSE": "1"
