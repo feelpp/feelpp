@@ -11,21 +11,23 @@
             "displayName": "Default Config",
             "description": "Default build using Makefile generator",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/default",
+            "binaryDir": "${sourceDir}/build/${presetName}$env{DISTRIBUTION}$env{ARCH}",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/default/install/",
-                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
                 "CMAKE_CXX_COMPILER": "clang++",
-                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "clang",
+                "FEELPP_STD_CPP": "17",
                 "FEELPP_ENABLE_TOOLBOXES": "ON",
                 "FEELPP_ENABLE_MOR": "ON",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "ON",
-                "FEELPP_USE_EXTERNAL_EIGEN3": "OFF"
+                "FEELPP_USE_EXTERNAL_EIGEN3": "OFF",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE"
             },
             "environment": {
-                "MY_ENVIRONMENT_VARIABLE": "Test"
+                "LDFLAGS": "-Wl,--copy-dt-needed-entries",
+                "NINJA_STATUS": "[run %r|beg %s|fin %f|tot %t|rate %o|time %e]:"
             },
             "vendor": {
                 "example.com/ExampleIDE/1.0": {
@@ -34,17 +36,195 @@
             }
         },
         {
-            "name": "specx",
-            "inherits": "default",
-            "displayName": "specx",
-            "description": "Build feelpp with specx",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/specx",
+            "name": "warnings",
+            "hidden": true,
+            "description": "Enable compiler warnings on linux and osx",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/specx/install/",
-                "FEELPP_ENABLE_BENCHMARKS": "ON",
-                "FEELPP_ENABLE_SPECX": "ON"
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wunused",
+                "CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wunused"
             }
+        },
+        {
+            "name": "usrlocal",
+            "hidden": true,
+            "description": "Install in /usr/local",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "/usr/local"
+            }
+        },
+        {
+            "name": "cpp20",
+            "hidden": true,
+            "description": "Enable compiler C++20",
+            "cacheVariables": {
+                "FEELPP_STD_CPP": "20"
+            }
+        },
+        {
+            "name": "cpp23",
+            "hidden": true,
+            "description": "Enable compiler C++23",
+            "cacheVariables": {
+                "FEELPP_STD_CPP": "23"
+            }
+        },
+        {
+            "name": "release",
+            "hidden": false,
+            "displayName": "Release|no package manager",
+            "description": "Plain release build without dependency handling.",
+            "inherits": [
+                "default"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "debug",
+            "hidden": false,
+            "displayName": "Debug|no package manager",
+            "description": "Plain debug build without dependency handling.",
+            "inherits": [
+                "default"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_VERBOSE_MAKEFILE": "TRUE",
+                "CMAKE_MESSAGE_LOG_LEVEL": "VERBOSE",
+                "H5PP_ENABLE_TESTS": "TRUE",
+                "H5PP_BUILD_EXAMPLES": "TRUE",
+                "H5PP_ENABLE_ASAN": "TRUE",
+                "H5PP_ENABLE_PCH": "FALSE",
+                "H5PP_ENABLE_CCACHE": "FALSE",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "TRUE"
+            },
+            "environment": {
+                "VERBOSE": "1"
+            }
+        },
+        {
+            "name": "gcc",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "clang",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "release-cmake",
+            "displayName": "Release|cmake package manager",
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "inherits": [
+                "release",
+                "default"
+            ]
+        },
+        {
+            "name": "release-cpp20-cmake",
+            "displayName": "Release|c++20|cmake package manager",
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "inherits": [
+                "release",
+                "cpp20",
+                "default"
+            ]
+        },
+        {
+            "name": "release-cpp23-cmake",
+            "displayName": "Release|c++23|cmake package manager",
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "inherits": [
+                "release",
+                "cpp23",
+                "default"
+            ]
+        },
+        {
+            "name": "release-gcc-cmake",
+            "displayName": "Release|gcc|cmake package manager",
+            "inherits": [
+                "gcc",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cmake",
+            "displayName": "Release|clang|cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-gcc-cpp20-cmake",
+            "displayName": "Release|gcc|c++20|cmake package manager",
+            "inherits": [
+                "gcc",
+                "cpp20",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cpp20-cmake",
+            "displayName": "Release|clang|c++20|cmake package manager",
+            "inherits": [
+                "clang",
+                "cpp20",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-gcc-cpp23-cmake",
+            "displayName": "Release|gcc|c++23|cmake package manager",
+            "inherits": [
+                "gcc",
+                "cpp23",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cpp23-cmake",
+            "displayName": "Release|clang|c++23|cmake package manager",
+            "inherits": [
+                "clang",
+                "cpp23",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "debug-cmake",
+            "displayName": "Debug|cmake package manager",
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "inherits": [
+                "debug",
+                "default"
+            ]
+        },
+        {
+            "name": "debug-gcc-cmake",
+            "displayName": "Debug|gcc|cmake package manager",
+            "inherits": [
+                "gcc",
+                "debug-cmake"
+            ]
+        },
+        {
+            "name": "debug-clang-cmake",
+            "displayName": "Debug|clang|cmake package manager",
+            "inherits": [
+                "clang",
+                "debug-cmake"
+            ]
         },
         {
             "name": "dbg",
@@ -72,13 +252,13 @@
         },
         {
             "name": "feelpp",
-            "inherits": "default",
-            "displayName": "feelpp",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "feelpp|clang|release|cmake package manager",
             "description": "Build only the Feel++ library Component",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/feelpp",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/feelpp/install/",
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": "OFF",
@@ -87,6 +267,15 @@
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "OFF"
             }
+        },
+        {
+            "name": "feelpp-usrlocal",
+            "inherits": [
+                "usrlocal",
+                "feelpp"
+            ],
+            "displayName": "feelpp|usrlocal|clang|release|cmake package manager",
+            "description": "Build only the Feel++ library Component and install in /usr/local"
         },
         {
             "name": "feelpp+specx",
@@ -277,9 +466,44 @@
             "jobs": 25
         },
         {
-            "name": "specx",
-            "configurePreset": "specx",
-            "jobs": 25
+            "name": "release",
+            "configurePreset": "release",
+            "inherits": "default"
+        },
+        {
+            "name": "release-cmake",
+            "configurePreset": "release-cmake",
+            "inherits": "release"
+        },
+        {
+            "name": "release-gcc-cmake",
+            "configurePreset": "release-gcc-cmake",
+            "inherits": "release"
+        },
+        {
+            "name": "release-clang-cmake",
+            "configurePreset": "release-clang-cmake",
+            "inherits": "release"
+        },
+        {
+            "name": "release-gcc-cpp20-cmake",
+            "configurePreset": "release-gcc-cpp20-cmake",
+            "inherits": "release"
+        },
+        {
+            "name": "release-clang-cpp20-cmake",
+            "configurePreset": "release-clang-cpp20-cmake",
+            "inherits": "release"
+        },
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "inherits": "default"
+        },
+        {
+            "name": "debug-clang-cmake",
+            "configurePreset": "debug-clang-cmake",
+            "inherits": "debug"
         },
         {
             "name": "dbg",
@@ -299,6 +523,15 @@
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
+            "inherits": "default",
+            "targets": [
+                "all",
+                "install"
+            ]
+        },
+        {
+            "name": "feelpp-usrlocal",
+            "configurePreset": "feelpp-usrlocal",
             "inherits": "default",
             "targets": [
                 "all",
@@ -386,14 +619,48 @@
             }
         },
         {
-            "name": "specx",
-            "configurePreset": "specx",
+            "name": "release",
+            "configurePreset": "release",
+            "configuration": "Release",
             "inherits": "default"
+        },
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "configuration": "Debug",
+            "inherits": "default"
+        },
+        {
+            "name": "release-cmake",
+            "configurePreset": "release-cmake",
+            "configuration": "Release",
+            "inherits": "default"
+        },
+        {
+            "name": "release-clang-cmake",
+            "configurePreset": "release-clang-cmake",
+            "configuration": "Release",
+            "inherits": "default"
+        },
+        {
+            "name": "release-clang-cpp20-cmake",
+            "configurePreset": "release-clang-cpp20-cmake",
+            "configuration": "Release",
+            "inherits": ["default"]
+        },
+        {
+            "name": "release-gcc-cpp20-cmake",
+            "configurePreset": "release-gcc-cpp20-cmake",
+            "configuration": "Release",
+            "inherits": ["default"]
         },
         {
             "name": "feelpp",
             "configurePreset": "feelpp",
-            "inherits":"default"
+            "inherits":"default",
+            "execution": {
+                "timeout": 40
+            }
         },
         {
             "name": "toolboxes",

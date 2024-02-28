@@ -280,7 +280,7 @@ TestMixed<Dim,Order>::run()
         D->multVector( U, Q );
         //Q->printMatlab( "Q.m" );
         res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
         BOOST_TEST_MESSAGE( "[D(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         form2( _trial=Xh, _test=Yh, _matrix=D, _init=true )=

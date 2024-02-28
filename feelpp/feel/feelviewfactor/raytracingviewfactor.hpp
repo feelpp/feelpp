@@ -204,8 +204,8 @@ public:
                 }
             }
             // std::cout <<      M_view_factor_row << std::endl;
-            std::cout <<      M_markers_string << std::endl;
-            std::cout <<      M_markers_int << std::endl;
+            // std::cout <<      M_markers_string << std::endl;
+            // std::cout <<      M_markers_int << std::endl;
 
             std::random_device rd;  // Will be used to obtain a seed for the random number engine
             std::random_device rd2;  // Will be used to obtain a seed for the random number engine
@@ -329,7 +329,7 @@ public:
             {
                 // Surface with marker i launches rays to surface of marker j
                 this->vf_.row(i)=computeViewFactor_bvh(this->list_of_bdys_[i]);
-                std::cout << this->vf_.row(i) << std::endl;
+                //std::cout << this->vf_.row(i) << std::endl;
             }
         }
         else
@@ -404,7 +404,7 @@ public:
                         row_vf_matrix(std::distance(M_markers_int.begin(),index_view_factor))++;
                     }
                     else{
-                        std::cout << "RAY NOT INTERSECTING: Rand origin" << ray.origin() << "rand_dir" <<  ray.dir() <<std::endl;
+                        //std::cout << "RAY NOT INTERSECTING: Rand origin" << ray.origin() << "rand_dir" <<  ray.dir() <<std::endl;
                     }
                 }
                 return row_vf_matrix;
@@ -430,12 +430,12 @@ public:
 
         }
         M_view_factor_row /=(1.*M_Nrays*ray_submesh->numElements());
-        std::cout << M_Nrays*ray_submesh->numElements() << std::endl;
+        //std::cout << M_Nrays*ray_submesh->numElements() << std::endl;
 
         auto index_marker =std::find(M_markers_string.begin(),M_markers_string.end(),marker);
         this->areas_[std::distance(M_markers_string.begin(),index_marker)] = integrate(_range=elements(ray_submesh),_expr=cst(1.)).evaluate()(0,0);
 
-        std::cout << "Areas_" << marker << " " << this->areas_[std::distance(M_markers_string.begin(),index_marker)] << std::endl;
+        //std::cout << "Areas_" << marker << " " << this->areas_[std::distance(M_markers_string.begin(),index_marker)] << std::endl;
 
         return M_view_factor_row;
     }

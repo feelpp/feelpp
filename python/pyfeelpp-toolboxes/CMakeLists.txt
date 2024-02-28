@@ -74,7 +74,7 @@ if (FEELPP_ENABLE_PYFEELPP_TOOLBOXES)
   # install(
   #   CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_TOOLBOXES_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
   #   CODE "
-  #     execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_TOOLBOXES_PY} install --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
+  #     execute_process(COMMAND ${Python3_EXECUTABLE} ${SETUP_TOOLBOXES_PY} install --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
   #     if(ret EQUAL \"1\")
   #       message( FATAL_ERROR \"pyfeelpp-toolboxes setup.py bad exit status\")
   #     endif()

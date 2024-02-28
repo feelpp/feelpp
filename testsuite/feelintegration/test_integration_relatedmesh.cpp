@@ -196,7 +196,7 @@ void run( bool useSMD )
                                     _expr=idt(u1)*id(u2) );
     double energyFacesNonStandardC = bfFacesNonStandardC(u2,u1);
     BOOST_CHECK_CLOSE( energyFacesNonStandardC, 2.4, 1e-12 );
-    Feel::cout << "energyFacesNonStandardC " << energyFacesNonStandardC << " [2.4]\n";
+    BOOST_TEST_MESSAGE( fmt::format("energyFacesNonStandardC computed value [{}] should be equal to [2.4]",energyFacesNonStandardC) );
 
     //-----------------------------------------------------------//
     if ( ctxRelationLoc )

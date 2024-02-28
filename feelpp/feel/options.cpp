@@ -998,6 +998,7 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.ensightgold.save-face" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Save nodal functions on the face" )
         //  single
         ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+        ( prefixvm( prefix,"exporter.byparts" ).c_str(), Feel::po::value<bool>()->default_value( true ), "export by parts the mesh" )
 
         // merge timeteps or domains into single files
         ( prefixvm( prefix,"exporter.ensightgold.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )

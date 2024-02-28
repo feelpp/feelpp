@@ -362,11 +362,30 @@ public:
             CHECK( 0 <= ts && ts < M_ts_set.size() ) << "invalid time set index " << ts;
             return M_ts_set[ts];
         }
-
+    /**
+     * @return true if export by parts if true, false otherwise
+     */
+    bool exportByParts() const
+    {
+        return M_export_by_parts;
+    }
+    /**
+     * set the export by parts to \p b
+     */
+    void setExportByParts( bool b )
+    {
+        M_export_by_parts = b;
+    }
+    /**
+     * @return true if use single transient file if true, false otherwise
+     */
     bool useSingleTransientFile() const
         {
             return M_use_single_transient_file;
         }
+    /**
+     * set the use single transient file to \p s
+     */
     void setUseSingleTransientFile( bool s )
         {
             M_use_single_transient_file = s;
@@ -549,6 +568,7 @@ protected:
 
 
     bool M_do_export;
+    bool M_export_by_parts;
     bool M_use_single_transient_file;
     std::string M_type;
     std::string M_prefix;
@@ -568,6 +588,7 @@ auto exporter( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && mesh = args.get(_mesh);
     bool fileset = args.get_else_invocable(_fileset,[](){ return boption(_name="exporter.fileset"); } );
+    bool byparts = args.get_else_invocable(_byparts,[](){ return boption(_name="exporter.byparts"); } );
     std::string const& name = args.get_else_invocable(_name,[](){ return Environment::about().appName(); } );
     std::string const& geo = args.get_else_invocable(_geo, [](){ return soption(_name="exporter.geometry"); } );
     auto && path = args.get_else_invocable(_path, [&name](){ return std::string((fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string()); } );
@@ -578,6 +599,7 @@ auto exporter( Ts && ... v )
     auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
+    e->setExportByParts( byparts );
     if ( std::string(geo).compare("change_coords_only") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
     else if ( std::string(geo).compare("change") == 0 )
