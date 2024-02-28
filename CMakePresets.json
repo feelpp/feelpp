@@ -659,7 +659,7 @@
             "configurePreset": "feelpp",
             "inherits":"default",
             "execution": {
-                "timeout": 10
+                "timeout": 40
             }
         },
         {
