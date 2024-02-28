@@ -120,11 +120,15 @@ public:
     using geoelement_type = typename gmc_type::element_type;
     using fe_type = typename space_type::fe_type;
 
-    SensorPointwise() = default;
+    SensorPointwise() :
+        super_type(),
+        M_position(),
+        scale_expr_( "1" )
+    {}
     SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise", std::string const& scale = "1"):
         super_type( space, n, "pointwise" ),
         M_position(p),
-        scale_expr_( scale )
+        scale_expr_( scale.empty() ? "1" : scale )
     {
         this->init();
     }
@@ -403,7 +407,11 @@ public:
                 auto coords = sensor["coord"].template get<std::vector<double>>();
                 for( int i = 0; i < space_type::nDim; ++i )
                     n(i) = coords[i];
-                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name);
+                std::string scale_expr = "1";
+                if ( sensor.contains("scale") )
+                    scale_expr = sensor["scale"].template get<std::string>();
+
+                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name, scale_expr);
                 this->insert(value_type(name, s));
             }
             else if( type == "gaussian" )

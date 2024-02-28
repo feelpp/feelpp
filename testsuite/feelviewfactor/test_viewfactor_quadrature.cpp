@@ -30,14 +30,15 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_vf" ,
-                     "test_vf" ,
+    AboutData about( "test_vf_quadrature" ,
+                     "test_vf_quadrature",
                      "0.2",
                      "nD(n=2,3) test vf",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2022 Feel++ Consortium" );
+                     "Copyright (c) 2022-2024 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@cemosis.fr", "" );
+    about.addAuthor( "Luca Berti", "developer", "", "" );
     return about;
 
 }
