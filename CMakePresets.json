@@ -11,9 +11,9 @@
             "displayName": "Default Config",
             "description": "Default build using Makefile generator",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/${presetName}",
+            "binaryDir": "${sourceDir}/build/${presetName}$env{DISTRIBUTION}$env{ARCH}",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_C_COMPILER": "clang",
                 "FEELPP_STD_CPP": "17",
