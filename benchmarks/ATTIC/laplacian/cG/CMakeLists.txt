@@ -53,14 +53,14 @@ add_dependencies( benchmarks ${targetname} )
 # test each backend
     foreach( BACKEND ${FEELPP_BACKENDS} )
       add_test( feel_bench_${BENCH}-${BACKEND}-strong
-        ${PYTHON_EXECUTABLE}
+        ${Python3_EXECUTABLE}
         ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --path=${FEELPP_BUILD_DIR}/benchmarks/laplacian/cG/
         --cmdargs="--backend=${BACKEND} --weak=0 --export=0 ${${BACKEND}_SOLVER_OPTIONS}" )
       set_property(TEST feel_bench_${BENCH}-${BACKEND}-strong PROPERTY LABELS benchmarks)
       add_test( feel_bench_${BENCH}-${BACKEND}-weak
-        ${PYTHON_EXECUTABLE}
+        ${Python3_EXECUTABLE}
         ${FEELPP_SOURCE_DIR}/benchmarks/python/batch_validation.py
         --program=${targetname}
         --mode=0
