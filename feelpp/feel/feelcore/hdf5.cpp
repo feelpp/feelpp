@@ -81,8 +81,8 @@ void Feel::HDF5::openFile( const std::string& fileName,
 
     // Set up file access property list with parallel I/O access
     plistId = H5Pcreate (H5P_FILE_ACCESS);
+#if defined( H5_HAVE_PARALLEL )
     H5Pset_fapl_mpio (plistId, mpiComm, info);
-
     // Set properties based on member variables
     if (useCollectiveMetadataOps_) 
     {
@@ -92,7 +92,7 @@ void Feel::HDF5::openFile( const std::string& fileName,
     {
         H5Pset_coll_metadata_write(plistId, true);
     }
-
+#endif
 
     // Create/open a file collectively and release property list identifier.
     if (existing)
@@ -189,8 +189,10 @@ void Feel::HDF5::createTable ( const std::string& groupName,
                                       currentTable.filespace, H5P_DEFAULT,
                                       H5P_DEFAULT, H5P_DEFAULT);
 #endif
+#if defined( H5_HAVE_PARALLEL )
     currentTable.plist = H5Pcreate (H5P_DATASET_XFER);
     H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_COLLECTIVE);
+#endif    
 }
 
 void Feel::HDF5::createTable( const std::string& tableName,
@@ -210,8 +212,10 @@ void Feel::HDF5::createTable( const std::string& tableName,
                                       currentTable.filespace, H5P_DEFAULT,
                                       H5P_DEFAULT, H5P_DEFAULT);
 #endif
+#if defined( H5_HAVE_PARALLEL )
     currentTable.plist = H5Pcreate (H5P_DATASET_XFER);
     H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_INDEPENDENT);
+#endif    
 }
 
 void Feel::HDF5::openTable( const std::string& tableName,
@@ -226,8 +230,10 @@ void Feel::HDF5::openTable( const std::string& tableName,
 #endif
     currentTable.filespace = H5Dget_space (currentTable.dataset);
     H5Sget_simple_extent_dims (currentTable.filespace, tableDimensions, NULL);
+#if defined( H5_HAVE_PARALLEL )    
     currentTable.plist = H5Pcreate (H5P_DATASET_XFER);
     H5Pset_dxpl_mpio (currentTable.plist, H5FD_MPIO_COLLECTIVE);
+#endif    
 }
 
 void Feel::HDF5::write( const std::string& tableName,
