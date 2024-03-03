@@ -1,6 +1,6 @@
 SetFactory("OpenCASCADE");
 //+
-h = 0.1; 
+h = 0.1;
 
 N = DefineNumber[ 4, Name "Parameters/N" ];
 L = DefineNumber[ 2.5, Name "Parameters/L" ];
@@ -36,7 +36,7 @@ Physical Curve("Gamma_ext") = bdy[0];
 For ii In { 1 : (#bdy[]-1) }
     If (bdy[ii] != 4)
         Printf("boundary number %g = %g", ii, Abs(bdy[ii]));
-        Physical Curve("Gamma_ext") += Abs(bdy[ii]);   
+        Physical Curve("Gamma_ext") += Abs(bdy[ii]);
     Else
         Physical Curve("Gamma_root") = bdy[ii];
     EndIf

@@ -2,21 +2,21 @@ import sys
 import os
 import pytest
 
-
 import feelpp
 from feelpp.mor.nirb.nirb import *
+from feelpp.mor.nirb.greedy import *
+from feelpp.mor.nirb.nirbOffline import run_offline_pod, run_offline_greedy
+from feelpp.mor.nirb.nirbOnline import run_online
 
-# desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification, doGreedy), 'name-of-the-test')
+# desc : (('path', 'config-file', 'model-file', rectification), 'name-of-the-test')
 casesNirb = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect wogreedy'),
-        #  (('testcase/nirb/square', 'square.cfg', 'square.json', True, True) , 'square2d rect egreedy'),
-         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
-         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', False) , 'square2d drect'),
+         (('testcase/nirb/square', 'square.cfg', 'square.json', True) , 'square2d erect'),
+         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True) , 'thermal-fin-3d rect'),
         ]
-# NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy" 
+# NB: for the name of the test, erect is a keyword standing for "enable rectification", and drect for "disable rectification"
 cases_params_nirb, cases_ids_nirb = list(zip(*casesNirb))
 
 casesInit = [
@@ -26,68 +26,92 @@ casesInit = [
 cases_paramsInit, cases_idsInit = list(zip(*casesInit))
 
 
-def run_offline(model_path, rect, greedy):
-    nbSnap = 6
-    nirb_config = feelpp.readJson(model_path)['nirb']
-    nirb_config['doRectification'] = rect
-    nirb_off = nirbOffline(**nirb_config, initCoarse=True)
-    nirb_off.initModel()
-    nirb_off.generateOperators(coarse=True)
-
-    if greedy:
-        _,_,_ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=nbSnap, computeCoarse=True, samplingMode="random")
-    else:
-        _ = nirb_off.initProblem(nbSnap)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10)
-
-    tolortho =1.e-8
-    nirb_off.orthonormalizeL2(tol=tolortho)
-    
-    assert nirb_off.checkL2Orthonormalized(tol=tolortho), "L2 orthonormalization failed"
-    # assert nirb_off.checkH1Orthonormalized(), "H1 orthonormalization failed"
-
-    nirb_off.saveData(force=True)
 
 
-
-def run_online(model_path, rect):
-    nbSnap=6
-    nirb_config = feelpp.readJson(model_path)['nirb']
-    nirb_config['doRectification'] = rect
-    nirb_on = nirbOnline(**nirb_config)
-    nirb_on.initModel()
-    err = nirb_on.loadData(nbSnap=nbSnap)
-    assert err == 0, "loadData failed"
-
-    mu = nirb_on.Dmu.element()
-
-    uHh = nirb_on.getOnlineSol(mu)
-    uH = nirb_on.getInterpSol(mu)
-    uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-    errorNirb = nirb_on.normMat(uHh - uh)
-    errorInterp = nirb_on.normMat(uH - uh)
-
-    # assert errorNirb<0.08, f"higher nirb error value"
-    # assert errorInterp<0.05, f"higher interp error value"
-
-@pytest.mark.parametrize("dir,cfg,json,rect,greedy", cases_params_nirb, ids=cases_ids_nirb)
-def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):
+@pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
+def test_nirb_pod(dir, cfg, json, rect, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
     feelpp.Environment.setConfigFile(casefile)
 
-    run_offline(model_path, rect, greedy)
-    run_online(model_path, rect)
+    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config['doRectification'] = rect
+    nirb_config['doGreedy'] = False
+    # It is just for tests so we take large mesh to fasten the computation
+    if nirb_config['dim'] == 2:
+        nirb_config['H'] = 0.1
+        nirb_config['h'] = 0.01
+    else:
+        nirb_config['H'] = 0.5
+        nirb_config['h'] = 0.2
+    nirb_config['nbSnapshots'] = 10
 
-@pytest.mark.parametrize("dir,cfg,json", cases_paramsInit, ids=cases_idsInit)
+    nirb_off = run_offline_pod(nirb_config)
+    path = nirb_off.saveData(force=True)
+
+    s = nirb_off.Dmu.sampling()
+    s.sampling(10, "random")
+
+    Nbasis = nirb_off.N
+
+    # Check that the online solution is indeed computed
+    run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis, rectification=rect)
+    run_online(nirb_config, path, Xi=s.getVector(), rectification=rect)
+
+    if Nbasis > 4:
+        # Check that we can load smaller basis
+        run_online(nirb_config, path, nbSnap=Nbasis-2, Xi=s.getVector(), rectification=rect)
+        # Check that we can compute solution with a subbasis
+        run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis - 2, rectification=rect)
+
+    # assert errorNirb<0.08, f"higher nirb error value"
+    # assert errorInterp<0.05, f"higher interp error value"
+
+@pytest.mark.parametrize("dir, cfg, json, rect", cases_params_nirb, ids=cases_ids_nirb)
+def test_nirb_greedy(dir, cfg, json, rect, init_feelpp):
+    e = init_feelpp
+    casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
+    model_path = os.path.join(os.path.dirname(__file__), dir, json)
+    feelpp.Environment.setConfigFile(casefile)
+
+    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config['doRectification'] = rect
+    nirb_config['doGreedy'] = True
+    # It is just for tests so we take large mesh to fasten the computation
+    if nirb_config['dim'] == 2:
+        nirb_config['H'] = 0.1
+        nirb_config['h'] = 0.01
+    else:
+        nirb_config['H'] = 0.5
+        nirb_config['h'] = 0.2
+
+    nirb_offline, _, _ = run_offline_greedy(nirb_config, 5, 200, Nmax=20)
+    path = nirb_offline.saveData(force=True)
+    Nbasis = nirb_offline.N
+    s = nirb_offline.Dmu.sampling()
+    s.sampling(10, "random")
+
+    # Check that the online solution is indeed computed
+    run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis, rectification=rect)
+    run_online(nirb_config, path, Xi=s.getVector(), rectification=rect)
+
+    if Nbasis > 4:
+        # Check that we can load smaller basis
+        run_online(nirb_config, path, nbSnap=Nbasis-2, Xi=s.getVector(), rectification=rect)
+        # Check that we can compute solution with a subbasis
+        run_online(nirb_config, path, Xi=s.getVector(), Nb=Nbasis - 2, rectification=rect)
+
+@pytest.mark.parametrize("dir, cfg, json", cases_paramsInit, ids=cases_idsInit)
 def test_initializer(dir, cfg, json, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
-    
+
+    feelpp.Environment.setConfigFile(casefile)
     nirb_config = feelpp.readJson(model_path)['nirb']
     nirb_config['doRectification'] = True
+    nirb_config['doGreedy'] = True
     tbModel = ToolboxModel(**nirb_config)
     tbModel.initModel()
 

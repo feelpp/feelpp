@@ -88,14 +88,14 @@
     },
     "InitialConditions":
     {
-        "temperature": 
+        "temperature":
         {
-            "Expression": 
+            "Expression":
             {
-                "init": 
+                "init":
                 {
-                    "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"], 
-                    "expr":"0" 
+                    "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"],
+                    "expr":"0"
                 }
             }
         }
@@ -131,7 +131,7 @@
 
     "nirb":
     {
-        "H": 0.25,
+        "H": 0.5,
         "h": "H**2:H",
         "dim": 3,
         "order": 1,

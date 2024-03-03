@@ -10,7 +10,8 @@ import feelpp.toolboxes.core as core
 from petsc4py import PETSc
 from slepc4py import SLEPc
 import numpy as np
-from mpi4py import MPI 
+from mpi4py import MPI
+import random
 
 
 ############################################################################################################
@@ -86,8 +87,8 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
     """
     s = Dmu.sampling()
     s.sample(size, samplingMode)
+    s.writeOnFile(path)
     if feelpp.Environment.isMasterRank():
-        s.writeOnFile(path)
         print("Sampling saved in ", path)
 
     return s.getVector()
@@ -95,11 +96,11 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
 
 
 def samplingEqui(model_path,Ns,type='equidistribute'):
-    """ Get an equidistribute sampling of parameter 
+    """ Get an equidistribute sampling of parameter
 
     Args:
-        model_path (str): model path 
-        Ns (int): number of snapshot 
+        model_path (str): model path
+        Ns (int): number of snapshot
         type (str, optional): type of the equidistribution. Defaults to 'equidistribute'.
     """
     model = feelpp.readJson(model_path)
@@ -111,13 +112,72 @@ def samplingEqui(model_path,Ns,type='equidistribute'):
     key = crb.keys()
     mus = []
     dic = {}
-    for i in range(Ns): 
+    for i in range(Ns):
         for k in key:
             dic[k] = crb[k]['min'] + i*(crb[k]['max'] - crb[k]['min'])/float(Ns)
         mu.setParameters(dic)
         mus.append(mu)
-    
-    return mus 
+
+    return mus
+
+def SamplingPreProcess(Dmu,Ntrain=200, Ntest=50,path="./", idmodel='s4', samplingMode='log-random'):
+    """Generate and save sampling for trainning and testing. It ensure that both sampling will be distinct
+
+    Parameters
+    ----------
+    Dmu : feelpp.ParameterSpace
+        parameter space
+    Ntrain : int, optional
+        number of trainning parameter, by default 200
+    Ntest : int, optional
+        number of testing parameter, by default 50
+    path : str, optional
+        directory to save datas, by default "./"
+    idmodel : str, optional
+        end of file before extension, by default 's4'
+    samplingMode : str, optional
+        feelpp sampling mode , by default 'log-random'
+
+    Returns
+    -------
+    None
+        write the sampling on file named by :
+        sampling_train_{idmodel}_N{Ntrain}.sample
+        sampling_test_{idmodel}_N{Ntest}.sample
+    """
+
+    Nglob = Ntrain + Ntest + 100
+    g = Dmu.sampling()
+    g.sampling(Nglob, samplingMode)
+    Xglob = g.getVector()
+
+    if feelpp.Environment.isMasterRank():
+        itest = random.sample(range(Nglob), k=Ntest)
+        inp = np.array(itest, dtype='i')
+    else:
+        inp = np.empty(Ntest, dtype='i')
+
+    feelpp.Environment.worldComm().globalComm().Bcast(inp, root=0)
+    itest = list(inp)
+
+    Xtest = [Xglob[i] for i in itest]
+    Xtrain = [Xglob[i] for i in range(Nglob) if i not in itest]
+    Xtrain = Xtrain[:Ntrain]
+
+    g.setElements(Xtest)
+    if feelpp.Environment.isMasterRank():
+        Xtest_path = f"{path}/sampling_test_{idmodel}_N{Ntest}.sample"
+        g.writeOnFile(Xtest_path)
+
+    g.setElements(Xtrain)
+    if feelpp.Environment.isMasterRank():
+        Xtrain_path = f"{path}/sampling_train_{idmodel}_N{Ntrain}.sample"
+        g.writeOnFile(Xtrain_path)
+
+    if feelpp.Environment.isMasterRank():
+        print(f"[NIRB] Sampling saved on path : {path}")
+
+    return Xtrain, Xtest
 
 
 ############################################################################################################
@@ -152,7 +212,7 @@ def SavePetscArrayBin(filename, PetscAray):
     outputfile = os.path.join(filename)
 
     viewer = PETSc.Viewer().createBinary(outputfile, 'w')
-    
+
     # print(help(viewer.pushFormat))
     # print(help(viewer.Format))
 
@@ -163,8 +223,8 @@ def SavePetscArrayBin(filename, PetscAray):
 
 def SlepcEigenV(matrix, epsilon = 1.e-8):
     """
-    Computes eigenpairs of a symetric definite
-    matrix in petsc.mat format. The basis vectors returned are orthonormalized 
+    Computes eigenpairs of a symetric definite matrix in petsc.mat format.
+    The basis vectors returned are orthonormalized
 
     Parameters
     ----------
@@ -177,26 +237,26 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
     eigenvectors (list) : kept eigenvectors associated to kept eigenvalues in format PETSc.Vec
     """
 
-    # Get eigenpairs of the matrix 
-    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver  
-    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential 
+    # Get eigenpairs of the matrix
+    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver
+    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential
 
     E.setOperators(matrix)
     E.setFromOptions()
     E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
     E.setDimensions(matrix.size[1]) # set the number of eigen val to compute
-    E.setTolerances(epsilon) # set the tolerance used for the convergence 
+    E.setTolerances(epsilon) # set the tolerance used for the convergence
 
     E.solve()
-    nbmaxEv = E.getConverged() # number of eigenpairs 
- 
+    nbmaxEv = E.getConverged() # number of eigenpairs
+
     eigenValues = []
-    eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues 
+    eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues
 
     for i in range(nbmaxEv):
         eigenValues.append(float(E.getEigenvalue(i).real))
-    
-    E.destroy() # destroy the solver object 
+
+    E.destroy() # destroy the solver object
 
     eigenValues = np.array(eigenValues)
     idx = eigenValues.argsort()[::-1]
@@ -204,7 +264,6 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 
     eigenVectors = [eigenVectors[i] for i in idx]
 
-    
     return eigenValues, eigenVectors
 
 ############################################################################################################
@@ -213,8 +272,8 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 #                                                                                                          #
 ############################################################################################################
 def WriteVecAppend(filename, array):
-    """ Write an array or list in filename with append mode 
-            the vector value will be writen horizontally 
+    """ Write an array or list in filename with append mode
+            the vector value will be writen horizontally
     """
     with open(filename, 'a+') as file:
         file.write(' '.join(str(i) for i in list(array))+"\n")
