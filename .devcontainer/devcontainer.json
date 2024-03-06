@@ -24,6 +24,8 @@
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/workspaces/feelpp,type=bind,consistency=cached"
 	],
+	"remoteUser": "feelpp",
+	"updateRemoteUserUID": true,
 	"postCreateCommand": "/workspaces/feelpp/.devcontainer/detect_platform.sh",
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
