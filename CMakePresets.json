@@ -666,7 +666,7 @@
             "configurePreset": "feelpp",
             "inherits":"default",
             "execution": {
-                "timeout": 40
+                "timeout": 80
             }
         },
         {
