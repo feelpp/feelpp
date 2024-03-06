@@ -297,23 +297,25 @@
         },
         {
             "name": "toolboxes",
-            "inherits": "default",
-            "displayName": "toolboxes",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "toolboxes|clang|release|cmake package manager",
             "description": "Build only the Feel++ Toolboxes Component",
-            "binaryDir": "${sourceDir}/build/toolboxes",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "toolboxes",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/toolboxes/install/"
+                "FEELPP_COMPONENT": "toolboxes"
             }
         },
         {
             "name": "mor",
-            "inherits": "default",
-            "displayName": "mor",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "mor|clang|release|cmake package manager",
             "description": "Build only the Feel++ MOR Component",
-            "binaryDir": "${sourceDir}/build/mor",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor/install/",
                 "FEELPP_COMPONENT": "mor",
                 "FEELPP_ENABLE_RESEARCH": "OFF",
                 "FEELPP_ENABLE_OPENTURNS": "ON"
@@ -348,24 +350,26 @@
         },
         {
             "name": "feelpp-python",
-            "inherits": "default",
-            "displayName": "python",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "python|clang|release|cmake package manager",
             "description": "Build only the Feel++ python Component",
-            "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "python",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
+                "FEELPP_COMPONENT": "python"
             }
         },
         {
             "name": "python",
-            "inherits": "default",
-            "displayName": "python",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "python|clang|release|cmake package manager",
             "description": "Build only the Feel++ python Component",
-            "binaryDir": "${sourceDir}/build/python",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "python",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python/install/"
+                "FEELPP_COMPONENT": "python"
             }
         },
         {
@@ -381,44 +385,48 @@
         },
         {
             "name": "mor_python",
-            "inherits": "default",
-            "displayName": "mor_python",
+            "inherits": [
+                "mor",
+                "python"
+            ],
+            "displayName": "mor_python|clang|release|cmake package manager",            
             "description": "Build the Feel++ MOR and Python Components",
-            "binaryDir": "${sourceDir}/build/mor_python",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor_python/install/",
-                "FEELPP_COMPONENT": "mor;python",
-                "FEELPP_ENABLE_RESEARCH": "OFF",
-                "FEELPP_ENABLE_OPENTURNS": "ON"
+                "FEELPP_COMPONENT": "mor;python"
             }
         },
         {
             "name": "testsuite",
-            "inherits": "default",
-            "displayName": "testsuite",
-            "description": "Build only the Feel++ testsuite Component",
-            "binaryDir": "${sourceDir}/build/testsuite",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "testsuite|clang|release|cmake package manager",
+            "description": "Build only the Feel++ Testsuite library Component",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "testsuite"
             }
         },
         {
             "name": "testsuite-install",
-            "inherits": "default",
-            "displayName": "testsuite using local install",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "testsuite|clang|release|cmake package manager",            
             "description": "Build only the Feel++ testsuite Component",
-            "binaryDir": "${sourceDir}/build/testsuite-install",
             "cacheVariables": {
-                "FEELPP_COMPONENT": "testsuite",
-                "FEELPP_DIR": "${sourceDir}/build/default/install/"
+                "FEELPP_COMPONENT": "testsuite"
             }
         },
         {
             "name": "benchmarks",
-            "inherits": "default",
-            "displayName": "benchmarks",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "displayName": "benchmarks|clang|release|cmake package manager",            
             "description": "Build only the Feel++ benchmarks Component",
-            "binaryDir": "${sourceDir}/build/benchmarks",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "benchmarks"
             }
@@ -453,7 +461,6 @@
             "inherits": "default",
             "displayName": "doxygen",
             "description": "Build Feel++ doxygen documentation",
-            "binaryDir": "${sourceDir}/build/doxygen",
             "cacheVariables": {
                 "FEELPP_ENABLE_DOXYGEN": "ON"
             }
