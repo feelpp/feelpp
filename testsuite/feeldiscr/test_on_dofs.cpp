@@ -181,7 +181,7 @@ void runTestAssignMeshRelated()
 #endif
 }
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS(Feel::makeAboutDefault("test_on_dofs"))
 
 BOOST_AUTO_TEST_SUITE( test_on_dofs )
 
