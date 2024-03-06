@@ -12,7 +12,7 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 
 == SYNOPSIS
 
-{manmanual} is a simple application which can download data, upload data and print remote data listing.
+{manmanual} is a simple application which can download data, upload data and print remote data listing.
 
 
 == DESCRIPTION
@@ -26,10 +26,10 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 {manmanual} requires some options.
 
 .Table of command-line {manmanual} options
-|===                                                                                                                                                                              
+|===
 | Name | Description | Default value
 
-| upload | specify the remote server and the location of uploaded files on remote server |                                                                                              
+| upload | specify the remote server and the location of uploaded files on remote server |
 | download | specify remote data to download |
 | data a|
 
@@ -37,7 +37,7 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 * with download mode : the path of downloaded datas
 |
 | contents | specify data contents to print in the terminal |
-|===  
+|===
 
 == EXAMPLES
 
@@ -159,6 +159,6 @@ With the api key system, the remotedata apps generate and delete token automatic
 
 == COPYING
 
-Copyright \(C) 2017 {feelpp} Consortium. +
+Copyright \(C) 2017-2024 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
 
