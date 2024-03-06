@@ -26,13 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
+#include <fmt/chrono.h>
+
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelpde/operatorpcdbase.hpp>
-
+//#include <petscsystypes.h>
 
 extern "C" {
 
@@ -56,6 +58,8 @@ extern "C" {
 
 PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
 {
+//    PetscFunctionBeginUser;
+#if 0    
 #if 0
     // need to store the tree of prec/subsolver else object was already deleted when go here
     Feel::ConfigureKSP *solver  = static_cast<Feel::ConfigureKSP*>( ctx );
@@ -75,6 +79,15 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
 #endif    
     PetscViewerAndFormatDestroy( &vf );
 #endif
+#else
+    //PetscCall( PetscPrintf( PETSC_COMM_WORLD, "%3" PetscInt_FMT " KSP residual norm [ %1.12e ]\n", it, (double)rnorm ) );
+    Feel::ConfigureKSP* solver = static_cast<Feel::ConfigureKSP*>( ctx );
+    if ( !solver ) return 0;
+    if ( solver->worldComm().isMasterRank() )
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), solver->prefix(), it, rnorm );
+
+#endif
+//        PetscFunctionReturn( PETSC_SUCCESS );
     return 0;
 }
 
