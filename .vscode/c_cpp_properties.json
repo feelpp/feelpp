@@ -48,6 +48,7 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
+                "FEELPP_HAS_PETSC_H",
                 "FEELPP_HAS_PETSC=1",
                 "FEELPP_HAS_PETSC4PY=1",
             ],
