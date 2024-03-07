@@ -672,17 +672,26 @@
         {
             "name": "toolboxes",
             "configurePreset": "toolboxes",
-            "inherits": "feelpp"
+            "inherits": "feelpp",
+            "execution": {
+                "timeout": 360
+            }
         },
         {
             "name": "mor",
             "configurePreset": "mor",
-            "inherits": "feelpp"
+            "inherits": "feelpp",
+            "execution": {
+                "timeout": 240
+            }
         },
         {
             "name": "feelpp-python",
             "configurePreset": "feelpp-python",
-            "inherits": "feelpp"
+            "inherits": "feelpp",
+            "execution": {
+                "timeout": 240
+            }
         },
         {
             "name": "mor_python",
