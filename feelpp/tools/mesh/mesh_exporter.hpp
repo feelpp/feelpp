@@ -61,7 +61,9 @@ void doExport(std::shared_ptr<mesh_t> mesh = {} )
         auto const& [strname, strexpr, reps] = getfns( sexpr );
         ex->add( strname, expr( strexpr ), reps );
     }
-# if 0    
+    if ( boption( "export_pid" ) )
+        ex->addRegions();
+# if 0
     for ( auto const& sexpr : vsoption( _name = "vectorial_expr" ) )
     {
         auto const& [strname, strexpr, reps] = getfns( sexpr );
