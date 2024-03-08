@@ -267,9 +267,10 @@ public:
     {
         auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
+        auto order = this->space()->fe()->nOrder;
         auto n = integrate(_range=elements(support(this->space())), _expr=phi).evaluate()(0,0);
         form1( _test=this->space(), _vector=this->containerPtr() ) =
-            integrate(_range=elements(support(this->space())), _expr=id(v)*phi/n );
+            integrate(_range=elements(support(this->space())), _expr=id(v)*phi/n, _quad=2*order );
         this->close();
     }
 
