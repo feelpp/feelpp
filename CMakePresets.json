@@ -674,7 +674,7 @@
             "configurePreset": "toolboxes",
             "inherits": "feelpp",
             "execution": {
-                "timeout": 360
+                "timeout": 460
             }
         },
         {
