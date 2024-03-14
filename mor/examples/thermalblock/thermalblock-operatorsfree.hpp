@@ -23,7 +23,6 @@
 #ifndef FEELPP_ThermalBlockFree_HPP
 #define FEELPP_ThermalBlockFree_HPP 1
 
-#include <boost/timer.hpp>
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>

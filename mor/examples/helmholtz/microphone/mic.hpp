@@ -29,7 +29,6 @@
 #ifndef __Microphone_H
 #define __Microphone_H 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>
