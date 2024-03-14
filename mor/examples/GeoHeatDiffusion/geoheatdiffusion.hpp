@@ -32,7 +32,6 @@
 #ifndef __GeoHeatDiffusion_H
 #define __GeoHeatDiffusion_H 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>
