@@ -57,9 +57,11 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "FEELPP_ENABLE_TOOLBOXES": {
                     "type": "BOOL",
-                    "value": "OFF"
+                    "value": "ON"
                 },
-                "FEELPP_ENABLE_MOR": "OFF"
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
+                "FEELPP_MESH_MAX_ORDER": "1"
             },
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
