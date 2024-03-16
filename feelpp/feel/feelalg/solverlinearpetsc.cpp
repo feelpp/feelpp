@@ -48,7 +48,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feelcore/feel.hpp>
-
+#include <fmt/chrono.h>
 #ifdef FEELPP_HAS_PETSC_H
 
 #include <feel/feelalg/solverlinearpetsc.hpp>
@@ -65,13 +65,14 @@ extern "C"
     typedef int PetscErrorCode;
     typedef int PetscInt;
 #endif
-
     PetscErrorCode __feel_petsc_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
     {
         SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
         if ( !s ) return 1;
         if ( s->worldComm().isMasterRank() )
-            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+            std::cout << fmt::format( "[{:%Y-%m-%d %H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), s->prefix(), it, rnorm ) << std::endl;
+//        if ( s->worldComm().isMasterRank() )
+//            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
     }
 #if PETSC_VERSION_LESS_THAN(3,0,1)

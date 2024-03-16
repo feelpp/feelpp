@@ -31,7 +31,7 @@ def test_collision(case,casefile,required_facets,required_elts):
     f.startTimeStep()
     while not f.timeStepBase().isFinished():
         
-        if (f.timeStepBase().iteration() % 10 == 0):
+        if (f.timeStepBase().iteration() % 5 == 0):
             remesh(f,required_facets,required_elts)
             f.addContactForceModel()
             f.addContactForceResModel()

@@ -181,7 +181,7 @@ void runTestAssignMeshRelated()
 #endif
 }
 
-FEELPP_ENVIRONMENT_NO_OPTIONS
+FEELPP_ENVIRONMENT_WITH_ABOUT_NO_OPTIONS(Feel::makeAboutDefault("test_on_dofs"))
 
 BOOST_AUTO_TEST_SUITE( test_on_dofs )
 
@@ -191,16 +191,16 @@ BOOST_AUTO_TEST_CASE( assign_3d_assign )
 }
 BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order3 )
 {
-    runTestAssignMeshRelated<3,3>();
+    runTestAssignMeshRelated<3, 3>();
 }
 BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order4 )
 {
     // @warning this does not work with PointSetFekete
     runTestAssignMeshRelated<3,4,PointSetEquiSpaced>();
 }
-BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order0 )
+BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order1 )
 {
-    runTestAssignMeshRelated<3,0>();
+    runTestAssignMeshRelated<3,1>();
 }
 
 BOOST_AUTO_TEST_CASE( elimination_3d )
