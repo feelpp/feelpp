@@ -82,9 +82,9 @@ jobs:
           fail-fast: false
           matrix:
             include:
+              - { target: "ubuntu:24.04", continue-on-error: true }
               - { target: "ubuntu:22.04", continue-on-error: false }
               - { target: "ubuntu:20.04", continue-on-error: true }
-              - { target: "debian:11", continue-on-error: true }
               - { target: "debian:12", continue-on-error: false }
     steps:
       - name: Checkout code
@@ -124,6 +124,7 @@ jobs:
         fail-fast: false
         matrix:
             TARGET:
+              - "ubuntu:24.04"
               - "ubuntu:22.04"
               - "debian:12"
     steps:
@@ -158,6 +159,7 @@ jobs:
         fail-fast: false
         matrix:
             TARGET:
+              - "ubuntu:24.04"
               - "ubuntu:22.04"
               - "debian:12"
     steps:
@@ -192,6 +194,7 @@ jobs:
         fail-fast: false
         matrix:
             TARGET:
+              - "ubuntu:24.04"
               - "ubuntu:22.04"
               - "debian:12"
     steps:
@@ -226,6 +229,7 @@ jobs:
         fail-fast: false
         matrix:
             TARGET:
+              - "ubuntu:24.04"
               - "ubuntu:22.04"
               - "debian:12"
     steps:

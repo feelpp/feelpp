@@ -447,7 +447,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::exportResults( double tim
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
-    this->executePostProcessSave( invalid_uint32_type_value, mfields );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfPotential->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

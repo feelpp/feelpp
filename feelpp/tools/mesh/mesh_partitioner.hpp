@@ -164,7 +164,15 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
             fs::path outputDirPath;
             if ( Environment::vm().count("odir") )
+            {
+                if ( !fs::exists( soption("odir") ) )
+                {
+                    // create the directory
+                    outputDirPath = fs::path( soption("odir") );
+                    fs::create_directories( outputDirPath );
+                }
                 outputDirPath = fs::canonical( soption("odir") );
+            }
             else
                 outputDirPath = fs::current_path();
             outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();

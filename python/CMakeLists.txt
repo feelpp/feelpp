@@ -73,7 +73,7 @@ else()
   set(FEELPP_MOR_FOUND ${FEELPP_ENABLE_MOR})
 endif()
 
-find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development Development.Module)
 message(STATUS "[feelpp/python] Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
 message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
 message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")

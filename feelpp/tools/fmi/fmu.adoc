@@ -122,5 +122,5 @@ t,h,v
 
 == COPYING
 
-Copyright \(C) 2017-2019 {feelpp} Consortium. +
+Copyright \(C) 2017-2024 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.

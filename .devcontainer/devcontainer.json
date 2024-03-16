@@ -20,7 +20,12 @@
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-sid",
 	//"image": "ghcr.io/feelpp/feelpp-env:fedora-36",
 	//"image": "ghcr.io/feelpp/feelpp-env:fedora-37",
-	
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/workspaces/feelpp,type=bind,consistency=cached"
+	],
+	"remoteUser": "feelpp",
+	"updateRemoteUserUID": true,
+	"postCreateCommand": "/workspaces/feelpp/.devcontainer/detect_platform.sh",
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
 		"ms-vscode.cpptools",
@@ -29,6 +34,9 @@
 		"asciidoctor.asciidoctor-vscode",
 		"ms-python.python",
 		"ms-toolsai.jupyter",
-		"ms-vsliveshare.vsliveshare"
+		"ms-vsliveshare.vsliveshare",
+		"asciidoctor.asciidoctor-vscode",
+		"shardulm94.trailing-spaces",
+		"redhat.vscode-yaml"
 	]
 }

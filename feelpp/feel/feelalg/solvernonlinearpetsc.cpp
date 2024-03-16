@@ -28,7 +28,7 @@
  */
 #include <feel/feelcore/feel.hpp>
 
-
+#include <fmt/chrono.h>
 
 #if defined( FEELPP_HAS_PETSC_H )
 #include <feel/feelcore/feelpetsc.hpp>
@@ -118,6 +118,7 @@ extern "C"
             CHKERRABORT( b->worldComm().globalComm(), e );
         }
         LOG(INFO) << "call feel_petsc_post_nlsolve done";
+        KSPMonitorCancel( ksp );
         return 0;
     }
     PetscErrorCode feel_petsc_pre_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
@@ -152,9 +153,7 @@ extern "C"
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
         if ( !solver ) return 1;
 
-        if ( solver->worldComm().isMasterRank() )
-            std::cout << " " << its  << " " << solver->prefix() << " SNES Function norm " << std::scientific << fnorm << "\n";
-
+        
         if ( its>0 && solver->showKSPConvergedReason() )
         {
             KSP            ksp;         /* linear solver context */
@@ -175,12 +174,19 @@ extern "C"
             if ( solver->worldComm().isMasterRank() )
             {
                 if ( reason> 0 )
-                    std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
-                             << " iterations " << lits << std::endl;
+                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] SNES KSP converged with #{} iterations, residual norm {:.4e}, reason: {}",
+                                               fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
+                              << std::endl;
                 else
-                    std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
-                             << " iterations " << lits << std::endl;
+                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] SNES KSP did not converge due to {} iterations, residual norm {:.4e}, reason: {}",
+                                               fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
+                              << std::endl;
             }
+        }
+        else
+        {
+            if ( solver->worldComm().isMasterRank() )
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES Residual norm {:.4e}", fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm ) << std::endl;
         }
 
         return 0;
@@ -188,9 +194,10 @@ extern "C"
     PetscErrorCode __feel_petsc_snes_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
     {
         Feel::SolverNonLinearPetsc<double> *solver  = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
-        if ( !solver ) return 1;
+        if ( !solver ) return 0;
         if ( solver->worldComm().isMasterRank() )
-            std::cout << "   " << it  << " " << solver->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES/KSP Residual norm {:.4e}", fmt::localtime( std::time( nullptr ) ), solver->prefix(), it, rnorm ) << std::endl;
+
         return 0;
     }
 

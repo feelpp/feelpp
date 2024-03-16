@@ -3,7 +3,6 @@
 #ifndef FEELPP_OPUSHEAT_HPP
 #define FEELPP_OPUSHEAT_HPP 1
 
-#include <boost/timer.hpp>
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>

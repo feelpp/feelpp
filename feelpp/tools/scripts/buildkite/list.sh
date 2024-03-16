@@ -12,7 +12,6 @@ source $(dirname $0)/common.sh
 DEBIAN_VERSIONS=(
     12
     11
-    10
     testing
     sid
 )
@@ -20,8 +19,8 @@ DEBIAN_VERSIONS=(
 LATEST_DEBIAN=${DEBIAN_VERSIONS[${#DEBIAN_VERSIONS[@]} - 2]}
 
 UBUNTU_VERSIONS=(
-    22.10
-    23.04
+    24.04
+    23.10
     22.04
     20.04
 )

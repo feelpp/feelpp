@@ -61,6 +61,7 @@ __pycache__
 *.sw?
 \#*
 \.\#*
+np_*/
 /applications/crb/GeoHeatDiffusion/geoheatdiffusionapp.cpp
 /applications/crb/heatshield/heatshieldminimalversion1.cfg
 /applications/crb/heatshield/heatshieldminimalversion1.xml.in
@@ -191,3 +192,4 @@ mor/examples/heat3d/heat3dapp.cpp
 **/feelppdb
 conftest.o
 python/notebooks/feelpp-python/
+install/

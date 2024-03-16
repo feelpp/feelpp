@@ -1969,8 +1969,8 @@ template <typename Shape, typename T, int Tag, typename IndexT, bool EnableShare
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeFacesFromBoundary( std::initializer_list<uint16_type> markers )
 {
     std::for_each( markers.begin(), markers.end(),
-                   [=]( uint16_type marker ) {
-                       auto range = markedfaces( *this, boost::any( marker ) );
+                   [this]( uint16_type marker ) {
+                       auto range = markedfaces( this->shared_from_this(), boost::any( marker ) );
                        LOG( INFO ) << "removing " << nelements( range ) << " faces marked " << marker << " from boundary faces\n";
 
                        for ( auto it = range.begin(), en = range.end(); it != en; ++it )
