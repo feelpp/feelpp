@@ -252,7 +252,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect partitioning when mesh is loaded, false to ensure that partition is within the number of processors" )
         ( prefixvm( prefix,"gmsh.npartitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "Number of partitions" )
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
-        ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
+        ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
         ( prefixvm( prefix,"gmsh.in-memory" ).c_str(), Feel::po::value<bool>()->default_value( false ), "false to save on disk, true to read geometry directly from memory" )
