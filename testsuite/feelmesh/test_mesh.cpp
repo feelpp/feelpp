@@ -32,7 +32,8 @@
 #define BOOST_TEST_MODULE mesh testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
-
+#include <fmt/core.h>
+#include <fmt/chrono.h>
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
@@ -43,6 +44,7 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 namespace Feel
 {
@@ -249,6 +251,85 @@ BOOST_AUTO_TEST_CASE( test_mesh_comp )
     BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == true );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == false );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
+}
+typedef boost::mpl::list<
+    //    std::pair<boost::mpl::int_<2>, boost::mpl::int_<2>>,
+    std::pair<boost::mpl::int_<1>, boost::mpl::int_<3>>,
+    std::pair<boost::mpl::int_<2>, boost::mpl::int_<3>>,
+    std::pair<boost::mpl::int_<3>, boost::mpl::int_<3>>>
+    dim_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_mesh_measure, T, dim_types )
+{
+    using namespace Feel;
+    constexpr int topodim = T::first_type::value;
+    constexpr int realdim = T::second_type::value;
+    using mesh_t = Mesh<Simplex<topodim,1,realdim>>;
+    using mesh_ptr_t = std::shared_ptr<mesh_t>;
+    std::string desc = fmt::format( R"(
+        SetFactory( "OpenCASCADE" );
+        h = {};
+        Box( 1 ) = {{ 0, 0, 0, 1, 1, 1 }};
+        Characteristic Length{{ PointsOf{{ Surface{{ 1:6 }}; }} }} = h;
+        Physical Volume( "Box" ) = {{ 1 }};
+        Physical Surface( "Walls" ) = {{  1:5 }};
+        Physical Curve( "Edges" ) = {{  1:12 }};
+        Mesh {};)", doption("gmsh.hsize"), topodim);
+    BOOST_TEST_MESSAGE( desc );
+
+    auto [ fname, generated ] = Gmsh{topodim}.generate( fmt::format("hypercube{}{}",topodim,realdim), desc );
+    BOOST_TEST_MESSAGE( fmt::format( "mesh filename: {}", fname ) );
+    auto mesh = loadMesh(_mesh=new mesh_t,_filename=fname);
+    BOOST_CHECK( nelements(elements(mesh)) > 0 );
+    auto beg = std::chrono::high_resolution_clock::now();
+    double meas = 0, meas_int = 0, meas_surf = 0, meas_surf_int = 0;
+    for ( auto const& wf : elements(mesh) )
+    {
+        auto const& f = boost::unwrap_ref( wf );
+        meas += f.measure();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    BOOST_TEST_MESSAGE( fmt::format( "meas : {} in {}", meas, std::chrono::duration_cast<std::chrono::milliseconds>( end - beg ) ) );
+    beg = std::chrono::high_resolution_clock::now();
+    meas_int = integrate( _range = elements( mesh ), _expr = cst( 1. ) ).evaluate()( 0, 0 );
+    end = std::chrono::high_resolution_clock::now();
+    BOOST_TEST_MESSAGE( fmt::format( "meas int: {} in {}", meas_int, std::chrono::duration_cast<std::chrono::milliseconds>( end - beg ) ) );
+    if constexpr ( topodim > 1 )
+    {
+        beg = std::chrono::high_resolution_clock::now();
+        for ( auto const& wf : boundaryfaces( mesh ) )
+        {
+            auto const& f = boost::unwrap_ref( wf );
+            meas_surf += f.measure();
+        }
+        end = std::chrono::high_resolution_clock::now();
+        BOOST_TEST_MESSAGE( fmt::format( "meas surf: {} in {}", meas_surf, std::chrono::duration_cast<std::chrono::milliseconds>( end - beg ) ) );
+
+        beg = std::chrono::high_resolution_clock::now();
+        meas_surf_int = integrate( _range = boundaryfaces( mesh ), _expr = cst( 1. ) ).evaluate()( 0, 0 );
+        end = std::chrono::high_resolution_clock::now();
+        BOOST_TEST_MESSAGE( fmt::format( "meas surf int: {} in {}", meas_surf_int, std::chrono::duration_cast<std::chrono::milliseconds>( end - beg ) ) );
+    }
+    
+    
+    if constexpr ( topodim == 1 && realdim == 3 )
+    {
+        BOOST_CHECK_CLOSE( meas, 12, 1e-10 );
+        BOOST_CHECK_SMALL( meas_surf, 1e-15 );
+    }
+    if constexpr( topodim == 2 && realdim == 3)
+    {
+        // cube with one face removed
+        BOOST_CHECK_CLOSE( meas, 5, 1e-10);
+        BOOST_CHECK_CLOSE( meas_surf, 4, 1e-10 );
+    }
+    if constexpr ( topodim == 3 && realdim == 3 )
+    {
+        BOOST_CHECK_CLOSE( meas, 1, 1e-10 );
+        BOOST_CHECK_CLOSE( meas_surf, 6, 1e-10 );
+    }
+    BOOST_CHECK_CLOSE( meas, meas_int, 1e-12);
+    if ( meas_surf > 1e-10 )
+        BOOST_CHECK_CLOSE( meas_surf, meas_surf_int, 1e-12 );
 }
 BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
 {
