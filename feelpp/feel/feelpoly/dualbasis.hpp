@@ -59,8 +59,8 @@ public:
     /** @name Constants
     */
     //@{
-    static const uint16_type nDim = primal_space_type::nDim;
-    static const uint16_type nOrder = primal_space_type::nOrder;
+    static inline const uint16_type nDim = primal_space_type::nDim;
+    static inline const uint16_type nOrder = primal_space_type::nOrder;
     //@}
     /** @name Constructors, destructor
      */

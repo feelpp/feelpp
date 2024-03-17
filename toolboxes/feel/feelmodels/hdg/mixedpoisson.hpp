@@ -71,9 +71,9 @@ public:
 
     // mesh
     using convex_type = ConvexType;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     using mesh_type = Mesh<convex_type>;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
@@ -81,7 +81,7 @@ public:
     using face_mesh_type = typename mesh_type::trace_mesh_type;
     using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
 
-    static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
+    static inline const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 
     template<uint16_type Dim>
     using polyset_flux_type = PolySetType<Dim>;
@@ -447,7 +447,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::exportResults( double tim
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
-    this->executePostProcessSave( invalid_uint32_type_value, mfields );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfPotential->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

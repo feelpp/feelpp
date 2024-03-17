@@ -93,7 +93,7 @@ void vtkBaseInsituPipeline::CreatePipeline(vtkCPDataDescription* dataDescription
     /* Ref: Qt/Core/pqObjectBuilder.cxx */
     M_spxm->RegisterProxy("sources", producer);
 
-    /* Get the the client side object: The object in ParaView */
+    /* Get the client side object: The object in ParaView */
     /* and set its output */
     vtkObjectBase* clientSideObject = producer->GetClientSideObject();
     vtkPVTrivialProducer* realProducer = vtkPVTrivialProducer::SafeDownCast(clientSideObject);

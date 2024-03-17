@@ -43,8 +43,6 @@ extern "C"
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -409,7 +407,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = PetscInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = PetscInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = PetscInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -426,7 +424,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = SlepcInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = SlepcInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -447,8 +445,8 @@ Environment::Environment( int argc, char** argv,
     if (S_initialized)
         return;
     S_initialized = true;
-    
-    if ( argc == 0 )    
+
+    if ( argc == 0 )
     {
 #if BOOST_VERSION >= 105500
         M_env = std::make_unique<boost::mpi::environment>(lvl, false);
@@ -964,7 +962,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
     {
         for ( boost::shared_ptr<po::option_description> option : o.second )
         {
-            //Informations about the option
+            //Information about the option
             std::string optName = option->format_name().erase( 0,2 ); //Putting the option name in a variable for easier manipulations
             std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
             std::string desc=option->description(); // Option description
@@ -1720,11 +1718,12 @@ Environment::abort( int error_code )
     return mpi::environment::abort( error_code );
 }
 
-std::string const&
+fs::path const&
 Environment::rootRepository()
 {
-    return S_rootdir.string();
+    return S_rootdir;
 }
+
 std::string
 Environment::findFile( std::string const& filename, std::vector<std::string> paths )
 {
@@ -1999,7 +1998,7 @@ Environment::updateInformationObject( nl::json & p ) const
                     { "number_of_processors", Environment::numberOfProcessors() }
                 } ) );
 
-        // Softwares
+        // Software
         p["/software/boost/version"_json_pointer] = BOOST_LIB_VERSION;
 #if BOOST_VERSION >= 106700
         std::stringstream mpi_version;
@@ -2490,7 +2489,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${top_builddir}", topBuildDir );
     boost::replace_all( res, "${cfgdir}", cfgDir );
     boost::replace_all( res, "${home}", homeDir );
-    boost::replace_all( res, "${repository}", Environment::rootRepository() );
+    boost::replace_all( res, "${repository}", Environment::rootRepository().string() );
     boost::replace_all( res, "${appdir}", Environment::appRepository() );
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
@@ -2504,7 +2503,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$top_builddir", topBuildDir );
     boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
-    boost::replace_all( res, "$repository", Environment::rootRepository() );
+    boost::replace_all( res, "$repository", Environment::rootRepository().string() );
     boost::replace_all( res, "$appdir", Environment::appRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );

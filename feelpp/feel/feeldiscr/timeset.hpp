@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2012 Universite Joseph Fourier
- 
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,9 +39,6 @@
 #include <optional>
 
 #include <boost/operators.hpp>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -75,7 +72,6 @@
 
 namespace Feel
 {
-//namespace fs = boost::filesystem;
 
 enum
 {
@@ -1521,7 +1517,7 @@ public:
 
     void load( std::string const& _nameFile, Real __time )
     {
-        fs::ifstream ifs( _nameFile );
+        std::ifstream ifs( _nameFile );
         // load data from archive
         boost::archive::text_iarchive ia( ifs );
         ia >> *this;
@@ -1533,7 +1529,7 @@ public:
     {
         if ( worldComm.isMasterRank() )
         {
-            fs::ofstream ofs( _nameFile );
+            std::ofstream ofs( _nameFile );
             // save data from archive
             boost::archive::text_oarchive oa( ofs );
             oa << *this;
@@ -1634,7 +1630,7 @@ private:
         }
     }
 
-    //! delete all time next this __time (after a restart by exemple)
+    //! delete all time next this __time (after a restart by example)
     FEELPP_NO_EXPORT void resetPreviousTime( Real __time );
 
 public:

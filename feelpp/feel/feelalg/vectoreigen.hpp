@@ -764,7 +764,7 @@ public:
 
     value_type dot( Vector<T> const& __v ) const override
     {
-        throw std::logic_error( "[vetor eigen] ERROR dot function not yet implemented" );
+        throw std::logic_error( "[vector eigen] ERROR dot function not yet implemented" );
         return 0;
     }
     //@}

@@ -51,17 +51,17 @@ public :
     typedef typename functionspace1_type::mesh_type mesh1_type;
     typedef typename functionspace2_type::mesh_type mesh2_type;
 
-    static const uint16_type nDim = mesh1_type::nDim;
+    static inline const uint16_type nDim = mesh1_type::nDim;
     static const bool is_simplex = mesh1_type::shape_type::is_simplex;
 
-    static const uint16_type nDofPerVertex = functionspace1_type::fe_type::nDofPerVertex;
-    static const uint16_type numVertices = mesh1_type::element_type::numVertices;
-    static const uint16_type nDofPerEdge = functionspace1_type::fe_type::nDofPerEdge;
-    static const uint16_type numEdges = mesh1_type::element_type::numEdges;
-    static const uint16_type nDofPerFace = functionspace1_type::fe_type::nDofPerFace;
-    static const uint16_type numGeometricFaces = mesh1_type::element_type::numGeometricFaces;
-    static const uint16_type nDofPerVolume = functionspace1_type::fe_type::nDofPerVolume;
-    static const uint16_type numVolumes = mesh1_type::element_type::numVolumes;
+    static inline const uint16_type nDofPerVertex = functionspace1_type::fe_type::nDofPerVertex;
+    static inline const uint16_type numVertices = mesh1_type::element_type::numVertices;
+    static inline const uint16_type nDofPerEdge = functionspace1_type::fe_type::nDofPerEdge;
+    static inline const uint16_type numEdges = mesh1_type::element_type::numEdges;
+    static inline const uint16_type nDofPerFace = functionspace1_type::fe_type::nDofPerFace;
+    static inline const uint16_type numGeometricFaces = mesh1_type::element_type::numGeometricFaces;
+    static inline const uint16_type nDofPerVolume = functionspace1_type::fe_type::nDofPerVolume;
+    static inline const uint16_type numVolumes = mesh1_type::element_type::numVolumes;
 
     DofRelationshipMap(functionspace1_ptrtype __Xh1,functionspace2_ptrtype __Xh2 )
         :
@@ -559,7 +559,7 @@ std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::mapTrianglePoints2Face(std::vector<uint16_type> const & mapPoint)
 {
     std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    mapFaces[0]= 0; // trivial: only 1 face
 
     return mapFaces;
 }
@@ -569,7 +569,7 @@ std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::mapQuadranglePoints2Face(std::vector<uint16_type> const & mapPoint)
 {
     std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    mapFaces[0]= 0; // trivial: only 1 face
 
     return mapFaces;
 }

@@ -49,9 +49,6 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
@@ -85,7 +82,6 @@ bool IsGoogleLoggingInitialized();
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 namespace ptree = boost::property_tree;
 
 //!
@@ -119,9 +115,9 @@ Application::initPETSc()
         int __argc = this->unknownArgc();
         char** __argv = this->unknownArgv();
 #if defined( FEELPP_HAS_SLEPC )
-        int ierr = SlepcInitialize( &__argc,&__argv, PETSC_NULL, PETSC_NULL );
+        int ierr = SlepcInitialize( &__argc,&__argv, PETSC_IGNORE, PETSC_IGNORE );
 #else
-        int ierr = PetscInitialize( &__argc, &__argv, PETSC_NULL, PETSC_NULL );
+        int ierr = PetscInitialize( &__argc, &__argv, PETSC_IGNORE, PETSC_IGNORE );
 #endif
         // make sure that petsc do not catch signals and hence do not print long
         //and often unuseful messages
@@ -993,15 +989,15 @@ Application::run()
         if ( !prepare && has_stats == true )
         {
             std::string fname = (boost::format( "%1%-%2%.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofs( cp / fname );
+            std::ofstream ofs( cp / fname );
             std::string fnameall = (boost::format( "%1%-%2%-all.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofsall( cp / fnameall );
+            std::ofstream ofsall( cp / fnameall );
             std::string fnameerrors = (boost::format( "%1%-%2%-errors.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofserrors( cp / fnameerrors );
+            std::ofstream ofserrors( cp / fnameerrors );
             std::string fnametime = (boost::format( "%1%-%2%-timings.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofstime( cp / fnametime );
+            std::ofstream ofstime( cp / fnametime );
             std::string fnamedata = (boost::format( "%1%-%2%-data.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
-            fs::ofstream ofsdata( cp / fnamedata );
+            std::ofstream ofsdata( cp / fnamedata );
 
             this->printStats( ofs, Application::ALL );
             this->printStats( ofsall, Application::ALL|Application::FLAT );

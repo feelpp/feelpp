@@ -114,7 +114,7 @@ int main( int argc, char** argv)
     else
         fmter = boost::format("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5% %|70t|%6%\n");
     std::string fileName = "cvg.dat";
-    fs::ofstream file( fileName );
+    std::ofstream file( fileName );
     if( file && Environment::isMasterRank() )
     {
         if( output_index == 0 )

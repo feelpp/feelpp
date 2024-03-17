@@ -28,10 +28,10 @@
 # ifndef _FEELPP_HH_
 # define _FEELPP_HH_
 
-//! @defgroup Feelpp 
+//! @defgroup Feelpp
 //! Feel++ classes and methods
 
-//! @defgroup Core 
+//! @defgroup Core
 //! @ingroup Feelpp
 //! Core classes provided by the library
 
@@ -103,9 +103,6 @@
 
 #include <boost/cstdint.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 
@@ -114,6 +111,8 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <filesystem>
+#include <fstream>
 #include <cmath>
 #include <numeric>
 #include <string>
@@ -145,7 +144,7 @@
 #endif
 
 #include <feel/feelconfig.h>
-#include <feel/feelcore/info.hpp>
+//#include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/feelassert.hpp>
 #include <feel/feelcore/feeltypes.hpp>
@@ -169,7 +168,7 @@
 namespace Feel
 {
 namespace assign = boost::assign;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace mpl = boost::mpl;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
@@ -234,7 +233,7 @@ namespace Feel
 //!
 //! \namespace
 //! @brief Feel++ alias for program_options namespace
-//! 
+//!
 namespace po = boost::program_options;
 
 //!
@@ -253,24 +252,24 @@ prefixvm( std::string const& prefix,
 //!
 //! @ingroup Core
 //! @brief trim string to remove special characters
-//! 
+//!
 //! trim string removing all leading and trailing spaces and replace
 //! all special characters " ;:," inside the block by a _
 //! @param s a string to be trimmed
-//! 
+//!
 std::string sanitize( std::string const& s );
 
-//! 
+//!
 //! trim a vector of strings removing all leading and trailing spaces and
 //! replace all special characters " ;:," inside the block by a _
 //! @param s a vector of strings
-//! 
+//!
 std::vector<std::string> sanitize( std::vector<std::string> const& s );
 
 //!
 //! \namespace
 //! @ingroup Core
-//! 
+//!
 //! Feel++ namespace alias for boost::posix_time
 namespace posix_time = boost::posix_time;
 //! Feel++ namespace alias for boost::gregorian
@@ -416,7 +415,7 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 //!
 //! This macro is enabled only if `NDEBUG` is not defined which is to say that
 //! the macro will be activited when debugging
-//! 
+//!
 //! @code
 //! DVLOG_IF( INFO, param < 10 ) << "print only if param < 10";
 //! @endcode
@@ -469,6 +468,23 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 #endif // DVLOG_IF
 
 # endif // FEELPP_DOXYGEN_INVOKED
+
+/**
+ * @brief enable reduce for mpi communication
+ */
+inline const bool do_reduce = true;
+/**
+ * @brief disable reduce for mpi communication
+ */
+inline const bool no_reduce = false;
+/**
+ * @brief enable communication for mpi communication
+ */
+inline const bool do_communication = true;
+/**
+ * @brief disable communication for mpi communication
+ */
+inline const bool no_communication = false;
 
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>

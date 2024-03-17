@@ -385,7 +385,7 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
    uint16_type M_nComp1, M_nComp2;
 };
 
-//! return informations about a symbol in json format
+//! return information about a symbol in json format
 nl::json symbolExprInformations( std::string const& symbol, std::string const& expr, SymbolExprComponentSuffix const& symbolSuffix, std::string const& name = "" );
 
 

@@ -65,12 +65,12 @@ public:
     typedef typename functionspace_type::value_type value_type;
     typedef value_type evaluate_type;
 
-    static const uint16_type rank = fe_type::rank;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type rank = fe_type::rank;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
     static const bool is_terminal = true;
 
-    static const uint16_type ordervelocity = functionspace_type::basis_type::nOrder;
+    static inline const uint16_type ordervelocity = functionspace_type::basis_type::nOrder;
 
     template<typename Func>
     struct HasTestFunction
@@ -184,7 +184,7 @@ public:
         typedef typename fusion::result_of::value_at_key<map_basis_fec_trial_type,basis_fec_trial_key_type>::type::element_type* basis_fec_trial_ptrtype;
 
 
-        // output and usefull containter
+        // output and useful container
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape_scalar;
 
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape_vectorial;

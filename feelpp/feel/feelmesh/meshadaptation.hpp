@@ -635,7 +635,7 @@ namespace Feel
         size_t extensionBegin = geofile.find(".geo") - 1;
         std::string geofileName = geofile.substr( geoNameBegin+1, extensionBegin - geoNameBegin);
 
-        if( boost::filesystem::exists((boost::format( "./new-%1%.geo" ) % geofileName ).str()) )
+        if( fs::exists((boost::format( "./new-%1%.geo" ) % geofileName ).str()) )
             remove((boost::format( "./new-%1%.geo" ) % geofileName ).str().c_str() );
 
         newGeofile.open( (boost::format( "./new-%1%.geo" ) % geofileName ).str().c_str() );
@@ -823,7 +823,7 @@ namespace Feel
                 // Read the input geometry file
                 newGmshModel->readGEO(geofileNameWE);
 
-                // Retreive list of files
+                // Retrieve list of files
 #if 0
                 for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
                     {

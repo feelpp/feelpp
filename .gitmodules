@@ -70,12 +70,25 @@
 [submodule "pythonfmu"]
 	path = feelpp/contrib/pythonfmu
 	url = https://github.com/feelpp/PythonFMU.git
-[submodule "feelpp/contrib/taskflow"]
-	path = feelpp/contrib/taskflow
-	url = https://github.com/feelpp/taskflow.git
 [submodule "feelpp/contrib/spdlog"]
 	path = feelpp/contrib/spdlog
 	url = https://github.com/feelpp/spdlog.git
 [submodule "feelpp/contrib/cln"]
 	path = feelpp/contrib/cln
 	url = https://github.com/feelpp/cln.git
+[submodule "feelpp/contrib/nanoflann"]
+	path = feelpp/contrib/nanoflann
+	url = https://github.com/feelpp/nanoflann.git
+[submodule "mor/contrib/openturns"]
+	path = mor/contrib/openturns
+	url = https://github.com/feelpp/openturns.git
+[submodule "feelpp/contrib/specx"]
+	path = feelpp/contrib/specx
+	url = https://github.com/feelpp/specx.git
+  
+[submodule "feelpp/contrib/eigenrand"]
+	path = feelpp/contrib/eigenrand
+	url = https://github.com/feelpp/EigenRand.git
+[submodule "feelpp/contrib/bvh"]
+	path = feelpp/contrib/bvh
+	url = https://github.com/feelpp/bvh.git

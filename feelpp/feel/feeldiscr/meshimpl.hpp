@@ -1687,7 +1687,7 @@ Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
                 f2e[faceIdRegistered].reserve(2);
                 f2e[faceIdRegistered].push_back( std::make_tuple(eltId,eltPid,j) );
 
-                // erase face desc in map (maybe improve other acces)
+                // erase face desc in map (maybe improve other access)
                 //_faces.erase( _faceit );
             }
 
@@ -1806,7 +1806,7 @@ void Mesh<Shape, T, Tag, IndexT>::fixPointDuplicationInHOMesh( element_type& elt
         const uint16_type startPt = face_type::numVertices*face_type::nbPtsPerVertex + face_type::numEdges*face_type::nbPtsPerEdge;
         CHECK( startPt == 12 && face_type::numPoints==15 ) << "invalid case\n";
 
-        // get a correspondance between the face and elt point numbering
+        // get a correspondence between the face and elt point numbering
         std::set<uint16_type> idxDone;
         std::vector<uint16_type> idxDistribution(3,invalid_uint16_type_value);
         for ( uint16_type k = startPt; k < face_type::numPoints; ++k )
@@ -2081,7 +2081,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingBlock
                      nbMsgToRecv2 );
     for ( int proc = 0; proc < MeshBase<IndexT>::worldComm().localSize(); ++proc )
     {
-        CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "paritioning data incorect "
+        CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "partitioning data incorect "
                                                          << "myrank " << MeshBase<IndexT>::worldComm().localRank() << " proc " << proc
                                                          << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
                                                          << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
@@ -3394,151 +3394,52 @@ struct RemoveMarkerNameWithoutEntityForAllReduce : std::function<std::vector<std
 } // namespace details
 
 template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename TheShape>
 void
-    Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 0>* )
+Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity()
 {
     std::vector<std::vector<std::string>> markersEntity( nDim + 1 );
     std::vector<std::vector<size_type>> nMarkedEntity( nDim + 1 );
     std::vector<std::string> markersToRemove;
+    std::vector<std::map<size_type,size_type>> mapMarkerFlagToContainer( nDim + 1 ); // (flag->index in container)
     for ( auto const& m : this->markerNames() )
     {
         std::string const& markerName = m.first;
         int markerDim = m.second[1];
-        switch ( markerDim )
-        {
-        case 0:
-            markersEntity[0].push_back( markerName );
-            nMarkedEntity[0].push_back( nelements( markedpoints( *this, markerName ), false ) );
-            break;
-        default:
-            markersToRemove.push_back( markerName );
-            break;
-        }
+        index_type markerFlag = m.second[0];
+
+        mapMarkerFlagToContainer[markerDim][markerFlag] = nMarkedEntity[markerDim].size();
+        markersEntity[markerDim].push_back( markerName );
+        nMarkedEntity[markerDim].push_back( 0 );
     }
-    mpi::all_reduce( this->worldComm(), mpi::inplace( nMarkedEntity ), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce<index_type>() );
 
-    for ( int d = 0; d <= nDim; ++d )
-        for ( int k = 0; k < nMarkedEntity[d].size(); ++k )
-            if ( nMarkedEntity[d][k] == 0 )
-                markersToRemove.push_back( markersEntity[d][k] );
+    auto updateMarkedEntityCounter =
+        [&nMarkedEntity,&mapMarkerFlagToContainer]( auto itBegin, auto itEnd )
+            {
+                std::for_each(itBegin,itEnd, [&nMarkedEntity,&mapMarkerFlagToContainer]( auto const& pairIdElt )
+                              {
+                                  auto const& elt = pairIdElt.second;
+                                  auto & nMarkedEntityCurrent = nMarkedEntity[elt.nDim];
+                                  auto & mapMarkerFlagToContainerCurrent = mapMarkerFlagToContainer[elt.nDim];
+                                  for ( auto const& [mtag,mflags] : elt.markers() )
+                                  {
+                                      for ( auto mflag : mflags )
+                                      {
+                                          auto itFind = mapMarkerFlagToContainerCurrent.find( mflag );
+                                          if ( itFind != mapMarkerFlagToContainerCurrent.end() )
+                                              ++(nMarkedEntityCurrent[itFind->second]);
+                                      }
+                                  }
+                              });
+            };
 
-    for ( std::string const& markerName : markersToRemove )
-        this->M_markername.erase( markerName );
-}
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename TheShape>
-void
-    Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 1>* )
-{
-    std::vector<std::vector<std::string>> markersEntity( nDim + 1 );
-    std::vector<std::vector<size_type>> nMarkedEntity( nDim + 1 );
-    std::vector<std::string> markersToRemove;
-    for ( auto const& m : this->markerNames() )
-    {
-        std::string const& markerName = m.first;
-        int markerDim = m.second[1];
-        switch ( markerDim )
-        {
-        case 1:
-            markersEntity[1].push_back( markerName );
-            nMarkedEntity[1].push_back( nelements( markedelements( *this, markerName ), false ) );
-            break;
-        case 0:
-            markersEntity[0].push_back( markerName );
-            nMarkedEntity[0].push_back( nelements( markedpoints( *this, markerName ), false ) );
-            break;
-        default:
-            markersToRemove.push_back( markerName );
-            break;
-        }
-    }
-    mpi::all_reduce( this->worldComm(), mpi::inplace( nMarkedEntity ), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce<index_type>() );
+    if constexpr ( nDim >= 1 )
+        updateMarkedEntityCounter( this->beginElement(), this->endElement() );
+    if constexpr ( nDim == 3 )
+        updateMarkedEntityCounter( this->beginEdge(), this->endEdge() );
+    if constexpr ( nDim >= 2 )
+        updateMarkedEntityCounter( this->beginFace(), this->endFace() );
+    updateMarkedEntityCounter( this->beginPoint(), this->endPoint() );
 
-    for ( int d = 0; d <= nDim; ++d )
-        for ( int k = 0; k < nMarkedEntity[d].size(); ++k )
-            if ( nMarkedEntity[d][k] == 0 )
-                markersToRemove.push_back( markersEntity[d][k] );
-
-    for ( std::string const& markerName : markersToRemove )
-        this->M_markername.erase( markerName );
-}
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename TheShape>
-void
-    Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 2>* )
-{
-    std::vector<std::vector<std::string>> markersEntity( nDim + 1 );
-    std::vector<std::vector<size_type>> nMarkedEntity( nDim + 1 );
-    std::vector<std::string> markersToRemove;
-    for ( auto const& m : this->markerNames() )
-    {
-        std::string const& markerName = m.first;
-        int markerDim = m.second[1];
-        switch ( markerDim )
-        {
-        case 2:
-            markersEntity[2].push_back( markerName );
-            nMarkedEntity[2].push_back( nelements( markedelements( *this, markerName ), false ) );
-            break;
-        case 1:
-            markersEntity[1].push_back( markerName );
-            nMarkedEntity[1].push_back( nelements( markedfaces( *this, markerName ), false ) );
-            break;
-        case 0:
-            markersEntity[0].push_back( markerName );
-            nMarkedEntity[0].push_back( nelements( markedpoints( *this, markerName ), false ) );
-            break;
-        default:
-            markersToRemove.push_back( markerName );
-            break;
-        }
-    }
-    mpi::all_reduce( this->worldComm(), mpi::inplace( nMarkedEntity ), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce<index_type>() );
-
-    for ( int d = 0; d <= nDim; ++d )
-        for ( int k = 0; k < nMarkedEntity[d].size(); ++k )
-            if ( nMarkedEntity[d][k] == 0 )
-                markersToRemove.push_back( markersEntity[d][k] );
-
-    for ( std::string const& markerName : markersToRemove )
-        this->M_markername.erase( markerName );
-}
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename TheShape>
-void
-    Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 3>* )
-{
-    std::vector<std::vector<std::string>> markersEntity( nDim + 1 );
-    std::vector<std::vector<size_type>> nMarkedEntity( nDim + 1 );
-    std::vector<std::string> markersToRemove;
-    for ( auto const& m : this->markerNames() )
-    {
-        std::string const& markerName = m.first;
-        int markerDim = m.second[1];
-        switch ( markerDim )
-        {
-        case 3:
-            markersEntity[3].push_back( markerName );
-            nMarkedEntity[3].push_back( nelements( markedelements( *this, markerName ), false ) );
-            break;
-        case 2:
-            markersEntity[2].push_back( markerName );
-            nMarkedEntity[2].push_back( nelements( markedfaces( *this, markerName ), false ) );
-            break;
-        case 1:
-            markersEntity[1].push_back( markerName );
-            nMarkedEntity[1].push_back( nelements( markededges( *this, markerName ), false ) );
-            break;
-        case 0:
-            markersEntity[0].push_back( markerName );
-            nMarkedEntity[0].push_back( nelements( markedpoints( *this, markerName ), false ) );
-            break;
-        default:
-            markersToRemove.push_back( markerName );
-            break;
-        }
-    }
     mpi::all_reduce( this->worldComm(), mpi::inplace( nMarkedEntity ), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce<index_type>() );
 
     for ( int d = 0; d <= nDim; ++d )

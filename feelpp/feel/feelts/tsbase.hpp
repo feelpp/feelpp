@@ -41,8 +41,6 @@
 #include <boost/utility.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -62,7 +60,6 @@
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
-namespace fs = boost::filesystem;
 
 enum TSState { TS_UNITIALIZED = 0, TS_RUNNING, TS_STOPPED };
 enum TSStragegy { TS_STRATEGY_DT_CONSTANT,TS_STRATEGY_DT_ADAPTATIVE};
@@ -70,7 +67,7 @@ enum TSStragegy { TS_STRATEGY_DT_CONSTANT,TS_STRATEGY_DT_ADAPTATIVE};
 /**
  * \ingroup SpaceTime
  * \brief base class for time sets
- * 
+ *
  */
 class TSBase
 {
@@ -213,7 +210,7 @@ public:
     {
         M_state = TS_RUNNING;
         M_timer.start();
-        // if initiliaze has been called M_iteration start to 1 else 0
+        // if initialize has been called M_iteration start to 1 else 0
         M_iteration = M_time_values_map.size();//1;
         M_time = M_Ti+this->timeStep();
         return M_Ti;

@@ -10,7 +10,7 @@ foreach(item in ${TOOLBOXES} ${TOOLBOXES_CORE})
   set(LDPATH "${CMAKE_BINARY_DIR}/toolboxes/pyfeelpp-toolboxes/feel/feelmodels/${item}:${LDPATH}")
 endforeach()
 
-foreach(toolbox in fluid cfpdes heat electric )
+foreach(toolbox in fluid cfpdes heat electric thermoelectric heatfluid )
   add_test (NAME feelpp_toolbox_python-tests-${toolbox}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}

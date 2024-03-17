@@ -77,7 +77,7 @@ class FEELPP_EXPORT  Heat2D : public ModelCrbBase<ParameterSpaceX, decltype(Pch<
 public:
     using super = ModelCrbBase<ParameterSpaceX, decltype(Pch<3>(Mesh<Simplex<2>>::New()))>;
 
-    Heat2D() : super( "heat2d" ) {}
+    Heat2D();
 
     //! initialisation of the model
     void initModel();

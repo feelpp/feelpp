@@ -84,7 +84,7 @@ template <typename RangeType>
 GeomapStrategyType
 geomapStrategy( RangeType const& /**/, GeomapStrategyType gs )
 {
-    static const uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
+    constexpr uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
     if ( geoOrder == 1 )
         return GeomapStrategyType::GEOMAP_HO;
     else
@@ -133,7 +133,7 @@ class GeoMap
 
     //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
-    static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
+    static inline const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
                                                         mpl::int_<RealDim>,
                                                         mpl::int_<Dim>>::type::value;
 
@@ -773,10 +773,10 @@ class GeoMap
         static const int subEntityCoDim = SubEntityCoDim;
         static const int subEntityCoDimFix = SubEntityCoDim > 0 ? SubEntityCoDim : 1;
         // reference space dimension
-        static const uint16_type PDim = ElementType::nDim;
+        static inline const uint16_type PDim = ElementType::nDim;
         // real space dimension
         static constexpr uint16_type NDim = ElementType::nRealDim;
-        static const uint16_type nDim = NDim;
+        static inline const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
         static const bool is_linear = ( trans == fem::LINEAR );
@@ -1105,14 +1105,14 @@ class GeoMap
             }
 
         //!
-        //! @return true if geomap assocated to a face, false otherwise
+        //! @return true if geomap associated to a face, false otherwise
         //!
         bool isOnFace() const
             {
                 return (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value);
             }
         //!
-        //! @return true if geomap assocated to a face, edge or point, false otherwise
+        //! @return true if geomap associated to a face, edge or point, false otherwise
         //!
         bool isOnSubEntity() const
             {
@@ -3342,10 +3342,10 @@ struct GT_QK
     struct BOOST_PP_CAT( GT_, GEOM )<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), ENTITY, T>     \
         : public GeoMap<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), T, ENTITY, GEOM>            \
     {                                                                                                           \
-        static const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
-        static const uint16_type order = LORDER;                                                                \
-        static const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
-        static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
+        static inline const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
+        static inline const uint16_type order = LORDER;                                                                \
+        static inline const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
+        static inline const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
                                                             mpl::int_<nRealDim>,                                \
                                                             mpl::int_<nDim>>::type::value;                      \
                                                                                                                 \
@@ -3363,8 +3363,8 @@ struct GT_QK
         typedef GeoMap<nDim, LORDER, nRealDim, T, ENTITY, GEOM> super;                                          \
         typedef BOOST_PP_CAT( GT_, GEOM )<nDim - 1, LORDER, nRealDim, ENTITY, T> face_geo_type;                 \
                                                                                                                 \
-        static const uint16_type nDof = super::nDof;                                                            \
-        static const uint16_type nNodes = super::nNodes;                                                        \
+        static inline const uint16_type nDof = super::nDof;                                                            \
+        static inline const uint16_type nNodes = super::nNodes;                                                        \
         typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim>>::type element_gm_type;                     \
         typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim>>::type face_gm_type;                           \
         template <int N>                                                                                        \
@@ -3412,8 +3412,8 @@ template <typename Elem, template <uint16_type, uint16_type, uint16_type> class 
 class RealToReference
 {
   public:
-    static const uint16_type nDim = Elem::nDim;
-    static const uint16_type nRealDim = Elem::nRealDim;
+    static inline const uint16_type nDim = Elem::nDim;
+    static inline const uint16_type nRealDim = Elem::nRealDim;
 
     typedef T value_type;
     typedef typename matrix_node<T>::type points_type;

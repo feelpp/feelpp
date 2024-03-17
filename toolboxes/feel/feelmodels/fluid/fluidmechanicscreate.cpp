@@ -787,7 +787,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // ALE mode (maybe)
     this->createALE();
 
-    // update definePressureCst respect to the method choosen
+    // update definePressureCst respect to the method chosen
     if ( this->definePressureCst() )
         this->updateDefinePressureCst();
 
@@ -799,7 +799,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init stabilization
     if ( M_stabilizationGLS )
     {
-        //static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
+        //static inline const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
         typedef StabilizationGLSParameter<mesh_type, nOrderVelocity> stab_gls_parameter_velocity_impl_type;
         typedef StabilizationGLSParameter<mesh_type, nOrderPressure> stab_gls_parameter_pressure_impl_type;
         M_stabilizationGLSParameterConvectionDiffusion.reset( new stab_gls_parameter_velocity_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
@@ -977,7 +977,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
         M_savetsPressure->applyRemesh( this->functionSpacePressure(), matrixInterpolation_pressure );
     this->log("FluidMechanics","applyRemesh", "time stepping done" );
 
-    // update definePressureCst respect to the method choosen
+    // update definePressureCst respect to the method chosen
     if ( this->definePressureCst() )
         this->updateDefinePressureCst();
 
@@ -1417,7 +1417,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidOutlet()
     this->log("FluidMechanics","initFluidOutlet", "start" );
 
 
-    // list usefull to create the outlets submesh
+    // list useful to create the outlets submesh
     std::set<std::string> markerNameBFOutletForSubmesh;
     for ( auto const& [bcName,bcData] : M_boundaryConditions->outletWindkessel() )
         markerNameBFOutletForSubmesh.insert( bcData->markers().begin(), bcData->markers().end() );
@@ -2184,7 +2184,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 //<< "\"expr\":\"" << (boost::format("( (1*%1%/( %2%*0.1*%3% ) )^3 )*%4%/( %2%*0.1*%3% ) :%1%:%2%:%4%")%symbDynViscosity %symbDensity %mixing_length_limit %symb_c_mu ).str() << "\"";
                 strInitialConditions[unknownName_epsilon].push_back( ostr_ic_epsilon.str() );
 
-                // wall boundary condtions (only work currently with one material)
+                // wall boundary conditions (only work currently with one material)
                 for ( auto const& [bcName,bcWall] : M_turbulenceModelBoundaryConditions.wall() )
                 {
                     // TODO try replace symb_u_tauBC_V2 with friction velocity symb
@@ -3674,7 +3674,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
     if ( this->empty() )
         return;
 
-    // not very nice, we need to update direclty P, not rebuild
+    // not very nice, we need to update directly P, not rebuild
     if ( !algebraicFactory->hasInitSolverPtAP() )
         this->initAlgebraicFactory( fluidToolbox, algebraicFactory );
     else

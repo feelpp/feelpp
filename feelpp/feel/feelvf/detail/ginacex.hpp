@@ -54,7 +54,7 @@ public:
 
     static const size_type context = vm::DYNAMIC;
     static const bool is_terminal = false;
-    static const uint16_type imorder = Order;
+    static inline const uint16_type imorder = Order;
     static const bool imIsPoly = false;
 
     template<typename Funct>

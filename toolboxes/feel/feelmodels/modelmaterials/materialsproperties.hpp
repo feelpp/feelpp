@@ -91,7 +91,7 @@ class MaterialsProperties
     using modelphysics_weakptrtype = std::weak_ptr<modelphysics_type>;
 public :
     using physic_id_type = typename modelphysics_type::physic_id_type;
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
 
     MaterialsProperties( modelphysics_ptrtype const& mphysics )
         :
@@ -810,7 +810,7 @@ public :
     auto symbolsExpr( std::string const& prefix_symbol = "materials_" ) const
         {
             int nMat = this->numberOfMaterials();
-            std::map<std::string,std::string> propertyNamesToSymbol; //usefull for expression on whole mesh
+            std::map<std::string,std::string> propertyNamesToSymbol; //useful for expression on whole mesh
             // generate symbols heat_matName_k or heat_matName_k(_xx,_xy,...,_zz)
             auto tupleSymbolExprsByMaterial = hana::transform( ModelExpression::expr_shapes, [this,&prefix_symbol,&nMat,&propertyNamesToSymbol](auto const& e_ij) {
                     constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
@@ -1046,8 +1046,8 @@ class MaterialsOnMesh : public MaterialsOnMeshBase
 public :
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
 
     using materials_properties_type = MaterialsProperties<nRealDim>;
     using materials_properties_ptrtype = std::shared_ptr<materials_properties_type>;

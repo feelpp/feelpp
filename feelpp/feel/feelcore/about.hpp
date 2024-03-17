@@ -34,6 +34,7 @@
 #include <string>
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/info.hpp>
 
 
 
@@ -384,7 +385,7 @@ public:
     void setBugAddress( std::string const & bugAddress );
 
     /**
-     * Defines the product name wich will be used in the KBugReport dialog.
+     * Defines the product name which will be used in the KBugReport dialog.
      * By default it's the appName, but you can overwrite it here to provide
      * support for special components e.g. 'product/component' like
      * 'kontact/summary'.

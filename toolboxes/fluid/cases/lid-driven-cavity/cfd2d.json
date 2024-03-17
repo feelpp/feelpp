@@ -31,7 +31,7 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/cfd2d.geo",
+                "filename":"$cfgdir/cfd2d.geo",//,
                 "hsize":0.01
             },
             "DistanceToRange":
@@ -140,5 +140,4 @@
             }
         }
     }
-
 }

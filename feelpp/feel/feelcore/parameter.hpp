@@ -198,6 +198,13 @@ using quad = NA::named_argument_t<struct quad_tag>;
 using quad1 = NA::named_argument_t<struct quad1_tag>;
 using arg = NA::named_argument_t<struct arg_tag>;
 
+// for filters
+using min = NA::named_argument_t<struct min_tag>;
+using max = NA::named_argument_t<struct min_tag>;
+using value = NA::named_argument_t<struct value_tag>;
+using selector = NA::named_argument_t<struct selector_tag>;
+
+
 using quadptloc = NA::named_argument_t<struct quadptloc_tag>;
 
 using extended_doftable = NA::named_argument_t<struct extended_doftable_tag>;
@@ -330,6 +337,9 @@ using keyword = NA::named_argument_t<struct keyword_tag>;
 using repository = NA::named_argument_t<struct repository_tag>;
 using physic = NA::named_argument_t<struct physic_tag>;
 
+using quality = NA::named_argument_t<struct quality_tag>;
+using robust = NA::named_argument_t<struct robust_tag>;
+using ray = NA::named_argument_t<struct ray_tag>;
 
 } // namespace na
 
@@ -626,6 +636,14 @@ inline constexpr auto& _keyword = NA::identifier<na::keyword>;
 inline constexpr auto& _repository = NA::identifier<na::repository>;
 inline constexpr auto& _physic = NA::identifier<na::physic>;
 
+inline constexpr auto& _min = NA::identifier<na::min>;
+inline constexpr auto& _max = NA::identifier<na::max>;
+inline constexpr auto& _value = NA::identifier<na::value>;
+inline constexpr auto& _selector = NA::identifier<na::selector>;
+
+inline constexpr auto& _quality = NA::identifier<na::quality>;
+inline constexpr auto& _robust = NA::identifier<na::robust>;
+inline constexpr auto& _ray = NA::identifier<na::ray>;
 
 } // Feel
 

@@ -290,9 +290,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
                                                                         \
-            static const uint16_type rank = fe_type::rank;              \
-            static const uint16_type nComponents1 = fe_type::nComponents1; \
-            static const uint16_type nComponents2 = fe_type::nComponents2; \
+            static inline const uint16_type rank = fe_type::rank;              \
+            static inline const uint16_type nComponents1 = fe_type::nComponents1; \
+            static inline const uint16_type nComponents2 = fe_type::nComponents2; \
             static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
             static const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
             static const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \

@@ -53,9 +53,9 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
     // only master rank because only metis is supported at this time
     if ( Environment::isMasterRank() )
     {
-        fmt::print( fmt::emphasis::bold, 
+        fmt::print( fmt::emphasis::bold,
                     "** Run partioner with shape {}...\n", ShapeType::name() );
-        fs::path inputPathMesh = fs::system_complete( soption("ifile") );
+        fs::path inputPathMesh = fs::canonical( soption("ifile") );
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
@@ -71,7 +71,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
 
         if constexpr ( is_simplex_v<ShapeType> && ShapeType::nDim > 1 )
         {
-            
+
             if ( boption( "remesh" ) )
             {
                 auto Xh = Pch<1>( mesh );
@@ -93,15 +93,15 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
                     std::ifstream ifs( soption( "remesh.json" ).c_str() );
                     ifs >> j;
                 }
-                    
-#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG ) 
+
+#if defined( FEELPP_HAS_MMG ) && defined( FEELPP_HAS_PARMMG )
                 std::string metr = soption( "remesh.metric" );
                 LOG(INFO) << fmt::format( "metric:{}\n",soption( "remesh.metric" ));
                 LOG(INFO) << fmt::format( "h:{}\n",soption( "remesh.h" ));
                 auto [out,c] = remesh( _mesh = mesh, _metric = metr, _params = j );
                 mesh=out;
 #else
-                fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold, 
+                fmt::print( fg( fmt::color::crimson ) | fmt::emphasis::bold,
                             "mmg and parmmg are not configured with feelpp!\n"
                             " - remeshing is disabled\n"
                             " - result mesh is the initial mesh\n" );
@@ -147,7 +147,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
                     partitionByRange.push_back( markedelements(mesh,marker) );
             }
         }
-
+        std::string outputPathMesh;
         for ( int nPartition : nParts )
         {
             std::string outputFilenameWithoutExt = "";
@@ -164,10 +164,10 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
             fs::path outputDirPath;
             if ( Environment::vm().count("odir") )
-                outputDirPath = fs::system_complete( soption("odir") );
+                outputDirPath = fs::canonical( soption("odir") );
             else
                 outputDirPath = fs::current_path();
-            std::string outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();
+            outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();
 
             fs::path outputDir = fs::path(outputPathMesh).parent_path();
             if ( !fs::exists( outputDir ) )
@@ -185,8 +185,8 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
-
-        doExport(mesh);
+        auto parallel_mesh = loadMesh(_mesh=new mesh_type, _filename=outputPathMesh);
+        doExport(parallel_mesh);
     }
 
 }

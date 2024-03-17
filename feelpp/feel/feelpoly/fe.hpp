@@ -105,15 +105,15 @@ public:
     typedef typename super::polynomial_view_type polynomial_view_type;
 
     //!< Total number of degrees of freedom (equal to refEle::nDof)
-    inline static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static inline const uint16_type nLocalDof = dual_space_type::nLocalDof;
     //!< Number of degrees of freedom per vertex
-    inline static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static inline const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
     //!< Number of degrees  of freedom per edge
-    inline static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static inline const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
     //!< Number of degrees  of freedom per face
-    inline static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static inline const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
     //!< Number of degrees  of freedom per volume
-    inline static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static inline const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
 
     static constexpr uint16_type nDof = nLocalDof;
     static constexpr uint16_type nNodes = nDof;
