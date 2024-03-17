@@ -34,7 +34,7 @@ int main( int argc, char** argv )
         ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
         ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"g|sin(x):x|nodal|element"} ), "list of scalar expressions with name and representations" )
         ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
-
+        ( "export_pid", po::value<bool>()->default_value( true ), "export partition id" )
         ;
     Environment env( _argc=argc, _argv=argv,
                      _desc=meshpartoptions,

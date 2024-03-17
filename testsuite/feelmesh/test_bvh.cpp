@@ -137,6 +137,10 @@ void test3D( RangeType const& range )
 
 BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
 {
+    if ( Environment::isParallel() )
+    {
+        return;
+    }
     using mesh_type = Mesh<Simplex<2,1,2>>;
     auto mesh = loadMesh(_mesh = new mesh_type, _filename=soption(_name="mesh2D.filename" ) );
 

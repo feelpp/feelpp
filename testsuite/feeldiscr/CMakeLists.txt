@@ -14,7 +14,7 @@ feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )
 
-# comment out as it breaks compilation and buildkite testuite pipeline 
+# comment out as it breaks compilation and buildkite testuite pipeline
 # feelpp_add_test( space_0d SKIP_TEST )
 
 
@@ -100,7 +100,7 @@ feelpp_add_test( on_dofs SRCS test_on_dofs.cpp GEO square_mmarked.geo CFG test_o
 # feelpp_add_test( element0D )
 
 if ( FEELPP_HAS_VTK )
-  feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )  
+  feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )
 endif()
 
 feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )

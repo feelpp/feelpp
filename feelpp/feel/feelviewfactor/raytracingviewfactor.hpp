@@ -36,10 +36,11 @@ void getRandomDirection(std::vector<double> &random_direction, std::mt19937 & M_
     int size = random_direction.size();
     Eigen::VectorXd z_axis(size), crossProd1(size), crossProd2(size),crossProd3(size), direction(size);
     Eigen::MatrixXd matrix1(size,size), matrix2(size,size);
-    z_axis << 0,0,1;
+    
 
     if(random_direction.size()==3)
     {
+        z_axis << 0, 0, 1;
         double phi = 2.*M_PI*xi1(M_gen);
         double theta = math::asin(math::sqrt( xi2(M_gen2)));
         random_direction[0]=math::sin(theta)*math::cos(phi);

@@ -26,13 +26,15 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
+#include <fmt/chrono.h>
+
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelpde/operatorpcdbase.hpp>
-
+//#include <petscsystypes.h>
 
 extern "C" {
 
@@ -53,9 +55,26 @@ extern "C" {
 #include <feel/feelalg/preconditionerpetscpcd.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
+PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void** ctx)
+{
+
+    if ( ctx == nullptr )
+        return 0;
+    Feel::ConfigureKSP* solver = static_cast<Feel::ConfigureKSP*>( *ctx );
+    if ( solver )
+    {
+        if ( solver->worldCommPtr()->isMasterRank() )
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", fmt::localtime( std::time(nullptr) ), solver->prefix(), 0.0 ) << std::endl;
+        delete solver;
+    }
+    ctx = nullptr;
+    return 0;
+}
 
 PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
 {
+//    PetscFunctionBeginUser;
+#if 0    
 #if 0
     // need to store the tree of prec/subsolver else object was already deleted when go here
     Feel::ConfigureKSP *solver  = static_cast<Feel::ConfigureKSP*>( ctx );
@@ -74,6 +93,13 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
     int ierr = KSPMonitorDefault( ksp,it,rnorm, vf );
 #endif    
     PetscViewerAndFormatDestroy( &vf );
+#endif
+#else
+    //PetscCall( PetscPrintf( PETSC_COMM_WORLD, "%3" PetscInt_FMT " KSP residual norm [ %1.12e ]\n", it, (double)rnorm ) );
+    Feel::ConfigureKSP* solver = static_cast<Feel::ConfigureKSP*>( ctx );
+    if ( !solver ) return 0;
+    if ( solver->worldCommPtr()->isMasterRank() )
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), solver->prefix(), it, rnorm ) << std::endl;
 #endif
     return 0;
 }
@@ -1441,7 +1467,10 @@ ConfigureKSP::run( KSP& ksp ) const
     if ( M_showMonitor )
     {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,7,0)
-        this->check( KSPMonitorSet( ksp,__feel_petsc_prec_ksp_monitor,(void*) this,PETSC_IGNORE ) );
+        void* monitor = nullptr;
+        KSPGetMonitorContext(ksp, &monitor );
+        if ( !monitor )
+            this->check( KSPMonitorSet( ksp,__feel_petsc_prec_ksp_monitor,(void*)new ConfigureKSP(*this), __feel_destroy_petsc_prec_ksp_monitor ) );
 #else
         this->check( KSPMonitorSet( ksp,KSPMonitorDefault,PETSC_IGNORE,PETSC_IGNORE ) );
 #endif
