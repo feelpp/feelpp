@@ -125,7 +125,7 @@ void checkViewFactorRaytracing(std::string const& prefix)
     auto row_sum_vf = rtvf.viewFactors().rowwise().sum();
     auto exact_vf = eigen_vector_x_col_type<double>::Ones(rtvf.viewFactors().rows()) ;
     auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();
-    BOOST_TEST_MESSAGE( fmt::format("View factors sum to one {}; infinity norm of 1 - rowwise sum {}; rowwise sum {} ", difference_infNorm<1e-3, difference_infNorm,row_sum_vf) );
+    BOOST_TEST_MESSAGE( fmt::format("View factors sum to one {}; infinity norm of 1 - rowwise sum {:f}; rowwise sum {} ", difference_infNorm<1e-3, difference_infNorm,row_sum_vf) );
         
     if(prefix=="cube-raytracing")
     {

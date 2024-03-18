@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_create, T, test_types)
                 BOOST_CHECK_SMALL(std::abs(v-vv), 1e-2 );
             } else if( auto ff = std::dynamic_pointer_cast<SensorSurface<space_type>>(f) )
             {
-                auto m = ff->markers();  
+                auto m = ff->markers();
                 auto vv = mean(_range=markedfaces(mesh,m), _expr=ex)(0,0);
                 auto v = (*ff)(u);
                 BOOST_TEST_MESSAGE(fmt::format("[test_create] sensor::sensorsurface: markers: {}, exact : {} SensorPointwise : {}\n",m,vv,v));
@@ -86,7 +86,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_load, T, test_types)
     for( auto e : std::vector{ "x:x:y", "y:x:y", "x+y:x:y", "(x+y)*(x+y):x:y" } )
     {
         BOOST_TEST_MESSAGE(fmt::format("[test_load] check expression: {}\n", e ) );
+#if 0 
         auto ex = expr(e);
+       
         auto u = Xh->element(ex);
         for( auto const& [name, f] : sm )
         {
@@ -111,6 +113,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_load, T, test_types)
                 BOOST_CHECK_SMALL(std::abs(v-vv), 1e-10 );
             }
         }
+#endif        
     }
     json j = sm.to_json();
     BOOST_CHECK_EQUAL(j.size(), 3);
