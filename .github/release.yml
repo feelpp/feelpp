@@ -22,12 +22,12 @@ changelog:
       labels: 
         - "type:clean-code"
         - "type:refactoring"
-    - title: Bugs fixed 
+    - title: Bugs fixed 💚
       labels:
         - ":lady_beetle: type:bug"
         - ":lady_beetle: type:ftbs" 
         - "type: ftt" 
         - "type:fte"
-    - title: Other Changes
+    - title: Other Changes 
       labels:
         - "*"
