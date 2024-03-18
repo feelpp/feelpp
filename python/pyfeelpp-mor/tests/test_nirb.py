@@ -4,7 +4,7 @@ import pytest
 
 
 import feelpp
-from feelpp.mor.nirb.nirb import *
+from feelpp.fppmor.nirb.nirb import *
 
 # desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification, doGreedy), 'name-of-the-test')
 casesNirb = [
@@ -28,7 +28,7 @@ cases_paramsInit, cases_idsInit = list(zip(*casesInit))
 
 def run_offline(model_path, rect, greedy):
     nbSnap = 6
-    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config = fppc.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_off = nirbOffline(**nirb_config, initCoarse=True)
     nirb_off.initModel()
@@ -52,7 +52,7 @@ def run_offline(model_path, rect, greedy):
 
 def run_online(model_path, rect):
     nbSnap=6
-    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config = fppc.readJson(model_path)['nirb']
     nirb_config['doRectification'] = rect
     nirb_on = nirbOnline(**nirb_config)
     nirb_on.initModel()
@@ -75,7 +75,7 @@ def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
 
     run_offline(model_path, rect, greedy)
     run_online(model_path, rect)
@@ -86,7 +86,7 @@ def test_initializer(dir, cfg, json, init_feelpp):
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
     
-    nirb_config = feelpp.readJson(model_path)['nirb']
+    nirb_config = fppc.readJson(model_path)['nirb']
     nirb_config['doRectification'] = True
     tbModel = ToolboxModel(**nirb_config)
     tbModel.initModel()

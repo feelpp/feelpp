@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 
 has_cfpde = False
@@ -20,7 +20,7 @@ def cfpdes(dim=2, worldComm=None, keyword="cfpdes", prefix="cfpdes", subprefix="
     """create a cfpde toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
-    worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
+    worldComm -- the parallel communicator for the mesh (default: fppc.Environment::worldCommPtr())
     keyword -- the json keyword for the toolbox    (default: "cfpdes")
     prefix -- the prefix for the toolbox for the command line and .cfg options  (default: "cfpdes")
     subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
@@ -28,7 +28,7 @@ def cfpdes(dim=2, worldComm=None, keyword="cfpdes", prefix="cfpdes", subprefix="
     if not has_cfpde:
         raise Exception('CFPDE toolbox is not enabled in Feel++')
     if worldComm is None:
-        worldComm = feelpp.Environment.worldCommPtr()
+        worldComm = fppc.Environment.worldCommPtr()
     key='cfpdes('+str(dim)+')'
     if key not in _cfpdes:
         raise RuntimeError('cfpde solver '+key+' not existing')
