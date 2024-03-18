@@ -1,0 +1,33 @@
+# .github/release.yml
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Breaking Changes 🛠
+      labels:
+        - ":loudspeaker: semver: major"
+        - breaking-change
+    - title: Exciting New Features 🎉
+      labels:
+        - ":loudspeaker: semver: minor"
+        - enhancement
+        - ":sparkles: enhancement"
+        - ":sparkles:  type:feature"
+        - feature
+    - title: Optimizations ⏩
+      labels:
+        - "type:optimisation"
+    - title: Clean code 👌
+      labels: 
+        - "type:clean-code"
+        - "type:refactoring"
+    - title: Bugs fixed 💚
+      labels:
+        - ":lady_beetle: type:bug"
+        - ":lady_beetle: type:ftbs" 
+        - "type: ftt" 
+        - "type:fte"
+    - title: Other Changes 
+      labels:
+        - "*"
