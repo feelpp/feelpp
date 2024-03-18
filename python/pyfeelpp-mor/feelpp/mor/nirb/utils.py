@@ -29,11 +29,11 @@ def init_feelpp_environment(toolboxType, config_file, argv=['feelpp-mor-nirb']):
         argv (list, optional): list of arguments to give to Feel++ environment. Defaults to ['feelpp-mor-nirb'].
 
     Returns:
-        feelpp._core.Environment: Environment
+        fppc._core.Environment: Environment
     """
-    config = feelpp.globalRepository(f"nirb/{toolboxType}")
+    config = fppc.globalRepository(f"nirb/{toolboxType}")
     opts = core.toolboxes_options(toolboxType).add(mor.makeToolboxMorOptions())
-    e = feelpp.Environment(argv, config=config, opts=opts)
+    e = fppc.Environment(argv, config=config, opts=opts)
     e.setConfigFile(config_file)
     return e
 
@@ -49,9 +49,9 @@ def loadParameterSpace(model_path):
         ParameterSpace: object ParameterSpace
     """
 
-    crb_model_properties = mor.CRBModelProperties("", feelpp.Environment.worldCommPtr(), "")
+    crb_model_properties = mor.CRBModelProperties("", fppc.Environment.worldCommPtr(), "")
     crb_model_properties.setup(model_path)
-    Dmu = feelpp.mor._mor.ParameterSpace.New(crb_model_properties.parameters(), feelpp.Environment.worldCommPtr())
+    Dmu = feelpp.mor._mor.ParameterSpace.New(crb_model_properties.parameters(), fppc.Environment.worldCommPtr())
     return Dmu
 
 
@@ -86,7 +86,7 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
     """
     s = Dmu.sampling()
     s.sample(size, samplingMode)
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         s.writeOnFile(path)
         print("Sampling saved in ", path)
 
@@ -102,7 +102,7 @@ def samplingEqui(model_path,Ns,type='equidistribute'):
         Ns (int): number of snapshot 
         type (str, optional): type of the equidistribution. Defaults to 'equidistribute'.
     """
-    model = feelpp.readJson(model_path)
+    model = fppc.readJson(model_path)
     crb = model['CRBParameters']
 
     Dmu = loadParameterSpace(model_path)

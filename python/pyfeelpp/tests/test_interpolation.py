@@ -1,9 +1,9 @@
 import sys,os
-import feelpp
+import feelpp.core as fppc
 import pytest
-from feelpp.toolboxes.core import *
-from feelpp.toolboxes.heat import *
-import feelpp.interpolation as fi
+#from fppt.core import *
+#from fppt.heat import *
+import fppc.interpolation as fi
 
 cases = [
          (('cases/nirb/square/square.cfg', 'cases/nirb/square/square.geo', 'cases/nirb/square/square.json'), 'square-2d'),
@@ -14,8 +14,8 @@ cases_params, cases_ids = list(zip(*cases))
 def setToolbox(h, geo_path, model):
 
     # load meshes
-    mesh_ = feelpp.mesh(dim=2, realdim=2)
-    mesh = feelpp.load(mesh_, geo_path, h)
+    mesh_ = fppc.mesh(dim=2, realdim=2)
+    mesh = fppc.load(mesh_, geo_path, h)
 
     # set mesh and model properties
     tb = heat(dim=2, order=2)
@@ -46,16 +46,16 @@ def test_interpolate_constant(init_feelpp,cfg_path, geo_path, model_path):
     geo_path = os.path.join(os.path.dirname(__file__), geo_path)
     model_path = os.path.join(os.path.dirname(__file__), model_path)
     
-    feelpp.Environment.changeRepository(directory="pyfeelpp-tests/interpolate/nirb")
+    fppc.Environment.changeRepository(directory="pyfeelpp-tests/interpolate/nirb")
     
     # fineness of two grids
     H = 0.1
     h = H**2
 
     # load the model
-    feelpp.Environment.setConfigFile(cfg_path)
+    fppc.Environment.setConfigFile(cfg_path)
 
-    model = feelpp.readJson(model_path)
+    model = fppc.readJson(model_path)
     
     tbCoarse = setToolbox(H, geo_path, model)
     tbFine = setToolbox(h, geo_path, model)
@@ -80,22 +80,22 @@ def test_interpolate_constant(init_feelpp,cfg_path, geo_path, model_path):
         print("||u_truth - u_inter||2 :", diff.norm())
         assert diff.norm() < 1e-12
 
-    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("1")) 
+    u_coarse.on(fppc.elements(tbCoarse.mesh()), fppc.expr("1")) 
     check_interp(I_coarseToFine, u_coarse, u_fine, 1, 1)   
-    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("3")) 
+    u_fine.on(fppc.elements(tbFine.mesh()), fppc.expr("3")) 
     check_interp(I_fineToCoarse, u_fine, u_coarse, 3, 3)
 
-    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("x+y:x:y"))
+    u_coarse.on(fppc.elements(tbCoarse.mesh()), fppc.expr("x+y:x:y"))
     check_interp(I_coarseToFine, u_coarse, u_fine, 0, 2)
-    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("x+y:x:y"))
+    u_fine.on(fppc.elements(tbFine.mesh()), fppc.expr("x+y:x:y"))
     check_interp(I_fineToCoarse, u_fine, u_coarse, 0, 2)
 
-    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("x^2-3*y^2:x:y"))
+    u_coarse.on(fppc.elements(tbCoarse.mesh()), fppc.expr("x^2-3*y^2:x:y"))
     check_interp(I_coarseToFine, u_coarse, u_fine, -3, 1)
-    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("-3*x^2+y^2:x:y"))
+    u_fine.on(fppc.elements(tbFine.mesh()), fppc.expr("-3*x^2+y^2:x:y"))
     check_interp(I_fineToCoarse, u_fine, u_coarse, -3, 1)
 
-    u_coarse.on(feelpp.elements(tbCoarse.mesh()), feelpp.expr("x^2-3*y^2:x:y"))
-    u_fine.on(feelpp.elements(tbFine.mesh()), feelpp.expr("x^2-3*y^2:x:y"))
+    u_coarse.on(fppc.elements(tbCoarse.mesh()), fppc.expr("x^2-3*y^2:x:y"))
+    u_fine.on(fppc.elements(tbFine.mesh()), fppc.expr("x^2-3*y^2:x:y"))
     check_norm_inter(I_coarseToFine, u_coarse, u_fine)
     check_norm_inter(I_fineToCoarse, u_fine, u_coarse)

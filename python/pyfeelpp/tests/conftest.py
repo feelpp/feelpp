@@ -3,8 +3,8 @@ import sys
 
 import py
 import pytest
-import feelpp
-import feelpp.toolboxes.core as tb
+import feelpp.core as fppc
+#import fppc.toolboxes.core as tb
 import gmsh
 
 log = getLogger(__name__)
@@ -33,18 +33,18 @@ class InitFeelpp:
     def __init__(self,config):
         try:
             sys.argv=['test_feelpp']
-            self.feelpp_env = feelpp.Environment(sys.argv,config=config, 
-                                                 opts= tb.toolboxes_options("heat"))
+            self.feelpp_env = fppc.Environment(sys.argv,config=config)#, 
+                                                       #opts= tb.toolboxes_options("heat"))
         except Exception:
             return 
 
 
 @pytest.fixture(scope="session")
 def init_feelpp():
-    return InitFeelpp(feelpp.globalRepository("pyfeelpp-tests")).feelpp_env
+    return InitFeelpp(fppc.globalRepository("pyfeelpp-tests")).feelpp_env
 
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
-    return InitFeelpp(feelpp.localRepository("feelppdb")).feelpp_env
+    return InitFeelpp(fppc.localRepository("feelppdb")).feelpp_env
 
 

@@ -16,7 +16,7 @@ from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
 
-from feelpp.mor.reducedbasis.reducedbasis import *
+from feelpp.fppmor.reducedbasis.reducedbasis import *
 
 #        (( prefix, case, casefile, dim, use_cache, time_dependant), name     )
 cases = [
@@ -39,8 +39,8 @@ def init_toolbox(prefix, case, casefile, dim, use_cache):
         except FileNotFoundError:
             print('You asked to remove cache, but there was none, so no problem !')
 
-    feelpp.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
-    feelpp.Environment.changeRepository(directory=f'{prefix}/{case}')
+    fppc.Environment.setConfigFile(f'{prefix}/{case}/{casefile}')
+    fppc.Environment.changeRepository(directory=f'{prefix}/{case}')
 
     heatBox = heat(dim=dim, order=1)
     heatBox.init()
@@ -185,7 +185,7 @@ def compar_sols(rb, assembleMDEIM, heatBox):
     assert(len(beta) == 2)
     assembleMDEIM(mu)
     heatBox.solve()
-    s_tb = feelpp.mean(range=feelpp.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
+    s_tb = fppc.mean(range=fppc.markedfaces(heatBox.mesh(), "Gamma_root"), expr=heatBox.fieldTemperature())[0]
 
     _,sN = rb.getSolutions(mu)
     

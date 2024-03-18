@@ -1,7 +1,7 @@
 import sys
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.fluid import *
-e=feelpp.Environment(sys.argv,opts=toolboxes_options("fluid"))
+e=fppc.Environment(sys.argv,opts=toolboxes_options("fluid"))
 
 
 # 2D fluid solver using P2P1G1 approximation

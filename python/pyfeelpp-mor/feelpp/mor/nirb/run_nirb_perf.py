@@ -46,7 +46,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     res['N'] = [N]
     res['nirb_offline'] = [finish-start]
 
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
         print(f"[NIRB] Offline part Done !")
     
@@ -74,14 +74,14 @@ def online_error_sampling(nirb, RESPATH, Nb=None,  Nsample=50, Xi_test=None, ver
     df['N'] = nirb.N 
 
     if save:
-        if feelpp.Environment.isMasterRank():    
+        if fppc.Environment.isMasterRank():    
             file = Path(f"{RESPATH}/errors{Nsample}Params.csv").absolute()
             header = not os.path.isfile(file)
             df.to_csv(file, mode='a', index=False, header=header)
             print(f"[NIRB] Convergence errors are saved in {file}")
         
     if verbose:
-        if feelpp.Environment.isMasterRank():
+        if fppc.Environment.isMasterRank():
             print("[NIRB online] all computed errors ")
             data_mean = df.mean(axis=0)
             print("[NIRB online] Mean of errors ")
@@ -132,7 +132,7 @@ def online_time_measure(nirb, Nsample=50, Xi_test=None):
     res['nirb_online'] = [time_nirb]
     res['toolbox'] = [time_toolbox]
 
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         print(f"[NIRB online] Time to compute {Nsample} solutions with NIRB = ", time_nirb)
         print(f"[NIRB online] Time to compute {Nsample} solutions with toolbox = ", time_toolbox)
 
@@ -165,11 +165,11 @@ if __name__ == '__main__':
     convergence = bo[conv]
 
     ## Init feelpp 
-    cfg = feelpp.readCfg(config_file)
+    cfg = fppc.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
     e = init_feelpp_environment(toolboxType, config_file)
-    nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
-    config_nirb = feelpp.readJson(nirb_file)['nirb']
+    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'])
+    config_nirb = fppc.readJson(nirb_file)['nirb']
 
     ## Get model and data path 
     config_nirb['greedy-generation'] = bo[greedy]
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     greedyPath = ["noGreedy", "Greedy"][doGreedy]
     RESPATH = f"results/{rectPath}/{greedyPath}"
     
-    size = feelpp.Environment.numberOfProcessors()
+    size = fppc.Environment.numberOfProcessors()
 
     ### For time mesure in // computing
     
@@ -213,7 +213,7 @@ if __name__ == '__main__':
         s = Dmu.sampling()
         N = s.readFromFile(Xi_train_path)
         Xi_train = s.getVector()    
-        if feelpp.Environment.isMasterRank():
+        if fppc.Environment.isMasterRank():
             print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
     else :
         Xi_train = generatedAndSaveSampling(Dmu, 200, path=Xi_train_path, samplingMode="log-random")
@@ -223,7 +223,7 @@ if __name__ == '__main__':
         N = s.readFromFile(Xi_test_path)
         assert N==Nsample, f"Given size of sampling test {Nsample} # loaded sampling size {N}"
         Xi_test = s.getVector()  
-        if feelpp.Environment.isMasterRank():
+        if fppc.Environment.isMasterRank():
             print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
     else :
         Xi_test = generatedAndSaveSampling(Dmu, Nsample, path=Xi_test_path, samplingMode="log-random")
@@ -258,7 +258,7 @@ if __name__ == '__main__':
         err = nirb_on.loadData(nbSnap=baseList[-1], path=RESPATH)
         assert err == 0, "loadData failed"
         resOnline = online_time_measure(nirb_on, Nsample=Nsample)
-        if feelpp.Environment.isMasterRank():
+        if fppc.Environment.isMasterRank():
             res = resOnline
             res['nirb_offline'] = resOffline['nirb_offline']
             res['nproc'] = size
@@ -270,7 +270,7 @@ if __name__ == '__main__':
             df.to_csv(file, mode='a', index=False, header=header)
             print(f"[NIRB] Execution time mesure are saved in {file}")
 
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         print("=============================================")
         print(f"Run test_perf_nirb done, doRectification : {doRectification}, doGreedy : {doGreedy}")
         print(f"Result are stored in : {os.path.abspath(RESPATH)}")
