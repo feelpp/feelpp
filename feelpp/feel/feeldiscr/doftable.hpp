@@ -2938,7 +2938,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                     M_dof_points[thedof] = boost::make_tuple( ctxCurrent->xReal( ldofParentId ), thedof, c1 );
                 }
 #if !defined( NDEBUG )
-                else if ( !isP0Continuous<fe_type>::result )
+                else if ( !isP0Continuous<fe_type>::result && !is_mortar )
                 {
                     auto dofpointFromGmc = ctxCurrent->xReal( ldofParentId );
                     auto dofpointStored = M_dof_points[thedof].template get<0>();

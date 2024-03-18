@@ -517,6 +517,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     {
         tic();
         M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get() );
+        M_cache_mp[__ts->name()]->setExportByParts( this->exportByParts() );
         toc( "ExporterEnsightGold::writeGeoFiles init cache", FLAGS_v > 0 );
         // clear others caches with export of fields
         M_mapNodalArrayToDofId.clear();

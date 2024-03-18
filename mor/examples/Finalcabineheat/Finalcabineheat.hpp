@@ -29,7 +29,6 @@
 #ifndef __FINALCABINEHEAT_H
 #define __FINALCABINEHEAT_H 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>

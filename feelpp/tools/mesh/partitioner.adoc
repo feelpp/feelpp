@@ -12,12 +12,12 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == SYNOPSIS
 
-{manmanual} --part num [num2...] --ifile file [--dim d] [--shape s] [--order num] [--by-markers] [--by-markers-desc markers] [--ofile file] [--odir dir]
+{manmanual} --part num [num2...] --ifile file [--dim d] [--json file.json] [--shape s] [--order num] [--by-markers] [--by-markers-desc markers] [--ofile file] [--odir dir]
 
 == DESCRIPTION
 
-{manmanual} is a simple application which can generate a partitioned mesh and
-save it in a Feel++ specific `json+hdf5` file format.
+{manmanual} is a simple application which can generate a partitioned mesh and
+save it in a {feelpp} specific `json+hdf5` file format.
 
 The generated mesh can then be loaded very efficiently in parallel.
 
@@ -26,10 +26,10 @@ The generated mesh can then be loaded very efficiently in parallel.
 {manmanual} requires some options.
 
 .Table of command-line {manmanual} options
-|===                                                                                                                                                                              
+|===
 | Name | Description | Default value
 
-| dim | dimension of the mesh | 3                                                                                              
+| dim | dimension of the mesh | 3
 | shape| shape of the mesh elements | Simplex
 | order | mesh geometric order | 1
 | by-markers | partitioning on each marker |
@@ -38,12 +38,13 @@ The generated mesh can then be loaded very efficiently in parallel.
 | ifile | name or path to the mesh |
 | ofile | output filename prefix (without extension) |
 | odir | output directory |
-|===  
+| json | json file that describes the partitioning |
+|===
 
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.               
-We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.                                                                                                       
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
 ----
@@ -67,7 +68,7 @@ ls torus*
 torus.geo  torus.h5  torus.json  torus.msh
 ----
 
-Now the file `torus.json` can be loaded in a Feel++ application distributed on 4 cores. 
+Now the file `torus.json` can be loaded in a Feel++ application distributed on 4 cores.
 
 === Generating multiple mesh partitioning
 
@@ -106,12 +107,42 @@ feelpp_mesh_partitioner --ifile toto.geo --by-markers-desc marker1:marker2,marke
 ----
 In ```by-markers-desc``` option, the ```,``` keyword create an union of the markers and ```:``` keyword allow to split the partitioning regions.
 
+=== Aggregating elements of a mesh
+
+For some numerical methods, it is necessary to aggregate elements that share faces marked with a specific marker.
+This is done to 
+
+* avoid these faces are also interprocess faces 
+* avoid having degrees of freedom split over different processes
+
+To do so we use the `--json` option to specify the partitioning.
+
+The following code will aggregate the elements of the spheres marked with `CenterSphere`, `LeftSphere` and `RightSphere` in the mesh on the same processor.
+The aggregation is done by adding weights to the elements sharing the same face marked with the same marker which then force the graph partitioner to put them on the same processor.
+
+[source,json]
+----
+{
+    "partitioner":
+    {
+        "aggregates":
+        {
+            "spheres":{
+                "type": "faces",
+                "markers": ["CenterSphere","LeftSphere","RightSphere"]
+            }
+        }
+    }
+}
+----
+
+
 == SEE ALSO
 
 *{feelpp} Book:* http://book.feelpp.org
 
 == COPYING
 
-Copyright \(C) 2017 {feelpp} Consortium. +
+Copyright \(C) 2017-2024 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
 
