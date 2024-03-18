@@ -646,6 +646,71 @@ public:
     template <class ExprT>
     LinearForm& operator+=( Expr<ExprT> const& expr );
 
+    /**
+     * @brief add += operator
+     * 
+     * @param f linear form to add
+     * @return LinearForm& 
+     */
+    LinearForm& operator+=( LinearForm const& f )
+    {
+        if ( this == &f )
+        {
+            M_F->scale( 2. );
+            return *this;
+        }
+        this->close();
+        const_cast<LinearForm&>(f).close();
+
+        *M_F += *f.M_F;
+
+        return *this;
+    }
+    /**
+     * @brief add -= operator
+     * 
+     * @param f linear form to substract
+     * @return LinearForm& 
+     */
+    LinearForm& operator-=( LinearForm const& f )
+    {
+        if ( this == &f )
+        {
+            M_F->zero();
+            return *this;
+        }
+        this->close();
+        const_cast<LinearForm&>(f).close();
+
+        *M_F -= *f.M_F;
+
+        return *this;
+    }
+    /**
+     * @brief operator *= with a scalar
+     * 
+     * @param s scalar to multiply with
+     * @return LinearForm& 
+     */
+    LinearForm& operator*=( value_type const& s )
+    {
+        this->close();
+        M_F->scale( s );
+        return *this;
+    }
+    /**
+     * @brief operator /= with a scalar
+     * 
+     * @param s scalar
+     * @return LinearForm& 
+     */
+    LinearForm& operator/=( value_type const& s )
+    {
+        this->close();
+        M_F->scale( 1./s );
+        return *this;
+    }
+
 #if 0
     /**
      * \todo write documentation
@@ -897,18 +962,6 @@ public:
      */
     void scale( value_type s ) { M_F->scale( s ); }
 
-    LinearForm& operator+=( LinearForm const& f )
-        {
-            if ( this == &f )
-            {
-                M_F->scale( 2. );
-                return *this;
-            }
-
-            *M_F += *f.M_F;
-
-            return *this;
-        }
     //@}
 
 private:
@@ -994,6 +1047,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
     //tic();
     if ( !this->M_X->worldComm().isActive() ) return;
 
+    if ( !__F )
+        M_F = backend()->newVector( _test=__X );
+
     for ( uint16_type __i = 0; __i < M_X->qDim(); ++__i )
     {
         M_lb.push_back( Block( __i, 0,
@@ -1030,6 +1086,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
     //tic();
     if ( !this->M_X->worldComm().isActive() ) return;
 
+    if ( !__F )
+        M_F = backend()->newVector( _test=__X );
+    
     if ( init )
         M_F->zero();
 }
@@ -1168,16 +1227,6 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
     return *this;
 }
 
-template<typename SpaceType, typename VectorType,  typename ElemContType>
-LinearForm<SpaceType, VectorType, ElemContType>
-operator+(LinearForm<SpaceType, VectorType, ElemContType> const& a,
-          LinearForm<SpaceType, VectorType, ElemContType> const& b )
-{
-    LinearForm<SpaceType, VectorType, ElemContType> c{a};
-    c += b;
-
-    return c;
-}
 
 
 } // detail
@@ -1193,6 +1242,148 @@ struct LinearForm
 {
     typedef Feel::vf::detail::LinearForm<SpaceType,VectorType,ElemContType> type;
 };
+}
+
+/**
+ * @brief operator + with two linear forms
+ * 
+ * @tparam SpaceType space type
+ * @tparam VectorType representation type
+ * @tparam ElemContType type of element
+ * @param a linear form
+ * @param b linear form
+ * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ */
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
+operator+(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& a,
+          Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& b )
+{
+    Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c += b;
+
+    return c;
+}
+/**
+ * @brief operator - with two linear forms
+ * 
+ * @tparam SpaceType space type
+ * @tparam VectorType representation type
+ * @tparam ElemContType type of element
+ * @param a linear form
+ * @param b linear form
+ * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ */
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
+operator-(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& a,
+          Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& b )
+{
+    Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c -= b;
+
+    return c;
+}
+/**
+ * @brief operator * with a scalar on the right
+ * 
+ * @tparam SpaceType space type
+ * @tparam VectorType representation type
+ * @tparam ElemContType type of elements
+ * @param a linear form
+ * @param s representation type
+ * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ */
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
+operator*(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& a,
+          typename SpaceType::value_type const& s )
+{
+    Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c *= s;
+
+    return c;
+}
+/**
+ * @brief operator * with a scalar on the left
+ * 
+ * @tparam SpaceType space type
+ * @tparam VectorType representation type
+ * @tparam ElemContType type of container of elements
+ * @param s scalar 
+ * @param a linear form
+ * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ */
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
+operator*(typename SpaceType::value_type const& s, Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& a )
+{
+    Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c *= s;
+
+    return c;
+}
+/**
+ * @brief operator / with a scalar
+ * 
+ * @tparam SpaceType space type
+ * @tparam VectorType representation type
+ * @tparam ElemContType type of container of elements
+ * @param a linear form
+ * @param s scalar
+ * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ */
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
+operator/(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& a,
+          typename SpaceType::value_type const& s )
+{
+    Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c /= s;
+
+    return c;
+}
+/**
+ * @brief unary minus operator
+ * 
+ * @tparam SpaceType space type
+ * @tparam VectorType representation type
+ * @tparam ElemContType type of container of elements
+ * @param a linear form
+ * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ */
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
+operator-(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> const& a )
+{
+    Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c *= -1;
+
+    return c;
+}
+
+/**
+ * @brief sum of linear forms
+ * 
+ * @tparam FE1 
+ * @tparam BinaryOperation 
+ * @tparam VectorUblas<typename functionspace_type<FE1>::value_type> 
+ * @param v vector of linear forms
+ * @param op is the binary operation to apply
+ * @param init is the initial value
+ * @return LinearForm<FE1,ElemContType> 
+ */
+template<typename FE1,
+         class BinaryOperation,
+         typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
+         typename ElemContType = VectorType>
+Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> sum( std::vector<Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> > const& v, 
+                                                                BinaryOperation op, 
+                                                               Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> init = Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType>() )
+{
+    for(auto const& a : v)
+        init = op( std::move(init), a );
+    return init;
 }
 
 /**
