@@ -3,7 +3,7 @@ import feelpp.core as fppc
 import pytest
 #from fppt.core import *
 #from fppt.heat import *
-import fppc.interpolation as fi
+import feelpp.core.interpolation as fi
 
 cases = [
          (('cases/nirb/square/square.cfg', 'cases/nirb/square/square.geo', 'cases/nirb/square/square.json'), 'square-2d'),

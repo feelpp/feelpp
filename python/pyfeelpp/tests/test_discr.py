@@ -1,9 +1,9 @@
 import sys
 import pytest
 import numpy as np
-import feelpp.core as fppc as fppc 
-import feelpp.toolboxes as fppt
-from fppc.timing import tic,toc
+import feelpp.core as fppc
+#import feelpp.toolboxes as fppt
+from feelpp.core.timing import tic,toc
 
 def run(m, geo):
     tic()

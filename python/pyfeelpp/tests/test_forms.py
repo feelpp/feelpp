@@ -1,8 +1,8 @@
 import feelpp.core as fppc
 import sys
 import pytest
-from fppc.timing import tic,toc
-from fppc.forms import *
+from feelpp.core.timing import tic,toc
+from feelpp.core.forms import *
 import numpy as np
 
 def run(m, geo):
@@ -24,9 +24,11 @@ def run(m, geo):
     m3 = Xh.mesh()
 
     a = mass(test=Xh,trial=Xh)
-    l = a(u)
     u=Xh.element()
     u.setConstant(1)
+
+    al = a(u)
+    print(f"[form1] measure using l={al(u)}")
     print(f"[form2] measure={a(u,u)}")
     assert np.isclose(a(u,u),e_meas)
 

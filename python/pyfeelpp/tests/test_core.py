@@ -1,5 +1,5 @@
 from mpi4py import MPI
-import feelppcore as fppc 
+import feelpp.core as fppc 
 import sys
 import pytest
 import os,shutil

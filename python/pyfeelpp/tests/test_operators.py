@@ -1,7 +1,7 @@
 import math
 import sys
 import feelpp.core as fppc
-from fppc.operators import *
+from feelpp.core.operators import *
 import pytest
 
 

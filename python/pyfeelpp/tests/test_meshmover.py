@@ -1,6 +1,6 @@
 import feelpp.core as fppc
-import fppc.meshmover as mm
-from fppc.measure import measure
+import feelpp.core.meshmover as mm
+from feelpp.core.measure import measure
 
 def run(m, geo):
     

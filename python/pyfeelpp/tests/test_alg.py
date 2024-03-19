@@ -1,4 +1,4 @@
-import fppc.core as fppc
+import feelpp.core as fppc
 import sys
 import pytest
 from petsc4py import PETSc
