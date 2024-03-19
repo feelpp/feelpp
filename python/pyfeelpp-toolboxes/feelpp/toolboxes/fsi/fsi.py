@@ -1,7 +1,7 @@
 import sys
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.fsi import *
-e = feelpp.Environment(sys.argv, opts=toolboxes_options("fsi"))
+e = fppc.Environment(sys.argv, opts=toolboxes_options("fsi"))
 
 
 

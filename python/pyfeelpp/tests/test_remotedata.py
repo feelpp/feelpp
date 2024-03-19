@@ -1,15 +1,15 @@
-import feelpp
+import feelpp.core as fppc
 import sys
 import pytest
 
 #@pytest.mark.mpi
 def test_remotedata(init_feelpp):
-    feelpp.Environment.changeRepository(
+    fppc.Environment.changeRepository(
         directory="pyfeelpp-tests/core/test_remotedata")
-    rd = feelpp.RemoteData("github:{repo:feelpp,path:README.adoc}", worldComm=feelpp.Environment.worldCommPtr())
+    rd = fppc.RemoteData("github:{repo:feelpp,path:README.adoc}", worldComm=fppc.Environment.worldCommPtr())
 
     if rd.canDownload():
-        d=feelpp.Environment.downloadsRepository()
+        d=fppc.Environment.downloadsRepository()
         print("download data in ", d);
         data=rd.download( d )
         print("downloaded data:",data)

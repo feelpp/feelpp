@@ -4,7 +4,7 @@ import sys
 import py
 import pytest
 import feelpp
-import feelpp.mor as mor
+import feelpp.mor as fppmor
 import feelpp.toolboxes.core as tb
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
@@ -33,14 +33,14 @@ class InitFeelpp:
         try:
             print('xxx call init_feelpp;', __file__)
             sys.argv=['test_pyfeelppmor']
-            self.e = feelpp.Environment(
-                sys.argv, opts= feelpp.backend_options("Iv")
+            self.e = fppc.Environment(
+                sys.argv, opts= fppc.backend_options("Iv")
                                 .add(tb.toolboxes_options("heat"))
                                 .add(tb.toolboxes_options("fluid"))
-                                .add(mor.makeToolboxMorOptions()),
+                                .add(fppmor.makeToolboxMorOptions()),
                 config=config
                                 )
-            print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
+            print('is master? ', fppc.Environment.worldCommPtr().isMasterRank())
         except Exception as err:
             print('Exception caught while initializing Feel++: '.format(err))
             return 
@@ -48,8 +48,8 @@ class InitFeelpp:
 
 @pytest.fixture(scope="session")
 def init_feelpp():
-    return InitFeelpp(feelpp.globalRepository("pyfeelppmor-tests"))
+    return InitFeelpp(fppc.globalRepository("pyfeelppmor-tests"))
 
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
-    return InitFeelpp(feelpp.localRepository("feelppdb"))
+    return InitFeelpp(fppc.localRepository("feelppdb"))

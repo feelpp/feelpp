@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 
 from feelpp.toolboxes.core import *
 
@@ -24,7 +24,7 @@ def heat(dim=2, order=1, worldComm=None, keyword="heat", prefix="heat", subprefi
     Keyword arguments:
     dim -- the dimension (default: 2)
     order -- the polynomial order for the temperature (default: 1)
-    worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
+    worldComm -- the parallel communicator for the mesh (default: fppc.Environment::worldCommPtr())
     keyword -- the json keyword for the toolbox (default: heat)
     prefix -- the prefix for the toolbox command line and .cfg options (default: heat)
     subprefix -- the subprefix for the toolbox command line and .cfg options (default: "")
@@ -32,7 +32,7 @@ def heat(dim=2, order=1, worldComm=None, keyword="heat", prefix="heat", subprefi
     if not has_heat:
         raise Exception('Heat toolbox is not enabled in Feel++')
     if worldComm is None:
-        worldComm = feelpp.Environment.worldCommPtr()
+        worldComm = fppc.Environment.worldCommPtr()
     key='heat('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank() and verbose > 0:
         print(f"Toolbox {key} created.")

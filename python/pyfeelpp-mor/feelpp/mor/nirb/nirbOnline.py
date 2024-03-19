@@ -23,12 +23,12 @@ if __name__ == "__main__":
     config_file = args.config_file
     outdir = args.outdir
 
-    cfg = feelpp.readCfg(config_file)
+    cfg = fppc.readCfg(config_file)
     toolboxType = cfg['nirb']['toolboxType']
     e = init_feelpp_environment(toolboxType, config_file)
 
-    nirb_file = feelpp.Environment.expand(cfg['nirb']['filename'])
-    config_nirb = feelpp.readJson(nirb_file)['nirb']
+    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'])
+    config_nirb = fppc.readJson(nirb_file)['nirb']
 
 
     greedy = args.greedy 

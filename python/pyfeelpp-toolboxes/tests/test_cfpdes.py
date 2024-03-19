@@ -1,7 +1,7 @@
 import sys
 import pytest
-import feelpp
-import feelpp.quality as q
+import feelpp.core as fppc
+import fppc.quality as q
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.cfpdes import *
 import pandas as pd
@@ -16,7 +16,7 @@ cfpde_cases = [ ('fluid','TurekHron','cfd2.cfg', 2),
 
 @pytest.mark.parametrize("prefix,case,casefile,dim", cfpde_cases)
 def test_cfpdes(prefix,case,casefile,dim):
-    feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix,case,casefile))
+    fppc.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix,case,casefile))
     f = cfpdes(dim=dim)
     if not f.isStationary():
         # the code below is not working yet see #1763
@@ -27,40 +27,40 @@ def test_cfpdes(prefix,case,casefile,dim):
 
 # def test_cfpde_nlthermoelectric():
 #     prefix, case, casefile, dim= ( 'thermoelectric', 'ElectroMagnets_HL-31_H1', 'HL-31_H1.cfg', 3)
-#     feelpp.Environment.changeRepository(
+#     fppc.Environment.changeRepository(
 #         directory="toolboxes/coefficientformpdes/thermoelectric/ElectroMagnets_HL-31_H1")
-#     feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
+#     fppc.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
 #     linear_case_t = cfpdes(dim=dim)
 #     simulate(linear_case_t)
 #     assert linear_case_t.checkResults()
 #     # now run the nonlinear model using the linear solution as initial guess
 #     casefile = 'HL-31_H1_nonlinear.cfg'
-#     feelpp.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
+#     fppc.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix, case, casefile))
 #     nl_case_t = cfpdes(dim=dim)
 #     simulate(nl_case_t)
 #     return not nl_case_t.checkResults()
 
 def test_cfpdes_remesh():
-    feelpp.Environment.changeRepository(
+    fppc.Environment.changeRepository(
         directory="pyfeelpptoolboxes-tests/cfpdes/laplace/l-shape")
-    feelpp.Environment.setConfigFile('cfpdes/laplace/l-shape/l-shape.cfg')
+    fppc.Environment.setConfigFile('cfpdes/laplace/l-shape/l-shape.cfg')
     f=cfpdes(dim=2)
     simulate(f, export=False)
 
-    e = feelpp.exporter(mesh=f.mesh(), name="l-shape", geo="change")
+    e = fppc.exporter(mesh=f.mesh(), name="l-shape", geo="change")
     e.step(0.).setMesh(f.mesh())
     f.exportSolutionToStep( e.step(0.) )
     
     hclose=0.05
     hfar=1
 
-    Xh = feelpp.functionSpace(mesh=f.mesh())
-    metric = feelpp.gradedls(Xh,feelpp.boundaryfaces(Xh.mesh()),hclose,hfar)
+    Xh = fppc.functionSpace(mesh=f.mesh())
+    metric = fppc.gradedls(Xh,fppc.boundaryfaces(Xh.mesh()),hclose,hfar)
     e.step(0.).add("metric",metric)
     e.step(0.).add("quality", q.etaQ(f.mesh()))
     e.save()
 
-    new_mesh,cpt = feelpp.remesh(
+    new_mesh,cpt = fppc.remesh(
         mesh=f.mesh(), metric="gradedls({},{})".format(hclose, hfar),required_elts=[],required_facets=[],parent=None)
     
     fnew = cfpdes(dim=2)
@@ -69,8 +69,8 @@ def test_cfpdes_remesh():
     e.step(1.).setMesh(new_mesh)
     fnew.exportSolutionToStep(e.step(1.))
 
-    Xh = feelpp.functionSpace(mesh=fnew.mesh())
-    metric = feelpp.gradedls(Xh,feelpp.boundaryfaces(Xh.mesh()),hclose,hfar)
+    Xh = fppc.functionSpace(mesh=fnew.mesh())
+    metric = fppc.gradedls(Xh,fppc.boundaryfaces(Xh.mesh()),hclose,hfar)
     quality = q.etaQ(fnew.mesh())
     e.step(1.).add("metric",metric)
     e.step(1.).add("quality",quality)

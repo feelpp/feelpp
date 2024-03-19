@@ -8,7 +8,7 @@ from feelpp.toolboxes.core import *
 from feelpp.mor import *
 import feelpp
 
-from feelpp.mor.reducedbasis.reducedbasis_time import *
+from feelpp.fppmor.reducedbasis.reducedbasis_time import *
 
 
 # def test_init_argv(configfile):
@@ -30,7 +30,7 @@ assert( DIM in [2,3] )
 # Set the environment
 o=toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
-e=feelpp.Environment(sys.argv,opts=o)
+e=fppc.Environment(sys.argv,opts=o)
 
 
 # Set the toolboxes

@@ -1,8 +1,8 @@
 import sys
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import toolboxes_options
 
-e=feelpp.Environment(sys.argv, opts=toolboxes_options("mixedpoisson", "hdg.poisson"))
+e=fppc.Environment(sys.argv, opts=toolboxes_options("mixedpoisson", "hdg.poisson"))
 
 from feelpp.toolboxes.hdg import *
 

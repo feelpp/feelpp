@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 
 has_hf = False
@@ -32,7 +32,7 @@ def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, world
     subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if worldComm is None:
-        worldComm = feelpp.Environment.worldCommPtr()
+        worldComm = fppc.Environment.worldCommPtr()
     key=f'heatfluid({dim},{orderTemperature},{orderVelocity},{orderPressure})'
     if worldComm.isMasterRank():
         print(f"heatfluid:: key:{key}, has_hf:{has_hf}")

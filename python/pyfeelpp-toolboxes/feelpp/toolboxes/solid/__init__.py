@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 
 has_csm = False
@@ -31,7 +31,7 @@ def solid(dim=2, orderDisp=1, worldComm=None, keyword="solid", prefix="solid", s
     if not has_csm:
         raise Exception('Solid toolbox is not enabled in Feel++')
     if worldComm is None:
-        worldComm=feelpp.Environment.worldCommPtr()
+        worldComm=fppc.Environment.worldCommPtr()
     key='solid('+str(dim)+','+str(orderDisp)+')'
     if worldComm.isMasterRank():
         print(key)
