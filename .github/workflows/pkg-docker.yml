@@ -1,4 +1,4 @@
-name: Feelpp PKG Reusable Workflow
+name: Feelpp PKG Docker 
 on:
     workflow_dispatch:
       inputs:
