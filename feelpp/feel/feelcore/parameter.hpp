@@ -120,6 +120,7 @@ using local = NA::named_argument_t<struct local_tag>;
 // parameter for exporter
 using geo = NA::named_argument_t<struct geo_tag>;
 using fileset = NA::named_argument_t<struct fileset_tag>;
+using byparts = NA::named_argument_t<struct byparts_tag>;
 // parameter for description of geometries
 using h = NA::named_argument_t<struct h_tag>;
 using scale = NA::named_argument_t<struct scale_tag>;
@@ -341,7 +342,8 @@ using repository = NA::named_argument_t<struct repository_tag>;
 using physic = NA::named_argument_t<struct physic_tag>;
 
 using quality = NA::named_argument_t<struct quality_tag>;
-
+using robust = NA::named_argument_t<struct robust_tag>;
+using ray = NA::named_argument_t<struct ray_tag>;
 
 } // namespace na
 
@@ -430,6 +432,7 @@ inline constexpr auto& _local = NA::identifier<na::local>;
 // parameter for exporter
 inline constexpr auto& _geo = NA::identifier<na::geo>;
 inline constexpr auto& _fileset = NA::identifier<na::fileset>;
+inline constexpr auto& _byparts = NA::identifier<na::byparts>;
 // parameter for description of geometries
 inline constexpr auto& _h = NA::identifier<na::h>;
 inline constexpr auto& _scale = NA::identifier<na::scale>;
@@ -647,6 +650,8 @@ inline constexpr auto& _value = NA::identifier<na::value>;
 inline constexpr auto& _selector = NA::identifier<na::selector>;
 
 inline constexpr auto& _quality = NA::identifier<na::quality>;
+inline constexpr auto& _robust = NA::identifier<na::robust>;
+inline constexpr auto& _ray = NA::identifier<na::ray>;
 
 } // Feel
 

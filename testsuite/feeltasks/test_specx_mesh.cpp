@@ -1,3 +1,5 @@
+
+
 #define BOOST_TEST_MODULE test_specx
 #include <feel/feelcore/enumerate.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -14,6 +16,13 @@
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( testspecx_suite )
+
+/*
+BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
+{
+}
+*/
+
 
 BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
 {
@@ -101,4 +110,7 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
 }
+
+
+
 BOOST_AUTO_TEST_SUITE_END()

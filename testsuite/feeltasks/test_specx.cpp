@@ -59,7 +59,8 @@ BOOST_AUTO_TEST_CASE( test_specx_1 )
 BOOST_AUTO_TEST_CASE( test_specx_2 )
 {
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T2>\n");
-    const int NumThreads = SpUtils::DefaultNumThreads();
+    //const int NumThreads = SpUtils::DefaultNumThreads();
+    const int NumThreads = 6;
     SpRuntime runtime(NumThreads);
     auto start_time= std::chrono::steady_clock::now();
     const int initVal = 100;
@@ -154,7 +155,8 @@ BOOST_AUTO_TEST_CASE( test_specx_3 )
 BOOST_AUTO_TEST_CASE( test_specx_4 )
 {
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T4>\n");
-    const int NumThreads = SpUtils::DefaultNumThreads();
+    //const int NumThreads = SpUtils::DefaultNumThreads();
+    const int NumThreads = 6;
     SpRuntime runtime(NumThreads);
     auto start_time= std::chrono::steady_clock::now();
     const int baseTime = 10000;

@@ -39,10 +39,11 @@ struct MeshContiguousNumberingMapping
     using range_element_type = Range<mesh_type,MESH_ELEMENTS>; //elements_reference_wrapper_t<mesh_type>;
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
 
-    explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false )
+    explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false, bool exportByParts = true )
         :
         M_mesh( mesh ),
-        M_interprocessPointAreDuplicated( interprocessPointAreDuplicated )
+        M_interprocessPointAreDuplicated( interprocessPointAreDuplicated ),
+        M_exportByParts( exportByParts )
         {
             this->updateForUse();
         }
@@ -55,10 +56,17 @@ struct MeshContiguousNumberingMapping
 
             if ( M_partIdToRangeElement.empty() )
             {
-                for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( mesh ) )
+                if ( M_exportByParts )
                 {
-                    auto const& [range,mIds,fragmentName] = fragmentData;
-                    M_partIdToRangeElement[fragmentId] = std::make_tuple(fragmentName,range);
+                    for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( mesh ) )
+                    {
+                        auto const& [range,mIds,fragmentName] = fragmentData;
+                        M_partIdToRangeElement[fragmentId] = std::make_tuple(fragmentName,range);
+                    }
+                }
+                else
+                {
+                    M_partIdToRangeElement[0] = std::make_tuple("elements",elements(mesh));
                 }
             }
 
@@ -343,6 +351,16 @@ struct MeshContiguousNumberingMapping
 
         }
 
+    /**
+     * @brief export the mesh by parts if true, otherwise export the whole mesh without parts
+     */
+    void setExportByParts( bool exportByParts ) { M_exportByParts = exportByParts; }
+
+    /**
+     * @brief return true if the mesh is exported by parts, otherwise return false
+     */
+    bool exportByParts() const { return M_exportByParts; }
+
     const mesh_type* mesh() const { return M_mesh; }
 
     std::map<int,std::tuple<std::string,range_element_type>> const& partIdToRangeElement() const { return M_partIdToRangeElement; }
@@ -476,6 +494,7 @@ private :
 private:
     mesh_type* M_mesh;
     bool M_interprocessPointAreDuplicated;
+    bool M_exportByParts;
     std::map<int,std::tuple<std::string,range_element_type>> M_partIdToRangeElement;
     std::map<int,std::unordered_map<index_type,std::pair<index_type,point_ref_type> >> M_pointIdToContiguous;
     std::map<int,std::unordered_map<index_type,index_type>> M_elementIdToContiguous;

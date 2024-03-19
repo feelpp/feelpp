@@ -1969,8 +1969,13 @@ template <typename Shape, typename T, int Tag, typename IndexT, bool EnableShare
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeFacesFromBoundary( std::initializer_list<uint16_type> markers )
 {
     std::for_each( markers.begin(), markers.end(),
+<<<<<<< HEAD
                    [=]( uint16_type marker ) {
                        auto range = markedfaces( *this, boost::any( marker ) );
+=======
+                   [this]( uint16_type marker ) {
+                       auto range = markedfaces( this->shared_from_this(), boost::any( marker ) );
+>>>>>>> origin
                        LOG( INFO ) << "removing " << nelements( range ) << " faces marked " << marker << " from boundary faces\n";
 
                        for ( auto it = range.begin(), en = range.end(); it != en; ++it )
@@ -3278,36 +3283,53 @@ struct RemoveMarkerNameWithoutEntityForAllReduce : std::function<std::vector<std
 
 } // namespace details
 
+<<<<<<< HEAD
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
 void
      Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim == 0>* )
+=======
+template <typename Shape, typename T, int Tag, typename IndexT>
+void
+Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity()
+>>>>>>> origin
 {
     std::vector<std::vector<std::string>> markersEntity( nDim + 1 );
     std::vector<std::vector<size_type>> nMarkedEntity( nDim + 1 );
     std::vector<std::string> markersToRemove;
+    std::vector<std::map<size_type,size_type>> mapMarkerFlagToContainer( nDim + 1 ); // (flag->index in container)
     for ( auto const& m : this->markerNames() )
     {
         std::string const& markerName = m.first;
         int markerDim = m.second[1];
-        switch ( markerDim )
-        {
-        case 0:
-            markersEntity[0].push_back( markerName );
-            nMarkedEntity[0].push_back( nelements( markedpoints( *this, markerName ), false ) );
-            break;
-        default:
-            markersToRemove.push_back( markerName );
-            break;
-        }
+        index_type markerFlag = m.second[0];
+
+        mapMarkerFlagToContainer[markerDim][markerFlag] = nMarkedEntity[markerDim].size();
+        markersEntity[markerDim].push_back( markerName );
+        nMarkedEntity[markerDim].push_back( 0 );
     }
-    mpi::all_reduce( this->worldComm(), mpi::inplace( nMarkedEntity ), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce<index_type>() );
 
-    for ( int d = 0; d <= nDim; ++d )
-        for ( int k = 0; k < nMarkedEntity[d].size(); ++k )
-            if ( nMarkedEntity[d][k] == 0 )
-                markersToRemove.push_back( markersEntity[d][k] );
+    auto updateMarkedEntityCounter =
+        [&nMarkedEntity,&mapMarkerFlagToContainer]( auto itBegin, auto itEnd )
+            {
+                std::for_each(itBegin,itEnd, [&nMarkedEntity,&mapMarkerFlagToContainer]( auto const& pairIdElt )
+                              {
+                                  auto const& elt = pairIdElt.second;
+                                  auto & nMarkedEntityCurrent = nMarkedEntity[elt.nDim];
+                                  auto & mapMarkerFlagToContainerCurrent = mapMarkerFlagToContainer[elt.nDim];
+                                  for ( auto const& [mtag,mflags] : elt.markers() )
+                                  {
+                                      for ( auto mflag : mflags )
+                                      {
+                                          auto itFind = mapMarkerFlagToContainerCurrent.find( mflag );
+                                          if ( itFind != mapMarkerFlagToContainerCurrent.end() )
+                                              ++(nMarkedEntityCurrent[itFind->second]);
+                                      }
+                                  }
+                              });
+            };
 
+<<<<<<< HEAD
     for ( std::string const& markerName : markersToRemove )
         this->M_markername.erase( markerName );
 }
@@ -3424,6 +3446,16 @@ void
             break;
         }
     }
+=======
+    if constexpr ( nDim >= 1 )
+        updateMarkedEntityCounter( this->beginElement(), this->endElement() );
+    if constexpr ( nDim == 3 )
+        updateMarkedEntityCounter( this->beginEdge(), this->endEdge() );
+    if constexpr ( nDim >= 2 )
+        updateMarkedEntityCounter( this->beginFace(), this->endFace() );
+    updateMarkedEntityCounter( this->beginPoint(), this->endPoint() );
+
+>>>>>>> origin
     mpi::all_reduce( this->worldComm(), mpi::inplace( nMarkedEntity ), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce<index_type>() );
 
     for ( int d = 0; d <= nDim; ++d )

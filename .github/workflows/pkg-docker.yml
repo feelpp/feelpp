@@ -1,5 +1,37 @@
-name: Feelpp PKG Reusable Workflow
+name: Feelpp PKG Docker 
 on:
+    workflow_dispatch:
+      inputs:
+        flavor:
+          description: 'Flavor to build'
+          required: true
+          default: 'ubuntu'
+          type: choice
+          options:
+          - 'ubuntu'
+          - 'debian'
+        dist:
+          description: 'Distribution to build'
+          required: true
+          default: 'jammy'
+          type: choice
+          options:
+          - 'jammy'
+          - 'focal'
+          - 'bullseye'
+          - 'bookworm'
+          - 'testing'
+          - 'sid'
+        parallel:
+          description: 'Number of parallel jobs'
+          required: false
+          default: "20"
+          type: string
+        skip:
+          description: 'Skip build'
+          required: false
+          default: ""
+          type: string
     workflow_call:
         inputs:
             flavor:
