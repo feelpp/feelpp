@@ -18,6 +18,7 @@ on:
           options:
           - 'jammy'
           - 'focal'
+          - 'noble'
           - 'bullseye'
           - 'bookworm'
           - 'testing'
