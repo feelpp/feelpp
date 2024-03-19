@@ -1,7 +1,7 @@
 import math
 import sys
 import feelpp.core as fppc
-from fppc.integrate  import integrate
+from feelpp.core.integrate  import integrate
 import pytest
 
 def run(m, geo):

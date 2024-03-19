@@ -1,7 +1,7 @@
 import feelpp.core as fppc
 import sys,os
 import pytest
-from fppc.timing import tic,toc
+from feelpp.core.timing import tic,toc
 
 cases = [
          (2,'feelpp2d',os.path.dirname(__file__)+'/cases/feelpp2d/feelpp2d.geo'),
