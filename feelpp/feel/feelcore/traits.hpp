@@ -68,6 +68,9 @@ struct is_ptr_or_shared_ptr : std::bool_constant<is_shared_ptr_v<T>||std::is_poi
 template<typename T>
 using remove_shared_ptr_type = typename remove_shared_ptr<T>::type;
 
+template <typename T>
+using remove_shared_ptr_t = typename remove_shared_ptr<T>::type;
+
 template<typename T>
 using decay_type = std::decay_t<remove_shared_ptr_type<std::decay_t<T>>>;
 
