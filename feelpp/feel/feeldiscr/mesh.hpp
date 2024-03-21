@@ -1125,7 +1125,7 @@ public:
     //!  @return the computed trace mesh
     //!
     template <typename RangeT, int TheTag = 0>
-    trace_mesh_ptrtype<TheTag>
+    trace_mesh_ptr_t<mesh_type,TheTag>
     trace( RangeT && range, mpl::int_<TheTag> ) const
     {
         DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
@@ -1145,14 +1145,14 @@ public:
     //!  \todo make use of \c extraction_policies
     //!
     template <int TheTag = 0>
-    trace_mesh_ptrtype<TheTag>
+    trace_mesh_ptr_t<mesh_type,TheTag>
     trace() const
     {
         return trace( boundaryfaces( this->shared_from_this() ), mpl::int_<TheTag>() );
     }
 
     template <typename RangeT>
-    trace_mesh_ptrtype<Tag>
+    trace_mesh_ptr_t<mesh_type,Tag>
     trace( RangeT && range ) const
     {
         DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
@@ -1160,14 +1160,14 @@ public:
     }
 
     template <int TheTag = 0>
-    trace_trace_mesh_ptrtype<TheTag>
+    trace_trace_mesh_ptr_t<mesh_type,TheTag>
     wireBasket() const
     {
         return wireBasket( boundaryfaces( this->shared_from_this() ), mpl::int_<TheTag>() );
     }
 
     template <typename RangeT, int TheTag = 0>
-    trace_trace_mesh_ptrtype<TheTag>
+    trace_trace_mesh_ptr_t<mesh_type,TheTag>
     wireBasket( RangeT && range, mpl::int_<TheTag> ) const
     {
         DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
@@ -1175,7 +1175,7 @@ public:
     }
 
     template <typename RangeT>
-    trace_trace_mesh_ptrtype<Tag>
+    trace_trace_mesh_ptr_t<mesh_type,Tag>
     wireBasket( RangeT && range ) const
     {
         DVLOG( 2 ) << fmt::format("[wirebasked] extracting range: {}", range ); 

@@ -31,4 +31,7 @@ namespace Feel
 
     template <typename GeoShape, typename T = double, typename IndexT = uint32_type>
     class MeshStructured;
+
+    template<typename MeshType>
+    class MeshSupport;
 } // namespace Feel
