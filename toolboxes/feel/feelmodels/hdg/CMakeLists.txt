@@ -29,7 +29,7 @@ foreach(_DIM 2 3)
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDPOISSON ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
-    foreach( _G_ORDER RANGE 1 2 )
+    foreach(_G_ORDER RANGE 1 2 ) #${MAX_ORDER})
       genLibHdg(
         DIM     ${_DIM}
         P_ORDER ${_P_ORDER}
@@ -47,7 +47,7 @@ foreach(_DIM 2 3)
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDELASTICITY ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
-    foreach( _G_ORDER RANGE 1 2 )
+    foreach(_G_ORDER RANGE 1 2) #${MAX_ORDER})
       genLibHdg(
         DIM     ${_DIM}
         P_ORDER ${_P_ORDER}
