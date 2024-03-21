@@ -482,8 +482,8 @@ using trace_mesh_t = typename trace_mesh<MeshType,TheTag>::type;
  * @tparam MeshType type of the mesh
  * @tparam TheTag tag of the mesh
  */
-template<typename MeshType,int TheTag = 0>
-using trace_mesh_ptr_t = typename trace_mesh<MeshType,TheTag>::ptrtype;
+template <typename MeshType, int TheTag = 0>
+using trace_mesh_ptr_t = typename trace_mesh<MeshType, TheTag>::ptrtype;
 
 /**
  * @brief get the shared_ptr type of the trace of a const mesh
@@ -491,8 +491,8 @@ using trace_mesh_ptr_t = typename trace_mesh<MeshType,TheTag>::ptrtype;
  * @tparam MeshType type of the mesh
  * @tparam TheTag tag of the mesh
  */
-template<typename MeshType,int TheTag = 0>
-using trace_mesh_cptr_t = typename trace_mesh<MeshType,TheTag>::const_ptrtype;
+template <typename MeshType, int TheTag = 0>
+using trace_mesh_cptr_t = typename trace_mesh<MeshType, TheTag>::const_ptrtype;
 
 /**
  * @brief helper class to get the type of the trace of the trace of a mesh
