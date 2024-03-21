@@ -55,7 +55,7 @@ struct MeshTraits
     //@{
 
     typedef MeshTraits<MeshType> self_type;
-    typedef typename boost::remove_pointer<typename remove_shared_ptr<MeshType>::type >::type mesh_type;
+    typedef std::remove_pointer_t<remove_shared_ptr_t<std::remove_reference_t<MeshType>>> mesh_type;
 
     typedef typename mesh_type::shape_type element_shape_type;
 
