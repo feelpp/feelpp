@@ -434,7 +434,7 @@ inline worldscomm_ptr_t makeWorldsComm( int n, worldcomm_ptr_t const& wc )
 template<typename T>
 worldcomm_ptr_t wc( T&& t )
 {
-    if constexpr ( is_shared_ptr_v<T>||std::is_pointer_v<T> )
+    if constexpr ( is_shared_ptr_v<std::decay_t<T>>||std::is_pointer_v<std::decay_t<T>> )
         return std::forward<T>(t)->worldCommPtr();
     else
         return std::forward<T>(t).worldCommPtr();
