@@ -2528,7 +2528,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             this->M_n_localWithGhost_df[p] = mynDofWithGhost;
         }
         toc("DofTable buildDofMap all_gather", FLAGS_v>1);
-        std::cout << fmt::format( "[builddofmap] gather discontinuous dof info done!" ) << std::endl;
     }
     else
     {
@@ -2540,7 +2539,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         this->M_n_localWithGhost_df[myrank] = mynDofWithGhost;
     }
 
-#if 1
+#if 0
     std::cout << "\n build Dof Map --2---with god rank " << this->worldComm().godRank()
               << " local rank DofT " << this->worldComm().localRank()
               << " local rank mesh " << M.worldComm().localRank()
