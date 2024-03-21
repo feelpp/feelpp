@@ -98,7 +98,11 @@
                 "H5PP_ENABLE_PCH": "FALSE",
                 "H5PP_ENABLE_CCACHE": "FALSE",
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
-                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE"
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
+                "FEELPP_ENABLE_TOOLBOXES": "ON",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
+                "FEELPP_MESH_MAX_ORDER": "1"
             },
             "environment": {
                 "VERBOSE": "1"
