@@ -33,11 +33,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels/modelcore/modelphysics.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feeldiscr/traits.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -46,6 +42,12 @@
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelts/newmark.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+
 
 #include <feel/feelmodels/hdg/enums.hpp>
 #include <feel/feelmodels/hdg/mixedpoissonboundaryconditions.hpp>

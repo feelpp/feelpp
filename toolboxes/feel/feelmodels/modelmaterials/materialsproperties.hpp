@@ -1101,7 +1101,22 @@ public :
             for ( auto const& [_tag,pairRangeElt] : collectMarkedElements )
             {
                 std::string const& matName = mapTagToMatName.at(_tag);
+                CHECK( std::get<0>( pairRangeElt ).mesh() )
+                    << fmt::format( "range active elements is null", matName );
+                CHECK( std::get<1>( pairRangeElt ).mesh() )
+                    << fmt::format( "range ghost elements is null", matName );
+                CHECK( std::get<0>( pairRangeElt ).mesh() == mesh.get() )
+                    << fmt::format( "range active elements for material {} is not on the mesh",  matName );
+                CHECK( std::get<1>( pairRangeElt ).mesh() == mesh.get() )
+                    << fmt::format( "range ghost elements for material {} is not on the mesh", matName );
+                // CHECK( std::get<0>( pairRangeElt ).size() + std::get<1>( pairRangeElt ).size() > 0 ) << fmt::format( "no elements for material {}", matName );
+
                 M_rangeMeshElementsByMaterial[matName] = pairRangeElt;
+                CHECK( std::get<0>(M_rangeMeshElementsByMaterial[matName]).mesh() == mesh.get() )
+                    << fmt::format( "range active elements for material {} is not on the mesh", matName );
+                CHECK( std::get<1>(M_rangeMeshElementsByMaterial[matName]).mesh() == mesh.get() )
+                    << fmt::format( "range ghost elements for material {} is not on the mesh", matName );
+                //CHECK( std::get<0>(M_rangeMeshElementsByMaterial[matName]).size() + std::get<1>(M_rangeMeshElementsByMaterial[matName]).size() > 0 ) << fmt::format( "no elements for material {}", matName );
             }
 #endif
         }
