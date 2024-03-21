@@ -5831,24 +5831,34 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
         for ( ; it != en; ++it )
         {
             auto const& faceCur = boost::unwrap_ref( *it );
-            if ( faceCur.isConnectedTo1() )
+            auto faceConnection = faceCur.connectedTo();
+            // std::cout << fmt::format("faceCur.id()={}", faceCur.id()) << std::endl;
+            if (lit->hasMeshSupport() )
             {
+                //faceConnection.update( lit.mesh() );
+                std::cout << fmt::format(" -- has mesh support, before connection: 0 {} 1 {}", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1() ) << std::endl;
+                faceConnection = faceConnection.updateConnectionFromMeshSupport( lit->meshSupport() );
+                std::cout << fmt::format(" -- after connection: 0 {} 1 {} ", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1() ) << std::endl;
+            }
+            if ( faceConnection.isConnectedTo1() )
+            {
+                std::cout << fmt::format(" -- faceCur.id()={} is connected to 1", faceCur.id()) << std::endl;
                 if ( faceCur.isGhostFace() )
                     continue;
 
                 DCHECK( !faceCur.isOnBoundary() ) << "face id " << faceCur.id() << " on boundary but connected on both sides";
-                uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-                uint16_type __face_id_in_elt_1 = faceCur.pos_second();
+                uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
+                uint16_type __face_id_in_elt_1 = faceConnection.pos_second();
 
                 if ( !__c1 )
                 {
-                    __c1 = gm->template context<gmc_context_face_v>( faceCur.element( 1 ), __geopc, __face_id_in_elt_1, this->expression().dynamicContext() );
+                    __c1 = gm->template context<gmc_context_face_v>( faceConnection.element( 1 ), __geopc, __face_id_in_elt_1, this->expression().dynamicContext() );
                     map2_gmc_type mapgmc = Feel::vf::mapgmc(__c0,__c1);
                     expr2 = eval2_expr_ptrtype( new eval2_expr_type( expression(), mapgmc ) );
                 }
 
-                __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
-                bool found_permutation = __c1->template updateFromNeighborMatchingFace<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1, __c0 );
+                __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
+                bool found_permutation = __c1->template updateFromNeighborMatchingFace<gmc_context_face_v>( faceConnection.element( 1 ), __face_id_in_elt_1, __c0 );
                 CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
 
 #if 0
@@ -5883,11 +5893,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
             else
             {
-                if ( !faceCur.isConnectedTo0() )
+                if ( !faceConnection.isConnectedTo0() )
                     continue;
-
-                uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-                __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
+                std::cout << fmt::format( " -- faceCur.id()={} is connected to 0", faceCur.id() ) << std::endl;
+                uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
+                __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
                 map_gmc_type mapgmc = Feel::vf::mapgmc(__c0);
                 expr->update( mapgmc );
                 __integrators[__face_id_in_elt_0].update( *__c0 );
@@ -6124,32 +6134,36 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          {
 
              auto const& faceCur = boost::unwrap_ref( *it );
-
-             if ( faceCur.isConnectedTo1() )
+             auto faceConnection = faceCur.connectedTo();
+             if ( lit->hasMeshSupport() )
              {
-                 FEELPP_ASSERT( faceCur.isOnBoundary() == false   )
-                     ( faceCur.id() ).error( "face on boundary but connected on both sides" );
-                 uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-                 uint16_type __face_id_in_elt_1 = faceCur.pos_second();
+                 faceConnection = faceConnection.updateConnectionFromMeshSupport( lit->meshSupport() );
+             }
+             if ( faceConnection.isConnectedTo1() )
+             {
+                 FEELPP_ASSERT( faceConnection.isOnBoundary() == false   )
+                     ( faceConnection.id() ).error( "face on boundary but connected on both sides" );
+                 uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
+                 uint16_type __face_id_in_elt_1 = faceConnection.pos_second();
 
-                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
-                 __c1->template update<gmc_context_face_v>( faceCur.element( 1 ), __face_id_in_elt_1 );
+                 __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
+                 __c1->template update<gmc_context_face_v>( faceConnection.element( 1 ), __face_id_in_elt_1 );
 
 #if 0
-                 std::cout << "face " << faceCur.id() << "\n"
+                 std::cout << "face " << faceConnection.id() << "\n"
                            << " id in elt = " << __face_id_in_elt_1 << "\n"
-                           << "  elt 0 : " << faceCur.element( 0 ).id() << "\n"
-                           << "  elt 0 G: " << faceCur.element( 0 ).G() << "\n"
-                           << "  node elt 0 0 :" << faceCur.element( 0 ).point( faceCur.element( 0 ).fToP( __face_id_in_elt_0, 0 ) ).node() << "\n"
-                           << "  node elt 0 1 :" << faceCur.element( 0 ).point( faceCur.element( 0 ).fToP( __face_id_in_elt_0, 1 ) ).node() << "\n"
+                           << "  elt 0 : " << faceConnection.element( 0 ).id() << "\n"
+                           << "  elt 0 G: " << faceConnection.element( 0 ).G() << "\n"
+                           << "  node elt 0 0 :" << faceConnection.element( 0 ).point( faceConnection.element( 0 ).fToP( __face_id_in_elt_0, 0 ) ).node() << "\n"
+                           << "  node elt 0 1 :" << faceConnection.element( 0 ).point( faceConnection.element( 0 ).fToP( __face_id_in_elt_0, 1 ) ).node() << "\n"
                            << "  ref nodes 0 :" << __c0->xRefs() << "\n"
                            << "  real nodes 0: " << __c0->xReal() << "\n";
-                 std::cout << "face " << faceCur.id() << "\n"
+                 std::cout << "face " << faceConnection.id() << "\n"
                            << " id in elt = " << __face_id_in_elt_1 << "\n"
-                           << " elt 1 : " << faceCur.element( 1 ).id() << "\n"
-                           << "  elt 1 G: " << faceCur.element( 1 ).G() << "\n"
-                           << "  node elt 1 0 :" << faceCur.element( 1 ).point( faceCur.element( 1 ).fToP( __face_id_in_elt_1, 1 ) ).node() << "\n"
-                           << "  node elt 1 1 :" << faceCur.element( 1 ).point( faceCur.element( 1 ).fToP( __face_id_in_elt_1, 0 ) ).node() << "\n"
+                           << " elt 1 : " << faceConnection.element( 1 ).id() << "\n"
+                           << "  elt 1 G: " << faceConnection.element( 1 ).G() << "\n"
+                           << "  node elt 1 0 :" << faceConnection.element( 1 ).point( faceConnection.element( 1 ).fToP( __face_id_in_elt_1, 1 ) ).node() << "\n"
+                           << "  node elt 1 1 :" << faceConnection.element( 1 ).point( faceConnection.element( 1 ).fToP( __face_id_in_elt_1, 0 ) ).node() << "\n"
                            << " ref nodes 1 :" << __c1->xRefs() << "\n"
                            << " real nodes 1:" << __c1->xReal() << "\n";
 #endif
@@ -6166,8 +6180,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
                  for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                  {
-                     size_type i0 = P0h->dof()->localToGlobal( faceCur.element( 0 ), 0, c1 ).index();
-                     size_type i1 =  P0h->dof()->localToGlobal( faceCur.element( 1 ), 0, c1 ).index();
+                     size_type i0 = P0h->dof()->localToGlobal( faceConnection.element( 0 ), 0, c1 ).index();
+                     size_type i1 =  P0h->dof()->localToGlobal( faceConnection.element( 1 ), 0, c1 ).index();
                      double v = __integrators[__face_id_in_elt_0]( *expr2, c1, 0 );
                      p0.add( i0, v );
                      p0.add( i1, v );
@@ -6176,8 +6190,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
              else
              {
-                 uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-                 __c0->template update<gmc_context_face_v>( faceCur.element( 0 ), __face_id_in_elt_0 );
+                 uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
+                 __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
                  map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
                  expr->update( mapgmc, __face_id_in_elt_0 );
                  //expr->update( mapgmc );
@@ -6187,7 +6201,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
                  for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                  {
-                     size_type i0 = P0h->dof()->localToGlobal( faceCur.element( 0 ), 0, c1 ).index();
+                     size_type i0 = P0h->dof()->localToGlobal( faceConnection.element( 0 ), 0, c1 ).index();
                      double v = __integrators[__face_id_in_elt_0]( *expr, c1, 0 );
                      p0.add( i0, v );
                  }

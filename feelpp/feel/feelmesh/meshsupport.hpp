@@ -39,7 +39,7 @@ namespace Feel
  * allows to build a function space on a range of elements
  */
 template<typename MeshType>
-class MeshSupport : public MeshSupportBase
+class MeshSupport : public MeshSupportBase, public std::enable_shared_from_this<MeshSupport<MeshType>>
 {
 public :
     using super_type = MeshSupportBase;
@@ -73,7 +73,7 @@ public :
                 M_localizationToolPartialSupport = std::make_shared<Localization<mesh_type>>();
                 M_localizationToolPartialSupport->setMesh( M_mesh, M_rangeElements, false );
                 //M_localizationToolPartialSupport->/*init*/reset( M_rangeElements );
-
+                //M_rangeElements.setMeshSupport( this->shared_from_this() );
                 M_mesh->attachMeshSupport( this );
             }
         }
@@ -92,18 +92,33 @@ public :
 
     std::shared_ptr<Localization<mesh_type>> tool_localization() const { return this->isPartialSupport()? M_localizationToolPartialSupport : M_mesh->tool_localization(); }
 
-    range_elements_type const& rangeElements() const { return M_rangeElements; }
-    range_faces_type const& rangeInterProcessFaces() const { this->updateParallelData(); return M_rangeInterProcessFaces; }
-    range_faces_type const& rangeBoundaryFaces() const { this->updateBoundaryInternalFaces();return M_rangeBoundaryFaces; }
-    range_faces_type const& rangeInternalFaces() const { this->updateBoundaryInternalFaces();return M_rangeInternalFaces; }
+    range_elements_type const& rangeElements() const
+    {
+        return M_rangeElements;
+    }
+    range_faces_type const& rangeInterProcessFaces() const
+    {
+        this->updateParallelData();
+        return M_rangeInterProcessFaces;
+    }
+    range_faces_type const& rangeBoundaryFaces() const
+    {
+        this->updateBoundaryInternalFaces();
+        return M_rangeBoundaryFaces;
+    }
+    range_faces_type const& rangeInternalFaces() const
+    {
+        this->updateBoundaryInternalFaces();
+        return M_rangeInternalFaces;
+    }
 
     range_elements_type rangeElements( EntityProcessType entity ) const;
     //!
-    //! return the set of elements of marker type marker_t with marker flag 
+    //! return the set of elements of marker type marker_t with marker flag
     //!
     range_elements_type rangeMarkedElements( uint16_type marker_t, boost::any flag );
     //!
-    //! return the set of faces of marker type marker_t with marker flag 
+    //! return the set of faces of marker type marker_t with marker flag
     //!
     range_faces_type rangeMarkedFaces( uint16_type marker_t, boost::any flag );
 
@@ -399,6 +414,8 @@ private :
                         M_rangeBoundaryFaces.push_back( M_mesh->face( faceId ) );
                 }
             }
+            M_rangeBoundaryFaces.setMeshSupport( const_cast<MeshSupport*>(this)->shared_from_this() );
+            M_rangeInternalFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
         }
 
     void resetLocalizationTool() override
@@ -461,11 +478,12 @@ MeshSupport<MeshType>::rangeElements( EntityProcessType entity ) const
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
+    myExtendedElements.setMeshSupport( const_cast<MeshSupport*>(this)->shared_from_this() );
     return myExtendedElements;
 }
 
 template<typename MeshType>
-typename MeshSupport<MeshType>::range_elements_type 
+typename MeshSupport<MeshType>::range_elements_type
 MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any flag )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
@@ -493,11 +511,12 @@ MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any fla
     {
         insertMarkedElements( eltWrap );
     }
+    myelements.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
     return myelements;
 }
 
 template<typename MeshType>
-typename MeshSupport<MeshType>::range_faces_type 
+typename MeshSupport<MeshType>::range_faces_type
 MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
@@ -506,7 +525,7 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     {
         return markedfacesByType( M_mesh, marker_t, flag );
     }
-        
+
     Range<mesh_type,MESH_FACES> myfaces( M_mesh );
     auto insertMarkedFace = [&myfaces, &marker_t,&markerFlagSet]( auto const& eltWrap)
                              {
@@ -517,7 +536,7 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
                                      return false;
                                  if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
                                      return false;
-        
+
                                  myfaces.push_back( face );
                                  return true;
                              };
@@ -529,6 +548,7 @@ MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
     {
         insertMarkedFace( eltWrap );
     }
+    myfaces.setMeshSupport( const_cast<MeshSupport*>(this)->shared_from_this() );
     return myfaces;
 }
 
@@ -561,6 +581,7 @@ faces( MeshSupportType const& imesh )
     {
         myfaces.push_back( eltWrap );
     }
+    myfaces.setMeshSupport( imesh );
     return myfaces;
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>

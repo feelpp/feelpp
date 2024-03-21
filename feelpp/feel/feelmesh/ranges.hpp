@@ -186,20 +186,46 @@ class FEELPP_EXPORT Range
     using iterator_t = typename boost::tuples::template element<1, super>::type;
     using element_t = typename  boost::unwrap_reference<typename iterator_t::value_type>::type;
     using value_t = typename mesh_t::value_type;
+    using mesh_support_ptr_t = std::shared_ptr < MeshSupport<decay_type<MeshType> >>;
+    using mesh_support_t = MeshSupport<decay_type<MeshType>>;
 
     static constexpr int mesh_entities = MESH_ENTITIES; // idim_t
     static constexpr int nDim = mesh_t::nDim;
     static constexpr int nRealDim = mesh_t::nRealDim;
 
 
-    Range()  : super_range(), cont_( std::make_shared<container_t>() )
+    Range()  : super_range(), mesh_(nullptr), mesh_support_(), cont_( std::make_shared<container_t>() )
     {
     }
-    Range( Range const& e ) = default;
-    Range( Range && e ) =  default;
+    Range( Range const& e ) : super_range(e.mesh_), mesh_( e.mesh_ ), mesh_support_( e.mesh_support_ ), cont_( e.cont_ ) {}
+    Range( Range && e ) = default;
     ~Range() = default;
+
+    // Constructor for when OtherMeshType is a std::shared_ptr<MeshType>
     template <typename OtherMeshType>
-    Range( Range<OtherMeshType, MESH_ENTITIES> const& other ) : super_range(other.mesh()), cont_( other.container() ) {}
+    Range( const Range<OtherMeshType, MESH_ENTITIES>& other,
+           std::enable_if_t<std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<std::remove_pointer_t<OtherMeshType>>>, int> = 0 )
+        : super_range( other.mesh() ), mesh_( other.mesh() ), mesh_support_( other.meshSupport() ), cont_( other.container() ) 
+        {
+            //std::cout << fmt::format( "Range<OtherMeshType> shared constructor") << std::endl;
+        }
+
+    // Constructor for when OtherMeshType is not a std::shared_ptr<MeshType>
+    template <typename OtherMeshType>
+    Range( const Range<OtherMeshType, MESH_ENTITIES>& other,
+           std::enable_if_t <is_simplex_v<MeshType> && !std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<std::remove_pointer_t<OtherMeshType>>>, int> = 0 )
+            : super_range( other.mesh() ), mesh_( other.mesh() ), mesh_support_( other.meshSupport() ), cont_( other.container() )
+    {
+            // std::cout << fmt::format("Range<OtherMeshType> not shared constructor") << std::endl;
+    }
+
+    template <typename OtherMeshType>
+    Range( const Range<OtherMeshType, MESH_ENTITIES>& other,
+           std::enable_if_t<!is_simplex_v<MeshType> && !std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<std::remove_pointer_t<OtherMeshType>>>, int> = 0 )
+        : super_range( other.mesh() ), mesh_( nullptr ), mesh_support_( nullptr ), cont_( other.container() )
+    {
+        // std::cout << fmt::format("Range<OtherMeshType> not shared constructor") << std::endl;
+    }
 
     static constexpr idim_t idim() { return idim_t(); }
     static constexpr int iDim() { return idim_t::value; }
@@ -291,8 +317,22 @@ class FEELPP_EXPORT Range
     void shrink_to_fit() { this->container()->shrink_to_fit(); }
 
     auto mesh() const { return mesh_; }
+
+    /**
+     * @brief Check if the range has mesh support
+     */
+    bool hasMeshSupport() const { return mesh_support_ != nullptr; }
+
+    /**
+     * @brief Get the mesh support
+     */
+    mesh_support_ptr_t meshSupport() const { return mesh_support_; }
+
+    void setMeshSupport( mesh_support_ptr_t const& ms ) { mesh_support_ = ms; }
 private:
+    //std::weak_ptr<const mesh_t> mesh_;
     mesh_non_const_t const* mesh_;
+    mesh_support_ptr_t mesh_support_;
     container_ptr_t cont_;
 };
 
