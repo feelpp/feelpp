@@ -691,8 +691,7 @@ template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwr
 Range<MeshType,MESH_FACES>
 internalfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
 {
-    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
-    // store face ids to know if a face is already in the list
+    Range<MeshType,MESH_FACES> res( mesh );
     std::set<int> fids;
     for(auto const&e : r )
     {
@@ -706,16 +705,13 @@ internalfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
                 if ( fids.find( face->id() ) == fids.end() )
                 {
                     fids.insert( face->id() );
-                    myelts->push_back( boost::cref( *face ) );
+                    res.push_back( *face );
                 }
             }
         }
     }
-    myelts->shrink_to_fit();
-    return range( _range=boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts ), _mesh=mesh );
+    res.shrink_to_fit();
+    return res;
 }
 /**
  *

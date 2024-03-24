@@ -5831,21 +5831,23 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
         for ( ; it != en; ++it )
         {
             auto const& faceCur = boost::unwrap_ref( *it );
+            if ( !faceCur.isConnectedTo0() )
+                continue;
             auto faceConnection = faceCur.connectedTo();
-            // std::cout << fmt::format("faceCur.id()={}", faceCur.id()) << std::endl;
+            //std::cout << fmt::format("faceCur.id()={}", faceCur.id()) << std::endl;
             if (lit->hasMeshSupport() )
             {
-                //faceConnection.update( lit.mesh() );
-                std::cout << fmt::format(" -- has mesh support, before connection: 0 {} 1 {}", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1() ) << std::endl;
+                //if ( faceCur.isConnectedTo1() )
+                //    std::cout << fmt::format(" -- has mesh support, before connection: 0 {} 1 {} ghost 0 : {} ghost 1 : {} \n", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1(), faceConnection.element1().isGhostCell(), faceConnection.element1().isGhostCell()   ) << std::endl;
+                //else
+                //    std::cout << fmt::format(" -- has mesh support, before connection: 0 {} 1 {} ghost 0 : {} \n", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1(), faceConnection.element0().isGhostCell()  ) << std::endl;
                 faceConnection = faceConnection.updateConnectionFromMeshSupport( lit->meshSupport() );
-                std::cout << fmt::format(" -- after connection: 0 {} 1 {} ", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1() ) << std::endl;
+                //std::cout << fmt::format(" -- after connection: 0 {} 1 {} ghost: {}\n ", faceConnection.isConnectedTo0(), faceConnection.isConnectedTo1(), faceConnection.element0().isGhostCell() ) << std::endl;
             }
             if ( faceConnection.isConnectedTo1() )
             {
-                std::cout << fmt::format(" -- faceCur.id()={} is connected to 1", faceCur.id()) << std::endl;
                 if ( faceCur.isGhostFace() )
                     continue;
-
                 DCHECK( !faceCur.isOnBoundary() ) << "face id " << faceCur.id() << " on boundary but connected on both sides";
                 uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
                 uint16_type __face_id_in_elt_1 = faceConnection.pos_second();
@@ -5893,9 +5895,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
             else
             {
-                if ( !faceConnection.isConnectedTo0() )
+                if ( faceConnection.element( 0 ).isGhostCell() )
                     continue;
-                std::cout << fmt::format( " -- faceCur.id()={} is connected to 0", faceCur.id() ) << std::endl;
                 uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
                 __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
                 map_gmc_type mapgmc = Feel::vf::mapgmc(__c0);
@@ -6134,6 +6135,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          {
 
              auto const& faceCur = boost::unwrap_ref( *it );
+             if ( faceCur.isGhostFace() || !faceCur.isConnectedTo0() )
+                 continue;
              auto faceConnection = faceCur.connectedTo();
              if ( lit->hasMeshSupport() )
              {
