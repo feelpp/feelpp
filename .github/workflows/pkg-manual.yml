@@ -19,8 +19,7 @@ on:
         options:
         - 'jammy'
         - 'focal'
-        - 'lunar'
-#        - 'mantic'
+        - 'noble'
         - 'bullseye'
         - 'bookworm'
         - 'testing'
