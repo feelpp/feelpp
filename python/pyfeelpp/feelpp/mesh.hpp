@@ -156,12 +156,19 @@ void defMesh(py::module &m)
             }, "get the list of marker names" )
         ;
 
-    pyclass_name = std::string("simplex_elements_reference_wrapper_")+suffix;
+    pyclass_name = std::string("range_mesh_elements_")+suffix;
     py::class_<Range<mesh_t,MESH_ELEMENTS>>(m,pyclass_name.c_str())
         .def(py::init<>());
-    pyclass_name = std::string("faces_reference_wrapper_")+suffix;
+    pyclass_name = std::string("range_mesh_faces_")+suffix;
     py::class_<Range<mesh_t,MESH_FACES>>(m,pyclass_name.c_str())
         .def(py::init<>());
+
+    pyclass_name = std::string( "range_mesh_elements_ptr_" ) + suffix;
+    py::class_<Range<mesh_ptr_t, MESH_ELEMENTS>>( m, pyclass_name.c_str() )
+        .def( py::init<>() );
+    pyclass_name = std::string( "range_mesh_faces_ptr_" ) + suffix;
+    py::class_<Range<mesh_ptr_t, MESH_FACES>>( m, pyclass_name.c_str() )
+        .def( py::init<>() );
 
     pyclass_name = std::string("mesh_support_")+suffix;
     py::class_<MeshSupport<mesh_t>,std::shared_ptr<MeshSupport<mesh_t>>>(m,pyclass_name.c_str())
@@ -187,8 +194,15 @@ void defMesh(py::module &m)
     m.def("boundaryfaces", &boundaryfacesByPid<mesh_ptr_t>,"get iterator over the boundary faces of the mesh", py::arg("mesh"));
     m.def( "nelements", []( Range<mesh_t,MESH_ELEMENTS> const& range, bool global ) {
         return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def(
+        "nelements", []( Range<mesh_ptr_t, MESH_ELEMENTS> const& range, bool global )
+        { return nelements( range, global ); },
+        "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
     m.def( "nelements", []( Range<mesh_t,MESH_FACES> const& range, bool global ) {
         return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( Range<mesh_ptr_t,MESH_FACES> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+
 //    m.def("nfaces",(decltype(&nFacesTuple<mesh_ptr_t>))  &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
     m.def(
@@ -308,13 +322,13 @@ void defMesh(py::module &m)
             "create a Remesher data structure" );
     }
     m.def(
-        "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_t,MESH_ELEMENTS> const& range )
+        "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_ELEMENTS> const& range )
         { return createSubmesh( _mesh = m, _range = range ); },
         py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of elements" ).c_str() );
     if constexpr ( mesh_t::nDim >= 2 )
     {
         m.def(
-            "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_t,MESH_FACES> const& range )
+            "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_FACES> const& range )
             { return createSubmesh( _mesh = m, _range = range ); },
             py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of facets" ).c_str() );
     }

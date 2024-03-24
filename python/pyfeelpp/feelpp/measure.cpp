@@ -52,9 +52,15 @@ void defMeasure(py::module &m)
     m.def("measure",[]( Range<mesh_t,MESH_ELEMENTS> const& r, std::string const& e, int quad_order ){
             return measure( _range=r, _expr=expr(e), _quad=quad_order );
         }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
+    m.def("measure",[]( Range<mesh_ptr_t,MESH_ELEMENTS> const& r, std::string const& e, int quad_order ){
+            return measure( _range=r, _expr=expr(e), _quad=quad_order );
+        }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
     if constexpr ( mesh_t::nDim > 1 )        
     { 
         m.def("measure",[]( Range<mesh_t,MESH_FACES> const& r, std::string const& e, int quad_order ){
+                return measure( _range=r, _expr=expr(e), _quad=quad_order );
+            }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
+        m.def("measure",[]( Range<mesh_ptr_t,MESH_FACES> const& r, std::string const& e, int quad_order ){
                 return measure( _range=r, _expr=expr(e), _quad=quad_order );
             }, py::arg("range"), py::arg("expr")="1", py::arg("quad")=1, "compute the measure of the range of elements" );
     }        
