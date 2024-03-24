@@ -34,4 +34,6 @@ namespace Feel
 
     template<typename MeshType>
     class MeshSupport;
+
+    struct MeshStructuredBase;
 } // namespace Feel

@@ -163,6 +163,26 @@ MeshType const* shared_from_this( MeshType const& m )
 {
     return &m;
 }
+
+template <typename MeshType, typename OtherMeshType>
+void printTypeInformation() {
+    // Using typeid to print demangled type names might require additional demangling steps, especially on GCC/Clang
+    std::cout << fmt::format("MeshType: {}, OtherMeshType: {}\n", typeid(MeshType).name(), typeid(OtherMeshType).name());
+
+    // Compile-time check to print a custom message
+    if constexpr (is_simplex_v<MeshType>) {
+        std::cout << "MeshType is a simplex mesh.\n";
+    } else {
+        std::cout << "MeshType is not a simplex mesh.\n";
+    }
+
+    if constexpr (std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<OtherMeshType>>) {
+        std::cout << "OtherMeshType is a shared_ptr of MeshType.\n";
+    } else {
+        std::cout << "OtherMeshType is not a shared_ptr of MeshType.\n";
+    }
+}
+
 template <typename MeshType, int MESH_ENTITIES, std::enable_if_t<std::is_base_of_v<MeshBase<>, decay_type<std::remove_pointer_t<MeshType>>>, int> = 0>
 class FEELPP_EXPORT Range
     : public RangeBase<typename decay_type<std::remove_pointer_t<MeshType>>::index_t>
@@ -186,7 +206,7 @@ class FEELPP_EXPORT Range
     using iterator_t = typename boost::tuples::template element<1, super>::type;
     using element_t = typename  boost::unwrap_reference<typename iterator_t::value_type>::type;
     using value_t = typename mesh_t::value_type;
-    using mesh_support_ptr_t = std::shared_ptr < MeshSupport<decay_type<MeshType> >>;
+    using mesh_support_ptr_t = std::shared_ptr < MeshSupport<decay_type<std::remove_pointer_t<MeshType>> >>;
     using mesh_support_t = MeshSupport<decay_type<MeshType>>;
 
     static constexpr int mesh_entities = MESH_ENTITIES; // idim_t
@@ -203,28 +223,13 @@ class FEELPP_EXPORT Range
 
     // Constructor for when OtherMeshType is a std::shared_ptr<MeshType>
     template <typename OtherMeshType>
-    Range( const Range<OtherMeshType, MESH_ENTITIES>& other,
-           std::enable_if_t<std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<std::remove_pointer_t<OtherMeshType>>>, int> = 0 )
-        : super_range( other.mesh() ), mesh_( other.mesh() ), mesh_support_( other.meshSupport() ), cont_( other.container() ) 
-        {
-            //std::cout << fmt::format( "Range<OtherMeshType> shared constructor") << std::endl;
+    Range( const Range<OtherMeshType, MESH_ENTITIES>& other )
+        : super_range( other.mesh() ), mesh_( static_cast<const mesh_non_const_t*>(other.mesh()) ), mesh_support_( nullptr ), cont_( other.container() ) 
+    {
+        //printTypeInformation<MeshType, OtherMeshType>();
+        if constexpr (!std::is_base_of_v<MeshStructuredBase, std::decay_t<std::remove_pointer_t<MeshType>>>) {
+            mesh_support_ = other.meshSupport();
         }
-
-    // Constructor for when OtherMeshType is not a std::shared_ptr<MeshType>
-    template <typename OtherMeshType>
-    Range( const Range<OtherMeshType, MESH_ENTITIES>& other,
-           std::enable_if_t <is_simplex_v<MeshType> && !std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<std::remove_pointer_t<OtherMeshType>>>, int> = 0 )
-            : super_range( other.mesh() ), mesh_( other.mesh() ), mesh_support_( other.meshSupport() ), cont_( other.container() )
-    {
-            // std::cout << fmt::format("Range<OtherMeshType> not shared constructor") << std::endl;
-    }
-
-    template <typename OtherMeshType>
-    Range( const Range<OtherMeshType, MESH_ENTITIES>& other,
-           std::enable_if_t<!is_simplex_v<MeshType> && !std::is_same_v<std::shared_ptr<MeshType>, std::decay_t<std::remove_pointer_t<OtherMeshType>>>, int> = 0 )
-        : super_range( other.mesh() ), mesh_( nullptr ), mesh_support_( nullptr ), cont_( other.container() )
-    {
-        // std::cout << fmt::format("Range<OtherMeshType> not shared constructor") << std::endl;
     }
 
     static constexpr idim_t idim() { return idim_t(); }

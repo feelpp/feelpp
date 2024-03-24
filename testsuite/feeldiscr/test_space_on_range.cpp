@@ -264,29 +264,30 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto therange = concatenate(r1,r2);
+    //auto therange = r2;
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Scalar> > > space_type;
     auto Vh = space_type::New(_mesh=mesh,_range=therange);
-
-    Vh->dof()->meshSupport()->updateBoundaryInternalFaces();
-    auto myboundaryfaces = Vh->dof()->meshSupport()->rangeBoundaryFaces();
-
-    double int1 = integrate(_range=myboundaryfaces,_expr=cst(1.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( fmt::format ("nelts: {} nbdyfaces {}, perimeter = {}",nelements(therange), nelements(boundaryfaces(support(Vh))), 2*M_PI*0.15 ) );
+    double int1 = integrate(_range=boundaryfaces(support(Vh)),_expr=cst(1.)).evaluate()(0,0);
     auto uPS =  Vh->element(cst(1.));
 
     auto l = form1( _test=Vh );
-    l = integrate(_range= myboundaryfaces,_expr=id(uPS));
+    l = integrate(_range= boundaryfaces(support(Vh)),_expr=id(uPS));
     l.vectorPtr()->close();
     double int1PS = inner_product( *l.vectorPtr(),uPS);
+    BOOST_TEST_MESSAGE( fmt::format("int1={}, int1PS={}",int1,int1PS));
     BOOST_CHECK_SMALL( std::abs(int1PS-int1),1e-12 );
 
     auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate(_range=myboundaryfaces,_expr=id(uPS)*idt(uPS));
+    a = integrate(_range=boundaryfaces(support(Vh)),_expr=id(uPS)*idt(uPS));
     a.matrixPtr()->close();
     double int2PS = a.matrixPtr()->energy(uPS,uPS);
+    BOOST_TEST_MESSAGE( fmt::format("int1={}, int2PS={}",int1,int1PS));
     BOOST_CHECK_SMALL( std::abs(int2PS-int1),1e-12 );
 
-    auto submesh = createSubmesh(_mesh=mesh,_range=myboundaryfaces);
+    auto submesh = createSubmesh(_mesh=mesh,_range=boundaryfaces(support(Vh)));
     double int1b = integrate(_range=elements(submesh),_expr=cst(1.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( fmt::format("int1={}, int1b = {}, int1PS={}",int1, int1b, int1PS));
     BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
 }
