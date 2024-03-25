@@ -61,13 +61,14 @@ void defInterpolate( py::module& m )
     std::string pyclass_name = fmt::format( "OperatorInterpolation_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
     using iterator_range_t = Range<mesh_t,MESH_ELEMENTS>;
+    using iterator_range_ptr_t = Range<mesh_ptr_t,MESH_ELEMENTS>;
     using interp_t = decltype(InterpolationNonConforming());
-    using Iop_t = OperatorInterpolation<space_t,space_t,iterator_range_t,interp_t>;
+    using Iop_t = OperatorInterpolation<space_t,space_t,iterator_range_ptr_t,interp_t>;
     using matrix_setup_t = OperatorInterpolationMatrixSetup<double>;
 
 
     py::class_<Iop_t, std::shared_ptr<Iop_t>>( m, pyclass_name.c_str() )
-            .def( py::init<space_ptr_t const&, space_ptr_t const&, iterator_range_t, backend_ptrtype const&,interp_t,bool,matrix_setup_t const&>(),
+            .def( py::init<space_ptr_t const&, space_ptr_t const&, iterator_range_ptr_t, backend_ptrtype const&,interp_t,bool,matrix_setup_t const&>(),
                   py::arg( "domain_space" ), py::arg( "image_space" ), py::arg("range"), py::arg("backend"), py::arg("interp"), py::arg("dd") = false, py::arg("setup")=matrix_setup_t{}, "Initialize a remesher" )
             .def( "interpolate", []( std::shared_ptr<Iop_t> const& self, typename Iop_t::domain_element_type const& v ) {
                 auto u = self->dualImageSpace()->elementPtr();
@@ -75,7 +76,7 @@ void defInterpolate( py::module& m )
                 return u;
             },  py::arg("domain"),  "apply interpolation operator");
 
-    m.def("interpolator", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_t const& r )
+    m.def("interpolator", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_ptr_t const& r )
         { return opInterpPtr( domain, image, r, backend(), InterpolationNonConforming(), false, matrix_setup_t{} ); },
         py::arg( "domain" ), py::arg( "image" ), py::arg( "range" ), "create an Interpolation Operator" );
 }
