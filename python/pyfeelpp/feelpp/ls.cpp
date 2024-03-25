@@ -42,7 +42,7 @@ dist2range_inst( py::module &m )
     using mesh_t = Mesh < Simplex<Dim, 1>>;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     m.def(
-        "distanceToRange", []( Pch_ptrtype<mesh_t, 1> const& Xh, Range<mesh_t,MESH_FACES> const& facets, double maxDistance, double fmStride )
+        "distanceToRange", []( Pch_ptrtype<mesh_t, 1> const& Xh, Range<mesh_ptr_t,MESH_FACES> const& facets, double maxDistance, double fmStride )
         { return distanceToRange( _space=Xh, _range=facets, _max_distance=maxDistance, _fm_stride=fmStride ); },
         py::return_value_policy::copy,
         py::arg( "space" ),
@@ -51,7 +51,7 @@ dist2range_inst( py::module &m )
         py::arg( "fmStride" ) = -1.,
         fmt::format("compute the distance field in space to the range of faces in {}D",Dim).c_str() );
     m.def(
-        "gradedls", []( Pch_ptrtype<mesh_t, 1> const& Xh, Range<mesh_t,MESH_FACES> const& facets, double hclose, double hfar )
+        "gradedls", []( Pch_ptrtype<mesh_t, 1> const& Xh, Range<mesh_ptr_t,MESH_FACES> const& facets, double hclose, double hfar )
         { 
             return gradedfromls( Xh, facets, hclose, hfar);
         },
