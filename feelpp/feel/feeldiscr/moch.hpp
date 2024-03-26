@@ -39,16 +39,18 @@ namespace Feel {
  */
 template<int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
-         typename MeshType>
+         typename MeshType,typename T = double>
 inline
 std::shared_ptr<FunctionSpace<MeshType,
                                 bases<Lagrange<Order,Scalar,Continuous,Pts>>,
+                                T,
                                 Periodicity <NoPeriodicity>,
                                 mortars<Mortar>>>
-Moch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Moch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,
                          bases<Lagrange<Order,Scalar,Continuous,Pts>>,
+                         T,
                          Periodicity <NoPeriodicity>,
                          mortars<Mortar>>::New( _mesh=mesh,
                                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),

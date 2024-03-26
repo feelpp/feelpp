@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feells/fastmarching_impl.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/ranges.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/cst.hpp>
@@ -63,11 +64,10 @@ class DistanceToRange
         typedef typename functionspace_distance_type::mesh_type mesh_distance_type;
         typedef typename functionspace_distance_type::mesh_ptrtype mesh_distance_ptrtype;
 
-        typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_type elements_reference_wrapper_distance_type;
-        typedef typename MeshTraits<mesh_distance_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_distance_ptrtype;
-        typedef elements_reference_wrapper_t<mesh_distance_type> range_elements_distance_type;
-
-        typedef faces_reference_wrapper_t<mesh_distance_type> range_faces_type;
+        using elements_reference_wrapper_distance_type = Range<mesh_distance_type,MESH_ELEMENTS>;
+        using elements_reference_wrapper_distance_ptrtype = std::shared_ptr<Range<mesh_distance_type,MESH_ELEMENTS>>;
+        using range_elements_distance_type = Range<mesh_distance_type,MESH_ELEMENTS>;
+        using range_faces_type = Range<mesh_distance_type,MESH_FACES> ;
 
         //--------------------------------------------------------------------//
         static constexpr uint16_type nRealDim = functionspace_distance_type::nRealDim;
@@ -120,16 +120,22 @@ class DistanceToRange
         //--------------------------------------------------------------------//
         // Result
         template< typename RangeType >
-        element_distance_type unsignedDistance( RangeType const& rangeFaces ) const;
+        element_distance_type unsignedDistance( RangeType && rangeFaces ) const;
         template< typename RangeType >
-        element_distance_type signedDistance( RangeType const& rangeFaces ) const;
+        element_distance_type signedDistance( RangeType && rangeFaces ) const;
 
     private:
-        element_distance_type unsignedDistanceToFaces( range_faces_type const& rangeFaces ) const;
-        element_distance_type signedDistanceToFaces( range_faces_type const& rangeFaces ) const;
+        template< typename RangeType >
+        element_distance_type unsignedDistanceToFaces( RangeType && rangeFaces ) const;
 
-        elements_reference_wrapper_distance_ptrtype eltsTouchingFaces( range_faces_type const& rangeFaces ) const;
-        map_face_dofs_type dofsNeighbouringFaces( range_faces_type const& rangeFaces ) const;
+        template< typename RangeType >
+        element_distance_type signedDistanceToFaces( RangeType && rangeFaces ) const;
+
+        template< typename RangeType >
+        range_elements_distance_type const& eltsTouchingFaces( RangeType && rangeFaces ) const;
+
+        template< typename RangeType >
+        map_face_dofs_type dofsNeighbouringFaces( RangeType && rangeFaces ) const;
 
     private:
         functionspace_distance_ptrtype M_spaceDistance;
@@ -139,7 +145,7 @@ class DistanceToRange
         value_type M_maxDistance = -1.;
         value_type M_fastMarchingStride = -1.;
 
-        mutable elements_reference_wrapper_distance_ptrtype M_eltsTouchingFaces;
+        mutable range_elements_distance_type M_eltsTouchingFaces;
         mutable std::unordered_map< size_type, std::vector< size_type > > M_dofsNeighbouringFaces;
 
         mutable std::unordered_map< size_type, Eigen::Matrix<value_type,3,3> > M_faceTriangleTransformationMatrices;
@@ -149,7 +155,7 @@ template< typename FunctionSpaceType >
 DistanceToRange< FunctionSpaceType >::DistanceToRange(
         functionspace_distance_ptrtype const& spaceDistance ) :
     M_spaceDistance( spaceDistance ),
-    M_eltsTouchingFaces( new elements_reference_wrapper_distance_type{} )
+    M_eltsTouchingFaces( spaceDistance->mesh() )
 {}
 
 template< typename FunctionSpaceType >
@@ -194,30 +200,33 @@ DistanceToRange< FunctionSpaceType >::distanceDofToFace( size_type dofId, size_t
 template< typename FunctionSpaceType >
 template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::unsignedDistance( RangeType const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::unsignedDistance( RangeType && rangeFaces ) const
 {
-    return this->unsignedDistanceToFaces( rangeFaces );
+    return this->unsignedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
 }
 
 template< typename FunctionSpaceType >
 template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::signedDistance( RangeType const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::signedDistance( RangeType && rangeFaces ) const
 {
-    return this->signedDistanceToFaces( rangeFaces );
+    return this->signedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
 }
 
 template< typename FunctionSpaceType >
+template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( RangeType && rangeFaces ) const
 {
+    static_assert(decay_type<RangeType>::entities() == MESH_FACES, "RangeType must have entities() == MESH_FACES");
+
     auto unsignedDistance = this->functionSpaceDistance()->element( "unsignedDistance" );
     // Initialise distance with arbitrarily large value
     unsignedDistance.setConstant( std::numeric_limits<value_type>::max() );
     // Set distance=0 on rangeFaces
-    unsignedDistance.on( _range=rangeFaces, _expr=cst(0.) );
+    unsignedDistance.on( _range=std::forward<RangeType>(rangeFaces), _expr=cst(0.) );
     // Compute exact distance on neighbouring dofs
-    auto const dofsNeighbouringFaces = this->dofsNeighbouringFaces( rangeFaces );
+    auto const dofsNeighbouringFaces = this->dofsNeighbouringFaces( std::forward<RangeType>(rangeFaces) );
     for( auto const [faceId, dofsIds]: dofsNeighbouringFaces )
     {
         for( size_type dofId: dofsIds )
@@ -230,8 +239,7 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
         }
     }
 
-    auto eltsTouchingFaces = this->eltsTouchingFaces( rangeFaces );
-    range_elements_distance_type rangeEltsTouchingFaces( mpl::size_t<MESH_ELEMENTS>(), eltsTouchingFaces->begin(), eltsTouchingFaces->end(), eltsTouchingFaces );
+    auto const& rangeEltsTouchingFaces = this->eltsTouchingFaces( std::forward<RangeType>(rangeFaces) );
 
     // Sync initial distance
     syncDofs( unsignedDistance, rangeEltsTouchingFaces,
@@ -251,14 +259,17 @@ DistanceToRange< FunctionSpaceType >::unsignedDistanceToFaces( range_faces_type 
 }
 
 template< typename FunctionSpaceType >
+template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::element_distance_type
-DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( range_faces_type const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( RangeType && rangeFaces ) const
 {
+    static_assert(decay_type<RangeType>::entities() == MESH_FACES, "RangeType must have entities() == MESH_FACES");
+
     // Compute unsigned distance
     // Set sign: set negative everywhere, then propagate + sign from the domain boundary
     // note: the element container (VectorUblas) does not provide unary operators at the moment -> TODO: need to improve
     // note2: elements touching the faces are cached by unsignedDistanceToFaces in M_eltsTouchingFaces
-    auto signedDistance = this->unsignedDistanceToFaces( rangeFaces );
+    auto signedDistance = this->unsignedDistanceToFaces( std::forward<RangeType>(rangeFaces) );
     signedDistance->scale( -1. );
 
     // Communication
@@ -270,14 +281,8 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( range_faces_type co
     std::unordered_set< size_type > eltsToVisit, eltsVisited;
     auto const& intersectingElements = this->intersectingElements();
     auto const rangeMeshBoundaryElements = boundaryelements( this->meshDistance() );
-    auto it_boundaryelt = rangeMeshBoundaryElements.template get<1>();
-    auto en_boundaryelt = rangeMeshBoundaryElements.template get<2>();
-    for( ; it_boundaryelt != en_boundaryelt; it_boundaryelt++ )
-    {
-        auto const& elt = boost::unwrap_ref( *it_boundaryelt );
-        size_type const eltId = elt.id();
-        eltsToVisit.insert( eltId );
-    }
+    std::for_each( rangeMeshBoundaryElements.begin(), rangeMeshBoundaryElements.end(),
+            [&eltsToVisit]( auto const& elt ) { eltsToVisit.insert( elt.id() ); } );
 
     bool eltsToVisitIsEmptyOnAllProc = false;
     while( !eltsToVisitIsEmptyOnAllProc )
@@ -364,35 +369,35 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( range_faces_type co
 }
 
 template< typename FunctionSpaceType >
-typename DistanceToRange< FunctionSpaceType >::elements_reference_wrapper_distance_ptrtype 
-DistanceToRange< FunctionSpaceType >::eltsTouchingFaces( range_faces_type const& rangeFaces ) const
+template< typename RangeType >
+typename DistanceToRange< FunctionSpaceType >::range_elements_distance_type const&
+DistanceToRange< FunctionSpaceType >::eltsTouchingFaces( RangeType && rangeFaces ) const
 {
     // Get ids of elements touching a face in rangeFaces
     // and cache in M_eltsTouchingFaces for reuse
-    M_eltsTouchingFaces->clear();
+    M_eltsTouchingFaces.clear();
 
-    auto face_it = rangeFaces.template get<1>();
-    auto face_en = rangeFaces.template get<2>();
-    for( ; face_it != face_en ; ++face_it )
+    for( auto const& facew: rangeFaces )
     {
-        auto const& face = boost::unwrap_ref( *face_it );
+        auto const& face = boost::unwrap_ref( facew );
         if ( face.isConnectedTo0() && !face.element0().isGhostCell() )
         {
-            M_eltsTouchingFaces->push_back( boost::cref( face.element0() ) );
+            M_eltsTouchingFaces.push_back( face.element0() );
         }
         if ( face.isConnectedTo1() && !face.element1().isGhostCell() )
         {
-            M_eltsTouchingFaces->push_back( boost::cref( face.element1() ) );
+            M_eltsTouchingFaces.push_back( face.element1() );
         }
     }
-    M_eltsTouchingFaces->shrink_to_fit();
+    M_eltsTouchingFaces.shrink_to_fit();
 
     return M_eltsTouchingFaces;
 }
 
 template< typename FunctionSpaceType >
+template< typename RangeType >
 typename DistanceToRange< FunctionSpaceType >::map_face_dofs_type
-DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type const& rangeFaces ) const
+DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( RangeType && rangeFaces ) const
 {
     // Get ids of dofs touching a face in rangeFaces via an element, without the face dofs
     // and cache in M_dofsNeighbouringFaces
@@ -412,8 +417,8 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( range_faces_type co
         }
     };
 
-    auto face_it = rangeFaces.template get<1>();
-    auto face_en = rangeFaces.template get<2>();
+    auto face_it = std::forward<RangeType>(rangeFaces).begin();
+    auto face_en = std::forward<RangeType>(rangeFaces).end();
     for( ; face_it != face_en ; ++face_it )
     {
         auto const& face = boost::unwrap_ref( *face_it );
@@ -447,11 +452,12 @@ auto distanceToRange( Args && ... nargs )
     auto && range = args.get( _range );
     double maxDistance = args.get_else( _max_distance, -1. );
     double fastMarchingStride = args.get_else( _fm_stride, -1. );
-    DistanceToRange distToRange( space );
+    DistanceToRange distToRange( std::forward<decltype(space)>(space) );
     distToRange.setMaxDistance( maxDistance );
     distToRange.setFastMarchingStride( fastMarchingStride );
-    return distToRange.unsignedDistance( range );
+    return distToRange.unsignedDistance( std::forward<decltype(range)>(range) );
 }
+
 
 } // namespace Feel
 

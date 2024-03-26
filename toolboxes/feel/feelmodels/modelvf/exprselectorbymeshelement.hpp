@@ -37,7 +37,7 @@ public :
     ExprSelectorByMeshElementMapping() = default;
 
     template <typename MeshType>
-    void updateForUse( std::map<std::string, std::tuple<elements_reference_wrapper_t<MeshType>,elements_reference_wrapper_t<MeshType>> > const& data )
+    void updateForUse( std::map<std::string, std::tuple<Range<MeshType,MESH_ELEMENTS>,Range<MeshType,MESH_ELEMENTS>> > const& data )
         {
             uint16_type cpt=0;
             for ( auto const& [name,pairRangeElt] : data )

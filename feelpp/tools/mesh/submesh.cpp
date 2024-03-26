@@ -120,7 +120,7 @@ runCreateSubmeshAndSaveFace( std::shared_ptr<MeshType> const& mesh, std::list<st
     }
 
     tic();
-    std::shared_ptr<typename MeshType::trace_mesh_type> submesh;
+    trace_mesh_ptr_t<MeshType> submesh;
     if ( extractBoundaryFaces )
     {
         submesh = createSubmesh( _mesh=mesh, _range=boundaryfaces(mesh), _only_on_boundary_faces=true );

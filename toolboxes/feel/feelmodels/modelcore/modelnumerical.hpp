@@ -404,7 +404,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
 
                     if constexpr ( !is_hcurl_conforming_v<typename std::decay_t<decltype(u)>::functionspace_type::fe_type> )
                     {
-                        if constexpr (RangeTraits<RangeType>::element_type::nDim > 2 )
+                        if constexpr (element_t<RangeType>::nDim > 2 )
                         {
                             if ( !listMarkerEdges.empty() )
                                 u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
@@ -433,7 +433,7 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
 
     std::set<std::string> /*const&*/ fieldsNamesToExport = this->postProcessExportsFields( tag );
 #if 1
-    std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<typename ExporterType::mesh_type>, std::set<std::string> > > > mapExportsExpr;
+    std::map<std::string,std::vector<std::tuple<ModelExpression, Range<typename ExporterType::mesh_type,MESH_ELEMENTS>, std::set<std::string> > > > mapExportsExpr;
     if ( this->hasModelProperties() )
     {
         auto mesh = exporter->defaultTimeSet()->mesh();

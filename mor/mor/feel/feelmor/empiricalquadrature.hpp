@@ -45,8 +45,8 @@ class EmpiricalQuadrature
 {
 public:
     using range_type = RangeType;
-    using element_type = typename boost::tuples::element<1_c,range_type>::type::value_type;
-    using gm_type = typename element_type::type::gm_type;
+    using element_type = element_t<range_type>;
+    using gm_type = typename element_type::gm_type;
 
     using expressionevalbase_type = ExpressionEvaluatorBase<range_type>;
     using expressionevalbase_ptrtype = std::shared_ptr<expressionevalbase_type>;
@@ -277,7 +277,7 @@ EmpiricalQuadrature<RangeType>::offline()
     M_trainset->randomize(M_J);
 
     tic();
-    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
+    auto const eltForInit = this->M_range.front();
 
     int nPts = M_exprevals[0]->nPoints();
     M_N = M_numElts*nPts;

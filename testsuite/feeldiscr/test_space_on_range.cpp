@@ -49,6 +49,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
 
     auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
+    BOOST_MESSAGE( fmt::format("nr1={}, nr2={}",nelements(r1), nelements(r2)));
     auto therange = concatenate(r1,r2);
 
     auto VhPS = space_type::New(_mesh=mesh,_range=therange);
@@ -209,16 +210,16 @@ BOOST_AUTO_TEST_CASE( test_composite_meshes_list_2d )
     BOOST_CHECK_SMALL( err_u2,1e-12 );
 
     auto r = elements(mesh);
-    auto rSize = r.get<3>()->size();
-    auto r1Size = r1.get<3>()->size();
-    auto r2Size = r2.get<3>()->size();
+    auto rSize = r.size();
+    auto r1Size = r1.size();
+    auto r2Size = r2.size();
     BOOST_TEST_MESSAGE( "r size : " << rSize );
     BOOST_TEST_MESSAGE( "r1 size : " << r1Size );
     BOOST_TEST_MESSAGE( "r2 size : " << r2Size );
     auto VhPS1 = VhPS->template functionSpace<0>();
-    auto fsSize = VhFS->rangeElements<0>().get<3>()->size(); // no meshsupport
-    auto ps1Size = VhPS1->rangeElements<0>().get<3>()->size(); // no composite
-    auto ps2Size = VhPS->rangeElements<1>().get<3>()->size(); // composite
+    auto fsSize = VhFS->rangeElements<0>().size(); // no meshsupport
+    auto ps1Size = VhPS1->rangeElements<0>().size(); // no composite
+    auto ps2Size = VhPS->rangeElements<1>().size(); // composite
     BOOST_CHECK_EQUAL( rSize,fsSize);
     BOOST_CHECK_EQUAL( r1Size,ps1Size);
     BOOST_CHECK_EQUAL( r2Size,ps2Size);
@@ -263,29 +264,30 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     auto r1 = elements(mesh, pow(Px()-0.4,2)+pow(Py()-0.5,2) < pow(cst(0.23),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2) < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto therange = concatenate(r1,r2);
+    //auto therange = r2;
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Scalar> > > space_type;
     auto Vh = space_type::New(_mesh=mesh,_range=therange);
-
-    Vh->dof()->meshSupport()->updateBoundaryInternalFaces();
-    auto myboundaryfaces = Vh->dof()->meshSupport()->rangeBoundaryFaces();
-
-    double int1 = integrate(_range=myboundaryfaces,_expr=cst(1.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( fmt::format ("nelts: {} nbdyfaces {}, perimeter = {}",nelements(therange), nelements(boundaryfaces(support(Vh))), 2*M_PI*0.15 ) );
+    double int1 = integrate(_range=boundaryfaces(support(Vh)),_expr=cst(1.)).evaluate()(0,0);
     auto uPS =  Vh->element(cst(1.));
 
     auto l = form1( _test=Vh );
-    l = integrate(_range= myboundaryfaces,_expr=id(uPS));
+    l = integrate(_range= boundaryfaces(support(Vh)),_expr=id(uPS));
     l.vectorPtr()->close();
     double int1PS = inner_product( *l.vectorPtr(),uPS);
+    BOOST_TEST_MESSAGE( fmt::format("int1={}, int1PS={}",int1,int1PS));
     BOOST_CHECK_SMALL( std::abs(int1PS-int1),1e-12 );
 
     auto a = form2( _trial=Vh, _test=Vh);
-    a = integrate(_range=myboundaryfaces,_expr=id(uPS)*idt(uPS));
+    a = integrate(_range=boundaryfaces(support(Vh)),_expr=id(uPS)*idt(uPS));
     a.matrixPtr()->close();
     double int2PS = a.matrixPtr()->energy(uPS,uPS);
+    BOOST_TEST_MESSAGE( fmt::format("int1={}, int2PS={}",int1,int1PS));
     BOOST_CHECK_SMALL( std::abs(int2PS-int1),1e-12 );
 
-    auto submesh = createSubmesh(_mesh=mesh,_range=myboundaryfaces);
+    auto submesh = createSubmesh(_mesh=mesh,_range=boundaryfaces(support(Vh)));
     double int1b = integrate(_range=elements(submesh),_expr=cst(1.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( fmt::format("int1={}, int1b = {}, int1PS={}",int1, int1b, int1PS));
     BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
 }
@@ -294,18 +296,26 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
 {
     using namespace Feel;
     auto mesh = unitCube();
-    auto Vh = Pdhv<1>(mesh,elements(mesh, Px() < cst(0.5), _selector=select_elements_from_expression::with_value, _value=1 ), true );
+    BOOST_TEST_MESSAGE(fmt::format("mesh built"));
+    auto selected = elements(mesh, Px() < cst(0.5), _selector=select_elements_from_expression::with_value, _value=1 );
+    //wc(mesh)->print( fmt::format("number of selected elements local : {}",nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
+    //wc(mesh)->print( fmt::format("number of selected elements global: {} local: {}", nelements(selected, true),nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
+
+    BOOST_TEST_MESSAGE(fmt::format("elements selected"));
+    auto Vh = Pdhv<1>(mesh, selected , true );
+    BOOST_TEST_MESSAGE(fmt::format("Vh built"));
     //auto Vh = Pdhv<1>(mesh);
     auto submesh = createSubmesh(_mesh=mesh, _range=faces(support(Vh)),_update=0);
     //auto submesh = createSubmesh(_mesh=mesh, _range=boundaryfaces(support(Vh)));
     auto Xh = Pdh<1>(submesh,true);
-
+    BOOST_TEST_MESSAGE(fmt::format("Xh built"));
     auto u = Vh->element();
     auto v = Xh->element();
     v.setConstant(2.);
     u.setConstant(3.);
 
     auto rangeIntegrateBoundary = intersect(boundaryfaces(support(Vh)),boundaryfaces(mesh)); // there is a problem
+    BOOST_TEST_MESSAGE(fmt::format("intersect ranges done"));
     auto a = form2(_test=Xh, _trial=Vh);
     //a = integrate(_range=boundaryfaces(mesh), _expr=idt(v)*normal(u));
     //a = integrate(_range=boundaryfaces(mesh), _expr=id(v)*inner(idt(u),N()));

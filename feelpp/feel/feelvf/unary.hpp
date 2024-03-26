@@ -98,9 +98,9 @@ public:
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p) const
         {
-            return M_expr.evaluate(p,worldcomm);
+            return M_expr.evaluate(p);
         }
 
     expression_type const& expression() const
@@ -344,9 +344,9 @@ public:
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            return -M_expr.evaluate(p,worldcomm);
+            return -M_expr.evaluate(p);
         }
 
     expression_type const& expression() const

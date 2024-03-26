@@ -169,6 +169,9 @@ else()
   target_include_directories(cln INTERFACE
     $<BUILD_INTERFACE:${cln_SOURCE_DIR}/include/>
     $<INSTALL_INTERFACE:include/feelpp>)
+  if ( CMAKE_BUILD_TYPE STREQUAL "Debug" )
+    target_compile_options(cln PRIVATE -O1 )
+  endif()
   target_link_libraries(feelpp_contrib INTERFACE cln::cln)
   install(TARGETS cln EXPORT feelpp-contrib-export-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

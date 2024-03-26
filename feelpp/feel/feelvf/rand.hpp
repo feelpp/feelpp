@@ -126,12 +126,7 @@ public:
         return M_r();
     }
 
-    constexpr value_type evaluate( bool ) const
-    {
-        return M_r();
-    }
-
-    constexpr evaluate_type evaluate( bool, WorldComm const& ) const
+    constexpr evaluate_type evaluate( bool ) const
     {
         return evaluate_type::Constant( M_r() );
     }

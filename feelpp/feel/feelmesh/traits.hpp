@@ -36,6 +36,7 @@
 #include <feel/feelmesh/hypercube.hpp>
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <boost/mp11/utility.hpp>
 
 namespace Feel
 {
@@ -54,7 +55,7 @@ struct MeshTraits
     //@{
 
     typedef MeshTraits<MeshType> self_type;
-    typedef typename boost::remove_pointer<typename remove_shared_ptr<MeshType>::type >::type mesh_type;
+    typedef std::remove_pointer_t<remove_shared_ptr_t<std::remove_reference_t<MeshType>>> mesh_type;
 
     typedef typename mesh_type::shape_type element_shape_type;
 
@@ -103,9 +104,9 @@ struct MeshTraits
 };
 
 template<typename T>
-struct dimension_t : mpl::int_<decay_type<T>::nDim> {};
+using dimension_t = mp11::mp_size_t<decay_type<T>::nDim>;
 template<typename T>
-constexpr uint16_type dimension_v = dimension_t<T>::value;
+inline constexpr uint16_type dimension_v = dimension_t<T>::value;
 /**
  * @return topological dimension of a type T
  */
@@ -116,7 +117,7 @@ inline constexpr int dimension( T const& t )
 }
 
 template<typename T>
-struct real_dimension_t : mpl::int_<decay_type<T>::nRealDim> {};
+using real_dimension_t = boost::mp11::mp_size_t<decay_type<T>::nRealDim>;
 template<typename T>
 constexpr uint16_type real_dimension_v = real_dimension_t<T>::value;
 
@@ -129,16 +130,28 @@ inline constexpr int real_dimension( T const& t )
   return real_dimension_v<T>;
 }
 
+template<typename T>
+using is_3d = mp11::mp_bool<decay_type<T>::nDim == 3>;
 
+template<typename T>
+using is_2d = mp11::mp_bool<decay_type<T>::nDim == 2>;
 
 template<typename T>
-struct is_3d : mpl::bool_<decay_type<T>::nDim == 3 /*|| decay_type<T>::nRealDim ==3*/> {};
+using is_1d = mp11::mp_bool<decay_type<T>::nDim == 1>;
+
 template<typename T>
-struct is_2d : mpl::bool_<decay_type<T>::nDim == 2 /*|| decay_type<T>::nRealDim ==2*/> {};
+using is_0d = mp11::mp_bool<decay_type<T>::nDim == 0>;
+
+// now define the _v variants
 template<typename T>
-struct is_1d : mpl::bool_<decay_type<T>::nDim == 1 /*|| decay_type<T>::nRealDim ==1*/> {};
+inline constexpr bool is_3d_v = is_3d<T>::value;
 template<typename T>
-struct is_0d : mpl::bool_<decay_type<T>::nDim == 0 /*|| decay_type<T>::nRealDim ==0*/> {};
+inline constexpr bool is_2d_v = is_2d<T>::value;
+template<typename T>
+inline constexpr bool is_1d_v = is_1d<T>::value;
+template<typename T>
+inline constexpr bool is_0d_v = is_0d<T>::value;
+
 
 template<typename T>
 struct is_3d_real : mpl::bool_< decay_type<T>::nRealDim ==3 > {};
@@ -199,17 +212,24 @@ template <typename T> struct is_geoelement: std::false_type {};
 template <typename... T>
 inline constexpr bool is_geoelement_v = is_geoelement<T...>::value;
 
-
-
+template<typename T> class RangeBase;
+template<typename T>
+using has_base_rangebase_32 = std::is_base_of<RangeBase<uint32_type>, T>;
+template<typename T>
+constexpr bool has_base_rangebase_32_v = has_base_rangebase_32<T>::value;
+template<typename T>
+using has_base_rangebase_64 = std::is_base_of<RangeBase<uint64_type>, T>;
+template<typename T>
+constexpr bool has_base_rangebase_64_v = has_base_rangebase_64<T>::value;
 
 
 /**
  * Filters
  */
-
-template <typename T> struct is_filter: std::false_type {};
+template <typename T> struct is_filter: boost::mp11::mp_if_c<has_base_rangebase_32_v<T> || has_base_rangebase_64_v<T>, std::true_type, std::false_type>  {};
 
 template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
+
 template <typename... T>
 constexpr bool is_filter_v = is_filter<T...>::value;
 
@@ -224,7 +244,8 @@ using range_t = typename mpl::if_< boost::is_std_list<RangeType>,
                                    mpl::identity<std::list<RangeType> > >::type::type::value_type;
 
 template <typename RangeType>
-using entity_range_t = typename  boost::unwrap_reference<typename boost::tuples::template element<1,range_t<RangeType> >::type::value_type>::type;
+using entity_range_t = typename decay_type<RangeType>::element_t;
+
 
 template<typename MeshType>
 using elements_reference_wrapper_t = boost::tuple<mpl::size_t<MESH_ELEMENTS>,
@@ -346,24 +367,19 @@ template<typename IteratorRangeT>
 using submeshrange_t = typename Feel::detail::submeshrangetype<IteratorRangeT>::type;
 
 
-template<typename IteratorType>
-using filter_enum_t = typename boost::tuples::element<0,typename meta::remove_all<IteratorType>::type >::type;
-template<typename IteratorType>
-using filter_iterator_t = typename boost::tuples::element<1,typename meta::remove_all<IteratorType>::type >::type;
-template<typename IteratorType>
-using filter_entity_t = typename boost::unwrap_reference<typename filter_iterator_t<IteratorType>::value_type>::type;
-template<typename IteratorType>
-using ext_entities_from_iterator_t = boost::tuple<filter_enum_t<IteratorType>,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  typename std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> >::const_iterator,
-                                                  std::shared_ptr<std::vector<boost::reference_wrapper<filter_entity_t<IteratorType> const> > >
-                                                  >;
+template<typename RangeType>
+using filter_enum_t = typename RangeType::idim_t;
+template<typename RangeType>
+using filter_iterator_t = typename RangeType::iterator_t;
+template<typename RangeType>
+using filter_entity_t = typename RangeType::element_t;
+template<typename RangeType>
+using ext_entities_from_iterator_t = RangeType;
 
 template<typename MeshType>
 using elements_wrapper_t = typename MeshTraits<MeshType>::elements_reference_wrapper_type;
 template<typename MeshType>
 using elements_wrapper_ptr_t = typename MeshTraits<MeshType>::elements_reference_wrapper_ptr_type;
-
 
 
 } // Feel

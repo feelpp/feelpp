@@ -181,7 +181,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
                     interfaceElts->push_back( boost::cref(elt) );
             }
 
-            elements_reference_wrapper_t<mesh_type> interfaceElements = 
+            Range<mesh_type,MESH_ELEMENTS> interfaceElements = 
                 boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                         interfaceElts->begin(),
                         interfaceElts->end(),

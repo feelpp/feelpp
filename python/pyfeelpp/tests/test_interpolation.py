@@ -1,8 +1,12 @@
 import sys,os
 import feelpp
 import pytest
-from feelpp.toolboxes.core import *
-from feelpp.toolboxes.heat import *
+try:
+    from feelpp.toolboxes.core import *
+    from feelpp.toolboxes.heat import *
+    can_import_toolboxes = True
+except ImportError:
+    can_import_toolboxes = False
 import feelpp.interpolation as fi
 
 cases = [
@@ -39,6 +43,7 @@ def createInterpolator(image_tb,domain_tb):
     interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
 
+@pytest.mark.skipif(not can_import_toolboxes, reason="Required feelpp.toolboxes.core module cannot be imported")
 @pytest.mark.parametrize("cfg_path, geo_path, model_path", cases_params, ids=cases_ids)
 def test_interpolate_constant(init_feelpp,cfg_path, geo_path, model_path):
 

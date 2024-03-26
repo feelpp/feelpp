@@ -746,7 +746,7 @@ ModelMesh<IndexType>::applyRemesh( std::shared_ptr<MeshType> const& newMesh )
         {
             auto mmt = this->meshMotionTool<MeshType>();
 
-            std::vector<std::tuple<std::string,elements_reference_wrapper_t<MeshType>>> computationDomains;
+            std::vector<std::tuple<std::string,Range<MeshType,MESH_ELEMENTS>>> computationDomains;
             if ( M_meshMotionSetup )
             {
                 auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();

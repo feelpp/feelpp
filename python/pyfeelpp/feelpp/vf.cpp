@@ -62,24 +62,24 @@ void addGinacMatrix( py::module& m )
             { return e.setParameterValues( m ); },
             "set parameter value for the expression", py::arg( "mp" ) )
         .def(
-            "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, bool parallel, worldcomm_ptr_t wc )
-            { return e.evaluate( parallel, wc ); },
-            "evaluate the expression", py::arg( "parallel" ) = true, py::arg( "worldcomm" ) = Environment::worldCommPtr() )
+            "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, bool parallel )
+            { return e.evaluate( parallel ); },
+            "evaluate the expression", py::arg( "parallel" ) = true )
         .def(
             "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::map<std::string, double /*value_type*/> const& m )
             { return e.evaluate( m ); },
             "evaluate the expression", py::arg( "mp" ) )
         .def(
-            "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::string const& s, Eigen::VectorXd const& x, bool parallel, worldcomm_ptr_t wc )
+            "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::string const& s, Eigen::VectorXd const& x, bool parallel )
             {
                 Eigen::VectorXd y(x.size());
                 std::transform( x.begin(), x.end(),  y.begin(), 
-                                  [&e,s,parallel,&wc](auto x) { 
+                                  [&e,s,parallel](auto x) { 
                                       e.setParameterValues( { { s, x } } );
-                                      return e.evaluate(parallel, wc)( 0, 0 ); 
+                                      return e.evaluate(parallel)( 0, 0 ); 
                                   } );
                 return y; },
-            "evaluate the expression", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true, py::arg( "worldcomm" ) = Environment::worldCommPtr() )
+            "evaluate the expression", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true )
         .def(
             "diff", []( Expr<GinacMatrix<M, N, Order>>& e, std::string const& s )
             { return e.template diff<1>( s ); },

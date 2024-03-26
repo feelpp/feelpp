@@ -87,14 +87,18 @@ public:
      * \note Elements have their topological dimension equal to the
      * dimension of the geometric space.
      */
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<3> >,
-                              mpl::identity<GeoElement3D<ElementType::nRealDim, ElementType, T, IndexT, true> >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<2> >,
-                              mpl::identity<GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim,IndexT>, T, IndexT, true> >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<ElementType::nDim>, mpl::int_<1> >,
-                              mpl::identity<GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT, true, true> >,
-                              mpl::identity<GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim, IndexT>/*ElementType*/, T, IndexT> > >::type>::type>::type::type element_type;
-
+    using element_type = 
+        mp11::mp_if_c<(ElementType::nDim == 3),
+            GeoElement3D<ElementType::nRealDim, ElementType, T, IndexT, true>,
+            mp11::mp_if_c<(ElementType::nDim == 2),
+                GeoElement2D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim,IndexT>, T, IndexT, true>,
+                mp11::mp_if_c<(ElementType::nDim == 1),
+                    GeoElement1D<ElementType::nRealDim, ElementType, SubFaceOfNone<ElementType::nDim, IndexT>, T, IndexT, true, true>,
+                    GeoElement0D<ElementType::nRealDim, SubFaceOfNone<ElementType::nDim, IndexT>/*ElementType*/, T, IndexT>
+                >
+            >
+        >;
+    using element_ptrtype = std::shared_ptr<element_type>;
 
     typedef std::unordered_map<size_type,element_type> elements_type;
 
@@ -535,7 +539,7 @@ public:
         }
 
 
-        /**
+    /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p markerFlags on processor \p p
      *  - TheType=0 : only actives elements

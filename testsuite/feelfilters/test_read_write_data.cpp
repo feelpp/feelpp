@@ -75,13 +75,13 @@ BOOST_AUTO_TEST_CASE( test_mesh )
 
     BOOST_CHECK( nMeshElt == meshSeqReloaded->numGlobalElements() );
 
-    double areaElementsReloaded = integrate(_range=elements(meshSeqReloaded),_expr=cst(1.)).evaluate( true, meshSeqReloaded->worldCommPtr() )(0,0);
-    double areaBoundaryFacesReloaded = integrate(_range=boundaryfaces(meshSeqReloaded),_expr=cst(1.)).evaluate( true, meshSeqReloaded->worldCommPtr() )(0,0);
+    double areaElementsReloaded = integrate(_range=elements(meshSeqReloaded),_expr=cst(1.)).evaluate( parallelEvaluation )(0,0);
+    double areaBoundaryFacesReloaded = integrate(_range=boundaryfaces(meshSeqReloaded),_expr=cst(1.)).evaluate( parallelEvaluation)(0,0);
     BOOST_CHECK_CLOSE( areaElements, areaElementsReloaded, 1e-10 );
     BOOST_CHECK_CLOSE( areaBoundaryFaces, areaBoundaryFacesReloaded, 1e-10 );
     for ( int k=0;k<namesOfMarkedFaces.size();++k )
     {
-        double areaMarkedFacesReloaded = integrate(_range=markedfaces(meshSeqReloaded,namesOfMarkedFaces[k]),_expr=cst(1.)).evaluate( true, meshSeqReloaded->worldCommPtr() )(0,0);
+        double areaMarkedFacesReloaded = integrate(_range=markedfaces(meshSeqReloaded,namesOfMarkedFaces[k]),_expr=cst(1.)).evaluate( parallelEvaluation )(0,0);
         BOOST_CHECK_CLOSE( areaMarkedFaces[k], areaMarkedFacesReloaded, 1e-10 );
     }
 

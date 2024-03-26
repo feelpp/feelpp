@@ -902,7 +902,7 @@ public :
                     constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
 
                     using _expr_type = std::decay_t< decltype( expr( ModelExpression{}.template expr<ni,nj>(), se ) ) >;
-                    std::map<std::string,std::vector<std::tuple<_expr_type, elements_reference_wrapper_t<MeshType>, std::string > > > mapExprExported;
+                    std::map<std::string,std::vector<std::tuple<_expr_type, Range<MeshType,MESH_ELEMENTS>, std::string > > > mapExprExported;
 
                     if ( !mom )
                         return mapExprExported;
@@ -936,11 +936,11 @@ public :
                 });
 
             typedef decltype(expr(ModelExpression{}.template expr<nDim,nDim>(),se)) _expr_tensor2_type;
-            std::map<std::string,std::vector<std::tuple<_expr_tensor2_type, elements_reference_wrapper_t<MeshType>, std::string > > > mapExprTensor2;
+            std::map<std::string,std::vector<std::tuple<_expr_tensor2_type, Range<MeshType,MESH_ELEMENTS>, std::string > > > mapExprTensor2;
 
             auto Id = eye<nDim,nDim>();
             typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
-            std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<MeshType>, std::string > > > mapExprTensor2FromScalar;
+            std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, Range<MeshType,MESH_ELEMENTS>, std::string > > > mapExprTensor2FromScalar;
 
             for ( auto const& [matName,matProps] : propertiesNotHaveSameShape )
             {
@@ -1009,7 +1009,7 @@ public :
             return std::dynamic_pointer_cast<MaterialsOnMesh<MeshType>>( itFindMatMesh->second );
         }
     template <typename MeshType>
-    elements_reference_wrapper_t<MeshType> const& rangeMeshElementsByMaterial( std::shared_ptr<MeshType> const& mesh, std::string const& matName ) const
+    Range<MeshType,MESH_ELEMENTS> const& rangeMeshElementsByMaterial( std::shared_ptr<MeshType> const& mesh, std::string const& matName ) const
         {
             auto mom = this->materialsOnMesh(mesh);
             CHECK( mom ) << "no materialmesh";
@@ -1101,7 +1101,22 @@ public :
             for ( auto const& [_tag,pairRangeElt] : collectMarkedElements )
             {
                 std::string const& matName = mapTagToMatName.at(_tag);
+                CHECK( std::get<0>( pairRangeElt ).mesh() )
+                    << fmt::format( "range active elements is null", matName );
+                CHECK( std::get<1>( pairRangeElt ).mesh() )
+                    << fmt::format( "range ghost elements is null", matName );
+                CHECK( std::get<0>( pairRangeElt ).mesh() == mesh.get() )
+                    << fmt::format( "range active elements for material {} is not on the mesh",  matName );
+                CHECK( std::get<1>( pairRangeElt ).mesh() == mesh.get() )
+                    << fmt::format( "range ghost elements for material {} is not on the mesh", matName );
+                // CHECK( std::get<0>( pairRangeElt ).size() + std::get<1>( pairRangeElt ).size() > 0 ) << fmt::format( "no elements for material {}", matName );
+
                 M_rangeMeshElementsByMaterial[matName] = pairRangeElt;
+                CHECK( std::get<0>(M_rangeMeshElementsByMaterial[matName]).mesh() == mesh.get() )
+                    << fmt::format( "range active elements for material {} is not on the mesh", matName );
+                CHECK( std::get<1>(M_rangeMeshElementsByMaterial[matName]).mesh() == mesh.get() )
+                    << fmt::format( "range ghost elements for material {} is not on the mesh", matName );
+                //CHECK( std::get<0>(M_rangeMeshElementsByMaterial[matName]).size() + std::get<1>(M_rangeMeshElementsByMaterial[matName]).size() > 0 ) << fmt::format( "no elements for material {}", matName );
             }
 #endif
         }
@@ -1145,8 +1160,8 @@ public :
             return this->markers( setOfPhysics ).size() == M_eltMarkersInMesh.size();
         }
 
-    std::map<std::string, std::tuple<elements_reference_wrapper_t<mesh_type>,elements_reference_wrapper_t<mesh_type>>> const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
+    std::map<std::string, std::tuple<Range<mesh_type,MESH_ELEMENTS>,Range<mesh_type,MESH_ELEMENTS>>> const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElementsByMaterial( std::string const& matName ) const
         {
             // CHECK( this->materialsProperties()->hasMaterial(matName) ) << "no material with name " << matName;
             auto itFindMat = M_rangeMeshElementsByMaterial.find( matName );
@@ -1161,7 +1176,7 @@ private :
     std::set<std::string> M_eltMarkersInMesh;
     std::map<physic_id_type,bool> M_isDefinedOnWholeMesh; // physics -> bool
     std::map<physic_id_type,std::set<std::string>> M_markers; // physic -> markers
-    std::map<std::string, std::tuple< elements_reference_wrapper_t<mesh_type>,elements_reference_wrapper_t<mesh_type> > > M_rangeMeshElementsByMaterial; // matName -> (range active elt, range ghost elt)
+    std::map<std::string, std::tuple< Range<mesh_type,MESH_ELEMENTS>,Range<mesh_type,MESH_ELEMENTS> > > M_rangeMeshElementsByMaterial; // matName -> (range active elt, range ghost elt)
 
 };
 

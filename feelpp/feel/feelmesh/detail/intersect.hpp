@@ -36,48 +36,45 @@ namespace detail
 /**
  * implementation for faces
  */
-template<typename ContainerType, typename IteratorType>
-std::shared_ptr<ContainerType>
-intersect_entities( std::shared_ptr<ContainerType> const& elts, IteratorType it )
+template<typename RangeType1, typename RangeType2>
+auto intersect_entities(RangeType1&& elts, RangeType2&& it)
 {
-    using entity_t = filter_entity_t<IteratorType>;
-    std::shared_ptr<ContainerType> myelts( new ContainerType );
+    // If RangeType has a non-trivial constructor, use std::decay_t to get the underlying type
+    using DecayedRangeType = std::remove_reference_t<decay_type<RangeType1>>;
+    using mesh_ptr_const_t = typename DecayedRangeType::mesh_ptr_const_t;
+    //mesh_ptr_const_t p{std::forward<RangeType1>(elts).mesh()};
+    //mesh_ptr_const_t p = elts.mesh();//std::const_pointer_cast<const mesh_ptr_non_const_t>(std::forward<RangeType1>(elts).mesh());
+
+    DecayedRangeType myelts{elts.mesh()};
 
     std::unordered_set<size_type> idsIn;
-    for ( auto const& eltWrap1 : *elts )
-        idsIn.insert( unwrap_ref( eltWrap1 ).id() );
-    for ( auto const& eltWrap2 : it )
-    {
-        auto const& elt2 = unwrap_ref( eltWrap2 );
-        auto itFindElt = idsIn.find( elt2.id() );
-        if ( itFindElt != idsIn.end() )
-            myelts->push_back( boost::cref(elt2) );
-    }
+    std::for_each(std::forward<RangeType1>(elts).begin(), std::forward<RangeType1>(elts).end(), 
+                  [&idsIn](element_t<DecayedRangeType> const& elt) { idsIn.insert(elt.id()); });
+
+    std::for_each(std::forward<RangeType2>(it).begin(), std::forward<RangeType2>(it).end(), 
+                  [&myelts, &idsIn](element_t<DecayedRangeType> const& elt) {
+                        auto itFindElt = idsIn.find(elt.id());
+                        if (itFindElt != idsIn.end())
+                            myelts.push_back(elt);
+                 });
+    
     return myelts;
 }
 
-template<typename ContainerType, typename IteratorType, typename ...Args>
-std::shared_ptr<ContainerType>
-intersect_entities( std::shared_ptr<ContainerType> const& elts, IteratorType it, Args... args )
+
+template<typename RangeType1, typename RangeType2, typename ...Args>
+auto
+intersect_entities(RangeType1&& elts, RangeType2&& it, Args&&... args)
 {
-    return intersect_entities( intersect_entities( elts,it ), args... );
+    return intersect_entities(intersect_entities(std::forward<RangeType1>(elts), std::forward<RangeType2>(it)), std::forward<Args>(args)...);
 }
 
-template<typename IteratorType, typename ...Args>
-ext_entities_from_iterator_t<IteratorType>
-intersect_impl( IteratorType it, Args... args )
-{
-    using entity_t = filter_entity_t<IteratorType>;
-    typedef std::vector<boost::reference_wrapper<entity_t const> > cont_range_type;
-    std::shared_ptr<cont_range_type> firstelts( new cont_range_type );
 
-    auto append = [&firstelts]( entity_t const& e ) { firstelts->push_back( boost::cref(e) ); };
-    std::for_each( begin( it ), end( it ), append );
-    auto myelts = intersect_entities( firstelts, args... );
-    return boost::make_tuple( filter_enum_t<IteratorType>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+template<typename RangeType, typename ...Args>
+auto
+intersect_impl( RangeType&& it, Args&&... args )
+{
+    return intersect_entities( std::forward<RangeType>(it), std::forward<Args>(args)... );
 }
 
 } // detail

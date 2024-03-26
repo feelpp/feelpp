@@ -105,7 +105,7 @@ public:
     BilinearFormBase&
     operator=( BilinearFormBase const& form );
 
-    BilinearFormBase& operator+=( BilinearFormBase& a )
+    BilinearFormBase& operator+=( BilinearFormBase const& a )
         {
             if ( this == &a )
             {
@@ -116,7 +116,7 @@ public:
             return *this;
         }
 
-    BilinearFormBase& add( double alpha, BilinearFormBase&  a )
+    BilinearFormBase& add( double alpha, BilinearFormBase const&  a )
         {
             M_matrix->addMatrix( alpha, a.M_matrix );
             return *this;

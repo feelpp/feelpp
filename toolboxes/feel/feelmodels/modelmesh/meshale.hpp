@@ -75,8 +75,8 @@ public :
     typedef Convex convex_type;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
-    using range_faces_type = faces_reference_wrapper_t<mesh_type>;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
+    using range_faces_type = Range<mesh_type,MESH_FACES>;
 
     /*
      * Reference mesh typedefs
@@ -84,7 +84,7 @@ public :
     typedef typename mesh_type::P1_mesh_type  mesh_ref_type;
     typedef std::shared_ptr<mesh_ref_type> mesh_ref_ptrtype;
     typedef typename mesh_ref_type::shape_type convex_ref_type;
-    using range_elements_ref_type = elements_reference_wrapper_t<mesh_ref_type>;
+    using range_elements_ref_type = Range<mesh_ref_type,MESH_ELEMENTS>;
 
     typedef ALE< convex_ref_type, mesh_type::nOrder > ale_map_type;
     typedef std::shared_ptr< ale_map_type > ale_map_ptrtype;
@@ -190,13 +190,13 @@ public :
 
     class DisplacementImposedOnInitialDomainOverFaces
     {
-        using trace_mesh_type = typename mesh_type::trace_mesh_type;
-        using trace_mesh_ptrtype = std::shared_ptr<trace_mesh_type>;
+        using trace_mesh_type = trace_mesh_t<mesh_type>;
+        using trace_mesh_ptrtype = trace_mesh_ptr_t<mesh_type>;
         using trace_functionspace_type = typename ale_map_functionspace_type::trace_functionspace_type;
         using trace_functionspace_ptrtype = std::shared_ptr<trace_functionspace_type>;
         using trace_element_type = typename trace_functionspace_type::element_type;
         using trace_element_ptrtype = std::shared_ptr<trace_element_type>;
-        using trace_range_elements_type = elements_reference_wrapper_t<trace_mesh_type>;
+        using trace_range_elements_type = Range<trace_mesh_type,MESH_ELEMENTS>;
     public :
 
         DisplacementImposedOnInitialDomainOverFaces( self_type const* meshALE, std::set<std::string> const& markers );

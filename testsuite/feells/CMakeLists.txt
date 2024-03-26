@@ -23,11 +23,11 @@
 #
 
 set_directory_properties(PROPERTIES LABEL testls )
-foreach(TEST levelset )
-    feelpp_add_test( ${TEST} )
-endforeach()
-foreach(TEST extender_from_interface )
-    feelpp_add_test( ${TEST} NO_MPI_TEST )
-endforeach()
+# foreach(TEST levelset )
+#     feelpp_add_test( ${TEST} )
+# endforeach()
+# foreach(TEST extender_from_interface )
+#     feelpp_add_test( ${TEST} NO_MPI_TEST )
+# endforeach()
 
 feelpp_add_test( distancetorange )

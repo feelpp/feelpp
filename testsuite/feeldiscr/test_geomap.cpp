@@ -60,6 +60,7 @@ struct TestInterp
     typedef Reference<entity_type,Dim,1,Dim> ref_entity_type;
     typedef Mesh<entity_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptr_type;
+    using size_type = typename mesh_type::size_type;
 
     typedef typename mesh_type::gm_type gm_type;
     static const size_type gmc_context_v = vm::POINT|vm::JACOBIAN|vm::HESSIAN;
@@ -86,14 +87,14 @@ public:
         M_mesh->accept( import );
 
         auto rangeElement = elements( *M_mesh );
-        auto el_it = boost::get<1>( rangeElement );
-        auto el_en = boost::get<2>( rangeElement );
+        auto el_it = rangeElement.begin();
+        auto el_en = rangeElement.end();
 
         ref_entity_type refelem;
         typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
                 refelem.points() ) );
 
-        typename mesh_type::Inverse meshinv( M_mesh );
+        MeshInverse<mesh_type> meshinv( M_mesh );
         using size_type = typename mesh_type::size_type;
         /* initialisation of the mesh::inverse data structure */
         meshinv.addPoints( M_mesh->points() );

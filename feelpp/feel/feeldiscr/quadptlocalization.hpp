@@ -49,7 +49,7 @@ class QuadPtLocalization
 {
 public :
 
-    static const Feel::size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+    static const Feel::size_type iDim = IteratorRange::entities();
 
     static const int coDimFromRange = iDim == MESH_FACES? 1 : 0;
 
@@ -63,12 +63,9 @@ public :
 
     typedef IteratorRange range_iterator;
 
-
-    typedef typename boost::tuples::template element<1, IteratorRange>::type element_iterator_type;
-    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type::GeoShape GeoShape;
-    //typedef Mesh<GeoShape> mesh_type;
-
-    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type range_elt_type;
+    using element_iterator_type = typename IteratorRange::iterator_t;
+    using GeoShape = typename IteratorRange::element_t::GeoShape;
+    using range_elt_type = typename IteratorRange::element_t;
     typedef typename boost::remove_reference<range_elt_type>::type const_t;
     typedef typename boost::remove_const<const_t>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
@@ -188,7 +185,7 @@ public :
      */
     element_iterator_type beginElement() const
     {
-        return M_listRange.front().template get<1>();// M_eltbegin;
+        return M_listRange.front().begin();
     }
 #if 0
     /**
@@ -196,7 +193,7 @@ public :
      */
     element_iterator_type endElement() const
     {
-        return M_listRange.front().template get<2>();//M_eltend;
+        return M_listRange.front().end();
     }
 #endif
     /**
@@ -252,8 +249,8 @@ public :
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             const size_type distRange = std::distance(elt_it, elt_en);
             if ( (ide+distRange-1) < theIdElt) { ide+=distRange; continue; }
 
@@ -296,8 +293,8 @@ public :
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             const size_type distRange = std::distance(elt_it, elt_en);
             if ( (ide+distRange-1) < theIdElt) { ide+=distRange; continue; }
 
@@ -496,8 +493,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& faceCur = boost::unwrap_ref( *elt_it );
@@ -563,8 +560,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& eltCur = boost::unwrap_ref( *elt_it );
@@ -663,8 +660,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& faceCur = boost::unwrap_ref( *elt_it );
@@ -799,8 +796,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& eltCur = boost::unwrap_ref( *elt_it );

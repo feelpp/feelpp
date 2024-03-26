@@ -34,15 +34,15 @@
 
 namespace Feel {
 
-template<int Order,typename MeshType>
-using dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
+template<int Order,typename MeshType,typename T = double>
+using dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,T,Periodicity <NoPeriodicity>>;
 
 template<int Order,typename MeshType>
 using dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
 
 
-template<typename MeshType, int Order>
-using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,Periodicity <NoPeriodicity>>;
+template<typename MeshType, int Order,typename T = double>
+using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,T,Periodicity <NoPeriodicity>>;
 
 template<typename MeshType, int Order>
 using Dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;

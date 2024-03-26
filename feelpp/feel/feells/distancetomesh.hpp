@@ -256,11 +256,11 @@ DistanceToMesh< MeshType, FunctionSpaceType >::rangeIntersectingElements() const
             std::back_inserter( *intersectingElementsRefWrapper ),
             [this]( size_type id ) { return boost::cref( this->meshDistance()->element( id ) ); }
             );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+    return range(_range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
             intersectingElementsRefWrapper->begin(),
             intersectingElementsRefWrapper->end(),
             intersectingElementsRefWrapper
-            );
+            ), _mesh=this->meshDistance() );
 }
 
 template< typename MeshType, typename FunctionSpaceType >

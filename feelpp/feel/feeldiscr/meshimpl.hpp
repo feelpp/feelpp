@@ -137,8 +137,8 @@ void print( MeshT* m )
 }
 
 // Constructor.
-template <typename Shape, typename T, int Tag, typename IndexT>
-Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
     : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type ),
@@ -153,14 +153,14 @@ Mesh<Shape, T, Tag, IndexT>::Mesh( std::string const& name, worldcomm_ptr_t cons
     VLOG( 2 ) << "[Mesh] constructor called\n";
     CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::partition( const uint16_type n_parts )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::partition( const uint16_type n_parts )
 {
     //M_part->partition( *this, n_parts );
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateForUse()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
 {
     VLOG( 2 ) << "component                  MESH_RENUMBER: " << this->components().test( MESH_RENUMBER ) << "\n";
     VLOG( 2 ) << "component MESH_UPDATE_ELEMENTS_ADJACENCY: " << this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) << "\n";
@@ -401,8 +401,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
     }
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUseAfterMovingNodes( bool upMeasures )
 {
     // reset geomap cache
     if ( this->gm()->isCached() )
@@ -430,8 +430,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUseAfterMovingNodes( bool upMeasures 
 #endif
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateMeasures()
 {
     if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
         return;
@@ -543,33 +543,11 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     // compute h information: average, min and max
     {
         tic();
-#if 0
-        M_h_avg = 0;
-        M_h_min = std::numeric_limits<value_type>::max();
-        M_h_max = 0;
-        for ( auto const& eltWrap : elements( this->shared_from_this() ) )
-        {
-            auto const& elt = unwrap_ref( eltWrap );
-            M_h_avg += elt.h();
-            M_h_min = std::min( M_h_min, elt.h() );
-            M_h_max = std::max( M_h_max, elt.h() );
-        }
-        M_h_avg /= this->numGlobalElements();
-        value_type reduction[3] = {M_h_avg, M_h_min, M_h_max};
-        MPI_Op op;
-        MPI_Op_create( (MPI_User_function*)(Functor::AvgMinMax<value_type, WorldComm::communicator_type>), 1, &op );
-        MPI_Allreduce( MPI_IN_PLACE, reduction, 3, mpi::get_mpi_datatype<value_type>(), op, MeshBase<IndexT>::worldComm() );
-        MPI_Op_free( &op );
-
-        M_h_avg = reduction[0];
-        M_h_min = reduction[1];
-        M_h_max = reduction[2];
-#else
-        auto [ havg, hmin, hmax ] = hMeasures( this->shared_from_this() );
+        auto [ havg, hmin, hmax ] = hMeasures( *this );
         M_h_avg = havg;
         M_h_min = hmin;
         M_h_max = hmax;
-#endif
+
         LOG( INFO ) << "h average : " << this->hAverage() << "\n";
         LOG( INFO ) << "    h min : " << this->hMin() << "\n";
         LOG( INFO ) << "    h max : " << this->hMax() << "\n";
@@ -577,9 +555,9 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     }
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-typename Mesh<Shape, T, Tag, IndexT>::self_type&
-Mesh<Shape, T, Tag, IndexT>::operator+=( self_type const& m )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+typename  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::self_type&
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::operator+=( self_type const& m )
 {
     std::map<std::vector<double>, size_type> mapDel;
     for ( auto it = m.beginPoint(), en = m.endPoint();
@@ -644,9 +622,9 @@ Mesh<Shape, T, Tag, IndexT>::operator+=( self_type const& m )
     this->updateForUse();
     return *this;
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-    Mesh<Shape, T, Tag, IndexT>::propagateMarkers( mpl::int_<2> )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::propagateMarkers( mpl::int_<2> )
 {
     // propagate top-down marker from face if edge has not been marked
     for ( auto itf = this->beginFace(), enf = this->endFace(); itf != enf; ++itf )
@@ -667,9 +645,9 @@ void
     }
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-    Mesh<Shape, T, Tag, IndexT>::propagateMarkers( mpl::int_<3> )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::propagateMarkers( mpl::int_<3> )
 {
 #if 0
     // first propagate top-down  marker from edges if points have not been marked
@@ -720,18 +698,18 @@ void
 #endif
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
 void
-    Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 0>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 0>* )
 {
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
 void
-    Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* )
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
@@ -741,10 +719,10 @@ void
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
 void
-    Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* )
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
@@ -755,10 +733,10 @@ void
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
 void
-    Mesh<Shape, T, Tag, IndexT>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* )
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
@@ -773,9 +751,9 @@ void
         itp->second.setMesh( this );
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-    Mesh<Shape, T, Tag, IndexT>::renumber( mpl::bool_<true> )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::renumber( mpl::bool_<true> )
 {
 #if 0
     size_type next_free_node = 0;
@@ -959,17 +937,17 @@ void
 #endif
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::renumber( std::vector<size_type> const& node_map, mpl::int_<1> )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::renumber( std::vector<size_type> const& node_map, mpl::int_<1> )
 {
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::renumber( std::vector<size_type> const& node_map, mpl::int_<2> )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::renumber( std::vector<size_type> const& node_map, mpl::int_<2> )
 {
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::renumber( std::vector<size_type> const& node_map, mpl::int_<3> )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::renumber( std::vector<size_type> const& node_map, mpl::int_<3> )
 {
 #if 0
     for ( auto elt = this->beginEdge();
@@ -1001,8 +979,8 @@ void Mesh<Shape, T, Tag, IndexT>::renumber( std::vector<size_type> const& node_m
     CHECK( 0 ) << "renumber not implemented yet";
 #endif
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::localrenumber()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::localrenumber()
 {
 #if 0
     for ( element_const_iterator elt = this->beginElement();
@@ -1048,8 +1026,8 @@ void Mesh<Shape, T, Tag, IndexT>::localrenumber()
 #endif
 } /** void LocalRenumber **/
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionOne()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionOne()
 {
     bool updateComponentFacesMinimal = !this->components().test( MESH_UPDATE_FACES ) && this->components().test( MESH_UPDATE_FACES_MINIMAL );
     if ( updateComponentFacesMinimal )
@@ -1060,15 +1038,15 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionOne()
         this->updateEntitiesCoDimensionOne( mpl::bool_<true>() );
     }
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-    Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionOne( mpl::bool_<false> )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionOne( mpl::bool_<false> )
 {
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-    Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 {
     const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
 
@@ -1374,8 +1352,8 @@ void
     LOG( INFO ) << "We have now " << std::distance( this->beginFace(), this->endFace() ) << " faces in the mesh";
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionOneMinimal()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionOneMinimal()
 {
     rank_type currentPid = MeshBase<IndexT>::worldComm().localRank();
     rank_type numPartition = MeshBase<IndexT>::worldComm().localSize();
@@ -1639,7 +1617,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionOneMinimal()
 // this version is a lit bit less efficiently
 template<typename Shape, typename T, int Tag, typename IndexT>
 void
-Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements()
 {
     VLOG(2) << "Compute adjacency graph\n";
     //boost::unordered_map<std::set<int>, size_type > _faces;
@@ -1715,8 +1693,8 @@ Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
     }
 }
 #else
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements()
 {
     VLOG( 2 ) << "Compute adjacency graph\n";
     //typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
@@ -1779,8 +1757,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateAdjacencyElements()
 
 #endif
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ )
 {
 #if 0
     CHECK( nOrder == 3 || nOrder == 4 ) << "this fix with nOrder " << nOrder << " not implement, only order 3 and 4\n";
@@ -1851,14 +1829,14 @@ void Mesh<Shape, T, Tag, IndexT>::fixPointDuplicationInHOMesh( element_type& elt
     CHECK( 0 ) << "fixPointDuplicationInHOMesh not implemented yet ";
 #endif
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ )
 {
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-void Mesh<Shape, T, Tag, IndexT>::modifyEdgesOnBoundary( face_type& face, std::enable_if_t<TheShape::nDim == 3>* )
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& face, std::enable_if_t<TheShape::nDim == 3>* )
 {
     // loop over face edges
     for ( int f = 0; f < face_type::numEdges; ++f )
@@ -1871,21 +1849,21 @@ void Mesh<Shape, T, Tag, IndexT>::modifyEdgesOnBoundary( face_type& face, std::e
     }
     DVLOG( 3 ) << "We have " << nelements( boundaryedges( this ) ) << " boundary edges";
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-void Mesh<Shape, T, Tag, IndexT>::modifyEdgesOnBoundary( face_type& f, std::enable_if_t<TheShape::nDim != 3>* )
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& f, std::enable_if_t<TheShape::nDim != 3>* )
 {
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-bool Mesh<Shape, T, Tag, IndexT>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim != 3>* )
+bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim != 3>* )
 {
     return false;
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-bool Mesh<Shape, T, Tag, IndexT>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim == 3>* )
+bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim == 3>* )
 {
     // in 3D check if the edges of the element touch the boundary
     bool isOnBoundary = false;
@@ -1904,13 +1882,13 @@ bool Mesh<Shape, T, Tag, IndexT>::modifyElementOnBoundaryFromEdge( element_type&
     return isOnBoundary;
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateOnBoundary()
 {
     // first go through all the faces and set the points of the boundary
     // faces to be on the boundary
     LOG( INFO ) << "update boundary points...";
-    DVLOG( 2 ) << "Initially we have " << nelements( boundarypoints( this ) ) << " boundary points";
+    DVLOG( 2 ) << "Initially we have " << nelements( boundarypoints( *this ) ) << " boundary points";
     for ( auto it = this->beginFace(), en = this->endFace(); it != en; ++it )
     {
         auto& face = it->second;
@@ -1928,7 +1906,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
             }
         }
     }
-    DVLOG( 2 ) << "We have now " << nelements( boundarypoints( this ) ) << " boundary points";
+    DVLOG( 2 ) << "We have now " << nelements( boundarypoints( *this ) ) << " boundary points";
     LOG( INFO ) << "update boundary elements...";
     // loop through faces to set the elements having a face on the boundary
     for ( auto iv = this->beginElement(), en = this->endElement();
@@ -1972,7 +1950,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
         }
     } // loop over the elements
 #if !defined( NDEBUG )
-    DVLOG( 2 ) << "[updateOnBoundary] We have " << nelements( boundaryelements( this ) )
+    DVLOG( 2 ) << "[updateOnBoundary] We have " << nelements( boundaryelements( this->shared_from_this() ) )
                << " elements sharing a point, a edge or a face with the boundary in the database";
     // BOOST_FOREACH( auto const& e, this->boundaryElements( 0, 2, 0 ) )
     auto rangebe = this->boundaryElements( 0, 2, 0 );
@@ -1987,15 +1965,15 @@ void Mesh<Shape, T, Tag, IndexT>::updateOnBoundary()
     }
 #endif
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::removeFacesFromBoundary( std::initializer_list<uint16_type> markers )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeFacesFromBoundary( std::initializer_list<uint16_type> markers )
 {
     std::for_each( markers.begin(), markers.end(),
                    [this]( uint16_type marker ) {
                        auto range = markedfaces( this->shared_from_this(), boost::any( marker ) );
                        LOG( INFO ) << "removing " << nelements( range ) << " faces marked " << marker << " from boundary faces\n";
 
-                       for ( auto it = range.template get<1>(), en = range.template get<2>(); it != en; ++it )
+                       for ( auto it = range.begin(), en = range.end(); it != en; ++it )
                        {
                            auto const& face = boost::unwrap_ref( *it );
                            if ( face.isOnBoundary() )
@@ -2014,8 +1992,8 @@ void Mesh<Shape, T, Tag, IndexT>::removeFacesFromBoundary( std::initializer_list
                    } );
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
 {
     typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_type;
 
@@ -2387,8 +2365,8 @@ void updateEntitiesCoDimensionTwoGhostCell_step2( MeshType& mesh, typename MeshT
 
 } // namespace detail
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 {
     typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_point_type;
     typedef std::vector<boost::tuple<size_type, bool, std::vector<double>>> resultghost_edge_type;
@@ -2694,8 +2672,8 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
     DVLOG( 1 ) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << MeshBase<IndexT>::worldComm().localRank() << "\n";
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::check() const
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::check() const
 {
     if ( nDim != nRealDim )
         return;
@@ -2790,7 +2768,7 @@ void Mesh<Shape, T, Tag, IndexT>::check() const
 #if 0
 template<typename Shape, typename T, int Tag, typename IndexT>
 void
-Mesh<Shape, T, Tag, IndexT>::findNeighboringProcessors()
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::findNeighboringProcessors()
 {
     // Don't need to do anything if there is
     // only one processor.
@@ -2849,9 +2827,9 @@ Mesh<Shape, T, Tag, IndexT>::findNeighboringProcessors()
 }
 #endif
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-    Mesh<Shape, T, Tag, IndexT>::checkLocalPermutation( mpl::bool_<true> ) const
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::checkLocalPermutation( mpl::bool_<true> ) const
 {
     bool mesh_well_oriented = true;
     std::vector<size_type> list_of_bad_elts;
@@ -2884,7 +2862,7 @@ void
 #if 0
 template<typename Shape, typename T, int Tag, typename IndexT>
 void
-Mesh<Shape, T, Tag, IndexT>::checkAndFixPermutation(  )
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::checkAndFixPermutation(  )
 {
     element_type __element = *this->beginElement()->second;
 
@@ -2944,8 +2922,8 @@ Mesh<Shape, T, Tag, IndexT>::checkAndFixPermutation(  )
 }
 #endif
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::send( int p, int tag )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::send( int p, int tag )
 {
     encode();
     VLOG( 1 ) << "sending markername\n";
@@ -2960,8 +2938,8 @@ void Mesh<Shape, T, Tag, IndexT>::send( int p, int tag )
     }
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::recv( int p, int tag )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::recv( int p, int tag )
 {
     VLOG( 1 ) << "receiving markername\n";
     //this->comm().recv( p, tag, this->M_markername );
@@ -2984,9 +2962,9 @@ void Mesh<Shape, T, Tag, IndexT>::recv( int p, int tag )
     //decode();
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-typename Mesh<Shape, T, Tag, IndexT>::element_iterator
-Mesh<Shape, T, Tag, IndexT>::eraseElement( element_iterator position, bool modify )
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+typename  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::element_iterator
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::eraseElement( element_iterator position, bool modify )
 {
 #if 0
     for(int i = 0; i < element_type::numTopologicalFaces; ++i )
@@ -3020,8 +2998,8 @@ Mesh<Shape, T, Tag, IndexT>::eraseElement( element_iterator position, bool modif
 
 #endif
 }
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::encode()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
 {
     //std::cout<<"encode=   " << MeshBase<IndexT>::worldComm().localSize() << std::endl;
 
@@ -3039,9 +3017,9 @@ void Mesh<Shape, T, Tag, IndexT>::encode()
     }
     M_enc_elts.clear();
 
-    auto allmarkedfaces = boundaryfaces( *this );
-    auto face_it = allmarkedfaces.template get<1>();
-    auto face_end = allmarkedfaces.template get<2>();
+    auto allmarkedfaces = boundaryfaces( this->shared_from_this() );
+    auto face_it = allmarkedfaces.begin();
+    auto face_end = allmarkedfaces.end();
 
     int elem_number = 1;
 
@@ -3091,8 +3069,8 @@ void Mesh<Shape, T, Tag, IndexT>::encode()
     //std::cout<<"encode=   " << MeshBase<IndexT>::worldComm().localSize() << std::endl;
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::decode()
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
 {
 #if 0
     std::vector<int> mapWorld(MeshBase<IndexT>::worldComm().size());
@@ -3273,99 +3251,6 @@ merge( std::shared_ptr<Mesh<Shape, T, Tag1>> m1,
     return m;
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::Inverse::distribute( bool extrapolation )
-{
-    auto rangeElements = M_mesh->elementsWithProcessId();
-    auto el_it = std::get<0>( rangeElements );
-    auto el_en = std::get<1>( rangeElements );
-    const size_type nActifElt = std::distance( el_it, el_en );
-    if ( nActifElt == 0 ) return;
-
-    typedef typename self_type::element_type element_type;
-    BoundingBox<> bb;
-
-    typename gm_type::reference_convex_type refelem;
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
-                                                                                         refelem.points() ) );
-    boost::unordered_map<size_type, bool> npt;
-
-    M_dist.clear();
-    M_ref_coords.clear();
-    M_cvx_pts.clear();
-    M_pts_cvx.clear();
-    M_pts_cvx.clear();
-
-    KDTree::points_type boxpts;
-
-    auto __c = M_mesh->gm()->template context<vm::JACOBIAN | vm::KB | vm::POINT>( unwrap_ref( *el_it ),__geopc );
-    VLOG( 2 ) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
-
-    for ( ; el_it != el_en; ++el_it )
-    {
-        auto const& elt = boost::unwrap_ref( *el_it );
-        // get geometric transformation
-        __c->template update<vm::JACOBIAN | vm::KB | vm::POINT>( elt );
-        gic_type gic( M_mesh->gm(), elt );
-
-        // create bounding box
-        //bb.make( el_it->points() );
-        bb.make( elt.G() );
-
-        for ( size_type k = 0; k < bb.min.size(); ++k )
-        {
-            bb.min[k] -= 1e-10;
-            bb.max[k] += 1e-10;
-        }
-
-        DVLOG( 2 ) << "G = " << elt.G() << " min = " << bb.min << ", max = " << bb.max << "\n";
-
-        // check if the points
-        this->pointsInBox( boxpts, bb.min, bb.max );
-
-        DVLOG( 2 ) << "boxpts size = " << boxpts.size() << "\n";
-
-        for ( size_type i = 0; i < boxpts.size(); ++i )
-        {
-            size_type index = boost::get<1>( boxpts[i] );
-
-            if ( ( !npt[index] ) || M_dist[index] < 0 )
-            {
-                // check if we are in
-                gic.setXReal( boost::get<0>( boxpts[i] ) );
-                bool isin;
-                value_type dmin;
-                boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
-                bool tobeadded = extrapolation || isin;
-
-                DVLOG( 2 ) << "i = " << i << " index = " << index << " isin = " << ( isin >= -1e-10 )
-                           << " xref = " << gic.xRef() << " xreal = " << boost::get<0>( boxpts[i] )
-                           << " tobeadded= " << tobeadded << " dist=" << dmin << "\n";
-
-                if ( tobeadded && npt[index] )
-                {
-                    if ( dmin > M_dist[index] )
-                        M_pts_cvx[M_cvx_pts[index]].erase( index );
-
-                    else
-                        tobeadded = false;
-                }
-
-                if ( tobeadded )
-                {
-                    M_ref_coords[index] = gic.xRef();
-                    M_dist[index] = dmin;
-                    M_cvx_pts[index] = elt.id();
-                    M_pts_cvx[elt.id()][index] = boost::get<2>( boxpts[i] );
-                    npt[index] = true;
-                }
-            }
-        }
-    }
-
-    VLOG( 2 ) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
-}
-
 namespace details
 {
 template<typename IndexT = uint32_type>
@@ -3393,9 +3278,10 @@ struct RemoveMarkerNameWithoutEntityForAllReduce : std::function<std::vector<std
 
 } // namespace details
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-Mesh<Shape, T, Tag, IndexT>::removeMarkerNameWithoutEntity()
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeMarkerNameWithoutEntity()
 {
     std::vector<std::vector<std::string>> markersEntity( nDim + 1 );
     std::vector<std::vector<size_type>> nMarkedEntity( nDim + 1 );

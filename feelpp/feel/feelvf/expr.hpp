@@ -142,9 +142,9 @@ public:
     }
 
     evaluate_type
-    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool p ) const
         {
-            return evaluate_type::Constant( M_expr.evaluate( p, worldcomm )(M_c1,M_c2) );
+            return evaluate_type::Constant( M_expr.evaluate( p )(M_c1,M_c2) );
         }
 
     void setParameterValues( std::map<std::string,double> const& mp )
@@ -317,7 +317,7 @@ constexpr bool is_vf_expr_v = is_vf_expr<T>::value;
 template <typename T, typename = void>
 struct has_evaluate_without_context : std::false_type {};
 template <typename T>
-struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true,Feel::worldcomm_ptr_t{} )) >>
+struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true )) >>
     : std::true_type {};
 template <typename T>
 constexpr bool has_evaluate_without_context_v = has_evaluate_without_context<T>::value;
@@ -948,22 +948,23 @@ public :
         return M_expr.evaluate( mp );
     }
     evaluate_type
-    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel = true ) const
     {
         if constexpr ( has_evaluate_without_context_v<expression_type> )
-                         return M_expr.evaluate( parallel,worldcomm );
+        {
+            return M_expr.evaluate( parallel );
+        }
         else
         {
-            CHECK( false ) << "expression can not be evaluated without context";
-            return evaluate_type{};
+            throw std::invalid_argument( "expression can not be evaluated without context" );
         }
     }
     template<typename T, int M, int N=1>
     decltype(auto)
-    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
-        {
-            return M_expr.evaluate( v, true, worldcomm );
-        }
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true ) const
+    {
+        return M_expr.evaluate( v, true );
+    }
     typename expression_type::value_type
     evaluateAndSum() const
     {
@@ -1044,12 +1045,16 @@ extern Expr<LambdaExpr3V> _e3v;
 template<typename IntElts,typename ExprT>
 struct ExpressionOrder
 {
-
+    using element_iterator_type = typename IntElts::iterator_t;
+    using the_face_element_type = typename IntElts::element_t;
+    using the_element_type = typename the_face_element_type::super2::template Element<the_face_element_type>::type;
+#if 0    
     typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
+
     typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
-
+#endif
     static inline const uint16_type nOrderGeo = the_element_type::nOrder;
 #if 0
     static const bool is_polynomial = ExprT::imIsPoly;

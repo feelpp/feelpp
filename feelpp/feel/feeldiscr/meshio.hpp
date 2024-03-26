@@ -31,8 +31,8 @@
 namespace Feel
 {
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate, double scale )
+template <typename Shape, typename T, int Tag, typename IndexT, bool _EnableSharedFromThis>
+void Mesh<Shape, T, Tag, IndexT, _EnableSharedFromThis>::ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate, double scale )
 {
     PartitionIO<mesh_type> io( filename );
     if ( status == IOStatus::isLoading )

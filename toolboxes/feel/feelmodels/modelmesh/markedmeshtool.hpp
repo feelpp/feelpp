@@ -45,7 +45,7 @@ void
 updateP0EltMarkerFromFaceRange( IteratorRange const& range, std::shared_ptr<SpaceP0Type> const& XhP0,
                                 std::shared_ptr<VectorType> & markEltVec )
 {
-    for ( auto itr = range.template get<1>(), enr = range.template get<2>() ; itr!=enr ; ++itr )
+    for ( auto itr = range.begin(), enr = range.end() ; itr!=enr ; ++itr )
     {
         auto const& face = boost::unwrap_ref( *itr );
         if ( face.isConnectedTo0() )

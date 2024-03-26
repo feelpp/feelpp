@@ -115,7 +115,7 @@ class LevelSetRedistanciationFM :
         typedef std::shared_ptr< fastmarching_type > fastmarching_ptrtype;
 
         // Range
-        typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+        typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
 
         // Initialisation method
         enum class FastMarchingInitialisationMethod { 

@@ -12,11 +12,12 @@ namespace FeelModels
 template<typename RangeType>
 struct RangeTraits
 {
-    typedef typename boost::tuples::template element<1, RangeType>::type element_iterator;
-    typedef typename boost::unwrap_reference<typename element_iterator::value_type>::type range_elt_type;
-    typedef typename boost::remove_reference<range_elt_type>::type const_t;
-    typedef typename boost::remove_const<const_t>::type the_face_element_type;
-    typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type element_type;
+    using element_iterator = typename RangeType::iterator_t;
+    using range_elt_type = typename RangeType::element_t;
+    using const_t = std::remove_reference_t<range_elt_type>;
+    using element_type = std::remove_const_t<const_t>;
+    //using the_face_element_type = std::remove_const_t<const_t>;
+    //using element_type = typename the_face_element_type::super2::template Element<the_face_element_type>::type;
 };
 template<typename RangeType, typename ExprType>
 struct ExprTraits

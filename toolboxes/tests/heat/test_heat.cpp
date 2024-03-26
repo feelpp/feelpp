@@ -14,7 +14,8 @@ po::options_description makeOptions()
     options.add( toolboxes_options("heat") );
     options.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
-        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ");
+        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+        ("ensemble.split", Feel::po::value<int>()->default_value( 2 ), "split ensemble" );
     return options;
 }
 
@@ -27,7 +28,7 @@ makeAbout()
                      "0.1",
                      "Heat test",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2022 Feel++ Consortium" );
+                     "Copyright (c) 2022-2024 Feel++ Consortium" );
 
     return about;
 }
@@ -38,17 +39,20 @@ BOOST_AUTO_TEST_SUITE( heatsuite )
 
 BOOST_AUTO_TEST_CASE( test_heat_ensemble )
 {
-    if (  Environment::numberOfProcessors() % 2 == 0 )
+    int nsplit = ioption("ensemble.split");
+    if (  Environment::numberOfProcessors() % nsplit == 0 )
     {
-        auto [color, w, wglob] = Environment::worldCommPtr()->split( 2 );
-        Environment::changeRepository( _directory=boost::format( ( fs::path( soption("directory") ) / fs::path( fmt::format("{}_{}", 2, color ) ) ).string() ) );
-
+        auto [color, w, wglob] = Environment::worldCommPtr()->split( nsplit );
         using toolbox_t = Feel::FeelModels::Heat< Simplex<2,1>, Lagrange<1, Scalar,Continuous,PointSetFekete> >;
-
-        auto toolbox = toolbox_t::New( _prefix = "heat", _worldcomm=w );
+        fs::path ensembleRepo = fmt::format( "{}/ensemble/{}_{}/{}/", Environment::appRepository(), Environment::numberOfProcessors(), nsplit, color );
+        fs::path ensembleRepoExpr = fmt::format( "{}/ensemble/{}_{}/{}/exprs/", Environment::appRepository(), Environment::numberOfProcessors(), nsplit, color );
+        LOG(INFO) << "ensembleRepo = " << ensembleRepo.string();
+        w->print( fmt::format( "[rank {}] ensemble repo : {}\n", w->rank(), ensembleRepo ), FLAGS_v > 0, FLAGS_v > 0, FLAGS_v > 0 );
+        auto toolbox = toolbox_t::New( _prefix = "heat", _worldcomm = w,
+                                       _repository = Feel::FeelModels::ModelBaseRepository( ensembleRepo.string(),false, ensembleRepoExpr ) );
         if ( toolbox->isStationary() )
             toolbox->setTimeFinal( 10 * toolbox->timeStep() );
-        //execute( toolbox, _verbose=1, _save=false );
+        execute( toolbox, _verbose=1, _save=false );
     }
 }
 

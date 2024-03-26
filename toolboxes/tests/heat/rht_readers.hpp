@@ -1,3 +1,4 @@
+#include <fmt/ostream.h>
 #include "rht.hpp"
 
 // Readers for view factor data
@@ -176,13 +177,13 @@ namespace Feel
                     if(vf_status=="load")
                     {
                         auto vf_filename = value["viewfactors"]["filename"];
-                        fmt::format("Loading view factors for {} from {}",bc,vf_filename);
+                        fmt::format("Loading view factors for {} from {}",bc,vf_filename.dump());
                         loadVF(bc,vf_filename);
                     }
                     else if(vf_status=="compute")
                     {
                         auto vf_filename = value["viewfactors"]["filename"];
-                        fmt::format("Computing view factors for {} from {}",bc,vf_filename);                    
+                        fmt::format( "Computing view factors for {} from {}", bc, vf_filename.dump() );
                         computeVF(bc,vf_filename);
                     }
                     else

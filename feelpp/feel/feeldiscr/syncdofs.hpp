@@ -48,8 +48,8 @@ void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& 
     std::map< rank_type, std::set< std::pair<size_type, value_type> > > dataToReSend, dataToReRecv;
 
     // Send ghost dofs to the unique active dof
-    auto itElt = range.template get<1>();
-    auto enElt = range.template get<2>();
+    auto itElt = range.begin();
+    auto enElt = range.end();
     for( ; itElt != enElt; ++itElt )
     {
         auto const elt = boost::unwrap_ref( *itElt );
@@ -110,7 +110,7 @@ void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& 
     
     // Re-send active dof value to ghost dofs
     auto const& activeDofsShared = dofTable.activeDofSharedOnCluster();
-    itElt = range.template get<1>();
+    itElt = range.begin();
     for( ; itElt != enElt; ++itElt )
     {
         auto const elt = boost::unwrap_ref( *itElt );

@@ -282,15 +282,15 @@ public:
         }
 
     //! evaluate the expression without context
-    evaluate_type evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate( bool parallel ) const
         {
             evaluate_type res;
             uint16_type k = 0;
-            hana::for_each( M_expr, [&parallel,&worldcomm,&k,&res]( auto const& e )
+            hana::for_each( M_expr, [&parallel,&k,&res]( auto const& e )
                             {
                                 uint16_type i = k / res.cols();
                                 uint16_type j = k % res.cols();
-                                res( i,j ) = e.evaluate(parallel,worldcomm)(0,0);
+                                res( i,j ) = e.evaluate(parallel)(0,0);
                                 ++k;
                             } );
             return res;

@@ -46,7 +46,7 @@ template<typename MeshType>
 std::unique_ptr<MeshPartitionSet<MeshType>>
 partitionMesh( std::shared_ptr<MeshType> mesh,
                rank_type nGlobalParts,
-               std::vector<elements_reference_wrapper_t<MeshType>> partitionByRange = std::vector<elements_reference_wrapper_t<MeshType>>(),
+               std::vector<Range<MeshType,MESH_ELEMENTS>> partitionByRange = std::vector<Range<MeshType,MESH_ELEMENTS>>(),
                json const& partconfig = json() )
 {
 #if defined(FEELPP_HAS_METIS)
@@ -54,7 +54,8 @@ partitionMesh( std::shared_ptr<MeshType> mesh,
     // partitioners
     PartitionerMetis<MeshType> metis( partconfig );
     metis.partition( mesh, nGlobalParts, partitionByRange );
-    std::set<rank_type> localPartitionIds (boost::counting_iterator<int>(0), boost::counting_iterator<int>(nGlobalParts));
+    std::set<rank_type> localPartitionIds (boost::counting_iterator<int
+    >(0), boost::counting_iterator<int>(nGlobalParts));
     return std::make_unique<MeshPartitionSet<MeshType>>( mesh, nGlobalParts, localPartitionIds );
 #else
     CHECK(false) << "no partitioner implementation";

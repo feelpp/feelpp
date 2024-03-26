@@ -141,7 +141,7 @@ class Heat : public ModelNumerical,
         // mesh, space, element temperature
         mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
         void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-        elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+        Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
         void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
 
@@ -227,7 +227,7 @@ class Heat : public ModelNumerical,
         auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
             {
                 using _expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().convection().expr( se ) )>;
-                std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
+                std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprVelocityConvection;
 
                 for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
                 {
@@ -467,7 +467,7 @@ class Heat : public ModelNumerical,
 
     protected :
 
-        elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+        Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
         bool M_useExtendedDoftable = false;
