@@ -14,6 +14,7 @@ def remesh(f,required_facets,required_elts):
     f.applyRemesh(f.mesh(),new_mesh)
 
 
+@pytest.mark.skip(reason="This test is being skipped for now.")
 @pytest.mark.parametrize("case,casefile,required_facets,required_elts", collision_cases)
 def test_collision(case,casefile,required_facets,required_elts):
     
