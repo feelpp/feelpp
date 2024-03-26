@@ -79,6 +79,9 @@ void defInterpolate( py::module& m )
     m.def("interpolator", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_ptr_t const& r )
         { return opInterpPtr( domain, image, r, backend(), InterpolationNonConforming(), false, matrix_setup_t{} ); },
         py::arg( "domain" ), py::arg( "image" ), py::arg( "range" ), "create an Interpolation Operator" );
+    m.def("interpolator", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_t const& r )
+        { return opInterpPtr( domain, image, r, backend(), InterpolationNonConforming(), false, matrix_setup_t{} ); },
+        py::arg( "domain" ), py::arg( "image" ), py::arg( "range" ), "create an Interpolation Operator" );
 }
 
 PYBIND11_MODULE( _interpolation, m )
