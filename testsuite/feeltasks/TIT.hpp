@@ -245,7 +245,10 @@ class TiT
         SpComputeEngine myce;
         std::vector<int> numTaskStatus;
         std::vector<std::future<bool>> myfutures;
+        std::vector<std::future<bool>> myfutures_detach;
         std::vector<std::thread> mythreads;
+        std::vector<std::thread> mythreads_detach;
+
         std::vector<pthread_t> mypthread_t; 
         //pthread_t mypthread_t[100]; 
         pthread_attr_t mypthread_attr_t;
@@ -320,10 +323,10 @@ class TiT
 
             if (qInfo)
             {
-                if (numTypeTh==0) { std::cout<<"[INFO]: Mode No Thread\n"; }
-                if (numTypeTh==1) { std::cout<<"[INFO]: Mode Multithread\n"; }
-                if (numTypeTh==2) { std::cout<<"[INFO]: Mode Std::async\n"; }
-                if (numTypeTh==3) { std::cout<<"[INFO]: Mode Specx\n"; }
+                if (numTypeTh== 0) { std::cout<<"[INFO]: Mode No Thread\n"; }
+                if (numTypeTh== 1) { std::cout<<"[INFO]: Mode Multithread\n"; }
+                if (numTypeTh== 2) { std::cout<<"[INFO]: Mode Std::async\n"; }
+                if (numTypeTh== 3) { std::cout<<"[INFO]: Mode Specx\n"; }
 
                 if (numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
             }
@@ -344,7 +347,7 @@ class TiT
             TiT() :
                 mytg(), myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) {
                     qHIP=true;
-                    std::cout<<"[INFO]: Cuda Mode\n";
+                    std::cout<<"[INFO]: Hip Mode\n";
                     mytg.computeOn(myce);
             }
         #endif
@@ -459,8 +462,18 @@ void TiT::addTaskMultithread( Ts && ... ts )
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
 	};
-    std::thread th(LamdaTransfert);
-    mythreads.push_back(move(th));
+
+    if (!qDetach)
+    {
+        std::thread th(LamdaTransfert);
+        mythreads.push_back(move(th));
+    }
+    else
+    {
+        if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        std::thread th(LamdaTransfert); th.detach();
+        mythreads_detach.push_back(move(th)); 
+    }
     usleep(1);
 }
 
@@ -475,8 +488,19 @@ void TiT::addTaskAsync( Ts && ... ts )
             return true; 
 		};
 
-    if (qDeferred) { myfutures.emplace_back(std::async(std::launch::deferred,LamdaTransfert));}
-    else           { myfutures.emplace_back(std::async(std::launch::async,LamdaTransfert)); }
+    if (!qDetach)
+    {
+        if (qDeferred) { myfutures.emplace_back(std::async(std::launch::deferred,LamdaTransfert));}
+        else           { myfutures.emplace_back(std::async(std::launch::async,LamdaTransfert)); }
+    }
+    else
+    {
+        if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); //voir l'option à utiliser
+        //std::thread th(LamdaTransfert); th.detach();
+        //mythreads_detach.push_back(move(th)); 
+    }
+
     usleep(1);
 }
 
@@ -591,6 +615,7 @@ void TiT::run()
         for( auto& r : myfutures){ auto a =  r.get(); };  
         myfutures.clear(); numTaskStatus.clear();
     } //std::async
+
     if (numTypeTh==3) { /*promise0.set_value(0);*/ mytg.waitAllTasks(); } //Specx
 
     if (numTypeTh==10) { 
@@ -733,6 +758,5 @@ void TiT::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
-
 
 

@@ -1523,7 +1523,7 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
 
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T21> in ms since start :"<<run_time.count()<<"\n");
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T22> in ms since start :"<<run_time.count()<<"\n");
 }
 
 
@@ -1566,9 +1566,59 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
 
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T22> in ms since start :"<<run_time.count()<<"\n");
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T23> in ms since start :"<<run_time.count()<<"\n");
 }
 
+
+
+BOOST_AUTO_TEST_CASE( test_specx_24 )
+{
+    //Detach with Sleep
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T24>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    const int nbThreads = 6;
+    TiT TiT_001(nbThreads,2);
+    TiT_001.qSave=false; 
+    TiT_001.qInfo=false; 
+    TiT_001.setFileName("./DATA/Test");
+    const int initVal1 = 100;
+    const int initVal2 = 1000;
+    int writeVal = 0;
+    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+        _task=[](const int& initValParam, int& writeValParam){
+            std::cout <<"I live 1!"<<std::endl; sleep(1);  std::cout <<"YES 1!"<<std::endl;
+        }
+    );
+    TiT_001.run();   
+
+    TiT_001.qDetach=true; // <<=== detach mode
+
+    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+        _task=[](const int& initValParam, int& writeValParam){
+            std::cout <<"I live 2!"<<std::endl; sleep(5);  std::cout <<"YES 2!"<<std::endl;
+        }
+    );
+    TiT_001.run();   
+
+    TiT_001.add(_parameters=Frontend::parameters(initVal2,writeVal),
+        _task=[](const int& initValParam, int& writeValParam){
+            std::cout <<"I live 3!"<<std::endl; sleep(1);  std::cout <<"YES 3!"<<std::endl;
+        }
+    );
+    TiT_001.run();   
+
+    TiT_001.close();
+    std::cout<< "\n"; 
+    std::cout<<"writeVal="<<writeVal<<"\n"; 
+    std::cout<<"\n";
+    TiT_001.debriefingTasks();
+    sleep(10); 
+
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T24> in ms since start :"<<run_time.count()<<"\n");
+}
 
 
 
