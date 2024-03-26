@@ -2,7 +2,9 @@
 #include <feel/feelcore/testsuite.hpp>
 
 
-#include <feel/feelmesh/ranges.hpp>
+//#include <feel/feelmesh/ranges.hpp>
+
+///nvme0/lemoinep/feelpp/feelpp/feel/feelcore/range.hpp
 
 //#include <feel/feelcore/enumerate.hpp>
 //#include <feel/feelcore/environment.hpp>
@@ -30,11 +32,11 @@
 #include <specx/Legacy/SpRuntime.hpp>
 
 
-#include "UTester.hpp"
-#include "utestUtils.hpp"
+//#include "UTester.hpp"
+//#include "utestUtils.hpp"
 
 
-
+#include "TIT.hpp"
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -432,6 +434,8 @@ BOOST_AUTO_TEST_CASE( test_specx_7 )
 BOOST_AUTO_TEST_CASE( test_specx_8 )
 {
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T8>\n");
+
+    /*
     //Small Thread Race
     std::array<unsigned int,3> SleepTimes{0, 500,1000};
     int const NumThreads = 10;
@@ -520,7 +524,10 @@ BOOST_AUTO_TEST_CASE( test_specx_8 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+
 	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T8> in ms since start :"<<run_time.count()<<"\n"); 
+
+    */
 }   
 
 
@@ -1427,9 +1434,142 @@ BOOST_AUTO_TEST_CASE( test_specx_20 )
     //We calculate the time frame with the “SPECX” clock
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T19> in ms since start :"<<run_time.count()<<"\n");
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T20> in ms since start :"<<run_time.count()<<"\n");
 
 }
+
+
+BOOST_AUTO_TEST_CASE( test_specx_21 )
+{
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T21>\n");
+    auto start_time= std::chrono::steady_clock::now();
+    int nbThreads=9;
+    long int nbN=1000000;
+    int sizeBlock=nbN/nbThreads;
+    int diffBlock=nbN-sizeBlock*nbThreads;
+    double h=1.0/double(nbN);
+    double integralValue=0.0;
+    std::vector<double> valuesVec(nbThreads,0.0);
+    std::vector<double> sumVec(nbThreads*10,0.0);
+
+    auto FC1=[h,sizeBlock](const int& k,double& s) {  
+            int vkBegin=k*sizeBlock;
+            int vkEnd=(k+1)*sizeBlock;
+            double sum=0.0; double x=0.0;
+            for(int j=vkBegin;j<vkEnd;j++) { x=h*double(j); sum+=4.0/(1.0+x*x); }
+            s=sum;
+        return true;
+    };
+
+    TiT TiT_001(nbThreads,3); 
+        TiT_001.qSave=false; 
+        TiT_001.qInfo=false; 
+        TiT_001.setFileName("./PI");
+        for(int k=0;k<nbThreads;k++) { 
+            auto const& idk = k;
+            TiT_001.add(_parameters=Frontend::parameters(idk,valuesVec.at(idk)),_task=FC1);
+        }
+
+    TiT_001.run();
+    TiT_001.close();
+    integralValue=h*std::reduce(valuesVec.begin(),valuesVec.end());
+    //std::cout<<"PI Value= "<<integralValue<<"\n";
+    BOOST_MESSAGE("[INFO SPECX] : PI Value= "<<integralValue<<"\n");
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T21> in ms since start :"<<run_time.count()<<"\n");
+}
+
+
+BOOST_AUTO_TEST_CASE( test_specx_22 )
+{
+    //ADD 2 Vectors
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T22>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    int nbThreads = 6;
+    long int nbN=nbThreads*6;
+    int sizeBlock=nbN/nbThreads;
+    int diffBlock=nbN-sizeBlock*nbThreads;
+
+    std::vector<double> VecA;
+    std::vector<double> VecB;
+    std::vector<double> VecR;
+
+    for(int i=0;i<nbN;i++) {  VecA.push_back(i);   VecB.push_back(i);  }
+
+    
+    auto FC1=[VecA,VecB,sizeBlock,&VecR](const int& k) {  
+            int vkBegin=k*sizeBlock;
+            int vkEnd=(k+1)*sizeBlock;
+            for(int j=vkBegin;j<vkEnd;j++)
+            {
+                VecR.push_back(VecA[j]+VecB[j]);    
+            }
+        return true;
+    };
+
+        TiT TiT_001(nbThreads,3); 
+        TiT_001.qSave=false; 
+        TiT_001.qInfo=false; 
+        TiT_001.setFileName("./AddVectors");
+        for(int k=0;k<nbThreads;k++) { 
+            auto const& idk = k;
+            TiT_001.add(_parameters=Frontend::parameters(idk),_task=FC1);
+        }
+
+        TiT_001.run();        
+        TiT_001.close();
+
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T21> in ms since start :"<<run_time.count()<<"\n");
+}
+
+
+BOOST_AUTO_TEST_CASE( test_specx_23 )
+{
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T23>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    const int nbThreads = 6;
+    TiT TiT_001(nbThreads,3);
+    TiT_001.qSave=false; 
+    TiT_001.qInfo=false; 
+    TiT_001.setFileName("./Test");
+    const int initVal1 = 100;
+    const int initVal2 = 1000;
+    int writeVal = 0;
+    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+        _task=[](const int& initValParam, int& writeValParam){
+            writeValParam += initValParam;
+        }
+    );
+    TiT_001.run();   
+
+    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+        _task=[](const int& initValParam, int& writeValParam){
+            writeValParam += 123;
+        }
+    );
+    TiT_001.run();   
+
+    TiT_001.add(_parameters=Frontend::parameters(initVal2,writeVal),
+        _task=[](const int& initValParam, int& writeValParam){
+            writeValParam += initValParam;
+        }
+    );
+    TiT_001.run();   
+
+    TiT_001.close();
+
+
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T22> in ms since start :"<<run_time.count()<<"\n");
+}
+
+
 
 
 
