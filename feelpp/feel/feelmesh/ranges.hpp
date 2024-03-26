@@ -106,13 +106,13 @@ public:
 
     template <typename MeshType>
     RangeBase(std::shared_ptr<MeshType> const& b)
-        : CommObject(b->worldCommPtr()),
-          M_mesh_base(b.get())
+        : CommObject(b?b->worldCommPtr():nullptr),
+          M_mesh_base(b?b.get():nullptr)
     {}
 
     template <typename MeshType>
     RangeBase(std::shared_ptr<const MeshType> const& b)
-        : CommObject(b->worldCommPtr()),
+        : CommObject(b?b->worldCommPtr():nullptr),
           M_mesh_base(b.get())
     {}
 
@@ -124,7 +124,7 @@ public:
 
     template <typename MeshType, std::enable_if_t<std::is_pointer_v<MeshType>, int> = 0>
     RangeBase(MeshType const b)
-        : CommObject(b->worldCommPtr()),
+        : CommObject(b?b->worldCommPtr():nullptr),
           M_mesh_base(b)
     {}
 
@@ -136,8 +136,11 @@ public:
     template<typename MeshType>
     void setMesh( std::shared_ptr<MeshType> const& m )
     {
-        this->setWorldCommPtr( m->worldCommPtr() );
-        M_mesh_base = m.get();
+        if ( m )
+        {
+            this->setWorldCommPtr( m->worldCommPtr() );
+            M_mesh_base = m.get();
+        }
     }
 
 
