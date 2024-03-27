@@ -146,6 +146,7 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_2 )
         TiT_001.qSave=false;
         TiT_001.qInfo=false;
         TiT_001.setFileName("./Test_Mesh2");
+        TiT_001.getInformation();
         
         
         //SpRuntime runtime( NumThreads );
@@ -221,6 +222,7 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
         TiT_001.qSave=false;
         TiT_001.qInfo=false;
         TiT_001.setFileName("./Test_Integrate2");
+        TiT_001.getInformation();
         //SpRuntime runtime( NumThreads );
 
 

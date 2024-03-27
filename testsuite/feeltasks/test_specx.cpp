@@ -1513,6 +1513,7 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
         TiT_001.qSave=false; 
         TiT_001.qInfo=false; 
         TiT_001.setFileName("./AddVectors");
+        TiT_001.getInformation();
         for(int k=0;k<nbThreads;k++) { 
             auto const& idk = k;
             TiT_001.add(_parameters=Frontend::parameters(idk),_task=FC1);
@@ -1537,6 +1538,7 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
     TiT_001.qSave=false; 
     TiT_001.qInfo=false; 
     TiT_001.setFileName("./Test");
+    TiT_001.getInformation();
     const int initVal1 = 100;
     const int initVal2 = 1000;
     int writeVal = 0;
@@ -1581,7 +1583,8 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
     TiT TiT_001(nbThreads,2);
     TiT_001.qSave=false; 
     TiT_001.qInfo=false; 
-    TiT_001.setFileName("./DATA/Test");
+    TiT_001.setFileName("./Test");
+    TiT_001.getInformation();
     const int initVal1 = 100;
     const int initVal2 = 1000;
     int writeVal = 0;
@@ -1596,7 +1599,7 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
 
     TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
-            std::cout <<"I live 2!"<<std::endl; sleep(5);  std::cout <<"YES 2!"<<std::endl;
+            std::cout <<"I live 2! (Detach)"<<std::endl; sleep(5);  std::cout <<"YES 2! (Detach)"<<std::endl;
         }
     );
     TiT_001.run();   
@@ -1609,12 +1612,8 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
     TiT_001.run();   
 
     TiT_001.close();
-    std::cout<< "\n"; 
-    std::cout<<"writeVal="<<writeVal<<"\n"; 
     std::cout<<"\n";
     TiT_001.debriefingTasks();
-    sleep(10); 
-
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
 	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T24> in ms since start :"<<run_time.count()<<"\n");

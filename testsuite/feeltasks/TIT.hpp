@@ -52,6 +52,8 @@
 
 
 
+//#define COMPILE_WITH_CUDA
+//#define COMPILE_WITH_HIP
 
 #define MODE_NO_THREAD 0
 #define MODE_THREAD 1
@@ -241,14 +243,13 @@ class TiT
         template <typename ... Ts>
         auto parameters(Ts && ... ts);
         bool QEmptyTask;
+        bool QFlagDetachAlert;
         SpTaskGraph<SpSpeculativeModel::SP_NO_SPEC> mytg;
         SpComputeEngine myce;
         std::vector<int> numTaskStatus;
         std::vector<std::future<bool>> myfutures;
         std::vector<std::future<bool>> myfutures_detach;
         std::vector<std::thread> mythreads;
-        std::vector<std::thread> mythreads_detach;
-
         std::vector<pthread_t> mypthread_t; 
         //pthread_t mypthread_t[100]; 
         pthread_attr_t mypthread_attr_t;
@@ -260,6 +261,7 @@ class TiT
         bool qFirstTask;
         int  idk;
         int  numLevelAction;
+        int nbThreadDetach;
 
         template <typename ... Ts> 
             auto common(Ts && ... ts);
@@ -309,7 +311,7 @@ class TiT
         {
             nbTh=nbThread;
             numTypeTh=numTypeThread;
-            idk=0; numTaskStatus.clear(); qDetach=0;
+            idk=0; numTaskStatus.clear(); qDetach=0; nbThreadDetach=0;
             t_begin = std::chrono::steady_clock::now();
             
             
@@ -319,18 +321,8 @@ class TiT
             if (numTypeTh==3) { mytg.computeOn(myce); }
 
             if (numTypeTh==10) { pthread_attr_init(&mypthread_attr_t); }
-            
 
-            if (qInfo)
-            {
-                if (numTypeTh== 0) { std::cout<<"[INFO]: Mode No Thread\n"; }
-                if (numTypeTh== 1) { std::cout<<"[INFO]: Mode Multithread\n"; }
-                if (numTypeTh== 2) { std::cout<<"[INFO]: Mode Std::async\n"; }
-                if (numTypeTh== 3) { std::cout<<"[INFO]: Mode Specx\n"; }
-
-                if (numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
-            }
-            
+            //getInformation();            
         }
         
         #ifdef COMPILE_WITH_CUDA
@@ -391,6 +383,7 @@ class TiT
         void run();
         void close();
         void debriefingTasks();
+        void getInformation();
 
 
 };
@@ -401,7 +394,6 @@ TiT::TiT()
 {
     nbThTotal=std::thread::hardware_concurrency();
     nbTh=nbThTotal;
-    qInfo=false;
     qInfo=true;
     qSave=false;
     qDeferred=false;
@@ -414,6 +406,8 @@ TiT::TiT()
     qCUDA=false;
     qHIP=false;
     QEmptyTask=true;
+    QFlagDetachAlert=false;
+    nbThreadDetach=0;
 }
 
 TiT::~TiT()
@@ -424,8 +418,20 @@ TiT::~TiT()
 }
 
 
+void TiT::getInformation()
+{
+    if (qInfo)
+    {
+        if (numTypeTh== 0) { std::cout<<"[INFO]: Mode No Thread\n"; }
+        if (numTypeTh== 1) { std::cout<<"[INFO]: Mode Multithread\n"; }
+        if (numTypeTh== 2) { std::cout<<"[INFO]: Mode Std::async\n"; }
+        if (numTypeTh== 3) { std::cout<<"[INFO]: Mode Specx\n"; }
 
-
+        if (numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
+        nbThTotal=getNbMaxThread(); 
+        std::cout<<"[INFO]: Nb max Thread="<<nbThTotal<<"\n";
+    }
+}
 
 template <typename ... Ts>
 auto TiT::parameters(Ts && ... ts)
@@ -471,8 +477,7 @@ void TiT::addTaskMultithread( Ts && ... ts )
     else
     {
         if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        std::thread th(LamdaTransfert); th.detach();
-        mythreads_detach.push_back(move(th)); 
+        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
 }
@@ -496,9 +501,7 @@ void TiT::addTaskAsync( Ts && ... ts )
     else
     {
         if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); //voir l'option à utiliser
-        //std::thread th(LamdaTransfert); th.detach();
-        //mythreads_detach.push_back(move(th)); 
+        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); 
     }
 
     usleep(1);
@@ -516,8 +519,15 @@ void TiT::addTaskSpecx( Ts && ... ts )
 					Backend::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 				);
-    std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tp);
-    usleep(0); std::atomic_int counter(0);
+    if (!qDetach)
+    {
+        std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tp);
+        usleep(0); std::atomic_int counter(0);
+    }
+    else
+    {
+        addTaskAsync(std::forward<Ts>(ts)...);
+    }
 }
 
 
@@ -527,6 +537,7 @@ void TiT::add( Ts && ... ts )
     numLevelAction=1;
     QEmptyTask=false;
     idk++; numTaskStatus.push_back(qDetach);
+    if (qDetach) { QFlagDetachAlert=true; nbThreadDetach++; }
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
     //std::cout<<"numTypeTh="<<numTypeTh<<"\n";
     switch(numTypeTh) {
@@ -632,13 +643,32 @@ void TiT::run()
 
 void TiT::close()
 {
+    if (QFlagDetachAlert) {
+        if (qInfo) { std::cout<<"[INFO]: Detach processes are still running...\n"; }
+        if (qInfo) { std::cout<<"[INFO]: Please wait before closing.\n"; }
+
+        if ((numTypeTh>0) && (numTypeTh<10))
+        {
+            if (myfutures_detach.size()>0)
+            {
+                for( auto& r : myfutures_detach) {
+                    //std::cout <<"Detach Status=" <<r.valid() << '\n';
+                    r.wait(); 
+                }
+            }
+        }      
+    }
+
     numLevelAction=3;
     if (numTypeTh==0) {  } //No Thread
     if (numTypeTh==1) {  } //multithread
     if (numTypeTh==2) {  } //std::async
     if (numTypeTh==3) { myce.stopIfNotAlreadyStopped(); } //Specx
     if (!qFirstTask) { t_end = std::chrono::steady_clock::now(); qFirstTask=true;}
-    if (qInfo) { std::cout<<"[INFO]: Close All Tasks annd process\n"; }
+
+    if (myfutures_detach.size()>0) { myfutures_detach.clear(); }
+
+    if (qInfo) { std::cout<<"[INFO]: Close All Tasks and process\n"; }
     idk=0;
 }
 
@@ -657,6 +687,15 @@ void TiT::debriefingTasks()
             mytg.generateDot(FileName+".dot",true); 
             mytg.generateTrace(FileName+".svg",true); 
         }
+
+        std::ofstream myfile;
+        myfile.open (FileName+".csv");
+        myfile << "Elapsed microseconds,"<< t_laps<<"\n";
+        myfile << "Nb max Thread,"<< nbThTotal<<"\n";
+        myfile << "Nb Thread used,"<< nbTh<<"\n";
+        myfile << "Nb Thread Detach used,"<<nbThreadDetach<<"\n";
+        myfile << "Mode,"<< numTypeTh<<"\n";
+        myfile.close();
     }
 } 
 
@@ -758,5 +797,6 @@ void TiT::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
 
 
