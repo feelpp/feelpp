@@ -25,8 +25,8 @@ namespace Feel
     public:
         using mesh_t = Mesh<Simplex<Dim>>;
         using mesh_ptr_t = std::shared_ptr<mesh_t>;
-        using mesh_trace_t = typename mesh_t::trace_mesh_type;
-        using mesh_trace_ptr_t = typename mesh_t::trace_mesh_ptrtype;
+        using mesh_trace_t = trace_mesh_t<mesh_t>;
+        using mesh_trace_ptr_t = trace_mesh_ptr_t<mesh_t>;
         using space_t = Pch_type<mesh_t, Order>;
         using space_ptr_t = Pch_ptrtype<mesh_t, Order>;
         using spacedisc_t = Pdh_type<mesh_trace_t, Order-1>;

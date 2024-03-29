@@ -2781,7 +2781,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initElasticBehavior()
             smd = M_mesh->subMeshData();
             M_mesh->setSubMeshData( typename trace_mesh_type::smd_ptrtype{} );
 #endif
-            M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh(),_range=elements( M_body->mesh(), this->rangeMarkedFacesOnFluid()/*, ElementsType::MESH_FACES*/ ) );
+            M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh(),_range=elements( M_body->mesh(), elements(M_body->mesh()), this->rangeMarkedFacesOnFluid()/*, ElementsType::MESH_FACES*/ ) );
             //M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh() );
             M_fieldElasticVelocityTouchingBodyInterface = M_spaceElasticVelocityTouchingBodyInterface->elementPtr();
             auto opInterpolationElasticVelocity_tmp1 = opInterpolation(_domainSpace=this->body().fieldElasticVelocity().functionSpace(),

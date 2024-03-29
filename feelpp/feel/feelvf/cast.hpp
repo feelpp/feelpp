@@ -88,9 +88,9 @@ public:
     expression_type const& expression() const { return M_expr; }
     expression_type & expression()  { return M_expr; }
 
-    constexpr value_type evaluate( bool p, worldcomm_ptr_t const& worldcomm) const
+    constexpr value_type evaluate( bool p ) const
     {
-        auto eval = M_expr.evaluate(p,worldcomm);
+        auto eval = M_expr.evaluate(p);
         evaluate_type res(eval.rows(),eval.cols());
         for ( uint16_type i=0;i< eval.rows();++i )
             for ( uint16_type j=0;j< eval.cols();++j )

@@ -32,8 +32,8 @@
 
 namespace Feel {
 
-template<typename IteratorType, typename ...Args>
-using concatenate_t = ext_entities_from_iterator_t<IteratorType>;
+template<typename RangeType, typename ...Args>
+using concatenate_t = RangeType;
 
 
 /**
@@ -49,11 +49,11 @@ using concatenate_t = ext_entities_from_iterator_t<IteratorType>;
  * auto submesh = createSubmesh( mesh, subset );
  * \endcode
  */
-template<typename IteratorType, typename... Args>
-FEELPP_EXPORT Feel::concatenate_t<IteratorType>
-concatenate( IteratorType&& it, Args&&... args )
+template<typename RangeType, typename... Args>
+FEELPP_EXPORT auto
+concatenate( RangeType&& r, Args&&... args )
 {
-    return Feel::detail::concatenate_impl( std::forward<IteratorType>(it), std::forward<Args>(args)... );
+    return Feel::detail::concatenate_impl( std::forward<RangeType>(r), std::forward<Args>(args)... );
 }
 
 

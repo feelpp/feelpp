@@ -82,7 +82,7 @@ template<int Order,
          int Tag = 0>
 inline
 Pch_ptrtype<MeshType,Order,T,Pts,Tag>
-Pch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
@@ -98,14 +98,14 @@ Pch( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 template<int Order,
          typename T = double,
          template<class, uint16_type, class> class Pts = PointSetFekete,
-         typename MeshType,
+         typename MeshType, typename RangeType,
          int Tag = 0>
 inline
 Pch_ptrtype<MeshType,Order,T,Pts,Tag>
-Pch( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false, size_type components = 0 )
+Pch( std::shared_ptr<MeshType> const& mesh, RangeType&& rangeElt, bool buildExtendedDofTable=false, size_type components = 0 )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _range=rangeElt,
+                                                    _range=std::forward<RangeType>(rangeElt),
                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                     _extended_doftable=buildExtendedDofTable,
                                                     _components=components );
@@ -121,14 +121,6 @@ extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>>;
 extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>>;
 extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>>;
 
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<0,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<1,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<2,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<3,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<0,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
 #endif
 
 } // Feel

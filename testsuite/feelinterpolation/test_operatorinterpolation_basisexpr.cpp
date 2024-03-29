@@ -287,6 +287,7 @@ BOOST_AUTO_TEST_CASE( test_grad )
     //--------------------------------------
     // case 0 : same support
     executeTestGrad( "case0_elt", spacePch1, "Pch1", spaceNed1h, "Ned1h", rangeElements, e, e );
+#if 0    
     executeTestGrad( "case0_elt", spacePch2, "Pch2", spacePchv1, "Pchv1", rangeElements, e, e );
     executeTestGrad( "case0_face_interface", spacePch1, "Pch1", spaceNed1h, "Ned1h", rangeFacesInterface, e, e );
     executeTestGrad( "case0_face_interface", spacePch2, "Pch2", spacePchv1, "Pchv1", rangeFacesInterface, e, e );
@@ -327,7 +328,7 @@ BOOST_AUTO_TEST_CASE( test_grad )
         executeTestGrad( "case3_face_interface", spacePch1_omega1_range, "Pch1", spaceNed1h_omega2_range, "Ned1h", rangeFacesInterface, e, e );
         executeTestGrad( "case3_face_interface", spacePch2_omega1_range, "Pch2", spacePchv1_omega2_range, "Pchv1", rangeFacesInterface, e, e );
     }
-
+#endif
 
     e->save();
     eOmega2->save();

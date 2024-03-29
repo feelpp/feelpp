@@ -335,7 +335,7 @@ public:
     }
 
     value_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( bool parallel = true ) const
     {
         int no = 1;
         int ni = M_syms.size();

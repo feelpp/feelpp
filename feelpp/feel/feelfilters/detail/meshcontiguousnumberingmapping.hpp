@@ -38,7 +38,7 @@ struct MeshContiguousNumberingMapping
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using index_type = typename mesh_type::index_type;
     using storage_node_value_type = StorageNodeValueType;
-    using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using range_element_type = Range<mesh_type,MESH_ELEMENTS>; //elements_reference_wrapper_t<mesh_type>;
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
 
     explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false, MeshFragmentation<mesh_type> const& meshFragmentation = MeshFragmentation<mesh_type>{} )
@@ -62,7 +62,7 @@ struct MeshContiguousNumberingMapping
 
             for ( auto const& [part,nameAndRangeElt] : M_partIdToRangeElement )
             {
-                auto const& rangeElt = std::get<1>( nameAndRangeElt );
+                auto const& rangeElt  = std::get<1>( nameAndRangeElt );
                 index_type nEltInRange = nelements(rangeElt);
                 auto & elementIdToContiguous = M_elementIdToContiguous[part];
                 auto & pointIdsInElements = M_pointIdsInElements[part];
@@ -583,7 +583,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             coords[3 * i] = (T)p.node()[0];
         }
 
-        if ( MeshType::nRealDim >= 2 )
+        if constexpr ( MeshType::nRealDim >= 2 )
         {
             if ( outer )
             {
@@ -610,7 +610,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             }
         }
 
-        if ( MeshType::nRealDim >= 3 )
+        if constexpr ( MeshType::nRealDim >= 3 )
         {
             if ( outer )
             {

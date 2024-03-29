@@ -90,7 +90,7 @@ auto convolve( Ts && ... varg )
     DLOG(INFO) << "convolve::Z(" << Z.size() << ")=" << Z;
     auto ret = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
                           _quad1=quad1,_use_tbb=use_tbb,_grainsize=grainsize,
-                          _partitioner=partitioner,_verbose=verbose,_quadptloc=quadptloc).evaluate( Z, true, wc );
+                          _partitioner=partitioner,_verbose=verbose,_quadptloc=quadptloc).evaluate( Z, true );
     DLOG(INFO) << "convolve::ret(" << ret.size() <<")=" << ret << std::endl;
     auto v = space->element();
     size_type firstDofGlobalCluster = space->dof()->firstDofGlobalCluster();

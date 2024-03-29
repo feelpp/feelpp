@@ -117,7 +117,7 @@ public:
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
     element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
@@ -172,17 +172,17 @@ public :
         {
             auto const& v = this->fieldElectricPotential();
             auto electricFieldExpr = -trans(gradv( v ) );
-            std::map<std::string,std::vector<std::tuple<std::decay_t<decltype(electricFieldExpr)>, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprElectricField;
+            std::map<std::string,std::vector<std::tuple<std::decay_t<decltype(electricFieldExpr)>, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprElectricField;
             mapExprElectricField[prefixvm(prefix,"electric-field")].push_back( std::make_tuple( electricFieldExpr, M_rangeMeshElements, "element" ) );
 
             typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)) _expr_scalar_type;
-            std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
+            std::map<std::string,std::vector<std::tuple<_expr_scalar_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprScalar;
 
             typedef std::decay_t<decltype(-_expr_scalar_type{}*trans(gradv(v)))> expr_current_density_type;
-            std::map<std::string,std::vector<std::tuple< expr_current_density_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprCurrentDensity;
+            std::map<std::string,std::vector<std::tuple< expr_current_density_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprCurrentDensity;
 
             typedef std::decay_t<decltype(_expr_scalar_type{}*inner(gradv(v)))> expr_joules_losses_type;
-            std::map<std::string,std::vector<std::tuple< expr_joules_losses_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprJoulesLosses;
+            std::map<std::string,std::vector<std::tuple< expr_joules_losses_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprJoulesLosses;
 
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
@@ -365,7 +365,7 @@ public :
 
 private :
 
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     space_electricpotential_ptrtype M_XhElectricPotential;
     element_electricpotential_ptrtype M_fieldElectricPotential;

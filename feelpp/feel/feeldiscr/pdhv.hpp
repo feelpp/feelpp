@@ -93,14 +93,15 @@ Pdhv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
  than k using Lagrange basis functions
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
+         typename MeshType,typename RangeType,
          int Tag = 0>
 inline
 Pdhv_ptrtype<MeshType,Order,Pts,Tag>
-Pdhv( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false  )
+Pdhv( std::shared_ptr<MeshType> const& mesh, RangeType&& rangeElt, bool buildExtendedDofTable=false  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _range=rangeElt,
+                                                   _range=std::forward<RangeType>(rangeElt),
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=buildExtendedDofTable );
 }

@@ -396,8 +396,8 @@ public :
             this->updateForUseImpl( space->mesh(),mats,false,space );
         }
 
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements( std::string const& matName ) const
+    std::map<std::string, Range<mesh_type,MESH_ELEMENTS> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements( std::string const& matName ) const
         {
             CHECK( this->hasMaterial( matName ) ) << "no material " << matName;
             return M_rangeMeshElementsByMaterial.find( matName )->second;
@@ -638,7 +638,7 @@ private :
     space_ptrtype M_space;
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+    std::map<std::string, Range<mesh_type,MESH_ELEMENTS> > M_rangeMeshElementsByMaterial;
 
     element_ptrtype M_fieldDynamicViscosity;
     double M_dynamicViscosityDefaultValue;

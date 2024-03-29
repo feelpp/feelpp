@@ -121,7 +121,7 @@ markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid  )
                               std::get<1>( rangeElementsWithMarker ),
                               std::get<2>( rangeElementsWithMarker ) );
 }
-
+#if 0
 template<int TheType,typename MeshType>
 auto//std::map<int,markedelements_t<MeshType> >
 collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMarkersFlag )
@@ -173,6 +173,71 @@ collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMa
     }
 
 }
+#else
+template<int TheType, typename MeshType>
+using CollectionOfMarkedElementsResultType 
+                = std::conditional_t<TheType == 0 || TheType == 1, 
+                                     std::map<int, Range<MeshType,ElementsType::MESH_ELEMENTS>>, 
+                                     std::map<int, std::tuple<Range<MeshType,ElementsType::MESH_ELEMENTS>, Range<MeshType,ElementsType::MESH_ELEMENTS>>>>;
+
+template<typename MeshType,typename TupleRange>
+Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshType> const& mesh, TupleRange && r ) 
+{
+    auto&& meshRange = std::forward<TupleRange>(r);
+    wc( mesh )->print( fmt::format( "makeResultRange: mesh count={}", mesh.use_count() ), FLAGS_v > 0, FLAGS_v > 0, FLAGS_v > 0 );
+
+    //std::cout << fmt::format( "mesh: {} ptr:{}, count: {}\n", ( is_shared_ptr_v<decay_type<MeshType>>  ) ? "shared_ptr" : "ref_or_val", mesh, mesh.use_count()  ) << std::endl;
+    Range<decay_type<MeshType>, MESH_ELEMENTS> res( mesh );
+    for ( auto const& elt : *std::get<2>( meshRange ) )
+        res.push_back( elt );
+    res.shrink_to_fit();
+    wc( mesh )->print( fmt::format( "makeResultRange: res size={}\n", res.size() ));
+    return res;
+}
+
+template<int TheType, typename MeshType>
+CollectionOfMarkedElementsResultType<TheType, MeshType>
+collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMarkersFlag) 
+{
+    std::map<int, std::set<flag_type>> collectionOfMarkerFlagSet;
+
+    if (auto argCasted = std::any_cast<std::map<int, int>>(&collectionOfMarkersFlag)) 
+    {
+        for (auto const& [part, markersFlag] : *argCasted)
+            collectionOfMarkerFlagSet[part] = { Feel::unwrap_ptr(mesh).markerId(markersFlag) };
+    }
+    else if (auto argCasted = std::any_cast<std::map<int, std::set<std::string>>>(&collectionOfMarkersFlag)) 
+    {
+        for (auto const& [part, markerNames] : *argCasted)
+            collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr(mesh).markersId(markerNames);
+    }
+    else
+    {
+        throw std::runtime_error("Unsupported data type in collectionOfMarkersFlag");
+    }
+
+    auto collectionOfRangeElement = Feel::unwrap_ptr(mesh).template collectionOfElementsWithMarkerByType<TheType>(1, collectionOfMarkerFlagSet, rank(mesh));
+
+    CollectionOfMarkedElementsResultType<TheType, MeshType> res;
+    for (auto const& [part, rangeElementsWithMarker] : collectionOfRangeElement) 
+    {
+        if constexpr (TheType == 0 || TheType == 1) 
+        {
+            res[part] = makeResultRange(mesh,rangeElementsWithMarker);
+        } 
+        else 
+        {
+            auto const& [rangeActive, rangeGhost] = rangeElementsWithMarker;
+            res[part] = std::make_tuple( makeResultRange( mesh, rangeActive ), makeResultRange(mesh,rangeGhost) );
+            CHECK( std::get<0>(res[part]).mesh() ) << "mesh with active elements is null";
+            CHECK( std::get<1>(res[part]).mesh() ) << "mesh with ghost elements is null";
+            CHECK( std::get<0>(res[part]).mesh() == std::get<1>(res[part]).mesh() );
+        }
+    }
+    
+    return res;
+}
+#endif
 
 
 

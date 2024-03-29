@@ -166,12 +166,12 @@ class Product : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
             value_type res = 0;
             if constexpr ( Type == 1 )
             {
-                auto leval = M_left_expr.evaluate(p,worldcomm);
+                auto leval = M_left_expr.evaluate(p);
                 if constexpr( IsSame )
                     {
                         for ( uint16_type c2 = 0; c2 < leval.cols(); ++c2 )
@@ -184,7 +184,7 @@ class Product : public ExprDynamicBase
                     }
                 else
                 {
-                    auto reval = M_right_expr.evaluate(p,worldcomm);
+                    auto reval = M_right_expr.evaluate(p);
                     for ( uint16_type c2 = 0; c2 < leval.cols(); ++c2 )
                         for ( uint16_type c1 = 0; c1 < leval.rows(); ++c1 )
                         {

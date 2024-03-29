@@ -458,9 +458,10 @@ MeshStructuredSetup<Dim,RealDim,T,IndexT>::New( nl::json const& jDesc )
 
 struct MeshStructuredBase {};
 
-template <typename GeoShape, typename T = double, typename IndexT = uint32_type>
-class MeshStructured : public Mesh<GeoShape,T,0,IndexT>,
-                       public MeshStructuredBase
+template <typename GeoShape, typename T, typename IndexT>
+class MeshStructured : public Mesh<GeoShape,T,0,IndexT,EnableSharedFromThis>,
+                       public MeshStructuredBase//,
+                       //public std::enable_shared_from_this<MeshStructured<GeoShape,T,IndexT>>
 {
 
   public:
@@ -503,6 +504,13 @@ class MeshStructured : public Mesh<GeoShape,T,0,IndexT>,
 
     MeshStructured( std::shared_ptr<setup_type> const& setup, worldcomm_ptr_t const& = Environment::worldCommPtr() );
 
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override { return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  }
+
+    //! return current shared_ptr of type MeshBase
+    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override { return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  }
+
+
 private:
 
     void generateStructuredMesh();
@@ -525,7 +533,7 @@ private:
  * @tparam MeshT mesh type
  */
 template<typename MeshT>
-struct is_mesh_structured : std::conditional<std::is_base_of_v<MeshStructuredBase, MeshT>, std::true_type, std::false_type>::type {};
+using is_mesh_structured = std::conditional_t<std::is_base_of_v<MeshStructuredBase, MeshT>, std::true_type, std::false_type>;
 
 /**
  * @brief boolean to detect a @p MeshStructured mesh

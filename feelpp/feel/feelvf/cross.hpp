@@ -154,10 +154,10 @@ class CrossProduct : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            auto leval = M_left_expr.evaluate(p,worldcomm);
-            auto reval = M_right_expr.evaluate(p,worldcomm);
+            auto leval = M_left_expr.evaluate(p);
+            auto reval = M_right_expr.evaluate(p);
             CHECK( leval.rows() == reval.rows() && leval.cols() == reval.cols() ) << "vector should be same dim";
             CHECK( leval.rows() == 2 || leval.rows() == 3 ) << "only vector of dim 2 or 3";
             CHECK( leval.cols() == 1 ) << "not a vector";

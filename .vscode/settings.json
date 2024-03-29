@@ -136,7 +136,6 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     
     ],
-    "cmake.buildDirectory": "${workspaceFolder}/build-${buildKitVendor}${buildKitVersionMajor}-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
     "cmake.parallelJobs": 5,
     "autoDocstring.docstringFormat": "numpy",
     "svg.preview.background": "transparent"
