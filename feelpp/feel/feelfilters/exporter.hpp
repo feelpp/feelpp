@@ -38,6 +38,7 @@
 
 #include <feel/feeldiscr/timeset.hpp>
 #include <feel/feelfilters/enums.hpp>
+#include <feel/feelmesh/meshfragmentation.hpp>
 
 namespace Feel
 {
@@ -103,6 +104,8 @@ public:
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
     };
+
+
 
   protected :
     typedef std::vector<std::pair<timeset_ptrtype,step_set_type>> steps_write_on_disk_type;
@@ -363,19 +366,22 @@ public:
             return M_ts_set[ts];
         }
     /**
-     * @return true if export by parts if true, false otherwise
+     * @return mesh fragmentation used as mesh parts of exporter
      */
-    bool exportByParts() const
+    MeshFragmentation<mesh_type> const& meshFragmentation() const
     {
-        return M_export_by_parts;
+        return M_meshFragmentation;
     }
+
     /**
-     * set the export by parts to \p b
+     * set the mesh fragmentation used as mesh parts of exporter
      */
-    void setExportByParts( bool b )
+    template <typename MFT>
+    void setMeshFragmentation( MFT && mf )
     {
-        M_export_by_parts = b;
+        M_meshFragmentation = std::forward<MFT>( mf );
     }
+
     /**
      * @return true if use single transient file if true, false otherwise
      */
@@ -568,7 +574,7 @@ protected:
 
 
     bool M_do_export;
-    bool M_export_by_parts;
+    MeshFragmentation<mesh_type> M_meshFragmentation;
     bool M_use_single_transient_file;
     std::string M_type;
     std::string M_prefix;
@@ -588,18 +594,20 @@ auto exporter( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && mesh = args.get(_mesh);
     bool fileset = args.get_else_invocable(_fileset,[](){ return boption(_name="exporter.fileset"); } );
-    bool byparts = args.get_else_invocable(_byparts,[](){ return boption(_name="exporter.byparts"); } );
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    using mesh_fragmentation_type = MeshFragmentation<mesh_type>;
+    auto && meshFragmentation = args.get_else_invocable(_byparts,[](){ return mesh_fragmentation_type(boption(_name="exporter.byparts")? mesh_fragmentation_type::Strategy::AllMarkedElements : mesh_fragmentation_type::Strategy::None ); } );
+
     std::string const& name = args.get_else_invocable(_name,[](){ return Environment::about().appName(); } );
     std::string const& geo = args.get_else_invocable(_geo, [](){ return soption(_name="exporter.geometry"); } );
     auto && path = args.get_else_invocable(_path, [&name](){ return std::string((fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string()); } );
 
-    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
     using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
 
     auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
-    e->setExportByParts( byparts );
+    e->setMeshFragmentation( meshFragmentation );
     if ( std::string(geo).compare("change_coords_only") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
     else if ( std::string(geo).compare("change") == 0 )
