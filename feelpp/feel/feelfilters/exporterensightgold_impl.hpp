@@ -516,8 +516,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     if ( buildNewCache )
     {
         tic();
-        M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get() );
-        M_cache_mp[__ts->name()]->setExportByParts( this->exportByParts() );
+        M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get(), false, this->meshFragmentation() );
         toc( "ExporterEnsightGold::writeGeoFiles init cache", FLAGS_v > 0 );
         // clear others caches with export of fields
         M_mapNodalArrayToDofId.clear();
@@ -943,7 +942,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     //VLOG(1) << "material : " << m << " local nb element: " << std::distance(lelt_it, lelt_en );
     M_cache_mp.try_emplace( markerid, mesh.get(), this->worldComm(), allelt_it, allelt_en, true, true, true );
     auto& mp = M_cache_mp.at( markerid );
-    
+
     VLOG(1) << "mesh pts size : " << mp.ids.size();
     // part
 
@@ -1058,7 +1057,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
     M_cache_mp.try_emplace( markerid, mesh.get(), this->worldComm(), lelt_it, lelt_en, true, true, true );
     mp = M_cache_mp.at( markerid );
-    
+
     int32_t gnole = mp.globalNumberOfElements();
     //LOG(INFO) << "Global nb elements: " << gnole << std::endl;
     if( this->worldComm().isMasterRank() )
