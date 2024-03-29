@@ -449,7 +449,7 @@ public:
     //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
     //! \param rangeElt collection of mesh element
     //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
-    template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+    template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
     void
     add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
          typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> >* = nullptr )
@@ -626,11 +626,18 @@ namespace meta
 template<typename MeshType, int N = 1>
 struct Exporter
 {
-    typedef Feel::Exporter<MeshType,N> type;
+    typedef Feel::Exporter<decay_type<MeshType>,N> type;
     typedef std::shared_ptr<type> ptrtype;
 };
 
 }
+
+template<typename MeshType, int N = 1>
+using exporter_t = typename meta::Exporter<MeshType,N>::type;
+
+template<typename MeshType, int N = 1>
+using exporter_ptr_t = typename meta::Exporter<MeshType,N>::ptrtype;
+
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )

@@ -3,7 +3,13 @@ import feelpp.core as fppc
 import pytest
 #from fppt.core import *
 #from fppt.heat import *
-import feelpp.core.interpolation as fi
+try:
+    from feelpp.toolboxes.core import *
+    from feelpp.toolboxes.heat import *
+    can_import_toolboxes = True
+except ImportError:
+    can_import_toolboxes = False
+import feelpp.core.interpolation as fppci
 
 cases = [
          (('cases/nirb/square/square.cfg', 'cases/nirb/square/square.geo', 'cases/nirb/square/square.json'), 'square-2d'),
@@ -36,9 +42,10 @@ def createInterpolator(image_tb,domain_tb):
     """
     Vh_image = image_tb.spaceTemperature()
     Vh_domain = domain_tb.spaceTemperature()
-    interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
+    interpolator = fppci.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
     return interpolator
 
+@pytest.mark.skipif(not can_import_toolboxes, reason="Required feelpp.toolboxes.core module cannot be imported")
 @pytest.mark.parametrize("cfg_path, geo_path, model_path", cases_params, ids=cases_ids)
 def test_interpolate_constant(init_feelpp,cfg_path, geo_path, model_path):
 

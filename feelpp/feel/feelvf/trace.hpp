@@ -142,9 +142,9 @@ class Trace : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            return evaluate_type::Constant( M_expr.evaluate(p,worldcomm).trace() );
+            return evaluate_type::Constant( M_expr.evaluate(p).trace() );
         }
 
     //@}
