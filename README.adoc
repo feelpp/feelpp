@@ -62,7 +62,6 @@ link:http://docs.feelpp.org[{feelpp}] is a {cpp} library for continuous or disco
 
 The latest release of {feelpp} is https://github.com/feelpp/feelpp/releases/latest[here]  image:https://img.shields.io/github/v/release/feelpp/feelpp[link=https://github.com/feelpp/feelpp/releases/latest]
 
-
 {feelpp} has a DOI provided by Zenodo. Please use this to cite {feelpp} if you use it in a publication
 image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/latestdoi/4392591]
 
