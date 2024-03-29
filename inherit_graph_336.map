@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structFeel_1_1MeshTraits.html" title="Traits for meshes." alt="" coords="5,5,228,32"/>
+<area shape="rect" id="node1" href="$classFeel_1_1MeshSupportBase.html" title="Description of a mesh support." alt="" coords="5,78,180,105"/>
+<area shape="rect" id="node2" href="$classFeel_1_1MeshSupport.html" title=" " alt="" coords="228,5,397,47"/>
+<area shape="rect" id="node3" href="$classFeel_1_1MeshSupport.html" title=" " alt="" coords="232,71,393,112"/>
+<area shape="rect" id="node4" href="$classFeel_1_1MeshSupport.html" title="Description of a mesh support." alt="" coords="236,136,389,177"/>
 </map>

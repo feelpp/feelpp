@@ -495,6 +495,7 @@ var namespaceFeel =
     [ "MeshAdaptation", "classFeel_1_1MeshAdaptation.html", "classFeel_1_1MeshAdaptation" ],
     [ "MeshBase", "classFeel_1_1MeshBase.html", "classFeel_1_1MeshBase" ],
     [ "meshes", "structFeel_1_1meshes.html", null ],
+    [ "MeshFragmentation", "classFeel_1_1MeshFragmentation.html", "classFeel_1_1MeshFragmentation" ],
     [ "MeshHighOrder", "classFeel_1_1MeshHighOrder.html", null ],
     [ "MeshMarkerName", "structFeel_1_1MeshMarkerName.html", null ],
     [ "MeshMover", "classFeel_1_1MeshMover.html", null ],

@@ -1,5 +1,11 @@
 var NAVTREEINDEX19 =
 {
+"namespacenlohmann_1_1detail_1_1dtoa__impl.html#a311ee6c8cda0cef9c36395aeac79035d":[4,0,3,0,1,4],
+"namespacenlohmann_1_1detail_1_1dtoa__impl.html#a36ded358763b5dbcea9867660fbe4e28":[4,0,3,0,1,6],
+"namespacenlohmann_1_1detail_1_1dtoa__impl.html#a7aa658e4e632ee559c82e6ed2fd4c8e0":[4,0,3,0,1,3],
+"namespacenlohmann_1_1detail_1_1dtoa__impl.html#a9b899c72b0e1e3dd46d75c2b4e6bcdfb":[4,0,3,0,1,8],
+"namespacenlohmann_1_1detail_1_1dtoa__impl.html#adbf329a18c5cf854a3477327afd2200b":[4,0,3,0,1,7],
+"namespaces.html":[4,0],
 "namespacestd.html":[4,0,5],
 "namespacestd.html#ae23c025cf50ad98d916e49a8f36fe9b7":[4,0,5,7],
 "namespacetermcolor.html":[4,0,6],
@@ -11,16 +17,16 @@ var NAVTREEINDEX19 =
 "norm_8hpp.html":[6,0,0,0,4,36],
 "norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc":[4,0,1,13,50],
 "norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc":[6,0,0,0,4,36,0],
-"norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850":[6,0,0,0,4,36,1],
 "norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850":[4,0,1,13,82],
+"norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850":[6,0,0,0,4,36,1],
 "normh1_8hpp.html":[6,0,0,0,4,37],
 "norml2_8hpp.html":[6,0,0,0,4,38],
 "norml2squared_8hpp.html":[6,0,0,0,4,39],
 "odh_8hpp.html":[6,0,0,0,1,38],
 "odh_8hpp.html#a17f18ff761e5bd2f0993491ca46b6ec6":[6,0,0,0,1,38,1],
 "on_8hpp.html":[6,0,0,0,4,40],
-"on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc":[4,0,1,13,77],
 "on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc":[6,0,0,0,4,40,0],
+"on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc":[4,0,1,13,77],
 "one_8hpp.html":[6,0,0,0,4,41],
 "ones_8hpp.html":[6,0,0,0,4,42],
 "ones_8hpp.html#a4bf25ae0ee2497a5aae867115f43c756":[6,0,0,0,4,42,0],
@@ -243,11 +249,5 @@ var NAVTREEINDEX19 =
 "structFeel_1_1FeelModels_1_1TransformDiffSymbolicExpr.html":[5,0,1,4,93],
 "structFeel_1_1FeelModels_1_1TransformDiffSymbolicExpr.html":[4,0,1,4,93],
 "structFeel_1_1FeelModels_1_1TrialSymbolExprFeelppTag.html":[4,0,1,4,99],
-"structFeel_1_1FeelModels_1_1TrialSymbolExprFeelppTag.html":[5,0,1,4,99],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprFeelppTag.html":[4,0,1,4,101],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprFeelppTag.html":[5,0,1,4,101],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html":[4,0,1,4,102],
-"structFeel_1_1FeelModels_1_1TrialSymbolsExprTraits.html":[5,0,1,4,102],
-"structFeel_1_1FeelModels_1_1TrialsSymbolsExprFeelppTag.html":[4,0,1,4,95],
-"structFeel_1_1FeelModels_1_1TrialsSymbolsExprFeelppTag.html":[5,0,1,4,95]
+"structFeel_1_1FeelModels_1_1TrialSymbolExprFeelppTag.html":[5,0,1,4,99]
 };

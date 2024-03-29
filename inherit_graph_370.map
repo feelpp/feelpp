@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classFeel_1_1Partitioner.html" title="partitioner class" alt="" coords="5,5,141,47"/>
+<area shape="rect" id="node1" href="$classFeel_1_1Parameter__impl.html" title=" " alt="" coords="5,5,167,32"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Parameter.html" title="parameter class to describe code inputs" alt="" coords="215,5,340,32"/>
+<area shape="rect" id="node3" href="$classFeel_1_1Output__impl.html" title=" " alt="" coords="388,5,525,32"/>
+<area shape="rect" id="node4" href="$classFeel_1_1Output.html" title="output class to describe code outputs" alt="" coords="573,5,675,32"/>
 </map>

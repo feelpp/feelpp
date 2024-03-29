@@ -1,5 +1,11 @@
 var NAVTREEINDEX23 =
 {
+"structFeel_1_1vf_1_1UnaryMinus_1_1HasTestFunction.html":[5,0,1,13,47,0],
+"structFeel_1_1vf_1_1UnaryMinus_1_1HasTrialFunction.html":[4,0,1,13,47,1],
+"structFeel_1_1vf_1_1UnaryMinus_1_1HasTrialFunction.html":[5,0,1,13,47,1],
+"structFeel_1_1vf_1_1UnaryMinus_1_1Lambda.html":[4,0,1,13,47,2],
+"structFeel_1_1vf_1_1UnaryMinus_1_1Lambda.html":[5,0,1,13,47,2],
+"structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html":[4,0,1,13,47,3],
 "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html":[5,0,1,13,47,3],
 "structFeel_1_1vf_1_1UnaryMinus_1_1tensor_1_1is__zero.html":[4,0,1,13,47,3,0],
 "structFeel_1_1vf_1_1UnaryMinus_1_1tensor_1_1is__zero.html":[5,0,1,13,47,3,0],
@@ -51,10 +57,10 @@ var NAVTREEINDEX23 =
 "structFeel_1_1vf_1_1tensorFromExprClassic.html":[5,0,1,13,43],
 "structFeel_1_1vf_1_1tensorGen.html":[4,0,1,13,44],
 "structFeel_1_1vf_1_1tensorGen.html":[5,0,1,13,44],
-"structFeel_1_1void__basis.html":[4,0,1,318],
-"structFeel_1_1void__basis.html":[5,0,1,318],
-"structFeel_1_1void__basis_1_1ChangeTag.html":[4,0,1,318,0],
-"structFeel_1_1void__basis_1_1ChangeTag.html":[5,0,1,318,0],
+"structFeel_1_1void__basis.html":[4,0,1,319],
+"structFeel_1_1void__basis.html":[5,0,1,319],
+"structFeel_1_1void__basis_1_1ChangeTag.html":[4,0,1,319,0],
+"structFeel_1_1void__basis_1_1ChangeTag.html":[5,0,1,319,0],
 "structbases.html":[5,0,10],
 "structfmem.html":[5,0,23],
 "structmpfr__group__t.html":[5,0,26],
@@ -243,11 +249,5 @@ var NAVTREEINDEX23 =
 "structnlohmann_1_1detail_1_1is__constructible__tuple_3_01T1_00_01std_1_1tuple_3_01Args_8_8_8_01_4_01_4.html":[5,0,2,0,62],
 "structnlohmann_1_1detail_1_1is__default__constructible.html":[5,0,2,0,63],
 "structnlohmann_1_1detail_1_1is__default__constructible.html":[4,0,3,0,63],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01const_01std_1_1pair_3_01T1_00_01T2_01_4_01_4.html":[4,0,3,0,64],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01const_01std_1_1pair_3_01T1_00_01T2_01_4_01_4.html":[5,0,2,0,64],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01const_01std_1_1tuple_3_01Ts_8_8_8_01_4_01_4.html":[4,0,3,0,65],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01const_01std_1_1tuple_3_01Ts_8_8_8_01_4_01_4.html":[5,0,2,0,65],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01std_1_1pair_3_01T1_00_01T2_01_4_01_4.html":[4,0,3,0,66],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01std_1_1pair_3_01T1_00_01T2_01_4_01_4.html":[5,0,2,0,66],
-"structnlohmann_1_1detail_1_1is__default__constructible_3_01std_1_1tuple_3_01Ts_8_8_8_01_4_01_4.html":[4,0,3,0,67]
+"structnlohmann_1_1detail_1_1is__default__constructible_3_01const_01std_1_1pair_3_01T1_00_01T2_01_4_01_4.html":[4,0,3,0,64]
 };

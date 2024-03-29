@@ -691,6 +691,7 @@ var hierarchy =
     [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::trace_mesh< TheTag >", "structFeel_1_1Mesh_1_1trace__mesh.html", null ],
     [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::trace_trace_mesh< TheTag >", "structFeel_1_1Mesh_1_1trace__trace__mesh.html", null ],
     [ "Feel::MeshAdaptation< Dim, Order, OrderGeo >", "classFeel_1_1MeshAdaptation.html", null ],
+    [ "Feel::MeshFragmentation< MeshType >", "classFeel_1_1MeshFragmentation.html", null ],
     [ "Feel::MeshHighOrder< Convex >", "classFeel_1_1MeshHighOrder.html", null ],
     [ "Feel::MeshMarkerName", "structFeel_1_1MeshMarkerName.html", null ],
     [ "Feel::MeshMover< MeshType >", "classFeel_1_1MeshMover.html", null ],
