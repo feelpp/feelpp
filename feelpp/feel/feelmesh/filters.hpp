@@ -1636,7 +1636,7 @@ fragmentationMarkedElements( MeshType const& mesh, EntityProcessType entity = En
     {
         auto & [myelts,fragmentId] = fragementData;
         myelts->shrink_to_fit();
-        auto therange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=mesh->shared_from_this() );
+        auto therange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(), myelts->end(), myelts ), _mesh=unwrap_ptr(mesh).shared_from_this() );
 
         std::string fragmentName;
         for ( auto mId : mIds )
