@@ -29,13 +29,13 @@ endif()
 
 find_dependency( NLopt )
 
-if ( FEELPP_HAS_SPECX )
-  find_dependency( specx )
-endif()
-
-if ( FEELPP_HAS_EIGENRAND )
-  find_dependency( eigenrand )
-endif()
+# if ( FEELPP_HAS_SPECX )
+#   find_dependency( specx )
+# endif()
+# 
+# if ( FEELPP_HAS_EIGENRAND )
+#   find_dependency( eigenrand )
+# endif()
 
 
 if(NOT TARGET Feelpp::feelpp_contrib)
