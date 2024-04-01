@@ -1,6 +1,6 @@
+import feelpp.core as fppc
 from ._modelcore import *
 from ._modelmesh import *
-import feelpp.core as fppc
 
 has_tqdm = False
 try:

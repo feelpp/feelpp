@@ -12,7 +12,7 @@ try:
     }
     has_cfpde = True
 except ImportError as e:
-    print('Import feelpp.toolboxes.cfpdes failed: Feel++ Toolbox cfpdes is not available')
+    print('Import feelpp.toolboxes.cfpdes failed: Feel++ Toolbox cfpdes is not available',flush=True)
     pass  # module doesn't exist, deal with it.
 
 

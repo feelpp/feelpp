@@ -4,14 +4,14 @@
 ## 09/2022
 
 
-import feelpp
+import feelpp.core as fppc
 from .utils import *
-import fppc.operators as FppOp
+import feelpp.core.operators as fppcop
 # from NIRBinitCase import *
 import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
-import fppc.interpolation as fi
+import feelpp.core.interpolation as fppci
 from tqdm import tqdm
 import random 
 import math
@@ -219,7 +219,7 @@ class ToolboxModel():
         elif self.toolboxType == "fluid":
             Vh_image = image_tb.spaceVelocity()
             Vh_domain = domain_tb.spaceVelocity()
-        interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
+        interpolator = fppci.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
         return interpolator
 
     def getToolboxInfos(self):
@@ -533,14 +533,14 @@ class nirbOffline(ToolboxModel):
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
             # Vh = fppc.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
-            self.l2ScalarProductMatrix = FppOp.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
-            self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            self.l2ScalarProductMatrix = fppcop.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            self.h1ScalarProductMatrix = fppcop.stiffness(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
             self.l2ScalarProductMatrix.to_petsc().close()
             self.h1ScalarProductMatrix.to_petsc().close()
 
         if coarse:
-            self.l2ScalarProductMatrixCoarse = FppOp.mass(test=self.XH, trial=self.XH, range=fppc.elements(self.tbCoarse.mesh()))
-            self.h1ScalarProductMatrixCoarse = FppOp.stiffness(test=self.XH, trial=self.XH, range=fppc.elements(self.tbCoarse.mesh()))
+            self.l2ScalarProductMatrixCoarse = fppcop.mass(test=self.XH, trial=self.XH, range=fppc.elements(self.tbCoarse.mesh()))
+            self.h1ScalarProductMatrixCoarse = fppcop.stiffness(test=self.XH, trial=self.XH, range=fppc.elements(self.tbCoarse.mesh()))
             self.l2ScalarProductMatrixCoarse.to_petsc().close()
             self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
@@ -1135,13 +1135,13 @@ class nirbOnline(ToolboxModel):
         """Assemble L2 and H1 operators associated to the fine toolbox
         """
         if h1:
-            l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
-            h1Mat = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            l2Mat = fppcop.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            h1Mat = fppcop.stiffness(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
             l2Mat.to_petsc().close()
             h1Mat.to_petsc().close()
             return l2Mat, h1Mat
         else :
-            l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            l2Mat = fppcop.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
             l2Mat.to_petsc().close()
             return l2Mat
 

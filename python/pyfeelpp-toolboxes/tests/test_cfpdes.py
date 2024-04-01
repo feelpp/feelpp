@@ -1,7 +1,7 @@
 import sys
 import pytest
 import feelpp.core as fppc
-import fppc.quality as q
+import feelpp.core.quality as fppcq
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.cfpdes import *
 import pandas as pd
@@ -57,7 +57,7 @@ def test_cfpdes_remesh():
     Xh = fppc.functionSpace(mesh=f.mesh())
     metric = fppc.gradedls(Xh,fppc.boundaryfaces(Xh.mesh()),hclose,hfar)
     e.step(0.).add("metric",metric)
-    e.step(0.).add("quality", q.etaQ(f.mesh()))
+    e.step(0.).add("quality", fppcq.etaQ(f.mesh()))
     e.save()
 
     new_mesh,cpt = fppc.remesh(
@@ -71,7 +71,7 @@ def test_cfpdes_remesh():
 
     Xh = fppc.functionSpace(mesh=fnew.mesh())
     metric = fppc.gradedls(Xh,fppc.boundaryfaces(Xh.mesh()),hclose,hfar)
-    quality = q.etaQ(fnew.mesh())
+    quality = fppcq.etaQ(fnew.mesh())
     e.step(1.).add("metric",metric)
     e.step(1.).add("quality",quality)
     e.save()

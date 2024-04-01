@@ -742,6 +742,14 @@
             }
         },
         {
+            "name": "python",
+            "configurePreset": "python",
+            "inherits": "feelpp",
+            "execution": {
+                "timeout": 600
+            }
+        },
+        {
             "name": "feelpp-python",
             "configurePreset": "feelpp-python",
             "inherits": "feelpp",

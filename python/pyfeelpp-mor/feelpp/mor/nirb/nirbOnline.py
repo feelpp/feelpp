@@ -1,4 +1,5 @@
 from time import time
+import feelpp.core as fppc
 from feelpp.mor.nirb.nirb import *
 from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
 import sys

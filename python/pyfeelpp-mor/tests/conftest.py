@@ -3,7 +3,7 @@ import sys
 
 import py
 import pytest
-import feelpp
+import feelpp.core as fppc
 import feelpp.mor as fppmor
 import feelpp.toolboxes.core as tb
 log = getLogger(__name__)

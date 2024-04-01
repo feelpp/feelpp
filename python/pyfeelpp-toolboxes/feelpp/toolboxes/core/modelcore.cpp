@@ -154,8 +154,8 @@ PYBIND11_MODULE(_modelcore, m )
 
         ;
       
-    bind_ModelMeshes<int32_t>( m );
-    bind_ModelMeshes<int64_t>( m );
+    bind_ModelMeshes<uint32_t>( m );
+    //bind_ModelMeshes<int64_t>( m );
     
 }
 

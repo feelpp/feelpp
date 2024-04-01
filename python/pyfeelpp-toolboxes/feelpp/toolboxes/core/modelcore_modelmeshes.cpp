@@ -848,5 +848,5 @@ void bind_ModelMeshes( py::module& m )
 
 }
 
-template void bind_ModelMeshes<int32_t>( py::module& m );
-template void bind_ModelMeshes<int64_t>( py::module& m );
+template void bind_ModelMeshes<uint32_t>( py::module& m );
+//template void bind_ModelMeshes<int64_t>( py::module& m );
