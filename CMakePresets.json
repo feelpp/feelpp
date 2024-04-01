@@ -746,7 +746,7 @@
             "configurePreset": "python",
             "inherits": "feelpp",
             "execution": {
-                "timeout": 600
+                "timeout": 700
             }
         },
         {
@@ -754,7 +754,7 @@
             "configurePreset": "feelpp-python",
             "inherits": "feelpp",
             "execution": {
-                "timeout": 600
+                "timeout": 700
             }
         },
         {

@@ -91,7 +91,7 @@ mass( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
       std::vector<std::string> const& markers, double coeff, bool boundary = false )
 {
     using namespace vf;
-    auto a = form2( _test = Xh, _trial = Xh );
+    auto a = form2( _test = Xh, _trial = Yh );
     auto u_ = Yh->element();
     auto v_ = Xh->element();
     auto mesh_=Xh->mesh();
@@ -125,6 +125,52 @@ mass( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
                 LOG( INFO ) << fmt::format( "assemble mass on face marker {} with coeff: {}", marker, coeff );
                 a += integrate( _range = markedfaces( support( Xh ), marker ),
                             _expr = coeff * idt( u_ ) * id( v_ ) );
+            }
+        }
+    }
+    a.close();
+    return a;
+}
+template <typename XhT, typename YhT>
+form2_type<XhT,YhT>
+advect( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,  
+        std::vector<std::string> const& markers, Eigen::MatrixXd const& beta, bool boundary = false )
+{
+    using namespace vf;
+    auto a = form2( _test = Xh, _trial = Yh );
+    auto u_ = Yh->element();
+    auto v_ = Xh->element();
+    auto mesh_=Xh->mesh();
+    if ( markers.empty() )
+    {
+        if ( boundary )
+        {
+            LOG( INFO ) << fmt::format( "assemble advect on all boundary faces with beta: {}", beta );
+            a += integrate( _range = boundaryfaces( support( Xh ) ),
+                            _expr =  (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
+        }
+        else
+        {
+            LOG( INFO ) << fmt::format( "assemble advect on all elements with beta: {}", beta );
+            a += integrate( _range = elements( support( Xh ) ),
+                            _expr = (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
+        }
+    }
+    else
+    {
+        for( auto marker : markers )
+        {
+            if ( mesh_->markerNames().at(marker)[1] == XhT::nDim )
+            {
+                LOG( INFO ) << fmt::format( "assemble advect on volume marker {} with beta: {}", marker, beta );
+                a += integrate( _range = markedelements( support( Xh ), marker ),
+                            _expr = (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
+            }
+            else if ( mesh_->markerNames().at(marker)[1] == XhT::nDim-1 )
+            {
+                LOG( INFO ) << fmt::format( "assemble advec on face marker {} with beta: {}", marker, beta );
+                a += integrate( _range = markedfaces( support( Xh ), marker ),
+                            _expr = (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
             }
         }
     }
@@ -379,6 +425,7 @@ bind_forms( py::module &m, std::string const& space_str )
 
     m.def( "aGradGrad", &aGradGrad<SpaceType,SpaceType>, "assemble A grad.grad terms", py::arg("test"), py::arg("trial"), py::arg( "markers" ) = std::vector<std::string>{}, py::arg( "coeffs" ) = Eigen::MatrixXd::Ones( SpaceType::nDim, SpaceType::nDim ) );
     m.def( "mass", &mass<SpaceType,SpaceType>, "assemble mass terms", py::arg("test"), py::arg("trial"),py::arg( "markers" )= std::vector<std::string>{}, py::arg( "coeffs" ) = 1, py::arg("boundary") = false );
+    m.def( "advect", &advect<SpaceType,SpaceType>, "assemble advect terms", py::arg("test"), py::arg("trial"),py::arg( "markers" )= std::vector<std::string>{}, py::arg( "beta" ) = 1, py::arg("boundary") = false );
     m.def( "flux", &flux<SpaceType>, "assemble flux terms", py::arg("test"), py::arg( "markers" )= std::vector<std::string>{}, py::arg( "coeffs" ) = 1, py::arg("boundary") = false );
 }
 PYBIND11_MODULE(_forms, m )
