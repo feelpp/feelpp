@@ -1,6 +1,6 @@
 import  os
 import pytest
-import feelpp.fppmor.generate_basis as g
+import feelpp.mor.generate_basis as g
 
 
 #        (( prefix, case, casefile, dim, time_dependant), name     )

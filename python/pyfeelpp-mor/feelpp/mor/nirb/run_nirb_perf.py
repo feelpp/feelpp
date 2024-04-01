@@ -7,6 +7,7 @@ from pathlib import Path
 from nirb_perf import *
 import argparse
 from os.path import dirname, basename, isfile, join
+import feelpp.core as fppc
 
 from mpi4py import MPI
 comm = MPI.COMM_WORLD

@@ -12,7 +12,7 @@ except ImportError:
 import feelpp.core.interpolation as fppci
 
 cases = [
-         (('cases/nirb/square/square.cfg', 'cases/nirb/square/square.geo', 'cases/nirb/square/square.json'), 'square-2d'),
+         (('nirb/square/square.cfg', 'nirb/square/square.geo', 'nirb/square/square.json'), 'square-2d'),
         ]
 cases_params, cases_ids = list(zip(*cases))
 

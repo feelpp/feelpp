@@ -14,7 +14,7 @@ size = comm.Get_size()
 from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
-import feelpp
+import feelpp.core as fppc
 
 from feelpp.fppmor.reducedbasis.reducedbasis import *
 

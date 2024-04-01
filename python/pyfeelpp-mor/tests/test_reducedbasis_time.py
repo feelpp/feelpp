@@ -6,9 +6,9 @@ import pandas as pd
 from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
-import feelpp
+import feelpp.core as fppc
 
-from feelpp.fppmor.reducedbasis.reducedbasis_time import *
+from feelpp.mor.reducedbasis.reducedbasis_time import *
 
 
 # def test_init_argv(configfile):

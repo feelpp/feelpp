@@ -4,7 +4,7 @@
 ## 09/2022
 
 import os
-import feelpp
+import feelpp.core as fppc
 import feelpp.mor as mor
 import feelpp.toolboxes.core as core
 from petsc4py import PETSc
@@ -51,7 +51,7 @@ def loadParameterSpace(model_path):
 
     crb_model_properties = mor.CRBModelProperties("", fppc.Environment.worldCommPtr(), "")
     crb_model_properties.setup(model_path)
-    Dmu = feelpp.mor._mor.ParameterSpace.New(crb_model_properties.parameters(), fppc.Environment.worldCommPtr())
+    Dmu = mor.ParameterSpace.New(crb_model_properties.parameters(), fppc.Environment.worldCommPtr())
     return Dmu
 
 

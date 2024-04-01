@@ -3,8 +3,8 @@ import os
 import pytest
 
 
-import feelpp
-from feelpp.fppmor.nirb.nirb import *
+import feelpp.core as fppc
+from feelpp.mor.nirb.nirb import *
 
 # desc : ((toolboxtype, 'model_directory', cfg, json, geo, H, h, dimension, doRectification, doGreedy), 'name-of-the-test')
 casesNirb = [
