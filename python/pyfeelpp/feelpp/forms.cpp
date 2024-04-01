@@ -326,10 +326,10 @@ bind_forms( py::module &m, std::string const& space_str )
             "zero", []( form2_type<SpaceType, SpaceType>& a )
             { a.zero(); },
             "Set the form to zero" )
-        //.def("scale", [](form2_type<SpaceType,SpaceType> &a, double factor) {
-        //        // Define the scaling operation
-        //        a.scale(factor);
-        //    }, "Scale the form by a factor", py::arg("factor"))
+    //.def("scale", [](form2_type<SpaceType,SpaceType> &a, double factor) {
+    //        // Define the scaling operation
+    //        a.scale(factor);
+    //    }, "Scale the form by a factor", py::arg("factor"))
 #if 0        
         .def(
             "__assign__", []( form2_type<SpaceType, SpaceType>& a, const form2_type<SpaceType, SpaceType>& b )
@@ -373,12 +373,23 @@ bind_forms( py::module &m, std::string const& space_str )
                 l.scale(alpha);
                 return l; },
             "Multiply form with a scalar from left" )
-#endif            
+#endif
         .def( "__call__", []( form2_type<SpaceType, SpaceType> const& a, element_t const& u, element_t const& v )
               { return a( u, v ); } )
         .def(
             "__call__", []( form2_type<SpaceType, SpaceType> const& a, element_t const& u )
             { return a( u ); } )
+        .def(
+            "on", []( form2_type<SpaceType, SpaceType>& a, std::vector<std::string> const& markers, form1_type<SpaceType>& rhs, element_t const& u, std::string const& e )
+            { 
+                    a.close();
+                    if (markers.empty())
+                        a += on( _range=boundaryfaces(a.testSpace()->mesh()), _rhs=rhs, _element=u, _expr=expr(e) ); 
+                    else
+                        a += on( _range=markedfaces(a.testSpace()->mesh(), markers), _rhs=rhs, _element=u, _expr=expr(e) ); },
+            "impose Dirichlet boundary conditions",
+            py::arg( "range" ) = std::vector<std::string>(), py::arg( "rhs" ),
+            py::arg( "element" ), py::arg( "expr" ) = "0" )
         .def(
             "coercivity", []( form2_type<SpaceType, SpaceType> const& a, form2_type<SpaceType, SpaceType> const& b, nl::json const& options )
             { 
@@ -423,7 +434,8 @@ bind_forms( py::module &m, std::string const& space_str )
         "build a bilinear form", py::arg( "test" ), py::arg( "trial" ), py::arg( "matrix" ) = py::none(), py::arg( "name" ) = "bilinearform.a", py::arg( "rowstart" ) = 0, py::arg( "colstart" ) = 0, py::arg( "init" ) = true, py::arg( "do_threshold" ) = false, py::arg( "threshold" ) = 0.0 );
 
 
-    m.def( "aGradGrad", &aGradGrad<SpaceType,SpaceType>, "assemble A grad.grad terms", py::arg("test"), py::arg("trial"), py::arg( "markers" ) = std::vector<std::string>{}, py::arg( "coeffs" ) = Eigen::MatrixXd::Ones( SpaceType::nDim, SpaceType::nDim ) );
+    m.def( "aGradGrad", &aGradGrad<SpaceType,SpaceType>, "assemble A grad.grad terms", py::arg("test"), py::arg("trial"), py::arg( "markers" ) = std::vector<std::string>{}, py::arg( "coeffs" ) = Eigen::MatrixXd::Identity( SpaceType::nDim, SpaceType::nDim ) );
+    m.def( "stiffness", &aGradGrad<SpaceType,SpaceType>, "assemble stiffness terms", py::arg("test"), py::arg("trial"), py::arg( "markers" ) = std::vector<std::string>{}, py::arg( "coeffs" ) = Eigen::MatrixXd::Identity( SpaceType::nDim, SpaceType::nDim ) );
     m.def( "mass", &mass<SpaceType,SpaceType>, "assemble mass terms", py::arg("test"), py::arg("trial"),py::arg( "markers" )= std::vector<std::string>{}, py::arg( "coeffs" ) = 1, py::arg("boundary") = false );
     m.def( "advect", &advect<SpaceType,SpaceType>, "assemble advect terms", py::arg("test"), py::arg("trial"),py::arg( "markers" )= std::vector<std::string>{}, py::arg( "beta" ) = 1, py::arg("boundary") = false );
     m.def( "flux", &flux<SpaceType>, "assemble flux terms", py::arg("test"), py::arg( "markers" )= std::vector<std::string>{}, py::arg( "coeffs" ) = 1, py::arg("boundary") = false );
