@@ -41,6 +41,16 @@ def run(m, geo):
     print(f"[form1] measure using l_bdy={l_bdy(f)}")
     assert np.isclose(l_bdy(f),e_s_bdy)
 
+    b=aGradGrad(test=Xh,trial=Xh)
+    l.zero()
+    b.on(rhs=l,expr="x:x",element=u)
+    b.solve(rhs=l,solution=u)
+    # u should be equal to 1
+    v=Xh.element()
+    v.on(range=fppc.elements(Xh.mesh()), expr=fppc.expr("x:x:y"))
+    l2_e = fppc.normL2(range=fppc.elements(Xh.mesh()), expr=u-v)
+    print(f"norm(u-v)={l2_e}") # should be 0 up to machine precision
+    assert np.isclose(l2_e,0)
 
 geo_cases=[(2, fppc.create_rectangle),
             (3, fppc.create_box)]
