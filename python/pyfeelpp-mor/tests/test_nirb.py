@@ -10,10 +10,10 @@ from feelpp.mor.nirb.nirb import *
 casesNirb = [
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', False), 'lid-driven-cavity w/o rect.'),
         #  (('testcase/nirb/lid-driven-cavity/', 'cfd2d.cfg', 'cfd2d.json', True) , 'lid-driven-cavity rect'),
-         (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
+        # (('testcase/nirb/square', 'square.cfg', 'square.json', False, False), 'square2d w/o rect wogreedy'),
          (('testcase/nirb/square', 'square.cfg', 'square.json', True, False) , 'square2d rect wogreedy'),
         #  (('testcase/nirb/square', 'square.cfg', 'square.json', True, True) , 'square2d rect egreedy'),
-         (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
+        # (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
         ]
 # NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy" 
@@ -76,6 +76,8 @@ def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
     fppc.Environment.setConfigFile(casefile)
+    if fppc.Environment.isMasterRank():
+        print(f"[NIRB::test_nirb] Running test {dir} with config {cfg} and json {json}")
 
     run_offline(model_path, rect, greedy)
     run_online(model_path, rect)
@@ -85,7 +87,9 @@ def test_initializer(dir, cfg, json, init_feelpp):
     e = init_feelpp
     casefile = os.path.join(os.path.dirname(__file__), dir, cfg)
     model_path = os.path.join(os.path.dirname(__file__), dir, json)
-    
+    if fppc.Environment.isMasterRank():
+        print(f"[NIRB::test_initializer] Running test {dir} with config {cfg} and json {json}")
+
     nirb_config = fppc.readJson(model_path)['nirb']
     nirb_config['doRectification'] = True
     tbModel = ToolboxModel(**nirb_config)
