@@ -54,6 +54,8 @@
 
 //#define COMPILE_WITH_CUDA
 //#define COMPILE_WITH_HIP
+//#define COMPILE_WITH_CXX_20
+
 
 #define MODE_NO_THREAD 0
 #define MODE_THREAD 1
@@ -262,9 +264,12 @@ class TiT
         int  idk;
         int  numLevelAction;
         int nbThreadDetach;
+        bool qReady;
 
         template <typename ... Ts> 
             auto common(Ts && ... ts);
+
+        void init();
         
 
     public:
@@ -277,6 +282,7 @@ class TiT
         bool qDeferred;
         bool qUseIndex;
         bool qDetach;
+        bool qYield;
         bool qCUDA;
         bool qHIP;
 
@@ -313,6 +319,8 @@ class TiT
             numTypeTh=numTypeThread;
             idk=0; numTaskStatus.clear(); qDetach=0; nbThreadDetach=0;
             t_begin = std::chrono::steady_clock::now();
+            qDeferred=false;
+            qReady=false;
             
             
             if (numTypeTh==0) { } //No Thread
@@ -392,6 +400,19 @@ class TiT
 
 TiT::TiT()
 {
+    init();
+}
+
+TiT::~TiT()
+{
+    //Add somes   
+    if ((numTypeTh==3) && (numLevelAction==3)) {  myce.stopIfNotAlreadyStopped(); } 
+    //Specx
+}
+
+
+void TiT::init()
+{
     nbThTotal=std::thread::hardware_concurrency();
     nbTh=nbThTotal;
     qInfo=true;
@@ -408,15 +429,9 @@ TiT::TiT()
     QEmptyTask=true;
     QFlagDetachAlert=false;
     nbThreadDetach=0;
+    qReady=false;
+    qYield=false;
 }
-
-TiT::~TiT()
-{
-    //Add somes   
-    if ((numTypeTh==3) && (numLevelAction==3)) {  myce.stopIfNotAlreadyStopped(); } 
-    //Specx
-}
-
 
 void TiT::getInformation()
 {
@@ -558,14 +573,18 @@ template <class InputIterator,typename ... Ts>
 {
     qUseIndex=true; //Iterator used
     numLevelAction=1;
+    QEmptyTask=false;
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
     for ( ; first!=last; ++first )
     {
-        auto const& idk = *first;
+        idk++;
+        auto const& ivdk = *first;
+        //std::cout <<ivdk;
+
         auto args = NA::make_arguments( std::forward<Ts>(ts)... );
         auto && task = args.get(_task);
         auto && parameters = args.get_else(_parameters,std::make_tuple());
-        if (qUseIndex) { std::get<0>(parameters)=std::cref(idk); } 
+        if (qUseIndex) { std::get<0>(parameters)=std::cref(ivdk); } 
         auto tp=std::tuple_cat( 
 					Backend::makeSpData( parameters ), 
 					std::make_tuple( task ) 
@@ -584,6 +603,7 @@ template <class InputIterator,typename ... Ts>
             };
             std::thread th(LamdaTransfert);
             mythreads.push_back(move(th));
+            usleep(1);
         }
 
         if (numTypeTh==2) {
@@ -598,16 +618,14 @@ template <class InputIterator,typename ... Ts>
         }
 
         if (numTypeTh==3) {
-            auto tpSpecx=std::tuple_cat( 
+            auto tp=std::tuple_cat( 
 					Backend::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 			);
-            std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tpSpecx);
+            std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tp);
             usleep(0); std::atomic_int counter(0);
         }
     }
-
-    //run(); 
 }
 
 
@@ -797,6 +815,5 @@ void TiT::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
-
 
 
