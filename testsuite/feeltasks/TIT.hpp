@@ -248,11 +248,17 @@ class TiT
         bool QFlagDetachAlert;
         SpTaskGraph<SpSpeculativeModel::SP_NO_SPEC> mytg;
         SpComputeEngine myce;
+        std::vector<int> idType;
         std::vector<int> numTaskStatus;
         std::vector<std::future<bool>> myfutures;
         std::vector<std::future<bool>> myfutures_detach;
         std::vector<std::thread> mythreads;
         std::vector<pthread_t> mypthread_t; 
+
+        #ifdef COMPILE_WITH_CXX_20
+        std::vector<std::jthread> myjthreads; 
+        #endif
+
         //pthread_t mypthread_t[100]; 
         pthread_attr_t mypthread_attr_t;
         std::vector<int> mypthread_cpu; 
@@ -263,7 +269,7 @@ class TiT
         bool qFirstTask;
         int  idk;
         int  numLevelAction;
-        int nbThreadDetach;
+        int  nbThreadDetach;
         bool qReady;
 
         template <typename ... Ts> 
@@ -293,7 +299,10 @@ class TiT
         int  getNbThreads     () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getCurrentNbOfWorkers()); } return val; }
         int  getNbCpuWorkers  () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getNbCpuWorkers()); } return val; }
 
+        auto getIdThread      (int i);
+
         long int  getTimeLaps ()        { return t_laps; }
+
 
         #ifdef COMPILE_WITH_CUDA
             int getNbCudaWorkers() const {
@@ -318,6 +327,7 @@ class TiT
             nbTh=nbThread;
             numTypeTh=numTypeThread;
             idk=0; numTaskStatus.clear(); qDetach=0; nbThreadDetach=0;
+            idType.clear(); 
             t_begin = std::chrono::steady_clock::now();
             qDeferred=false;
             qReady=false;
@@ -370,6 +380,12 @@ class TiT
 
             template <typename ... Ts>
                 void addTaskMultithread( Ts && ... ts );
+
+            
+            #ifdef COMPILE_WITH_CXX_20
+            template <typename ... Ts>
+                void addTaskjthread( Ts && ... ts );
+            #endif
 
 
         //void add_CUDA();
@@ -431,6 +447,12 @@ void TiT::init()
     nbThreadDetach=0;
     qReady=false;
     qYield=false;
+    mythreads.clear();
+    myfutures.clear();
+    
+    #ifdef COMPILE_WITH_CXX_20
+    myjthreads.clear();
+    #endif
 }
 
 void TiT::getInformation()
@@ -545,13 +567,38 @@ void TiT::addTaskSpecx( Ts && ... ts )
     }
 }
 
+#ifdef COMPILE_WITH_CXX_20
+template <typename ... Ts>
+void TiT::addTaskjthread( Ts && ... ts )
+{
+    auto tp=common(std::forward<Ts>(ts)...);
+    Backend::Runtime runtime;
+	auto LamdaTransfert = [&]() {
+			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
+            return true; 
+	};
+
+    if (!qDetach)
+    {
+        std::jthread th(LamdaTransfert);
+        myjthreads.push_back(move(th));
+    }
+    else
+    {
+        if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); 
+    }
+    usleep(1);
+}
+#endif
+
 
 template <typename ... Ts>
 void TiT::add( Ts && ... ts )
 {
     numLevelAction=1;
     QEmptyTask=false;
-    idk++; numTaskStatus.push_back(qDetach);
+    idk++; idType.push_back(numTypeTh); numTaskStatus.push_back(qDetach);
     if (qDetach) { QFlagDetachAlert=true; nbThreadDetach++; }
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
     //std::cout<<"numTypeTh="<<numTypeTh<<"\n";
@@ -562,10 +609,45 @@ void TiT::add( Ts && ... ts )
         break;
         case 3: addTaskSpecx(std::forward<Ts>(ts)...); //Specx
         break;
+        #ifdef COMPILE_WITH_CXX_20
+        case 4: addTaskjthread(std::forward<Ts>(ts)...); //std::jthread
+        break;
+        #endif
         default: addTaskSimple(std::forward<Ts>(ts)...); //No Thread
     }
     qDetach=false;
 }
+
+
+auto TiT::getIdThread(int i)
+{
+    if ((i>0) && (i<idType.size()))
+    {
+        int nb=idType.size();
+        int numidType=idType[i];
+        int k=0; int ki=-1; bool qOn=true;
+        while (qOn)
+        {
+            if (idType[k]==numidType) { ki++; }
+            k++; if (k>i) { qOn=false; }
+        }
+
+        switch(numidType) {
+            case 1: return(mythreads[ki].get_id());//multithread
+            break;
+            case 2:  //std::async
+            break;
+            case 3: //Specx
+            break;
+            #ifdef COMPILE_WITH_CXX_20
+            case 4: return(myjthreads[ki].get_id()); //std::jtread
+            break;
+            #endif
+
+        }
+    }
+}
+
 
 
 template <class InputIterator,typename ... Ts>
@@ -577,7 +659,7 @@ template <class InputIterator,typename ... Ts>
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
     for ( ; first!=last; ++first )
     {
-        idk++;
+        idk++; idType.push_back(numTypeTh);
         auto const& ivdk = *first;
         //std::cout <<ivdk;
 
@@ -625,6 +707,19 @@ template <class InputIterator,typename ... Ts>
             std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tp);
             usleep(0); std::atomic_int counter(0);
         }
+
+        #ifdef COMPILE_WITH_CXX_20
+        if (numTypeTh==4) {
+            auto LamdaTransfert = [&]() {
+			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
+            return true; 
+            };
+            std::jthread th(LamdaTransfert);
+            myjthreads.push_back(move(th));
+            usleep(1);
+        }
+        #endif
+
     }
 }
 
@@ -637,15 +732,22 @@ void TiT::run()
     if (numTypeTh==0) { } //No Thread
     if (numTypeTh==1) { 
         for (std::thread &t : mythreads) { t.join();} 
-        mythreads.clear(); numTaskStatus.clear();
     } //multithread
 
     if (numTypeTh==2) { 
         for( auto& r : myfutures){ auto a =  r.get(); };  
-        myfutures.clear(); numTaskStatus.clear();
     } //std::async
 
-    if (numTypeTh==3) { /*promise0.set_value(0);*/ mytg.waitAllTasks(); } //Specx
+    if (numTypeTh==3) { 
+        /*promise0.set_value(0);*/ 
+        mytg.waitAllTasks();
+    } //Specx
+
+    #ifdef COMPILE_WITH_CXX_20
+    if (numTypeTh==4) { 
+        for (std::jthread &t : myjthreads) { t.join();} 
+    } //std::jthread
+    #endif
 
     if (numTypeTh==10) { 
         for (int i = 0; i < mypthread_cpu.size(); i++) { 
@@ -654,6 +756,15 @@ void TiT::run()
         }
         //pthread_attr_destroy(&mypthread_attr_t);
     } //In CPU
+
+    mythreads.clear();
+    myfutures.clear();
+    #ifdef COMPILE_WITH_CXX_20
+    myjthreads.clear();
+    #endif
+
+    numTaskStatus.clear();
+    idType.clear();
 
     if (qInfo) { std::cout<<"[INFO]: All Tasks Accomplished\n"; }
     QEmptyTask=true;
@@ -763,6 +874,7 @@ void TiT::add(int numCPU,Ts && ... ts)
 
     //vectorOfThreads.resize(NUM_THREADS);
 }
+
 
 
 

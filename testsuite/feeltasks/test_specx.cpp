@@ -1618,20 +1618,17 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
 BOOST_AUTO_TEST_CASE( test_specx_25 )
 {
     //for_each
-    //Detach with Sleep
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T25>\n");
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
     int valExternal=0;
 
-    //BEGIN::Lambda function part
      auto FC1=[&](const int &v) {  
         //std::cout <<"I live "<<v<<"\n";
         valExternal=valExternal+v;
         return true;
     };
-    //END::Lambda function part
 
     double valOutput1=0;
     int           idk=0;
@@ -1641,7 +1638,7 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
     TiT_001.qSave=false; 
     TiT_001.qInfo=false; 
     TiT_001.setFileName("./ForEach");
-    //TiT_001.getInformation();
+    TiT_001.getInformation();
 
     std::vector<int> Vec(nb,0); for (int k=0; k<nb; ++k) { Vec[k]=k; }
     TiT_001.for_each(Vec.begin(),Vec.end(),_parameters=Frontend::parameters(idk),_task=FC1);
@@ -1653,7 +1650,7 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
     BOOST_MESSAGE("[INFO SPECX] : Value= "<<valExternal<<"\n"); 
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
-	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T24> in ms since start :"<<run_time.count()<<"\n");
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T25> in ms since start :"<<run_time.count()<<"\n");
 }
 
 
