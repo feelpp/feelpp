@@ -274,6 +274,9 @@ public:
 
     std::string const& physic() const { return this->keyword(); }
     std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
+    std::string convectionCoefficientName() const { return prefixvm( this->physic(), "alpha", "_" ); }
+    std::string reactionCoefficientName() const { return prefixvm( this->physic(), "a", "_" ); }
+
     std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
     std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d2", "_" ); }
     std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }

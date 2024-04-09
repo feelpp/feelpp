@@ -43,6 +43,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                 auto coeff_c_expr = expr( coeff_c.expr(), symbolsExpr );
                 bbf(0_c, 0_c) += integrate(_range=range, _expr=inner(idt(u),id(u))/coeff_c_expr);
             }
+            
             if( this->materialsProperties()->hasProperty( matName, this->lameLambdaCoefficientName() ) && this->materialsProperties()->hasProperty( matName, this->lameMuCoefficientName() ) )
             {
                 auto coeff_lambda = this->materialsProperties()->materialProperty( matName, this->lameLambdaCoefficientName() );
@@ -59,8 +60,25 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
         }
     }
 
+    if constexpr ( is_scalar )
+    {
+        for ( auto const& [physicName, physicData] : this->physicsFromCurrentType() )
+        {
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+                if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+                {
+                    auto coeff_alpha = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
+                    auto coeff_alpha_expr = expr( coeff_alpha.template expr<nDim, 1>(), symbolsExpr );
+                    bbf( 0_c, 1_c ) += integrate( _range = range, _expr = inner( -coeff_alpha_expr * idt( p ), id( u ) ) );
+                }
+            }
+        }
+    }
     // -(p,div(v))_Omega
     bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)), _expr=-el_param*inner(idt(p),div(u)) );
+
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
@@ -86,6 +104,12 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
                 auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
+                {
+                    auto coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
+                    auto coeff_a_expr = expr( coeff_a.expr(), symbolsExpr );
+                    bbf( 1_c, 1_c ) += integrate( _range = range, _expr = inner( coeff_a_expr * idt( p ), id( p ) ) );
+                }
                 if( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
                 {
                     auto coeff = this->timeStepBdfPotential()->polyDerivCoefficient(0);

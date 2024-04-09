@@ -1,0 +1,78 @@
+{
+    "Name": "HDG-Mixed-Poisson ",
+    "ShortName":"MP",
+    "Models":
+    {
+        "equations":"hdg"
+    },
+
+    "Parameters": {
+        "alpha_x": 1,
+        "alpha_y": 1,
+        "a":0,
+        "c": 1,
+        "pex": "x:x:y"
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"omega",
+            "poisson_c":"c:c",
+            "poisson_alpha":"{alpha_x,alpha_y}:alpha_x:alpha_y",
+            "poisson_a":"a:a",
+            "poisson_f":"alpha_x+0*alpha_y+a*x:x:y:pex:a:alpha_x:alpha_y"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "poisson":
+        {
+            "Dirichlet":
+            {
+                "Dirichlet":
+                {
+                    "expr":"(x):x:y:pex"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "poisson":{
+           "Exports":
+           {
+               "fields":["all"]
+           },
+           "Measures":
+           {
+                "Norm": {
+                    "potential_error": {
+                        "type": "L2-error",
+                        "field": "potential",
+                        "solution": "(x):x:y:pex",
+                        "markers": "omega"
+                    },
+                    "flux_error": {
+                        "type": "L2-error",
+                        "field": "flux",
+                        "solution": "{(-1+alpha_x*(x))*c,(-0+alpha_y*(x))*c}:x:y:alpha_x:alpha_y:c:pex",
+                        "markers": "omega"
+                    }
+                }
+           },   
+           "Checkers": {
+             "Measures": {
+                "Norm_potential_error_L2-error": {
+                    "value": 0,
+                    "tolerance": 1e-10
+                },
+                "Norm_flux_error_L2-error": {
+                    "value": 0,
+                    "tolerance": 1e-10
+                }
+            }
+            }
+        }
+    }
+}
