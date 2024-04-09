@@ -97,6 +97,20 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                                    inner(rightfacet( idt(p)), rightface(id(p))) ) );
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(support(M_Wh)),
                                  _expr=tau_constant * inner(id(p), idt(p)) );
+
+    for ( auto const& [physicName, physicData] : this->physicsFromCurrentType() )
+    {
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+            if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
+            {
+                auto coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
+                auto coeff_a_expr = expr( coeff_a.expr(), symbolsExpr );
+                bbf( 1_c, 1_c ) += integrate( _range = range, _expr = inner( coeff_a_expr * idt( p ), id( p ) ) );
+            }
+        }
+    }
     if( !this->isStationary() )
     {
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -104,12 +118,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
                 auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
-                {
-                    auto coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
-                    auto coeff_a_expr = expr( coeff_a.expr(), symbolsExpr );
-                    bbf( 1_c, 1_c ) += integrate( _range = range, _expr = inner( coeff_a_expr * idt( p ), id( p ) ) );
-                }
+                
                 if( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
                 {
                     auto coeff = this->timeStepBdfPotential()->polyDerivCoefficient(0);
