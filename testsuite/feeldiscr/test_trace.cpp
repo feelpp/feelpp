@@ -76,7 +76,7 @@ public:
 
     typedef typename imesh<double_type,Dim,Order>::convex_type convex_type;
     typedef typename imesh<double_type,Dim,Order>::type mesh_type;
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
     typedef Backend<double_type> backend_type;
     typedef Exporter<trace_mesh_type,Order> trace_export_type;

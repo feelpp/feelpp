@@ -54,7 +54,7 @@ public:
     typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
     // Levelset element
     typedef typename levelset_type::space_levelset_type functionspace_type;
     typedef typename levelset_type::space_levelset_ptrtype functionspace_ptrtype;

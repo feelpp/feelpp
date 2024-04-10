@@ -60,6 +60,7 @@
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
 #include <feel/feelmesh/mesh3d.hpp>
+#include <feel/feeldiscr/mesh_fwd.hpp>
 
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelpoly/geomap.hpp>
@@ -146,6 +147,7 @@ std::vector<MeshMarkerName> markerMap( int Dim );
 template <typename Mesh>
 class Partitioner;
 
+class DummySharedFromThis {};
 //!
 //!  @brief unifying mesh class
 //!  @details This structure is an aggregation of elements, faces,
@@ -156,25 +158,37 @@ class Partitioner;
 //!  @tparam T numerical type for coordinates
 //!  @tparam Tag = 0 to discriminate between meshes of the same type
 //!
-template <typename GeoShape, typename T = double, int Tag = 0, typename IndexT = uint32_type>
+template <typename GeoShape, typename T, int Tag, typename IndexT, bool _EnableSharedFromThis>
 class Mesh
-    : public mpl::if_<is_0d<GeoShape>,
-                      mpl::identity<Mesh0D<GeoShape, T, IndexT>>,
-                      typename mpl::if_<is_1d<GeoShape>,
-                                        mpl::identity<Mesh1D<GeoShape, T, IndexT>>,
-                                        typename mpl::if_<is_2d<GeoShape>,
-                                                          mpl::identity<Mesh2D<GeoShape, T, IndexT>>,
-                                                          mpl::identity<Mesh3D<GeoShape, T, IndexT>>>::type>::type>::type::type,
+    : public mp11::mp_if_c< is_3d_v<GeoShape>,
+                            Mesh3D<GeoShape, T, IndexT>,
+                            mp11::mp_if_c<
+                                is_2d_v<GeoShape>,
+                                Mesh2D<GeoShape, T, IndexT>,
+                                mp11::mp_if_c<
+                                    is_1d_v<GeoShape>,
+                                    Mesh1D<GeoShape, T, IndexT>,
+                                    Mesh0D<GeoShape, T, IndexT>
+                                >
+                            >
+                          >,
       public boost::addable<Mesh<GeoShape, T, Tag, IndexT>>,
-      public std::enable_shared_from_this<Mesh<GeoShape, T, Tag, IndexT>>
+      public std::conditional_t<_EnableSharedFromThis, 
+                                std::enable_shared_from_this<Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>>, 
+                                DummySharedFromThis>
 {
-    using super = typename mpl::if_<is_0d<GeoShape>,
-                                    mpl::identity<Mesh0D<GeoShape, T, IndexT>>,
-                                    typename mpl::if_<is_1d<GeoShape>,
-                                                      mpl::identity<Mesh1D<GeoShape, T, IndexT>>,
-                                                      typename mpl::if_<is_2d<GeoShape>,
-                                                                        mpl::identity<Mesh2D<GeoShape, T, IndexT>>,
-                                                                        mpl::identity<Mesh3D<GeoShape, T, IndexT>>>::type>::type>::type::type;
+    using super = mp11::mp_if_c< is_3d_v<GeoShape>,
+                            Mesh3D<GeoShape, T, IndexT>,
+                            mp11::mp_if_c<
+                                is_2d_v<GeoShape>,
+                                Mesh2D<GeoShape, T, IndexT>,
+                                mp11::mp_if_c<
+                                    is_1d_v<GeoShape>,
+                                    Mesh1D<GeoShape, T, IndexT>,
+                                    Mesh0D<GeoShape, T, IndexT>
+                                >
+                            >
+                        >;
 
   public:
     //!  @name Constants
@@ -204,6 +218,7 @@ class Mesh
 
     typedef typename super::super_elements super_elements;
     typedef typename super::elements_type elements_type;
+    using element_ptrtype = typename super::element_ptrtype;
     typedef typename super::element_type element_type;
     typedef typename super::element_iterator element_iterator;
     typedef typename super::element_const_iterator element_const_iterator;
@@ -230,7 +245,7 @@ class Mesh
     // using gmc_type = typename gm_type::template Context<element_type>;
     // using gmc_ptrtype = std::shared_ptr<gmc_type>;
 
-    typedef Mesh<shape_type, T, Tag, IndexT> self_type;
+    typedef Mesh<shape_type, T, Tag, IndexT, EnableSharedFromThis> self_type;
     typedef self_type mesh_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
     typedef self_ptrtype mesh_ptrtype;
@@ -243,57 +258,32 @@ class Mesh
     typedef typename super::face_processor_type face_processor_type;
     typedef typename super::face_processor_type element_edge_type;
 
-    using P1_mesh_type = typename mpl::if_<is_simplex<GeoShape>,
-                                           mpl::identity<Mesh<Simplex<GeoShape::nDim, 1, GeoShape::nRealDim>, value_type, Tag>>,
-                                           mpl::identity<Mesh<Hypercube<GeoShape::nDim, 1, GeoShape::nRealDim>, value_type, Tag>>>::type::type;
-
+    using P1_mesh_type = boost::mp11::mp_if_c<is_simplex_v<GeoShape>,
+                                       Mesh<Simplex<GeoShape::nDim, 1, GeoShape::nRealDim>, value_type, Tag, IndexT, _EnableSharedFromThis>,
+                                       Mesh<Hypercube<GeoShape::nDim, 1, GeoShape::nRealDim>, value_type, Tag, IndexT, _EnableSharedFromThis>>;
     typedef std::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
-    template <int TheTag>
-    struct parent_mesh
-    {
-        static const int d = ( GeoShape::nDim == GeoShape::nRealDim - 1 ) ? GeoShape::nDim + 1 : GeoShape::nDim;
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<Mesh<Simplex<d, nOrder, GeoShape::nRealDim>, value_type, TheTag>>,
-                                  mpl::identity<Mesh<Hypercube<d, nOrder, GeoShape::nRealDim>, value_type, TheTag>>>::type::type type;
-        typedef std::shared_ptr<type> ptrtype;
-        typedef std::shared_ptr<const type> const_ptrtype;
-    };
-    using parent_mesh_type = typename parent_mesh<Tag>::type;
-    using parent_mesh_ptrtype = typename parent_mesh<Tag>::ptrtype;
+    template<int TheTag = 0>
+    using parent_mesh_type = parent_mesh_t<mesh_type, TheTag>;
+    template<int TheTag = 0>
+    using parent_mesh_ptrtype = parent_mesh_ptr_t<mesh_type, TheTag>;
 
-    template <int TheTag>
-    struct trace_mesh
-    {
-        static const int d = ( GeoShape::nDim == 0 ) ? 0 : GeoShape::nDim - 1;
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<Mesh<Simplex<d, nOrder, GeoShape::nRealDim>, value_type, TheTag>>,
-                                  mpl::identity<Mesh<Hypercube<d, nOrder, GeoShape::nRealDim>, value_type, TheTag>>>::type::type type;
-        typedef std::shared_ptr<type> ptrtype;
-        typedef std::shared_ptr<const type> const_ptrtype;
-    };
-    typedef typename trace_mesh<Tag>::type trace_mesh_type;
-    typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
+    template<int TheTag = 0>
+    using trace_mesh_type = trace_mesh_t<mesh_type, TheTag>;
+    template<int TheTag = 0>
+    using trace_mesh_ptrtype = trace_mesh_ptr_t<mesh_type, TheTag>;
 
-    template <int TheTag>
-    struct trace_trace_mesh
-    {
-        static inline const uint16_type nDim = ( GeoShape::nDim == 1 ) ? GeoShape::nDim - 1 : GeoShape::nDim - 2;
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<Mesh<Simplex<nDim, nOrder, GeoShape::nRealDim>, value_type, TheTag>>,
-                                  mpl::identity<Mesh<Hypercube<nDim, nOrder, GeoShape::nRealDim>, value_type, TheTag>>>::type::type type;
+    template<int TheTag = 0>
+    using trace_trace_mesh_type = trace_trace_mesh_t<mesh_type, TheTag>;
+    template<int TheTag = 0>
+    using trace_trace_mesh_ptrtype = trace_trace_mesh_ptr_t<mesh_type, TheTag>;
 
-        typedef std::shared_ptr<type> ptrtype;
-        typedef std::shared_ptr<const type> const_ptrtype;
-    };
-    typedef typename trace_trace_mesh<Tag>::type trace_trace_mesh_type;
-    typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
 
     //@}
 
     //!
     //!  Default mesh constructor
-    //!
+    //
     explicit Mesh( std::string const& name,
                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                    std::string const& props = "00001" );
@@ -313,10 +303,22 @@ class Mesh
     }
 
     //! return current shared_ptr of type MeshBase
-    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override { return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  }
+    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override 
+    { 
+        if constexpr ( _EnableSharedFromThis )
+            return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  
+        else
+            return std::shared_ptr<MeshBase<IndexT>>{};
+    }
 
     //! return current shared_ptr of type MeshBase
-    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override { return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  }
+    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override 
+    { 
+        if constexpr ( _EnableSharedFromThis )
+            return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  
+        else
+            return std::shared_ptr<MeshBase<IndexT>>{};
+    }
 
     //!
     //! @brief allocate a new Mesh
@@ -1122,9 +1124,13 @@ public:
     //!  @param range iterator range
     //!  @return the computed trace mesh
     //!
-    template <typename RangeT, int TheTag>
-    typename trace_mesh<TheTag>::ptrtype
-    trace( RangeT const& range, mpl::int_<TheTag> ) const;
+    template <typename RangeT, int TheTag = 0>
+    trace_mesh_ptr_t<mesh_type,TheTag>
+    trace( RangeT && range, mpl::int_<TheTag> ) const
+    {
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
+        return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
+    }
 
     //!
     //!  creates a mesh by iterating over the elements between
@@ -1138,31 +1144,43 @@ public:
     //!
     //!  \todo make use of \c extraction_policies
     //!
-    template <int TheTag = Tag>
-    typename trace_mesh<TheTag>::ptrtype
+    template <int TheTag = 0>
+    trace_mesh_ptr_t<mesh_type,TheTag>
     trace() const
     {
         return trace( boundaryfaces( this->shared_from_this() ), mpl::int_<TheTag>() );
     }
 
     template <typename RangeT>
-    typename trace_mesh<Tag>::ptrtype
-    trace( RangeT const& range ) const;
+    trace_mesh_ptr_t<mesh_type,Tag>
+    trace( RangeT && range ) const
+    {
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
+        return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
+    }
 
-    template <int TheTag = Tag>
-    typename trace_mesh<TheTag>::ptrtype
+    template <int TheTag = 0>
+    trace_trace_mesh_ptr_t<mesh_type,TheTag>
     wireBasket() const
     {
         return wireBasket( boundaryfaces( this->shared_from_this() ), mpl::int_<TheTag>() );
     }
 
-    template <typename RangeT, int TheTag>
-    typename trace_trace_mesh<TheTag>::ptrtype
-    wireBasket( RangeT const& range, mpl::int_<TheTag> ) const;
+    template <typename RangeT, int TheTag = 0>
+    trace_trace_mesh_ptr_t<mesh_type,TheTag>
+    wireBasket( RangeT && range, mpl::int_<TheTag> ) const
+    {
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
+        return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
+    }
 
     template <typename RangeT>
-    typename trace_trace_mesh<Tag>::ptrtype
-    wireBasket( RangeT const& range ) const;
+    trace_trace_mesh_ptr_t<mesh_type,Tag>
+    wireBasket( RangeT && range ) const
+    {
+        DVLOG( 2 ) << fmt::format("[wirebasked] extracting range: {}", range ); 
+        return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
+    }
 
     template <typename Iterator>
     void createSubmesh( self_type& mesh,
@@ -1244,8 +1262,7 @@ public:
     template <typename IteratorRange>
     void updateMarker3WithRange( IteratorRange const& range, flag_type flag )
     {
-        const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
-        this->updateMarker3WithRange( range, flag, mpl::int_<iDim>() );
+        this->updateMarker3WithRange( range, flag, mpl::int_<IteratorRange::entities()>() );
     }
 
     //!
@@ -1595,76 +1612,7 @@ public:
     }
 
   public:
-    struct Inverse
-        : public mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                          mpl::identity<GeoMapInverse<nDim, nOrder, nRealDim, T, Simplex>>,
-                          mpl::identity<GeoMapInverse<nDim, nOrder, nRealDim, T, Hypercube>>>::type::type
-    {
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim, nOrder, nRealDim, T, Simplex>>,
-                                  mpl::identity<GeoMapInverse<nDim, nOrder, nRealDim, T, Hypercube>>>::type::type super;
-        typedef typename super::gic_type gic_type;
-
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity<GeoMapInverse<nDim, 1, nRealDim, T, Simplex>>,
-                                  mpl::identity<GeoMapInverse<nDim, 1, nRealDim, T, Hypercube>>>::type::type super1;
-        typedef typename super1::gic_type gic1_type;
-
-        explicit Inverse( std::shared_ptr<self_type> const& m )
-            : super(),
-              M_mesh( m )
-        {
-        }
-
-        ~Inverse() override
-        {
-        }
-
-        size_type nPointsInConvex( size_type i ) const
-        {
-            auto itFind = M_pts_cvx.find( i );
-            if ( itFind != M_pts_cvx.end() )
-                return M_pts_cvx.find( i )->second.size();
-            else
-                return 0;
-        }
-        void pointsInConvex( size_type i, std::vector<boost::tuple<size_type, uint16_type>>& itab ) const
-        {
-            const size_type nPts = this->nPointsInConvex( i );
-            itab.resize( nPts );
-            if ( nPts == 0 ) return;
-
-            auto it = M_pts_cvx.find( i )->second.begin();
-            auto const en = M_pts_cvx.find( i )->second.end();
-            for ( size_type j = 0; it != en; ++it )
-                itab[j++] = boost::make_tuple( it->first, it->second );
-        }
-
-        const boost::unordered_map<size_type, node_type>& referenceCoords( void )
-        {
-            return M_ref_coords;
-        }
-
-        //!
-        //!  distribute the points of the mesh in a kdtree
-        //!
-        //!  extrapolation = false : Only the points inside the mesh are distributed.
-        //!  extrapolation = true  : Try to project the exterior points.
-        //!  \todo : for extrapolation, verify that all the points have been taken
-        //!         into account, else test them on the frontiere convexes.
-        //!
-        void distribute( bool extrapolation = false );
-
-      private:
-        std::shared_ptr<self_type> M_mesh;
-        boost::unordered_map<size_type, boost::unordered_map<size_type, uint16_type>> M_pts_cvx;
-        typedef typename std::map<size_type, uint16_type>::const_iterator map_iterator;
-        //! typedef typename node<value_type>::type node_type;
-        boost::unordered_map<size_type, node_type> M_ref_coords;
-        boost::unordered_map<size_type, double> M_dist;
-        boost::unordered_map<size_type, size_type> M_cvx_pts;
-
-    }; // Inverse
+    
 
     //!  @name  Signals
     //!
@@ -1865,57 +1813,18 @@ public:
     std::shared_ptr<GeoNDCommon<typename edge_type::super>> M_geondEdgeCommon;
 };
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename RangeT>
-typename Mesh<Shape, T, Tag, IndexT>::template trace_mesh<Tag>::ptrtype
-Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range ) const
-{
-    DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
-               << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
-}
-
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename RangeT>
-typename Mesh<Shape, T, Tag, IndexT>::template trace_trace_mesh<Tag>::ptrtype
-Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range ) const
-{
-    DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
-               << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
-}
 
 template <int TheTag>
 struct Tag : public mpl::int_<TheTag>
 {
 };
 
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename RangeT, int TheTag>
-typename Mesh<Shape, T, Tag, IndexT>::template trace_mesh<TheTag>::ptrtype
-Mesh<Shape, T, Tag, IndexT>::trace( RangeT const& range, mpl::int_<TheTag> ) const
-{
-    DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
-               << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
-}
-
-template <typename Shape, typename T, int Tag, typename IndexT>
-template <typename RangeT, int TheTag>
-typename Mesh<Shape, T, Tag, IndexT>::template trace_trace_mesh<TheTag>::ptrtype
-Mesh<Shape, T, Tag, IndexT>::wireBasket( RangeT const& range, mpl::int_<TheTag> ) const
-{
-    DVLOG( 2 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
-               << std::distance( range.template get<1>(), range.template get<2>() ) << "\n";
-    return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=range );
-}
-
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename Iterator>
-void Mesh<Shape, T, Tag, IndexT>::createSubmesh( self_type& new_mesh,
-                                         Iterator const& begin_elt,
-                                         Iterator const& end_elt,
-                                         size_type extraction_policies ) const
+void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type& new_mesh,
+                                                                       Iterator const& begin_elt,
+                                                                       Iterator const& end_elt,
+                                                                       size_type extraction_policies ) const
 {
 #if 0
     new_mesh = Feel::createSubmesh( this->shared_from_this(), boost::make_tuple(mpl::int_<MESH_ELEMENTS>(),begin_elt, end_elt), extraction_policies );
@@ -1927,7 +1836,7 @@ void Mesh<Shape, T, Tag, IndexT>::createSubmesh( self_type& new_mesh,
     new_mesh.clear();
     //!  inherit all the markers
     new_mesh.M_markername = this->markerNames();
-    BOOST_FOREACH ( auto marker, new_mesh.M_markername )
+    for ( auto marker : new_mesh.M_markername )
     {
         LOG( INFO ) << "marker name " << marker.first
                     << " id: " << marker.second[0]
@@ -2062,10 +1971,10 @@ void Mesh<Shape, T, Tag, IndexT>::createSubmesh( self_type& new_mesh,
 #endif
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename RangeType>
-typename Mesh<Shape, T, Tag, IndexT>::P1_mesh_ptrtype
-Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctxExtraction, size_type ctxMeshUpdate ) const
+typename Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::P1_mesh_ptrtype
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createP1mesh( RangeType const& range, size_type ctxExtraction, size_type ctxMeshUpdate ) const
 {
     if constexpr (false /*nOrder == 1*/ )
          return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=elements(this->shared_from_this()), _context=ctxExtraction, _update=ctxMeshUpdate );
@@ -2415,9 +2324,9 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctx
 }
 
 #if defined( FEELPP_HAS_VTK )
-template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 typename MeshBase<>::vtk_export_type
-Mesh<Shape, T, Tag, IndexT>::exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const
+ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::exportVTK( bool exportMarkers, std::string const& vtkFieldNameMarkers ) const
 {
     /* Compute element type from the parameters */
     typedef typename
@@ -2522,8 +2431,8 @@ Mesh<Shape, T, Tag, IndexT>::exportVTK( bool exportMarkers, std::string const& v
 #endif // FEELPP_HAS_VTK
 
 //! Fill mesh properties in journal publication
-template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( nl::json& p ) const
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateInformationObject( nl::json& p ) const
 {
     if ( p.contains( "shape" ) )
         return;
@@ -2570,6 +2479,185 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( nl::json& p ) const
     }
 }
 
+template<typename MeshType>
+class MeshInverse
+        : public boost::mp11::mp_if_c<
+              MeshType::shape_type::is_simplex,
+              GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+              GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+            >
+{
+public:
+    using mesh_t = decay_type<MeshType>;
+    using mesh_ptr_t = std::shared_ptr<mesh_t>;
+    using value_type = typename mesh_t::value_type;
+    using size_type = typename mesh_t::size_type;
+    using super = boost::mp11::mp_if_c<
+        MeshType::shape_type::is_simplex,
+        GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+        GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+    >;
+    using gic_type = typename super::gic_type;
+    using gm_type = typename super::gm_type;
+
+    using super1 = boost::mp11::mp_if_c<
+        MeshType::shape_type::is_simplex,
+        GeoMapInverse<MeshType::nDim, 1, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+        GeoMapInverse<MeshType::nDim, 1, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+    >;
+
+    using gic1_type = typename super1::gic_type;
+    using gm1_type = typename super1::gm_type;
+    explicit MeshInverse( std::shared_ptr<mesh_t> const& m )
+        : super(),
+            M_mesh( m )
+    {
+    }
+
+    ~MeshInverse() override
+    {
+    }
+
+    size_type nPointsInConvex( size_type i ) const
+    {
+        auto itFind = M_pts_cvx.find( i );
+        if ( itFind != M_pts_cvx.end() )
+            return M_pts_cvx.find( i )->second.size();
+        else
+            return 0;
+    }
+    void pointsInConvex( size_type i, std::vector<boost::tuple<size_type, uint16_type>>& itab ) const
+    {
+        const size_type nPts = this->nPointsInConvex( i );
+        itab.resize( nPts );
+        if ( nPts == 0 ) return;
+
+        auto it = M_pts_cvx.find( i )->second.begin();
+        auto const en = M_pts_cvx.find( i )->second.end();
+        for ( size_type j = 0; it != en; ++it )
+            itab[j++] = boost::make_tuple( it->first, it->second );
+    }
+
+    const boost::unordered_map<size_type, node_type>& referenceCoords( void )
+    {
+        return M_ref_coords;
+    }
+
+    //!
+    //!  distribute the points of the mesh in a kdtree
+    //!
+    //!  extrapolation = false : Only the points inside the mesh are distributed.
+    //!  extrapolation = true  : Try to project the exterior points.
+    //!  \todo : for extrapolation, verify that all the points have been taken
+    //!         into account, else test them on the frontiere convexes.
+    //!
+    void distribute( bool extrapolation = false );
+
+    private:
+    mesh_ptr_t M_mesh;
+    boost::unordered_map<size_type, boost::unordered_map<size_type, uint16_type>> M_pts_cvx;
+    typedef typename std::map<size_type, uint16_type>::const_iterator map_iterator;
+    //! typedef typename node<value_type>::type node_type;
+    boost::unordered_map<size_type, node_type> M_ref_coords;
+    boost::unordered_map<size_type, double> M_dist;
+    boost::unordered_map<size_type, size_type> M_cvx_pts;
+
+}; // MeshInverse
+
+
+template <typename MeshType>
+void  
+MeshInverse<MeshType>::distribute( bool extrapolation )
+{
+    auto rangeElements = elements(M_mesh);
+    auto el_it = rangeElements.begin();
+    auto el_en = rangeElements.end();
+    const size_type nActifElt = std::distance( el_it, el_en );
+    if ( nActifElt == 0 ) return;
+
+    using element_type = element_t<mesh_t>;
+    BoundingBox<> bb;
+
+    typename gm_type::reference_convex_type refelem;
+    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
+                                                                                         refelem.points() ) );
+    boost::unordered_map<size_type, bool> npt;
+
+    M_dist.clear();
+    M_ref_coords.clear();
+    M_cvx_pts.clear();
+    M_pts_cvx.clear();
+    M_pts_cvx.clear();
+
+    KDTree::points_type boxpts;
+
+    auto __c = M_mesh->gm()->template context<vm::JACOBIAN | vm::KB | vm::POINT>( unwrap_ref( *el_it ),__geopc );
+    VLOG( 2 ) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
+
+    for ( ; el_it != el_en; ++el_it )
+    {
+        auto const& elt = boost::unwrap_ref( *el_it );
+        // get geometric transformation
+        __c->template update<vm::JACOBIAN | vm::KB | vm::POINT>( elt );
+        gic_type gic( M_mesh->gm(), elt );
+
+        // create bounding box
+        //bb.make( el_it->points() );
+        bb.make( elt.G() );
+
+        for ( size_type k = 0; k < bb.min.size(); ++k )
+        {
+            bb.min[k] -= 1e-10;
+            bb.max[k] += 1e-10;
+        }
+
+        DVLOG( 2 ) << "G = " << elt.G() << " min = " << bb.min << ", max = " << bb.max << "\n";
+
+        // check if the points
+        this->pointsInBox( boxpts, bb.min, bb.max );
+
+        DVLOG( 2 ) << "boxpts size = " << boxpts.size() << "\n";
+
+        for ( size_type i = 0; i < boxpts.size(); ++i )
+        {
+            size_type index = boost::get<1>( boxpts[i] );
+
+            if ( ( !npt[index] ) || M_dist[index] < 0 )
+            {
+                // check if we are in
+                gic.setXReal( boost::get<0>( boxpts[i] ) );
+                bool isin;
+                value_type dmin;
+                boost::tie( isin, dmin ) = refelem.isIn( gic.xRef() );
+                bool tobeadded = extrapolation || isin;
+
+                DVLOG( 2 ) << "i = " << i << " index = " << index << " isin = " << ( isin >= -1e-10 )
+                           << " xref = " << gic.xRef() << " xreal = " << boost::get<0>( boxpts[i] )
+                           << " tobeadded= " << tobeadded << " dist=" << dmin << "\n";
+
+                if ( tobeadded && npt[index] )
+                {
+                    if ( dmin > M_dist[index] )
+                        M_pts_cvx[M_cvx_pts[index]].erase( index );
+
+                    else
+                        tobeadded = false;
+                }
+
+                if ( tobeadded )
+                {
+                    M_ref_coords[index] = gic.xRef();
+                    M_dist[index] = dmin;
+                    M_cvx_pts[index] = elt.id();
+                    M_pts_cvx[elt.id()][index] = boost::get<2>( boxpts[i] );
+                    npt[index] = true;
+                }
+            }
+        }
+    }
+
+    VLOG( 2 ) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
+}
 
 
 } // namespace Feel

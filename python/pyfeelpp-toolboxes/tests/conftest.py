@@ -23,7 +23,7 @@ def has_mpi4py():
 class InitFeelpp:
     def __init__(self,config):
         try:
-            print('xxx call init_feelpp;', __file__)
+            print('[conftest] init_feelpp;', __file__, flush=True)
             sys.argv=['test_pyfeelpptoolboxes']
             self.e = feelpp.Environment(
                 sys.argv, opts= feelpp.backend_options("Iv")
@@ -36,7 +36,7 @@ class InitFeelpp:
                                 .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes")),
                 config=config
                                 )
-            print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
+            print('[conftest] is master? ', feelpp.Environment.worldCommPtr().isMasterRank(),flush=True)
         except Exception as err:
             print('Exception caught while initializing Feel++: '.format(err))
             return 

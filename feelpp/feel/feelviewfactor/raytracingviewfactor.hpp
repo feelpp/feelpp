@@ -164,10 +164,13 @@ class RayTracingViewFactor : public ViewFactorBase<MeshType>
 {
     using super = ViewFactorBase<MeshType>;
     typedef typename MeshType::ptrtype mesh_ptrtype;
-    typedef typename MeshType::trace_mesh_ptrtype tr_mesh_ptrtype;
+
+    using tr_mesh_ptrtype = trace_mesh_ptr_t<MeshType>;
+    using tr_mesh_t = trace_mesh_t<MeshType>;
+
     typedef typename MeshType::face_type face_type;
     typedef typename matrix_node<double>::type matrix_node_type;
-    using bvh_type = BVH<typename MeshType::trace_mesh_type::element_type>;
+    using bvh_type = BVH<element_t<tr_mesh_t>>;
     using bvh_ray_type = typename bvh_type::ray_type;
 public:
     using value_type = double;

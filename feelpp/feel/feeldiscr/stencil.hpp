@@ -644,7 +644,7 @@ public :
         // typedef typename boost::tuple<mpl::size_t<MESH_ELEMENTS>,
         //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator,
         //                               typename MeshTraits<typename test_space_type::mesh_type>::element_const_iterator> defaultrange_type;
-        typedef elements_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
+        typedef Range<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type,MESH_ELEMENTS> defaultrange_type;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of
@@ -671,7 +671,8 @@ public :
         // typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
         //                               typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
         //                               typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
-        typedef faces_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
+        //typedef faces_reference_wrapper_t<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type> defaultrange_type;
+        using defaultrange_type = Range<typename MeshTraits<typename test_space_type::mesh_type>::mesh_type,MESH_FACES>;
 
         // fix compilation from boost 1.55
         // if not find in fusion map else there is a problem now with result_of::value_of
@@ -1558,9 +1559,9 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
 
     for ( auto const& rangeTest : rangeListTest )
     {
-        auto iDimRange = rangeTest.template get<0>();
-        auto elem_it = rangeTest.template get<1>();
-        auto elem_en = rangeTest.template get<2>();
+        auto iDimRange = rangeTest.idim();
+        auto elem_it = rangeTest.begin();
+        auto elem_en = rangeTest.end();
 
         for ( ; elem_it != elem_en; ++elem_it )
         {
@@ -1695,15 +1696,15 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
         //auto rangeExtended = this->rangeExtendedIterator<0,0>( mpl::bool_<hasNotFindRangeExtended>() );
         auto rangeListExtended = this->rangeExtendedIterator<0, 0>( mpl::bool_<hasNotFindRangeExtended>() );
         auto rangeExtended = rangeListExtended.front();
-        auto iDimRangeExtended = rangeExtended.template get<0>();
+        auto iDimRangeExtended = rangeExtended.idim();
         if ( iDimRangeExtended == ElementsType::MESH_ELEMENTS )
         {
             CHECK( false ) << "a range with MESH_ELEMENTS is not implemented";
         }
         else if ( iDimRangeExtended == ElementsType::MESH_FACES )
         {
-            auto faceExtended_it = rangeExtended.template get<1>();
-            auto faceExtended_en = rangeExtended.template get<2>();
+            auto faceExtended_it = rangeExtended.begin();
+            auto faceExtended_en = rangeExtended.end();
             for ( ; faceExtended_it != faceExtended_en; ++faceExtended_it )
             {
                 auto const& faceExtended = boost::unwrap_ref( *faceExtended_it );
@@ -1852,12 +1853,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     auto rangeListTest = this->rangeiterator<0,0>( mpl::bool_<hasNotFindRangeStandard>() );
 
     //auto r = elements( _M_X1->mesh(), EntityProcessType::ALL );
-    auto m = dynamic_cast<typename test_space_type::mesh_type::parent_mesh_type const*>(_M_X1->mesh()->parentMesh().get());
+    auto m = dynamic_cast<typename test_space_type::mesh_type::template parent_mesh_type<> const*>(_M_X1->mesh()->parentMesh().get());
     using index_type = typename test_space_type::mesh_type::index_type;
     auto r = faces(m, EntityProcessType::LOCAL_ONLY/*EntityProcessType::ALL*/ );
 
-    auto elem_it = r.template get<1>();
-    auto elem_en = r.template get<2>();
+    auto elem_it = r.begin();
+    auto elem_en = r.end();
 
     DVLOG(2) << " nv elements : " << std::distance( elem_it, elem_en ) << std::endl;
     for ( ; elem_it != elem_en; ++elem_it )
@@ -2119,9 +2120,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
     auto rangeListTest = this->rangeiterator<0,0>( mpl::bool_<hasNotFindRangeStandard>() );
     for ( auto const& rangeTest : rangeListTest )
     {
-    auto iDimRange = rangeTest.template get<0>();
-    auto elem_it = rangeTest.template get<1>();
-    auto elem_en = rangeTest.template get<2>();
+    auto iDimRange = rangeTest.idim();
+    auto elem_it = rangeTest.begin();
+    auto elem_en = rangeTest.end();
 
     if ( elem_it==elem_en ) return sparsity_graph;
 

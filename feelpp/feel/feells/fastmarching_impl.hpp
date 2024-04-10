@@ -133,8 +133,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
     M_negativeCloseDofHeap.clear();
 
     // Initialize DONE dofs
-    auto itEltDone = rangeDone.template get<1>();
-    auto enEltDone = rangeDone.template get<2>();
+    auto itEltDone = rangeDone.begin();
+    auto enEltDone = rangeDone.end();
     for( ; itEltDone != enEltDone; ++itEltDone )
     {
         auto const eltDone = boost::unwrap_ref( *itEltDone );
