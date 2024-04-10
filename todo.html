@@ -104,22 +104,22 @@ $(document).ready(function(){initNavTree('todo.html',''); initResizable(); });
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><dl class="reflist">
-<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a6bce93a6491db7917aaab9a596e9fe21">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::geomapPtr</a>  (geoelement_type const &amp;elt) const</dt>
+<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a7f4798aae9884a7188ddf7f187137c9d">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::geomapPtr</a>  (geoelement_type const &amp;elt) const</dt>
 <dd><a class="anchor" id="_todo000003"></a>should be in the element of the mesh  </dd>
-<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#ae958b3881ab8780f3dcff0e04abd128f">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::grad_</a>  (ContextType const &amp;context, grad_array_type &amp;v) const</dt>
+<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#ae958b3881ab8780f3dcff0e04abd128f">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::grad_</a>  (ContextType const &amp;context, grad_array_type &amp;v) const</dt>
 <dd><p class="startdd"><a class="anchor" id="_todo000004"></a>handle the case where the mesh/element is not the same as the one associated with the discretization space.</p>
 <p class="enddd"><a class="anchor" id="_todo000005"></a>need to introduce the geometric transformation to incorporate the pseudo-inverse of the jacobian for the derivative  </p>
 </dd>
-<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a7aa108170353db202b714d02654e048b">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::hess_</a>  (ContextType const &amp;context, hess_array_type &amp;v) const</dt>
+<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a7aa108170353db202b714d02654e048b">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::hess_</a>  (ContextType const &amp;context, hess_array_type &amp;v) const</dt>
 <dd><p class="startdd"><a class="anchor" id="_todo000006"></a>handle the case where the mesh/element is not the same as the one associated with the discretization space.</p>
 <p class="enddd"><a class="anchor" id="_todo000007"></a>need to introduce the geometric transformation to incorporate the pseudo-inverse of the jacobian for the derivative  </p>
 </dd>
-<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#aaa0d64462b48360b52a781eb2e46a489">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::id_</a>  (Context_t const &amp;context, id_array_type &amp;v) const</dt>
+<dt>Member <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#aaa0d64462b48360b52a781eb2e46a489">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::id_</a>  (Context_t const &amp;context, id_array_type &amp;v) const</dt>
 <dd><a class="anchor" id="_todo000002"></a>handle the case where the mesh/element is not the same as the one associated with the discretization space. </dd>
-<dt>Member <a class="el" href="structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;::Inverse::distribute</a>  (bool extrapolation=false)</dt>
-<dd><a class="anchor" id="_todo000009"></a>: for extrapolation, verify that all the points have been taken into account, else test them on the frontiere convexes.  </dd>
-<dt>Member <a class="el" href="classFeel_1_1Mesh.html#ab9119fb7e8480622450e910113a2b071">Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;::trace</a>  () const</dt>
+<dt>Member <a class="el" href="classFeel_1_1Mesh.html#ab30ce5bf3ec138df33105b9ba8a352a5">Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;::trace</a>  () const</dt>
 <dd><a class="anchor" id="_todo000008"></a>make use of <code>extraction_policies</code>  </dd>
+<dt>Member <a class="el" href="classFeel_1_1MeshInverse.html#a90b1b7f43b15f5c93193c4084b721d56">Feel::MeshInverse&lt; MeshType &gt;::distribute</a>  (bool extrapolation=false)</dt>
+<dd><a class="anchor" id="_todo000009"></a>: for extrapolation, verify that all the points have been taken into account, else test them on the frontiere convexes.  </dd>
 <dt>Member <a class="el" href="classFeel_1_1TSBase.html#adb8d719396f180b5662039cc770a2daf">Feel::TSBase::next</a>  () const</dt>
 <dd><a class="anchor" id="_todo000010"></a>implements the strategies here, at the moment constant time step  </dd>
 <dt>Class <a class="el" href="classFeel_1_1WorldComm.html">Feel::WorldComm</a>  </dt>

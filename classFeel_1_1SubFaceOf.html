@@ -158,6 +158,9 @@ size_type&#160;</td><td class="memItemRight" valign="bottom"><b>ad_first</b> () 
 <tr class="memitem:af8b62afaf445fab6a09ca2c16d1f76bd"><td class="memItemLeft" align="right" valign="top"><a id="af8b62afaf445fab6a09ca2c16d1f76bd" name="af8b62afaf445fab6a09ca2c16d1f76bd"></a>
 size_type&#160;</td><td class="memItemRight" valign="bottom"><b>ad_second</b> () const</td></tr>
 <tr class="separator:af8b62afaf445fab6a09ca2c16d1f76bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae84ef44a6cba916d0c6ff113c49ec9c0"><td class="memItemLeft" align="right" valign="top"><a id="ae84ef44a6cba916d0c6ff113c49ec9c0" name="ae84ef44a6cba916d0c6ff113c49ec9c0"></a>
+<a class="el" href="classFeel_1_1SubFaceOf.html">SubFaceOf</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>connectedTo</b> () const</td></tr>
+<tr class="separator:ae84ef44a6cba916d0c6ff113c49ec9c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a408d4f61cfdf98ceed49bd3d490b8791"><td class="memItemLeft" align="right" valign="top"><a id="a408d4f61cfdf98ceed49bd3d490b8791" name="a408d4f61cfdf98ceed49bd3d490b8791"></a>
 element_connectivity_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>connection0</b> () const</td></tr>
 <tr class="separator:a408d4f61cfdf98ceed49bd3d490b8791"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,9 +185,15 @@ entity_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>el
 <tr class="memitem:aa3c0c472d9aff44583e86f3b7ed3b061"><td class="memItemLeft" align="right" valign="top"><a id="aa3c0c472d9aff44583e86f3b7ed3b061" name="aa3c0c472d9aff44583e86f3b7ed3b061"></a>
 entity_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>element0</b> () const</td></tr>
 <tr class="separator:aa3c0c472d9aff44583e86f3b7ed3b061"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af38364162f917d52bd99f1d663f4a478"><td class="memItemLeft" align="right" valign="top"><a id="af38364162f917d52bd99f1d663f4a478" name="af38364162f917d52bd99f1d663f4a478"></a>
+entity_type const *&#160;</td><td class="memItemRight" valign="bottom"><b>element0Ptr</b> () const</td></tr>
+<tr class="separator:af38364162f917d52bd99f1d663f4a478"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01c637ad80eea830ef6e7ab8a6a03a8e"><td class="memItemLeft" align="right" valign="top"><a id="a01c637ad80eea830ef6e7ab8a6a03a8e" name="a01c637ad80eea830ef6e7ab8a6a03a8e"></a>
 entity_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>element1</b> () const</td></tr>
 <tr class="separator:a01c637ad80eea830ef6e7ab8a6a03a8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a748cb89039f2ffef46cf448ec5b666ca"><td class="memItemLeft" align="right" valign="top"><a id="a748cb89039f2ffef46cf448ec5b666ca" name="a748cb89039f2ffef46cf448ec5b666ca"></a>
+entity_type const *&#160;</td><td class="memItemRight" valign="bottom"><b>element1Ptr</b> () const</td></tr>
+<tr class="separator:a748cb89039f2ffef46cf448ec5b666ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd4004fa393538707e106b88cedefe0b"><td class="memItemLeft" align="right" valign="top"><a id="abd4004fa393538707e106b88cedefe0b" name="abd4004fa393538707e106b88cedefe0b"></a>
 size_type&#160;</td><td class="memItemRight" valign="bottom"><b>idElement0</b> () const</td></tr>
 <tr class="separator:abd4004fa393538707e106b88cedefe0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -274,6 +283,10 @@ template&lt;typename TheEltType &gt; </td></tr>
 template&lt;<a class="el" href="classint.html">int</a> SFoD&gt; </td></tr>
 <tr class="memitem:a0b7f381cc48ce7f1b1debea13f4c151a"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>SubFaceOf</b> (<a class="el" href="classFeel_1_1SubFaceOfNone.html">SubFaceOfNone</a>&lt; SFoD &gt; const &amp;, std::enable_if_t&lt; SFoD==nDim||SFoD==0 &gt; *=nullptr)</td></tr>
 <tr class="separator:a0b7f381cc48ce7f1b1debea13f4c151a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc210dba7d943fbefa47c2dd9b29e7ac"><td class="memTemplParams" colspan="2"><a id="acc210dba7d943fbefa47c2dd9b29e7ac" name="acc210dba7d943fbefa47c2dd9b29e7ac"></a>
+template&lt;typename MeshSupportT &gt; </td></tr>
+<tr class="memitem:acc210dba7d943fbefa47c2dd9b29e7ac"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1SubFaceOf.html">SubFaceOf</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateConnectionFromMeshSupport</b> (std::shared_ptr&lt; MeshSupportT &gt; const &amp;ms)</td></tr>
+<tr class="separator:acc210dba7d943fbefa47c2dd9b29e7ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>

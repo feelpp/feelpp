@@ -24,6 +24,7 @@ var classFeel_1_1WorldComm =
     [ "masterRank", "classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716", null ],
     [ "operator=", "classFeel_1_1WorldComm.html#a7cff85e0df783a30d6b24e977404e8eb", null ],
     [ "operator==", "classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6", null ],
+    [ "print", "classFeel_1_1WorldComm.html#ac189841336d1d6a97a9eeaf116c6a5f0", null ],
     [ "registerSubWorlds", "classFeel_1_1WorldComm.html#a34a9fa2d7b4a6d29d5f7d73f4348faf6", null ],
     [ "showMe", "classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e", null ],
     [ "split", "classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84", null ],

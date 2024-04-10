@@ -124,12 +124,12 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>__quad1_type</b> = s
 <tr class="memitem:af80df1eeeb4c869ff365224bf8ceeeb5"><td class="memItemLeft" align="right" valign="top"><a id="af80df1eeeb4c869ff365224bf8ceeeb5" name="af80df1eeeb4c869ff365224bf8ceeeb5"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>__quad_type</b> = std::decay_t&lt; ArgQuadType &gt;</td></tr>
 <tr class="separator:af80df1eeeb4c869ff365224bf8ceeeb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5f250400f277077566838d38a3b2209"><td class="memItemLeft" align="right" valign="top"><a id="aa5f250400f277077566838d38a3b2209" name="aa5f250400f277077566838d38a3b2209"></a>
-typedef boost::tuples::template element&lt; 1, _range_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>_element_iterator</b></td></tr>
-<tr class="separator:aa5f250400f277077566838d38a3b2209"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7b5bdd0fbf809cd52326c5b9c2c71c8"><td class="memItemLeft" align="right" valign="top"><a id="aa7b5bdd0fbf809cd52326c5b9c2c71c8" name="aa7b5bdd0fbf809cd52326c5b9c2c71c8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>_element_type</b> = typename boost::unwrap_reference&lt; typename _element_iterator::value_type &gt;::type</td></tr>
-<tr class="separator:aa7b5bdd0fbf809cd52326c5b9c2c71c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29425e0207ca4ccf51bbb71297601afd"><td class="memItemLeft" align="right" valign="top"><a id="a29425e0207ca4ccf51bbb71297601afd" name="a29425e0207ca4ccf51bbb71297601afd"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_element_iterator</b> = typename _range_type::iterator_t</td></tr>
+<tr class="separator:a29425e0207ca4ccf51bbb71297601afd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19098eeb43144e62c41648c3c3f2d8fe"><td class="memItemLeft" align="right" valign="top"><a id="a19098eeb43144e62c41648c3c3f2d8fe" name="a19098eeb43144e62c41648c3c3f2d8fe"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>_element_type</b> = typename _range_type::iterator_t</td></tr>
+<tr class="separator:a19098eeb43144e62c41648c3c3f2d8fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a121b0fbcd5d48758085d9224b4c63ac8"><td class="memItemLeft" align="right" valign="top"><a id="a121b0fbcd5d48758085d9224b4c63ac8" name="a121b0fbcd5d48758085d9224b4c63ac8"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>_expr_type</b> = std::decay_t&lt; ArgExprType &gt;</td></tr>
 <tr class="separator:a121b0fbcd5d48758085d9224b4c63ac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -161,7 +161,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>im_default_type</b> 
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:aa4f5de6a4d4533719ffebd7c6565a7e2"><td class="memItemLeft" align="right" valign="top"><a id="aa4f5de6a4d4533719ffebd7c6565a7e2" name="aa4f5de6a4d4533719ffebd7c6565a7e2"></a>
-static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>geoOrder</b> = boost::unwrap_reference&lt;typename _element_iterator::value_type&gt;::type::nOrder</td></tr>
+static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>geoOrder</b> = _element_type::nOrder</td></tr>
 <tr class="separator:aa4f5de6a4d4533719ffebd7c6565a7e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->

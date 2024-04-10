@@ -161,6 +161,7 @@ var group__Core =
       [ "masterRank", "classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716", null ],
       [ "operator=", "classFeel_1_1WorldComm.html#a7cff85e0df783a30d6b24e977404e8eb", null ],
       [ "operator==", "classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6", null ],
+      [ "print", "classFeel_1_1WorldComm.html#ac189841336d1d6a97a9eeaf116c6a5f0", null ],
       [ "registerSubWorlds", "classFeel_1_1WorldComm.html#a34a9fa2d7b4a6d29d5f7d73f4348faf6", null ],
       [ "showMe", "classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e", null ],
       [ "split", "classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84", null ],
@@ -189,5 +190,5 @@ var group__Core =
     [ "Feel::range", "group__Core.html#ga9ac2567d303c357e7c0de44280697997", null ],
     [ "Feel::range", "group__Core.html#ga024e23db145273f363dfe1a77bfb8e33", null ],
     [ "Feel::sanitize", "group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87", null ],
-    [ "do_reduce", "group__Core.html#gadb09701b29e693e3be3a506482791f31", null ]
+    [ "do_reduce", "group__Core.html#ga7d82be42bea9ef533d47d8dbc084f88c", null ]
 ];

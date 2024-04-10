@@ -139,15 +139,12 @@ typedef expression_type::value_type&#160;</td><td class="memItemRight" valign="b
 <tr class="memitem:a2e5a258a25467e395221c5c76a736c5d"><td class="memItemLeft" align="right" valign="top"><a id="a2e5a258a25467e395221c5c76a736c5d" name="a2e5a258a25467e395221c5c76a736c5d"></a>
 typedef IteratorRange&#160;</td><td class="memItemRight" valign="bottom"><b>range_iterator</b></td></tr>
 <tr class="separator:a2e5a258a25467e395221c5c76a736c5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e1639d3eb58c35fde20b6bb81597d77"><td class="memItemLeft" align="right" valign="top"><a id="a1e1639d3eb58c35fde20b6bb81597d77" name="a1e1639d3eb58c35fde20b6bb81597d77"></a>
-typedef mpl::if_&lt; boost::is_std_list&lt; range_iterator &gt;, mpl::identity&lt; range_iterator &gt;, mpl::identity&lt; std::list&lt; range_iterator &gt; &gt; &gt;::type::type::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>range_iterator_type</b></td></tr>
-<tr class="separator:a1e1639d3eb58c35fde20b6bb81597d77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56d68a710dd7601a89194c2eb0216389"><td class="memItemLeft" align="right" valign="top"><a id="a56d68a710dd7601a89194c2eb0216389" name="a56d68a710dd7601a89194c2eb0216389"></a>
-typedef boost::tuples::template element&lt; 0, range_iterator_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>idim_type</b></td></tr>
-<tr class="separator:a56d68a710dd7601a89194c2eb0216389"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b343f0c57626737a9610a65bab9a8b7"><td class="memItemLeft" align="right" valign="top"><a id="a5b343f0c57626737a9610a65bab9a8b7" name="a5b343f0c57626737a9610a65bab9a8b7"></a>
-typedef boost::tuples::template element&lt; 1, range_iterator_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_type</b></td></tr>
-<tr class="separator:a5b343f0c57626737a9610a65bab9a8b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a7f35d2cb8b295dcc7e3d9b814fe20c"><td class="memItemLeft" align="right" valign="top"><a id="a8a7f35d2cb8b295dcc7e3d9b814fe20c" name="a8a7f35d2cb8b295dcc7e3d9b814fe20c"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>idim_type</b> = typename IteratorRange::idim_t</td></tr>
+<tr class="separator:a8a7f35d2cb8b295dcc7e3d9b814fe20c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd3157fb9143c2f4b14d9a6f2e68b2f3"><td class="memItemLeft" align="right" valign="top"><a id="afd3157fb9143c2f4b14d9a6f2e68b2f3" name="afd3157fb9143c2f4b14d9a6f2e68b2f3"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_type</b> = typename IteratorRange::iterator_t</td></tr>
+<tr class="separator:afd3157fb9143c2f4b14d9a6f2e68b2f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35cb50649e46c7ef88f58c8e7e6c49d7"><td class="memItemLeft" align="right" valign="top"><a id="a35cb50649e46c7ef88f58c8e7e6c49d7" name="a35cb50649e46c7ef88f58c8e7e6c49d7"></a>
 static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>context</b> = ExprT::context|vm::POINT</td></tr>
 <tr class="separator:a35cb50649e46c7ef88f58c8e7e6c49d7"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -164,10 +164,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b
 <div class="textblock"><div class="compoundTemplParams">template&lt;<a class="el" href="classint.html">int</a> M, <a class="el" href="classint.html">int</a> N = 1, <a class="el" href="classint.html">int</a> Order = 2&gt;<br />
 struct Feel::vf::map_vector_field&lt; M, N, Order &gt;</div><p >defines a dictionary of vector fields </p>
 <p >this data structure creates a dictionary of fields, it associates a string to a Ginac Expr of rank 1 and a set of vector. In the case of vector fields the size of the vector field must be given</p>
-<div class="fragment"><div class="line"><span class="keyword">auto</span> e = <a class="code hl_function" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>(<span class="stringliteral">&quot;{x,y}:x:y&quot;</span>);</div>
-<div class="line"><span class="keyword">auto</span> z = <a class="code hl_function" href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">expr</a>(<span class="stringliteral">&quot;{0,0}:x:y&quot;</span>);</div>
+<div class="fragment"><div class="line"><span class="keyword">auto</span> e = <a class="code hl_function" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>(<span class="stringliteral">&quot;{x,y}:x:y&quot;</span>);</div>
+<div class="line"><span class="keyword">auto</span> z = <a class="code hl_function" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>(<span class="stringliteral">&quot;{0,0}:x:y&quot;</span>);</div>
 <div class="line">map_vector_field&lt;2&gt; m { { <span class="stringliteral">&quot;inlet&quot;</span>, e }, { <span class="stringliteral">&quot;wall&quot;</span>, z } };</div>
-<div class="ttc" id="anamespaceFeel_html_a338e05dd5e37f3594666f0a00e029d3d"><div class="ttname"><a href="namespaceFeel.html#a338e05dd5e37f3594666f0a00e029d3d">Feel::expr</a></div><div class="ttdeci">SpaceT::element_type expr(std::shared_ptr&lt; SpaceT &gt; const &amp;Xh, ExprT const &amp;e)</div><div class="ttdoc">create an isotropic metric field based on a scalar expression</div><div class="ttdef"><b>Definition:</b> metric.hpp:130</div></div>
+<div class="ttc" id="anamespaceFeel_html_ae2f6db1ab4c336cc4f4a008bc86f401a"><div class="ttname"><a href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">Feel::expr</a></div><div class="ttdeci">SpaceT::element_type expr(std::shared_ptr&lt; SpaceT &gt; const &amp;Xh, ExprT &amp;&amp;e)</div><div class="ttdoc">create an isotropic metric field based on a scalar expression</div><div class="ttdef"><b>Definition:</b> metric.hpp:133</div></div>
 </div><!-- fragment --> </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

@@ -132,15 +132,15 @@ Public Types</h2></td></tr>
 <tr class="memitem:a9fcf48a310d1f6053c9fb346a1e43836"><td class="memItemLeft" align="right" valign="top"><a id="a9fcf48a310d1f6053c9fb346a1e43836" name="a9fcf48a310d1f6053c9fb346a1e43836"></a>
 typedef boost::remove_reference&lt; range_elt_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>const_t</b></td></tr>
 <tr class="separator:a9fcf48a310d1f6053c9fb346a1e43836"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a916fe177327c6f2f60600d45e1188e20"><td class="memItemLeft" align="right" valign="top"><a id="a916fe177327c6f2f60600d45e1188e20" name="a916fe177327c6f2f60600d45e1188e20"></a>
-typedef boost::tuples::template element&lt; 1, IteratorRange &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_iterator_type</b></td></tr>
-<tr class="separator:a916fe177327c6f2f60600d45e1188e20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fcbc07ebc5db530e6af5398e2e9e0b1"><td class="memItemLeft" align="right" valign="top"><a id="a3fcbc07ebc5db530e6af5398e2e9e0b1" name="a3fcbc07ebc5db530e6af5398e2e9e0b1"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>element_iterator_type</b> = typename IteratorRange::iterator_t</td></tr>
+<tr class="separator:a3fcbc07ebc5db530e6af5398e2e9e0b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc0250069e47564a77d7877094732797"><td class="memItemLeft" align="right" valign="top"><a id="adc0250069e47564a77d7877094732797" name="adc0250069e47564a77d7877094732797"></a>
 typedef the_element_type&#160;</td><td class="memItemRight" valign="bottom"><b>geoelement_type</b></td></tr>
 <tr class="separator:adc0250069e47564a77d7877094732797"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ef799e540c703c03f165f8da6edeec7"><td class="memItemLeft" align="right" valign="top"><a id="a8ef799e540c703c03f165f8da6edeec7" name="a8ef799e540c703c03f165f8da6edeec7"></a>
-typedef boost::unwrap_reference&lt; typenameelement_iterator_type::value_type &gt;::type::GeoShape&#160;</td><td class="memItemRight" valign="bottom"><b>GeoShape</b></td></tr>
-<tr class="separator:a8ef799e540c703c03f165f8da6edeec7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdd2cf79b71eebefb678bbc380bcccf4"><td class="memItemLeft" align="right" valign="top"><a id="acdd2cf79b71eebefb678bbc380bcccf4" name="acdd2cf79b71eebefb678bbc380bcccf4"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>GeoShape</b> = typename IteratorRange::element_t::GeoShape</td></tr>
+<tr class="separator:acdd2cf79b71eebefb678bbc380bcccf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6cbe94c9ec1972ac10871e19fc132921"><td class="memItemLeft" align="right" valign="top"><a id="a6cbe94c9ec1972ac10871e19fc132921" name="a6cbe94c9ec1972ac10871e19fc132921"></a>
 typedef geoelement_type::gm_type&#160;</td><td class="memItemRight" valign="bottom"><b>gm_type</b></td></tr>
 <tr class="separator:a6cbe94c9ec1972ac10871e19fc132921"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,9 +186,9 @@ typedef QuadMapped&lt; im_type &gt;::permutation_points_type&#160;</td><td class
 <tr class="memitem:a2aa3137b26825fad56e36331b37de606"><td class="memItemLeft" align="right" valign="top"><a id="a2aa3137b26825fad56e36331b37de606" name="a2aa3137b26825fad56e36331b37de606"></a>
 typedef QuadMapped&lt; im_type &gt;::permutation_type&#160;</td><td class="memItemRight" valign="bottom"><b>permutation_type</b></td></tr>
 <tr class="separator:a2aa3137b26825fad56e36331b37de606"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae6606d43dde178670eba1add34fafb8"><td class="memItemLeft" align="right" valign="top"><a id="aae6606d43dde178670eba1add34fafb8" name="aae6606d43dde178670eba1add34fafb8"></a>
-typedef boost::unwrap_reference&lt; typenameelement_iterator_type::value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>range_elt_type</b></td></tr>
-<tr class="separator:aae6606d43dde178670eba1add34fafb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8298e4efbf039eb37873ddc2ceb43f9f"><td class="memItemLeft" align="right" valign="top"><a id="a8298e4efbf039eb37873ddc2ceb43f9f" name="a8298e4efbf039eb37873ddc2ceb43f9f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elt_type</b> = typename IteratorRange::element_t</td></tr>
+<tr class="separator:a8298e4efbf039eb37873ddc2ceb43f9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b51a1e5d1e6a0f526ce3ec766288d54"><td class="memItemLeft" align="right" valign="top"><a id="a5b51a1e5d1e6a0f526ce3ec766288d54" name="a5b51a1e5d1e6a0f526ce3ec766288d54"></a>
 typedef IteratorRange&#160;</td><td class="memItemRight" valign="bottom"><b>range_iterator</b></td></tr>
 <tr class="separator:a5b51a1e5d1e6a0f526ce3ec766288d54"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -327,7 +327,7 @@ static const <a class="el" href="classint.html">int</a>&#160;</td><td class="mem
 <tr class="memitem:a6baae0d3d1f84745ac033e70d62b092d"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">Feel::size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1QuadPtLocalization.html#a6baae0d3d1f84745ac033e70d62b092d">context</a></td></tr>
 <tr class="separator:a6baae0d3d1f84745ac033e70d62b092d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e620fb64f6766940125ca4c571e8467"><td class="memItemLeft" align="right" valign="top"><a id="a8e620fb64f6766940125ca4c571e8467" name="a8e620fb64f6766940125ca4c571e8467"></a>
-static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">Feel::size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>iDim</b> = boost::tuples::template element&lt;0, IteratorRange&gt;::type::value</td></tr>
+static const <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">Feel::size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>iDim</b> = IteratorRange::entities()</td></tr>
 <tr class="separator:a8e620fb64f6766940125ca4c571e8467"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>

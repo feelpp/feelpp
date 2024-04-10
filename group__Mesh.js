@@ -329,7 +329,7 @@ var group__Mesh =
       [ "Feel::GEOMETRY_4", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6a54503d8991db83b0881690920230a997", null ],
       [ "Feel::GEOMETRY_5", "namespaceFeel.html#ga8a2b0de2d64f5281612ba8d3077fbfd6ac4e0f60e28b63a4d720202b5bee0bea9", null ]
     ] ],
-    [ "Feel::idelements", "group__Mesh.html#ga11f6177c58adf8bebf116edbcae4c2d7", null ],
+    [ "Feel::idelements", "group__Mesh.html#ga5684cb4c105e6f100e239055162ce3c0", null ],
     [ "Feel::remesh", "group__Mesh.html#ga6394537813e21ec32dee0d6ffd8f6ffe", null ],
     [ "Feel::worldComm", "group__Mesh.html#gab4cf21b17bddf97ac6b13289cc329ae8", null ]
 ];

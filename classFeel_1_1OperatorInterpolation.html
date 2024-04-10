@@ -187,12 +187,12 @@ typedef dual_image_space_type::basis_type&#160;</td><td class="memItemRight" val
 <tr class="memitem:ae5378f848c8befa5888e0a255d486c6c"><td class="memItemLeft" align="right" valign="top"><a id="ae5378f848c8befa5888e0a255d486c6c" name="ae5378f848c8befa5888e0a255d486c6c"></a>
 typedef domain_space_type::basis_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_basis_type</b></td></tr>
 <tr class="separator:ae5378f848c8befa5888e0a255d486c6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e8be03b870c18e828a3d0f93016fc5d"><td class="memItemLeft" align="right" valign="top"><a id="a3e8be03b870c18e828a3d0f93016fc5d" name="a3e8be03b870c18e828a3d0f93016fc5d"></a>
-typedef boost::tuples::template element&lt; 0, IteratorRange &gt;<a class="el" href="classFeel_1_1OperatorInterpolation.html#a7ba25de53ba2c6ba4b86614fdd55eac1">::type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>idim_type</b></td></tr>
-<tr class="separator:a3e8be03b870c18e828a3d0f93016fc5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe5e69e48ce5d799d41fbfa172a639bc"><td class="memItemLeft" align="right" valign="top"><a id="afe5e69e48ce5d799d41fbfa172a639bc" name="afe5e69e48ce5d799d41fbfa172a639bc"></a>
-typedef boost::tuples::template element&lt; 1, IteratorRange &gt;<a class="el" href="classFeel_1_1OperatorInterpolation.html#a7ba25de53ba2c6ba4b86614fdd55eac1">::type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_type</b></td></tr>
-<tr class="separator:afe5e69e48ce5d799d41fbfa172a639bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f22f0c9e0b40cb91a381f6c43f4e42f"><td class="memItemLeft" align="right" valign="top"><a id="a9f22f0c9e0b40cb91a381f6c43f4e42f" name="a9f22f0c9e0b40cb91a381f6c43f4e42f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>idim_type</b> = typename IteratorRange::idim_t</td></tr>
+<tr class="separator:a9f22f0c9e0b40cb91a381f6c43f4e42f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1517af6aa848c0829deb32c6de8fd96"><td class="memItemLeft" align="right" valign="top"><a id="ac1517af6aa848c0829deb32c6de8fd96" name="ac1517af6aa848c0829deb32c6de8fd96"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_type</b> = typename IteratorRange::iterator_t</td></tr>
+<tr class="separator:ac1517af6aa848c0829deb32c6de8fd96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b5426be44d1e28a2a5f12837db73f04"><td class="memItemLeft" align="right" valign="top"><a id="a8b5426be44d1e28a2a5f12837db73f04" name="a8b5426be44d1e28a2a5f12837db73f04"></a>
 typedef IteratorRange&#160;</td><td class="memItemRight" valign="bottom"><b>range_iterator</b></td></tr>
 <tr class="separator:a8b5426be44d1e28a2a5f12837db73f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -483,7 +483,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setDualImageSpace</b>
 <tr class="separator:a99d4d1011e2c722778241e1be27f30ba inherit pub_methods_classFeel_1_1Operator"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange = elements_pid_t&lt;typename ImageSpaceType::mesh_type&gt;, typename InterpType = decltype(makeInterpolation&lt;nonconforming_t&gt;(nonconforming_t()))&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange = Range&lt;typename ImageSpaceType::mesh_type,MESH_ELEMENTS&gt;, typename InterpType = decltype(makeInterpolation&lt;nonconforming_t&gt;(nonconforming_t()))&gt;<br />
 class Feel::OperatorInterpolation&lt; DomainSpaceType, ImageSpaceType, IteratorRange, InterpType &gt;</div><p >Global interpolation operator. </p>
 <dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme </dd></dl>
 <dl class="section see"><dt>See also</dt><dd></dd></dl>
@@ -494,7 +494,7 @@ class Feel::OperatorInterpolation&lt; DomainSpaceType, ImageSpaceType, IteratorR
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename DomainSpaceType , typename ImageSpaceType , typename IteratorRange  = elements_pid_t&lt;typename ImageSpaceType::mesh_type&gt;, typename InterpType  = decltype(makeInterpolation&lt;nonconforming_t&gt;(nonconforming_t()))&gt; </div>
+template&lt;typename DomainSpaceType , typename ImageSpaceType , typename IteratorRange  = Range&lt;typename ImageSpaceType::mesh_type,MESH_ELEMENTS&gt;, typename InterpType  = decltype(makeInterpolation&lt;nonconforming_t&gt;(nonconforming_t()))&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -523,7 +523,7 @@ template&lt;typename DomainSpaceType , typename ImageSpaceType , typename Iterat
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename DomainSpaceType , typename ImageSpaceType , typename IteratorRange  = elements_pid_t&lt;typename ImageSpaceType::mesh_type&gt;, typename InterpType  = decltype(makeInterpolation&lt;nonconforming_t&gt;(nonconforming_t()))&gt; </div>
+template&lt;typename DomainSpaceType , typename ImageSpaceType , typename IteratorRange  = Range&lt;typename ImageSpaceType::mesh_type,MESH_ELEMENTS&gt;, typename InterpType  = decltype(makeInterpolation&lt;nonconforming_t&gt;(nonconforming_t()))&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">

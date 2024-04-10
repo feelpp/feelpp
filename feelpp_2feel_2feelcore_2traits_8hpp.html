@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feelcore/traits.hpp File Reference</title>
+<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feelcore/traits.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -148,6 +148,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1type__identity.html">Feel::type_identity&lt; T &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1value__type__trait.html">Feel::value_type_trait&lt; Type, Enable &gt;</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -161,10 +163,22 @@ Typedefs</h2></td></tr>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a68061759e3dc50db29052d6a2e4ad890"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::decay_type</b> = std::decay_t&lt; remove_shared_ptr_type&lt; std::decay_t&lt; T &gt; &gt; &gt;</td></tr>
 <tr class="separator:a68061759e3dc50db29052d6a2e4ad890"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accd7dcbb1e0aec8ed30e47659000dafb"><td class="memTemplParams" colspan="2"><a id="accd7dcbb1e0aec8ed30e47659000dafb" name="accd7dcbb1e0aec8ed30e47659000dafb"></a>
+template&lt;typename ObjectType &gt; </td></tr>
+<tr class="memitem:accd7dcbb1e0aec8ed30e47659000dafb"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::element_ptr_t</b> = typename element_type_helper&lt; ObjectType &gt;::ptrtype</td></tr>
+<tr class="separator:accd7dcbb1e0aec8ed30e47659000dafb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bb677a4e5be4387187f5e07074c91a5"><td class="memTemplParams" colspan="2"><a id="a2bb677a4e5be4387187f5e07074c91a5" name="a2bb677a4e5be4387187f5e07074c91a5"></a>
+template&lt;typename ObjectType &gt; </td></tr>
+<tr class="memitem:a2bb677a4e5be4387187f5e07074c91a5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::element_t</b> = typename element_type_helper&lt; ObjectType &gt;::type</td></tr>
+<tr class="separator:a2bb677a4e5be4387187f5e07074c91a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69eca2c301fe48e4035082b2098cf901"><td class="memTemplParams" colspan="2"><a id="a69eca2c301fe48e4035082b2098cf901" name="a69eca2c301fe48e4035082b2098cf901"></a>
 template&lt;class T &gt; </td></tr>
 <tr class="memitem:a69eca2c301fe48e4035082b2098cf901"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_std_vector_t</b> = is_std_vector&lt; T &gt;</td></tr>
 <tr class="separator:a69eca2c301fe48e4035082b2098cf901"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c8b3f82de2c09f62559e175bbd8140e"><td class="memTemplParams" colspan="2"><a id="a4c8b3f82de2c09f62559e175bbd8140e" name="a4c8b3f82de2c09f62559e175bbd8140e"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a4c8b3f82de2c09f62559e175bbd8140e"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::remove_shared_ptr_t</b> = typename remove_shared_ptr&lt; T &gt;::type</td></tr>
+<tr class="separator:a4c8b3f82de2c09f62559e175bbd8140e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc9d8bf030049a9603f2dedc43f8ded6"><td class="memTemplParams" colspan="2"><a id="adc9d8bf030049a9603f2dedc43f8ded6" name="adc9d8bf030049a9603f2dedc43f8ded6"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:adc9d8bf030049a9603f2dedc43f8ded6"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::remove_shared_ptr_type</b> = typename remove_shared_ptr&lt; T &gt;::type</td></tr>
@@ -181,6 +195,10 @@ template&lt;typename... T&gt; </td></tr>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a62a2fb3d607993a8bf0c33be2b19cf5d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::type_identity_t</b> = typename type_identity&lt; T &gt;::type</td></tr>
 <tr class="separator:a62a2fb3d607993a8bf0c33be2b19cf5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aacdac016a9f620f231ce42a6f3cc7be6"><td class="memTemplParams" colspan="2"><a id="aacdac016a9f620f231ce42a6f3cc7be6" name="aacdac016a9f620f231ce42a6f3cc7be6"></a>
+template&lt;typename Type &gt; </td></tr>
+<tr class="memitem:aacdac016a9f620f231ce42a6f3cc7be6"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::value_t</b> = typename value_type_trait&lt; Type &gt;::type</td></tr>
+<tr class="separator:aacdac016a9f620f231ce42a6f3cc7be6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>

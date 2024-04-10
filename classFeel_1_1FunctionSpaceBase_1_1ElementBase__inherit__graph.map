@@ -1,7 +1,7 @@
 <map id="Feel::FunctionSpaceBase::ElementBase" name="Feel::FunctionSpaceBase::ElementBase">
-<area shape="rect" id="node1" title=" " alt="" coords="340,5,523,97"/>
-<area shape="rect" id="node2" href="$classFeel_1_1FunctionSpace_1_1Element.html" title=" " alt="" coords="5,145,191,868"/>
-<area shape="rect" id="node3" href="$classFeel_1_1ProductSpace_1_1Element.html" title=" " alt="" coords="215,424,424,589"/>
-<area shape="rect" id="node4" href="$classFeel_1_1ProductSpaces2_1_1Element.html" title=" " alt="" coords="449,417,641,597"/>
-<area shape="rect" id="node5" href="$classFeel_1_1ProductSpaces_1_1Element.html" title=" " alt="" coords="665,417,841,597"/>
+<area shape="rect" id="node1" title=" " alt="" coords="377,5,560,97"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FunctionSpace_1_1Element.html" title=" " alt="" coords="5,145,228,868"/>
+<area shape="rect" id="node3" href="$classFeel_1_1ProductSpace_1_1Element.html" title=" " alt="" coords="252,424,461,589"/>
+<area shape="rect" id="node4" href="$classFeel_1_1ProductSpaces2_1_1Element.html" title=" " alt="" coords="486,417,678,597"/>
+<area shape="rect" id="node5" href="$classFeel_1_1ProductSpaces_1_1Element.html" title=" " alt="" coords="702,417,878,597"/>
 </map>

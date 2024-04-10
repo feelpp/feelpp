@@ -1,14 +1,9 @@
 var feelpp_2feel_2feelmesh_2traits_8hpp =
 [
     [ "Feel::detail::submeshrangetype< RangeType >", "structFeel_1_1detail_1_1submeshrangetype.html", null ],
-    [ "Feel::dimension_t< T >", "structFeel_1_1dimension__t.html", null ],
-    [ "Feel::is_0d< T >", "structFeel_1_1is__0d.html", null ],
     [ "Feel::is_0d_real< T >", "structFeel_1_1is__0d__real.html", null ],
-    [ "Feel::is_1d< T >", "structFeel_1_1is__1d.html", null ],
     [ "Feel::is_1d_real< T >", "structFeel_1_1is__1d__real.html", null ],
-    [ "Feel::is_2d< T >", "structFeel_1_1is__2d.html", null ],
     [ "Feel::is_2d_real< T >", "structFeel_1_1is__2d__real.html", null ],
-    [ "Feel::is_3d< T >", "structFeel_1_1is__3d.html", null ],
     [ "Feel::is_3d_real< T >", "structFeel_1_1is__3d__real.html", null ],
     [ "Feel::is_convex< T >", "structFeel_1_1is__convex.html", null ],
     [ "Feel::is_cube< T >", "structFeel_1_1is__cube.html", null ],
@@ -25,7 +20,6 @@ var feelpp_2feel_2feelmesh_2traits_8hpp =
     [ "Feel::is_tetrahedron< T >", "structFeel_1_1is__tetrahedron.html", null ],
     [ "Feel::is_topological_face< T >", "structFeel_1_1is__topological__face.html", null ],
     [ "Feel::is_triangle< T >", "structFeel_1_1is__triangle.html", null ],
-    [ "Feel::real_dimension_t< T >", "structFeel_1_1real__dimension__t.html", null ],
     [ "range_t", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a2512946a9caa632d22ac8d531b15a1a2", null ],
     [ "dimension", "feelpp_2feel_2feelmesh_2traits_8hpp.html#af5c2ee4c05c1dcd72e48264fe5bcff5e", null ],
     [ "real_dimension", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a195b351a8f80c5359cb2227246ac4d07", null ],

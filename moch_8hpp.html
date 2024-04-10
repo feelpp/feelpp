@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/moch.hpp File Reference</title>
+<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/moch.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -115,11 +115,11 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a43557c0f6db629607ae09372a8e17b5a"><td class="memTemplParams" colspan="2"><a id="a43557c0f6db629607ae09372a8e17b5a" name="a43557c0f6db629607ae09372a8e17b5a"></a>
-template&lt;<a class="el" href="classint.html">int</a> Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced, typename MeshType &gt; </td></tr>
-<tr class="memitem:a43557c0f6db629607ae09372a8e17b5a"><td class="memTemplItemLeft" align="right" valign="top">std::shared_ptr&lt; FunctionSpace&lt; MeshType, <a class="el" href="structbases.html">bases</a>&lt; Lagrange&lt; Order, Scalar, Continuous, Pts &gt; &gt;, Periodicity&lt; NoPeriodicity &gt;, mortars&lt; Mortar &gt; &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Moch</b> (std::shared_ptr&lt; MeshType &gt; mesh, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
-<tr class="memdesc:a43557c0f6db629607ae09372a8e17b5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">build a function space of continuous function which are piecewise polynomial of degree (total or in each variable) less than k. <br /></td></tr>
-<tr class="separator:a43557c0f6db629607ae09372a8e17b5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3c9eb8f0a7ce8c176b6a6704a737ed3"><td class="memTemplParams" colspan="2"><a id="ae3c9eb8f0a7ce8c176b6a6704a737ed3" name="ae3c9eb8f0a7ce8c176b6a6704a737ed3"></a>
+template&lt;<a class="el" href="classint.html">int</a> Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetEquiSpaced, typename MeshType , typename T  = double&gt; </td></tr>
+<tr class="memitem:ae3c9eb8f0a7ce8c176b6a6704a737ed3"><td class="memTemplItemLeft" align="right" valign="top">std::shared_ptr&lt; FunctionSpace&lt; MeshType, <a class="el" href="structbases.html">bases</a>&lt; Lagrange&lt; Order, Scalar, Continuous, Pts &gt; &gt;, T, Periodicity&lt; NoPeriodicity &gt;, mortars&lt; Mortar &gt; &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Moch</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
+<tr class="memdesc:ae3c9eb8f0a7ce8c176b6a6704a737ed3"><td class="mdescLeft">&#160;</td><td class="mdescRight">build a function space of continuous function which are piecewise polynomial of degree (total or in each variable) less than k. <br /></td></tr>
+<tr class="separator:ae3c9eb8f0a7ce8c176b6a6704a737ed3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>

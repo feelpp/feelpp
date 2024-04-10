@@ -189,9 +189,9 @@ Protected Types</h2></td></tr>
 <tr class="memitem:ae040f30aaed02554f1c3316689593647"><td class="memItemLeft" align="right" valign="top"><a id="ae040f30aaed02554f1c3316689593647" name="ae040f30aaed02554f1c3316689593647"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>context_ptrtype</b> = std::shared_ptr&lt; context_type &gt;</td></tr>
 <tr class="separator:ae040f30aaed02554f1c3316689593647"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a67f1eda677d079eb485bfb3e7e4732"><td class="memItemLeft" align="right" valign="top"><a id="a0a67f1eda677d079eb485bfb3e7e4732" name="a0a67f1eda677d079eb485bfb3e7e4732"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>context_type</b> = typename gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; typename std::remove_const&lt; typename element_type::type &gt;::type &gt;</td></tr>
-<tr class="separator:a0a67f1eda677d079eb485bfb3e7e4732"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d3fe151ab9a5b839047e810c0c75ecf"><td class="memItemLeft" align="right" valign="top"><a id="a1d3fe151ab9a5b839047e810c0c75ecf" name="a1d3fe151ab9a5b839047e810c0c75ecf"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>context_type</b> = typename gm_type::template <a class="el" href="classFeel_1_1meta_1_1Context.html">Context</a>&lt; std::remove_const_t&lt; element_type &gt; &gt;</td></tr>
+<tr class="separator:a1d3fe151ab9a5b839047e810c0c75ecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6041513376bb19fb3d592e34b7704dde"><td class="memItemLeft" align="right" valign="top"><a id="a6041513376bb19fb3d592e34b7704dde" name="a6041513376bb19fb3d592e34b7704dde"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = typename super::element_type</td></tr>
 <tr class="separator:a6041513376bb19fb3d592e34b7704dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -228,25 +228,6 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>super</b> = <a class
 <tr class="memitem:a668089c509701bfffda8ad5935311830"><td class="memItemLeft" align="right" valign="top"><a id="a668089c509701bfffda8ad5935311830" name="a668089c509701bfffda8ad5935311830"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>weights_type</b> = ublas::vector&lt; double &gt;</td></tr>
 <tr class="separator:a668089c509701bfffda8ad5935311830"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pro_types_classFeel_1_1ExpressionEvaluatorBase"><td colspan="2" onclick="javascript:toggleInherit('pro_types_classFeel_1_1ExpressionEvaluatorBase')"><img src="closed.png" alt="-"/>&#160;Protected Types inherited from <a class="el" href="classFeel_1_1ExpressionEvaluatorBase.html">Feel::ExpressionEvaluatorBase&lt; EltT &gt;</a></td></tr>
-<tr class="memitem:ac1dcea3474ba1429154ee640e6ce2dd4 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="ac1dcea3474ba1429154ee640e6ce2dd4" name="ac1dcea3474ba1429154ee640e6ce2dd4"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = typename boost::tuples::element&lt; 1_c, <a class="el" href="classEltT.html">range_type</a> &gt;::type::value_type</td></tr>
-<tr class="separator:ac1dcea3474ba1429154ee640e6ce2dd4 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad67e88fcaa705f85778f320146b00b6 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="aad67e88fcaa705f85778f320146b00b6" name="aad67e88fcaa705f85778f320146b00b6"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>gm_type</b> = typename element_type::type::gm_type</td></tr>
-<tr class="separator:aad67e88fcaa705f85778f320146b00b6 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a052b70c2fa6df2f8f12695e75bd9ac1a inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a052b70c2fa6df2f8f12695e75bd9ac1a" name="a052b70c2fa6df2f8f12695e75bd9ac1a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterelement_type</b> = typename parameterspace_type::element_type</td></tr>
-<tr class="separator:a052b70c2fa6df2f8f12695e75bd9ac1a inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f7fe322a56d7d0c957ec2e4b0a464df inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a6f7fe322a56d7d0c957ec2e4b0a464df" name="a6f7fe322a56d7d0c957ec2e4b0a464df"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_ptrtype</b> = std::shared_ptr&lt; parameterspace_type &gt;</td></tr>
-<tr class="separator:a6f7fe322a56d7d0c957ec2e4b0a464df inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e8065f86fc5eff2ca75c0c1e86eacc0 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a9e8065f86fc5eff2ca75c0c1e86eacc0" name="a9e8065f86fc5eff2ca75c0c1e86eacc0"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_type</b> = ParameterSpace&lt;&gt;</td></tr>
-<tr class="separator:a9e8065f86fc5eff2ca75c0c1e86eacc0 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26a2d57d2f343a05f6b5a95a9a926719 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a26a2d57d2f343a05f6b5a95a9a926719" name="a26a2d57d2f343a05f6b5a95a9a926719"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>range_type</b> = <a class="el" href="classEltT.html">EltT</a></td></tr>
-<tr class="separator:a26a2d57d2f343a05f6b5a95a9a926719 inherit pro_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -266,6 +247,28 @@ weights_type&#160;</td><td class="memItemRight" valign="bottom"><b>M_weights</b>
 <tr class="memitem:a9c1eec80ce963ba50fb17c561b8d1602 inherit pro_attribs_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a9c1eec80ce963ba50fb17c561b8d1602" name="a9c1eec80ce963ba50fb17c561b8d1602"></a>
 <a class="el" href="classEltT.html">range_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>M_range</b></td></tr>
 <tr class="separator:a9c1eec80ce963ba50fb17c561b8d1602 inherit pro_attribs_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_types_classFeel_1_1ExpressionEvaluatorBase"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1ExpressionEvaluatorBase')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1ExpressionEvaluatorBase.html">Feel::ExpressionEvaluatorBase&lt; EltT &gt;</a></td></tr>
+<tr class="memitem:a3906531afd42f69badceb71a90cfc6fd inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a3906531afd42f69badceb71a90cfc6fd" name="a3906531afd42f69badceb71a90cfc6fd"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = typename range_type::element_t</td></tr>
+<tr class="separator:a3906531afd42f69badceb71a90cfc6fd inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a601f40485cca00aedc4a87e0560d3a inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a8a601f40485cca00aedc4a87e0560d3a" name="a8a601f40485cca00aedc4a87e0560d3a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>gm_type</b> = typename element_type::gm_type</td></tr>
+<tr class="separator:a8a601f40485cca00aedc4a87e0560d3a inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a052b70c2fa6df2f8f12695e75bd9ac1a inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a052b70c2fa6df2f8f12695e75bd9ac1a" name="a052b70c2fa6df2f8f12695e75bd9ac1a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterelement_type</b> = typename parameterspace_type::element_type</td></tr>
+<tr class="separator:a052b70c2fa6df2f8f12695e75bd9ac1a inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f7fe322a56d7d0c957ec2e4b0a464df inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a6f7fe322a56d7d0c957ec2e4b0a464df" name="a6f7fe322a56d7d0c957ec2e4b0a464df"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_ptrtype</b> = std::shared_ptr&lt; parameterspace_type &gt;</td></tr>
+<tr class="separator:a6f7fe322a56d7d0c957ec2e4b0a464df inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e8065f86fc5eff2ca75c0c1e86eacc0 inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a9e8065f86fc5eff2ca75c0c1e86eacc0" name="a9e8065f86fc5eff2ca75c0c1e86eacc0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_type</b> = ParameterSpace&lt;&gt;</td></tr>
+<tr class="separator:a9e8065f86fc5eff2ca75c0c1e86eacc0 inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26a2d57d2f343a05f6b5a95a9a926719 inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memItemLeft" align="right" valign="top"><a id="a26a2d57d2f343a05f6b5a95a9a926719" name="a26a2d57d2f343a05f6b5a95a9a926719"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_type</b> = <a class="el" href="classEltT.html">EltT</a></td></tr>
+<tr class="separator:a26a2d57d2f343a05f6b5a95a9a926719 inherit pub_types_classFeel_1_1ExpressionEvaluatorBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="aa7561c49898a4d1d907eca0260774e44" name="aa7561c49898a4d1d907eca0260774e44"></a>

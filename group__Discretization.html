@@ -169,7 +169,7 @@ template&lt;typename FacetType &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="facet_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/facet.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="facet_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/facet.hpp</a>&gt;</code></p>
 
 <p>get the local indexing of a facet from the global id </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -216,7 +216,7 @@ template&lt;typename FacetType , typename DofTableType &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="facet_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/facet.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="facet_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/facet.hpp</a>&gt;</code></p>
 
 <p>get the local indexing of a facet from the global id and a doftable </p>
 <dl class="section warning"><dt>Warning</dt><dd>if the tuple {-1,-1} is returned it means with are on a partial mesh and the facet is in it</dd></dl>
@@ -256,7 +256,7 @@ template&lt;typename... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
 
 <p>compute the max of the element of a function space at DOF points over the range <code>r</code> </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -274,9 +274,9 @@ template&lt;typename... Ts&gt; </div>
   </dd>
 </dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
-<div class="line"><span class="keyword">auto</span> [max_v,arg_max_v] = <a class="code hl_function" href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">maxelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v);</div>
+<div class="line"><span class="keyword">auto</span> [max_v,arg_max_v] = <a class="code hl_function" href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">maxelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a>(mesh),_element=v);</div>
 <div class="ttc" id="agroup__Discretization_html_ga23210be0660ed163219437701260e4ee"><div class="ttname"><a href="group__Discretization.html#ga23210be0660ed163219437701260e4ee">Feel::maxelt</a></div><div class="ttdeci">auto maxelt(Ts &amp;&amp;... v)</div><div class="ttdoc">compute the max of the element of a function space at DOF points over the range r</div><div class="ttdef"><b>Definition:</b> minmax.hpp:200</div></div>
-<div class="ttc" id="anamespaceFeel_html_abdab447afcf746e7e621c56c1d6dc06b"><div class="ttname"><a href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements</a></div><div class="ttdeci">elements_pid_t&lt; MeshType &gt; elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:121</div></div>
+<div class="ttc" id="anamespaceFeel_html_ac20d23cc8e912e4b7919da0c978d7b17"><div class="ttname"><a href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">Feel::elements</a></div><div class="ttdeci">auto elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:113</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the max value and the dof point coordinates </dd></dl>
 
 </div>
@@ -299,7 +299,7 @@ template&lt;typename... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
 
 <p>compute the min of the element of a function space at DOF points over the range <code>r</code> </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -317,7 +317,7 @@ template&lt;typename... Ts&gt; </div>
   </dd>
 </dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
-<div class="line"><span class="keyword">auto</span> [min_v,arg_min_v] = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v);</div>
+<div class="line"><span class="keyword">auto</span> [min_v,arg_min_v] = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a>(mesh),_element=v);</div>
 <div class="ttc" id="agroup__Discretization_html_gac354bf0f9af28c2f4bb464bf49eccabd"><div class="ttname"><a href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">Feel::minelt</a></div><div class="ttdeci">auto minelt(Ts &amp;&amp;... v)</div><div class="ttdoc">compute the min of the element of a function space at DOF points over the range r</div><div class="ttdef"><b>Definition:</b> minmax.hpp:175</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the min value and the dof point coordinates </dd></dl>
 
@@ -341,7 +341,7 @@ template&lt;typename... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
 
 <p>compute the min of the element of a function space at DOF points over the range <code>r</code> </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -359,7 +359,7 @@ template&lt;typename... Ts&gt; </div>
   </dd>
 </dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
-<div class="line"><span class="keyword">auto</span> r = <a class="code hl_function" href="group__Discretization.html#ga5bb7051513b50412427c81e806b45468">minmaxelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v);</div>
+<div class="line"><span class="keyword">auto</span> r = <a class="code hl_function" href="group__Discretization.html#ga5bb7051513b50412427c81e806b45468">minmaxelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a>(mesh),_element=v);</div>
 <div class="line"><span class="keywordflow">for</span>( <span class="keyword">auto</span> <span class="keyword">const</span>&amp; [o_v,arg_o_v] : <a class="code hl_function" href="namespaceFeel.html#a957bcceae9034d9d5f0b2f16aeaa7ed3">enumerate</a>(r) )</div>
 <div class="line">{</div>
 <div class="line">     std::cout &lt;&lt; <span class="stringliteral">&quot;i: &quot;</span> &lt;&lt; o_v &lt;&lt; <span class="stringliteral">&quot;, &quot;</span> &lt;&lt; arg_o_v &lt;&lt; std::endl;</div>
@@ -390,7 +390,7 @@ template&lt;typename... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
 
 <p>compute the min of the element of a function space at DOF points over the range <code>r</code> </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -408,7 +408,7 @@ template&lt;typename... Ts&gt; </div>
   </dd>
 </dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
-<div class="line"><span class="keyword">auto</span> [op_v,arg_op_v] = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v,_op=[](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b){ <span class="keywordflow">return</span> a &lt; b; });</div>
+<div class="line"><span class="keyword">auto</span> [op_v,arg_op_v] = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a>(mesh),_element=v,_op=[](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b){ <span class="keywordflow">return</span> a &lt; b; });</div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the value and the dof point coordinates </dd></dl>
 
 </div>
@@ -431,7 +431,7 @@ template&lt;typename... Ts&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feeldiscr_2minmax_8hpp.html">/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/minmax.hpp</a>&gt;</code></p>
 
 <p>compute the set of operations <code>ops</code> of the element of a function space at DOF points over the range <code>r</code> </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -449,7 +449,7 @@ template&lt;typename... Ts&gt; </div>
   </dd>
 </dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> v = Xh-&gt;element();</div>
-<div class="line"><span class="keyword">auto</span> res = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">elements</a>(mesh),_element=v,_op=[](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b){ <span class="keywordflow">return</span> a &lt; b; });</div>
+<div class="line"><span class="keyword">auto</span> res = <a class="code hl_function" href="group__Discretization.html#gac354bf0f9af28c2f4bb464bf49eccabd">minelt</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a>(mesh),_element=v,_op=[](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; a, <span class="keyword">auto</span> <span class="keyword">const</span>&amp; b){ <span class="keywordflow">return</span> a &lt; b; });</div>
 <div class="line"><span class="comment">// loop on results</span></div>
 <div class="line"><span class="keywordflow">for</span>( <span class="keyword">auto</span> item: res )</div>
 <div class="line">{</div>

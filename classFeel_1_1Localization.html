@@ -179,9 +179,9 @@ typedef boost::tuple&lt; node_type, std::list&lt; size_type &gt; &gt;&#160;</td>
 <tr class="memitem:a2d766255243dca0e11c77620aa9d5ecb"><td class="memItemLeft" align="right" valign="top"><a id="a2d766255243dca0e11c77620aa9d5ecb" name="a2d766255243dca0e11c77620aa9d5ecb"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b> = typename MeshType::node_type</td></tr>
 <tr class="separator:a2d766255243dca0e11c77620aa9d5ecb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e7391e3d525c751c9dd45949ec5aa48"><td class="memItemLeft" align="right" valign="top"><a id="a6e7391e3d525c751c9dd45949ec5aa48" name="a6e7391e3d525c751c9dd45949ec5aa48"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elements_type</b> = elements_reference_wrapper_t&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;</td></tr>
-<tr class="separator:a6e7391e3d525c751c9dd45949ec5aa48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c2a62f1e229640e8c309040777c03b8"><td class="memItemLeft" align="right" valign="top"><a id="a6c2a62f1e229640e8c309040777c03b8" name="a6c2a62f1e229640e8c309040777c03b8"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elements_type</b> = <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a>, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;</td></tr>
+<tr class="separator:a6c2a62f1e229640e8c309040777c03b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a350bfd7f124c9d0620b2621f4e8187e1"><td class="memItemLeft" align="right" valign="top"><a id="a350bfd7f124c9d0620b2621f4e8187e1" name="a350bfd7f124c9d0620b2621f4e8187e1"></a>
 typedef mesh_type::gm1_type::reference_convex_type&#160;</td><td class="memItemRight" valign="bottom"><b>ref_convex1_type</b></td></tr>
 <tr class="separator:a350bfd7f124c9d0620b2621f4e8187e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -279,7 +279,7 @@ container_search_iterator_type&#160;</td><td class="memItemRight" valign="bottom
 <tr class="memitem:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58">setMesh</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt; m, <a class="el" href="classbool.html">bool</a> b=true)</td></tr>
 <tr class="separator:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b2d5348acb00bbb52447baf2cb961bd"><td class="memItemLeft" align="right" valign="top"><a id="a1b2d5348acb00bbb52447baf2cb961bd" name="a1b2d5348acb00bbb52447baf2cb961bd"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMesh</b> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt; m, range_elements_type const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classbool.html">bool</a> b=true)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setMesh</b> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt; m, <a class="el" href="classFeel_1_1Range.html">range_elements_type</a> const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classbool.html">bool</a> b=true)</td></tr>
 <tr class="separator:a1b2d5348acb00bbb52447baf2cb961bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d54fa323c45777c5484ff5b0b9c1ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">updateForUse</a> ()</td></tr>
 <tr class="separator:a7d54fa323c45777c5484ff5b0b9c1ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -697,7 +697,7 @@ template&lt;typename MeshType &gt; </div>
 <hr  />
 <p> Define the mesh whith or not init </p>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">Feel::elements()</a>.</p>
 
 </div>
 </div>
@@ -720,7 +720,7 @@ template&lt;typename MeshType &gt; </div>
 <hr  />
 <p> Run the init function if necessary </p>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#abdab447afcf746e7e621c56c1d6dc06b">Feel::elements()</a>, and <a class="el" href="classFeel_1_1Localization.html#ae95e40dc21ace203e878aaf542f3492e">Feel::Localization&lt; MeshType &gt;::isInit()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">Feel::elements()</a>, and <a class="el" href="classFeel_1_1Localization.html#ae95e40dc21ace203e878aaf542f3492e">Feel::Localization&lt; MeshType &gt;::isInit()</a>.</p>
 
 </div>
 </div>

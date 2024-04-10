@@ -261,6 +261,9 @@ worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>operator+<
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (<a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;wc) const</td></tr>
 <tr class="memdesc:ace65a2ba7a2c86db0e3a6fc15137a8e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">comparison of worldcomm <br /></td></tr>
 <tr class="separator:ace65a2ba7a2c86db0e3a6fc15137a8e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac189841336d1d6a97a9eeaf116c6a5f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ac189841336d1d6a97a9eeaf116c6a5f0">print</a> (std::string const &amp;text, <a class="el" href="classbool.html">bool</a> sync=false, <a class="el" href="classbool.html">bool</a> print_to_cout=false, <a class="el" href="classbool.html">bool</a> flush=false)</td></tr>
+<tr class="memdesc:ac189841336d1d6a97a9eeaf116c6a5f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">print text on the worldcomm  <a href="classFeel_1_1WorldComm.html#ac189841336d1d6a97a9eeaf116c6a5f0">More...</a><br /></td></tr>
+<tr class="separator:ac189841336d1d6a97a9eeaf116c6a5f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34a9fa2d7b4a6d29d5f7d73f4348faf6"><td class="memItemLeft" align="right" valign="top"><a id="a34a9fa2d7b4a6d29d5f7d73f4348faf6" name="a34a9fa2d7b4a6d29d5f7d73f4348faf6"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>registerSubWorlds</b> (<a class="el" href="classint.html">int</a> n) const</td></tr>
 <tr class="memdesc:a34a9fa2d7b4a6d29d5f7d73f4348faf6"><td class="mdescLeft">&#160;</td><td class="mdescRight">register sub worlds associated to <code>worldmap</code> <br /></td></tr>
@@ -392,7 +395,7 @@ static <a class="el" href="classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7
 <div class="line"><a class="code hl_function" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a> worldColored( <a class="code hl_function" href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">mapColorWorld</a> );</div>
 <div class="ttc" id="aclassFeel_1_1Environment_html_ade89e3983d4b3f998fb4ebd0e84f28a7"><div class="ttname"><a href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm</a></div><div class="ttdeci">static WorldComm &amp; worldComm()</div><div class="ttdoc">return the worldcomm (static)</div><div class="ttdef"><b>Definition:</b> environment.hpp:319</div></div>
 <div class="ttc" id="aclassFeel_1_1WorldComm_html_a4ed4a25902258a5ca6e66d215fa5787b"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">Feel::WorldComm::WorldComm</a></div><div class="ttdeci">WorldComm()</div><div class="ttdoc">Default constructor.</div><div class="ttdef"><b>Definition:</b> worldcomm.cpp:41</div></div>
-<div class="ttc" id="aclassFeel_1_1WorldComm_html_a9cd39e2ebe804a5f64bae91662d31c8a"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">Feel::WorldComm::mapColorWorld</a></div><div class="ttdeci">std::vector&lt; int &gt; const &amp; mapColorWorld() const</div><div class="ttdoc">the colormap of the worldcomm by default the colormap set all processes to the same color 0</div><div class="ttdef"><b>Definition:</b> worldcomm.hpp:209</div></div>
+<div class="ttc" id="aclassFeel_1_1WorldComm_html_a9cd39e2ebe804a5f64bae91662d31c8a"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a9cd39e2ebe804a5f64bae91662d31c8a">Feel::WorldComm::mapColorWorld</a></div><div class="ttdeci">std::vector&lt; int &gt; const &amp; mapColorWorld() const</div><div class="ttdoc">the colormap of the worldcomm by default the colormap set all processes to the same color 0</div><div class="ttdef"><b>Definition:</b> worldcomm.hpp:210</div></div>
 <div class="ttc" id="anamespaceFeel_html_a99aac342902035d1427a6e77b4037a78"><div class="ttname"><a href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">Feel::rank</a></div><div class="ttdeci">auto rank(C const &amp;c)</div><div class="ttdef"><b>Definition:</b> rank.hpp:37</div></div>
 </div><!-- fragment --> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aee58710d8c993dd3d6797e60b28593cf" name="aee58710d8c993dd3d6797e60b28593cf"></a>
@@ -588,6 +591,57 @@ static <a class="el" href="classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7
 <dl class="section return"><dt>Returns</dt><dd>the master rank id in the worldcomm </dd></dl>
 
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1PsLogger.html#a2f72736898d3212023d583d9bf131992">Feel::PsLogger::log()</a>, <a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e">showMe()</a>.</p>
+
+</div>
+</div>
+<a id="ac189841336d1d6a97a9eeaf116c6a5f0" name="ac189841336d1d6a97a9eeaf116c6a5f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac189841336d1d6a97a9eeaf116c6a5f0">&#9670;&nbsp;</a></span>print()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::WorldComm::print </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>text</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>sync</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>print_to_cout</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>flush</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>print text on the worldcomm </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">text</td><td>text to print </td></tr>
+    <tr><td class="paramname">sync</td><td>whether to synchronize the worldcomm before printing and after </td></tr>
+    <tr><td class="paramname">print_to_cout</td><td>print to standard output </td></tr>
+    <tr><td class="paramname">flush</td><td>flush log files </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

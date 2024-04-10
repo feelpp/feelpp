@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::AddOffContainer&lt; BasisType &gt; Struct Template Reference</title>
+<title>Feel++: Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::AddOffContainer&lt; BasisType &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -103,35 +103,35 @@ $(document).ready(function(){initNavTree('structFeel_1_1FunctionSpace_1_1Element
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::AddOffContainer&lt; BasisType &gt; Struct Template Reference</div></div>
+  <div class="headertitle"><div class="title">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::AddOffContainer&lt; BasisType &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
 <p>useful in // with composite case store the off views  
  <a href="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html#details">More...</a></p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::AddOffContainer&lt; BasisType &gt;:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::AddOffContainer&lt; BasisType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer__coll__graph.svg" width="259" height="132"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer__coll__graph.svg" width="310" height="147"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a6176796583d0132bb727f2ddfb73a7ed"><td class="memItemLeft" align="right" valign="top"><a id="a6176796583d0132bb727f2ddfb73a7ed" name="a6176796583d0132bb727f2ddfb73a7ed"></a>enum &#160;</td><td class="memItemRight" valign="bottom">{ <b>mpl_assertion_in_line_2228</b> = sizeof( boost::mpl::assertion_failed&lt;false&gt;( boost::mpl::assert_not_arg( (void (*) ( boost::is_same&lt;BasisType,mpl::void_&gt; ))0, 1 ) ) )
+<tr class="memitem:aebeec6e024d855a96ce9879f612cfc6a"><td class="memItemLeft" align="right" valign="top"><a id="aebeec6e024d855a96ce9879f612cfc6a" name="aebeec6e024d855a96ce9879f612cfc6a"></a>enum &#160;</td><td class="memItemRight" valign="bottom">{ <b>mpl_assertion_in_line_2219</b> = sizeof( boost::mpl::assertion_failed&lt;false&gt;( boost::mpl::assert_not_arg( (void (*) ( boost::is_same&lt;BasisType,mpl::void_&gt; ))0, 1 ) ) )
  }</td></tr>
-<tr class="separator:a6176796583d0132bb727f2ddfb73a7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12441ce5dc50e665cc9bb95c5b851184"><td class="memItemLeft" align="right" valign="top"><a id="a12441ce5dc50e665cc9bb95c5b851184" name="a12441ce5dc50e665cc9bb95c5b851184"></a>
+<tr class="separator:aebeec6e024d855a96ce9879f612cfc6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a237e5775d882c70117daaded99030cfe"><td class="memItemLeft" align="right" valign="top"><a id="a237e5775d882c70117daaded99030cfe" name="a237e5775d882c70117daaded99030cfe"></a>
 typedef std::shared_ptr&lt; Cont &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
-<tr class="separator:a12441ce5dc50e665cc9bb95c5b851184"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a237e5775d882c70117daaded99030cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename A0, typename A1 = parameter::void_, typename A2 = parameter::void_, typename A3 = parameter::void_, typename A4 = parameter::void_&gt;<br />
-template&lt;typename T = double, typename Cont = VectorUblas&lt;T&gt;&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename MeshTypes, typename BasisTypes = Feel::bases&lt;Lagrange&lt;1,Scalar&gt; &gt;, typename T = double, typename PeriodicityType = Periodicity&lt;NoPeriodicity&gt;, typename MortarType = mortars&lt;NoMortar&gt;&gt;<br />
+template&lt;typename TT = double, typename Cont = VectorUblas&lt;TT&gt;&gt;<br />
 template&lt;typename BasisType&gt;<br />
-struct Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;::AddOffContainer&lt; BasisType &gt;</div><p >useful in // with composite case store the off views </p>
+struct Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;::AddOffContainer&lt; BasisType &gt;</div><p >useful in // with composite case store the off views </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

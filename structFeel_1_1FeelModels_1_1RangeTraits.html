@@ -117,21 +117,18 @@ $(document).ready(function(){initNavTree('structFeel_1_1FeelModels_1_1RangeTrait
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a84fc051291be49d8452d4fbfe35adc9d"><td class="memItemLeft" align="right" valign="top"><a id="a84fc051291be49d8452d4fbfe35adc9d" name="a84fc051291be49d8452d4fbfe35adc9d"></a>
-typedef boost::remove_reference&lt; range_elt_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>const_t</b></td></tr>
-<tr class="separator:a84fc051291be49d8452d4fbfe35adc9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5574cc063dcc89e9233d0dacd2d45d78"><td class="memItemLeft" align="right" valign="top"><a id="a5574cc063dcc89e9233d0dacd2d45d78" name="a5574cc063dcc89e9233d0dacd2d45d78"></a>
-typedef boost::tuples::template element&lt; 1, RangeType &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_iterator</b></td></tr>
-<tr class="separator:a5574cc063dcc89e9233d0dacd2d45d78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a007c5de76eec7a7b5ebbd375b0378d33"><td class="memItemLeft" align="right" valign="top"><a id="a007c5de76eec7a7b5ebbd375b0378d33" name="a007c5de76eec7a7b5ebbd375b0378d33"></a>
-typedef the_face_element_type::super2::template Element&lt; the_face_element_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b></td></tr>
-<tr class="separator:a007c5de76eec7a7b5ebbd375b0378d33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88362ddf6a193f0521bf196904fefbb5"><td class="memItemLeft" align="right" valign="top"><a id="a88362ddf6a193f0521bf196904fefbb5" name="a88362ddf6a193f0521bf196904fefbb5"></a>
-typedef boost::unwrap_reference&lt; typenameelement_iterator::value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>range_elt_type</b></td></tr>
-<tr class="separator:a88362ddf6a193f0521bf196904fefbb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0008ec0f082f4cd097ed5baa367db82c"><td class="memItemLeft" align="right" valign="top"><a id="a0008ec0f082f4cd097ed5baa367db82c" name="a0008ec0f082f4cd097ed5baa367db82c"></a>
-typedef boost::remove_const&lt; const_t &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>the_face_element_type</b></td></tr>
-<tr class="separator:a0008ec0f082f4cd097ed5baa367db82c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f75ca98747d82f8474e946f41ff90e4"><td class="memItemLeft" align="right" valign="top"><a id="a7f75ca98747d82f8474e946f41ff90e4" name="a7f75ca98747d82f8474e946f41ff90e4"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>const_t</b> = std::remove_reference_t&lt; range_elt_type &gt;</td></tr>
+<tr class="separator:a7f75ca98747d82f8474e946f41ff90e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a721740657ffb2cccef6c81552a853939"><td class="memItemLeft" align="right" valign="top"><a id="a721740657ffb2cccef6c81552a853939" name="a721740657ffb2cccef6c81552a853939"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>element_iterator</b> = typename RangeType::iterator_t</td></tr>
+<tr class="separator:a721740657ffb2cccef6c81552a853939"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3003925daf8e802b89832b98f770a452"><td class="memItemLeft" align="right" valign="top"><a id="a3003925daf8e802b89832b98f770a452" name="a3003925daf8e802b89832b98f770a452"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = std::remove_const_t&lt; const_t &gt;</td></tr>
+<tr class="separator:a3003925daf8e802b89832b98f770a452"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a5c18aa06dc7af7c258e8fdb2712a93"><td class="memItemLeft" align="right" valign="top"><a id="a0a5c18aa06dc7af7c258e8fdb2712a93" name="a0a5c18aa06dc7af7c258e8fdb2712a93"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elt_type</b> = typename RangeType::element_t</td></tr>
+<tr class="separator:a0a5c18aa06dc7af7c258e8fdb2712a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

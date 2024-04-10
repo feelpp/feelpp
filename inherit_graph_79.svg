@@ -12,10 +12,10 @@
 <!-- Node0 -->
 <g id="node1" class="node">
 <title>Node0</title>
-<g id="a_node1"><a xlink:href="structFeel_1_1detail_1_1Div_1_1result.html" target="_top" xlink:title=" ">
+<g id="a_node1"><a xlink:href="structFeel_1_1detail_1_1Div.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-30.5 101,-30.5 101,-0.5 0,-0.5"/>
 <text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::detail::Div&lt;</text>
-<text text-anchor="middle" x="50.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"> T, D &gt;::result</text>
+<text text-anchor="middle" x="50.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00"> T, D &gt;</text>
 </a>
 </g>
 </g>

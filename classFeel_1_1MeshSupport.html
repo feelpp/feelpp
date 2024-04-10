@@ -116,7 +116,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1MeshSupport.html',''); in
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1MeshSupport__inherit__graph.svg" width="186" height="375"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1MeshSupport__inherit__graph.svg" width="400" height="375"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -124,7 +124,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1MeshSupport.html',''); in
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1MeshSupport__coll__graph.svg" width="248" height="390"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1MeshSupport__coll__graph.svg" width="463" height="390"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
@@ -142,12 +142,12 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b> = s
 <tr class="memitem:a46c3ef4c2c40c77fb053f26848364ea2"><td class="memItemLeft" align="right" valign="top"><a id="a46c3ef4c2c40c77fb053f26848364ea2" name="a46c3ef4c2c40c77fb053f26848364ea2"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b> = typename <a class="el" href="structFeel_1_1MeshTraits.html">MeshTraits</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt;::mesh_type</td></tr>
 <tr class="separator:a46c3ef4c2c40c77fb053f26848364ea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c299390ad1a21f8cc526ee2364aabb4"><td class="memItemLeft" align="right" valign="top"><a id="a2c299390ad1a21f8cc526ee2364aabb4" name="a2c299390ad1a21f8cc526ee2364aabb4"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elements_type</b> = elements_reference_wrapper_t&lt; mesh_type &gt;</td></tr>
-<tr class="separator:a2c299390ad1a21f8cc526ee2364aabb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d7955fea1b0458674a8be043862ff00"><td class="memItemLeft" align="right" valign="top"><a id="a9d7955fea1b0458674a8be043862ff00" name="a9d7955fea1b0458674a8be043862ff00"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>range_faces_type</b> = faces_reference_wrapper_t&lt; mesh_type &gt;</td></tr>
-<tr class="separator:a9d7955fea1b0458674a8be043862ff00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a083971a52adedbf28802ea03e7983245"><td class="memItemLeft" align="right" valign="top"><a id="a083971a52adedbf28802ea03e7983245" name="a083971a52adedbf28802ea03e7983245"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_elements_type</b> = <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; mesh_type, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;</td></tr>
+<tr class="separator:a083971a52adedbf28802ea03e7983245"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65617e161f1ea64df81399afcf0b34e9"><td class="memItemLeft" align="right" valign="top"><a id="a65617e161f1ea64df81399afcf0b34e9" name="a65617e161f1ea64df81399afcf0b34e9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_faces_type</b> = <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; mesh_type, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;</td></tr>
+<tr class="separator:a65617e161f1ea64df81399afcf0b34e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f0bb79360e9cd23bc12c6e3d2255679"><td class="memItemLeft" align="right" valign="top"><a id="a7f0bb79360e9cd23bc12c6e3d2255679" name="a7f0bb79360e9cd23bc12c6e3d2255679"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>super_type</b> = <a class="el" href="classFeel_1_1MeshSupportBase.html">MeshSupportBase</a></td></tr>
 <tr class="separator:a7f0bb79360e9cd23bc12c6e3d2255679"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -162,14 +162,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5c3823fc1e4de58bc4f7d2d894190b58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3166ed7d2ac13157f3bb4247621bb12"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshSupport.html#ae3166ed7d2ac13157f3bb4247621bb12">isFullSupport</a> () const override</td></tr>
 <tr class="separator:ae3166ed7d2ac13157f3bb4247621bb12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada68761c44e4a204f4e315674ecb21e0"><td class="memTemplParams" colspan="2"><a id="ada68761c44e4a204f4e315674ecb21e0" name="ada68761c44e4a204f4e315674ecb21e0"></a>
+<tr class="memitem:a8371c28f6998e7f7a785c2122285030c"><td class="memTemplParams" colspan="2"><a id="a8371c28f6998e7f7a785c2122285030c" name="a8371c28f6998e7f7a785c2122285030c"></a>
 template&lt;typename FaceType &gt; </td></tr>
-<tr class="memitem:ada68761c44e4a204f4e315674ecb21e0"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>isGhostFace</b> (FaceType const &amp;face, typename std::enable_if_t&lt; std::is_same_v&lt; FaceType, face_type &gt; &gt; *=nullptr) const</td></tr>
-<tr class="separator:ada68761c44e4a204f4e315674ecb21e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f6b777c4030129edd2e05f6dddd3beb"><td class="memTemplParams" colspan="2"><a id="a7f6b777c4030129edd2e05f6dddd3beb" name="a7f6b777c4030129edd2e05f6dddd3beb"></a>
-template&lt;typename FaceType &gt; </td></tr>
-<tr class="memitem:a7f6b777c4030129edd2e05f6dddd3beb"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>isGhostFace</b> (FaceType const &amp;face, typename std::enable_if_t&lt;!std::is_same_v&lt; FaceType, face_type &gt; &gt; *=nullptr) const</td></tr>
-<tr class="separator:a7f6b777c4030129edd2e05f6dddd3beb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8371c28f6998e7f7a785c2122285030c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>isGhostFace</b> (FaceType const &amp;face) const</td></tr>
+<tr class="separator:a8371c28f6998e7f7a785c2122285030c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4b092363f482e116e1fe616095fd463"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshSupport.html#ac4b092363f482e116e1fe616095fd463">isPartialSupport</a> () const override</td></tr>
 <tr class="separator:ac4b092363f482e116e1fe616095fd463"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af05fa39885fcdce413b6f0f0e11fee52"><td class="memItemLeft" align="right" valign="top"><a id="af05fa39885fcdce413b6f0f0e11fee52" name="af05fa39885fcdce413b6f0f0e11fee52"></a>
@@ -178,32 +174,32 @@ mesh_ptrtype const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 <tr class="memitem:a5fd38afff24408df6f67696addd033b4"><td class="memItemLeft" align="right" valign="top"><a id="a5fd38afff24408df6f67696addd033b4" name="a5fd38afff24408df6f67696addd033b4"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshSupport</b> (mesh_ptrtype const &amp;mesh)</td></tr>
 <tr class="separator:a5fd38afff24408df6f67696addd033b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa661feb2d5eb799b9fe82048ba20efe8"><td class="memItemLeft" align="right" valign="top"><a id="aa661feb2d5eb799b9fe82048ba20efe8" name="aa661feb2d5eb799b9fe82048ba20efe8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>MeshSupport</b> (mesh_ptrtype const &amp;mesh, range_elements_type const &amp;rangeElements)</td></tr>
-<tr class="separator:aa661feb2d5eb799b9fe82048ba20efe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4baa46a201eef4239e2ed0e3dbedfd7f"><td class="memItemLeft" align="right" valign="top"><a id="a4baa46a201eef4239e2ed0e3dbedfd7f" name="a4baa46a201eef4239e2ed0e3dbedfd7f"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MeshSupport</b> (mesh_ptrtype const &amp;mesh, <a class="el" href="classFeel_1_1Range.html">range_elements_type</a> const &amp;rangeElements, <a class="el" href="classbool.html">bool</a> fullsupport=false)</td></tr>
+<tr class="separator:a4baa46a201eef4239e2ed0e3dbedfd7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b751f029df62b58ccb13b087614d291"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshSupport.html#a5b751f029df62b58ccb13b087614d291">numElements</a> () const override</td></tr>
 <tr class="separator:a5b751f029df62b58ccb13b087614d291"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd47c84cd815f7e3b50fdb839104517d"><td class="memItemLeft" align="right" valign="top"><a id="afd47c84cd815f7e3b50fdb839104517d" name="afd47c84cd815f7e3b50fdb839104517d"></a>
-range_faces_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeBoundaryFaces</b> () const</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_faces_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeBoundaryFaces</b> () const</td></tr>
 <tr class="separator:afd47c84cd815f7e3b50fdb839104517d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0194eb8257448eba8751d3e1d4af02f"><td class="memItemLeft" align="right" valign="top"><a id="ab0194eb8257448eba8751d3e1d4af02f" name="ab0194eb8257448eba8751d3e1d4af02f"></a>
-range_elements_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeElements</b> () const</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_elements_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeElements</b> () const</td></tr>
 <tr class="separator:ab0194eb8257448eba8751d3e1d4af02f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a259517f12e9e1308ce49cb0e1b6ef90b"><td class="memItemLeft" align="right" valign="top"><a id="a259517f12e9e1308ce49cb0e1b6ef90b" name="a259517f12e9e1308ce49cb0e1b6ef90b"></a>
-range_elements_type&#160;</td><td class="memItemRight" valign="bottom"><b>rangeElements</b> (EntityProcessType entity) const</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_elements_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rangeElements</b> (EntityProcessType entity) const</td></tr>
 <tr class="separator:a259517f12e9e1308ce49cb0e1b6ef90b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b45aa9cd19d523fbd93487e6987748e"><td class="memItemLeft" align="right" valign="top"><a id="a5b45aa9cd19d523fbd93487e6987748e" name="a5b45aa9cd19d523fbd93487e6987748e"></a>
-range_faces_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeInternalFaces</b> () const</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_faces_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeInternalFaces</b> () const</td></tr>
 <tr class="separator:a5b45aa9cd19d523fbd93487e6987748e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65331daf6a635c694dd0fe39f9a680c4"><td class="memItemLeft" align="right" valign="top"><a id="a65331daf6a635c694dd0fe39f9a680c4" name="a65331daf6a635c694dd0fe39f9a680c4"></a>
-range_faces_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeInterProcessFaces</b> () const</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_faces_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>rangeInterProcessFaces</b> () const</td></tr>
 <tr class="separator:a65331daf6a635c694dd0fe39f9a680c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46f0b4bd4e3ef063b47f6b7d422a13f3"><td class="memItemLeft" align="right" valign="top"><a id="a46f0b4bd4e3ef063b47f6b7d422a13f3" name="a46f0b4bd4e3ef063b47f6b7d422a13f3"></a>
-range_elements_type&#160;</td><td class="memItemRight" valign="bottom"><b>rangeMarkedElements</b> (uint16_type marker_t, boost::any flag)</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_elements_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rangeMarkedElements</b> (uint16_type marker_t, boost::any flag)</td></tr>
 <tr class="memdesc:a46f0b4bd4e3ef063b47f6b7d422a13f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the set of elements of marker type marker_t with marker flag <br /></td></tr>
 <tr class="separator:a46f0b4bd4e3ef063b47f6b7d422a13f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac243bd90267e1aef5a1e4fb441e24864"><td class="memItemLeft" align="right" valign="top"><a id="ac243bd90267e1aef5a1e4fb441e24864" name="ac243bd90267e1aef5a1e4fb441e24864"></a>
-range_faces_type&#160;</td><td class="memItemRight" valign="bottom"><b>rangeMarkedFaces</b> (uint16_type marker_t, boost::any flag)</td></tr>
+<a class="el" href="classFeel_1_1Range.html">range_faces_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rangeMarkedFaces</b> (uint16_type marker_t, boost::any flag)</td></tr>
 <tr class="memdesc:ac243bd90267e1aef5a1e4fb441e24864"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the set of faces of marker type marker_t with marker flag <br /></td></tr>
 <tr class="separator:ac243bd90267e1aef5a1e4fb441e24864"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21d7000cbbba0a6ba3f59dfa308c3ae5"><td class="memItemLeft" align="right" valign="top">std::unordered_set&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshSupport.html#a21d7000cbbba0a6ba3f59dfa308c3ae5">rangeMeshElementsGhostIdsPartialSupport</a> () const override</td></tr>

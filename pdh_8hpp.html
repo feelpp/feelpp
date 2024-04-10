@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/pdh.hpp File Reference</title>
+<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/pdh.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -135,16 +135,16 @@ template&lt;typename MeshType , <a class="el" href="classint.html">int</a> Order
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab2f03c2ea910621a56ef1d35d3e9b89b"><td class="memTemplParams" colspan="2"><a id="ab2f03c2ea910621a56ef1d35d3e9b89b" name="ab2f03c2ea910621a56ef1d35d3e9b89b"></a>
+<tr class="memitem:a681d0e37b913d032da7321235714dfd6"><td class="memTemplParams" colspan="2"><a id="a681d0e37b913d032da7321235714dfd6" name="a681d0e37b913d032da7321235714dfd6"></a>
 template&lt;<a class="el" href="classint.html">int</a> Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, typename MeshType &gt; </td></tr>
-<tr class="memitem:ab2f03c2ea910621a56ef1d35d3e9b89b"><td class="memTemplItemLeft" align="right" valign="top">Pdh_ptrtype&lt; MeshType, Order, Pts &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdh</b> (std::shared_ptr&lt; MeshType &gt; mesh, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
-<tr class="memdesc:ab2f03c2ea910621a56ef1d35d3e9b89b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code>, build a function space of discontinuous function which are piecewise polynomial of degree (total or in each variable) less than k. <br /></td></tr>
-<tr class="separator:ab2f03c2ea910621a56ef1d35d3e9b89b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a122a84fb47ad140b59f8bdb74dade556"><td class="memTemplParams" colspan="2"><a id="a122a84fb47ad140b59f8bdb74dade556" name="a122a84fb47ad140b59f8bdb74dade556"></a>
-template&lt;<a class="el" href="classint.html">int</a> Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, typename MeshType &gt; </td></tr>
-<tr class="memitem:a122a84fb47ad140b59f8bdb74dade556"><td class="memTemplItemLeft" align="right" valign="top">Pdh_ptrtype&lt; MeshType, Order, Pts &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdh</b> (std::shared_ptr&lt; MeshType &gt; mesh, elements_reference_wrapper_t&lt; MeshType &gt; const &amp;rangeElt, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
-<tr class="memdesc:a122a84fb47ad140b59f8bdb74dade556"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code>, build a function space of discontinuous function which are piecewise polynomial of degree (total or in each variable) less than k. <br /></td></tr>
-<tr class="separator:a122a84fb47ad140b59f8bdb74dade556"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a681d0e37b913d032da7321235714dfd6"><td class="memTemplItemLeft" align="right" valign="top">Pdh_ptrtype&lt; MeshType, Order, Pts &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
+<tr class="memdesc:a681d0e37b913d032da7321235714dfd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code>, build a function space of discontinuous function which are piecewise polynomial of degree (total or in each variable) less than k. <br /></td></tr>
+<tr class="separator:a681d0e37b913d032da7321235714dfd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a599860ae5dd96017d2539d75ee3862c9"><td class="memTemplParams" colspan="2"><a id="a599860ae5dd96017d2539d75ee3862c9" name="a599860ae5dd96017d2539d75ee3862c9"></a>
+template&lt;<a class="el" href="classint.html">int</a> Order, template&lt; class, uint16_type, class &gt; class Pts = PointSetFekete, typename MeshType , typename RangeType &gt; </td></tr>
+<tr class="memitem:a599860ae5dd96017d2539d75ee3862c9"><td class="memTemplItemLeft" align="right" valign="top">Pdh_ptrtype&lt; MeshType, Order, Pts &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::Pdh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, RangeType &amp;&amp;rangeElt, <a class="el" href="classbool.html">bool</a> buildExtendedDofTable=false)</td></tr>
+<tr class="memdesc:a599860ae5dd96017d2539d75ee3862c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code>, build a function space of discontinuous function which are piecewise polynomial of degree (total or in each variable) less than k. <br /></td></tr>
+<tr class="separator:a599860ae5dd96017d2539d75ee3862c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>

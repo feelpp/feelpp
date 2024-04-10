@@ -1,6 +1,11 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classboost_1_1mpl_1_1int__.html" title=" " alt="" coords="5,56,128,83"/>
-<area shape="rect" id="node2" href="$structFeel_1_1Tag.html" title=" " alt="" coords="186,5,341,32"/>
-<area shape="rect" id="node3" href="$structFeel_1_1dimension__t.html" title=" " alt="" coords="176,56,351,83"/>
-<area shape="rect" id="node4" href="$structFeel_1_1real__dimension__t.html" title=" " alt="" coords="185,107,342,149"/>
+<area shape="rect" id="node1" href="$classboost_1_1mpl_1_1bool__.html" title=" " alt="" coords="5,183,140,209"/>
+<area shape="rect" id="node2" href="$structFeel_1_1is__0d__real.html" title=" " alt="" coords="188,5,349,32"/>
+<area shape="rect" id="node3" href="$structFeel_1_1is__1d__real.html" title=" " alt="" coords="188,56,349,83"/>
+<area shape="rect" id="node4" href="$structFeel_1_1is__2d__real.html" title=" " alt="" coords="188,107,349,133"/>
+<area shape="rect" id="node5" href="$structFeel_1_1is__3d__real.html" title=" " alt="" coords="188,157,349,184"/>
+<area shape="rect" id="node6" href="$structFeel_1_1is__edge.html" title=" " alt="" coords="196,208,341,235"/>
+<area shape="rect" id="node7" href="$structFeel_1_1is__face.html" title=" " alt="" coords="198,259,339,285"/>
+<area shape="rect" id="node8" href="$structFeel_1_1is__point.html" title=" " alt="" coords="195,309,342,336"/>
+<area shape="rect" id="node9" href="$structFeel_1_1is__topological__face.html" title=" " alt="" coords="195,361,342,402"/>
 </map>

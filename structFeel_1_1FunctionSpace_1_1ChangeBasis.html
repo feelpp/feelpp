@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::ChangeBasis&lt; BasisType &gt; Struct Template Reference</title>
+<title>Feel++: Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::ChangeBasis&lt; BasisType &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -103,29 +103,29 @@ $(document).ready(function(){initNavTree('structFeel_1_1FunctionSpace_1_1ChangeB
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="structFeel_1_1FunctionSpace_1_1ChangeBasis-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::ChangeBasis&lt; BasisType &gt; Struct Template Reference</div></div>
+  <div class="headertitle"><div class="title">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::ChangeBasis&lt; BasisType &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::ChangeBasis&lt; BasisType &gt;:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::ChangeBasis&lt; BasisType &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1FunctionSpace_1_1ChangeBasis__coll__graph.svg" width="235" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1FunctionSpace_1_1ChangeBasis__coll__graph.svg" width="235" height="132"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a913f38d024071236cc7444936513c960"><td class="memItemLeft" align="right" valign="top"><a id="a913f38d024071236cc7444936513c960" name="a913f38d024071236cc7444936513c960"></a>
+<tr class="memitem:a71b78e76a1259989cbde8883a4f8782c"><td class="memItemLeft" align="right" valign="top"><a id="a71b78e76a1259989cbde8883a4f8782c" name="a71b78e76a1259989cbde8883a4f8782c"></a>
 typedef boost::remove_reference&lt; bases_list &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>bases_list_noref</b></td></tr>
-<tr class="separator:a913f38d024071236cc7444936513c960"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a871a6a4976889440f6362ec9e079b2"><td class="memItemLeft" align="right" valign="top"><a id="a0a871a6a4976889440f6362ec9e079b2" name="a0a871a6a4976889440f6362ec9e079b2"></a>
+<tr class="separator:a71b78e76a1259989cbde8883a4f8782c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39a384c2c3243cbf301794e8557cda5d"><td class="memItemLeft" align="right" valign="top"><a id="a39a384c2c3243cbf301794e8557cda5d" name="a39a384c2c3243cbf301794e8557cda5d"></a>
 typedef fusion::result_of::distance&lt; typenamefusion::result_of::begin&lt; bases_list_noref &gt;::type, typenamefusion::result_of::find&lt; bases_list_noref, BasisType &gt;::type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>pos</b></td></tr>
-<tr class="separator:a0a871a6a4976889440f6362ec9e079b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa91d1d3c21ebb388292b749129dbafbf"><td class="memItemLeft" align="right" valign="top"><a id="aa91d1d3c21ebb388292b749129dbafbf" name="aa91d1d3c21ebb388292b749129dbafbf"></a>
+<tr class="separator:a39a384c2c3243cbf301794e8557cda5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a679fba0e8cdaade6dd87ac416530e1b3"><td class="memItemLeft" align="right" valign="top"><a id="a679fba0e8cdaade6dd87ac416530e1b3" name="a679fba0e8cdaade6dd87ac416530e1b3"></a>
 typedef mpl::if_&lt; boost::is_base_of&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, meshes_list &gt;, mpl::identity&lt; mpl::identity&lt; std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; meshes_list, Feel::detail::bases&lt; BasisType &gt;, value_type, <a class="el" href="structFeel_1_1Periodicity.html">Periodicity</a>&lt; typenameGetPeriodicity&lt; periodicity_type, pos::value &gt;::type &gt;, <a class="el" href="structFeel_1_1mortars.html">mortars</a>&lt; typenameGetMortar&lt; mortar_list, pos::value &gt;::type &gt; &gt; &gt; &gt; &gt;, mpl::identity&lt; <a class="el" href="structFeel_1_1FunctionSpace_1_1ChangeMesh.html">ChangeMesh</a>&lt; BasisType &gt; &gt; &gt;::type::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
-<tr class="separator:aa91d1d3c21ebb388292b749129dbafbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a679fba0e8cdaade6dd87ac416530e1b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -15,7 +15,7 @@ var hierarchy =
     ] ],
     [ "bases", "structbases.html", null ],
     [ "basis_0_type::polyset_type", null, [
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]
     ] ],
     [ "BinaryType", "classBinaryType.html", [
       [ "nlohmann::byte_container_with_subtype< BinaryType >", "classnlohmann_1_1byte__container__with__subtype.html", null ]
@@ -29,11 +29,11 @@ var hierarchy =
       [ "Feel::ProductSpaces< SpaceList >::Element", "classFeel_1_1ProductSpaces_1_1Element.html", null ]
     ] ],
     [ "boost::addable", null, [
-      [ "Feel::Mesh< GeoShape, double, 0, uint32_type >", "classFeel_1_1Mesh.html", [
+      [ "Feel::Mesh< GeoShape, T, 0, IndexT, EnableSharedFromThis >", "classFeel_1_1Mesh.html", [
         [ "Feel::MeshStructured< GeoShape, T, IndexT >", "classFeel_1_1MeshStructured.html", null ]
       ] ],
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ],
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >", "classFeel_1_1Mesh.html", null ]
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ],
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT, _EnableSharedFromThis >", "classFeel_1_1Mesh.html", null ]
     ] ],
     [ "boost::equality_comparable", null, [
       [ "Feel::Geo0D< Dim, double, uint32_type >", "classFeel_1_1Geo0D.html", [
@@ -89,6 +89,12 @@ var hierarchy =
       [ "Feel::GeoEntity< Entity, T, IndexT >", "classFeel_1_1GeoEntity.html", null ],
       [ "Feel::detail::TimeSet< MeshType, N >::Step", "classFeel_1_1detail_1_1TimeSet_1_1Step.html", null ]
     ] ],
+    [ "boost::mp11::mp_if_c", null, [
+      [ "Feel::Mesh< GeoShape, T, 0, IndexT, EnableSharedFromThis >", "classFeel_1_1Mesh.html", null ],
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT, _EnableSharedFromThis >", "classFeel_1_1Mesh.html", null ],
+      [ "Feel::MeshInverse< MeshType >", "classFeel_1_1MeshInverse.html", null ],
+      [ "Feel::is_filter< T >", "structFeel_1_1is__filter.html", null ]
+    ] ],
     [ "boost::mpi::communicator", "classboost_1_1mpi_1_1communicator.html", [
       [ "Feel::WorldComm", "classFeel_1_1WorldComm.html", null ]
     ] ],
@@ -100,13 +106,9 @@ var hierarchy =
       [ "Feel::is_triangle< T >", "structFeel_1_1is__triangle.html", null ]
     ] ],
     [ "boost::mpl::bool_", "classboost_1_1mpl_1_1bool__.html", [
-      [ "Feel::is_0d< T >", "structFeel_1_1is__0d.html", null ],
       [ "Feel::is_0d_real< T >", "structFeel_1_1is__0d__real.html", null ],
-      [ "Feel::is_1d< T >", "structFeel_1_1is__1d.html", null ],
       [ "Feel::is_1d_real< T >", "structFeel_1_1is__1d__real.html", null ],
-      [ "Feel::is_2d< T >", "structFeel_1_1is__2d.html", null ],
       [ "Feel::is_2d_real< T >", "structFeel_1_1is__2d__real.html", null ],
-      [ "Feel::is_3d< T >", "structFeel_1_1is__3d.html", null ],
       [ "Feel::is_3d_real< T >", "structFeel_1_1is__3d__real.html", null ],
       [ "Feel::is_edge< T >", "structFeel_1_1is__edge.html", null ],
       [ "Feel::is_face< T >", "structFeel_1_1is__face.html", null ],
@@ -114,9 +116,7 @@ var hierarchy =
       [ "Feel::is_topological_face< T >", "structFeel_1_1is__topological__face.html", null ]
     ] ],
     [ "boost::mpl::int_", "classboost_1_1mpl_1_1int__.html", [
-      [ "Feel::Tag< TheTag >", "structFeel_1_1Tag.html", null ],
-      [ "Feel::dimension_t< T >", "structFeel_1_1dimension__t.html", null ],
-      [ "Feel::real_dimension_t< T >", "structFeel_1_1real__dimension__t.html", null ]
+      [ "Feel::Tag< TheTag >", "structFeel_1_1Tag.html", null ]
     ] ],
     [ "boost::mpl::void_", "classboost_1_1mpl_1_1void__.html", [
       [ "Feel::void_basis", "structFeel_1_1void__basis.html", null ]
@@ -145,7 +145,7 @@ var hierarchy =
       [ "Feel::detail::searchIndicesBySpace< map_type >::result< searchIndicesBySpace(M, T)>", "structFeel_1_1detail_1_1searchIndicesBySpace_1_1result_3_01searchIndicesBySpace_07M_00_01T_08_4.html", null ]
     ] ],
     [ "boost::subtractable", null, [
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]
     ] ],
     [ "boost::true_type", null, [
       [ "Feel::detail::is_shared_ptr< std::shared_ptr< T0 > >", "structFeel_1_1detail_1_1is__shared__ptr_3_01std_1_1shared__ptr_3_01T0_01_4_01_4.html", null ]
@@ -189,6 +189,7 @@ var hierarchy =
           [ "Feel::Mesh2D< Shape, T, IndexT >", "classFeel_1_1Mesh2D.html", null ],
           [ "Feel::Mesh3D< Shape, T, IndexT >", "classFeel_1_1Mesh3D.html", null ]
         ] ],
+        [ "Feel::MeshBase< index_t >", "classFeel_1_1MeshBase.html", null ],
         [ "Feel::Checker", "classFeel_1_1Checker.html", null ],
         [ "Feel::FeelModels::ModelBase", "classFeel_1_1FeelModels_1_1ModelBase.html", [
           [ "Feel::FeelModels::ModelMeshes< ModelAlgebraic::index_type >", "classFeel_1_1FeelModels_1_1ModelMeshes.html", [
@@ -243,8 +244,7 @@ var hierarchy =
           [ "Feel::FeelModels::ModelPhysicThermoElectric< Dim >", "classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html", null ]
         ] ],
         [ "Feel::FunctionSpaceBase", "classFeel_1_1FunctionSpaceBase.html", [
-          [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >", "classFeel_1_1FunctionSpace.html", null ],
-          [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >", "classFeel_1_1FunctionSpace.html", null ]
+          [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >", "classFeel_1_1FunctionSpace.html", null ]
         ] ],
         [ "Feel::JournalFeed", "classFeel_1_1JournalFeed.html", null ],
         [ "Feel::MeshBase< IndexT >", "classFeel_1_1MeshBase.html", null ],
@@ -299,6 +299,21 @@ var hierarchy =
     [ "Feel::CommObject", "classFeel_1_1CommObject.html", [
       [ "Feel::MeshBase< index_type >", "classFeel_1_1MeshBase.html", null ],
       [ "Feel::MeshBase< uint32_type >", "classFeel_1_1MeshBase.html", null ],
+      [ "Feel::MeshBase< index_t >", "classFeel_1_1MeshBase.html", null ],
+      [ "Feel::RangeBase< decay_type< std::remove_pointer_t< MeshType > >::index_t >", "classFeel_1_1RangeBase.html", [
+        [ "Feel::Range< MeshType, MESH_ENTITIES, >", "classFeel_1_1Range.html", null ]
+      ] ],
+      [ "Feel::RangeBase< decay_type< std::remove_pointer_t< Feel::Mesh > >::index_t >", "classFeel_1_1RangeBase.html", [
+        [ "Feel::Range< Feel::Mesh, MESH_ELEMENTS >", "classFeel_1_1Range.html", null ]
+      ] ],
+      [ "Feel::RangeBase< decay_type< std::remove_pointer_t< mesh_type > >::index_t >", "classFeel_1_1RangeBase.html", [
+        [ "Feel::Range< mesh_type, MESH_ELEMENTS >", "classFeel_1_1Range.html", null ],
+        [ "Feel::Range< mesh_type, MESH_FACES >", "classFeel_1_1Range.html", null ]
+      ] ],
+      [ "Feel::RangeBase< decay_type< std::remove_pointer_t< typename dual_image_space_type::mesh_type > >::index_t >", "classFeel_1_1RangeBase.html", [
+        [ "Feel::Range< typename dual_image_space_type::mesh_type, MESH_ELEMENTS >", "classFeel_1_1Range.html", null ],
+        [ "Feel::Range< typename dual_image_space_type::mesh_type, MESH_FACES >", "classFeel_1_1Range.html", null ]
+      ] ],
       [ "Feel::BVH< MeshEntityType >", "classFeel_1_1BVH.html", [
         [ "Feel::BVH_InHouse< MeshEntityType >", "classFeel_1_1BVH__InHouse.html", null ],
         [ "Feel::BVH_ThirdParty< MeshEntityType >", "classFeel_1_1BVH__ThirdParty.html", null ]
@@ -310,6 +325,7 @@ var hierarchy =
         [ "Feel::GeometricSpace< MeshType >", "classFeel_1_1GeometricSpace.html", null ]
       ] ],
       [ "Feel::MeshBase< IndexT >", "classFeel_1_1MeshBase.html", null ],
+      [ "Feel::RangeBase< IndexT >", "classFeel_1_1RangeBase.html", null ],
       [ "Feel::vf::details::EvaluatorContext< CTX, ExprT, CTX2 >", "classFeel_1_1vf_1_1details_1_1EvaluatorContext.html", null ]
     ] ],
     [ "Feel::ContextGeometricBase", "structFeel_1_1ContextGeometricBase.html", [
@@ -409,10 +425,12 @@ var hierarchy =
     [ "Feel::detail::NLocalDofOnProc< IsWithGhostType >::result< Sig >", "structFeel_1_1detail_1_1NLocalDofOnProc_1_1result.html", null ],
     [ "Feel::detail::opinterprangetype< RangeType >", "structFeel_1_1detail_1_1opinterprangetype.html", null ],
     [ "Feel::detail::PartitioningMeshStructured< Dim, IndexT >", "classFeel_1_1detail_1_1PartitioningMeshStructured.html", null ],
-    [ "Feel::detail::periodic_base", "classFeel_1_1detail_1_1periodic__base.html", [
+    [ "Feel::detail::periodic_base", null, [
+      [ "Feel::Periodicity< NoPeriodicity >", "structFeel_1_1Periodicity.html", null ],
       [ "Feel::Periodicity< A0, A1, A2, A3, A4 >", "structFeel_1_1Periodicity.html", null ]
     ] ],
     [ "Feel::detail::periodicity_base", "structFeel_1_1detail_1_1periodicity__base.html", [
+      [ "Feel::Periodicity< NoPeriodicity >", "structFeel_1_1Periodicity.html", null ],
       [ "Feel::NoPeriodicity", "classFeel_1_1NoPeriodicity.html", null ],
       [ "Feel::Periodic< T >", "classFeel_1_1Periodic.html", null ],
       [ "Feel::Periodicity< A0, A1, A2, A3, A4 >", "structFeel_1_1Periodicity.html", null ]
@@ -444,11 +462,20 @@ var hierarchy =
     [ "Feel::DofTable< MeshType, FEType, PeriodicityType, MortarType >::element_access", "structFeel_1_1DofTable_1_1element__access.html", null ],
     [ "Feel::DofTable< MeshType, FEType, PeriodicityType, MortarType >::face_access", "structFeel_1_1DofTable_1_1face__access.html", null ],
     [ "Feel::DofTableInfos", "structFeel_1_1DofTableInfos.html", null ],
+    [ "Feel::DummySharedFromThis", "classFeel_1_1DummySharedFromThis.html", null ],
+    [ "Feel::edges_mesh< MeshType, TheTag >", "structFeel_1_1edges__mesh.html", null ],
+    [ "Feel::element_type_helper< ObjectType, typename >", "structFeel_1_1element__type__helper.html", null ],
+    [ "Feel::element_type_helper< MeshType, std::enable_if_t< is_mesh_v< MeshType > > >", "structFeel_1_1element__type__helper_3_01MeshType_00_01std_1_1enable__if__t_3_01is__mesh__v_3_01MeshType_01_4_01_4_01_4.html", null ],
+    [ "Feel::element_type_helper< RangeType, std::enable_if_t< is_range_v< RangeType > > >", "structFeel_1_1element__type__helper_3_01RangeType_00_01std_1_1enable__if__t_3_01is__range__v_3_01RangeType_01_4_01_4_01_4.html", null ],
+    [ "Feel::element_type_helper< SpaceType, std::enable_if_t< is_functionspace_v< SpaceType > > >", "structFeel_1_1element__type__helper_3_01SpaceType_00_01std_1_1enable__if__t_3_01is__functionspac5bf0096d00d33686055da1a6c6998111.html", null ],
+    [ "Feel::elements_mesh< MeshType, TheTag >", "structFeel_1_1elements__mesh.html", null ],
     [ "Feel::Entity< ShapeE, T >", "classFeel_1_1Entity.html", [
       [ "Feel::GeoEntity< Entity, T, IndexT >", "classFeel_1_1GeoEntity.html", null ]
     ] ],
     [ "Feel::ExprBase", "classFeel_1_1ExprBase.html", null ],
     [ "Feel::ExpressionEvaluatorBase< RangeType >", "classFeel_1_1ExpressionEvaluatorBase.html", null ],
+    [ "Feel::faces_mesh< MeshType, TheTag >", "structFeel_1_1faces__mesh.html", null ],
+    [ "Feel::facets_mesh< MeshType, TheTag >", "structFeel_1_1facets__mesh.html", null ],
     [ "Feel::FactoryDefaultError< IdentifierType, AbstractProduct >", "structFeel_1_1FactoryDefaultError.html", [
       [ "Feel::Factory< AbstractProduct, IdentifierType, ProductCreator, FactoryErrorPolicy >", "classFeel_1_1Factory.html", null ]
     ] ],
@@ -619,26 +646,26 @@ var hierarchy =
     [ "Feel::FunctionExpr< FunctionType, Order, FunctionArgsTupleType >::tensor< Geo_t, Basis_i_t, Basis_j_t >::shapeType< T, isArithmetic >", "structFeel_1_1FunctionExpr_1_1tensor_1_1shapeType.html", null ],
     [ "Feel::FunctionExpr< FunctionType, Order, FunctionArgsTupleType >::tensor< Geo_t, Basis_i_t, Basis_j_t >::shapeType< T, false >", "structFeel_1_1FunctionExpr_1_1tensor_1_1shapeType_3_01T_00_01false_01_4.html", null ],
     [ "Feel::FunctionExpr< FunctionType, Order, FunctionArgsTupleType >::tensor< Geo_t, Basis_i_t, Basis_j_t >::shapeType< T, true >", "structFeel_1_1FunctionExpr_1_1tensor_1_1shapeType_3_01T_00_01true_01_4.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Basis< N >", "structFeel_1_1FunctionSpace_1_1Basis.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::ChangeBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeBasis.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::ChangeBasisToComponentBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeBasisToComponentBasis.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::ChangeMesh< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeMesh.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::ChangeMeshSupport< SpaceType >", "structFeel_1_1FunctionSpace_1_1ChangeMeshSupport.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::ChangeMeshToComponentBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeMeshToComponentBasis.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::ChangeToMeshPtr< MeshType >", "structFeel_1_1FunctionSpace_1_1ChangeToMeshPtr.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >::AddOffContainer< BasisType >", "structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >::ChangeElement< BasisType, keyType >", "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >::sub_element< i >", "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::GetComponentBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1GetComponentBasis.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::GetMesh< MeshListType, N >", "structFeel_1_1FunctionSpace_1_1GetMesh.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::GetMeshSupport< MeshListType, N >", "structFeel_1_1FunctionSpace_1_1GetMeshSupport.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::GetMortar< TheMortarType, pos >", "structFeel_1_1FunctionSpace_1_1GetMortar.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::GetNComponents< BasisType >", "structFeel_1_1FunctionSpace_1_1GetNComponents.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::GetPeriodicity< ThePeriodicityType, pos >", "structFeel_1_1FunctionSpace_1_1GetPeriodicity.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::nodim", "structFeel_1_1FunctionSpace_1_1nodim.html", null ],
-    [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::sub_functionspace< i >", "structFeel_1_1FunctionSpace_1_1sub__functionspace.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Basis< N >", "structFeel_1_1FunctionSpace_1_1Basis.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::ChangeBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeBasis.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::ChangeBasisToComponentBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeBasisToComponentBasis.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::ChangeMesh< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeMesh.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::ChangeMeshSupport< SpaceType >", "structFeel_1_1FunctionSpace_1_1ChangeMeshSupport.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::ChangeMeshToComponentBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1ChangeMeshToComponentBasis.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::ChangeToMeshPtr< MeshType >", "structFeel_1_1FunctionSpace_1_1ChangeToMeshPtr.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >::AddOffContainer< BasisType >", "structFeel_1_1FunctionSpace_1_1Element_1_1AddOffContainer.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >::ChangeElement< BasisType, keyType >", "structFeel_1_1FunctionSpace_1_1Element_1_1ChangeElement.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >::sub_element< i >", "structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::GetComponentBasis< BasisType >", "structFeel_1_1FunctionSpace_1_1GetComponentBasis.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::GetMesh< MeshListType, N >", "structFeel_1_1FunctionSpace_1_1GetMesh.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::GetMeshSupport< MeshListType, N >", "structFeel_1_1FunctionSpace_1_1GetMeshSupport.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::GetMortar< TheMortarType, pos >", "structFeel_1_1FunctionSpace_1_1GetMortar.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::GetNComponents< BasisType >", "structFeel_1_1FunctionSpace_1_1GetNComponents.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::GetPeriodicity< ThePeriodicityType, pos >", "structFeel_1_1FunctionSpace_1_1GetPeriodicity.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::nodim", "structFeel_1_1FunctionSpace_1_1nodim.html", null ],
+    [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::sub_functionspace< i >", "structFeel_1_1FunctionSpace_1_1sub__functionspace.html", null ],
     [ "Feel::FunctionSpaceBase::ElementBase", "classFeel_1_1FunctionSpaceBase_1_1ElementBase.html", [
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ],
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ],
       [ "Feel::ProductSpace< T, same_mesh >::Element", "classFeel_1_1ProductSpace_1_1Element.html", null ],
       [ "Feel::ProductSpaces2< T, SpaceList >::Element", "classFeel_1_1ProductSpaces2_1_1Element.html", null ],
       [ "Feel::ProductSpaces< SpaceList >::Element", "classFeel_1_1ProductSpaces_1_1Element.html", null ]
@@ -687,9 +714,6 @@ var hierarchy =
     [ "Feel::math::Constant< Tag, Rep >", "structFeel_1_1math_1_1Constant.html", null ],
     [ "Feel::math::pi_tag", "structFeel_1_1math_1_1pi__tag.html", null ],
     [ "Feel::MemoryUsage", "structFeel_1_1MemoryUsage.html", null ],
-    [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::parent_mesh< TheTag >", "structFeel_1_1Mesh_1_1parent__mesh.html", null ],
-    [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::trace_mesh< TheTag >", "structFeel_1_1Mesh_1_1trace__mesh.html", null ],
-    [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::trace_trace_mesh< TheTag >", "structFeel_1_1Mesh_1_1trace__trace__mesh.html", null ],
     [ "Feel::MeshAdaptation< Dim, Order, OrderGeo >", "classFeel_1_1MeshAdaptation.html", null ],
     [ "Feel::MeshFragmentation< MeshType >", "classFeel_1_1MeshFragmentation.html", null ],
     [ "Feel::MeshHighOrder< Convex >", "classFeel_1_1MeshHighOrder.html", null ],
@@ -701,6 +725,10 @@ var hierarchy =
     ] ],
     [ "Feel::MeshStructuredSetup< Dim, RealDim, T, IndexT >", "classFeel_1_1MeshStructuredSetup.html", null ],
     [ "Feel::MeshSupportBase", "classFeel_1_1MeshSupportBase.html", [
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< Feel::Mesh > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< mesh_type > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< typename dual_image_space_type::mesh_type > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< MeshType > > >", "classFeel_1_1MeshSupport.html", null ],
       [ "Feel::MeshSupport< domain_mesh_type >", "classFeel_1_1MeshSupport.html", null ],
       [ "Feel::MeshSupport< image_mesh_type >", "classFeel_1_1MeshSupport.html", null ],
       [ "Feel::MeshSupport< MeshType >", "classFeel_1_1MeshSupport.html", null ]
@@ -708,13 +736,13 @@ var hierarchy =
     [ "Feel::MeshTraits< MeshType >", "structFeel_1_1MeshTraits.html", null ],
     [ "Feel::meta::Context< StorageType >", "classFeel_1_1meta_1_1Context.html", null ],
     [ "Feel::meta::LinearForm< SpaceType, VectorType, ElemContType >", "structFeel_1_1meta_1_1LinearForm.html", null ],
-    [ "Feel::meta::NChv< MeshType, Order, Pts, Tag >", "structFeel_1_1meta_1_1NChv.html", null ],
-    [ "Feel::meta::Ned1h< MeshType, Order >", "structFeel_1_1meta_1_1Ned1h.html", null ],
-    [ "Feel::meta::Odh< MeshType, Order, Tag >", "structFeel_1_1meta_1_1Odh.html", null ],
+    [ "Feel::meta::NChv< MeshType, Order, Pts, T, Tag >", "structFeel_1_1meta_1_1NChv.html", null ],
+    [ "Feel::meta::Ned1h< MeshType, Order, T >", "structFeel_1_1meta_1_1Ned1h.html", null ],
+    [ "Feel::meta::Odh< MeshType, Order, T, Tag >", "structFeel_1_1meta_1_1Odh.html", null ],
     [ "Feel::meta::P2ch< Order1, Order2, MeshType >", "structFeel_1_1meta_1_1P2ch.html", null ],
     [ "Feel::meta::Pch< MeshType, Order, T, Pts, Tag >", "structFeel_1_1meta_1_1Pch.html", null ],
     [ "Feel::meta::Pchmg< MeshType, Order, Pset, T, Pts, Tag >", "structFeel_1_1meta_1_1Pchmg.html", null ],
-    [ "Feel::meta::Pchv< MeshType, Order, Pts, Tag >", "structFeel_1_1meta_1_1Pchv.html", null ],
+    [ "Feel::meta::Pchv< MeshType, Order, Pts, T, Tag >", "structFeel_1_1meta_1_1Pchv.html", null ],
     [ "Feel::meta::Pdhmg< MeshType, Order, Pset, T, Pts, Tag >", "structFeel_1_1meta_1_1Pdhmg.html", null ],
     [ "Feel::meta::Pdhv< MeshType, Order, Pts, Tag >", "structFeel_1_1meta_1_1Pdhv.html", null ],
     [ "Feel::meta::THch< Order, MeshType >", "structFeel_1_1meta_1_1THch.html", null ],
@@ -742,6 +770,7 @@ var hierarchy =
         ] ]
       ] ]
     ] ],
+    [ "Feel::parent_mesh< MeshType, TheTag >", "structFeel_1_1parent__mesh.html", null ],
     [ "Feel::Partitioner< Mesh >", "classFeel_1_1Partitioner.html", null ],
     [ "Feel::PeriodicEntity", "structFeel_1_1PeriodicEntity.html", null ],
     [ "Feel::PointSetBase", "classFeel_1_1PointSetBase.html", [
@@ -835,19 +864,22 @@ var hierarchy =
       [ "Feel::TimerTool", "classFeel_1_1TimerTool.html", null ],
       [ "Feel::TimerToolNull", "classFeel_1_1TimerToolNull.html", null ]
     ] ],
+    [ "Feel::trace_mesh< MeshType, TheTag >", "structFeel_1_1trace__mesh.html", null ],
+    [ "Feel::trace_trace_mesh< MeshType, TheTag >", "structFeel_1_1trace__trace__mesh.html", null ],
     [ "Feel::TSBase", "classFeel_1_1TSBase.html", [
       [ "Feel::Bdf< SpaceType >", "classFeel_1_1Bdf.html", null ],
       [ "Feel::Newmark< SpaceType >", "classFeel_1_1Newmark.html", null ]
     ] ],
     [ "Feel::TSBaseMetadata", "classFeel_1_1TSBaseMetadata.html", null ],
-    [ "Feel::tuple_element< I, Tuple >", "structFeel_1_1tuple__element.html", null ],
-    [ "Feel::tuple_element< 0, boost::tuple< Head, Tail... > >", "structFeel_1_1tuple__element_3_010_00_01boost_1_1tuple_3_01Head_00_01Tail_8_8_8_01_4_01_4.html", null ],
-    [ "Feel::tuple_element< I, boost::tuple< Head, Tail... > >", "structFeel_1_1tuple__element_3_01I_00_01boost_1_1tuple_3_01Head_00_01Tail_8_8_8_01_4_01_4.html", null ],
     [ "Feel::TwoSpacesMap< SpaceType >", "classFeel_1_1TwoSpacesMap.html", null ],
     [ "Feel::type_identity< T >", "structFeel_1_1type__identity.html", null ],
     [ "Feel::type_traits< T >", "structFeel_1_1type__traits.html", null ],
     [ "Feel::TypeInfo", "classFeel_1_1TypeInfo.html", null ],
     [ "Feel::UpdateInformationObject< SpaceType >", "structFeel_1_1UpdateInformationObject.html", null ],
+    [ "Feel::value_type_trait< Type, Enable >", "structFeel_1_1value__type__trait.html", null ],
+    [ "Feel::value_type_trait< Type, std::enable_if_t< is_functionspace_v< Type > > >", "structFeel_1_1value__type__trait_3_01Type_00_01std_1_1enable__if__t_3_01is__functionspace__v_3_01Type_01_4_01_4_01_4.html", null ],
+    [ "Feel::value_type_trait< Type, std::enable_if_t< is_mesh_v< Type > > >", "structFeel_1_1value__type__trait_3_01Type_00_01std_1_1enable__if__t_3_01is__mesh__v_3_01Type_01_4_01_4_01_4.html", null ],
+    [ "Feel::value_type_trait< Type, std::enable_if_t< is_range_v< Type > > >", "structFeel_1_1value__type__trait_3_01Type_00_01std_1_1enable__if__t_3_01is__range__v_3_01Type_01_4_01_4_01_4.html", null ],
     [ "Feel::Vector< T, SizeT >", "classFeel_1_1Vector.html", null ],
     [ "Feel::vf::BlocksBase< T >", "structFeel_1_1vf_1_1BlocksBase.html", [
       [ "Feel::vf::Blocks< NR, NC, T >", "structFeel_1_1vf_1_1Blocks.html", null ]
@@ -1052,7 +1084,7 @@ var hierarchy =
     [ "Feel::Localization< Feel::Mesh >", "classFeel_1_1Localization.html", null ],
     [ "Feel::Localization< mesh_type >", "classFeel_1_1Localization.html", null ],
     [ "Feel::MeshMover< Feel::Mesh >", "classFeel_1_1MeshMover.html", null ],
-    [ "Feel::MeshMover< typename mesh_type::trace_mesh_type >", "classFeel_1_1MeshMover.html", null ],
+    [ "Feel::MeshMover< trace_mesh_t< Feel::Mesh > >", "classFeel_1_1MeshMover.html", null ],
     [ "Feel::MeshStructuredSetup< Dim, Dim, double, uint32_type >", "classFeel_1_1MeshStructuredSetup.html", [
       [ "Feel::MeshStructuredSetupHyperRectangle< Dim, RealDim, T, IndexT >", "classFeel_1_1MeshStructuredSetupHyperRectangle.html", null ],
       [ "Feel::MeshStructuredSetupWithCoordinates< Dim, RealDim, T, IndexT >", "classFeel_1_1MeshStructuredSetupWithCoordinates.html", null ]
@@ -1067,18 +1099,14 @@ var hierarchy =
       [ "Feel::meshes< A0, A1, A2, A3, A4 >", "structFeel_1_1meshes.html", null ],
       [ "Feel::mortars< A0, A1, A2, A3, A4 >", "structFeel_1_1mortars.html", null ]
     ] ],
+    [ "mpl::if_::type", null, [
+      [ "Feel::Periodicity< NoPeriodicity >", "structFeel_1_1Periodicity.html", null ]
+    ] ],
     [ "mpl::if_::type", "classmpl_1_1if___3_01boost_1_1is__same_3_01void__basis_00_01void__basis_01_4_00_01boost_1_1fusio0a31df2c50b0fddf482ad5b064d09145.html", [
       [ "Feel::bases< A0, A1, A2, A3, A4 >", "structFeel_1_1bases.html", null ]
     ] ],
-    [ "mpl::if_::type::type", null, [
-      [ "Feel::Mesh< GeoShape, double, 0, uint32_type >", "classFeel_1_1Mesh.html", null ],
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >", "classFeel_1_1Mesh.html", null ]
-    ] ],
     [ "mpl::if_::type::type", "classmpl_1_1if___3_01mpl_1_1bool___3_01false_01_4_00_01mpl_1_1identity_3_01GeoNDMeasuresStorage_1b4a2037756985fd616e6afd271a4aef.html", [
       [ "Feel::GeoND< Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage >", "classFeel_1_1GeoND.html", null ]
-    ] ],
-    [ "mpl::if_::type::type", "classmpl_1_1if___3_01mpl_1_1bool___3_01GeoShape_1_1is__simplex_01_4_00_01mpl_1_1identity_3_01Geoa8d5788622dd5f22f83013fc79c8d05d.html", [
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::Inverse", "structFeel_1_1Mesh_1_1Inverse.html", null ]
     ] ],
     [ "mpl::if_::type::type", null, [
       [ "Feel::GeoND< Dim, GEOSHAPE, double, uint32_type, mpl::if_< mpl::bool_< false >, mpl::identity< GeoElement0D< Dim, SubFaceOf< GeoElement1D< Dim, GEOSHAPE, SubFaceOfNone< 0 >, double, uint32_type, false, false > >, double, uint32_type > >, mpl::identity< GeoElement0D< Dim, SubFaceOfNone< 0 >, double, uint32_type > > >::type::type, false >", "classFeel_1_1GeoND.html", null ],
@@ -1267,16 +1295,21 @@ var hierarchy =
     [ "std::conditional::type", "classstd_1_1conditional_3_01bool_07B1_1_1value_08_00_01conjunction_3_01Bn_8_8_8_01_4_00_01B1_01_4_1_1type.html", [
       [ "nlohmann::detail::conjunction< B1, Bn... >", "structnlohmann_1_1detail_1_1conjunction_3_01B1_00_01Bn_8_8_8_01_4.html", null ]
     ] ],
-    [ "std::conditional::type", "classstd_1_1conditional_3_01std_1_1is__base__of__v_3_01MeshStructuredBase_00_01MeshT_01_4_00_01sf38de804df90ca37fb2eb29ea870681d.html", [
-      [ "Feel::is_mesh_structured< MeshT >", "structFeel_1_1is__mesh__structured.html", null ]
+    [ "std::conditional_t", null, [
+      [ "Feel::Mesh< GeoShape, T, 0, IndexT, EnableSharedFromThis >", "classFeel_1_1Mesh.html", null ],
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT, _EnableSharedFromThis >", "classFeel_1_1Mesh.html", null ]
     ] ],
     [ "std::enable_shared_from_this", null, [
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >", "classFeel_1_1FunctionSpace.html", null ],
-      [ "Feel::Mesh< GeoShape, double, 0, uint32_type >", "classFeel_1_1Mesh.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< Feel::Mesh > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< mesh_type > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< typename dual_image_space_type::mesh_type > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< decay_type< std::remove_pointer_t< MeshType > > >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< domain_mesh_type >", "classFeel_1_1MeshSupport.html", null ],
+      [ "Feel::MeshSupport< image_mesh_type >", "classFeel_1_1MeshSupport.html", null ],
       [ "Feel::FeelModels::ModelBase", "classFeel_1_1FeelModels_1_1ModelBase.html", null ],
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >", "classFeel_1_1FunctionSpace.html", null ],
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >", "classFeel_1_1FunctionSpace.html", null ],
       [ "Feel::GeometricSpace< MeshType >", "classFeel_1_1GeometricSpace.html", null ],
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >", "classFeel_1_1Mesh.html", null ],
+      [ "Feel::MeshSupport< MeshType >", "classFeel_1_1MeshSupport.html", null ],
       [ "Feel::TabulateInformationsSections", "classFeel_1_1TabulateInformationsSections.html", null ],
       [ "Feel::TabulateInformationsTable", "classFeel_1_1TabulateInformationsTable.html", null ],
       [ "Feel::TabulateInformationsTableAlternative", "classFeel_1_1TabulateInformationsTableAlternative.html", null ],
@@ -1297,7 +1330,6 @@ var hierarchy =
       ] ]
     ] ],
     [ "std::false_type", null, [
-      [ "Feel::is_filter< T >", "structFeel_1_1is__filter.html", null ],
       [ "Feel::is_geoelement< T >", "structFeel_1_1is__geoelement.html", null ],
       [ "Feel::is_iterable< T, typename >", "structFeel_1_1is__iterable.html", null ],
       [ "Feel::is_iterable_of< T, V, typename >", "structFeel_1_1is__iterable__of.html", null ],
@@ -1331,8 +1363,8 @@ var hierarchy =
       [ "nlohmann::detail::is_json_ref< typename >", "structnlohmann_1_1detail_1_1is__json__ref.html", null ]
     ] ],
     [ "std::function", null, [
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", null ],
-      [ "Feel::Mesh< GeoShape, T, Tag, IndexT >::UpdateSetForAllReduce< ContType >", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html", null ],
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT, _EnableSharedFromThis >::UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", null ],
+      [ "Feel::Mesh< GeoShape, T, Tag, IndexT, _EnableSharedFromThis >::UpdateSetForAllReduce< ContType >", "structFeel_1_1Mesh_1_1UpdateSetForAllReduce.html", null ],
       [ "Feel::details::RemoveMarkerNameWithoutEntityForAllReduce< IndexT >", "structFeel_1_1details_1_1RemoveMarkerNameWithoutEntityForAllReduce.html", null ]
     ] ],
     [ "std::hash< nlohmann::basic_json< ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType > >", "structstd_1_1hash_3_01nlohmann_1_1basic__json_3_01ObjectType_00_01ArrayType_00_01StringType_00_06d4f1ea19ce1bda8275363c404adf9a2.html", null ],
@@ -1363,7 +1395,7 @@ var hierarchy =
       [ "Feel::FeelModels::ModelMeshes< ModelAlgebraic::index_type >", "classFeel_1_1FeelModels_1_1ModelMeshes.html", null ],
       [ "Feel::FeelModels::FluidMechanics< ConvexType, BasisVelocityType, BasisPressureType >::BodySetBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html", null ],
       [ "Feel::FeelModels::ModelMeshes< IndexType >", "classFeel_1_1FeelModels_1_1ModelMeshes.html", null ],
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Context", "classFeel_1_1FunctionSpace_1_1Context.html", null ],
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Context", "classFeel_1_1FunctionSpace_1_1Context.html", null ],
       [ "Feel::GeometricSpace< MeshType >::Context", "classFeel_1_1GeometricSpace_1_1Context.html", null ],
       [ "Feel::GinacExprManagerDefaultFileNameImpl", "classFeel_1_1GinacExprManagerDefaultFileNameImpl.html", null ],
       [ "Feel::GinacExprManagerImpl", "classFeel_1_1GinacExprManagerImpl.html", null ],
@@ -1418,7 +1450,7 @@ var hierarchy =
       [ "Feel::is_iterable_of< T, V, std::void_t< decltype(std::declval< T >().begin()), decltype(std::declval< T >().end()), std::is_same< decltype(*std::declval< T >().begin()), V > > >", "structFeel_1_1is__iterable__of_3_01T_00_01V_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_dfe806ee660b09a85b57435717287147.html", null ],
       [ "Feel::is_reference_convex< Reference< Hypercube< Dim, Order, RDim >, Dim, Order, RDim, T > >", "structFeel_1_1is__reference__convex_3_01Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_d10526581737785a3b6f78d52185ed4f.html", null ],
       [ "Feel::is_reference_convex< Reference< Simplex< Dim, Order, RDim >, Dim, Order, RDim, T > >", "structFeel_1_1is__reference__convex_3_01Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_7942c028eecb11bc3174ad89f8815f2b.html", null ],
-      [ "Feel::is_tuple< boost::tuple< T... > >", "structFeel_1_1is__tuple_3_01boost_1_1tuple_3_01T_8_8_8_01_4_01_4.html", null ],
+      [ "Feel::is_tuple< std::tuple< T... > >", "structFeel_1_1is__tuple_3_01std_1_1tuple_3_01T_8_8_8_01_4_01_4.html", null ],
       [ "nlohmann::detail::conjunction<... >", "structnlohmann_1_1detail_1_1conjunction.html", null ],
       [ "nlohmann::detail::is_basic_json< basic_json< ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType > >", "structnlohmann_1_1detail_1_1is__basic__json_3_01basic__json_3_01ObjectType_00_01ArrayType_00_01S22724cadd4c00141f83926df5e541441.html", null ],
       [ "nlohmann::detail::is_complete_type< T, decltype(void(sizeof(T)))>", "structnlohmann_1_1detail_1_1is__complete__type_3_01T_00_01decltype_07void_07sizeof_07T_08_08_08_4.html", null ],
@@ -1437,6 +1469,7 @@ var hierarchy =
       [ "Feel::StatusRequestHTTP", "classFeel_1_1StatusRequestHTTP.html", null ],
       [ "Feel::TimeStepInfo", "structFeel_1_1TimeStepInfo.html", null ]
     ] ],
+    [ "std::tuple_element< I, T >", "structstd_1_1tuple__element.html", null ],
     [ "std::tuple_element< N, ::nlohmann::detail::iteration_proxy_value< IteratorType > >", "classstd_1_1tuple__element_3_01N_00_01_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html", null ],
     [ "std::tuple_element< n, boost::hana::tuple< Types... > >", "structstd_1_1tuple__element_3_01n_00_01boost_1_1hana_1_1tuple_3_01Types_8_8_8_01_4_01_4.html", null ],
     [ "std::vector< T >", null, [
@@ -1475,7 +1508,7 @@ var hierarchy =
     [ "utility::centre< T >", "structutility_1_1centre.html", null ],
     [ "Feel::Vector< double >", "classFeel_1_1Vector.html", null ],
     [ "VectorUblas", "classVectorUblas.html", [
-      [ "Feel::FunctionSpace< A0, A1, A2, A3, A4 >::Element< T, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]
+      [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]
     ] ],
     [ "Feel::Visitor< Head, R >", "classFeel_1_1Visitor.html", [
       [ "Feel::VisitorBaseImpl< mpl::list< Head >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_01_4_00_01R_01_4.html", null ],

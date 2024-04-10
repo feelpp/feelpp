@@ -115,7 +115,7 @@ $(document).ready(function(){initNavTree('structFeel_1_1detail_1_1createMeshSupp
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1detail_1_1createMeshSupport__coll__graph.svg" width="650" height="331"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFeel_1_1detail_1_1createMeshSupport__coll__graph.svg" width="650" height="316"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
@@ -158,9 +158,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6a186979c7c06666266e49e04f1d7ee1"><td class="memItemLeft" align="right" valign="top"><a id="a6a186979c7c06666266e49e04f1d7ee1" name="a6a186979c7c06666266e49e04f1d7ee1"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>createMeshSupport</b> (mesh_ptrtype const &amp;mesh, mesh_support_vector_type const &amp;meshSupport)</td></tr>
 <tr class="separator:a6a186979c7c06666266e49e04f1d7ee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6ce48a393d9e6c06fc74095121156e2"><td class="memItemLeft" align="right" valign="top"><a id="ac6ce48a393d9e6c06fc74095121156e2" name="ac6ce48a393d9e6c06fc74095121156e2"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>createMeshSupport</b> (mesh_ptrtype const &amp;mesh, range_elements_type const &amp;rangeMeshElt)</td></tr>
-<tr class="separator:ac6ce48a393d9e6c06fc74095121156e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac474889189c5ae5bed83e7cc71d6881b"><td class="memTemplParams" colspan="2"><a id="ac474889189c5ae5bed83e7cc71d6881b" name="ac474889189c5ae5bed83e7cc71d6881b"></a>
+template&lt;typename RangeType , typename std::enable_if_t&lt; is_range_v&lt; RangeType &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:ac474889189c5ae5bed83e7cc71d6881b"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>createMeshSupport</b> (mesh_ptrtype const &amp;mesh, RangeType &amp;&amp;rangeMeshElt)</td></tr>
+<tr class="separator:ac474889189c5ae5bed83e7cc71d6881b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8dc73667e23e8db274edd14e7a6e59d"><td class="memTemplParams" colspan="2"><a id="ab8dc73667e23e8db274edd14e7a6e59d" name="ab8dc73667e23e8db274edd14e7a6e59d"></a>
 template&lt;<a class="el" href="classbool.html">bool</a> _UseMeshesList&gt; </td></tr>
 <tr class="memitem:ab8dc73667e23e8db274edd14e7a6e59d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (mesh_ptrtype const &amp;mesh, typename std::enable_if&lt; !_UseMeshesList &gt;::type *=nullptr)</td></tr>
@@ -169,14 +170,10 @@ template&lt;<a class="el" href="classbool.html">bool</a> _UseMeshesList&gt; </td
 template&lt;<a class="el" href="classbool.html">bool</a> _UseMeshesList&gt; </td></tr>
 <tr class="memitem:a6484adfd60afc1ecb2036c23b87b51fd"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (mesh_ptrtype const &amp;mesh, typename std::enable_if&lt; _UseMeshesList &gt;::type *=nullptr)</td></tr>
 <tr class="separator:a6484adfd60afc1ecb2036c23b87b51fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c8d71a462f4b3d02e2e7736cdef10d3"><td class="memTemplParams" colspan="2"><a id="a9c8d71a462f4b3d02e2e7736cdef10d3" name="a9c8d71a462f4b3d02e2e7736cdef10d3"></a>
-template&lt;<a class="el" href="classbool.html">bool</a> _UseMeshesList&gt; </td></tr>
-<tr class="memitem:a9c8d71a462f4b3d02e2e7736cdef10d3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init2</b> (mesh_ptrtype const &amp;mesh, range_elements_type const &amp;rangeMeshElt, typename std::enable_if&lt; !_UseMeshesList &gt;::type *=nullptr)</td></tr>
-<tr class="separator:a9c8d71a462f4b3d02e2e7736cdef10d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a551a057bd5c804a0cc533d5fec3396e5"><td class="memTemplParams" colspan="2"><a id="a551a057bd5c804a0cc533d5fec3396e5" name="a551a057bd5c804a0cc533d5fec3396e5"></a>
-template&lt;<a class="el" href="classbool.html">bool</a> _UseMeshesList&gt; </td></tr>
-<tr class="memitem:a551a057bd5c804a0cc533d5fec3396e5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init2</b> (mesh_ptrtype const &amp;mesh, range_elements_type const &amp;rangeMeshElt, typename std::enable_if&lt; _UseMeshesList &gt;::type *=nullptr)</td></tr>
-<tr class="separator:a551a057bd5c804a0cc533d5fec3396e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fb5048e5931f6d86ab6b37840196570"><td class="memTemplParams" colspan="2"><a id="a0fb5048e5931f6d86ab6b37840196570" name="a0fb5048e5931f6d86ab6b37840196570"></a>
+template&lt;<a class="el" href="classbool.html">bool</a> _UseMeshesList, typename RangeType &gt; </td></tr>
+<tr class="memitem:a0fb5048e5931f6d86ab6b37840196570"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init2</b> (mesh_ptrtype const &amp;mesh, RangeType &amp;&amp;rangeMeshElt)</td></tr>
+<tr class="separator:a0fb5048e5931f6d86ab6b37840196570"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>

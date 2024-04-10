@@ -1,5 +1,5 @@
-<map id="Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Context" name="Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Context">
-<area shape="rect" id="node1" title=" " alt="" coords="54,285,209,465"/>
+<map id="Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Context" name="Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Context">
+<area shape="rect" id="node1" title=" " alt="" coords="20,285,243,480"/>
 <area shape="rect" id="node2" title=" " alt="" coords="5,145,140,223"/>
 <area shape="rect" id="node3" title=" " alt="" coords="16,5,55,83"/>
 <area shape="rect" id="node4" title=" " alt="" coords="92,5,131,83"/>

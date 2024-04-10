@@ -1,8 +1,8 @@
-<map id="Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;" name="Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="205,807,383,1397"/>
+<map id="Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;" name="Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="186,807,423,1412"/>
 <area shape="rect" id="node2" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="92,564,275,759"/>
 <area shape="rect" id="node3" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="5,248,148,399"/>
 <area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="172,131,408,516"/>
 <area shape="rect" id="node5" title=" " alt="" coords="219,5,361,83"/>
-<area shape="rect" id="node6" title=" " alt="" coords="299,593,513,729"/>
+<area shape="rect" id="node6" title=" " alt="" coords="299,586,553,737"/>
 </map>

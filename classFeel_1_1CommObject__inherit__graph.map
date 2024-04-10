@@ -1,21 +1,32 @@
 <map id="Feel::CommObject" name="Feel::CommObject">
-<area shape="rect" id="node1" title=" " alt="" coords="1395,5,1538,156"/>
-<area shape="rect" id="node2" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="299,204,530,765"/>
-<area shape="rect" id="node3" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="554,204,785,765"/>
-<area shape="rect" id="node8" href="$classFeel_1_1BVH.html" title="BVH base class." alt="" coords="883,365,1101,604"/>
-<area shape="rect" id="node11" href="$classFeel_1_1BilinearFormBase.html" title="Base class for Bilinear Forms handle algebraic representation and multithreading." alt="" coords="1126,292,1341,677"/>
-<area shape="rect" id="node12" href="$classFeel_1_1CreateSubmeshTool.html" title=" " alt="" coords="1365,395,1568,575"/>
-<area shape="rect" id="node13" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="1593,387,1775,582"/>
-<area shape="rect" id="node16" href="$structFeel_1_1GeometricSpaceBase.html" title=" " alt="" coords="1800,402,1997,567"/>
-<area shape="rect" id="node18" href="$classFeel_1_1MeshBase.html" title="base mesh class" alt="" coords="2022,211,2253,758"/>
-<area shape="rect" id="node19" href="$classFeel_1_1vf_1_1details_1_1EvaluatorContext.html" title="work class to evaluate expressions at sets of points" alt="" coords="2277,292,2457,677"/>
-<area shape="rect" id="node4" href="$classFeel_1_1Mesh0D.html" title="0D mesh class" alt="" coords="5,857,224,1360"/>
-<area shape="rect" id="node5" href="$classFeel_1_1Mesh1D.html" title="1D mesh class" alt="" coords="248,901,464,1316"/>
-<area shape="rect" id="node6" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="488,887,704,1331"/>
-<area shape="rect" id="node7" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="728,879,947,1338"/>
-<area shape="rect" id="node9" href="$classFeel_1_1BVH__InHouse.html" title="in house implementation of BVH tool" alt="" coords="971,1055,1127,1162"/>
-<area shape="rect" id="node10" href="$classFeel_1_1BVH__ThirdParty.html" title="implementation of BVH tool with an external third party" alt="" coords="1151,1048,1310,1169"/>
-<area shape="rect" id="node14" href="$classFeel_1_1FunctionSpace.html" title=" " alt="" coords="1401,813,1580,1404"/>
-<area shape="rect" id="node15" href="$classFeel_1_1FunctionSpace.html" title=" " alt="" coords="1604,813,1783,1404"/>
-<area shape="rect" id="node17" href="$classFeel_1_1GeometricSpace.html" title=" " alt="" coords="1817,1026,1981,1191"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2089,5,2231,156"/>
+<area shape="rect" id="node2" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="257,204,487,765"/>
+<area shape="rect" id="node3" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="511,204,742,765"/>
+<area shape="rect" id="node8" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="802,211,1033,758"/>
+<area shape="rect" id="node9" href="$classFeel_1_1RangeBase.html" title=" " alt="" coords="1057,395,1271,575"/>
+<area shape="rect" id="node11" href="$classFeel_1_1RangeBase.html" title=" " alt="" coords="1295,395,1515,575"/>
+<area shape="rect" id="node13" href="$classFeel_1_1RangeBase.html" title=" " alt="" coords="1539,395,1762,575"/>
+<area shape="rect" id="node16" href="$classFeel_1_1RangeBase.html" title=" " alt="" coords="1787,387,2027,582"/>
+<area shape="rect" id="node19" href="$classFeel_1_1BVH.html" title="BVH base class." alt="" coords="2051,365,2269,604"/>
+<area shape="rect" id="node22" href="$classFeel_1_1BilinearFormBase.html" title="Base class for Bilinear Forms handle algebraic representation and multithreading." alt="" coords="2294,292,2509,677"/>
+<area shape="rect" id="node23" href="$classFeel_1_1CreateSubmeshTool.html" title=" " alt="" coords="2533,395,2736,575"/>
+<area shape="rect" id="node24" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="2761,387,2943,582"/>
+<area shape="rect" id="node26" href="$structFeel_1_1GeometricSpaceBase.html" title=" " alt="" coords="2968,402,3165,567"/>
+<area shape="rect" id="node28" href="$classFeel_1_1MeshBase.html" title="base mesh class" alt="" coords="3190,211,3421,758"/>
+<area shape="rect" id="node29" href="$classFeel_1_1RangeBase.html" title="RangeBase class." alt="" coords="3445,409,3649,560"/>
+<area shape="rect" id="node30" href="$classFeel_1_1vf_1_1details_1_1EvaluatorContext.html" title="work class to evaluate expressions at sets of points" alt="" coords="3673,292,3853,677"/>
+<area shape="rect" id="node4" href="$classFeel_1_1Mesh0D.html" title="0D mesh class" alt="" coords="5,865,224,1367"/>
+<area shape="rect" id="node5" href="$classFeel_1_1Mesh1D.html" title="1D mesh class" alt="" coords="248,909,464,1323"/>
+<area shape="rect" id="node6" href="$classFeel_1_1Mesh2D.html" title="2D mesh class" alt="" coords="488,894,704,1338"/>
+<area shape="rect" id="node7" href="$classFeel_1_1Mesh3D.html" title="3D mesh class" alt="" coords="728,887,947,1345"/>
+<area shape="rect" id="node10" href="$classFeel_1_1Range.html" title=" " alt="" coords="971,975,1154,1257"/>
+<area shape="rect" id="node12" href="$classFeel_1_1Range.html" title=" " alt="" coords="1179,975,1373,1257"/>
+<area shape="rect" id="node14" href="$classFeel_1_1Range.html" title=" " alt="" coords="1397,975,1587,1257"/>
+<area shape="rect" id="node15" href="$classFeel_1_1Range.html" title=" " alt="" coords="1611,975,1800,1257"/>
+<area shape="rect" id="node17" href="$classFeel_1_1Range.html" title=" " alt="" coords="1825,967,2063,1265"/>
+<area shape="rect" id="node18" href="$classFeel_1_1Range.html" title=" " alt="" coords="2088,967,2299,1265"/>
+<area shape="rect" id="node20" href="$classFeel_1_1BVH__InHouse.html" title="in house implementation of BVH tool" alt="" coords="2323,1063,2479,1169"/>
+<area shape="rect" id="node21" href="$classFeel_1_1BVH__ThirdParty.html" title="implementation of BVH tool with an external third party" alt="" coords="2503,1055,2662,1177"/>
+<area shape="rect" id="node25" href="$classFeel_1_1FunctionSpace.html" title=" " alt="" coords="2728,813,2965,1419"/>
+<area shape="rect" id="node27" href="$classFeel_1_1GeometricSpace.html" title=" " alt="" coords="2990,1033,3154,1199"/>
 </map>

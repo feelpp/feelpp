@@ -13,5 +13,6 @@ var feelpp_2feel_2feelcore_2traits_8hpp =
     [ "Feel::remove_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
     [ "Feel::remove_std_vector< T >", "structFeel_1_1remove__std__vector.html", null ],
     [ "Feel::remove_std_vector< std::vector< T > >", "structFeel_1_1remove__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html", null ],
-    [ "Feel::type_identity< T >", "structFeel_1_1type__identity.html", null ]
+    [ "Feel::type_identity< T >", "structFeel_1_1type__identity.html", null ],
+    [ "Feel::value_type_trait< Type, Enable >", "structFeel_1_1value__type__trait.html", null ]
 ];

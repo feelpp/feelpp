@@ -127,48 +127,54 @@ $(document).ready(function(){initNavTree('classFeel_1_1CreateSubmeshTool.html','
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a9f2299002235973b5d49da034d22a95f"><td class="memItemLeft" align="right" valign="top"><a id="a9f2299002235973b5d49da034d22a95f" name="a9f2299002235973b5d49da034d22a95f"></a>
-typedef boost::tuples::template element&lt; 0, range_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>idim_type</b></td></tr>
-<tr class="separator:a9f2299002235973b5d49da034d22a95f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabf12a3ef891a179c52eaabe49c4a127"><td class="memItemLeft" align="right" valign="top"><a id="aabf12a3ef891a179c52eaabe49c4a127" name="aabf12a3ef891a179c52eaabe49c4a127"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>idim_type</b> = typename range_type::idim_t</td></tr>
+<tr class="separator:aabf12a3ef891a179c52eaabe49c4a127"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cde63744754550d59b25884312aaf5c"><td class="memItemLeft" align="right" valign="top"><a id="a0cde63744754550d59b25884312aaf5c" name="a0cde63744754550d59b25884312aaf5c"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename mesh_type::index_type</td></tr>
 <tr class="separator:a0cde63744754550d59b25884312aaf5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7cfe11d1fcddda240e83c005ab1badb1"><td class="memItemLeft" align="right" valign="top"><a id="a7cfe11d1fcddda240e83c005ab1badb1" name="a7cfe11d1fcddda240e83c005ab1badb1"></a>
-typedef boost::tuples::template element&lt; 1, range_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_type</b></td></tr>
-<tr class="separator:a7cfe11d1fcddda240e83c005ab1badb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf83ffed4892206b549a2191fcd8a0e0"><td class="memItemLeft" align="right" valign="top"><a id="adf83ffed4892206b549a2191fcd8a0e0" name="adf83ffed4892206b549a2191fcd8a0e0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_type</b> = typename range_type::iterator_t</td></tr>
+<tr class="separator:adf83ffed4892206b549a2191fcd8a0e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c3f889695143d4d7b6d8bc76c6645af"><td class="memItemLeft" align="right" valign="top"><a id="a6c3f889695143d4d7b6d8bc76c6645af" name="a6c3f889695143d4d7b6d8bc76c6645af"></a>
 typedef std::shared_ptr&lt; mesh_build_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_build_ptrtype</b></td></tr>
 <tr class="separator:a6c3f889695143d4d7b6d8bc76c6645af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77194f00a80f6013f0e333702feefd9f"><td class="memItemLeft" align="right" valign="top"><a id="a77194f00a80f6013f0e333702feefd9f" name="a77194f00a80f6013f0e333702feefd9f"></a>
-typedef mpl::if_&lt; mpl::equal_to&lt; idim_type, mpl::size_t&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt; &gt;, mpl::identity&lt; mesh_elements_type &gt;, typenamempl::if_&lt; mpl::equal_to&lt; idim_type, mpl::size_t&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt; &gt;, mpl::identity&lt; mesh_faces_type &gt;, mpl::identity&lt; mesh_edges_type &gt; &gt;::type &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_build_type</b></td></tr>
-<tr class="separator:a77194f00a80f6013f0e333702feefd9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c75d2327985193495cc7517672a8d13"><td class="memItemLeft" align="right" valign="top"><a id="a8c75d2327985193495cc7517672a8d13" name="a8c75d2327985193495cc7517672a8d13"></a>
-typedef std::shared_ptr&lt; mesh_edges_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_edges_ptrtype</b></td></tr>
-<tr class="separator:a8c75d2327985193495cc7517672a8d13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a038d8db2ec87f9810e335ba99cb988d6"><td class="memItemLeft" align="right" valign="top"><a id="a038d8db2ec87f9810e335ba99cb988d6" name="a038d8db2ec87f9810e335ba99cb988d6"></a>
-typedef mpl::if_&lt; <a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; mesh_type::shape_type::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt;(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1, mesh_type::nOrder, mesh_type::nRealDim &gt;, value_type, tag, index_type &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt;(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1, mesh_type::nOrder, mesh_type::nRealDim &gt;, value_type, tag, index_type &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_edges_type</b></td></tr>
-<tr class="separator:a038d8db2ec87f9810e335ba99cb988d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d817ad2022dd0864345f9d0b507253e"><td class="memItemLeft" align="right" valign="top"><a id="a8d817ad2022dd0864345f9d0b507253e" name="a8d817ad2022dd0864345f9d0b507253e"></a>
-typedef std::shared_ptr&lt; mesh_elements_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_elements_ptrtype</b></td></tr>
-<tr class="separator:a8d817ad2022dd0864345f9d0b507253e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9bef51840df00df1ef13681abd294cef"><td class="memItemLeft" align="right" valign="top"><a id="a9bef51840df00df1ef13681abd294cef" name="a9bef51840df00df1ef13681abd294cef"></a>
-typedef mpl::if_&lt; <a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; mesh_type::shape_type::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; mesh_type::nDim, mesh_type::nOrder, mesh_type::nRealDim &gt;, value_type, tag, index_type &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; mesh_type::nDim, mesh_type::nOrder, mesh_type::nRealDim &gt;, value_type, tag, index_type &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_elements_type</b></td></tr>
-<tr class="separator:a9bef51840df00df1ef13681abd294cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4cc13e15e5b092995c1273846cca7e7"><td class="memItemLeft" align="right" valign="top"><a id="ab4cc13e15e5b092995c1273846cca7e7" name="ab4cc13e15e5b092995c1273846cca7e7"></a>
-typedef std::shared_ptr&lt; mesh_faces_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_faces_ptrtype</b></td></tr>
-<tr class="separator:ab4cc13e15e5b092995c1273846cca7e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac99fab807a97893a7f8b2d1a82a322bb"><td class="memItemLeft" align="right" valign="top"><a id="ac99fab807a97893a7f8b2d1a82a322bb" name="ac99fab807a97893a7f8b2d1a82a322bb"></a>
-typedef mpl::if_&lt; <a class="el" href="classboost_1_1mpl_1_1bool__.html">mpl::bool_</a>&lt; mesh_type::shape_type::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Simplex.html">Simplex</a>&lt; mesh_type::nDim-1, mesh_type::nOrder, mesh_type::nRealDim &gt;, value_type, tag, index_type &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a>&lt; mesh_type::nDim-1, mesh_type::nOrder, mesh_type::nRealDim &gt;, value_type, tag, index_type &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_faces_type</b></td></tr>
-<tr class="separator:ac99fab807a97893a7f8b2d1a82a322bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec84a5e7b47362cf9c5855306642084d"><td class="memItemLeft" align="right" valign="top"><a id="aec84a5e7b47362cf9c5855306642084d" name="aec84a5e7b47362cf9c5855306642084d"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_build_type</b> = mp11::mp_if_c&lt; IteratorRange::entities()==<a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a>, mesh_elements_type, mp11::mp_if_c&lt; IteratorRange::entities()==<a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a>, mesh_facets_type, mesh_edges_type &gt; &gt;</td></tr>
+<tr class="separator:aec84a5e7b47362cf9c5855306642084d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07c852a36b6096fbd118590678bb0df1"><td class="memItemLeft" align="right" valign="top"><a id="a07c852a36b6096fbd118590678bb0df1" name="a07c852a36b6096fbd118590678bb0df1"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_edges_ptrtype</b> = <a class="el" href="group__Traits.html#ga61d9eed113495eb9120c42487150b600">edges_mesh_ptr_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a07c852a36b6096fbd118590678bb0df1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a314e69ebf00181e6fc29650311dd45c0"><td class="memItemLeft" align="right" valign="top"><a id="a314e69ebf00181e6fc29650311dd45c0" name="a314e69ebf00181e6fc29650311dd45c0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_edges_type</b> = <a class="el" href="group__Traits.html#gaca2b87ead630e7225a22e328affd9d1a">edges_mesh_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a314e69ebf00181e6fc29650311dd45c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc15374c46175196c01778bb2f92226f"><td class="memItemLeft" align="right" valign="top"><a id="abc15374c46175196c01778bb2f92226f" name="abc15374c46175196c01778bb2f92226f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_elements_ptrtype</b> = <a class="el" href="group__Traits.html#ga8b9a851be389063f24e2d2f48f250a19">elements_mesh_ptr_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:abc15374c46175196c01778bb2f92226f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7ca61761f07a519acb6922ce02c9c8a"><td class="memItemLeft" align="right" valign="top"><a id="ab7ca61761f07a519acb6922ce02c9c8a" name="ab7ca61761f07a519acb6922ce02c9c8a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_elements_type</b> = <a class="el" href="group__Traits.html#ga32bd8e28c70f19a3fa1a14ecef841456">elements_mesh_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:ab7ca61761f07a519acb6922ce02c9c8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3db955c6a98d0414e7a3cb09a8ebc6d5"><td class="memItemLeft" align="right" valign="top"><a id="a3db955c6a98d0414e7a3cb09a8ebc6d5" name="a3db955c6a98d0414e7a3cb09a8ebc6d5"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_faces_ptrtype</b> = <a class="el" href="group__Traits.html#ga09e54df1a8d433091ccbf2970f693cd0">faces_mesh_ptr_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a3db955c6a98d0414e7a3cb09a8ebc6d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62621f1eb85ded71ac594deb7feaff88"><td class="memItemLeft" align="right" valign="top"><a id="a62621f1eb85ded71ac594deb7feaff88" name="a62621f1eb85ded71ac594deb7feaff88"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_faces_type</b> = <a class="el" href="group__Traits.html#ga079f62562d57762ab4c2725ba5855074">faces_mesh_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a62621f1eb85ded71ac594deb7feaff88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63340d51eff52b65aedce4f197386382"><td class="memItemLeft" align="right" valign="top"><a id="a63340d51eff52b65aedce4f197386382" name="a63340d51eff52b65aedce4f197386382"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_facets_ptrtype</b> = <a class="el" href="group__Traits.html#gabf0ffdf9c3eab4b027e547dd8a977c96">trace_mesh_ptr_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a63340d51eff52b65aedce4f197386382"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02fc111e0ef4063343ba533b1b7caf86"><td class="memItemLeft" align="right" valign="top"><a id="a02fc111e0ef4063343ba533b1b7caf86" name="a02fc111e0ef4063343ba533b1b7caf86"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_facets_type</b> = <a class="el" href="group__Traits.html#gad14d305c1d454b6c9c8dd36fc5f616f8">trace_mesh_t</a>&lt; mesh_type &gt;</td></tr>
+<tr class="separator:a02fc111e0ef4063343ba533b1b7caf86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c5f72e8a39eb4dbceb1e5b094b4d5ab"><td class="memItemLeft" align="right" valign="top"><a id="a9c5f72e8a39eb4dbceb1e5b094b4d5ab" name="a9c5f72e8a39eb4dbceb1e5b094b4d5ab"></a>
 typedef std::shared_ptr&lt; mesh_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b></td></tr>
 <tr class="separator:a9c5f72e8a39eb4dbceb1e5b094b4d5ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6542688172eb82097277de844a107229"><td class="memItemLeft" align="right" valign="top"><a id="a6542688172eb82097277de844a107229" name="a6542688172eb82097277de844a107229"></a>
 typedef MeshType&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b></td></tr>
 <tr class="separator:a6542688172eb82097277de844a107229"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ce4fe3f896304ad6272fc5528c2e3a7"><td class="memItemLeft" align="right" valign="top"><a id="a9ce4fe3f896304ad6272fc5528c2e3a7" name="a9ce4fe3f896304ad6272fc5528c2e3a7"></a>
-typedef IteratorRange&#160;</td><td class="memItemRight" valign="bottom"><b>range_type</b></td></tr>
-<tr class="separator:a9ce4fe3f896304ad6272fc5528c2e3a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0bd5efbbefd8a46cefa1837d38e1cb20"><td class="memItemLeft" align="right" valign="top"><a id="a0bd5efbbefd8a46cefa1837d38e1cb20" name="a0bd5efbbefd8a46cefa1837d38e1cb20"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>range_type</b> = IteratorRange</td></tr>
+<tr class="separator:a0bd5efbbefd8a46cefa1837d38e1cb20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa19782013adf3e87fc7d1c4362c1d56"><td class="memItemLeft" align="right" valign="top"><a id="aaa19782013adf3e87fc7d1c4362c1d56" name="aaa19782013adf3e87fc7d1c4362c1d56"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename mesh_type::size_type</td></tr>
 <tr class="separator:aaa19782013adf3e87fc7d1c4362c1d56"><td class="memSeparator" colspan="2">&#160;</td></tr>

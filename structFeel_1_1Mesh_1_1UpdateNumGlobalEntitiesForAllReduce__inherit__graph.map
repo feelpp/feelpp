@@ -1,4 +1,4 @@
-<map id="Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;::UpdateNumGlobalEntitiesForAllReduce" name="Feel::Mesh&lt; GeoShape, T, Tag, IndexT &gt;::UpdateNumGlobalEntitiesForAllReduce">
-<area shape="rect" id="node1" title=" " alt="" coords="25,248,243,355"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,263,200"/>
+<map id="Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;::UpdateNumGlobalEntitiesForAllReduce" name="Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;::UpdateNumGlobalEntitiesForAllReduce">
+<area shape="rect" id="node1" title=" " alt="" coords="5,248,280,369"/>
+<area shape="rect" id="node2" title=" " alt="" coords="14,5,271,200"/>
 </map>

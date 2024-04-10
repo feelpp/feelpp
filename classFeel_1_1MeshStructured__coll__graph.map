@@ -1,11 +1,11 @@
 <map id="Feel::MeshStructured&lt; GeoShape, T, IndexT &gt;" name="Feel::MeshStructured&lt; GeoShape, T, IndexT &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="765,1180,951,1345"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Mesh.html" title=" " alt="" coords="463,365,738,1103"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,271,244"/>
-<area shape="rect" id="node4" title=" " alt="" coords="295,71,463,178"/>
-<area shape="rect" id="node5" title=" " alt="" coords="487,71,714,178"/>
-<area shape="rect" id="node6" title=" " alt="" coords="738,86,917,163"/>
-<area shape="rect" id="node7" title=" " alt="" coords="941,86,1175,163"/>
-<area shape="rect" id="node8" href="$structFeel_1_1MeshStructuredBase.html" title="Structured mesh class." alt="" coords="763,695,953,773"/>
-<area shape="rect" id="node9" title=" " alt="" coords="977,695,1184,773"/>
+<area shape="rect" id="node1" title=" " alt="" coords="845,1151,1032,1316"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Mesh.html" title=" " alt="" coords="544,321,819,1073"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,269,200"/>
+<area shape="rect" id="node4" title=" " alt="" coords="294,57,525,149"/>
+<area shape="rect" id="node5" title=" " alt="" coords="549,27,813,178"/>
+<area shape="rect" id="node6" title=" " alt="" coords="837,64,1016,141"/>
+<area shape="rect" id="node7" title=" " alt="" coords="1040,64,1275,141"/>
+<area shape="rect" id="node8" href="$structFeel_1_1MeshStructuredBase.html" title="Structured mesh class." alt="" coords="843,659,1034,736"/>
+<area shape="rect" id="node9" title=" " alt="" coords="1058,659,1265,736"/>
 </map>

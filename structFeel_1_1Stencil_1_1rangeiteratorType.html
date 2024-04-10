@@ -117,14 +117,14 @@ $(document).ready(function(){initNavTree('structFeel_1_1Stencil_1_1rangeiterator
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a26ac534761c0978396ae435b5e80cf44"><td class="memItemLeft" align="right" valign="top"><a id="a26ac534761c0978396ae435b5e80cf44" name="a26ac534761c0978396ae435b5e80cf44"></a>
-typedef elements_reference_wrapper_t&lt; typename <a class="el" href="structFeel_1_1MeshTraits.html">MeshTraits</a>&lt; typename test_space_type::mesh_type &gt;::mesh_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>defaultrange_type</b></td></tr>
-<tr class="separator:a26ac534761c0978396ae435b5e80cf44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a614810b09aeed347e3278c8030305dbe"><td class="memItemLeft" align="right" valign="top"><a id="a614810b09aeed347e3278c8030305dbe" name="a614810b09aeed347e3278c8030305dbe"></a>
+typedef <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; typename <a class="el" href="structFeel_1_1MeshTraits.html">MeshTraits</a>&lt; typename test_space_type::mesh_type &gt;::mesh_type, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>defaultrange_type</b></td></tr>
+<tr class="separator:a614810b09aeed347e3278c8030305dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0208aac84b94301fdfe923ef3b2b3ff"><td class="memItemLeft" align="right" valign="top"><a id="ab0208aac84b94301fdfe923ef3b2b3ff" name="ab0208aac84b94301fdfe923ef3b2b3ff"></a>
 typedef boost::is_same&lt; resultfindrange_it_type, typename fusion::result_of::end&lt; rangeiterator_test_type &gt;::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>hasnotfindrange_type</b></td></tr>
 <tr class="separator:ab0208aac84b94301fdfe923ef3b2b3ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a719293bc873cc519a6654cfa1beb6d97"><td class="memItemLeft" align="right" valign="top"><a id="a719293bc873cc519a6654cfa1beb6d97" name="a719293bc873cc519a6654cfa1beb6d97"></a>
-typedef <a class="el" href="classboost_1_1fusion_1_1map.html">fusion::map</a>&lt; fusion::pair&lt; fusion::pair&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;-1 &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;-1 &gt; &gt;, defaultrange_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mapbid</b></td></tr>
+typedef <a class="el" href="classboost_1_1fusion_1_1map.html">fusion::map</a>&lt; fusion::pair&lt; fusion::pair&lt; <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;-1 &gt;, <a class="el" href="classboost_1_1mpl_1_1int__.html">mpl::int_</a>&lt;-1 &gt; &gt;, <a class="el" href="classFeel_1_1Range.html">defaultrange_type</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mapbid</b></td></tr>
 <tr class="separator:a719293bc873cc519a6654cfa1beb6d97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad54f0123de883dd88b551f50e4f61128"><td class="memItemLeft" align="right" valign="top"><a id="ad54f0123de883dd88b551f50e4f61128" name="ad54f0123de883dd88b551f50e4f61128"></a>
 typedef mpl::if_&lt; hasnotfindrange_type, resultfindrange_it_bid_type, resultfindrange_it_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>resultfindrange_it2_type</b></td></tr>
@@ -139,7 +139,7 @@ typedef fusion::result_of::find&lt; rangeiterator_test_type, fusion::pair&lt; <a
 typedef fusion::result_of::value_of&lt; resultfindrange_it2_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>resultfindrange_type</b></td></tr>
 <tr class="separator:aa69f1e1c81c99af95738d3bfb4997036"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33e5fce29c0fbfb8d79eac7104ee5690"><td class="memItemLeft" align="right" valign="top"><a id="a33e5fce29c0fbfb8d79eac7104ee5690" name="a33e5fce29c0fbfb8d79eac7104ee5690"></a>
-typedef mpl::if_&lt; hasnotfindrange_type, mpl::identity&lt; defaultrange_type &gt;, mpl::identity&lt; resultfindrange_type &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
+typedef mpl::if_&lt; hasnotfindrange_type, mpl::identity&lt; <a class="el" href="classFeel_1_1Range.html">defaultrange_type</a> &gt;, mpl::identity&lt; resultfindrange_type &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
 <tr class="separator:a33e5fce29c0fbfb8d79eac7104ee5690"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->

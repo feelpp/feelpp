@@ -10,9 +10,7 @@ var dir_f953484fe51916b7b30cc3393ae061de =
     ] ],
     [ "checker.cpp", "checker_8cpp.html", null ],
     [ "checker.hpp", "checker_8hpp.html", "checker_8hpp" ],
-    [ "commobject.hpp", "commobject_8hpp.html", [
-      [ "Feel::CommObject", "classFeel_1_1CommObject.html", "classFeel_1_1CommObject" ]
-    ] ],
+    [ "commobject.hpp", "commobject_8hpp.html", "commobject_8hpp" ],
     [ "constants.hpp", "constants_8hpp.html", "constants_8hpp" ],
     [ "context.hpp", "feelcore_2context_8hpp.html", "feelcore_2context_8hpp" ],
     [ "debug.hpp", "debug_8hpp.html", null ],

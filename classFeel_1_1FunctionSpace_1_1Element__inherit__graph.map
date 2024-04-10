@@ -1,5 +1,5 @@
-<map id="Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;" name="Feel::FunctionSpace&lt; A0, A1, A2, A3, A4 &gt;::Element&lt; T, Cont &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="421,160,606,883"/>
+<map id="Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;" name="Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="402,160,625,883"/>
 <area shape="rect" id="node2" href="$classVectorUblas.html" title=" " alt="" coords="5,20,176,97"/>
 <area shape="rect" id="node3" title=" " alt="" coords="200,5,387,112"/>
 <area shape="rect" id="node4" title=" " alt="" coords="411,5,616,112"/>

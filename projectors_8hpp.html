@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feelvf/projectors.hpp File Reference</title>
+<title>Feel++: /nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feelvf/projectors.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -122,14 +122,6 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a5da1b6c6f2cb14771f6c0edd6b496bc9"><td class="memTemplParams" colspan="2">template&lt;typename FunctionSpaceType , typename ExprT &gt; </td></tr>
-<tr class="memitem:a5da1b6c6f2cb14771f6c0edd6b496bc9"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9">Feel::vf::project</a> (FunctionSpaceType const &amp;__functionspace, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_HO)</td></tr>
-<tr class="memdesc:a5da1b6c6f2cb14771f6c0edd6b496bc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">nodal projection of <code>__expr</code> onto the space <code>__functionspace</code>  <a href="projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9">More...</a><br /></td></tr>
-<tr class="separator:a5da1b6c6f2cb14771f6c0edd6b496bc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66887cbb33af1eaefdda642539f018f0"><td class="memTemplParams" colspan="2">template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT &gt; </td></tr>
-<tr class="memitem:a66887cbb33af1eaefdda642539f018f0"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a66887cbb33af1eaefdda642539f018f0">Feel::vf::project</a> (FunctionSpaceType const &amp;__functionspace, IteratorRange const &amp;range_it, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_HO)</td></tr>
-<tr class="memdesc:a66887cbb33af1eaefdda642539f018f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">nodal projection of <code>__expr</code> onto the subspace of <code>__functionspace</code> described by the range <code>range_it</code>  <a href="projectors_8hpp.html#a66887cbb33af1eaefdda642539f018f0">More...</a><br /></td></tr>
-<tr class="separator:a66887cbb33af1eaefdda642539f018f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ebd194b59695b44292ffeb2e59bd85c"><td class="memTemplParams" colspan="2">template&lt;typename FunctionSpaceType , typename ExprT &gt; </td></tr>
 <tr class="memitem:a9ebd194b59695b44292ffeb2e59bd85c"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a9ebd194b59695b44292ffeb2e59bd85c">Feel::vf::project</a> (std::shared_ptr&lt; FunctionSpaceType &gt; const &amp;__functionspace, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_HO)</td></tr>
 <tr class="memdesc:a9ebd194b59695b44292ffeb2e59bd85c"><td class="mdescLeft">&#160;</td><td class="mdescRight">nodal projection of <code>__expr</code> onto the space <code>__functionspace</code>  <a href="projectors_8hpp.html#a9ebd194b59695b44292ffeb2e59bd85c">More...</a><br /></td></tr>
@@ -159,92 +151,8 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2005-05-31 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a5da1b6c6f2cb14771f6c0edd6b496bc9" name="a5da1b6c6f2cb14771f6c0edd6b496bc9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5da1b6c6f2cb14771f6c0edd6b496bc9">&#9670;&nbsp;</a></span>project() <span class="overload">[1/4]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename FunctionSpaceType , typename ExprT &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">FunctionSpaceType::element_type Feel::vf::project </td>
-          <td>(</td>
-          <td class="paramtype">FunctionSpaceType const &amp;&#160;</td>
-          <td class="paramname"><em>__functionspace</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Expr&lt; ExprT &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>__expr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">GeomapStrategyType&#160;</td>
-          <td class="paramname"><em>geomap</em> = <code>GeomapStrategyType::GEOMAP_HO</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>nodal projection of <code>__expr</code> onto the space <code>__functionspace</code> </p>
-<dl class="section return"><dt>Returns</dt><dd>the element of the space <code>__functionspace</code> resulting from the nodal projection of <code>__expr</code> </dd></dl>
-
-</div>
-</div>
-<a id="a66887cbb33af1eaefdda642539f018f0" name="a66887cbb33af1eaefdda642539f018f0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66887cbb33af1eaefdda642539f018f0">&#9670;&nbsp;</a></span>project() <span class="overload">[2/4]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">FunctionSpaceType::element_type Feel::vf::project </td>
-          <td>(</td>
-          <td class="paramtype">FunctionSpaceType const &amp;&#160;</td>
-          <td class="paramname"><em>__functionspace</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">IteratorRange const &amp;&#160;</td>
-          <td class="paramname"><em>range_it</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Expr&lt; ExprT &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>__expr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">GeomapStrategyType&#160;</td>
-          <td class="paramname"><em>geomap</em> = <code>GeomapStrategyType::GEOMAP_HO</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>nodal projection of <code>__expr</code> onto the subspace of <code>__functionspace</code> described by the range <code>range_it</code> </p>
-<dl class="section return"><dt>Returns</dt><dd>the element of the space <code>__functionspace</code> resulting from the nodal projection of <code>__expr</code> over the range <code>__range_it</code> </dd></dl>
-
-</div>
-</div>
 <a id="a9ebd194b59695b44292ffeb2e59bd85c" name="a9ebd194b59695b44292ffeb2e59bd85c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ebd194b59695b44292ffeb2e59bd85c">&#9670;&nbsp;</a></span>project() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ebd194b59695b44292ffeb2e59bd85c">&#9670;&nbsp;</a></span>project() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -283,7 +191,7 @@ template&lt;typename FunctionSpaceType , typename ExprT &gt; </div>
 </div>
 </div>
 <a id="a5ad487c2da56e5147a5cb68bd33cbfcf" name="a5ad487c2da56e5147a5cb68bd33cbfcf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ad487c2da56e5147a5cb68bd33cbfcf">&#9670;&nbsp;</a></span>project() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ad487c2da56e5147a5cb68bd33cbfcf">&#9670;&nbsp;</a></span>project() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

@@ -115,11 +115,11 @@ $(document).ready(function(){initNavTree('group__Traits.html',''); initResizable
 </div>
 </div>
 <table class="memberdecls">
-<tr class="memitem:gad88b60e8e99ab7724f8e508d3c018bb1"><td class="memTemplParams" colspan="2"><a id="gad88b60e8e99ab7724f8e508d3c018bb1" name="gad88b60e8e99ab7724f8e508d3c018bb1"></a>
+<tr class="memitem:ga9c1eec59c096edff9ddc986121bcb0e8"><td class="memTemplParams" colspan="2"><a id="ga9c1eec59c096edff9ddc986121bcb0e8" name="ga9c1eec59c096edff9ddc986121bcb0e8"></a>
 template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:gad88b60e8e99ab7724f8e508d3c018bb1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_mesh</b> = typename std::is_base_of&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, MeshType &gt;::type</td></tr>
-<tr class="memdesc:gad88b60e8e99ab7724f8e508d3c018bb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">if <code>T</code> has base class <code>MeshBase&lt;&gt;</code> (hense if it is a function space) then provides the member constant value equal to true, false otherwise <br /></td></tr>
-<tr class="separator:gad88b60e8e99ab7724f8e508d3c018bb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9c1eec59c096edff9ddc986121bcb0e8"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_mesh</b> = typename std::is_base_of&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; MeshType &gt; &gt;::type</td></tr>
+<tr class="memdesc:ga9c1eec59c096edff9ddc986121bcb0e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">if <code>T</code> has base class <code>MeshBase&lt;&gt;</code> (hense if it is a function space) then provides the member constant value equal to true, false otherwise <br /></td></tr>
+<tr class="separator:ga9c1eec59c096edff9ddc986121bcb0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c12a3ffde0181ea0ef2e4bb4cb686e8"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, unwrap_ptr_t&lt; MeshType &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
 <tr class="memitem:ga7c12a3ffde0181ea0ef2e4bb4cb686e8"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga7c12a3ffde0181ea0ef2e4bb4cb686e8">Feel::mesh_t</a> = decay_type&lt; MeshType &gt;</td></tr>
 <tr class="memdesc:ga7c12a3ffde0181ea0ef2e4bb4cb686e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">provides the mesh type if <code>MeshType</code> is a shared_ptr of a <a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> then provides the mesh type  <a href="group__Traits.html#ga7c12a3ffde0181ea0ef2e4bb4cb686e8">More...</a><br /></td></tr>
@@ -146,13 +146,13 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::tensor2symm_tr
 <tr class="memitem:ga4f9fa85fe40871fb5b813fcc4734c9a3"><td class="memItemLeft" align="right" valign="top"><a id="ga4f9fa85fe40871fb5b813fcc4734c9a3" name="ga4f9fa85fe40871fb5b813fcc4734c9a3"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::tensor2symm_false</b> = std::integral_constant&lt; <a class="el" href="classbool.html">bool</a>, false &gt;</td></tr>
 <tr class="separator:ga4f9fa85fe40871fb5b813fcc4734c9a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga283c8056137c1283d5f79a3c45f5b20b"><td class="memTemplParams" colspan="2"><a id="ga283c8056137c1283d5f79a3c45f5b20b" name="ga283c8056137c1283d5f79a3c45f5b20b"></a>
+<tr class="memitem:ga720007f7bc8e7029d416c691d240c516"><td class="memTemplParams" colspan="2"><a id="ga720007f7bc8e7029d416c691d240c516" name="ga720007f7bc8e7029d416c691d240c516"></a>
 template&lt;typename FuncSpaceType &gt; </td></tr>
-<tr class="memitem:ga283c8056137c1283d5f79a3c45f5b20b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_functionspace</b> = typename std::is_base_of&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a>, FuncSpaceType &gt;::type</td></tr>
-<tr class="memdesc:ga283c8056137c1283d5f79a3c45f5b20b"><td class="mdescLeft">&#160;</td><td class="mdescRight">if <code>T</code> has base class <code><a class="el" href="classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace">FunctionSpaceBase</a></code> (hense if it is a function space) then provides the member constant value equal to true, false otherwise <br /></td></tr>
-<tr class="separator:ga283c8056137c1283d5f79a3c45f5b20b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga720007f7bc8e7029d416c691d240c516"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_functionspace</b> = typename std::is_base_of&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a>, decay_type&lt; FuncSpaceType &gt; &gt;::type</td></tr>
+<tr class="memdesc:ga720007f7bc8e7029d416c691d240c516"><td class="mdescLeft">&#160;</td><td class="mdescRight">if <code>T</code> has base class <code><a class="el" href="classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace">FunctionSpaceBase</a></code> (hense if it is a function space) then provides the member constant value equal to true, false otherwise <br /></td></tr>
+<tr class="separator:ga720007f7bc8e7029d416c691d240c516"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa0890ffe8d4236f488e086c81562c49d"><td class="memTemplParams" colspan="2">template&lt;typename FESpace &gt; </td></tr>
-<tr class="memitem:gaa0890ffe8d4236f488e086c81562c49d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d">Feel::functionspace_type</a> = typename mpl::if_&lt; <a class="el" href="group__Traits.html#ga283c8056137c1283d5f79a3c45f5b20b">is_functionspace</a>&lt; decay_type&lt; FESpace &gt; &gt;, mpl::identity&lt; decay_type&lt; FESpace &gt; &gt;, mpl::identity&lt; void &gt; &gt;::type::type</td></tr>
+<tr class="memitem:gaa0890ffe8d4236f488e086c81562c49d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d">Feel::functionspace_type</a> = typename mpl::if_&lt; <a class="el" href="group__Traits.html#ga720007f7bc8e7029d416c691d240c516">is_functionspace</a>&lt; decay_type&lt; FESpace &gt; &gt;, mpl::identity&lt; decay_type&lt; FESpace &gt; &gt;, mpl::identity&lt; void &gt; &gt;::type::type</td></tr>
 <tr class="memdesc:gaa0890ffe8d4236f488e086c81562c49d"><td class="mdescLeft">&#160;</td><td class="mdescRight">provides the function space type if <code>FESpace</code> is a shared_ptr of a function space then provides the function space type  <a href="group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d">More...</a><br /></td></tr>
 <tr class="separator:gaa0890ffe8d4236f488e086c81562c49d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga20ff4a86edc970a5cc884036d5752f8d"><td class="memTemplParams" colspan="2"><a id="ga20ff4a86edc970a5cc884036d5752f8d" name="ga20ff4a86edc970a5cc884036d5752f8d"></a>
@@ -164,21 +164,99 @@ template&lt;typename ElementType &gt; </td></tr>
 <tr class="memitem:ga309eaea5e6ae8eed34e171c103915dac"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga309eaea5e6ae8eed34e171c103915dac">Feel::functionspace_element_type</a> = typename mpl::if_&lt; <a class="el" href="group__Traits.html#ga20ff4a86edc970a5cc884036d5752f8d">is_functionspace_element</a>&lt; decay_type&lt; ElementT &gt; &gt;, mpl::identity&lt; decay_type&lt; ElementT &gt; &gt;, mpl::identity&lt; void &gt; &gt;::type::type</td></tr>
 <tr class="memdesc:ga309eaea5e6ae8eed34e171c103915dac"><td class="mdescLeft">&#160;</td><td class="mdescRight">provides the function space type if <code>FESpace</code> is a shared_ptr of a function space then provides the function space type  <a href="group__Traits.html#ga309eaea5e6ae8eed34e171c103915dac">More...</a><br /></td></tr>
 <tr class="separator:ga309eaea5e6ae8eed34e171c103915dac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga08aa0446d996817498103cd75c9bb7aa"><td class="memTemplParams" colspan="2"><a id="ga08aa0446d996817498103cd75c9bb7aa" name="ga08aa0446d996817498103cd75c9bb7aa"></a>
-template&lt;typename SpaceT , typename  = std::enable_if_t&lt;is_functionspace_v&lt;SpaceT&gt;&gt;&gt; </td></tr>
-<tr class="memitem:ga08aa0446d996817498103cd75c9bb7aa"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::element_t</b> = typename SpaceT::element_type</td></tr>
-<tr class="memdesc:ga08aa0446d996817498103cd75c9bb7aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the element type of a functionspace <br /></td></tr>
-<tr class="separator:ga08aa0446d996817498103cd75c9bb7aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3938281072c721669a9a3e387930e27e"><td class="memTemplParams" colspan="2"><a id="ga3938281072c721669a9a3e387930e27e" name="ga3938281072c721669a9a3e387930e27e"></a>
-template&lt;typename SpaceT , typename  = std::enable_if_t&lt;is_functionspace_v&lt;SpaceT&gt;&gt;&gt; </td></tr>
-<tr class="memitem:ga3938281072c721669a9a3e387930e27e"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::element_ptr_t</b> = typename SpaceT::element_ptrtype</td></tr>
-<tr class="memdesc:ga3938281072c721669a9a3e387930e27e"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the element shared ptr type of a functionspace <br /></td></tr>
-<tr class="separator:ga3938281072c721669a9a3e387930e27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga32bd8e28c70f19a3fa1a14ecef841456"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga32bd8e28c70f19a3fa1a14ecef841456"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga32bd8e28c70f19a3fa1a14ecef841456">Feel::elements_mesh_t</a> = typename <a class="el" href="structFeel_1_1elements__mesh.html">elements_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:ga32bd8e28c70f19a3fa1a14ecef841456"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the type of the mesh of topological dimension 2  <a href="group__Traits.html#ga32bd8e28c70f19a3fa1a14ecef841456">More...</a><br /></td></tr>
+<tr class="separator:ga32bd8e28c70f19a3fa1a14ecef841456"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8b9a851be389063f24e2d2f48f250a19"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga8b9a851be389063f24e2d2f48f250a19"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga8b9a851be389063f24e2d2f48f250a19">Feel::elements_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1elements__mesh.html">elements_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:ga8b9a851be389063f24e2d2f48f250a19"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#ga8b9a851be389063f24e2d2f48f250a19">More...</a><br /></td></tr>
+<tr class="separator:ga8b9a851be389063f24e2d2f48f250a19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6586ea882b7828675a59b4e0afbc55d1"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga6586ea882b7828675a59b4e0afbc55d1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga6586ea882b7828675a59b4e0afbc55d1">Feel::elements_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1elements__mesh.html">elements_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:ga6586ea882b7828675a59b4e0afbc55d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#ga6586ea882b7828675a59b4e0afbc55d1">More...</a><br /></td></tr>
+<tr class="separator:ga6586ea882b7828675a59b4e0afbc55d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga079f62562d57762ab4c2725ba5855074"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga079f62562d57762ab4c2725ba5855074"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga079f62562d57762ab4c2725ba5855074">Feel::faces_mesh_t</a> = typename <a class="el" href="structFeel_1_1faces__mesh.html">faces_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:ga079f62562d57762ab4c2725ba5855074"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the type of the mesh of topological dimension 2  <a href="group__Traits.html#ga079f62562d57762ab4c2725ba5855074">More...</a><br /></td></tr>
+<tr class="separator:ga079f62562d57762ab4c2725ba5855074"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga09e54df1a8d433091ccbf2970f693cd0"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga09e54df1a8d433091ccbf2970f693cd0"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga09e54df1a8d433091ccbf2970f693cd0">Feel::faces_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1faces__mesh.html">faces_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:ga09e54df1a8d433091ccbf2970f693cd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#ga09e54df1a8d433091ccbf2970f693cd0">More...</a><br /></td></tr>
+<tr class="separator:ga09e54df1a8d433091ccbf2970f693cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4d5cd527e9876c8c9302e4387db27fac"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga4d5cd527e9876c8c9302e4387db27fac"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga4d5cd527e9876c8c9302e4387db27fac">Feel::faces_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1faces__mesh.html">faces_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:ga4d5cd527e9876c8c9302e4387db27fac"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#ga4d5cd527e9876c8c9302e4387db27fac">More...</a><br /></td></tr>
+<tr class="separator:ga4d5cd527e9876c8c9302e4387db27fac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac3b369b18723a2938b6f316cbf691cc3"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gac3b369b18723a2938b6f316cbf691cc3"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gac3b369b18723a2938b6f316cbf691cc3">Feel::facets_mesh_t</a> = typename <a class="el" href="structFeel_1_1facets__mesh.html">facets_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:gac3b369b18723a2938b6f316cbf691cc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the type of the mesh of topological dimension 2  <a href="group__Traits.html#gac3b369b18723a2938b6f316cbf691cc3">More...</a><br /></td></tr>
+<tr class="separator:gac3b369b18723a2938b6f316cbf691cc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13730817f7c1bde4d8f99e9d4b49ddc0"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga13730817f7c1bde4d8f99e9d4b49ddc0"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga13730817f7c1bde4d8f99e9d4b49ddc0">Feel::facets_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1facets__mesh.html">facets_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:ga13730817f7c1bde4d8f99e9d4b49ddc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#ga13730817f7c1bde4d8f99e9d4b49ddc0">More...</a><br /></td></tr>
+<tr class="separator:ga13730817f7c1bde4d8f99e9d4b49ddc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf115d145eefe283bae8ff4c8048b4952"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gaf115d145eefe283bae8ff4c8048b4952"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gaf115d145eefe283bae8ff4c8048b4952">Feel::facets_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1facets__mesh.html">facets_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:gaf115d145eefe283bae8ff4c8048b4952"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#gaf115d145eefe283bae8ff4c8048b4952">More...</a><br /></td></tr>
+<tr class="separator:gaf115d145eefe283bae8ff4c8048b4952"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaca2b87ead630e7225a22e328affd9d1a"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gaca2b87ead630e7225a22e328affd9d1a"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gaca2b87ead630e7225a22e328affd9d1a">Feel::edges_mesh_t</a> = typename <a class="el" href="structFeel_1_1edges__mesh.html">edges_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:gaca2b87ead630e7225a22e328affd9d1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the type of the mesh of topological dimension 2  <a href="group__Traits.html#gaca2b87ead630e7225a22e328affd9d1a">More...</a><br /></td></tr>
+<tr class="separator:gaca2b87ead630e7225a22e328affd9d1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga61d9eed113495eb9120c42487150b600"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga61d9eed113495eb9120c42487150b600"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga61d9eed113495eb9120c42487150b600">Feel::edges_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1edges__mesh.html">edges_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:ga61d9eed113495eb9120c42487150b600"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#ga61d9eed113495eb9120c42487150b600">More...</a><br /></td></tr>
+<tr class="separator:ga61d9eed113495eb9120c42487150b600"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad844016c168ab638461f74e5f10347d9"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gad844016c168ab638461f74e5f10347d9"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gad844016c168ab638461f74e5f10347d9">Feel::edges_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1edges__mesh.html">edges_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:gad844016c168ab638461f74e5f10347d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension 2  <a href="group__Traits.html#gad844016c168ab638461f74e5f10347d9">More...</a><br /></td></tr>
+<tr class="separator:gad844016c168ab638461f74e5f10347d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac4cb0f781970c3fe167b39822c24ed19"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gac4cb0f781970c3fe167b39822c24ed19"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gac4cb0f781970c3fe167b39822c24ed19">Feel::parent_mesh_t</a> = typename <a class="el" href="structFeel_1_1parent__mesh.html">parent_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:gac4cb0f781970c3fe167b39822c24ed19"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the type of the mesh of topological dimension <code>d+1</code> if the real dimension of the mesh is <code>d+1</code>  <a href="group__Traits.html#gac4cb0f781970c3fe167b39822c24ed19">More...</a><br /></td></tr>
+<tr class="separator:gac4cb0f781970c3fe167b39822c24ed19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga341eb5cf6ed7cfe7cf7b1797be9f56fc"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga341eb5cf6ed7cfe7cf7b1797be9f56fc"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga341eb5cf6ed7cfe7cf7b1797be9f56fc">Feel::parent_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1parent__mesh.html">parent_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:ga341eb5cf6ed7cfe7cf7b1797be9f56fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension <code>d+1</code> if the real dimension of the mesh is <code>d+1</code>  <a href="group__Traits.html#ga341eb5cf6ed7cfe7cf7b1797be9f56fc">More...</a><br /></td></tr>
+<tr class="separator:ga341eb5cf6ed7cfe7cf7b1797be9f56fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf58371047ace605e2fc9e03e5a779356"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gaf58371047ace605e2fc9e03e5a779356"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gaf58371047ace605e2fc9e03e5a779356">Feel::parent_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1parent__mesh.html">parent_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:gaf58371047ace605e2fc9e03e5a779356"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the mesh of topological dimension <code>d+1</code> if the real dimension of the mesh is <code>d+1</code>  <a href="group__Traits.html#gaf58371047ace605e2fc9e03e5a779356">More...</a><br /></td></tr>
+<tr class="separator:gaf58371047ace605e2fc9e03e5a779356"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad14d305c1d454b6c9c8dd36fc5f616f8"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gad14d305c1d454b6c9c8dd36fc5f616f8"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gad14d305c1d454b6c9c8dd36fc5f616f8">Feel::trace_mesh_t</a> = typename <a class="el" href="structFeel_1_1trace__mesh.html">trace_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:gad14d305c1d454b6c9c8dd36fc5f616f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">get type of the trace of a mesh  <a href="group__Traits.html#gad14d305c1d454b6c9c8dd36fc5f616f8">More...</a><br /></td></tr>
+<tr class="separator:gad14d305c1d454b6c9c8dd36fc5f616f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabf0ffdf9c3eab4b027e547dd8a977c96"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gabf0ffdf9c3eab4b027e547dd8a977c96"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gabf0ffdf9c3eab4b027e547dd8a977c96">Feel::trace_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1trace__mesh.html">trace_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:gabf0ffdf9c3eab4b027e547dd8a977c96"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the trace of a mesh  <a href="group__Traits.html#gabf0ffdf9c3eab4b027e547dd8a977c96">More...</a><br /></td></tr>
+<tr class="separator:gabf0ffdf9c3eab4b027e547dd8a977c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0812eacb03bc8a42ce4f7f964deade4d"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga0812eacb03bc8a42ce4f7f964deade4d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga0812eacb03bc8a42ce4f7f964deade4d">Feel::trace_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1trace__mesh.html">trace_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:ga0812eacb03bc8a42ce4f7f964deade4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the trace of a const mesh  <a href="group__Traits.html#ga0812eacb03bc8a42ce4f7f964deade4d">More...</a><br /></td></tr>
+<tr class="separator:ga0812eacb03bc8a42ce4f7f964deade4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2767e934aa4c0405e916c224557d0311"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga2767e934aa4c0405e916c224557d0311"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga2767e934aa4c0405e916c224557d0311">Feel::trace_trace_mesh_t</a> = typename <a class="el" href="structFeel_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; MeshType, TheTag &gt;::type</td></tr>
+<tr class="memdesc:ga2767e934aa4c0405e916c224557d0311"><td class="mdescLeft">&#160;</td><td class="mdescRight">get type of the trace of the trace of a mesh  <a href="group__Traits.html#ga2767e934aa4c0405e916c224557d0311">More...</a><br /></td></tr>
+<tr class="separator:ga2767e934aa4c0405e916c224557d0311"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2f7f221ce2c20fa1ce97d333ac67e14"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:gad2f7f221ce2c20fa1ce97d333ac67e14"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gad2f7f221ce2c20fa1ce97d333ac67e14">Feel::trace_trace_mesh_ptr_t</a> = typename <a class="el" href="structFeel_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; MeshType, TheTag &gt;::ptrtype</td></tr>
+<tr class="memdesc:gad2f7f221ce2c20fa1ce97d333ac67e14"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the trace of the trace of a mesh  <a href="group__Traits.html#gad2f7f221ce2c20fa1ce97d333ac67e14">More...</a><br /></td></tr>
+<tr class="separator:gad2f7f221ce2c20fa1ce97d333ac67e14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga742c017d83cc1d1ef89ffa39fc114725"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </td></tr>
+<tr class="memitem:ga742c017d83cc1d1ef89ffa39fc114725"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga742c017d83cc1d1ef89ffa39fc114725">Feel::trace_trace_mesh_cptr_t</a> = typename <a class="el" href="structFeel_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt; MeshType, TheTag &gt;::const_ptrtype</td></tr>
+<tr class="memdesc:ga742c017d83cc1d1ef89ffa39fc114725"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the shared_ptr type of the trace of the trace of a const mesh  <a href="group__Traits.html#ga742c017d83cc1d1ef89ffa39fc114725">More...</a><br /></td></tr>
+<tr class="separator:ga742c017d83cc1d1ef89ffa39fc114725"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="memTemplParams" colspan="2"><a id="gaaed46165ccfb4bc35eb78bfe25f89459" name="gaaed46165ccfb4bc35eb78bfe25f89459"></a>
 template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_mesh_v</b> = <a class="el" href="group__Traits.html#gad88b60e8e99ab7724f8e508d3c018bb1">is_mesh</a>&lt;MeshType&gt;::value</td></tr>
+<tr class="memitem:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_mesh_v</b> = <a class="el" href="group__Traits.html#ga9c1eec59c096edff9ddc986121bcb0e8">is_mesh</a>&lt;MeshType&gt;::value</td></tr>
 <tr class="memdesc:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper variable template for is_mesh <br /></td></tr>
 <tr class="separator:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad7d1772bcda694db498cab7d730bd8a4"><td class="memTemplParams" colspan="2"><a id="gad7d1772bcda694db498cab7d730bd8a4" name="gad7d1772bcda694db498cab7d730bd8a4"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:gad7d1772bcda694db498cab7d730bd8a4"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_simplex_mesh_v</b> = is_simplex_v&lt;typename MeshType::shape_type&gt;</td></tr>
+<tr class="separator:gad7d1772bcda694db498cab7d730bd8a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa9ff86cd1f9759d28a737936036e5fb6"><td class="memTemplParams" colspan="2"><a id="gaa9ff86cd1f9759d28a737936036e5fb6" name="gaa9ff86cd1f9759d28a737936036e5fb6"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:gaa9ff86cd1f9759d28a737936036e5fb6"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_scalar_field_v</b> = <a class="el" href="group__Traits.html#gafea6d06eb930e7f148d8bb47ece9de37">is_scalar_field</a>&lt;T&gt;::value</td></tr>
@@ -205,7 +283,7 @@ template&lt;typename T &gt; </td></tr>
 <tr class="separator:ga90536bec69f2b3d99bbb96f64ca1eb7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga32bd57bba5f5a5a9a549edb0a71855b8"><td class="memTemplParams" colspan="2"><a id="ga32bd57bba5f5a5a9a549edb0a71855b8" name="ga32bd57bba5f5a5a9a549edb0a71855b8"></a>
 template&lt;typename FuncSpaceType &gt; </td></tr>
-<tr class="memitem:ga32bd57bba5f5a5a9a549edb0a71855b8"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_functionspace_v</b> = <a class="el" href="group__Traits.html#ga283c8056137c1283d5f79a3c45f5b20b">is_functionspace</a>&lt;FuncSpaceType&gt;::value</td></tr>
+<tr class="memitem:ga32bd57bba5f5a5a9a549edb0a71855b8"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::is_functionspace_v</b> = <a class="el" href="group__Traits.html#ga720007f7bc8e7029d416c691d240c516">is_functionspace</a>&lt;FuncSpaceType&gt;::value</td></tr>
 <tr class="memdesc:ga32bd57bba5f5a5a9a549edb0a71855b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper variable template for is_functionspace <br /></td></tr>
 <tr class="separator:ga32bd57bba5f5a5a9a549edb0a71855b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4d50181c65d94cfa6520d07dc40206df"><td class="memTemplParams" colspan="2"><a id="ga4d50181c65d94cfa6520d07dc40206df" name="ga4d50181c65d94cfa6520d07dc40206df"></a>
@@ -223,6 +301,330 @@ template&lt;typename ElementType &gt; </td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p >Traits provided by the library. </p>
 <h2 class="groupheader">Typedef Documentation</h2>
+<a id="gad844016c168ab638461f74e5f10347d9" name="gad844016c168ab638461f74e5f10347d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad844016c168ab638461f74e5f10347d9">&#9670;&nbsp;</a></span>edges_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gad844016c168ab638461f74e5f10347d9">Feel::edges_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1edges__mesh.html">edges_mesh</a>&lt;MeshType,TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga61d9eed113495eb9120c42487150b600" name="ga61d9eed113495eb9120c42487150b600"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga61d9eed113495eb9120c42487150b600">&#9670;&nbsp;</a></span>edges_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga61d9eed113495eb9120c42487150b600">Feel::edges_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1edges__mesh.html">edges_mesh</a>&lt;MeshType,TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gaca2b87ead630e7225a22e328affd9d1a" name="gaca2b87ead630e7225a22e328affd9d1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaca2b87ead630e7225a22e328affd9d1a">&#9670;&nbsp;</a></span>edges_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gaca2b87ead630e7225a22e328affd9d1a">Feel::edges_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1edges__mesh.html">edges_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga6586ea882b7828675a59b4e0afbc55d1" name="ga6586ea882b7828675a59b4e0afbc55d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6586ea882b7828675a59b4e0afbc55d1">&#9670;&nbsp;</a></span>elements_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga6586ea882b7828675a59b4e0afbc55d1">Feel::elements_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1elements__mesh.html">elements_mesh</a>&lt;MeshType,TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga8b9a851be389063f24e2d2f48f250a19" name="ga8b9a851be389063f24e2d2f48f250a19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8b9a851be389063f24e2d2f48f250a19">&#9670;&nbsp;</a></span>elements_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga8b9a851be389063f24e2d2f48f250a19">Feel::elements_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1elements__mesh.html">elements_mesh</a>&lt;MeshType,TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga32bd8e28c70f19a3fa1a14ecef841456" name="ga32bd8e28c70f19a3fa1a14ecef841456"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga32bd8e28c70f19a3fa1a14ecef841456">&#9670;&nbsp;</a></span>elements_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga32bd8e28c70f19a3fa1a14ecef841456">Feel::elements_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1elements__mesh.html">elements_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga4d5cd527e9876c8c9302e4387db27fac" name="ga4d5cd527e9876c8c9302e4387db27fac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4d5cd527e9876c8c9302e4387db27fac">&#9670;&nbsp;</a></span>faces_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga4d5cd527e9876c8c9302e4387db27fac">Feel::faces_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1faces__mesh.html">faces_mesh</a>&lt;MeshType,TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga09e54df1a8d433091ccbf2970f693cd0" name="ga09e54df1a8d433091ccbf2970f693cd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga09e54df1a8d433091ccbf2970f693cd0">&#9670;&nbsp;</a></span>faces_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga09e54df1a8d433091ccbf2970f693cd0">Feel::faces_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1faces__mesh.html">faces_mesh</a>&lt;MeshType,TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga079f62562d57762ab4c2725ba5855074" name="ga079f62562d57762ab4c2725ba5855074"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga079f62562d57762ab4c2725ba5855074">&#9670;&nbsp;</a></span>faces_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga079f62562d57762ab4c2725ba5855074">Feel::faces_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1faces__mesh.html">faces_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gaf115d145eefe283bae8ff4c8048b4952" name="gaf115d145eefe283bae8ff4c8048b4952"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf115d145eefe283bae8ff4c8048b4952">&#9670;&nbsp;</a></span>facets_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gaf115d145eefe283bae8ff4c8048b4952">Feel::facets_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1facets__mesh.html">facets_mesh</a>&lt;MeshType,TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga13730817f7c1bde4d8f99e9d4b49ddc0" name="ga13730817f7c1bde4d8f99e9d4b49ddc0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga13730817f7c1bde4d8f99e9d4b49ddc0">&#9670;&nbsp;</a></span>facets_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga13730817f7c1bde4d8f99e9d4b49ddc0">Feel::facets_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1facets__mesh.html">facets_mesh</a>&lt;MeshType,TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gac3b369b18723a2938b6f316cbf691cc3" name="gac3b369b18723a2938b6f316cbf691cc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac3b369b18723a2938b6f316cbf691cc3">&#9670;&nbsp;</a></span>facets_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gac3b369b18723a2938b6f316cbf691cc3">Feel::facets_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1facets__mesh.html">facets_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the type of the mesh of topological dimension 2 </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ga309eaea5e6ae8eed34e171c103915dac" name="ga309eaea5e6ae8eed34e171c103915dac"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga309eaea5e6ae8eed34e171c103915dac">&#9670;&nbsp;</a></span>functionspace_element_type</h2>
 
@@ -237,7 +639,7 @@ template&lt;typename ElementT &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>provides the function space type if <code>FESpace</code> is a shared_ptr of a function space then provides the function space type </p>
 <dl class="section note"><dt>Note</dt><dd>it checks that FESpace is indeed a functionspace type and return void if it is not the case. </dd></dl>
@@ -253,12 +655,12 @@ template&lt;typename ElementT &gt; </div>
 template&lt;typename FESpace &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d">Feel::functionspace_type</a> = typedef typename mpl::if_&lt;<a class="el" href="group__Traits.html#ga283c8056137c1283d5f79a3c45f5b20b">is_functionspace</a>&lt;decay_type&lt;FESpace&gt; &gt;, mpl::identity&lt;decay_type&lt;FESpace&gt; &gt;, mpl::identity&lt;void&gt; &gt;::type::type</td>
+          <td class="memname">using <a class="el" href="group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d">Feel::functionspace_type</a> = typedef typename mpl::if_&lt;<a class="el" href="group__Traits.html#ga720007f7bc8e7029d416c691d240c516">is_functionspace</a>&lt;decay_type&lt;FESpace&gt; &gt;, mpl::identity&lt;decay_type&lt;FESpace&gt; &gt;, mpl::identity&lt;void&gt; &gt;::type::type</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>provides the function space type if <code>FESpace</code> is a shared_ptr of a function space then provides the function space type </p>
 <dl class="section note"><dt>Note</dt><dd>it checks that FESpace is indeed a functionspace type and return void if it is not the case. </dd></dl>
@@ -279,7 +681,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>if <code>T</code> has base class <code>ScalarBase</code> then </p>
 <dl class="section return"><dt>Returns</dt><dd>the member constant value equal to true, false otherwise </dd></dl>
@@ -300,7 +702,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>if <code>T</code> has base class <code>Tensor2Base</code> then </p>
 <dl class="section return"><dt>Returns</dt><dd>the member constant value equal to true, false otherwise </dd></dl>
@@ -321,7 +723,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>if <code>T</code> has base class <code>Tensor2SymmBase</code> then </p>
 <dl class="section return"><dt>Returns</dt><dd>the member constant value equal to true, false otherwise </dd></dl>
@@ -342,7 +744,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>if <code>T</code> has base class <code>VectorialBase</code> then </p>
 <dl class="section return"><dt>Returns</dt><dd>the member constant value equal to true, false otherwise </dd></dl>
@@ -363,10 +765,253 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a cl
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>provides the mesh type if <code>MeshType</code> is a shared_ptr of a <a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a> then provides the mesh type </p>
 <dl class="section note"><dt>Note</dt><dd>it checks that the <code><a class="el" href="classFeel_1_1Mesh.html" title="unifying mesh class">Mesh</a></code> is indeed a mesh type and return void if it is not the case. </dd></dl>
+
+</div>
+</div>
+<a id="gaf58371047ace605e2fc9e03e5a779356" name="gaf58371047ace605e2fc9e03e5a779356"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf58371047ace605e2fc9e03e5a779356">&#9670;&nbsp;</a></span>parent_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gaf58371047ace605e2fc9e03e5a779356">Feel::parent_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1parent__mesh.html">parent_mesh</a>&lt;MeshType,TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension <code>d+1</code> if the real dimension of the mesh is <code>d+1</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga341eb5cf6ed7cfe7cf7b1797be9f56fc" name="ga341eb5cf6ed7cfe7cf7b1797be9f56fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga341eb5cf6ed7cfe7cf7b1797be9f56fc">&#9670;&nbsp;</a></span>parent_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga341eb5cf6ed7cfe7cf7b1797be9f56fc">Feel::parent_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1parent__mesh.html">parent_mesh</a>&lt;MeshType,TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the mesh of topological dimension <code>d+1</code> if the real dimension of the mesh is <code>d+1</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gac4cb0f781970c3fe167b39822c24ed19" name="gac4cb0f781970c3fe167b39822c24ed19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac4cb0f781970c3fe167b39822c24ed19">&#9670;&nbsp;</a></span>parent_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gac4cb0f781970c3fe167b39822c24ed19">Feel::parent_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1parent__mesh.html">parent_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the type of the mesh of topological dimension <code>d+1</code> if the real dimension of the mesh is <code>d+1</code> </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga0812eacb03bc8a42ce4f7f964deade4d" name="ga0812eacb03bc8a42ce4f7f964deade4d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0812eacb03bc8a42ce4f7f964deade4d">&#9670;&nbsp;</a></span>trace_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga0812eacb03bc8a42ce4f7f964deade4d">Feel::trace_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1trace__mesh.html">trace_mesh</a>&lt;MeshType, TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the trace of a const mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gabf0ffdf9c3eab4b027e547dd8a977c96" name="gabf0ffdf9c3eab4b027e547dd8a977c96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gabf0ffdf9c3eab4b027e547dd8a977c96">&#9670;&nbsp;</a></span>trace_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gabf0ffdf9c3eab4b027e547dd8a977c96">Feel::trace_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1trace__mesh.html">trace_mesh</a>&lt;MeshType, TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the trace of a mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gad14d305c1d454b6c9c8dd36fc5f616f8" name="gad14d305c1d454b6c9c8dd36fc5f616f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad14d305c1d454b6c9c8dd36fc5f616f8">&#9670;&nbsp;</a></span>trace_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gad14d305c1d454b6c9c8dd36fc5f616f8">Feel::trace_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1trace__mesh.html">trace_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get type of the trace of a mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga742c017d83cc1d1ef89ffa39fc114725" name="ga742c017d83cc1d1ef89ffa39fc114725"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga742c017d83cc1d1ef89ffa39fc114725">&#9670;&nbsp;</a></span>trace_trace_mesh_cptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga742c017d83cc1d1ef89ffa39fc114725">Feel::trace_trace_mesh_cptr_t</a> = typedef typename <a class="el" href="structFeel_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt;MeshType, TheTag&gt;::const_ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the trace of the trace of a const mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gad2f7f221ce2c20fa1ce97d333ac67e14" name="gad2f7f221ce2c20fa1ce97d333ac67e14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad2f7f221ce2c20fa1ce97d333ac67e14">&#9670;&nbsp;</a></span>trace_trace_mesh_ptr_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#gad2f7f221ce2c20fa1ce97d333ac67e14">Feel::trace_trace_mesh_ptr_t</a> = typedef typename <a class="el" href="structFeel_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt;MeshType, TheTag&gt;::ptrtype</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get the shared_ptr type of the trace of the trace of a mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga2767e934aa4c0405e916c224557d0311" name="ga2767e934aa4c0405e916c224557d0311"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2767e934aa4c0405e916c224557d0311">&#9670;&nbsp;</a></span>trace_trace_mesh_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , <a class="el" href="classint.html">int</a> TheTag = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="group__Traits.html#ga2767e934aa4c0405e916c224557d0311">Feel::trace_trace_mesh_t</a> = typedef typename <a class="el" href="structFeel_1_1trace__trace__mesh.html">trace_trace_mesh</a>&lt;MeshType,TheTag&gt;::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+
+<p>get type of the trace of the trace of a mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>type of the mesh </td></tr>
+    <tr><td class="paramname">TheTag</td><td>tag of the mesh </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -397,7 +1042,7 @@ template&lt;typename MeshType , typename  = std::enable_if_t&lt;is_mesh_v&lt;Mes
 </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 <dl class="section return"><dt>Returns</dt><dd>the real dimension in which the mesh is defined </dd></dl>
 
 </div>
@@ -428,7 +1073,7 @@ template&lt;typename MeshType , typename  = std::enable_if_t&lt;is_mesh_v&lt;Mes
 </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 <dl class="section return"><dt>Returns</dt><dd>the topogical dimension of the mesh <code>m</code> </dd></dl>
 
 </div>
@@ -456,7 +1101,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
+<p><code>#include &lt;/nvme0/prudhomm/github-actions/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feeldiscr/traits.hpp&gt;</code></p>
 
 <p>helper variable template, </p>
 <dl class="section return"><dt>Returns</dt><dd>true of field is a matrix field field, false otherwise </dd></dl>
