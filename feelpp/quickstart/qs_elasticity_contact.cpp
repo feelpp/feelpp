@@ -1,4 +1,6 @@
-#include "qs_elasticity_contact.hpp"
+#include "qs_elasticity_contact_nitsche.hpp"
+#include "qs_elasticity_contact_penalty.hpp"
+#include "qs_elasticity_contact_static.hpp"
 
 int main(int argc, char** argv)
 {
@@ -22,26 +24,55 @@ int main(int argc, char** argv)
 
         int dimension = specs["/Models/LinearElasticity/dimension"_json_pointer];
         int order = specs["/Models/LinearElasticity/order"_json_pointer];
+        bool sta = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
 
         if ( dimension == 2 && order == 1)
         {
-            ElasticContact<2, 1> ElasticContact(specs);
-            ElasticContact.run();
+            if (sta)
+            {
+                    ContactStatic<2, 1> ContactStatic(specs);
+                    ContactStatic.run();
+            }
+            else 
+            {
+                std::cout << "TODO" << std::endl;
+            }
         }
         else if ( dimension == 2 && order == 2)
         {
-            ElasticContact<2, 2> ElasticContact(specs);
-            ElasticContact.run();
+            if (sta)
+            {
+                    ContactStatic<2, 2> ContactStatic(specs);
+                    ContactStatic.run();
+            }
+            else 
+            {
+                std::cout << "TODO" << std::endl;
+            }
         }
         else if ( dimension == 3 && order == 1)
         {
-            ElasticContact<3, 1> ElasticContact(specs);
-            ElasticContact.run();
+            if (sta)
+            {
+                    ContactStatic<3, 1> ContactStatic(specs);
+                    ContactStatic.run();
+            }
+            else 
+            {
+                std::cout << "TODO" << std::endl;
+            }
         }
         else if ( dimension == 3 && order == 2)
         {
-            ElasticContact<3, 2> ElasticContact(specs);
-            ElasticContact.run();
+            if (sta)
+            {
+                    ContactStatic<3, 2> ContactStatic(specs);
+                    ContactStatic.run();
+            }
+            else 
+            {
+                std::cout << "TODO" << std::endl;
+            }
         }
         else
             throw std::runtime_error(fmt::format("Invalid dimension {} specified in the input file", dimension));
