@@ -80,6 +80,11 @@
 #include <boost/mpl/begin_end.hpp>
 #include <boost/mpl/comparison.hpp>
 
+#include <boost/mp11/integral.hpp>
+#include <boost/mp11/utility.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/function.hpp>
+
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -170,6 +175,7 @@ namespace Feel
 namespace assign = boost::assign;
 namespace fs = std::filesystem;
 namespace mpl = boost::mpl;
+namespace mp11 = boost::mp11;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
 using namespace boost::hana::literals;
@@ -182,8 +188,8 @@ namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
 //namespace constants = boost::math::constants;
 //using boost::math::double_constants;
-const double pi = constants::pi<double>();
-const double two_pi = constants::two_pi<double>();
+inline const double pi = constants::pi<double>();
+inline const double two_pi = constants::two_pi<double>();
 
 namespace algorithm=boost::algorithm;
 using google::WARNING;
@@ -472,22 +478,41 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 /**
  * @brief enable reduce for mpi communication
  */
-inline const bool do_reduce = true;
+constexpr inline bool do_reduce = true;
 /**
  * @brief disable reduce for mpi communication
  */
-inline const bool no_reduce = false;
+constexpr inline bool no_reduce = false;
 /**
  * @brief enable communication for mpi communication
  */
-inline const bool do_communication = true;
+constexpr inline bool do_communication = true;
 /**
  * @brief disable communication for mpi communication
  */
-inline const bool no_communication = false;
+constexpr inline bool no_communication = false;
+
+/**
+ * @brief enable communication for mpi communication
+ */
+constexpr inline bool parallelEvaluation = true;
+
+/**
+ * @brief disable communication for mpi communication
+ */
+constexpr inline bool sequentialEvaluation = false;
 
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>
 #include <feel/feelcore/hashtables.hpp>
+
+/**
+ * @brief boolean to enable shared_from_this
+ */
+inline constexpr bool EnableSharedFromThis = true;
+/**
+ * @brief boolean to disable shared_from_this
+ */
+inline constexpr bool DisableSharedFromThis = false;
 
 #endif

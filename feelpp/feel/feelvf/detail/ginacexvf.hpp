@@ -741,9 +741,9 @@ public:
     }
 
     evaluate_type
-    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel = true ) const
     {
-        return this->evaluateImpl( parallel, worldcomm );
+        return this->evaluateImpl( parallel);
     }
 private :
 
@@ -846,7 +846,7 @@ private :
     }
 
     evaluate_type
-    evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluateImpl( bool parallel ) const
     {
         if ( M_isNumericExpression )
             return evaluate_type::Constant( M_numericValue );
@@ -857,7 +857,7 @@ private :
         for ( uint16_type k=0;k<ni;++k )
             x[k] = M_params[k];
 
-        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel,&worldcomm]( auto seId )
+        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel]( auto seId )
                         {
                             auto const& evec = hana::at( M_expr.tupleExpr, hana::int_c<seId> );
                             auto const& evecExpand = hana::at(M_expandSymbolsExpr, hana::int_c<seId> );

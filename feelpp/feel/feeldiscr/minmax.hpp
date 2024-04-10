@@ -67,22 +67,22 @@ template <typename... Ts>
 
     auto choose_ctx_type = []()
     {
-        if constexpr ( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
+        if constexpr ( range_t::isOnFaces() )
             return on_facets_t();
         else
             return on_elements_t();
     };
-    auto pts = [&e]( auto f, auto p )
+    auto pts = [&e,&r]( auto f, auto p )
     {
-        if constexpr ( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
+        if constexpr ( range_t::isOnFaces() )
             return e.functionSpace()->fe()->points(f);
         else
             return e.functionSpace()->fe()->points();
     };
     // check if the range is not empty : this can occur for example in parallel
-    if ( begin(r) != end(r) )
+    if ( r.begin() != r.end() )
     {
-        auto ctx = context( _element=boost::unwrap_ref(*begin(r)), _type = choose_ctx_type(), _geomap= e.functionSpace()->gm(), _pointset=pts );
+        auto ctx = context( _element=r.front(), _type = choose_ctx_type(), _geomap= e.functionSpace()->gm(), _pointset=pts );
 
         auto find_local_op = [&e, &ctx, &ops, &ops_v, &op_id, &op_pt]( auto localdoftable, auto getDofId )
         {
@@ -107,7 +107,7 @@ template <typename... Ts>
         {
             auto const& meshElt = boost::unwrap_ref( rangeElt );
 
-            if constexpr ( std::is_same_v<range_t, faces_reference_wrapper_t<mesh_t>> )
+            if constexpr ( range_t::isOnFaces() )
             {
                 auto [facet_connection_id, facet_id] = facetGlobalToLocal( meshElt, e.functionSpace()->dof() );
                 ctx->template update<POINT>( meshElt.element( facet_connection_id ), facet_id );

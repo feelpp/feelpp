@@ -580,8 +580,8 @@ ExporterVTK<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, m
         //auto r = markedelements(__mesh, M_markersToWrite[i], EntityProcessType::ALL);
         //auto r = elements( step->mesh() );
         auto const& r =  mp.rangeElement( part );
-        auto elt_it = r.template get<1>();
-        auto elt_en = r.template get<2>();
+        auto elt_it = r.begin();
+        auto elt_en = r.end();
 
         vtkSmartPointer<vtkFloatArray> da = vtkSmartPointer<vtkFloatArray>::New();
         da->SetName(__var->first.c_str());

@@ -459,7 +459,7 @@ public :
     template <typename SpaceType, typename RangeType>
     void updateDofEliminationIds( std::string const& spaceName, std::shared_ptr<SpaceType> thespace, RangeType const& therange, ComponentType c1 = ComponentType::NO_COMPONENT )
         {
-            ElementsType et = (ElementsType)boost::get<0>( therange ).value;
+            ElementsType et = (ElementsType)therange.entities();
             auto dofsToAdd = thespace->dofs( therange, c1 );
             thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
             this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );

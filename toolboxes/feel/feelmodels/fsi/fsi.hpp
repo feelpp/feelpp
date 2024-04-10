@@ -97,11 +97,11 @@ public :
     typedef std::shared_ptr<element_solid1dreduced_normalstressfromfluid_scal_type> element_solid1dreduced_normalstressfromfluid_scal_ptrtype;
     //___________________________________________________________________________________//
 
-    typedef faces_reference_wrapper_t<mesh_fluid_type> range_fluid_face_type;
-    typedef elements_reference_wrapper_t<trace_mesh_fluid_type> range_fluid_trace_elt_type;
-    typedef faces_reference_wrapper_t<mesh_solid_type> range_solid_face_type;
-    typedef elements_reference_wrapper_t<trace_mesh_solid_type> range_solid_trace_elt_type;
-    typedef elements_reference_wrapper_t<mesh_solid_1dreduced_type> range_solid_elt_1dreduced_type;
+    typedef Range<mesh_fluid_type,MESH_FACES> range_fluid_face_type;
+    typedef Range<trace_mesh_fluid_type,MESH_ELEMENTS> range_fluid_trace_elt_type;
+    typedef Range<mesh_solid_type,MESH_FACES> range_solid_face_type;
+    typedef Range<trace_mesh_solid_type,MESH_ELEMENTS> range_solid_trace_elt_type;
+    typedef Range<mesh_solid_1dreduced_type,MESH_ELEMENTS> range_solid_elt_1dreduced_type;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//

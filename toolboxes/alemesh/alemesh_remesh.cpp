@@ -100,7 +100,7 @@ runALEMesh()
 
                 // define distance function from moving boundary to adapt the metric
                 auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->markers("moving")) );
-                auto [ havg, hmin, hmax ] = hMeasures( moving_mesh, markedfaces( Xh->mesh(), alemesh->markers("moving"))  );
+                auto [ havg, hmin, hmax ] = hMeasures( markedfaces( Xh->mesh(), alemesh->markers("moving"))  );
 
                 if ( !soption( "remesh.metric" ).empty() )
                 {

@@ -34,7 +34,7 @@ class MeshFragmentation
 {
 public:
     using mesh_type = MeshType;
-    using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using range_element_type = Range<mesh_type,MESH_ELEMENTS>;
     using container_type = std::map<int,std::tuple<std::string,range_element_type>>; // partId -> ( partName, range )
 
     enum class Strategy{ None=0, AllMarkedElements, Custom };
