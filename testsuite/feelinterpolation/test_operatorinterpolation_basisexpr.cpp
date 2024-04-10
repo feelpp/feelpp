@@ -287,7 +287,7 @@ BOOST_AUTO_TEST_CASE( test_grad )
     //--------------------------------------
     // case 0 : same support
     executeTestGrad( "case0_elt", spacePch1, "Pch1", spaceNed1h, "Ned1h", rangeElements, e, e );
-#if 0    
+#if 1
     executeTestGrad( "case0_elt", spacePch2, "Pch2", spacePchv1, "Pchv1", rangeElements, e, e );
     executeTestGrad( "case0_face_interface", spacePch1, "Pch1", spaceNed1h, "Ned1h", rangeFacesInterface, e, e );
     executeTestGrad( "case0_face_interface", spacePch2, "Pch2", spacePchv1, "Pchv1", rangeFacesInterface, e, e );
