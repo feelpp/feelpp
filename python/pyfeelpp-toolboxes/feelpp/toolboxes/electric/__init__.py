@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 has_electric = False
 _electrics = None
@@ -30,7 +30,7 @@ def electric(dim=2, orderPotential=1, worldComm=None, keyword="electric", prefix
     if not has_electric:
         raise Exception('Electric toolbox is not enabled in Feel++')
     if worldComm is None:
-        worldComm = feelpp.Environment.worldCommPtr()
+        worldComm = fppc.Environment.worldCommPtr()
     key='electric('+str(dim)+','+str(orderPotential)+')'
     if worldComm.isMasterRank():
         print(key)

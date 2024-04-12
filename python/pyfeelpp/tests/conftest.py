@@ -3,7 +3,7 @@ import sys
 
 import py
 import pytest
-import feelpp
+import feelpp.core as fppc
 import gmsh
 
 # Attempt to import feelpp.toolboxes.core dynamically
@@ -39,18 +39,18 @@ class InitFeelpp:
             sys.argv = ['test_feelpp']
             if has_toolboxes_core:
                 # Use toolboxes.core if available
-                self.feelpp_env = feelpp.Environment(sys.argv, config=config, opts=tb.toolboxes_options("heat"))
+                self.feelpp_env = fppc.Environment(sys.argv, config=config, opts=tb.toolboxes_options("heat"))
             else:
                 # Proceed without toolboxes.core specific functionality
-                self.feelpp_env = feelpp.Environment(sys.argv, config=config)
+                self.feelpp_env = fppc.Environment(sys.argv, config=config)
         except Exception as e:
             log.error(f"Failed to initialize Feel++ environment: {e}")
             return None
 
 @pytest.fixture(scope="session")
 def init_feelpp():
-    return InitFeelpp(feelpp.globalRepository("pyfeelpp-tests")).feelpp_env
+    return InitFeelpp(fppc.globalRepository("pyfeelpp-tests")).feelpp_env
 
 @pytest.fixture(scope="session")
 def init_feelpp_config_local():
-    return InitFeelpp(feelpp.localRepository("feelppdb")).feelpp_env
+    return InitFeelpp(fppc.localRepository("feelppdb")).feelpp_env

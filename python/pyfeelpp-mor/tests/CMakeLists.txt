@@ -30,7 +30,7 @@ add_test (NAME feelpp_mor_python-tests-mpi-nirb
 COMMAND ${CMAKE_COMMAND} -E env
       LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
       PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-      mpirun -np 2 ${Python3_EXECUTABLE} -m pytest test_nirb.py -s -vv -k wogreedy
+      mpirun -np 4 ${Python3_EXECUTABLE} -m pytest test_nirb.py -s -vv -k wogreedy
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
