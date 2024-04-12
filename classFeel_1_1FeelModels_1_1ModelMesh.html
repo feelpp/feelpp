@@ -185,9 +185,9 @@ template&lt;typename MeshType &gt; </td></tr>
 <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>metadata</b> () const</td></tr>
 <tr class="memdesc:a0053d713dea2b785249a02da45612a92"><td class="mdescLeft">&#160;</td><td class="mdescRight">return json metadata <br /></td></tr>
 <tr class="separator:a0053d713dea2b785249a02da45612a92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memTemplParams" colspan="2"><a id="ae5b61ff8de66fbde1d976b0fcf190f43" name="ae5b61ff8de66fbde1d976b0fcf190f43"></a>
-template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>modelFields</b> (std::string const &amp;prefix_field=&quot;&quot;, std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
+<tr class="memitem:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#ae5b61ff8de66fbde1d976b0fcf190f43">modelFields</a> (std::string const &amp;prefix_field=&quot;&quot;, std::string const &amp;prefix_symbol=&quot;&quot;) const</td></tr>
+<tr class="memdesc:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a tuple of model fields for a given mesh.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#ae5b61ff8de66fbde1d976b0fcf190f43">More...</a><br /></td></tr>
 <tr class="separator:ae5b61ff8de66fbde1d976b0fcf190f43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9adb74dc7afeaa4da40783f86462583f"><td class="memItemLeft" align="right" valign="top"><a id="a9adb74dc7afeaa4da40783f86462583f" name="a9adb74dc7afeaa4da40783f86462583f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelMesh</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">ModelMesh</a> &amp;&amp;)=default</td></tr>
@@ -201,9 +201,8 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:aa121b919415e1c8744aba783cdfd516c"><td class="memItemLeft" align="right" valign="top"><a id="aa121b919415e1c8744aba783cdfd516c" name="aa121b919415e1c8744aba783cdfd516c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ModelMesh</b> (std::string const &amp;name, <a class="el" href="classFeel_1_1FeelModels_1_1ModelMeshes.html">ModelMeshes</a>&lt; IndexType &gt; const &amp;mMeshes)</td></tr>
 <tr class="separator:aa121b919415e1c8744aba783cdfd516c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae27e714bc0d477a30084415ba9c4965f"><td class="memItemLeft" align="right" valign="top"><a id="ae27e714bc0d477a30084415ba9c4965f" name="ae27e714bc0d477a30084415ba9c4965f"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>removeField</b> (std::string const &amp;name)</td></tr>
-<tr class="memdesc:ae27e714bc0d477a30084415ba9c4965f"><td class="mdescLeft">&#160;</td><td class="mdescRight">remove a field from this name and return true is the field has been removed <br /></td></tr>
+<tr class="memitem:ae27e714bc0d477a30084415ba9c4965f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#ae27e714bc0d477a30084415ba9c4965f">removeField</a> (std::string const &amp;name)</td></tr>
+<tr class="memdesc:ae27e714bc0d477a30084415ba9c4965f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes a field given its name from the map.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#ae27e714bc0d477a30084415ba9c4965f">More...</a><br /></td></tr>
 <tr class="separator:ae27e714bc0d477a30084415ba9c4965f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af292692e6e9faf4cce485f9519453792"><td class="memItemLeft" align="right" valign="top"><a id="af292692e6e9faf4cce485f9519453792" name="af292692e6e9faf4cce485f9519453792"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setAsShared</b> (<a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">ModelMesh</a>&lt; IndexType &gt; const &amp;m)</td></tr>
@@ -231,20 +230,17 @@ template&lt;typename MeshType  = mesh_base_type, <a class="el" href="classbool.h
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a6587f31cc2c0acedbb42c83409af1d1f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateDistanceToRange</b> ()</td></tr>
 <tr class="separator:a6587f31cc2c0acedbb42c83409af1d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplParams" colspan="2"><a id="a1595ba1be71c63084085577ed9b0ec77" name="a1595ba1be71c63084085577ed9b0ec77"></a>
-template&lt;typename MeshType , typename ExprTypr , typename RangeType , std::enable_if_t&lt; is_filter_v&lt; std::decay_t&lt; RangeType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
-<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateField</b> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, std::string const &amp;basis=&quot;&quot;, <a class="el" href="classbool.html">bool</a> initZero=false)</td></tr>
-<tr class="memdesc:a1595ba1be71c63084085577ed9b0ec77"><td class="mdescLeft">&#160;</td><td class="mdescRight">update field from an expression on range of element. This field is identified by a name and the basis param allow to select the function space representation. if the field already exist but the basis differ, the field is rebuilt. <br /></td></tr>
+<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprTypr , typename RangeType , std::enable_if_t&lt; is_filter_v&lt; std::decay_t&lt; RangeType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#a1595ba1be71c63084085577ed9b0ec77">updateField</a> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, std::string const &amp;basis=&quot;&quot;, <a class="el" href="classbool.html">bool</a> initZero=false)</td></tr>
+<tr class="memdesc:a1595ba1be71c63084085577ed9b0ec77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates a field in a model mesh based on an expression and a range of elements.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#a1595ba1be71c63084085577ed9b0ec77">More...</a><br /></td></tr>
 <tr class="separator:a1595ba1be71c63084085577ed9b0ec77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplParams" colspan="2"><a id="ac13418379d03d501e13df441e122395d" name="ac13418379d03d501e13df441e122395d"></a>
-template&lt;typename MeshType , typename ExprTypr &gt; </td></tr>
-<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateField</b> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, std::string const &amp;basis=&quot;&quot;)</td></tr>
-<tr class="memdesc:ac13418379d03d501e13df441e122395d"><td class="mdescLeft">&#160;</td><td class="mdescRight">update field from an expression on all mesh elements <br /></td></tr>
+<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprTypr &gt; </td></tr>
+<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#ac13418379d03d501e13df441e122395d">updateField</a> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, std::string const &amp;basis=&quot;&quot;)</td></tr>
+<tr class="memdesc:ac13418379d03d501e13df441e122395d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates a field with a given name and expression on all mesh elements.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#ac13418379d03d501e13df441e122395d">More...</a><br /></td></tr>
 <tr class="separator:ac13418379d03d501e13df441e122395d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplParams" colspan="2"><a id="a563a8a7d2f898df7cd06ddd3aa7ede5b" name="a563a8a7d2f898df7cd06ddd3aa7ede5b"></a>
-template&lt;typename MeshType , typename FieldType , std::enable_if_t&lt; <a class="el" href="group__Traits.html#ga4d50181c65d94cfa6520d07dc40206df">is_functionspace_element_v</a>&lt; std::decay_t&lt; FieldType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
-<tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateField</b> (std::string const &amp;name, FieldType const &amp;u, std::string const &amp;basis=&quot;&quot;)</td></tr>
-<tr class="memdesc:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">update field from another field <br /></td></tr>
+<tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename FieldType , std::enable_if_t&lt; <a class="el" href="group__Traits.html#ga4d50181c65d94cfa6520d07dc40206df">is_functionspace_element_v</a>&lt; std::decay_t&lt; FieldType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
+<tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#a563a8a7d2f898df7cd06ddd3aa7ede5b">updateField</a> (std::string const &amp;name, FieldType const &amp;u, std::string const &amp;basis=&quot;&quot;)</td></tr>
+<tr class="memdesc:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates a field with data from another field.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#a563a8a7d2f898df7cd06ddd3aa7ede5b">More...</a><br /></td></tr>
 <tr class="separator:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae5b6f247af85d2e253b77936bc4ea6f"><td class="memTemplParams" colspan="2"><a id="aae5b6f247af85d2e253b77936bc4ea6f" name="aae5b6f247af85d2e253b77936bc4ea6f"></a>
 template&lt;typename MeshType &gt; </td></tr>
@@ -267,10 +263,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateTime</b> (doubl
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a85080781487c19e14685df638e713c22"><td class="memTemplParams" colspan="2"><a id="a85080781487c19e14685df638e713c22" name="a85080781487c19e14685df638e713c22"></a>
-template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:a85080781487c19e14685df638e713c22"><td class="memTemplItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>basisFieldTypeSupported</b> ()</td></tr>
-<tr class="memdesc:a85080781487c19e14685df638e713c22"><td class="mdescLeft">&#160;</td><td class="mdescRight">return basis field types supported by modelMesh (including the name associated) <br /></td></tr>
+<tr class="memitem:a85080781487c19e14685df638e713c22"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a85080781487c19e14685df638e713c22"><td class="memTemplItemLeft" align="right" valign="top">static constexpr auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#a85080781487c19e14685df638e713c22">basisFieldTypeSupported</a> ()</td></tr>
+<tr class="memdesc:a85080781487c19e14685df638e713c22"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a tuple of tuples containing the names and types of the basis fields supported by a mesh.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#a85080781487c19e14685df638e713c22">More...</a><br /></td></tr>
 <tr class="separator:a85080781487c19e14685df638e713c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a091917eafa24cda6e20bfeb2c9b21e81"><td class="memItemLeft" align="right" valign="top"><a id="a091917eafa24cda6e20bfeb2c9b21e81" name="a091917eafa24cda6e20bfeb2c9b21e81"></a>
 static tabulate_informations_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>tabulateInformations</b> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;p, <a class="el" href="classFeel_1_1TabulateInformationProperties.html">TabulateInformationProperties</a> const &amp;tabInfoProp)</td></tr>
@@ -285,7 +280,301 @@ class Feel::FeelModels::ModelMesh&lt; IndexType &gt;</div><p ><a class="el" href
   </table>
   </dd>
 </dl>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a85080781487c19e14685df638e713c22" name="a85080781487c19e14685df638e713c22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85080781487c19e14685df638e713c22">&#9670;&nbsp;</a></span>basisFieldTypeSupported()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexType &gt; </div>
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static constexpr auto <a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">Feel::FeelModels::ModelMesh</a>&lt; IndexType &gt;::basisFieldTypeSupported </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns a tuple of tuples containing the names and types of the basis fields supported by a mesh. </p>
+<p >The function template takes a template parameter <code>MeshType</code> which is a type that represents a mesh. The function returns a tuple of tuples, where each inner tuple contains a string and a type. The string represents the name of a basis field type supported by the mesh, and the type represents the type of the basis field.</p>
+<p >The function template is a static member function of the class that it is defined in. It is a constexpr function, which means that it can be evaluated at compile-time if the template parameter <code>MeshType</code> is a constant expression.</p>
+<p >The function template uses a C++17 feature called structured bindings to create the tuple of tuples. It uses the <code>hana</code> library to create the tuples and the <code>type_c</code> function to create the type objects.</p>
+<p >The function template is specialized for different types of meshes, depending on their dimension and the number of real dimensions. For example, for a 1<a class="el" href="classD.html">D</a> mesh with 1 real dimension, the function returns a tuple of tuples containing the names and types of the Lagrange basis fields with 1, 2, 0, and 1 DoFs. For a 2<a class="el" href="classD.html">D</a> mesh with 2 real dimensions, the function returns a tuple of tuples containing the names and types of the Lagrange basis fields (continuous order 1,2 and discontinuous 0,1 and vectorial continuous order 1,2 as well as Nedelec basis field 1st family of order 1)</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>The type of the mesh. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classA.html">A</a> tuple of tuples containing the names and types of the basis fields supported by the mesh. </dd></dl>
+
+</div>
+</div>
+<a id="ae5b61ff8de66fbde1d976b0fcf190f43" name="ae5b61ff8de66fbde1d976b0fcf190f43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5b61ff8de66fbde1d976b0fcf190f43">&#9670;&nbsp;</a></span>modelFields()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexType &gt; </div>
+<div class="memtemplate">
+template&lt;typename MeshType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto <a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">Feel::FeelModels::ModelMesh</a>&lt; IndexType &gt;::modelFields </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>prefix_field</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>prefix_symbol</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a tuple of model fields for a given mesh. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>The type of mesh for which to return the model fields.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">prefix_field</td><td><a class="el" href="classA.html">A</a> string prefix to use for the field names. </td></tr>
+    <tr><td class="paramname">prefix_symbol</td><td><a class="el" href="classA.html">A</a> string prefix to use for the symbol names.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classA.html">A</a> tuple of model fields for the given mesh. </dd></dl>
+
+</div>
+</div>
+<a id="ae27e714bc0d477a30084415ba9c4965f" name="ae27e714bc0d477a30084415ba9c4965f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae27e714bc0d477a30084415ba9c4965f">&#9670;&nbsp;</a></span>removeField()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">Feel::FeelModels::ModelMesh</a>&lt; IndexType &gt;::removeField </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Removes a field given its name from the map. </p>
+<p >This function removes the field with the given name from the M_fields map and returns true if the field was successfully removed, or false if the field was not found in the map.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>The name of the field to remove. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the field was successfully removed, or false if the field was not found in the map. </dd></dl>
+
+</div>
+</div>
+<a id="a1595ba1be71c63084085577ed9b0ec77" name="a1595ba1be71c63084085577ed9b0ec77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1595ba1be71c63084085577ed9b0ec77">&#9670;&nbsp;</a></span>updateField() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexType &gt; </div>
+<div class="memtemplate">
+template&lt;typename MeshType , typename ExprTypr , typename RangeType , std::enable_if_t&lt; is_filter_v&lt; std::decay_t&lt; RangeType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">Feel::FeelModels::ModelMesh</a>&lt; IndexType &gt;::updateField </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Expr&lt; ExprTypr &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">RangeType const &amp;&#160;</td>
+          <td class="paramname"><em>range</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>basis</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>initZero</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates a field in a model mesh based on an expression and a range of elements. </p>
+<p >This function template updates a field in a model mesh based on an expression and a range of elements. The function takes several parameters: </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td><a class="el" href="classA.html">A</a> string representing the name of the field to be updated. </td></tr>
+    <tr><td class="paramname">expr</td><td>An expression that represents the value to be assigned to the field. </td></tr>
+    <tr><td class="paramname">range</td><td><a class="el" href="classA.html">A</a> range of elements over which the field should be updated. </td></tr>
+    <tr><td class="paramname">basis</td><td><a class="el" href="classA.html">A</a> string representing the basis function space to be used for the field. If no basis is provided, the function will default to a scalar or vectorial function space based on the expression type. </td></tr>
+    <tr><td class="paramname">initZero</td><td><a class="el" href="classA.html">A</a> boolean flag indicating whether the field should be initialized to zero before being updated.</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>The function template uses Hana library to iterate over a tuple of supported basis function spaces for the given mesh type. For each basis function space, it checks if it matches the provided basis parameter.</p><ul>
+<li>If a match is found, it creates a function space of the appropriate type using the provided basis and checks if the field already exists in the mesh.</li>
+<li>If the field does not exist, it is created using the function space.</li>
+<li>If the field already exists but has a different basis, the field is rebuilt.</li>
+<li>Finally, the function applies the expression to the field over the specified range of elements. </li>
+</ul>
+
+</div>
+</div>
+<a id="ac13418379d03d501e13df441e122395d" name="ac13418379d03d501e13df441e122395d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac13418379d03d501e13df441e122395d">&#9670;&nbsp;</a></span>updateField() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexType &gt; </div>
+<div class="memtemplate">
+template&lt;typename MeshType , typename ExprTypr &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">Feel::FeelModels::ModelMesh</a>&lt; IndexType &gt;::updateField </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Expr&lt; ExprTypr &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>expr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>basis</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates a field with a given name and expression on all mesh elements. </p>
+<p >This function template is specialized for a given MeshType and ExprType and is used to update a field with a given name on all mesh elements. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>The name of the field to update. </td></tr>
+    <tr><td class="paramname">expr</td><td>The expression used to update the field. </td></tr>
+    <tr><td class="paramname">basis</td><td>The basis used to update the field. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshType</td><td>The type of mesh to update the field on. </td></tr>
+    <tr><td class="paramname">ExprType</td><td>The type of expression used to update the field. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a563a8a7d2f898df7cd06ddd3aa7ede5b" name="a563a8a7d2f898df7cd06ddd3aa7ede5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a563a8a7d2f898df7cd06ddd3aa7ede5b">&#9670;&nbsp;</a></span>updateField() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename IndexType &gt; </div>
+<div class="memtemplate">
+template&lt;typename MeshType , typename FieldType , std::enable_if_t&lt; <a class="el" href="group__Traits.html#ga4d50181c65d94cfa6520d07dc40206df">is_functionspace_element_v</a>&lt; std::decay_t&lt; FieldType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html">Feel::FeelModels::ModelMesh</a>&lt; IndexType &gt;::updateField </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">FieldType const &amp;&#160;</td>
+          <td class="paramname"><em>u</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>basis</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates a field with data from another field. </p>
+<p >This function template is specialized for a function space element FieldType and a mesh type MeshType The purpose of this function is to update a field with data from another field. The function takes in the name of the field to be updated, the field to be used for the update, and an optional basis string.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>The name of the field to be updated. </td></tr>
+    <tr><td class="paramname">u</td><td>The field to be used for the update. </td></tr>
+    <tr><td class="paramname">basis</td><td>An optional basis string.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000011">Todo:</a></b></dt><dd>get a default basis if empty (iterate over all space, maybe one will match or use also continuity property) </dd></dl>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

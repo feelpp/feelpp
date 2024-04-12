@@ -103,7 +103,8 @@ $(document).ready(function(){initNavTree('linearform_8hpp.html',''); initResizab
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a> &#124;
-<a href="#typedef-members">Typedefs</a>  </div>
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">linearform.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -136,6 +137,37 @@ template&lt;typename FE1 , typename VectorType  = typename Backend&lt;typename f
 <tr class="memitem:ad37d9e382554de2b0edff9411b3c0b51"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::form1_type</b> = Feel::vf::detail::LinearForm&lt; FE1, VectorType, ElemContType &gt;</td></tr>
 <tr class="memdesc:ad37d9e382554de2b0edff9411b3c0b51"><td class="mdescLeft">&#160;</td><td class="mdescRight">provide the type of the linear form <br /></td></tr>
 <tr class="separator:ad37d9e382554de2b0edff9411b3c0b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ace05c15f6b84bdc04894799aaee36f73"><td class="memTemplParams" colspan="2">template&lt;typename SpaceType , typename VectorType , typename ElemContType &gt; </td></tr>
+<tr class="memitem:ace05c15f6b84bdc04894799aaee36f73"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ace05c15f6b84bdc04894799aaee36f73">Feel::operator*</a> (Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;a, typename SpaceType::value_type const &amp;s)</td></tr>
+<tr class="memdesc:ace05c15f6b84bdc04894799aaee36f73"><td class="mdescLeft">&#160;</td><td class="mdescRight">operator * with a scalar on the right  <a href="namespaceFeel.html#ace05c15f6b84bdc04894799aaee36f73">More...</a><br /></td></tr>
+<tr class="separator:ace05c15f6b84bdc04894799aaee36f73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2733a0d20df66af2d212d6eddd833f1d"><td class="memTemplParams" colspan="2">template&lt;typename SpaceType , typename VectorType , typename ElemContType &gt; </td></tr>
+<tr class="memitem:a2733a0d20df66af2d212d6eddd833f1d"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2733a0d20df66af2d212d6eddd833f1d">Feel::operator*</a> (typename SpaceType::value_type const &amp;s, Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;a)</td></tr>
+<tr class="memdesc:a2733a0d20df66af2d212d6eddd833f1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">operator * with a scalar on the left  <a href="namespaceFeel.html#a2733a0d20df66af2d212d6eddd833f1d">More...</a><br /></td></tr>
+<tr class="separator:a2733a0d20df66af2d212d6eddd833f1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad8680c8a60a14624161567f4ba6aee55"><td class="memTemplParams" colspan="2">template&lt;typename SpaceType , typename VectorType , typename ElemContType &gt; </td></tr>
+<tr class="memitem:ad8680c8a60a14624161567f4ba6aee55"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ad8680c8a60a14624161567f4ba6aee55">Feel::operator+</a> (Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;a, Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;b)</td></tr>
+<tr class="memdesc:ad8680c8a60a14624161567f4ba6aee55"><td class="mdescLeft">&#160;</td><td class="mdescRight">operator + with two linear forms  <a href="namespaceFeel.html#ad8680c8a60a14624161567f4ba6aee55">More...</a><br /></td></tr>
+<tr class="separator:ad8680c8a60a14624161567f4ba6aee55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb4da6044fba5f2d708f4f25d16e434f"><td class="memTemplParams" colspan="2">template&lt;typename SpaceType , typename VectorType , typename ElemContType &gt; </td></tr>
+<tr class="memitem:afb4da6044fba5f2d708f4f25d16e434f"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#afb4da6044fba5f2d708f4f25d16e434f">Feel::operator-</a> (Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;a)</td></tr>
+<tr class="memdesc:afb4da6044fba5f2d708f4f25d16e434f"><td class="mdescLeft">&#160;</td><td class="mdescRight">unary minus operator  <a href="namespaceFeel.html#afb4da6044fba5f2d708f4f25d16e434f">More...</a><br /></td></tr>
+<tr class="separator:afb4da6044fba5f2d708f4f25d16e434f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2108a7680259e2e40dbdd4d00ca4311a"><td class="memTemplParams" colspan="2">template&lt;typename SpaceType , typename VectorType , typename ElemContType &gt; </td></tr>
+<tr class="memitem:a2108a7680259e2e40dbdd4d00ca4311a"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2108a7680259e2e40dbdd4d00ca4311a">Feel::operator-</a> (Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;a, Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;b)</td></tr>
+<tr class="memdesc:a2108a7680259e2e40dbdd4d00ca4311a"><td class="mdescLeft">&#160;</td><td class="mdescRight">operator - with two linear forms  <a href="namespaceFeel.html#a2108a7680259e2e40dbdd4d00ca4311a">More...</a><br /></td></tr>
+<tr class="separator:a2108a7680259e2e40dbdd4d00ca4311a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7974639d0c6dea61d387835df04b530d"><td class="memTemplParams" colspan="2">template&lt;typename SpaceType , typename VectorType , typename ElemContType &gt; </td></tr>
+<tr class="memitem:a7974639d0c6dea61d387835df04b530d"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a7974639d0c6dea61d387835df04b530d">Feel::operator/</a> (Feel::vf::detail::LinearForm&lt; SpaceType, VectorType, ElemContType &gt; const &amp;a, typename SpaceType::value_type const &amp;s)</td></tr>
+<tr class="memdesc:a7974639d0c6dea61d387835df04b530d"><td class="mdescLeft">&#160;</td><td class="mdescRight">operator / with a scalar  <a href="namespaceFeel.html#a7974639d0c6dea61d387835df04b530d">More...</a><br /></td></tr>
+<tr class="separator:a7974639d0c6dea61d387835df04b530d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ce3e1a3e1074b58af342779537bd193"><td class="memTemplParams" colspan="2">template&lt;typename FE1 , class BinaryOperation , typename VectorType  = typename Backend&lt;typename functionspace_type&lt;FE1&gt;::value_type&gt;::vector_type, typename ElemContType  = VectorType&gt; </td></tr>
+<tr class="memitem:a9ce3e1a3e1074b58af342779537bd193"><td class="memTemplItemLeft" align="right" valign="top">Feel::vf::detail::LinearForm&lt; FE1, VectorType, ElemContType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a9ce3e1a3e1074b58af342779537bd193">Feel::sum</a> (std::vector&lt; Feel::vf::detail::LinearForm&lt; FE1, VectorType, ElemContType &gt; &gt; const &amp;v, BinaryOperation op, Feel::vf::detail::LinearForm&lt; FE1, VectorType, ElemContType &gt; init=Feel::vf::detail::LinearForm&lt; FE1, VectorType, ElemContType &gt;())</td></tr>
+<tr class="memdesc:a9ce3e1a3e1074b58af342779537bd193"><td class="mdescLeft">&#160;</td><td class="mdescRight">sum of linear forms  <a href="namespaceFeel.html#a9ce3e1a3e1074b58af342779537bd193">More...</a><br /></td></tr>
+<tr class="separator:a9ce3e1a3e1074b58af342779537bd193"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>

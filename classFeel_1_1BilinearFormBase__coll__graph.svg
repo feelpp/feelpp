@@ -69,7 +69,7 @@ var sectionId = 'dynsection-1';
 <text text-anchor="start" x="430" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BilinearFormBase()</text>
 <text text-anchor="start" x="430" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BilinearFormBase()</text>
 <text text-anchor="start" x="430" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ BilinearFormBase()</text>
-<text text-anchor="start" x="430" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 6 more...</text>
+<text text-anchor="start" x="430" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 10 more...</text>
 <text text-anchor="start" x="430" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* close()</text>
 <text text-anchor="start" x="430" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* closed()</text>
 <text text-anchor="start" x="430" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* zeroRows()</text>
