@@ -1,4 +1,4 @@
-import feelpp as feelpp 
+import feelpp.core as fppc
 import pytest
 from feelpp.toolboxes.fluid import *
 
@@ -9,7 +9,7 @@ collision_cases = [
 ]
 
 def remesh(f,required_facets,required_elts):
-    new_mesh, cpt = feelpp.remesh(mesh=f.mesh(), metric="gradedls({},{})".format(0.01, 0.2), 
+    new_mesh, cpt = fppc.remesh(mesh=f.mesh(), metric="gradedls({},{})".format(0.01, 0.2), 
     required_elts=required_elts, required_facets=required_facets, params='{"remesh":{ "verbose":-1}}')    
     f.applyRemesh(f.mesh(),new_mesh)
 
@@ -18,9 +18,9 @@ def remesh(f,required_facets,required_elts):
 # @pytest.mark.skip(reason="This test is being skipped for now.")
 @pytest.mark.parametrize("case,casefile,required_facets,required_elts", collision_cases)
 def test_collision(case,casefile,required_facets,required_elts):
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         print(f"[test_collision] Testing collision {case} with casefile {casefile}\n",flush=True)
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
     f = fluid(dim=2, orderVelocity=2, orderPressure=1)
     f.init()
     
@@ -33,7 +33,7 @@ def test_collision(case,casefile,required_facets,required_elts):
     f.addContactForceResModel()
     f.startTimeStep()
     while not f.timeStepBase().isFinished():
-        if feelpp.Environment.isMasterRank():
+        if fppc.Environment.isMasterRank():
             print(f"[test_collision - [{case}]] iteration {f.timeStepBase().iteration()} time: {f.timeStepBase().time()} / final time: {f.timeStepBase().timeFinal()} step: {f.timeStepBase().timeStep()}\n", flush=True)
         if (f.timeStepBase().iteration() % 5 == 0):
             remesh(f,required_facets,required_elts)

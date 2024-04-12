@@ -324,5 +324,25 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
 }
 
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_form1, T, dim_t )
+{
+    BOOST_MESSAGE( "test_form2_faces starts for dim=" << T::value);
+    auto meshnd = unitHypercube<T::value>();
+    auto mesh = createSubmesh( _mesh=meshnd, _range=faces(meshnd), _update=0 );
+    auto Vh=Pdhv<1>(meshnd,true);
+    auto u = Vh->element();
+    auto Wh=Pdh<1>(meshnd,true);
+    auto p = Wh->element();
 
+    auto a = form1(_test=Wh);
+    a = integrate( _range=elements(meshnd), _expr=id(p));
+    a.close();
+    auto b = a;
+    b+=a;
+    auto c = a+b;
+    c-=3*a;
+    BOOST_CHECK_SMALL( c.vectorPtr()->linftyNorm(), 1e-12 );
+    b /= 2;
+    BOOST_CHECK_SMALL( (b-a).vectorPtr()->linftyNorm(), 1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()

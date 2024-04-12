@@ -1,7 +1,7 @@
 import sys
 import pytest
-import feelpp
-import feelpp.toolboxes as tb
+import feelpp.core as fppc
+import feelpp.toolboxes as fppt 
 from feelpp.toolboxes.cfpdes import *
 from feelpp.toolboxes.electric import *
 from feelpp.toolboxes.fluid import *

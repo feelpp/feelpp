@@ -101,6 +101,36 @@
                 "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
                 "FEELPP_ENABLE_TOOLBOXES": "ON",
                 "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
+                "FEELPP_MESH_MAX_ORDER": "1"
+            },
+            "environment": {
+                "VERBOSE": "1"
+            }
+        },
+        {
+            "name": "dev",
+            "hidden": false,
+            "displayName": "Development|no package manager",
+            "description": "development config",
+            "inherits": [
+                "default"
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_VERBOSE_MAKEFILE": "TRUE",
+                "CMAKE_MESSAGE_LOG_LEVEL": "VERBOSE",
+                "H5PP_ENABLE_TESTS": "TRUE",
+                "H5PP_BUILD_EXAMPLES": "TRUE",
+                "H5PP_ENABLE_ASAN": "TRUE",
+                "H5PP_ENABLE_PCH": "FALSE",
+                "H5PP_ENABLE_CCACHE": "FALSE",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
+                "FEELPP_ENABLE_TOOLBOXES": "ON",
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_INSTANTIATION_ORDER_MAX": "1",
                 "FEELPP_MESH_MAX_ORDER": "1"
             },
@@ -158,6 +188,15 @@
             "displayName": "Release|gcc|cmake package manager",
             "inherits": [
                 "gcc",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cmake-dev",
+            "displayName": "Release|clang|cmake package manager",
+            "inherits": [
+                "dev",
+                "clang",
                 "release-cmake"
             ]
         },
@@ -499,6 +538,11 @@
             "inherits": "release"
         },
         {
+            "name": "release-clang-cmake-dev",
+            "configurePreset": "release-clang-cmake-dev",
+            "inherits": "release"
+        },
+        {
             "name": "release-gcc-cpp20-cmake",
             "configurePreset": "release-gcc-cpp20-cmake",
             "inherits": "release"
@@ -656,6 +700,12 @@
             "inherits": "default"
         },
         {
+            "name": "release-clang-cmake-dev",
+            "configurePreset": "release-clang-cmake-dev",
+            "configuration": "Release",
+            "inherits": "default"
+        },
+        {
             "name": "release-clang-cpp20-cmake",
             "configurePreset": "release-clang-cpp20-cmake",
             "configuration": "Release",
@@ -692,11 +742,19 @@
             }
         },
         {
+            "name": "python",
+            "configurePreset": "python",
+            "inherits": "feelpp",
+            "execution": {
+                "timeout": 700
+            }
+        },
+        {
             "name": "feelpp-python",
             "configurePreset": "feelpp-python",
             "inherits": "feelpp",
             "execution": {
-                "timeout": 600
+                "timeout": 700
             }
         },
         {

@@ -1,6 +1,6 @@
 import sys
 import pytest
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.thermoelectric import *
 
@@ -10,7 +10,7 @@ thermoelectric_cases = [('thermoelectric/ElectroMagnets/HL-31_H1/HL-31_H1.cfg', 
 
 @pytest.mark.parametrize("casefile,dim,order", thermoelectric_cases)
 def test_thermoelectric(casefile,dim,order):
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
     f = thermoelectric(dim=dim, orderPotential=order)
     simulate(f)
 

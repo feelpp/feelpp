@@ -43,6 +43,9 @@ public:
 };
 #endif
 
+template <typename IndexType>
+void bind_ModelMeshes( py::module& m );
+
 PYBIND11_MODULE(_modelcore, m )
 {
     using namespace Feel;
@@ -150,5 +153,9 @@ PYBIND11_MODULE(_modelcore, m )
         .def( "checkResults", static_cast<bool ( ModelNumerical::* )() const>( &ModelNumerical::checkResults ), "check results in toolbox case if Checkers section present" )
 
         ;
+      
+    bind_ModelMeshes<uint32_t>( m );
+    //bind_ModelMeshes<int64_t>( m );
+    
 }
 

@@ -6,7 +6,7 @@ import pandas as pd
 from feelpp.toolboxes.heat import *
 from feelpp.toolboxes.core import *
 from feelpp.mor import *
-import feelpp
+import feelpp.core as fppc
 
 from feelpp.mor.reducedbasis.reducedbasis_time import *
 
@@ -30,7 +30,7 @@ assert( DIM in [2,3] )
 # Set the environment
 o=toolboxes_options("heat")
 o.add(makeToolboxMorOptions())
-e=feelpp.Environment(sys.argv,opts=o)
+e=fppc.Environment(sys.argv,opts=o)
 
 
 # Set the toolboxes
