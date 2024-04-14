@@ -47,7 +47,7 @@ then
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
-pbuilder-dist $DIST login --save-after-login << EOF
+yes | pbuilder-dist $DIST login --save-after-login << EOF
 echo "--- apt update"
 apt-get update
 EOF
@@ -97,7 +97,7 @@ echo "--- add source ${COMPONENT}  $version-1"
 dpkg-source -b .
 
 echo "--- building ${COMPONENT} debian version $version-1"
-pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  --buildplace $HOME/pbuilder/cache ../${COMPONENT}_${version}-1.dsc
+yes | pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  --buildplace $HOME/pbuilder/cache ../${COMPONENT}_${version}-1.dsc
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
