@@ -1,6 +1,9 @@
 #!/bin/sh
 
-yes | pbuilder-dist $DIST login --save-after-login << EOF
+scriptdir=$PWD/$(dirname $0)
+source $(dirname $0)/feelpp_pkg_common.sh
+
+feelpp-pbuilder-dist $DIST login --save-after-login << EOF
 apt install -y wget gnupg ca-certificates
 wget -qO - https://feelpp.jfrog.io/artifactory/api/security/keypair/gpg-debian/public | gpg --dearmor > feelpp.gpg
 mv feelpp.gpg /etc/apt/trusted.gpg.d
