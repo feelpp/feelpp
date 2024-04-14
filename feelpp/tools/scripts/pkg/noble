@@ -2,6 +2,7 @@ quilt
 debhelper
 cmake
 clang
+llvm-13-linker-tools
 llvm-18-linker-tools
 dh-python
 python3
