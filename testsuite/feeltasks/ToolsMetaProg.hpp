@@ -138,7 +138,7 @@ struct homogeneous_type<T, Ts...>
     // True if each parameter in the pack has the same type
     static const bool isHomogeneous = std::is_same<T, type_of_remaining_parameters>::value;
 
-    // If isHomogeneous is "false", the underlying type is the fictitious null_type
+    // If isHomogeneous is "false", the underlying type is the ficTaskflow_HPCious null_type
     using type = typename std::conditional<isHomogeneous, T, null_type>::type;
 };
 

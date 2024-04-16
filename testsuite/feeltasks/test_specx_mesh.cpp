@@ -34,7 +34,7 @@
 #include <specx/Utils/SpConsumerThread.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
 
-#include "TIT.hpp"
+#include "Taskflow_HPC.hpp"
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
         SpRuntime runtime( NumThreads );
 
         double area = 0;
-        auto ranges = partitionRange( therange, NumThreads );
+        auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
         tic();
 
         Eigen::VectorXd area_vec( NumThreads );
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
         SpRuntime runtime( NumThreads );
 
         double area = 0;
-        auto ranges = partitionRange( therange, NumThreads );
+        auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
         tic();
 
         Eigen::VectorXd area_vec( NumThreads );
@@ -142,17 +142,17 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_2 )
 
     for(int NumThreads : {1,2,4,8,16})
     {
-        TiT TiT_001(NumThreads,3);
-        TiT_001.qSave=false;
-        TiT_001.qInfo=false;
-        TiT_001.setFileName("./Test_Mesh2");
-        TiT_001.getInformation();
+        Taskflow_HPC Taskflow_HPC_001(NumThreads,3);
+        Taskflow_HPC_001.qSave=false;
+        Taskflow_HPC_001.qInfo=false;
+        Taskflow_HPC_001.setFileName("./Test_Mesh2");
+        Taskflow_HPC_001.getInformation();
         
         
         //SpRuntime runtime( NumThreads );
 
         double area = 0;
-        auto ranges = partitionRange( therange, NumThreads );
+        auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
         tic();
 
         Eigen::VectorXd area_vec( NumThreads );
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_2 )
             int threadid = i;
             auto const& ra = r;
             
-            TiT_001.add(_parameters=Frontend::parameters(area_vec(threadid )),
+            Taskflow_HPC_001.add(_parameters=Frontend::parameters(area_vec(threadid )),
                 _task= [ra,NumThreads,threadid]( double& a )
                 {
                     for( element_t<range_t> const& e : ra )
@@ -189,14 +189,14 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_2 )
         
         }
         
-        TiT_001.run();
+        Taskflow_HPC_001.run();
         //runtime.waitAllTasks();
         BOOST_MESSAGE( fmt::format( "[waitall] areas: {}", area_vec ) );
         area = area_vec.sum();
         double t = toc(fmt::format( "measure-area-{}", NumThreads ) );
         //runtime.stopAllThreads();
-        TiT_001.close();
-        TiT_001.debriefingTasks();
+        Taskflow_HPC_001.close();
+        Taskflow_HPC_001.debriefingTasks();
         
         BOOST_MESSAGE( fmt::format( "time for {} threads: {}, area: {}", NumThreads, t, area ) );
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
@@ -218,16 +218,16 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
 
     for ( int NumThreads : { 1, 2, 4, 8, 16 } )
     {
-        TiT TiT_001(NumThreads,3);
-        TiT_001.qSave=false;
-        TiT_001.qInfo=false;
-        TiT_001.setFileName("./Test_Integrate2");
-        TiT_001.getInformation();
+        Taskflow_HPC Taskflow_HPC_001(NumThreads,3);
+        Taskflow_HPC_001.qSave=false;
+        Taskflow_HPC_001.qInfo=false;
+        Taskflow_HPC_001.setFileName("./Test_Integrate2");
+        Taskflow_HPC_001.getInformation();
         //SpRuntime runtime( NumThreads );
 
 
         double area = 0;
-        auto ranges = partitionRange( therange, NumThreads );
+        auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
         tic();
 
         Eigen::VectorXd area_vec( NumThreads );
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
             int threadid = i;
             auto const& ra = r;
             
-            TiT_001.add(_parameters=Frontend::parameters(area_vec(threadid )),
+            Taskflow_HPC_001.add(_parameters=Frontend::parameters(area_vec(threadid )),
                 _task=[ra, NumThreads, threadid]( double& a )
                 {
                     a = integrate( _range=ra, _expr=expr("1") ).evaluate()(0,0);
@@ -257,13 +257,13 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
             
         }
         //runtime.waitAllTasks();
-        TiT_001.run();
+        Taskflow_HPC_001.run();
         BOOST_MESSAGE( fmt::format( "[waitall] areas: {}", area_vec ) );
         area = area_vec.sum();
         double t = toc( fmt::format( "int-area-{}", NumThreads ) );
         //runtime.stopAllThreads();
-        TiT_001.close();
-        TiT_001.debriefingTasks();
+        Taskflow_HPC_001.close();
+        Taskflow_HPC_001.debriefingTasks();
         BOOST_MESSAGE( fmt::format( "time for {} threads: {}, area: {}", NumThreads, t, area ) );
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }

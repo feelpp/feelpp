@@ -36,7 +36,7 @@
 //#include "utestUtils.hpp"
 
 
-#include "TIT.hpp"
+#include "Taskflow_HPC.hpp"
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -997,7 +997,7 @@ BOOST_AUTO_TEST_CASE( test_specx_15 )
     
     //We build a list of numbers. This can be a list of floats.
     std::vector<int> v(boost::counting_iterator<int>(0), boost::counting_iterator<int>(nbN));
-    //auto ranges = partitionRange(v,nbThreads);
+    //auto ranges = parTaskflow_HPCionRange(v,nbThreads);
 
     //We construct the ranges by cutting the list of numbers
     int lenClusters = v.size()/nbThreads;
@@ -1459,17 +1459,17 @@ BOOST_AUTO_TEST_CASE( test_specx_21 )
         return true;
     };
 
-    TiT TiT_001(nbThreads,3); 
-        TiT_001.qSave=false; 
-        TiT_001.qInfo=false; 
-        TiT_001.setFileName("./PI");
+    Taskflow_HPC Taskflow_HPC_001(nbThreads,3); 
+        Taskflow_HPC_001.qSave=false; 
+        Taskflow_HPC_001.qInfo=false; 
+        Taskflow_HPC_001.setFileName("./PI");
         for(int k=0;k<nbThreads;k++) { 
             auto const& idk = k;
-            TiT_001.add(_parameters=Frontend::parameters(idk,valuesVec.at(idk)),_task=FC1);
+            Taskflow_HPC_001.add(_parameters=Frontend::parameters(idk,valuesVec.at(idk)),_task=FC1);
         }
 
-    TiT_001.run();
-    TiT_001.close();
+    Taskflow_HPC_001.run();
+    Taskflow_HPC_001.close();
     integralValue=h*std::reduce(valuesVec.begin(),valuesVec.end());
     //std::cout<<"PI Value= "<<integralValue<<"\n";
     BOOST_MESSAGE("[INFO SPECX] : PI Value= "<<integralValue<<"\n");
@@ -1507,18 +1507,18 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
         return true;
     };
 
-        TiT TiT_001(nbThreads,3); 
-        TiT_001.qSave=false; 
-        TiT_001.qInfo=false; 
-        TiT_001.setFileName("./AddVectors");
-        TiT_001.getInformation();
+        Taskflow_HPC Taskflow_HPC_001(nbThreads,3); 
+        Taskflow_HPC_001.qSave=false; 
+        Taskflow_HPC_001.qInfo=false; 
+        Taskflow_HPC_001.setFileName("./AddVectors");
+        Taskflow_HPC_001.getInformation();
         for(int k=0;k<nbThreads;k++) { 
             auto const& idk = k;
-            TiT_001.add(_parameters=Frontend::parameters(idk),_task=FC1);
+            Taskflow_HPC_001.add(_parameters=Frontend::parameters(idk),_task=FC1);
         }
 
-        TiT_001.run();        
-        TiT_001.close();
+        Taskflow_HPC_001.run();        
+        Taskflow_HPC_001.close();
 
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
@@ -1532,36 +1532,36 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
-    TiT TiT_001(nbThreads,3);
-    TiT_001.qSave=false; 
-    TiT_001.qInfo=false; 
-    TiT_001.setFileName("./Test");
-    TiT_001.getInformation();
+    Taskflow_HPC Taskflow_HPC_001(nbThreads,3);
+    Taskflow_HPC_001.qSave=false; 
+    Taskflow_HPC_001.qInfo=false; 
+    Taskflow_HPC_001.setFileName("./Test");
+    Taskflow_HPC_001.getInformation();
     const int initVal1 = 100;
     const int initVal2 = 1000;
     int writeVal = 0;
-    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    Taskflow_HPC_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             writeValParam += initValParam;
         }
     );
-    TiT_001.run();   
+    Taskflow_HPC_001.run();   
 
-    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    Taskflow_HPC_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             writeValParam += 123;
         }
     );
-    TiT_001.run();   
+    Taskflow_HPC_001.run();   
 
-    TiT_001.add(_parameters=Frontend::parameters(initVal2,writeVal),
+    Taskflow_HPC_001.add(_parameters=Frontend::parameters(initVal2,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             writeValParam += initValParam;
         }
     );
-    TiT_001.run();   
+    Taskflow_HPC_001.run();   
 
-    TiT_001.close();
+    Taskflow_HPC_001.close();
 
 
     auto stop_time= std::chrono::steady_clock::now();
@@ -1578,37 +1578,37 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
-    TiT TiT_001(nbThreads,2);
-    TiT_001.qSave=false; 
-    TiT_001.qInfo=false; 
-    TiT_001.setFileName("./Test");
-    TiT_001.getInformation();
+    Taskflow_HPC Taskflow_HPC_001(nbThreads,2);
+    Taskflow_HPC_001.qSave=false; 
+    Taskflow_HPC_001.qInfo=false; 
+    Taskflow_HPC_001.setFileName("./Test");
+    Taskflow_HPC_001.getInformation();
     const int initVal1 = 100;
     const int initVal2 = 1000;
     int writeVal = 0;
-    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    Taskflow_HPC_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             std::cout <<"I live 1!"<<std::endl; sleep(1);  std::cout <<"YES 1!"<<std::endl;
         }
     );
-    TiT_001.run();   
+    Taskflow_HPC_001.run();   
 
-    TiT_001.qDetach=true; // <<=== detach mode
+    Taskflow_HPC_001.qDetach=true; // <<=== detach mode
 
-    TiT_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    Taskflow_HPC_001.add(_parameters=Frontend::parameters(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             std::cout <<"I live 2! (Detach)"<<std::endl; sleep(5);  std::cout <<"YES 2! (Detach)"<<std::endl;
         }
     );
-    TiT_001.run();   
+    Taskflow_HPC_001.run();   
 
-    TiT_001.add(_parameters=Frontend::parameters(initVal2,writeVal),
+    Taskflow_HPC_001.add(_parameters=Frontend::parameters(initVal2,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             std::cout <<"I live 3!"<<std::endl; sleep(1);  std::cout <<"YES 3!"<<std::endl;
         }
     );
-    TiT_001.run();   
-    TiT_001.close();
+    Taskflow_HPC_001.run();   
+    Taskflow_HPC_001.close();
 
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
@@ -1634,17 +1634,17 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
     int           idk=0;
     const int      nb=10;
 
-    TiT TiT_001(nbThreads,1);
-    TiT_001.qSave=false; 
-    TiT_001.qInfo=false; 
-    TiT_001.setFileName("./ForEach");
-    TiT_001.getInformation();
+    Taskflow_HPC Taskflow_HPC_001(nbThreads,1);
+    Taskflow_HPC_001.qSave=false; 
+    Taskflow_HPC_001.qInfo=false; 
+    Taskflow_HPC_001.setFileName("./ForEach");
+    Taskflow_HPC_001.getInformation();
 
     std::vector<int> Vec(nb,0); for (int k=0; k<nb; ++k) { Vec[k]=k; }
-    TiT_001.for_each(Vec.begin(),Vec.end(),_parameters=Frontend::parameters(idk),_task=FC1);
+    Taskflow_HPC_001.for_each(Vec.begin(),Vec.end(),_parameters=Frontend::parameters(idk),_task=FC1);
 
-    TiT_001.run();
-    TiT_001.close();
+    Taskflow_HPC_001.run();
+    Taskflow_HPC_001.close();
 
     //std::cout<<">>> valExternal="<<valExternal<< "\n";
     BOOST_MESSAGE("[INFO SPECX] : Value= "<<valExternal<<"\n"); 
