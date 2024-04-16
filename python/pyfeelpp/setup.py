@@ -39,7 +39,7 @@ class CMakeBuild(build_ext):
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable,
+            '-DPython3_EXECUTABLE=' + sys.executable,
             '-DFEELPP_DIR=@FEELPP_DIR@']
 
         if @PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS@ == 1 :
@@ -79,7 +79,7 @@ setup(
               'pyfeelpp.core','pyfeelpp.mesh','pyfeelpp.discr','pyfeelpp.ts','pyfeelpp.filters','pyfeelpp.vf','pyfeelpp.models','pyfeelpp.alg',
     ],
     #packages=['pyfeelpp','pyfeelpp.core' ],
-#    ext_modules=[Extension('pyfeelpp',['pyfeelpp/python.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
+#    ext_modules=[Extension('pyfeelpp',['pyfeel/feelpython.cpp'],include_dirs=@FEELPP_INCLUDE_DIRS@,libraries=@FEELPP_LIBRARIES@)
     ext_modules=[CMakeExtension('_pyfeelpp','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp'),
                  CMakeExtension('_core','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/core'),
                  CMakeExtension('_mesh','@CMAKE_CURRENT_SOURCE_DIR@/pyfeelpp/mesh'),

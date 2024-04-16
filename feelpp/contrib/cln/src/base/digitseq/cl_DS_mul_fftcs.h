@@ -273,7 +273,7 @@
 #include "cln/exception.h"
 
 
-#if defined(HAVE_LONGDOUBLE) && (long_double_mant_bits > double_mant_bits) && (defined(__i386__) || defined(__m68k__) || (defined(__sparc__) && 0))
+#if (long_double_mant_bits > double_mant_bits) && (defined(__i386__) || defined(__m68k__) || (defined(__sparc__) && 0))
 // Only these CPUs have fast "long double"s in hardware.
 // On SPARC, "long double"s are emulated in software and don't work.
 typedef long double fftcs_real;

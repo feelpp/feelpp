@@ -65,11 +65,11 @@
   #define TRUE   1
 
 // Ignore a value (instead of assigning it to a variable).
-// unused ...
+// cl_unused ...
   #if defined(__GNUC__) || defined(__KCC) // avoid a gcc warning "statement with no effect"
-    #define unused  (void)
+    #define cl_unused  (void)
   #else
-    #define unused
+    #define cl_unused
   #endif
 
 // Denotes a point where control flow can never arrive.
@@ -98,8 +98,6 @@
     #endif
   #elif defined(_AIX)
     #pragma alloca // AIX requires this to be the first thing in the file.
-  #elif defined(WATCOM)
-    #include <malloc.h> // defines `alloca' as a macro
   #elif !defined(NO_ALLOCA)
     extern "C" void* alloca (size_t size);
   #endif
@@ -110,15 +108,15 @@
 
 // Bit number n (0<=n<32 or 0<=n<64)
   #ifdef HAVE_FAST_LONGLONG
-    #define bit(n)  (1LL<<(n))
+    #define bit(n)  (long long)(1ULL<<(n))
   #else
-    #define bit(n)  (1L<<(n))
+    #define bit(n)  (long)(1UL<<(n))
   #endif
 // Bit number n (0<n<=32) mod 2^32
   #ifdef HAVE_FAST_LONGLONG
-    #define bitm(n)  (2LL<<((n)-1))
+    #define bitm(n)  (long long)(2ULL<<((n)-1))
   #else
-    #define bitm(n)  (2L<<((n)-1))
+    #define bitm(n)  (long)(2UL<<((n)-1))
   #endif
 // Test bit n in x, n constant, x a cl_uint:
   #if !(defined(__sparc__) || defined(__sparc64__))
@@ -137,15 +135,15 @@
   #endif
 // minus bit number n (0<=n<32 or 0<=n<64)
   #ifdef HAVE_FAST_LONGLONG
-    #define minus_bit(n)  (-1LL<<(n))
+    #define minus_bit(n)  (long long)(-1ULL<<(n))
   #else
-    #define minus_bit(n)  (-1L<<(n))
+    #define minus_bit(n)  (long)(-1UL<<(n))
   #endif
 // minus bit number n (0<n<=32) mod 2^32
   #ifdef HAVE_FAST_LONGLONG
-    #define minus_bitm(n)  (-2LL<<((n)-1))
+    #define minus_bitm(n)  (long long)(-2ULL<<((n)-1))
   #else
-    #define minus_bitm(n)  (-2L<<((n)-1))
+    #define minus_bitm(n)  (long)(-2UL<<((n)-1))
   #endif
 
 // Return 2^n, n a constant expression.
@@ -242,22 +240,12 @@
 
 // Inside a class definition:
 // Overload `new' so that a class object can be allocated anywhere.
-#if !((defined(__rs6000__) || defined(__alpha__)) && !defined(__GNUC__))
 #define ALLOCATE_ANYWHERE(classname)  \
     /* Ability to place an object at a given address. */		\
 public:									\
     void* operator new (size_t size) { return malloc_hook(size); }	\
-    void* operator new (size_t size, classname* ptr) { unused size; return ptr; } \
+    void* operator new (size_t size, classname* ptr) { cl_unused size; return ptr; } \
     void operator delete (void* ptr) { free_hook(ptr); }
-#else
-// For some compilers, work around template problem with "classname".
-#define ALLOCATE_ANYWHERE(classname)  \
-    /* Ability to place an object at a given address. */		\
-public:									\
-    void* operator new (size_t size) { return malloc_hook(size); }	\
-    void* operator new (size_t size, void* ptr) { unused size; return ptr; } \
-    void operator delete (void* ptr) { free_hook(ptr); }
-#endif
 
 // init1(type, object) (value);
 // initializes `object' with `value', by calling `type''s constructor.

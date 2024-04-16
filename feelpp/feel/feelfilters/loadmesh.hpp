@@ -94,8 +94,6 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
     using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
     using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
 
-    using Feel::cout;
-
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunsequenced"
@@ -125,18 +123,19 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             mesh_name.extension() != ".med" &&
             mesh_name.extension() != ".arm" )
         << "Invalid filename " << filenameExpand << " it should have either the .geo. .json or .msh extension\n";
-
+    VLOG(1) << "[loadmesh] loading mesh " << filenameExpand << " from " << mesh_name.string() << " with extension " << mesh_name.extension() << " on " << worldcomm->localSize() << " processors\n";
 #if defined(FEELPP_HAS_GMSH_H)
     if ( mesh_name.extension() == ".geo" )
     {
+        VLOG(1) << fmt::format("[loadmesh] loading geometry from file {}", mesh_name.string());
 #if defined(FEELPP_HAS_HDF5)
         if ( boption(_name="mesh.load.enable") && soption(_name="mesh.load.format") == "json+h5" )
         {
             auto json_fname = mesh_name.stem().string()+".json";
             if( fs::exists(json_fname) )
             {
-                if ( verbose ) 
-                    cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(json_fname) << "\n";
+                if ( verbose && worldcomm->isMasterRank() )
+                    std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::absolute(json_fname) << std::endl;
                 LOG(INFO) << " Loading mesh in format json+h5: " << json_fname;
                 CHECK( mesh ) << "Invalid mesh pointer to load " << json_fname;
                 _mesh_ptrtype m( mesh );
@@ -152,10 +151,10 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
         }
 #endif
 
-        if ( verbose )
-            cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::system_complete(mesh_name) << "\n";
-        if ( !desc && verbose )
-            cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << "\n";
+        if ( verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Loading mesh in format geo+msh: " << fs::absolute(mesh_name) << std::endl;
+        if ( !desc && verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Use default geo desc: " << mesh_name.string() << " " << h << " " << depends << std::endl;
 
         auto thedesc = (!desc) ? geo( _filename=mesh_name.string(),
                                       _h=h,
@@ -191,7 +190,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #else
     LOG(WARNING) << "Gmsh support not available: loading a .geo is not supported.";
 #endif
-    
+
     if ( ( mesh_name.extension() == ".msh"  ) ||
          ( mesh_name.extension() == ".bdf"  ) ||
          ( mesh_name.extension() == ".cgns"  ) ||
@@ -200,8 +199,8 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
          ( mesh_name.extension() == ".med"  ) )
 
     {
-        if ( verbose )
-            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
+        if ( verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::absolute(mesh_name) << std::endl;
 
         tic();
         auto m = loadGMSHMesh( _vm=vm,
@@ -223,8 +222,8 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
                                );
 
         toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
-        if ( verbose )
-            cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << " done\n";
+        if ( verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::absolute(mesh_name) << " done" << std::endl;
 
 #if defined(FEELPP_HAS_HDF5)
         if ( savehdf5 )
@@ -232,8 +231,8 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             tic();
             m->saveHDF5( mesh_name.stem().string()+".json", 1./scale );
             toc("loadMesh.saveHDF5", FLAGS_v>0);
-            if ( verbose )
-                cout << "[loadMesh] Saving HDF5 mesh: " << fs::system_complete(mesh_name.stem().string()+".json") << std::endl;
+            if ( verbose && worldcomm->isMasterRank() )
+                std::cout << "[loadMesh] Saving HDF5 mesh: " << fs::absolute(mesh_name.stem().string()+".json") << std::endl;
         }
 #endif
         return m;
@@ -242,9 +241,9 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #if defined(FEELPP_HAS_HDF5)
     if ( mesh_name.extension() == ".json"  )
     {
-        if ( verbose )
-            cout << "[loadMesh] Loading mesh in format json+h5: " << fs::system_complete(mesh_name) << "\n";
-        LOG(INFO) << " Loading mesh in json+h5 format " << fs::system_complete(mesh_name);
+        if ( verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Loading mesh in format json+h5: " << fs::absolute(mesh_name) << std::endl;
+        LOG(INFO) << " Loading mesh in json+h5 format " << fs::absolute(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
@@ -261,9 +260,9 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
     // Acusim Raw Mesh
     if ( mesh_name.extension() == ".arm"  )
     {
-        if ( verbose )
-            cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::system_complete(mesh_name) << "\n";
-        LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::system_complete(mesh_name);
+        if ( verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Loading mesh in format arm(acusolve)h5: " << fs::absolute(mesh_name) << std::endl;
+        LOG(INFO) << " Loading mesh in arm(acusolve) format " << fs::absolute(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
@@ -283,9 +282,9 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
     // Samcef Mesh (bacon script)
     if ( mesh_name.extension() == ".dat"  )
     {
-        if ( verbose )
-            cout << "[loadMesh] Loading mesh in format Samcef: " << fs::system_complete(mesh_name) << "\n";
-        LOG(INFO) << " Loading mesh in Samcef format " << fs::system_complete(mesh_name);
+        if ( verbose && worldcomm->isMasterRank() )
+            std::cout << "[loadMesh] Loading mesh in format Samcef: " << fs::canonical(mesh_name) << std::endl;
+        LOG(INFO) << " Loading mesh in Samcef format " << fs::canonical(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
@@ -304,10 +303,10 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 #if defined( FEELPP_HAS_GMSH_H )
     mesh_name = soption(_name="gmsh.domain.shape");
 
-    if ( verbose) 
-        cout << "[loadMesh] no file name or unrecognized extension provided\n"
-             << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
-             << mesh_name << ".geo\n";
+    if ( verbose && worldcomm->isMasterRank() )
+        std::cout << "[loadMesh] no file name or unrecognized extension provided\n"
+                  << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
+                  << mesh_name << ".geo" << std::endl;
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     auto m = createGMSHMesh(_vm=vm,
                             _mesh=mesh,

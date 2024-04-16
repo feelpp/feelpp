@@ -10,13 +10,11 @@
 // Implementation.
 
 #ifdef NEED_VAR_mulu32_high
-extern "C" {
-uint32 mulu32_high;
-}
+extern "C" { uint32 mulu32_high; }
 #endif
 
 #ifdef NEED_FUNCTION_mulu32_
-uint32 mulu32_high;
+extern "C" { uint32 mulu32_high; }
 namespace cln {
 uint32 mulu32_ (uint32 x, uint32 y)
 {
@@ -52,14 +50,11 @@ uint64 mulu32_w (uint32 arg1, uint32 arg2)
 
 
 #ifdef NEED_VAR_mulu64_high
-uint64 mulu64_high;
+extern "C" { uint64 mulu64_high; }
 #endif
 
 #ifdef NEED_FUNCTION_mulu64_
-extern "C"
-{
-uint64 mulu64_high;
-}
+extern "C" { uint64 mulu64_high; }
 namespace cln {
 extern "C" uint64 mulu64_ (uint64 x, uint64 y);
 uint64 mulu64_ (uint64 x, uint64 y)
@@ -82,3 +77,4 @@ uint64 mulu64_ (uint64 x, uint64 y)
 }
 }  // namespace cln
 #endif
+

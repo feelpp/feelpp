@@ -18,7 +18,7 @@ static const cl_I digits_to_I_base2 (const char * MSBptr, uintC len, uintD base)
 {
 	// base is a power of two: write the digits from least significant
 	// to most significant into the result NUDS. Result needs
-	// 1+ceiling(len*log(base)/(intDsize*log(2))) or some more digits
+	// 1+ceiling(len*log(base)/(intDsize*log(2))) or some more digits.
 	CL_ALLOCA_STACK;
 	var uintD* erg_MSDptr;
 	var uintC erg_len;
@@ -49,7 +49,7 @@ static const cl_I digits_to_I_base2 (const char * MSBptr, uintC len, uintD base)
 			    // d is ready to be written into the NUDS:
 			    lsprefnext(erg_MSDptr) = d;
 			    ch_where = ch_where-intDsize;
-			    d = (uintD)ch >> b-ch_where;  // carry
+			    d = (uintD)ch >> (b-ch_where);  // carry
 			    erg_len++;
 			}
 		}
@@ -64,7 +64,7 @@ static const cl_I digits_to_I_base2 (const char * MSBptr, uintC len, uintD base)
 
 static const cl_I digits_to_I_baseN (const char * MSBptr, uintC len, uintD base)
 {
-	// base is not a power of two: Add digits one by one. Result nees
+	// base is not a power of two: Add digits one by one. Result needs
 	// 1+ceiling(len*log(base)/(intDsize*log(2))) or some more digits.
 	CL_ALLOCA_STACK;
 	var uintD* erg_MSDptr;
@@ -121,19 +121,17 @@ static const cl_I digits_to_I_baseN (const char * MSBptr, uintC len, uintD base)
 		var uintD factor = 1;
 		while (chx < power_table[base-2].k && len > 0) {
 			var uintB ch = *(const uintB *)MSBptr; MSBptr++; // next character
-			if (ch!='.') { // skip decimal point
-				// Compute value of ('0'-'9','A'-'Z','a'-'z'):
-				ch = ch-'0';
-				if (ch > '9'-'0') { // not a digit?
-					ch = ch+'0'-'A'+10;
-					if (ch > 'Z'-'A'+10) {// not an uppercase letter?
-						ch = ch+'A'-'a';  // must be lowercase!
-					}
+			// Compute value of ('0'-'9','A'-'Z','a'-'z'):
+			ch = ch-'0';
+			if (ch > '9'-'0') { // not a digit?
+				ch = ch+'0'-'A'+10;
+				if (ch > 'Z'-'A'+10) {// not an uppercase letter?
+					ch = ch+'A'-'a';  // must be lowercase!
 				}
-				factor = factor*base;
-				newdigit = base*newdigit+ch;
-				chx++;
 			}
+			factor = factor*base;
+			newdigit = base*newdigit+ch;
+			chx++;
 			len--;
 		}
 		var uintD carry = mulusmall_loop_lsp(factor,erg_LSDptr,erg_len,newdigit);
@@ -146,32 +144,50 @@ static const cl_I digits_to_I_baseN (const char * MSBptr, uintC len, uintD base)
 	return NUDS_to_I(erg_MSDptr,erg_len);
 }
 
+static const cl_I digits_to_I_divconq (const char * MSBptr, uintC len, uintD base)
+{
+	// This is quite insensitive to the breakeven point.
+	// On a 1GHz Athlon I get approximately:
+	//   base  3: breakeven around 25000
+	//   base 10: breakeven around  8000
+	//   base 36: breakeven around  2000
+	if (len>80000/base) {
+		// Divide-and-conquer:
+		// Find largest i such that B = base^(k*2^i) satisfies B <= X.
+		var const cached_power_table_entry * p;
+		var uintC len_B = power_table[base-2].k;
+		for (uintC i = 0; ; i++) {
+			p = cached_power(base, i);
+			if (2*len_B >= len)
+				break;
+			len_B = len_B*2;
+		}
+			return digits_to_I_divconq(MSBptr,len-len_B,base) * p->base_pow
+			     + digits_to_I_divconq(MSBptr+len-len_B,len_B,base);
+	} else {
+		return digits_to_I_baseN(MSBptr, len, base);
+	}
+}
+
 const cl_I digits_to_I (const char * MSBptr, uintC len, uintD base)
 {
 	if ((base & (base-1)) == 0) {
 		return digits_to_I_base2(MSBptr, len, base);
 	} else {
-		// This is quite insensitive to the breakeven point.
-		// On a 1GHz Athlon I get approximately:
-		//   base  3: breakeven around 25000
-		//   base 10: breakeven around  8000
-		//   base 36: breakeven around  2000
-		if (len>80000/base) {
-			// Divide-and-conquer:
-			// Find largest i such that B = base^(k*2^i) satisfies B <= X.
-			var const cached_power_table_entry * p;
-			var uintC len_B = power_table[base-2].k;
-			for (uintC i = 0; ; i++) {
-				p = cached_power(base, i);
-				if (2*len_B >= len)
-					break;
-				len_B = len_B*2;
+		// digits_to_I_divconq cannot handle decimal points, so remove it here
+		CL_ALLOCA_STACK;
+		const uintD * digits_copy;
+		num_stack_alloc(len,,digits_copy=);
+		char * copy_ptr = (char *)digits_copy;
+		uintC n = 0;
+		for (uintC i = 0; i < len; ++i) {
+			const char ch = MSBptr[i];
+			if (ch != '.') { // skip decimal point
+				copy_ptr[n] = ch;
+				n++;
 			}
-			return digits_to_I(MSBptr,len-len_B,base)*p->base_pow
-			      +digits_to_I(MSBptr+len-len_B,len_B,base);
-		} else {
-			return digits_to_I_baseN(MSBptr, len, base);
 		}
+		return digits_to_I_divconq((const char*)digits_copy, n, base);
 	}
 }
 

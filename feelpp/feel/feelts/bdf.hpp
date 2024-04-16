@@ -44,8 +44,6 @@
 #include <boost/utility.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -70,7 +68,6 @@
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
-namespace fs = boost::filesystem;
 
 enum BDFTimeScheme { BDF_ORDER_ONE=1, BDF_ORDER_TWO, BDF_ORDER_THREE, BDF_ORDER_FOUR, BDF_MAX_ORDER = 4 };
 
@@ -807,7 +804,7 @@ Bdf<SpaceType>::init()
                     ostr << M_name << "-" << iteration;
                 DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
-                fs::ifstream ifs;
+                std::ifstream ifs;
                 ifs.open( dirPath/ostr.str() );
 
                 // load data from archive
@@ -971,7 +968,7 @@ Bdf<SpaceType>::saveCurrent()
             else
                 ostr << M_name << "-" << iteration;
             // load data from archive
-            fs::ofstream ofs( M_path_save / ostr.str() );
+            std::ofstream ofs( M_path_save / ostr.str() );
             boost::archive::binary_oarchive oa( ofs );
             oa << *M_unknowns[0];
         }
@@ -1030,7 +1027,7 @@ Bdf<SpaceType>::loadCurrent()
             else
                 ostr << M_name << "-" << iteration;
 
-            fs::ifstream ifs( M_path_save / ostr.str() );
+            std::ifstream ifs( M_path_save / ostr.str() );
 
             // load data from archive
             boost::archive::binary_iarchive ia( ifs );

@@ -45,8 +45,8 @@ class EmpiricalQuadrature
 {
 public:
     using range_type = RangeType;
-    using element_type = typename boost::tuples::element<1_c,range_type>::type::value_type;
-    using gm_type = typename element_type::type::gm_type;
+    using element_type = element_t<range_type>;
+    using gm_type = typename element_type::gm_type;
 
     using expressionevalbase_type = ExpressionEvaluatorBase<range_type>;
     using expressionevalbase_ptrtype = std::shared_ptr<expressionevalbase_type>;
@@ -194,7 +194,7 @@ EmpiricalQuadrature<RangeType>::saveDatabase()
     }
     Environment::worldComm().barrier();
     dbFilenamePath /= "db_" + std::to_string(Environment::rank());
-    std::ofstream os(dbFilenamePath, std::ios::binary);
+    std::ofstream os(dbFilenamePath.string(), std::ios::binary);
     boost::archive::binary_oarchive oar(os);
     oar << M_indexes;
     oar << M_weights;
@@ -208,7 +208,7 @@ EmpiricalQuadrature<RangeType>::loadDatabase()
     dbFilenamePath /= "db_" + std::to_string(Environment::rank());
     if( fs::exists(dbFilenamePath) )
     {
-        std::ifstream is(dbFilenamePath, std::ios::binary);
+        std::ifstream is(dbFilenamePath.string(), std::ios::binary);
         boost::archive::binary_iarchive iar(is);
         iar >> M_indexes;
         iar >> M_weights;
@@ -277,7 +277,7 @@ EmpiricalQuadrature<RangeType>::offline()
     M_trainset->randomize(M_J);
 
     tic();
-    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
+    auto const eltForInit = this->M_range.front();
 
     int nPts = M_exprevals[0]->nPoints();
     M_N = M_numElts*nPts;

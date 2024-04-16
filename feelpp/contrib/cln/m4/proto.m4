@@ -7,7 +7,7 @@ dnl the same distribution terms as the rest of that program.
 
 dnl From Bruno Haible, Marcus Daniels.
 
-AC_PREREQ(2.13)
+AC_PREREQ([2.13])
 
 dnl CL_PROTO(IDENTIFIER, ACTION-IF-NOT-FOUND, FINAL-PROTOTYPE)
 AC_DEFUN([CL_PROTO],
@@ -19,31 +19,10 @@ AC_MSG_RESULT([$]{ac_t:-
          }[$]cl_cv_proto_$1)
 ])
 
-dnl CL_PROTO_RET(INCLUDES, ANSI-DECL, TRAD-DECL, CACHE-ID, TYPE-IF-OK, TYPE-IF-FAILS)
-AC_DEFUN([CL_PROTO_RET],
-[AC_TRY_COMPILE([$1]
-AC_LANG_EXTERN
-[#if defined(__STDC__) || defined(__cplusplus)
-$2
-#else
-$3
-#endif
-], [], $4="$5", $4="$6")
-])
-
-dnl CL_PROTO_TRY(INCLUDES, ANSI-DECL, TRAD-DECL, ACTION-IF-OK, ACTION-IF-FAILS)
+dnl CL_PROTO_TRY(INCLUDES, DECL, ACTION-IF-OK, ACTION-IF-FAILS)
 AC_DEFUN([CL_PROTO_TRY],
-[AC_TRY_COMPILE([$1]
-AC_LANG_EXTERN
-[#if defined(__STDC__) || defined(__cplusplus)
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$1
+]AC_LANG_EXTERN[
 $2
-#else
-$3
-#endif
-], [], [$4], [$5])
+]], [[]])], [$3], [$4])
 ])
-
-dnl CL_PROTO_CONST(INCLUDES, ANSI-DECL, TRAD-DECL, CACHE-ID)
-AC_DEFUN([CL_PROTO_CONST],
-[CL_PROTO_TRY([$1], [$2], [$3], $4="", $4="const")]
-)

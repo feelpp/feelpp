@@ -1,12 +1,15 @@
-
 set(FEELPP_MOR_MODEL_LIBRARIES_CMAKE_VARIABLES @FEELPP_MOR_LIBRARIES@)
 
 #include(${CMAKE_CURRENT_LIST_DIR}/feelpp.mor.includes.config.cmake)
 #include(${CMAKE_CURRENT_LIST_DIR}/feelpp.mor.libraries.config.cmake)
 
+
+if (NOT FEELPP_MOR_FOUND)#FEELPP_MOR_DONT_SETUP_CMAKE)
+  #include(${FEELPP_DIR}/share/feelpp/mor/cmake/feelpp-mor-export-targets.cmake)
+  include( ${CMAKE_CURRENT_LIST_DIR}/feelpp-mor-export-targets.cmake )
+  include( ${CMAKE_CURRENT_LIST_DIR}/feelpp.macros.mor.cmake)
+endif()
+
+
 set(FEELPP_MOR_FOUND 1)
 set(Feel++-MOR_FOUND 1)
-
-if (NOT FEELPP_MOR_DONT_SETUP_CMAKE)
-  include(${FEELPP_DIR}/share/feelpp/mor/cmake/feelpp-mor-export-targets.cmake)
-endif()

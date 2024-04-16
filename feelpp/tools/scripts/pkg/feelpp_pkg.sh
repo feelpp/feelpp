@@ -47,7 +47,7 @@ then
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
-pbuilder-dist $DIST login --save-after-login << EOF
+feelpp-pbuilder-dist $DIST login --save-after-login << EOF
 echo "--- apt update"
 apt-get update
 EOF
@@ -89,13 +89,15 @@ cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$renam
 cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
 
 echo "--- update changelog ${COMPONENT}  $version-1"
+export DEBEMAIL="christophe.prudhomme@cemosis.fr" 
+export DEBFULLNAME="Christophe Prud'homme" 
 dch -v "$version-1" --distribution "unstable" -b "New upstream commits"
 
 echo "--- add source ${COMPONENT}  $version-1"
 dpkg-source -b .
 
 echo "--- building ${COMPONENT} debian version $version-1"
-pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  --buildplace $HOME/pbuilder/cache ../${COMPONENT}_${version}-1.dsc
+feelpp-pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  --buildplace $HOME/pbuilder/cache ../${COMPONENT}_${version}-1.dsc
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}

@@ -205,8 +205,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- freq save       : " << myexporterFreq
            << "\n     -- fields exported : " << doExport_str
            << "\n   Processors"
-           << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
-           << "\n     -- environement rank : " << Environment::worldComm().rank()
+           << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
+           << "\n     -- environment rank : " << Environment::worldComm().rank()
            << "\n     -- global rank : " << this->worldComm().globalRank()
            << "\n     -- local rank : " << this->worldComm().localRank()
         //<< "\n   Matrix Index Start"
@@ -693,7 +693,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     auto se = this->symbolsExpr();
     this->updateFluidInletVelocity( se ); // TODO VINCENT : create an updateBoundaryConditionForUse?
 
-    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
+    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externally)
     this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 #if 0
     if ( this->worldComm().isMasterRank() )
@@ -1149,6 +1149,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     // update all expressions in bc or in house prec
     this->updateParameterValues();
+
+    using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
+    this->template updateMeshAdaptation<mesh_type>( this->keyword(),
+                                                    mesh_adaptation_type::createEvent<mesh_adaptation_type::Event::Type::each_time_step>( this->time(),M_bdfVelocity->iteration() ),
+                                                    this->symbolsExpr() );
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();

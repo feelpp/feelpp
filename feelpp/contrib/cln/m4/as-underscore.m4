@@ -8,7 +8,7 @@ dnl the same distribution terms as the rest of that program.
 
 dnl From Bruno Haible, Marcus Daniels, Sam Steingold.
 
-AC_PREREQ(2.57)
+AC_PREREQ([2.57])
 
 AC_DEFUN([CL_AS_UNDERSCORE],
 [AC_BEFORE([$0], [CL_GLOBAL_CONSTRUCTORS])

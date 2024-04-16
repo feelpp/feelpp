@@ -50,7 +50,7 @@ namespace Feel
  *
  * The Boundary adapted basis is constructed to preserve a part
  * of the Jacobi polynomials' orthogonality. However we need
- * to modify the basis in order to manage easily the boundary condtions.
+ * to modify the basis in order to manage easily the boundary conditions.
  *
  * \ingroup Polynomial
  * @author Gilles Steiner

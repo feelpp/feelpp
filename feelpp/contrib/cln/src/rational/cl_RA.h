@@ -46,7 +46,7 @@ inline cl_RA::cl_RA (cl_heap_ratio* ptr)
 
 // Type tests.
 inline bool rationalp (const cl_RA& x)
-	{ unused x; return true; }
+	{ cl_unused x; return true; }
 inline bool integerp (const cl_RA& x)
 {
 	if (!x.pointer_p())
@@ -75,9 +75,9 @@ public:
 };
 
 inline bool integerp (const cl_RT& x)
-	{ unused x; return false; }
+	{ cl_unused x; return false; }
 inline bool ratiop (const cl_RT& x)
-	{ unused x; return true; }
+	{ cl_unused x; return true; }
 
 // Access numerator and denominator.
 inline const cl_I& numerator (const cl_RT& x)
@@ -104,7 +104,7 @@ inline bool minusp (const cl_RA& x)
 
 // (ZEROP x) == (= x 0)
 inline bool zerop (const cl_RT& x)
-	{ unused x; return false; }
+	{ cl_unused x; return false; }
 inline bool zerop (const cl_RA& x)
 {
 	return x.word == cl_combine(cl_FN_tag,0);
@@ -132,27 +132,6 @@ inline bool eq (const cl_RA& x, sint32 y)
 // Liefert zu den Integers a und b den Bruch a/b (Ratio oder Integer).
 // I_I_div_RA(a,b)
   extern const cl_RA I_I_div_RA (const cl_I& a, const cl_I& b);
-
-// Liefert den Zähler einer rationalen Zahl.
-// numerator(r)
-inline const cl_I numerator (const cl_RA& r)
-{
-	if (integerp(r)) {
-		DeclareType(cl_I,r);
-		return r;
-	} else
-		return TheRatio(r)->numerator;
-}
-
-// Liefert den Nenner einer rationalen Zahl.
-// denominator(r)
-inline const cl_I denominator (const cl_RA& r)
-{
-	if (integerp(r))
-		return 1;
-	else
-		return TheRatio(r)->denominator;
-}
 
 // Liefert Zähler und Nenner einer rationalen Zahl.
 // RA_numden_I_I(r, num=,den=);

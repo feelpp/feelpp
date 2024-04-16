@@ -66,7 +66,7 @@ extern cl_class cl_class_ffloat;
 // Builds a float from the explicit word.
 #if defined(CL_WIDE_POINTERS)
 inline cl_FF::cl_FF (struct cl_heap_ffloat * null, cl_uint w)
-	: cl_F ((cl_private_thing) w) { unused null; }
+	: cl_F ((cl_private_thing) w) { cl_unused null; }
 inline const cl_FF allocate_ffloat (ffloat eksplicit)
 {
 	return cl_FF((struct cl_heap_ffloat *) 0, ((cl_uint)eksplicit << FF_value_shift) | (cl_FF_tag << cl_tag_shift));
@@ -128,7 +128,7 @@ inline const cl_FF make_FF (cl_sint sign, unsigned int exp, cl_uint mant)
       { zero_statement } /* e=0 -> Zahl 0.0 */				\
       else								\
       { exp_zuweisung (sintL)(uexp - FF_exp_mid); /* Exponent */	\
-        unused (sign_zuweisung sign_of((sint32)(_x))); /* Vorzeichen */\
+        cl_unused (sign_zuweisung sign_of((sint32)(_x))); /* Vorzeichen */\
         mant_zuweisung (bit(FF_mant_len) | (_x & (bit(FF_mant_len)-1))); \
   }   }
 

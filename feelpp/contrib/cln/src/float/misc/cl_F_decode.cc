@@ -19,7 +19,7 @@
 
 namespace cln {
 
-inline const decoded_float decode_float (const cl_SF& x)
+static inline const decoded_float decode_float_inline (const cl_SF& x)
 {
 	// x entpacken:
 	var cl_signean sign;
@@ -35,7 +35,7 @@ inline const decoded_float decode_float (const cl_SF& x)
 	       );
 }
 
-inline const decoded_float decode_float (const cl_FF& x)
+static inline const decoded_float decode_float_inline (const cl_FF& x)
 {
 	// x entpacken:
 	var cl_signean sign;
@@ -51,7 +51,7 @@ inline const decoded_float decode_float (const cl_FF& x)
 	       );
 }
 
-inline const decoded_float decode_float (const cl_DF& x)
+static inline const decoded_float decode_float_inline (const cl_DF& x)
 {
 	// x entpacken:
 	var cl_signean sign;
@@ -80,7 +80,7 @@ inline const decoded_float decode_float (const cl_DF& x)
 #endif
 }
 
-inline const decoded_float decode_float (const cl_LF& x)
+static inline const decoded_float decode_float_inline (const cl_LF& x)
 {
 	// x entpacken:
 	var cl_signean sign;
@@ -99,10 +99,10 @@ inline const decoded_float decode_float (const cl_LF& x)
 const decoded_float decode_float (const cl_F& x)
 {
 	floatcase(x
-	,	return decode_float(x);
-	,	return decode_float(x);
-	,	return decode_float(x);
-	,	return decode_float(x);
+	,	return decode_float_inline(x);
+	,	return decode_float_inline(x);
+	,	return decode_float_inline(x);
+	,	return decode_float_inline(x);
 	);
 }
 

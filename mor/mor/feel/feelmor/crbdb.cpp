@@ -70,10 +70,9 @@ void
 CRBDB::setDBDirectory( std::string const& name, uuids::uuid const& i )
 {
     M_uuid = i;
-    std::string database_subdir = ( boost::format( "%1%/%2%" )% name % uuids::to_string(M_uuid)).str();
-    M_dbDirectory = ( boost::format( "%1%/crbdb/%2%" )
-                      % Feel::Environment::rootRepository()
-                      % database_subdir ).str();
+    std::string database_subdir = fmt::format( "{}/{}", name, uuids::to_string(M_uuid) );
+    M_dbDirectory = fmt::format( "{}/crbdb/{}", Feel::Environment::rootRepository().string(), database_subdir );
+    LOG(INFO) << fmt::format( "[CRBDB::setDBDirectory] database directory is {}, database_subdir = {}", M_dbDirectory, database_subdir );
 }
 //! destructor
 CRBDB::~CRBDB()
@@ -100,7 +99,7 @@ CRBDB::dbLocalPath() const
 fs::path
 CRBDB::lookForDB() const
 {
-    //std::cout << "db fdilename=" << this->dbFilename() << "\n";
+    //std::cout << "db localpath " << this->dbLocalPath() <<" db filename=" << this->dbFilename() << std::endl;
     // look in local repository $HOME/feel/db/crb/...
     if ( fs::exists( this->dbLocalPath() / this->dbFilename() ) )
     {
@@ -150,6 +149,10 @@ CRBDB::loadDB()
 {
     return false;
 }
+void
+CRBDB::saveNewElementToDB()
+{
+}
 
 fs::path
 CRBDB::db( std::string const& f )  const
@@ -163,11 +166,9 @@ CRBDB::db( std::string const& f )  const
 uuids::uuid
 CRBDB::idFromId( std::string const& id ) const
 {
-    auto dir = ( boost::format( "%1%/crbdb/%2%" )
-                 % Feel::Environment::rootRepository()
-                 % M_name ).str();
+    fs::path dir = Feel::Environment::rootRepository()/"crbdb"/M_name;
     if( !fs::exists(dir)  && !fs::is_directory(dir) )
-        throw std::invalid_argument(std::string("db directory ") + dir + " does not exist");
+        throw std::invalid_argument( fmt::format( "db directory {} does not exist", dir.string() ) );
 
     std::vector<fs::path> d;
 
@@ -195,7 +196,7 @@ CRBDB::dbFromId( std::string const& id, std::string const& root )  const
     fs::path crbdb = fs::path(root) / "crbdb";
     if ( !fs::exists( crbdb ) )
         throw std::invalid_argument(std::string("crbdb repository ") + crbdb.string() + " does not exist");
-    
+
     fs::path dbbasedir = crbdb / fs::path(name()) ;
     if ( !fs::exists( dbbasedir ) && !fs::is_directory(dbbasedir) )
         throw std::invalid_argument(std::string("db directory ") + dbbasedir.string() + " does not exist");
@@ -203,15 +204,15 @@ CRBDB::dbFromId( std::string const& id, std::string const& root )  const
     // try first full path
     typedef std::vector<fs::path> vec;
     vec d;
-    
+
     std::copy(fs::directory_iterator(dbbasedir), fs::directory_iterator(), std::back_inserter(d));
     std::sort(d.begin(), d.end());
-    
+
     //std::cout << "dbbasedir=" << dbbasedir.string()<< " id=" << id << std::endl;
     for( auto& dbdir : d )
     {
         //std::cout << "dbdir = " << dbdir.string() << std::endl;
-        
+
         if ( boost::ends_with( dbdir.string(), id ) )
         {
             fs::path dbfilename = dbdir / fs::path(name() + ".crb.json");
@@ -232,14 +233,13 @@ CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root
 uuids::uuid
 CRBDB::idFromDBLast( crb::last last ) const
 {
-    auto dir = ( boost::format( "%1%/crbdb/%2%" )
-                 % Feel::Environment::rootRepository()
-                 % M_name ).str();
+    fs::path dir = Feel::Environment::rootRepository()/"crbdb"/M_name;
     if( !fs::exists(dir)  && !fs::is_directory(dir) )
         return uuids::nil_uuid();
 
     std::vector<fs::path> d;
-    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    //typedef std::multimap<std::time_t, fs::path> result_set_t;
+    typedef std::multimap<std::filesystem::file_time_type, fs::path> result_set_t;
     result_set_t result_set;
 
     for( auto const& dd: boost::make_iterator_range( fs::directory_iterator(dir),{} ) )
@@ -249,7 +249,7 @@ CRBDB::idFromDBLast( crb::last last ) const
         {
             if ( last == crb::last::created )
             {
-                result_set.insert(result_set_t::value_type(fs::last_write_time(dd.path()), dbfilename));
+                result_set.insert(result_set_t::value_type( fs::last_write_time(dd.path()), dbfilename));
             }
             else if ( last == crb::last::modified )
             {
@@ -282,7 +282,7 @@ CRBDB::dbLast( crb::last last, std::string const& root ) const
     // try first full path
     typedef std::vector<fs::path> vec;
     vec d;
-    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    typedef std::multimap<std::filesystem::file_time_type, fs::path> result_set_t;
     result_set_t result_set;
 
     for( auto const& dir: boost::make_iterator_range( fs::directory_iterator(dbbasedir),{} ) )
@@ -310,7 +310,7 @@ CRBDB::dbLast( crb::last last, std::string const& root ) const
 }
 
 void
-CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root ) 
+CRBDB::loadDBLast( crb::last last, crb::load l, std::string const& root )
 {
     this->loadDB( dbLast( last, root ).string(), l );
 }

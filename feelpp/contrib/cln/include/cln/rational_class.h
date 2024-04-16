@@ -22,18 +22,14 @@ public:
 	cl_RA (const unsigned int);	// argument must be < 2^29
 	cl_RA (const long);
 	cl_RA (const unsigned long);
-#ifdef HAVE_LONGLONG
 	cl_RA (const long long);
 	cl_RA (const unsigned long long);
-#endif
 	cl_RA& operator= (const int);		// |argument| must be < 2^29
 	cl_RA& operator= (const unsigned int);	// argument must be < 2^29
 	cl_RA& operator= (const long);
 	cl_RA& operator= (const unsigned long);
-#ifdef HAVE_LONGLONG
 	cl_RA& operator= (const long long);
 	cl_RA& operator= (const unsigned long long);
-#endif
 // Other constructors.
 	cl_RA (const char *);
 // Private constructor.
@@ -61,10 +57,8 @@ CL_DEFINE_INT_CONSTRUCTORS(cl_RA)
 CL_DEFINE_INT_ASSIGNMENT_OPERATORS(cl_RA)
 CL_DEFINE_LONG_CONSTRUCTORS(cl_RA)
 CL_DEFINE_LONG_ASSIGNMENT_OPERATORS(cl_RA)
-#ifdef HAVE_LONGLONG
 CL_DEFINE_LONGLONG_CONSTRUCTORS(cl_RA)
 CL_DEFINE_LONGLONG_ASSIGNMENT_OPERATORS(cl_RA)
-#endif
 
 }  // namespace cln
 

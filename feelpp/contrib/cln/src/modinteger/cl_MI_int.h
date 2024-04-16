@@ -9,7 +9,7 @@ static void int_fprint (cl_heap_modint_ring* R, std::ostream& stream, const _cl_
 
 static const cl_I int_reduce_modulo (cl_heap_modint_ring* R, const cl_I& x)
 {
-	unused R;
+	cl_unused R;
 	return x; // reducing modulo 0 does nothing
 }
 
@@ -22,19 +22,16 @@ static const _cl_MI int_canonhom (cl_heap_modint_ring* R, const cl_I& x)
 // This is the only case where retract is surjective.
 static const cl_I int_retract (cl_heap_modint_ring* R, const _cl_MI& x)
 {
-	unused R;
+	cl_unused R;
 	return x.rep;
 }
 
 // This is the only case where random yields an error.
 static const _cl_MI int_random (cl_heap_modint_ring* R, random_state& randomstate)
 {
-	unused R;
-	unused randomstate;
+	cl_unused R;
+	cl_unused randomstate;
 	throw runtime_exception("Z / 0 Z not a finite set - no equidistributed random function.");
-#if ((defined(__sparc__) || defined(__sparc64__)) && !defined(__GNUC__)) // Sun CC wants a return value
-	return _cl_MI(R, 0);
-#endif
 }
 
 static const _cl_MI int_zero (cl_heap_modint_ring* R)
@@ -44,7 +41,7 @@ static const _cl_MI int_zero (cl_heap_modint_ring* R)
 
 static bool int_zerop (cl_heap_modint_ring* R, const _cl_MI& x)
 {
-	unused R;
+	cl_unused R;
 	return zerop(x.rep);
 }
 

@@ -48,8 +48,8 @@ private:
 		if (ht->_count < 100)
 			return false;
 		// Do a garbage collection.
-		var long removed = 0;
-		for (long i = 0; i < ht->_size; i++)
+		var intptr_t removed = 0;
+		for (intptr_t i = 0; i < ht->_size; i++)
 		    if (ht->_entries[i].next >= 0) {
 			var cl_htentry2<key1_type,key2_type,value_type>& entry = ht->_entries[i].entry;
 			if (ht->_maygc_htentry(entry)) {

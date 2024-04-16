@@ -40,8 +40,6 @@
 #include <boost/utility.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -63,7 +61,6 @@
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
-namespace fs = boost::filesystem;
 
 
 /**
@@ -343,7 +340,7 @@ Newmark<SpaceType>::init()
                 if( M_rankProcInNameOfFiles )
                     ostrUnknown << procsufix;
                 DVLOG(2) << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
-                fs::ifstream ifsUnknown;
+                std::ifstream ifsUnknown;
                 ifsUnknown.open( dirPath/ostrUnknown.str() );
                 // load data from archive
                 boost::archive::binary_iarchive iaUnknown( ifsUnknown );
@@ -354,7 +351,7 @@ Newmark<SpaceType>::init()
                 if( M_rankProcInNameOfFiles )
                     ostrVel << procsufix;
                 DVLOG(2) << "[Newmark::init()] load file: " << ostrVel.str() << "\n";
-                fs::ifstream ifsVel;
+                std::ifstream ifsVel;
                 ifsVel.open( dirPath/ostrVel.str() );
                 // load data from archive
                 boost::archive::binary_iarchive iaVel( ifsVel );
@@ -365,7 +362,7 @@ Newmark<SpaceType>::init()
                 if( M_rankProcInNameOfFiles )
                     ostrAcc << procsufix;
                 DVLOG(2) << "[Newmark::init()] load file: " << ostrAcc.str() << "\n";
-                fs::ifstream ifsAcc;
+                std::ifstream ifsAcc;
                 ifsAcc.open( dirPath/ostrAcc.str() );
                 // load data from archive
                 boost::archive::binary_iarchive iaAcc( ifsAcc );
@@ -558,7 +555,7 @@ Newmark<SpaceType>::saveCurrent()
         ostrUnknown << M_name << "-unknown-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrUnknown << procsufix;
-        fs::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
+        std::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
         // save data in archive
         boost::archive::binary_oarchive oaUnknown( ofsUnknown );
         oaUnknown << *(M_previousUnknown[0]);
@@ -567,7 +564,7 @@ Newmark<SpaceType>::saveCurrent()
         ostrVel << M_name << "-velocity-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrVel << procsufix;
-        fs::ofstream ofsVel( M_path_save / ostrVel.str() );
+        std::ofstream ofsVel( M_path_save / ostrVel.str() );
         // save data in archive
         boost::archive::binary_oarchive oaVel( ofsVel );
         oaVel << *(M_previousVel[0]);
@@ -576,7 +573,7 @@ Newmark<SpaceType>::saveCurrent()
         ostrAcc << M_name << "-acceleration-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrAcc << procsufix;
-        fs::ofstream ofsAcc( M_path_save / ostrAcc.str() );
+        std::ofstream ofsAcc( M_path_save / ostrAcc.str() );
         // save data in archive
         boost::archive::binary_oarchive oaAcc( ofsAcc );
         oaAcc << *(M_previousAcc[0]);
@@ -605,7 +602,7 @@ Newmark<SpaceType>::loadCurrent()
         ostrUnknown << M_name << "-unknown-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrUnknown << procsufix;
-        fs::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
+        std::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
         // load data from archive
         boost::archive::binary_iarchive iaUnknown( ifsUnknown );
         iaUnknown >> *(M_previousUnknown[0]);
@@ -614,7 +611,7 @@ Newmark<SpaceType>::loadCurrent()
         ostrVel << M_name << "-velocity-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrVel << procsufix;
-        fs::ifstream ifsVel( M_path_save / ostrVel.str() );
+        std::ifstream ifsVel( M_path_save / ostrVel.str() );
         // load data from archive
         boost::archive::binary_iarchive iaVel( ifsVel );
         iaVel >> *(M_previousVel[0]);
@@ -623,7 +620,7 @@ Newmark<SpaceType>::loadCurrent()
         ostrAcc << M_name << "-acceleration-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrAcc << procsufix;
-        fs::ifstream ifsAcc( M_path_save / ostrAcc.str() );
+        std::ifstream ifsAcc( M_path_save / ostrAcc.str() );
         // load data from archive
         boost::archive::binary_iarchive iaAcc( ifsAcc );
         iaAcc >> *(M_previousAcc[0]);

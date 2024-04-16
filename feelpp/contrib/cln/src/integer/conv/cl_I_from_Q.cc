@@ -27,10 +27,10 @@ cl_private_thing cl_I_constructor_from_Q (sint64 wert)
 	// (dessen Länge  bn_minlength <= n <= ceiling(32/intDsize)  erfüllt)
 	if (wert >= 0) {
 		#define IF_LENGTH(i)  \
-		  if ((bn_minlength <= i) && (i*intDsize <= 64))	\
-		    if (!((i+1)*intDsize <= 64)				\
+		  if ((bn_minlength <= i) && (i*intDsize <= 64)		\
+		    && (!((i+1)*intDsize <= 64)				\
 		        || ((uint64)wert < ((uint64)1 << (i*intDsize-1))) \
-		       )
+		     ) )
 		IF_LENGTH(1)
 			bignum1:
 			{ var cl_heap_bignum* ptr = allocate_bignum(1);
@@ -116,10 +116,10 @@ cl_private_thing cl_I_constructor_from_Q (sint64 wert)
 		#undef IF_LENGTH
 	} else {
 		#define IF_LENGTH(i)  \
-		  if ((bn_minlength <= i) && (i*intDsize <= 64))	\
-		    if (!((i+1)*intDsize <= 64)				\
+		  if ((bn_minlength <= i) && (i*intDsize <= 64)		\
+		    && (!((i+1)*intDsize <= 64)				\
 		        || ((uint64)wert >= ((uint64)(-1) << (i*intDsize-1))) \
-		       )
+		     ) )
 		IF_LENGTH(1)
 			goto bignum1;
 		#if (intDsize <= 32)

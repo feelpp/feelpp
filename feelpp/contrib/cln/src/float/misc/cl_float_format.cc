@@ -16,8 +16,8 @@ float_format_t float_format (uintE n)
 // Methode:
 // Mindestens 1+n Dezimalstellen (inklusive Vorkommastelle)
 // bedeutet mindestens ceiling((1+n)*ln(10)/ln(2)) Binärstellen.
-// ln(10)/ln(2) = 3.321928095 = (binär) 11.0101001001101001111000010010111100110100...
-//                       = (binär) 100 - 0.1010110110010110000111101101000111001011...
+// ln(10)/ln(2) = 3.321928095 = (binär) 11.010100100110100111100001001011110011010...
+//                       = (binär) 100 - 0.101011011001011000011110110100001100101...
 // Durch diese Berechnungsmethode wird das Ergebnis sicher >= (1+n)*ln(10)/ln(2)
 // sein, evtl. um ein paar Bit zu groß aber nicht zu klein.
 	n = 1+n;
@@ -28,7 +28,7 @@ float_format_t float_format (uintE n)
 		- (n >> 15) - (n >> 20) - (n >> 21) - (n >> 22)
 		- (n >> 23) - (n >> 25) - (n >> 26) - (n >> 28)
 #if (intEsize>32)
-		- (n >> 32) - (n >> 33) - (n >> 34) - (n >> 35)
+		- (n >> 33) - (n >> 34) - (n >> 37) - (n >> 39)
 #endif
 		);
 }

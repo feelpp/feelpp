@@ -1,9 +1,9 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+# ##  CMakeLists.txt; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 17 Sep 2017
+# Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# Date: 17 Sep 2017
 #
-#  Copyright (C) 2017 Feel++ Consortium
+# Copyright (C) 2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,9 +22,9 @@
 #
 #
 
-if ( FEELPP_HAS_PYTHON )
+if(FEELPP_HAS_PYTHON AND Python3_Development_FOUND )
   set_directory_properties(PROPERTIES LABEL testpython )
   foreach(TEST python_basic python_embed python1)
-    feelpp_add_test( ${TEST} LINK_LIBRARIES ${PYTHON_LIBRARIES} )
+    feelpp_add_test( ${TEST} LINK_LIBRARIES ${Python3_LIBRARIES} )
   endforeach()
 endif()

@@ -17,18 +17,18 @@ namespace cln {
 void cl_dprint_unknown (cl_heap* pointer)
 {
 	fprint(cl_debugout, "<unknown @0x");
-	fprinthexadecimal(cl_debugout, (unsigned long) pointer);
+	fprinthexadecimal(cl_debugout, (uintptr_t) pointer);
 	fprint(cl_debugout, " refcount=");
 	fprintdecimal(cl_debugout, pointer->refcount);
 	fprint(cl_debugout, " type=");
-	fprinthexadecimal(cl_debugout, (unsigned long) pointer->type);
+	fprinthexadecimal(cl_debugout, (uintptr_t) pointer->type);
 	fprint(cl_debugout, ">");
 }
 
 static void cl_dprint_unknown_immediate (cl_heap* pointer)
 {
 	fprint(cl_debugout, "<unknown @0x");
-	fprinthexadecimal(cl_debugout, (unsigned long) pointer);
+	fprinthexadecimal(cl_debugout, (uintptr_t) pointer);
 	fprint(cl_debugout, ">");
 }
 

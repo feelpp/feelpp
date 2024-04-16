@@ -56,6 +56,7 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
+#include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 //#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvectiveterm.hpp>
@@ -104,194 +105,6 @@ auto toExpr( eigen_matrix_type<RowDim, RowCol> const& em )
 
 
 
-/**
- * @brief Interpolation Helper class for remeshing
- * @ingroup Fluid
- */
-class RemeshInterpolation
-{
-public:
-    using functionspace_base_ptrtype = std::shared_ptr<FunctionSpaceBase>;
-    using sparse_matrix_ptrtype = std::shared_ptr<MatrixSparse<double>>;
-    using vector_type = Vector<double>;
-    using vector_ptrtype = std::shared_ptr<vector_type>;
-    using datamap_ptrtype = datamap_ptr_t<>;
-private:
-    using key_functionspaces_type = std::pair<functionspace_base_ptrtype,functionspace_base_ptrtype>;
-    using key_datamaps_type = std::tuple<std::string,datamap_ptrtype,datamap_ptrtype>;
-    using matrix_interpolation_key_type = std::variant<key_functionspaces_type,key_datamaps_type>;
-public:
-
-    sparse_matrix_ptrtype matrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace ) const
-        {
-            auto itFind = M_matrixInterpolations.find( matrix_interpolation_key_type{std::make_pair(domainSpace, imageSpace)} );
-            if ( itFind != M_matrixInterpolations.end() )
-                return itFind->second;
-            return sparse_matrix_ptrtype{};
-        }
-
-    sparse_matrix_ptrtype matrixInterpolation( std::string const& name, datamap_ptrtype const& domainDataMap, datamap_ptrtype const& imageDataMap ) const
-        {
-            return this->matrixInterpolation( std::make_tuple( name,domainDataMap, imageDataMap ) );
-        }
-
-    sparse_matrix_ptrtype matrixInterpolation( std::string const& name ) const
-        {
-            auto itFind = std::find_if(M_matrixInterpolations.begin(),M_matrixInterpolations.end(),
-                                       [&name]( auto const& keyRelated ) {
-                                           if ( const key_datamaps_type* dmRelated = std::get_if<key_datamaps_type>(&keyRelated.first) )
-                                               return std::get<0>( *dmRelated ) == name;
-                                           return false;
-                                       });
-            if ( itFind != M_matrixInterpolations.end() )
-                return itFind->second;
-            return sparse_matrix_ptrtype{};
-        }
-
-    template <typename DomainSpaceType, typename ImageSpaceType, typename RangeType>
-    sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace, RangeType const& range )
-        {
-            auto opI = opInterpolation(_domainSpace=domainSpace,
-                                       _imageSpace=imageSpace,
-                                       //_range=elements(support( imageSpace ) )
-                                       _range=range );
-            sparse_matrix_ptrtype matInterp = opI->matPtr();
-            this->setMatrixInterpolation( domainSpace, imageSpace, matInterp );
-            return matInterp;
-        }
-    template <typename DomainSpaceType, typename ImageSpaceType>
-    sparse_matrix_ptrtype computeMatrixInterpolation( std::shared_ptr<DomainSpaceType> domainSpace, std::shared_ptr<ImageSpaceType> imageSpace )
-        {
-            return this->computeMatrixInterpolation( domainSpace,imageSpace,elements(support( imageSpace ) ) );
-        }
-
-    void setMatrixInterpolation( functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace, sparse_matrix_ptrtype mat )
-        {
-            M_matrixInterpolations[matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)}] = mat;
-        }
-
-    void setMatrixInterpolation( std::string const& name, datamap_ptrtype domainDataMap, datamap_ptrtype imageDataMap, sparse_matrix_ptrtype mat )
-        {
-            M_matrixInterpolations[matrix_interpolation_key_type{std::make_tuple(name,domainDataMap,imageDataMap)}] = mat;
-        }
-
-    template <typename DomainElementType, typename ImageElementType>
-    bool interpolate( DomainElementType const& u, ImageElementType & v ) const
-        {
-            auto domainSpace = unwrap_ptr( u ).functionSpace();
-            auto imageSpace = unwrap_ptr( v ).functionSpace();
-            auto matInterp = this->matrixInterpolation( domainSpace, imageSpace );
-            if ( !matInterp )
-                return false;
-            matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
-            return true;
-        }
-    bool interpolate( std::string const& name, vector_ptrtype const& u, vector_ptrtype & v ) const
-        {
-            auto matInterp = this->matrixInterpolation( name );
-            if ( !matInterp )
-                return false;
-            matInterp->multVector( unwrap_ptr( u ),  unwrap_ptr( v ) );
-            return true;
-        }
-
-    bool interpolateBlockVector( std::string const& name, vector_ptrtype oldVecMonolithic, vector_ptrtype newVecMonolithic,  BlocksBaseVector<double> const& bvs, bool close = true ) const
-        {
-            auto thebackend = Feel::backend();
-            auto itFindName = M_blockIndexToSpace.find( name );
-            if ( itFindName == M_blockIndexToSpace.end() )
-                return false;
-            auto const& blockIndexToSpace = itFindName->second;
-
-            auto const& old_dm = oldVecMonolithic->map();
-            auto const& new_dm = newVecMonolithic->map();
-            CHECK( old_dm.numberOfDofIdToContainerId() == new_dm.numberOfDofIdToContainerId() ) << "vectors not compatible";
-            for ( size_type tag=0 ; tag<old_dm.numberOfDofIdToContainerId() ; ++tag )
-            {
-                auto matInterp = this->matrixInterpolation( blockIndexToSpace, tag );
-                CHECK( matInterp ) << "missing block index or interpolation matrix";
-#if 0
-                auto oldBlockField = thebackend->newVector( matInterp->mapColPtr() );
-                auto newBlockField = thebackend->newVector( matInterp->mapRowPtr() );
-#else
-                auto [mapDomainPtr,mapImagePtr] = this->dataMap( blockIndexToSpace, tag );
-                auto oldBlockField = thebackend->newVector( mapDomainPtr );
-                auto newBlockField = thebackend->newVector( mapImagePtr );
-#endif
-
-                bvs.setSubVector( *oldBlockField, *oldVecMonolithic, tag );
-
-                matInterp->multVector( unwrap_ptr( oldBlockField ),  unwrap_ptr( newBlockField ) );
-
-                bvs.setVector( *newVecMonolithic, *newBlockField, tag, false );
-            }
-            if ( close )
-                newVecMonolithic->close();
-            return true;
-        }
-
-    //! registering a the link between a \blockUndex (of block vector called \nameOfBlockVector) and interpolation matrix (represented by \domainSpace and \nameOfBlockVector)
-    void registeringBlockIndex( std::string const& nameOfBlockVector, size_type blockIndex, functionspace_base_ptrtype domainSpace, functionspace_base_ptrtype imageSpace )
-        {
-            M_blockIndexToSpace[nameOfBlockVector].insert( { blockIndex, matrix_interpolation_key_type{std::make_pair(domainSpace,imageSpace)} } );
-        }
-    //! registering a the link between a \blockUndex (of block vector called \nameOfBlockVector) and interpolation matrix (called matInterpName)
-    void registeringBlockIndex( std::string const& nameOfBlockVector, size_type blockIndex, std::string const& matInterpName )
-        {
-            auto itFind = std::find_if(M_matrixInterpolations.begin(),M_matrixInterpolations.end(),
-                                       [&matInterpName]( auto const& keyRelated ) {
-                                           if ( const key_datamaps_type* dmRelated = std::get_if<key_datamaps_type>(&keyRelated.first) )
-                                               return std::get<0>( *dmRelated ) == matInterpName;
-                                           return false;
-                                       });
-            CHECK( itFind != M_matrixInterpolations.end() ) << "no matrix interpolation with name" << matInterpName;
-            auto const& datmapsRelated = std::get<key_datamaps_type>( itFind->first );
-            M_blockIndexToSpace[nameOfBlockVector].insert( { blockIndex, matrix_interpolation_key_type{std::make_tuple(matInterpName,std::get<1>(datmapsRelated),std::get<2>(datmapsRelated))} } );
-        }
-private :
-    sparse_matrix_ptrtype matrixInterpolation( key_datamaps_type const& datamaps ) const
-        {
-            auto itFind = M_matrixInterpolations.find( matrix_interpolation_key_type{datamaps} );
-            if ( itFind != M_matrixInterpolations.end() )
-                return itFind->second;
-            return sparse_matrix_ptrtype{};
-        }
-    sparse_matrix_ptrtype matrixInterpolation( std::map<size_type,matrix_interpolation_key_type> const& blockIndexToSpace, size_type blockIndex ) const
-        {
-            auto itFindBlockIndex = blockIndexToSpace.find( blockIndex );
-            if ( itFindBlockIndex == blockIndexToSpace.end() )
-                return sparse_matrix_ptrtype{};
-            auto const& keyRelated = itFindBlockIndex->second;
-            if ( const key_functionspaces_type* spacesRelated = std::get_if<key_functionspaces_type>(&keyRelated) )
-                return this->matrixInterpolation( spacesRelated->first, spacesRelated->second );
-            else if ( const key_datamaps_type* datamapsRelated = std::get_if<key_datamaps_type>(&keyRelated) )
-                return this->matrixInterpolation( *datamapsRelated );
-            return sparse_matrix_ptrtype{};
-        }
-
-    std::pair<datamap_ptr_t<>,datamap_ptr_t<>> dataMap( std::map<size_type,matrix_interpolation_key_type> const& blockIndexToSpace, size_type blockIndex ) const
-        {
-            auto itFindBlockIndex = blockIndexToSpace.find( blockIndex );
-            if ( itFindBlockIndex == blockIndexToSpace.end() )
-                return {};
-            auto const& keyRelated = itFindBlockIndex->second;
-            if ( const key_functionspaces_type* spacesRelated = std::get_if<key_functionspaces_type>(&keyRelated) )
-                return std::make_pair( spacesRelated->first->mapPtr(), spacesRelated->second->mapPtr() );
-            else if ( const key_datamaps_type* datamapsRelated = std::get_if<key_datamaps_type>(&keyRelated) )
-                return std::make_pair( std::get<1>( *datamapsRelated ), std::get<2>( *datamapsRelated ) );
-            return {};
-        }
-
-private:
-    std::map<matrix_interpolation_key_type, sparse_matrix_ptrtype > M_matrixInterpolations;
-    std::map<std::string,std::map<size_type,matrix_interpolation_key_type> > M_blockIndexToSpace;
-};
-
-
-
-
-
-
 namespace FeelModels
 {
 
@@ -320,21 +133,21 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // trace mesh
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
+    using trace_mesh_ptrtype = std::shared_ptr<trace_mesh_type>;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // basis fluid
     static const bool useMixedBasis = true;
-    static const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
-    static const uint16_type nOrderPressure = BasisPressureType::nOrder;
+    static inline const uint16_type nOrderVelocity = BasisVelocityType::nOrder;
+    static inline const uint16_type nOrderPressure = BasisPressureType::nOrder;
     typedef BasisVelocityType basis_fluid_u_type;
     typedef BasisPressureType basis_fluid_p_type;
     typedef Lagrange<0, Scalar,Continuous> basis_l_type;
@@ -450,8 +263,8 @@ public:
     typedef std::shared_ptr<bdf_trace_p0c_vectorial_type> bdf_trace_p0c_vectorial_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
-    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
+    typedef Range<mesh_type,MESH_FACES> range_faces_type;
     //___________________________________________________________________________________//
     // fluid inlet
     typedef typename basis_fluid_u_type::component_basis_type basis_fluidinlet_type;
@@ -1200,7 +1013,7 @@ public:
     };
 
     /**
-     * @brief Boudary Condition for a Body
+     * @brief Boundary Condition for a Body
      * @ingroup Fluid
      */
     class BodyBoundaryCondition
@@ -1382,7 +1195,7 @@ public:
         eigen_vector_type<nRealDim> fluidForces() const
             {
                 eigen_vector_type<nRealDim> res = eigen_vector_type<nRealDim>::Zero();
-                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(this->fieldTranslationalVelocityPtr())-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                res = M_body->mass()*(M_bdfTranslationalVelocity->polyDerivCoefficient(0)*idv(this->fieldTranslationalVelocityPtr())-idv(M_bdfTranslationalVelocity->polyDeriv())).evaluate(true);
                 if ( this->gravityForceEnabled() )
                     res -= this->gravityForceWithMass();
                 return res;
@@ -1395,7 +1208,7 @@ public:
         evaluate_torques_type fluidTorques() const
             {
                 // WARNING : is the case of  isInNBodyArticulated, this torque is related to nNBodyArticulated object (else we need compute momentOfInertia of this body)
-                evaluate_torques_type res = this->momentOfInertia_inertialFrame()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true,M_mesh->worldCommPtr());
+                evaluate_torques_type res = this->momentOfInertia_inertialFrame()*(this->bdfAngularVelocity()->polyDerivCoefficient(0)*idv(this->fieldAngularVelocityPtr())-idv(this->bdfAngularVelocity()->polyDeriv())).evaluate(true);
                 return res;
             }
         //---------------------------------------------------------------------------//
@@ -1914,7 +1727,7 @@ public:
     typedef std::shared_ptr<space_scalar_visu_ho_type> space_scalar_visu_ho_ptrtype;
     typedef typename space_scalar_visu_ho_type::element_type element_scalar_visu_ho_type;
     typedef std::shared_ptr<element_scalar_visu_ho_type> element_scalar_visu_ho_ptrtype;
-    // function space vectorial discontinuos
+    // function space vectorial discontinuous
     typedef FunctionSpace<mesh_visu_ho_type,bases<Lagrange<1, Vectorial,Discontinuous,PointSetFekete> > > space_vectorialdisc_visu_ho_type;
     typedef std::shared_ptr<space_vectorialdisc_visu_ho_type> space_vectorialdisc_visu_ho_ptrtype;
     typedef typename space_vectorialdisc_visu_ho_type::element_type element_vectorialdisc_visu_ho_type;
@@ -1997,7 +1810,7 @@ private :
 public :
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
-    void applyRemesh( mesh_ptrtype const& newMesh );
+    void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
 
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesSourceAdded();
@@ -2011,7 +1824,7 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
     std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > rangeDistributionByMaterialName() const { return M_rangeDistributionByMaterialName; }
 
      // mesh motion
@@ -2286,7 +2099,7 @@ public :
             auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            auto sePhysics = this->symbolsExprPhysicsFromCurrentType();
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );//this->symbolsExprPhysicsFromCurrentType();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
@@ -2353,11 +2166,11 @@ public :
             auto const& p = this->fieldPressure();
 
             typedef decltype(curlv(u)) _expr_vorticity_type;
-            std::map<std::string,std::vector<std::tuple< _expr_vorticity_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVorticity;
+            std::map<std::string,std::vector<std::tuple< _expr_vorticity_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprVorticity;
             mapExprVorticity[prefixvm(prefix,"vorticity")].push_back( std::make_tuple( curlv(u), M_rangeMeshElements, "element" ) );
 
             using _expr_meshdisp_type = std::decay_t<decltype(idv(this->meshMotionTool()->displacement()))>;
-            std::map<std::string,std::vector<std::tuple< _expr_meshdisp_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprMeshDisp;
+            std::map<std::string,std::vector<std::tuple< _expr_meshdisp_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprMeshDisp;
             if ( this->hasMeshMotion() )
                 mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), elements(support(this->meshMotionTool()->displacement()->functionSpace())), "nodal" ) );
 
@@ -2365,11 +2178,11 @@ public :
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
 
             using _expr_normalstresstensor_type = std::decay_t<decltype(sigmaExpr*N())>;
-            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, faces_reference_wrapper_t<mesh_type>, std::string > > > mapExprNormalStressTensor;
+            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, Range<mesh_type,MESH_FACES>, std::string > > > mapExprNormalStressTensor;
             mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( sigmaExpr*N(), rangeTrace, "element" ) );
 
             auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
-            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , faces_reference_wrapper_t<mesh_type>, std::string > > > mapExprWallShearStress;
+            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , Range<mesh_type,MESH_FACES>, std::string > > > mapExprWallShearStress;
             mapExprWallShearStress[prefixvm(prefix,"trace.wall-shear-stress")].push_back( std::make_tuple( wssExpr, rangeTrace, "element" ) );
 
             return hana::make_tuple( mapExprVorticity, mapExprMeshDisp, mapExprNormalStressTensor, mapExprWallShearStress );
@@ -2698,7 +2511,7 @@ private :
 
     //----------------------------------------------------
     // mesh
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
     trace_mesh_ptrtype M_meshTrace;
     // fluid space and solution
@@ -2732,7 +2545,7 @@ private :
     //---------------------------------------------------
     std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > M_rangeDistributionByMaterialName;
     // range of mesh faces by material : (type -> ( matName -> ( faces range ) )
-    //std::map<std::string,std::map<std::string,faces_reference_wrapper_t<mesh_type>>> M_rangeMeshFacesByMaterial;
+    //std::map<std::string,std::map<std::string,Range<mesh_type,MESH_FACES>>> M_rangeMeshFacesByMaterial;
     //---------------------------------------------------
     space_vectorial_PN_ptrtype M_XhSourceAdded;
     element_vectorial_PN_ptrtype M_SourceAdded;
@@ -2911,10 +2724,11 @@ namespace FluidToolbox_detail
 {
 
 template <typename MeshType,typename RangeType>
-faces_reference_wrapper_t<MeshType>
+Range<MeshType,MESH_FACES>
 removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const& r )
 {
-    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+    Range<MeshType,MESH_FACES> myelts(ms);
+
      if ( !ms->isPartialSupport() )
         return r;
     for ( auto const& faceWrap : r )
@@ -2935,13 +2749,10 @@ removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const
             }
 
         }
-        myelts->push_back( boost::cref( theface ) );
+        myelts.push_back( theface );
     }
-    myelts->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+    myelts.shrink_to_fit();
+    return myelts;
 }
 }
 
@@ -3148,7 +2959,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     }
     else
     {
-        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity beacause canUpdateVelocity and canUpdateDisplacement are false";
+        CHECK( elasticBehavior.canUpdateDisplacement() ) << "we can't update the elastic velocity because canUpdateVelocity and canUpdateDisplacement are false";
         if constexpr ( ElasticBehaviorType::hasDisplacement )
         {
             auto dn = spaceDisp->element();
@@ -3178,7 +2989,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
     }
     else
     {
-        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement beacause canUpdateVelocity and canUpdateDisplacement are false";
+        CHECK( elasticBehavior.canUpdateVelocity() ) << "we can't update the elastic displacement because canUpdateVelocity and canUpdateDisplacement are false";
         if constexpr ( ElasticBehaviorType::hasVelocity )
         {
 #if 1

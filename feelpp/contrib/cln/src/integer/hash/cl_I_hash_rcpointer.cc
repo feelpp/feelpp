@@ -16,11 +16,7 @@ namespace cln {
 
 static void cl_hashtable_from_integer_to_rcpointer_destructor (cl_heap* pointer)
 {
-#if (defined(__mips__) || defined(__mips64__)) && !defined(__GNUC__) // workaround SGI CC bug
-	(*(cl_heap_hashtable_from_integer_to_rcpointer*)pointer).~cl_heap_hashtable_1();
-#else
 	(*(cl_heap_hashtable_from_integer_to_rcpointer*)pointer).~cl_heap_hashtable_from_integer_to_rcpointer();
-#endif
 }
 
 cl_class cl_class_hashtable_from_integer_to_rcpointer = {

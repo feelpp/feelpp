@@ -21,7 +21,7 @@ static const _cl_MI std_canonhom (cl_heap_modint_ring* R, const cl_I& x)
 
 static const cl_I std_retract (cl_heap_modint_ring* R, const _cl_MI& x)
 {
-	unused R;
+	cl_unused R;
 	return x.rep;
 }
 
@@ -37,7 +37,7 @@ static const _cl_MI std_zero (cl_heap_modint_ring* R)
 
 static bool std_zerop (cl_heap_modint_ring* R, const _cl_MI& x)
 {
-	unused R;
+	cl_unused R;
 	return zerop(x.rep);
 }
 

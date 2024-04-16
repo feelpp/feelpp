@@ -61,7 +61,6 @@ uintL isqrt (uintL x)
      }}
 }
 
-#ifdef HAVE_LONGLONG
 uintL isqrt (uintQ x)
 {
   // As isqrt (uintL) above, but with 64-bit numbers.
@@ -94,6 +93,5 @@ uintL isqrt (uintQ x)
          }
      }}
 }
-#endif
 
 }  // namespace cln

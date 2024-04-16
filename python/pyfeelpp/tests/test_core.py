@@ -1,21 +1,21 @@
 from mpi4py import MPI
-import feelpp 
+import feelpp.core as fppc 
 import sys
 import pytest
 import os,shutil
 from pathlib import Path
 import subprocess
 
-config_cases=[  ("pyfeelpp-tests/core/test_config",feelpp.Location.standard,False),
-                ("pyfeelpp-tests/core/test_config",feelpp.Location.relative,True),
-                #("pyfeelpp-tests/core/test_config",feelpp.Location.git,True),
-                ("/tmp/toto/pyfeelpp-tests/core/test_config",feelpp.Location.absolute,True),
+config_cases=[  ("pyfeelpp-tests/core/test_config",fppc.Location.standard,False),
+                ("pyfeelpp-tests/core/test_config",fppc.Location.relative,True),
+                #("pyfeelpp-tests/core/test_config",fppc.Location.git,True),
+                ("/tmp/toto/pyfeelpp-tests/core/test_config",fppc.Location.absolute,True),
             ]
 
 @pytest.mark.parametrize("dir,location,rm", config_cases)
 def test_config(init_feelpp,dir,location,rm):
     e=init_feelpp
-    if location == feelpp.Location.git :
+    if location == fppc.Location.git :
         if e.isMasterRank():
             shutil.rmtree("/tmp/test_config")
             os.mkdir("/tmp/test_config")
@@ -26,39 +26,39 @@ def test_config(init_feelpp,dir,location,rm):
         os.chdir("/tmp/test_config/tutu")
     
     e.changeRepository(directory=dir,location=location)
-    thedir=Path(feelpp.Environment.rootRepository()) / Path(dir)
+    thedir=Path(fppc.Environment.rootRepository()) / Path(dir)
     assert thedir.is_dir()
     assert (Path(os.getcwd())/Path("logs")).is_dir()
     e.worldComm().globalComm().Barrier()
     if rm and e.isMasterRank():
-        os.chdir(Path(feelpp.Environment.rootRepository()).parent)
-        shutil.rmtree(feelpp.Environment.rootRepository())
+        os.chdir(Path(fppc.Environment.rootRepository()).parent)
+        shutil.rmtree(fppc.Environment.rootRepository())
 
 
 def test_core(init_feelpp):
-    feelpp.Environment.changeRepository(directory="pyfeelpp-tests/core/test_core")
-    if feelpp.Environment.isMasterRank():
-        print("pid:",feelpp.Environment.worldComm().localRank() )
-        print("isMasterRank:", feelpp.Environment.isMasterRank())
+    fppc.Environment.changeRepository(directory="pyfeelpp-tests/core/test_core")
+    if fppc.Environment.isMasterRank():
+        print("pid:",fppc.Environment.worldComm().localRank() )
+        print("isMasterRank:", fppc.Environment.isMasterRank())
 
 
 def test_mpi_bcast(init_feelpp):
-    feelpp.Environment.changeRepository(directory="pyfeelpp-tests/core/test_core_bcast")
+    fppc.Environment.changeRepository(directory="pyfeelpp-tests/core/test_core_bcast")
     
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         data={"key":"test"}
     else:
         data = None
-    data=feelpp.Environment.worldComm().localComm().bcast(data,root=0)
+    data=fppc.Environment.worldComm().localComm().bcast(data,root=0)
     assert(data["key"] == "test")
 
 def test_mpi_numpy(init_feelpp):
     import numpy as np
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         data = np.arange(100, dtype='i')
     else:
         data = np.empty(100, dtype='i')
-    feelpp.Environment.worldComm().to_comm().Bcast(data, root=0)
+    fppc.Environment.worldComm().to_comm().Bcast(data, root=0)
     for i in range(100):
         assert(data[i] == i)
 
@@ -74,14 +74,14 @@ def test_worldcomm_split(init_feelpp):
 
 
 #def test_config_local(init_feelpp_config_local):
-#    feelpp.Environment.changeRepository(
+#    fppc.Environment.changeRepository(
 #        directory="pyfeelpp-tests/core/test_config_local")
 
 def test_config_parser(init_feelpp):
     e=init_feelpp
-    feelpp.Environment.changeRepository(
+    fppc.Environment.changeRepository(
         directory="pyfeelpp-tests/core/test_config_parser")
-    config = feelpp.readcfg(os.path.dirname(__file__)+'/test.cfg')
+    config = fppc.readCfg(os.path.dirname(__file__)+'/test.cfg')
     print("sections: {}".format(config.sections()))
     d = config['feelpp']['directory']
     #assert(d == 'toolboxes/fluid/TurekHron/cfd1/P2P1G1')

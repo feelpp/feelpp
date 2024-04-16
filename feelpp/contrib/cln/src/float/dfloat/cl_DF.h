@@ -121,7 +121,7 @@ inline cl_heap_dfloat* allocate_dfloat (uint32 semhi, uint32 mlo)
         { zero_statement } /* e=0 -> Zahl 0.0 */			\
         else								\
         { exp_zuweisung (sintL)(uexp - DF_exp_mid); /* Exponent */	\
-          unused (sign_zuweisung ((sint64)_x >> 63)); /* Vorzeichen */	\
+          cl_unused (sign_zuweisung ((sint64)_x >> 63)); /* Vorzeichen */	\
           mant_zuweisung (bit(DF_mant_len) | (_x & (bit(DF_mant_len)-1))); \
     }   }
 #else
@@ -142,7 +142,7 @@ inline cl_heap_dfloat* allocate_dfloat (uint32 semhi, uint32 mlo)
         { zero_statement } /* e=0 -> Zahl 0.0 */			\
         else								\
         { exp_zuweisung (sintL)(uexp - DF_exp_mid); /* Exponent */	\
-          unused (sign_zuweisung sign_of((sint32)(semhi))); /* Vorzeichen */\
+          cl_unused (sign_zuweisung sign_of((sint32)(semhi))); /* Vorzeichen */\
           manthi_zuweisung (bit(DF_mant_len-32) | (semhi & (bit(DF_mant_len-32)-1))); \
           mantlo_zuweisung mlo;						\
     }   }

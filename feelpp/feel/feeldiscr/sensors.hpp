@@ -120,10 +120,15 @@ public:
     using geoelement_type = typename gmc_type::element_type;
     using fe_type = typename space_type::fe_type;
 
-    SensorPointwise() = default;
-    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
+    SensorPointwise() :
+        super_type(),
+        M_position(),
+        scale_expr_( "1" )
+    {}
+    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise", std::string const& scale = "1"):
         super_type( space, n, "pointwise" ),
-        M_position(p)
+        M_position(p),
+        scale_expr_( scale.empty() ? "1" : scale )
     {
         this->init();
     }
@@ -143,10 +148,22 @@ public:
         geospacectx->updateForUse();
 
         auto u = space->element();
-        auto expr = id(u);
-        geospacectx->template updateGmcContext<std::decay_t<decltype(expr)>::context>();
+        auto scaling = [this]() {
+            if constexpr ( space_type::is_scalar )
+                return expr(this->scale_expr_);
+            else
+                return expr<dimension_v<mesh_type>,1>( this->scale_expr_ );
+        };
+        auto dirac_expr_fn = [this,&u,&scaling](){
+            if constexpr ( space_type::is_scalar )
+                return scaling()*id(u);
+            else
+                return trans(scaling())*id(u);
+        };
+        auto dirac_expr = dirac_expr_fn();
+        geospacectx->template updateGmcContext<std::decay_t<decltype(dirac_expr)>::context>();
 
-        using expr_type = std::decay_t<decltype(expr)>;
+        using expr_type = std::decay_t<decltype(dirac_expr)>;
         using expr_basis_t = typename expr_type::test_basis;
         static constexpr size_type expr_context = expr_type::context;
         // fe context
@@ -162,14 +179,14 @@ public:
             auto fec = std::make_shared<fecontext_type>( space->fe(), gmc, fepc );
             auto mapgmc = Feel::vf::mapgmc( gmc );
             auto mapfec = Feel::vf::mapfec( fec );
-            auto tExpr = expr.evaluator(mapgmc, mapfec);
+            auto tExpr = dirac_expr.evaluator(mapgmc, mapfec);
 
-            // TODO check if next lines are really usefull?
+            // TODO check if next lines are really useful?
             fec->update( gmc );
             tExpr.update( mapgmc, mapfec );
 
-            //Eigen::MatrixXd M_IhLoc = Vh->fe()->localInterpolants(1);
-            Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof,gmc->nPoints());
+            Eigen::MatrixXd IhLoc = space->fe()->localInterpolants(curCtxIdToPointIds.size(),1);
+            //Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof*dimension_v<mesh_type>,gmc->nPoints());
             space->fe()->interpolateBasisFunction( tExpr, IhLoc );
 
 
@@ -207,6 +224,7 @@ private:
 
 
     node_t M_position;
+    std::string scale_expr_;
 };
 
 
@@ -249,9 +267,10 @@ public:
     {
         auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
+        auto order = this->space()->fe()->nOrder;
         auto n = integrate(_range=elements(support(this->space())), _expr=phi).evaluate()(0,0);
         form1( _test=this->space(), _vector=this->containerPtr() ) =
-            integrate(_range=elements(support(this->space())), _expr=id(v)*phi/n );
+            integrate(_range=elements(support(this->space())), _expr=id(v)*phi/n, _quad=2*order );
         this->close();
     }
 
@@ -389,7 +408,11 @@ public:
                 auto coords = sensor["coord"].template get<std::vector<double>>();
                 for( int i = 0; i < space_type::nDim; ++i )
                     n(i) = coords[i];
-                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name);
+                std::string scale_expr = "1";
+                if ( sensor.contains("scale") )
+                    scale_expr = sensor["scale"].template get<std::string>();
+
+                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name, scale_expr);
                 this->insert(value_type(name, s));
             }
             else if( type == "gaussian" )

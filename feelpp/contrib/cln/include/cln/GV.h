@@ -38,6 +38,12 @@ public:
 	const cl_GV_constindex<T> operator[] (unsigned int index) const;
 	const cl_GV_index<T> operator[] (int index);
 	const cl_GV_constindex<T> operator[] (int index) const;
+	#if long_bitsize < pointer_bitsize
+	const cl_GV_index<T> operator[] (unsigned long long index);
+	const cl_GV_constindex<T> operator[] (unsigned long long index) const;
+	const cl_GV_index<T> operator[] (long long index);
+	const cl_GV_constindex<T> operator[] (long long index) const;
+	#endif
 public: /* ugh */
 	// Constructor.
 	cl_GV_inner (std::size_t l, cl_GV_vectorops<T>* ops) : len (l), vectorops (ops) {}
@@ -163,6 +169,34 @@ inline const cl_GV_constindex<T> cl_GV_inner<T>::operator[] (int index) const
 	return operator[]((unsigned long)index);
 }
 
+#if long_bitsize < pointer_bitsize
+
+template <class T>
+inline const cl_GV_index<T> cl_GV_inner<T>::operator[] (unsigned long long index)
+{
+	return cl_GV_index<T>(this,index);
+}
+
+template <class T>
+inline const cl_GV_constindex<T> cl_GV_inner<T>::operator[] (unsigned long long index) const
+{
+	return cl_GV_constindex<T>(this,index);
+}
+
+template <class T>
+inline const cl_GV_index<T> cl_GV_inner<T>::operator[] (long long index)
+{
+	return operator[]((unsigned long)index);
+}
+
+template <class T>
+inline const cl_GV_constindex<T> cl_GV_inner<T>::operator[] (long long index) const
+{
+	return operator[]((unsigned long)index);
+}
+
+#endif
+
 template <class T>
 inline cl_GV_inner<T>::~cl_GV_inner ()
 {
@@ -245,6 +279,20 @@ public:
 	{ return operator[]((unsigned long)index); }
 	const cl_GV_index<T> operator[] (int index)
 	{ return operator[]((unsigned long)index); }
+	#if long_bitsize < pointer_bitsize
+	const cl_GV_constindex<T> operator[] (unsigned long long index) const
+	{
+		return ((const cl_heap_GV<T> *) this->pointer)->v[index];
+	}
+	const cl_GV_index<T> operator[] (unsigned long long index)
+	{
+		return ((cl_heap_GV<T> *) this->pointer)->v[index];
+	}
+	const cl_GV_constindex<T> operator[] (long long index) const
+	{ return operator[]((unsigned long long)index); }
+	const cl_GV_index<T> operator[] (long long index)
+	{ return operator[]((unsigned long long)index); }
+	#endif
 	// Copy constructor.
 	cl_GV (const cl_GV&);
 	// Assignment operator.

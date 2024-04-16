@@ -17,13 +17,13 @@ namespace cln {
 
 static void N_fprint (cl_heap_ring* R, std::ostream& stream, const _cl_ring_element& x)
 {
-	unused R;
+	cl_unused R;
 	fprint(stream,The(cl_N)(x));
 }
 
 static bool N_equal (cl_heap_ring* R, const _cl_ring_element& x, const _cl_ring_element& y)
 {
-	unused R;
+	cl_unused R;
 	return equal(The(cl_N)(x),The(cl_N)(y));
 }
 
@@ -34,7 +34,7 @@ static const _cl_ring_element N_zero (cl_heap_ring* R)
 
 static bool N_zerop (cl_heap_ring* R, const _cl_ring_element& x)
 {
-	unused R;
+	cl_unused R;
 	// Here we return true only if x is the *exact* zero. Because we
 	// don't want the degree of polynomials to depend on rounding errors.
 	// For all ring theoretic purposes, we treat 0.0, 0+0.0i etc. as if
@@ -138,7 +138,7 @@ static void cl_complex_ring_destructor (cl_heap* pointer)
 
 static void cl_complex_ring_dprint (cl_heap* pointer)
 {
-	unused pointer;
+	cl_unused pointer;
 	fprint(cl_debugout, "(cl_complex_ring) cl_C_ring");
 }
 

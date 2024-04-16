@@ -63,8 +63,10 @@ void printToolboxApplication( std::string const& toolboxName, worldcomm_t const&
 
 struct ModelBaseCommandLineOptions
 {
+    using init_function_type = std::function<void(po::options_description const&,po::variables_map &)>;
     ModelBaseCommandLineOptions() = default;
-    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options, init_function_type func={} );
+    explicit ModelBaseCommandLineOptions( po::variables_map const& vm );
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
 
@@ -82,7 +84,7 @@ private :
 /**
  * @brief Repository for Models
  * @ingroup ModelCore
- * 
+ *
  */
 struct ModelBaseRepository
 {
@@ -103,7 +105,7 @@ private :
 /**
  * @brief File upload helper class
  * @ingroup ModelCore
- * 
+ *
  */
 struct ModelBaseUpload
 {
@@ -122,20 +124,20 @@ struct ModelBaseUpload
     void print() const;
 private :
     void uploadPreProcess( std::string const& dataPath,
-                           std::vector<std::tuple<std::string,std::time_t,std::string>> & resNewFile,
-                           std::vector<std::tuple<std::string,std::time_t,std::string,std::string>> & resReplaceFile ) const;
+                           std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string>> & resNewFile,
+                           std::vector<std::tuple<std::string,std::filesystem::file_time_type,std::string,std::string>> & resReplaceFile ) const;
 
 private :
     std::shared_ptr<RemoteData> M_remoteData;
     std::string M_basePath;
     // [ folder path -> ( folder id , [ filename -> file id, last write time ] ) ]
-    mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::time_t>>>> M_treeDataStructure;
+    mutable std::map<std::string,std::pair<std::string,std::map<std::string,std::pair<std::string,std::filesystem::file_time_type>>>> M_treeDataStructure;
 };
 
 /**
  * @brief Model base class
  * @ingroup ModelCore
- * 
+ *
  */
 class ModelBase : public JournalWatcher,
                   public std::enable_shared_from_this<ModelBase>
@@ -239,14 +241,14 @@ public :
 
     /**
      * @brief Set the Model Properties object from a filename
-     * 
+     *
      * @param filename file name
      */
     void setModelProperties( std::string const& filename );
 
     /**
      * @brief Set the Model Properties object from a json struct
-     * the json may come from python 
+     * the json may come from python
      * @param j json data structure
      */
     void setModelProperties( nl::json const& j );
@@ -258,6 +260,15 @@ public :
     bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
     void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
 
+    auto symbolsExprParameter() const
+        {
+            if ( this->hasModelProperties() )
+                return this->modelProperties().parameters().symbolsExpr();
+            else
+                return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
+        }
+
+
 private :
     // worldcomm
     worldcomm_ptr_t M_worldComm;
@@ -266,7 +277,7 @@ private :
     // prefix
     std::string M_prefix;
     std::string M_subPrefix;
-    // keyword (can be usefull in json for example)
+    // keyword (can be useful in json for example)
     std::string M_keyword;
     // directory
     ModelBaseRepository M_modelRepository;

@@ -2,7 +2,7 @@
 // little-endian modifications (c) Copyright 1996 B. Haible
 // external routines for arilev1.d
 // Processor: ARM in APCS mode
-// Assembler-Syntax: ObjAsm under RISC OS, GAS otherwise
+// Assembler-Syntax: GAS
 // Assumptions: intCsize=32, intDsize=32.
 // Parameter passing conventions: APCS means that registers a1-a4 and ip
 //   do not have to be preserved across function calls.
@@ -10,48 +10,9 @@
 //   to a branch.
 
 
-#ifdef __riscos
-
-// ObjAsm syntax
-
-a1      RN      0
-a2      RN      1
-a3      RN      2
-a4      RN      3
-v1      RN      4
-v2      RN      5
-v3      RN      6
-v4      RN      7
-v5      RN      8
-v6      RN      9
-sl      RN      10
-fp      RN      11
-ip      RN      12
-sp      RN      13
-lr      RN      14
-pc      RN      15
-
-f0      FN      0
-f1      FN      1
-f2      FN      2
-f3      FN      3
-f4      FN      4
-f5      FN      5
-f6      FN      6
-f7      FN      7
-
-#define C(x) _##x
-#define EXPORT(x) EXPORT x
-#define DECLARE_FUNCTION(x)
-#define GLABEL(x) _##x
-#define LABEL(x) _##x
-
-        AREA    |C$$code|,CODE,READONLY
-
-#else
-
 // GAS syntax
 
+#if 0 /* Avoid warnings "Warning: ignoring attempt to redefine built-in register" */
 a1      .req    r0
 a2      .req    r1
 a3      .req    r2
@@ -69,79 +30,27 @@ ip      .req    r12
 sp      .req    r13
 lr      .req    r14
 pc      .req    r15
-
-#define C(x) _##x
-#define EXPORT(x) .global _##x
-#if defined(__NetBSD__)
-#define DECLARE_FUNCTION(x) .type _##x,%function
-#else
-#define DECLARE_FUNCTION(x)
 #endif
-#define GLABEL(x) _##x##:
-#define LABEL(x) x##:
-#define RRX rrx
+
+#ifdef AS_UNDERSCORE
+  #define C(x) _##x
+  #define EXPORT(x) .global _##x
+  #define DECLARE_FUNCTION(x) .type _##x,%function
+  #define GLABEL(x) _##x##:
+  #define LABEL(x) x##:
+#else
+  #define C(x) x
+  #define EXPORT(x) .global x
+  #define DECLARE_FUNCTION(x) .type x,%function
+  #define GLABEL(x) x##:
+  #define LABEL(x) x##:
+#endif
 #define END
 
-#endif
 
-
-#if defined(__arm7m__) || defined(__arm8__) || defined(__arm9__) || defined(__strongarm__)
-  // ARM7M and later have 32x32 -> 64 multiplies which execute in 2-4 clocks.
+#if __ARM_ARCH >= 7
+  // ARM7 and later have 32x32 -> 64 multiplies which execute in 2-4 clocks.
   #define HAVE_umull
-#endif
-
-
-#if defined(__GNUC__) && 0
-  // With GNU C, we would like to pass the second return value in a2, don't
-  // need a global variable. Unfortunately, the current Acorn gcc crashes if
-  // we declare an appropriate local register variable with __asm__.
-  // It would be possible to declare the functions as returning a 64-bit
-  // result, but given the quality of gcc code dealing with 64-bit entities
-  // and the subtleties of 64-bit returns values (passed in register or in
-  // memory?) we now let it be.
-#else
-  // Use three global variables.
-  #define MULU32_HIGH
-  #define DIVU_16_REST
-  #define DIVU_32_REST
-#endif
-
-#ifdef __riscos
-
-#ifdef MULU32_HIGH
-ptr_mulu32_high
-        IMPORT  mulu32_high
-        DCD     mulu32_high
-#endif
-#ifdef DIVU_16_REST
-ptr_divu_16_rest
-        IMPORT  divu_16_rest
-        DCD     divu_16_rest
-#endif
-#ifdef DIVU_32_REST
-ptr_divu_32_rest
-        IMPORT  divu_32_rest
-        DCD     divu_32_rest
-#endif
-
-#else
-
-#ifdef MULU32_HIGH
-ptr_mulu32_high:
-        .word   _mulu32_high
-        .align  0
-#endif
-#ifdef DIVU_16_REST
-ptr_divu_16_rest:
-        .word   _divu_16_rest
-        .align  0
-#endif
-#ifdef DIVU_32_REST
-ptr_divu_32_rest:
-        .word   _divu_32_rest
-        .align  0
-#endif
-
 #endif
 
 
@@ -152,7 +61,6 @@ ptr_divu_32_rest:
 //       exit
 //               a1 = low32(x*y)
 //               a2 = high32(x*y)
-//               mulu32_high = high32(x*y)
 //               a3,a4,ip destroyed
         EXPORT(mulu32_)
         DECLARE_FUNCTION(mulu32_)
@@ -175,11 +83,7 @@ GLABEL(mulu32_)
         ADDS    a1,a4,a2,LSL #16        // x is now bottom 32 bits of result
         ADC     a2,a3,a2,LSR #16        // hi is top 32 bits
 #endif
-#ifdef MULU32_HIGH
-        LDR     a3,[pc,#ptr_mulu32_high-.-8]
-        STR     a2,[a3,#0]
-#endif
-        MOVS    pc,lr
+        BX      lr
 
 // extern uint16 divu_3216_1616_ (uint32 x, uint16 y);
 //       entry
@@ -188,7 +92,6 @@ GLABEL(mulu32_)
 //       exit
 //               a1 = q = floor(x/y)
 //               a2 = r = x-q*y
-//               divu_16_rest = r = x-q*y
 //               a3 destroyed
         EXPORT(divu_3216_1616_)
         DECLARE_FUNCTION(divu_3216_1616_)
@@ -234,115 +137,7 @@ GLABEL(divu_3216_1616_)
         ADC     a1,a1,a1                // move last bit of quotient in
         MOV     a1,a1,LSL#16            // AND out top 16 bits by shifting up
         MOV     a1,a1,LSR#16            // and back down again
-#ifdef DIVU_16_REST
-        LDR     a3,[pc,#ptr_divu_16_rest-.-8]   // save rest so can be picked up later
-        STR     a2,[a3,#0]              // the result is 16 bits
-#endif
-        MOVS    pc, lr
-
-// extern uint32 divu_6432_3232_ (uint32 xhi, uint32 xlo, uint32 y); // -> Quotient q
-// extern uint32 divu_32_rest;                                       // -> Rest r
-//       see cl_low_div.cc for algorithm
-//       entry
-//               a1 = xhi (dividend)
-//               a2 = xlo (dividend)
-//               a3 = y (divisor)
-//       exit
-//               a1 = 32 bit quotient
-//               a2 = 32 bit remainder
-//               a3, a4 destroyed
-        EXPORT(divu_6432_3232_)
-        DECLARE_FUNCTION(divu_6432_3232_)
-GLABEL(divu_6432_3232_)
-        STMFD   sp!, {v1,v2,v3,v4,v5,v6,lr}
-        MOV     v2, a2                  // = xlo
-        MOV     v1, a3                  // = y
-        CMP     a3,#0x10000             // y <= (uint32)(bit(16)-1)
-        BCS     divu_6432_3232_l1
-        MOV     a2, v2, LSR #16
-        ORR     a1, a2, a1, ASL #16     // = highlow32(low16(xhi),high16(xlo))
-        MOV     a2, v1
-        BL      C(divu_3216_1616_)
-        MOV     v3, a1                  // = q1
-        MOV     a1, v2, ASL #16
-        MOV     a1, a1, LSR #16
-        ORR     a1, a1, a2, ASL #16     // = highlow32(r1,low16(xlo))
-        MOV     a2, v1
-        BL      C(divu_3216_1616_)
-        ORR     a1, a1, v3, ASL #16     // = highlow32(q1,q0)
-#ifdef DIVU_32_REST
-        LDR     a4,[pc,#ptr_divu_32_rest-.-8]
-        STR     a2,[a4,#0]              // divu_32_rest = remainder
-#endif
-        LDMFD   sp!, {v1,v2,v3,v4,v5,v6,pc}^
-
-LABEL(divu_6432_3232_l1)
-        MOV     v3, #0                  // s = 0
-        MOVS    a4, v1, LSR #16         // while ((sint32)y >= 0)
-        ADDEQ   v3, v3, #16             //   { y = y<<1; s++; }
-        MOVEQ   v1, v1, ASL #16
-        MOVS    a4, v1, LSR #24
-        ADDEQ   v3, v3, #8
-        MOVEQ   v1, v1, ASL #8
-        MOVS    a4, v1, LSR #28
-        ADDEQ   v3, v3, #4
-        MOVEQ   v1, v1, ASL #4
-        MOVS    a4, v1, LSR #30
-        ADDEQ   v3, v3, #2
-        MOVEQ   v1, v1, ASL #2
-        MOVS    a4, v1, LSR #31
-        ADDEQ   v3, v3, #1
-        MOVEQ   v1, v1, ASL #1
-
-        CMPS    v3, #0
-        MOVNE   a2, a1, ASL v3          // if (!(s==0))
-        RSBNE   a1, v3, #32             //   { xhi = (xhi << s)
-        ORRNE   a1, a2, v2, LSR a1      //         | (xlo >> (32-s));
-        MOVNE   v2, v2, ASL v3          //     xlo = xlo << s; }
-        ADD     a2, v1, #0x10000        // y1_1 = high16(y)+1
-        MOVS    v5, a2, LSR #16         // if (y1_1 = 0)
-        MOVEQ   v4, a1, ASL #16         // r16 = low16(xhi) * 2^16
-        MOVEQ   a1, a1, LSR #16         // q1 = high16(xhi)
-        MOVNE   a2, v5
-        BLNE    C(divu_3216_1616_)      // divu_3216_1616(xhi,y1_1, q1=,r16=)
-        MOVNE   v4, a2, ASL #16         // r16 = r16 * 2^16
-        ORR     v4, v4, v2, LSR #16     // r = highlow32(r16,high16(xlo))
-        MOV     a4, v1, ASL #16         // tmp = mulu16(low16(y),q1)
-        MOV     a4, a4, LSR #16
-        MUL     a3, a4, a1
-        RSB     a3, a3, a1, ASL #16     // r2 = highlow32_0(q1) - tmp
-        MOV     v6, a1                  // = q1
-        ADDS    a1, v4, a3              // r += r2
-        ADDCS   v6, v6, #1              // if ( r < r2 ) { q1 += 1
-        SUBCS   a1, a1, v1              //                 r -= y }
-        CMP     a1, v1                  // if (r >= y)
-        ADDCS   v6, v6, #1              //     { q1 += 1
-        SUBCS   a1, a1, v1              //       r -= y }
-        CMP     v5, #0                  // if (y1_1 = 0)
-        MOVEQ   v4, a1, ASL #16         //    { r16 = low16(r) * 2^16
-        MOVEQ   a1, a1, LSR #16         //      q0  = high16(r) }
-        MOVNE   a2, v5
-        BLNE    C(divu_3216_1616_)      // divu_3216_1616(r,y1_1, q0=,r16=)
-        MOVNE   v4, a2, ASL #16         // r16 = r16 * 2^16
-        MOV     v2, v2, ASL #16
-        ORR     v4, v4, v2, LSR #16     // r = highlow32(r16,low16(xlo))
-        MOV     a4, v1, ASL #16         // tmp = mulu16(low16(y),q0)
-        MOV     a4, a4, LSR #16
-        MUL     a3, a4, a1
-        RSB     a3, a3, a1, ASL #16     // r2 = highlow32_0(q0) - tmp
-        ADDS    v4, v4, a3              // r += r2
-        ADDCS   a1, a1, #1              // if ( r < r2 ) { q0 += 1
-        SUBCS   v4, v4, v1              //                 r -= y }
-        CMP     v4, v1                  // if (r >= y)
-        ADDCS   a1, a1, #1              //     { q0 += 1
-        SUBCS   v4, v4, v1              //       r -= y }
-        MOV     a2, v4, LSR v3          // remainder = r >> s
-        ORR     a1, a1, v6, ASL #16     // return highlow32(q1,q0)
-#ifdef DIVU_32_REST
-        LDR     a3,[pc,#ptr_divu_32_rest-.-8]
-        STR     a2,[a3,#0]              // divu_32_rest = remainder
-#endif
-        LDMFD   sp!, {v1,v2,v3,v4,v5,v6,pc}^
+        BX      lr
 
 // extern uintD* copy_loop_up (uintD* sourceptr, uintD* destptr, uintC count);
 //       entry
@@ -367,7 +162,7 @@ GLABEL(copy_loop_up)
 LABEL(copy_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,a2                   // return addr of last word stored
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(copy_loop_up_l2)
         LDMIA   a1!,{a3,v1,ip,lr}       // copy 4 words in one go
@@ -377,7 +172,7 @@ LABEL(copy_loop_up_l2)
         STMGEIA a2!,{a3,v1,ip,lr}       // 4 more words
         BGT     copy_loop_up_l2         // and loop
         MOV     a1,a2                   // return addr of last word stored
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return
+        LDMFD   sp!,{v1,pc}             // restore work regs and return
 
 // extern uintD* copy_loop_down (uintD* sourceptr, uintD* destptr, uintC count);
 //       entry
@@ -402,7 +197,7 @@ GLABEL(copy_loop_down)
 LABEL(copy_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,a2                   // return addr of last word stored
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(copy_loop_down_l2)
         LDMDB   a1!,{a3,v1,ip,lr}       // copy 4 words in one go
@@ -412,7 +207,7 @@ LABEL(copy_loop_down_l2)
         STMGEDB a2!,{a3,v1,ip,lr}       // 4 more words
         BGT     copy_loop_down_l2       // and loop
         MOV     a1,a2                   // return addr of last word stored
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return
+        LDMFD   sp!,{v1,pc}             // restore work regs and return
 
 // extern uintD* clear_loop_up (uintD* destptr, uintC count);
 //       entry
@@ -446,7 +241,7 @@ GLABEL(fill_loop_up)
         STRGT   a3,[a1],#4
 LABEL(fill_loop_up_l1)
         BICS    a4,a2,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1,lr}             // save work regs
         MOV     v1,a3                   // copy filler to three other
         MOV     ip,a3                   // registers
@@ -456,7 +251,7 @@ LABEL(fill_loop_up_l2)
         SUBS    a4,a4,#8                // decrement counter by 8
         STMGEIA a1!,{a3,v1,ip,lr}       // if count still positive then store 4
         BGT     fill_loop_up_l2         // more and loop
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return
+        LDMFD   sp!,{v1,pc}             // restore work regs and return
 
 
 // extern uintD* clear_loop_down (uintD* destptr, uintC count);
@@ -491,7 +286,7 @@ GLABEL(fill_loop_down)
         STRGT   a3,[a1,#-4]!
 LABEL(fill_loop_down_l1)
         BICS    a4,a2,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1,lr}             // save work regs
         MOV     v1,a3                   // copy filler to three other
         MOV     ip,a3                   // registers
@@ -501,7 +296,7 @@ LABEL(fill_loop_down_l2)
         SUBS    a4,a4,#8                // decrement counter by 8
         STMGEDB a1!,{a3,v1,ip,lr}       // if count still positive then store 4
         BGT     fill_loop_down_l2       // more and loop
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return
+        LDMFD   sp!,{v1,pc}             // restore work regs and return
 
 // extern void test_loop_up (uintD* xptr, uintC count);
 //       entry
@@ -519,21 +314,21 @@ GLABEL(test_loop_up)
         BEQ     test_loop_up_l1         // yup, so branch
         LDR     a4,[ip],#4              // TEST the first 1-3 words
         TEQ     a4,#0                   // align the total to a multiple of 4
-        MOVNES  pc,lr                   // return TRUE if AND_TEST ok
+        BXNE    lr                      // return TRUE if AND_TEST ok
         CMP     a3,#2
         BLT     test_loop_up_l1         // need to branch 'cos PSR set
         LDRGE   a4,[ip],#4              // when checking against zero
         TEQGE   a4,#0
-        MOVNES  pc,lr
+        BXNE    lr
         CMP     a3,#2
         BLE     test_loop_up_l1         // need to branch 'cos PSR set
         LDRGT   a4,[ip],#4              // when checking against zero
         TEQGT   a4,#0
-        MOVNES  pc,lr
+        BXNE    lr
 LABEL(test_loop_up_l1)
         BICS    a4,a2,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // return FALSE
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(test_loop_up_l2)
         LDMIA   ip!,{a2,a3,v1,lr}       // load 4 words in one go
@@ -541,11 +336,11 @@ LABEL(test_loop_up_l2)
         TEQEQ   a3,#0
         TEQEQ   v1,#0
         TEQEQ   lr,#0
-        LDMNEFD sp!,{v1,pc}^
+        LDMNEFD sp!,{v1,pc}
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     test_loop_up_l2         // if count still positive then loop
         MOV     a1,#0
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return
+        LDMFD   sp!,{v1,pc}             // restore work regs and return
 
 // extern void test_loop_down (uintD* xptr, uintC count);
 //       entry
@@ -563,21 +358,21 @@ GLABEL(test_loop_down)
         BEQ     test_loop_down_l1       // yup, so branch
         LDR     a4,[ip,#-4]!            // TEST the first 1-3 words
         TEQ     a4,#0                   // align the total to a multiple of 4
-        MOVNES  pc,lr                   // return TRUE if AND_TEST ok
+        BXNE    lr                      // return TRUE if AND_TEST ok
         CMP     a3,#2
         BLT     test_loop_down_l1       // need to branch 'cos PSR set
         LDRGE   a4,[ip,#-4]!            // when checking against zero
         TEQGE   a4,#0
-        MOVNES  pc,lr
+        BXNE    lr
         CMP     a3,#2
         BLE     test_loop_down_l1       // need to branch 'cos PSR set
         LDRGT   a4,[ip,#-4]!            // when checking against zero
         TEQGT   a4,#0
-        MOVNES  pc,lr
+        BXNE    lr
 LABEL(test_loop_down_l1)
         BICS    a4,a2,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // return FALSE
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(test_loop_down_l2)
         LDMDB   ip!,{a2,a3,v1,lr}       // load 4 words in one go
@@ -585,11 +380,11 @@ LABEL(test_loop_down_l2)
         TEQEQ   a3,#0
         TEQEQ   v1,#0
         TEQEQ   lr,#0
-        LDMNEFD sp!,{v1,pc}^
+        LDMNEFD sp!,{v1,pc}
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     test_loop_down_l2       // if count still positive then loop
         MOV     a1,#0
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return
+        LDMFD   sp!,{v1,pc}             // restore work regs and return
 
 #if CL_DS_BIG_ENDIAN_P
 
@@ -622,7 +417,7 @@ GLABEL(or_loop_up)
         STRGT   ip,[a1],#4
 LABEL(or_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(or_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -634,7 +429,7 @@ LABEL(or_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     or_loop_up_l2           // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 #endif
 
@@ -667,7 +462,7 @@ GLABEL(xor_loop_up)
         STRGT   ip,[a1],#4
 LABEL(xor_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(xor_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -679,7 +474,7 @@ LABEL(xor_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     xor_loop_up_l2          // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 #if CL_DS_BIG_ENDIAN_P
 
@@ -712,7 +507,7 @@ GLABEL(and_loop_up)
         STRGT   ip,[a1],#4
 LABEL(and_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(and_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -724,7 +519,7 @@ LABEL(and_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     and_loop_up_l2          // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void eqv_loop_up (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -759,7 +554,7 @@ GLABEL(eqv_loop_up)
         STRGT   ip,[a1],#4
 LABEL(eqv_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(eqv_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -775,7 +570,7 @@ LABEL(eqv_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     eqv_loop_up_l2          // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void nand_loop_up (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -810,7 +605,7 @@ GLABEL(nand_loop_up)
         STRGT   ip,[a1],#4
 LABEL(nand_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(nand_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -826,7 +621,7 @@ LABEL(nand_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     nand_loop_up_l2         // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void nor_loop_up (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -861,7 +656,7 @@ GLABEL(nor_loop_up)
         STRGT   ip,[a1],#4
 LABEL(nor_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(nor_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -877,7 +672,7 @@ LABEL(nor_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     nor_loop_up_l2          // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void andc2_loop_up (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -908,7 +703,7 @@ GLABEL(andc2_loop_up)
         STRGT   ip,[a1],#4
 LABEL(andc2_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(andc2_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -920,7 +715,7 @@ LABEL(andc2_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     andc2_loop_up_l2        // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void orc2_loop_up (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -955,7 +750,7 @@ GLABEL(orc2_loop_up)
         STRGT   ip,[a1],#4
 LABEL(orc2_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(orc2_loop_up_l2)
         LDMIA   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -971,7 +766,7 @@ LABEL(orc2_loop_up_l2)
         STMIA   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     orc2_loop_up_l2         // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void not_loop_up (uintD* xptr, uintC count);
 //       entry
@@ -998,7 +793,7 @@ GLABEL(not_loop_up)
         STRGT   a3,[a1],#4
 LABEL(not_loop_up_l1)
         BICS    a4,a2,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{lr}                // save work regs
 LABEL(not_loop_up_l2)
         LDMIA   a1,{a2,a3,ip,lr}        // load 4 words in one go,NO writeback
@@ -1009,7 +804,7 @@ LABEL(not_loop_up_l2)
         STMIA   a1!,{a2,a3,ip,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     not_loop_up_l2          // if count still positive then loop
-        LDMFD   sp!,{pc}^               // restore work regs and return
+        LDMFD   sp!,{pc}                // restore work regs and return
 
 // extern void and_test_loop_up (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -1029,13 +824,13 @@ GLABEL(and_test_loop_up)
         LDR     ip,[a1],#4              // to align the total to a multiple
         TST     ip,a4                   // of 4 words
         MOVNE   a1,#1                   // return TRUE if AND_TEST ok
-        MOVNES  pc,lr
+        BXNE    lr
         BCC     and_test_loop_up_l1     // better to branch than skip instrs.
         LDRGE   a4,[a2],#4
         LDRGE   ip,[a1],#4
         TSTGE   ip,a4
         MOVNE   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
         ANDS    a4,a3,#3
         CMP     a4,#2
         BLE     and_test_loop_up_l1     // better to branch than skip instrs.
@@ -1043,11 +838,11 @@ GLABEL(and_test_loop_up)
         LDRGT   ip,[a1],#4
         TSTGT   ip,a4
         MOVNE   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
 LABEL(and_test_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // return FALSE
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v6,lr}          // save work regs
         MOV     v6,a1                   // move xptr to v6
         MOV     a1,#1                   // set result to TRUE
@@ -1058,11 +853,11 @@ LABEL(and_test_loop_up_l2)
         TSTEQ   v4,v1
         TSTEQ   v5,v2
         TSTEQ   lr,ip
-        LDMNEFD sp!,{v1-v6,pc}^
+        LDMNEFD sp!,{v1-v6,pc}
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     and_test_loop_up_l2     // if count still positive then loop
         MOV     a1,#0
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 #endif
 
@@ -1087,7 +882,7 @@ GLABEL(compare_loop_up)
         CMP     ip,a4                   // of 4 words
         MVNLO   a1,#0                   // x < y -> -1
         MOVHI   a1,#1                   // x > y -> +1
-        MOVNES  pc,lr                   // and return result if not equal
+        BXNE    lr                      // and return result if not equal
         ANDS    a4,a3,#3
         CMP     a4,#2
         BLT     compare_loop_up_l1      // need to branch 'cos PSR used
@@ -1096,7 +891,7 @@ GLABEL(compare_loop_up)
         CMP     ip,a4
         MVNLO   a1,#0
         MOVHI   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
         ANDS    a4,a3,#3
         CMP     a4,#2
         BLE     compare_loop_up_l1      // need to branch 'cos PSR used
@@ -1105,11 +900,11 @@ GLABEL(compare_loop_up)
         CMP     ip,a4
         MVNLO   a1,#0
         MOVHI   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
 LABEL(compare_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // xptr[] == yptr[] -> 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v6,lr}          // save work regs
         MOV     v6,a1                   // move xptr to v6
         MOV     a1,#1                   // set result to +1
@@ -1121,11 +916,11 @@ LABEL(compare_loop_up_l2)
         CMPEQ   v5,v2
         CMPEQ   lr,ip
         MVNLO   a1,#0                   // x < y -> -1 (a1 already holds +1)
-        LDMNEFD sp!,{v1-v6,pc}^
+        LDMNEFD sp!,{v1-v6,pc}
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     compare_loop_up_l2      // if count still positive then loop
         MOV     a1,#0
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 #if CL_DS_BIG_ENDIAN_P
 
@@ -1181,11 +976,11 @@ LABEL(add_loop_down_l0)                 // at least one add has happened
         BICS    a4,a4,#3                // set counter to multiple of 4
         BNE     add_loop_down_l3        // branch if more adds to do
         ADCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{v6,pc}^            // and return
+        LDMEQFD sp!,{v6,pc}             // and return
 LABEL(add_loop_down_l1)
         BICS    a4,a4,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // no adds, so C = 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         CMN     a4,#0                   // clear carry bit
         STMFD   sp!,{v6,lr}
 LABEL(add_loop_down_l3)
@@ -1202,7 +997,7 @@ LABEL(add_loop_down_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     add_loop_down_l2        // if count non-zero then loop
         ADC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD inc_loop_down (uintD* ptr, uintC count);
 //       entry
@@ -1221,11 +1016,11 @@ GLABEL(inc_loop_down)
         ADDS    a4,a4,#1                // align the total to a multiple of 2
         STR     a4,[a1]
         MOVNE   a1,#0                   // set result to 0
-        MOVNES  pc,lr                   // return 0 if non-zero result
+        BXNE    lr                      // return 0 if non-zero result
 LABEL(inc_loop_down_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
         MOVEQ   a1,#1                   // return 1
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         MOV     ip,a1                   // move ptr to ip
         MOV     a1,#0                   // set result to 0
         ANDS    a3,a4,#3
@@ -1234,10 +1029,10 @@ LABEL(inc_loop_down_l1)
         ADDS    a3,a3,#1                // INC the two words
         ADDEQS  a2,a2,#1                // stopping when first word non-zero
         STMDB   ip!,{a2,a3}             // store 2 results
-        MOVNES  pc,lr                   // return 0 if any result non-zero
+        BXNE    lr                      // return 0 if any result non-zero
         SUBS    a4,a4,#2                // decrement counter by 2
         MOVEQ   a1,#1                   // if finished loop then
-        MOVEQS  pc,lr                   // return 1
+        BXEQ    lr                      // return 1
 LABEL(inc_loop_down_l3)                 // now a multiple of 4 words
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(inc_loop_down_l2)
@@ -1247,11 +1042,11 @@ LABEL(inc_loop_down_l2)
         ADDEQS  a3,a3,#1
         ADDEQS  a2,a2,#1
         STMDB   ip!,{a2,a3,v1,lr}       // store 4 results
-        LDMNEFD sp!,{v1,pc}^            // return 0 if any result non-zero
+        LDMNEFD sp!,{v1,pc}             // return 0 if any result non-zero
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     inc_loop_down_l2        // if count still positive then loop
         MOV     a1,#1
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return 1
+        LDMFD   sp!,{v1,pc}             // restore work regs and return 1
 
 // extern uintD sub_loop_down (uintD* sourceptr1, uintD* sourceptr2, uintD* destptr, uintC count);
 //       entry
@@ -1277,7 +1072,7 @@ LABEL(sub_loop_down)
 LABEL(sub_loop_down_l4)                 // drop through for better instr. timings
         BICS    a4,a4,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{v6,pc}^            // and return
+        LDMEQFD sp!,{v6,pc}             // and return
         STMFD   sp!,{v1-v5}             // save work regs
         B       sub_loop_down_l2        // branch if more subtracts to do
 LABEL(sub_loop_down_l0)
@@ -1295,7 +1090,7 @@ LABEL(sub_loop_down_l0)
 LABEL(sub_loop_down_l1)
         BICS    a4,a4,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // no subtracts, so C = 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         CMP     a4,#0                   // set carry bit, since a4 > 0
         STMFD   sp!,{v1-v6,lr}          // save work regs
 LABEL(sub_loop_down_l2)
@@ -1310,7 +1105,7 @@ LABEL(sub_loop_down_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     sub_loop_down_l2        // if count non-zero then loop
         SBC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD subx_loop_down (uintD* sourceptr1, uintD* sourceptr2, uintD* destptr, uintC count, uintD carry);
 //       entry
@@ -1340,7 +1135,7 @@ LABEL(subx_loop_down_lsub)
 LABEL(subx_loop_down_l4)                // drop through for better instr. timings
         BICS    a4,a4,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{v6,pc}^            // and return
+        LDMEQFD sp!,{v6,pc}             // and return
         STMFD   sp!,{v1-v5}             // save work regs
         B       subx_loop_down_l2       // branch if more subtracts to do
 LABEL(subx_loop_down_l0)
@@ -1358,7 +1153,7 @@ LABEL(subx_loop_down_l0)
 LABEL(subx_loop_down_l1)
         BICS    a4,a4,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v6,lr}          // save work regs
 LABEL(subx_loop_down_l2)
         LDMDB   a2!,{v1,v2,v3,ip}       // load 4 words in one go
@@ -1372,7 +1167,7 @@ LABEL(subx_loop_down_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     subx_loop_down_l2       // if count non-zero then loop
         SBC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD subfrom_loop_down (uintD* sourceptr, uintD* destptr, uintC count);
 //       entry
@@ -1398,7 +1193,7 @@ GLABEL(subfrom_loop_down)
 LABEL(subfrom_loop_down_l4)             // drop through for better instr. timings
         BICS    a4,a3,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{pc}^               // and return
+        LDMEQFD sp!,{pc}                // and return
         STMFD   sp!,{v1-v5}             // save work regs
         B       subfrom_loop_down_l2    // branch if more subtracts to do
 LABEL(subfrom_loop_down_l0)
@@ -1416,7 +1211,7 @@ LABEL(subfrom_loop_down_l0)
 LABEL(subfrom_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // no subtracts, so C = 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         CMP     a4,#0                   // set carry bit, since a4 > 0
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(subfrom_loop_down_l2)
@@ -1431,7 +1226,7 @@ LABEL(subfrom_loop_down_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     subfrom_loop_down_l2    // if count non-zero then loop
         SBC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern uintD dec_loop_down (uintD* ptr, uintC count);
 //       entry
@@ -1450,11 +1245,11 @@ GLABEL(dec_loop_down)
         SUBS    a4,a4,#1                // align the total to a multiple of 2
         STR     a4,[a1]
         MOVCS   a1,#0                   // set result to 0
-        MOVCSS  pc,lr                   // return 0 if non-zero result
+        BXCS    lr                      // return 0 if non-zero result
 LABEL(dec_loop_down_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
         MVNEQ   a1,#0                   // return -1
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         MOV     ip,a1                   // move ptr to ip
         MOV     a1,#0                   // set result to 0
         ANDS    a3,a4,#3
@@ -1463,10 +1258,10 @@ LABEL(dec_loop_down_l1)
         SUBS    a3,a3,#1                // DEC the two words
         SUBCCS  a2,a2,#1                // stopping when first word non-zero
         STMDB   ip!,{a2,a3}             // store 2 results
-        MOVCSS  pc,lr                   // return 0 if any result non-zero
+        BXCS    lr                      // return 0 if any result non-zero
         SUBS    a4,a4,#2                // decrement counter by 2
         MVNEQ   a1,#0                   // if finished loop then
-        MOVEQS  pc,lr                   // return -1
+        BXEQ    lr                      // return -1
 LABEL(dec_loop_down_l3)                 // now a multiple of 4 words
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(dec_loop_down_l2)
@@ -1476,11 +1271,11 @@ LABEL(dec_loop_down_l2)
         SUBCCS  a3,a3,#1
         SUBCCS  a2,a2,#1
         STMDB   ip!,{a2,a3,v1,lr}       // store 4 results
-        LDMCSFD sp!,{v1,pc}^            // return 0 if any carry
+        LDMCSFD sp!,{v1,pc}             // return 0 if any carry
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     dec_loop_down_l2        // if count still positive then loop
         MVN     a1,#0
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return -1
+        LDMFD   sp!,{v1,pc}             // restore work regs and return -1
 
 // extern void neg_loop_down (uintD* ptr, uintC count);
 //       entry
@@ -1493,23 +1288,23 @@ LABEL(dec_loop_down_l2)
         EXPORT(neg_loop_down)           // word aligned neg loop down
         DECLARE_FUNCTION(neg_loop_down)
 GLABEL(neg_loop_down)
-        CMPS    a2,#0                   // count = 0 ?
+        CMP     a2,#0                   // count = 0 ?
         MOVEQ   a1,#0                   // yup, so return 0
-        MOVEQS  pc,lr
+        BXEQ    lr
 LABEL(neg_loop_down_l1)                 // skip all the zero words first
         LDR     a3,[a1,#-4]!            // compare words against zero
-        CMPS    a3,#0                   // downwards in memory
+        CMP     a3,#0                   // downwards in memory
         BNE     neg_loop_down_l2        // non-zero, so negate rest of words
         SUBS    a2,a2,#1                // reduce count of words
         BNE     neg_loop_down_l1        // more ?, so loop
         MOV     a1,#0                   // return 0
-        MOVS    pc,lr
+        BX      lr
 LABEL(neg_loop_down_l2)
         RSB     a3,a3,#0                // first non-zero word = -word
         STR     a3,[a1]
         SUBS    a2,a2,#1
         MVNEQ   a1,#0                   // done ? -> return -1
-        MOVEQS  pc,lr
+        BXEQ    lr
                                         // now NOT rest of the words
         ANDS    a3,a2,#3                // multiple of 4 words ?
         BEQ     neg_loop_down_l3        // yup, so branch
@@ -1527,7 +1322,7 @@ LABEL(neg_loop_down_l2)
 LABEL(neg_loop_down_l3)
         BICS    a4,a2,#3                // set counter to multiple of 4
         MVNEQ   a1,#0                   // set result to -1
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{lr}                // save work regs
 LABEL(neg_loop_down_l4)
         LDMDB   a1,{a2,a3,ip,lr}        // load 4 words in one go,NO writeback
@@ -1539,7 +1334,7 @@ LABEL(neg_loop_down_l4)
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     neg_loop_down_l4        // if count still positive then loop
         MVN     a1,#0                   // set result to -1
-        LDMFD   sp!,{pc}^               // restore work regs and return -1
+        LDMFD   sp!,{pc}                // restore work regs and return -1
 
 // extern uintD shift1left_loop_down (uintD* ptr, uintC count);
 //       entry
@@ -1560,7 +1355,7 @@ GLABEL(shift1left_loop_down)
 LABEL(shift1left_loop_down_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
         ADCEQ   a1,a4,a4                // if zero set result to C (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        BXEQ    l                       // and return
         ANDS    a3,a4,#3                // multiple of 4 words ?
         BEQ     shift1left_loop_down_l3 // yup, so branch
         LDMDB   a1,{a2,a3}              // load 2 words in one go
@@ -1569,7 +1364,7 @@ LABEL(shift1left_loop_down_l1)
         STMDB   a1!,{a2,a3}             // store 2 results
         BICS    a4,a4,#2                // decrement counter by 2
         ADCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        BXEQ    lr                      // and return
 LABEL(shift1left_loop_down_l3)          // now a multiple of 4 words
         STMFD   sp!,{lr}                // save work regs
 LABEL(shift1left_loop_down_l2)
@@ -1583,7 +1378,7 @@ LABEL(shift1left_loop_down_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     shift1left_loop_down_l2 // if count non-zero then loop
         ADC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{pc}^               // restore work regs and return 1
+        LDMFD   sp!,{pc}                // restore work regs and return 1
 
 // extern uintD shiftleft_loop_down (uintD* ptr, uintC count, uintC i, uintD carry);
 //       entry
@@ -1618,7 +1413,7 @@ GLABEL(shiftleft_loop_down)
 LABEL(shiftleft_loop_down_l1)
         BICS    ip,a2,#3                // set counter to multiple of 4
         MOVEQ   a1,a4                   // if zero then we're done
-        LDMEQFD sp!,{v6,pc}^            // so return last shift out
+        LDMEQFD sp!,{v6,pc}             // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftleft_loop_down_l2)
         LDMDB   a1,{a2,v1,v2,v3}        // load 4 words in one go
@@ -1634,7 +1429,7 @@ LABEL(shiftleft_loop_down_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftleft_loop_down_l2  // if count still positive then loop
         MOV     a1,a4                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v6,pc}^      // restore work regs and return
+        LDMFD   sp!,{v1-v3,v6,pc}       // restore work regs and return
 
 // extern uintD shiftleftcopy_loop_down (uintD* sourceptr, uintD* destptr, uintC count, uintC i);
 //       entry
@@ -1670,7 +1465,7 @@ GLABEL(shiftleftcopy_loop_down)
 LABEL(shiftleftcopy_loop_down_l1)
         BICS    ip,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,v5                   // if zero then we're done
-        LDMEQFD sp!,{v5,v6,pc}^         // so return last shift out
+        LDMEQFD sp!,{v5,v6,pc}          // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftleftcopy_loop_down_l2)
         LDMDB   a1!,{a3,v1,v2,v3}       // load 4 words in one go
@@ -1686,7 +1481,7 @@ LABEL(shiftleftcopy_loop_down_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftleftcopy_loop_down_l2      // if count still positive then loop
         MOV     a1,v5                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v5,v6,pc}^   // restore work regs and return
+        LDMFD   sp!,{v1-v3,v5,v6,pc}    // restore work regs and return
 
 // extern uintD shift1right_loop_up (uintD* ptr, uintC count, uintD carry);
 //       entry
@@ -1703,35 +1498,35 @@ GLABEL(shift1right_loop_up)
         ANDS    a3,a2,#1                // multiple of 2 words ?
         BEQ     shift1right_loop_up_l1  // yup, so branch
         LDR     a4,[a1]                 // shift right the first word
-        MOVS    a4,a4,RRX
+        MOVS    a4,a4,rrx
         STR     a4,[a1],#4
 LABEL(shift1right_loop_up_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
-        MOVEQ   a1,a4,RRX               // if zero set result to C (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        MOVEQ   a1,a4,rrx               // if zero set result to C (a4 is 0)
+        BXEQ    lr                      // and return
         ANDS    a3,a4,#3                // multiple of 4 words ?
         BEQ     shift1right_loop_up_l3  // yup, so branch
         LDMIA   a1,{a2,a3}              // load 2 words in one go
-        MOVS    a2,a2,RRX               // shift right the two words
-        MOVS    a3,a3,RRX
+        MOVS    a2,a2,rrx               // shift right the two words
+        MOVS    a3,a3,rrx
         STMIA   a1!,{a2,a3}             // store 2 results
         BICS    a4,a4,#2                // decrement counter by 2
         ADCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        BXEQ    lr                      // and return
 LABEL(shift1right_loop_up_l3)           // now a multiple of 4 words
         STMFD   sp!,{lr}                // save work regs
 LABEL(shift1right_loop_up_l2)
         LDMIA   a1,{a2,a3,ip,lr}        // load 4 words in one go
-        MOVS    a2,a2,RRX               // shift right the four words
-        MOVS    a3,a3,RRX
-        MOVS    ip,ip,RRX
-        MOVS    lr,lr,RRX
+        MOVS    a2,a2,rrx               // shift right the four words
+        MOVS    a3,a3,rrx
+        MOVS    ip,ip,rrx
+        MOVS    lr,lr,rrx
         STMIA   a1!,{a2,a3,ip,lr}       // store 4 results
         SUB     a4,a4,#4                // decrement counter by 4
         TEQ     a4,#0                   // are we done ?
         BNE     shift1right_loop_up_l2  // if count non-zero then loop
-        MOV     a1,a4,RRX               // set result to Carry (a4 is 0)
-        LDMFD   sp!,{pc}^               // restore work regs and return 1
+        MOV     a1,a4,rrx               // set result to Carry (a4 is 0)
+        LDMFD   sp!,{pc}                // restore work regs and return 1
 
 // extern uintD shiftright_loop_up (uintD* ptr, uintC count, uintC i);
 //       entry
@@ -1767,7 +1562,7 @@ LABEL(shiftright_loop_up_l0)
 LABEL(shiftright_loop_up_l1)
         BICS    ip,a2,#3                // set counter to multiple of 4
         MOVEQ   a1,a4                   // if zero then we're done
-        LDMEQFD sp!,{v6,pc}^            // so return last shift out
+        LDMEQFD sp!,{v6,pc}             // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftright_loop_up_l2)
         LDMIA   a1,{v1,v2,v3,lr}        // load 4 words in one go
@@ -1783,7 +1578,7 @@ LABEL(shiftright_loop_up_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftright_loop_up_l2   // if count still positive then loop
         MOV     a1,a4                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v6,pc}^      // restore work regs and return
+        LDMFD   sp!,{v1-v3,v6,pc}       // restore work regs and return
 
 // extern uintD shiftrightsigned_loop_up (uintD* ptr, uintC count, uintC i);
 //       entry
@@ -1840,7 +1635,7 @@ LABEL(shiftrightcopy_loop_up_l0)
 LABEL(shiftrightcopy_loop_up_l1)
         BICS    ip,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,v5                   // if zero then we're done
-        LDMEQFD sp!,{v5,v6,pc}^         // so return last shift out
+        LDMEQFD sp!,{v5,v6,pc}          // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftrightcopy_loop_up_l2)
         LDMIA   a1!,{v1,v2,v3,lr}       // load 4 words in one go
@@ -1856,7 +1651,7 @@ LABEL(shiftrightcopy_loop_up_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftrightcopy_loop_up_l2       // if count still positive then loop
         MOV     a1,v5                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v5,v6,pc}^   // restore work regs and return
+        LDMFD   sp!,{v1-v3,v5,v6,pc}    // restore work regs and return
 
 #ifndef HAVE_umull
 // mulu32_64_vregs
@@ -1881,7 +1676,7 @@ LABEL(mulu32_64_vregs)
         ADDCS   v2,v2,#0x10000          // carry from above add
         ADDS    v1,v4,ip,LSL #16        // x is now bottom 32 bits of result
         ADC     ip,v2,ip,LSR #16        // hi is top 32 bits
-        MOVS    pc,lr
+        BX      lr
 #endif
 
 // extern uintD mulusmall_loop_down (uintD digit, uintD* ptr, uintC len, uintD newdigit);
@@ -1898,7 +1693,7 @@ LABEL(mulu32_64_vregs)
 GLABEL(mulusmall_loop_down)
         CMP     a3,#0
         MOVEQ   a1,a4
-        MOVEQS  pc,lr
+        BXEQ    lr
 #ifdef HAVE_umull
         STMFD   sp!,{v1,lr}
 LABEL(mulusmall_loop_down_l1)
@@ -1910,29 +1705,20 @@ LABEL(mulusmall_loop_down_l1)
         SUBS    a3,a3,#1                // len--
         BNE     mulusmall_loop_down_l1  // until len==0
         MOV     a1,a4                   // return carry
-        LDMFD   sp!,{v1,pc}^
+        LDMFD   sp!,{v1,pc}
 #else
-        STMFD   sp!,{v1-v2,lr}
+        STMFD   sp!,{v1-v4,lr}
 LABEL(mulusmall_loop_down_l1)
         LDR     ip,[a2,#-4]!
 
-//      BL      mulu32_64_vregs         // muluD(digit,*--ptr,hi=,lo=)
-// replaced by multiplication of a small x = a1 and a big y = ip :
-        MOV     v1,ip,LSR #16           // top half of y
-        BIC     ip,ip,v1,LSL #16        // bottom half of y
-        MUL     v2,a1,v1                // middle section of result
-        MUL     v1,a1,ip                // low section of result
-        MOV     ip,#0                   // high section of result
-        ADDS    v1,v1,v2,LSL #16        // bottom 32 bits of result
-        ADC     ip,ip,v2,LSR #16        // top 32 bits of result
-
+        BL      mulu32_64_vregs         // muluD(digit,*--ptr,hi=,lo=)
         ADDS    v1,v1,a4                // lo += carry
         ADC     a4,ip,#0                // if (lo<carry) { hi += 1 }; carry=hi
         STR     v1,[a2,#0]              // *ptr = lo
         SUBS    a3,a3,#1                // len--
         BNE     mulusmall_loop_down_l1  // until len==0
         MOV     a1,a4                   // return carry
-        LDMFD   sp!,{v1-v2,pc}^
+        LDMFD   sp!,{v1-v4,pc}
 #endif
 
 // extern void mulu_loop_down (uintD digit, uintD* sourceptr, uintD* destptr, uintC len);
@@ -1958,7 +1744,7 @@ LABEL(mulu_loop_down_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulu_loop_down_l1       // until len==0
         STR     v5,[a3,#-4]!            // *--destptr = carry
-        LDMFD   sp!,{v1,v5,pc}^
+        LDMFD   sp!,{v1,v5,pc}
 #else
         STMFD   sp!,{v1-v5,lr}
         MOV     v5,#0
@@ -1971,7 +1757,7 @@ LABEL(mulu_loop_down_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulu_loop_down_l1       // until len==0
         STR     v5,[a3,#-4]!            // *--destptr = carry
-        LDMFD   sp!,{v1-v5,pc}^
+        LDMFD   sp!,{v1-v5,pc}
 #endif
 
 // extern void muluadd_loop_down (uintD digit, uintD* sourceptr, uintD* destptr, uintC len);
@@ -2000,7 +1786,7 @@ LABEL(muluadd_loop_down_l1)
         SUBS    a4,a4,#1                // len--
         BNE     muluadd_loop_down_l1    // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1,v5,pc}^
+        LDMFD   sp!,{v1,v5,pc}
 #else
         STMFD   sp!,{v1-v5,lr}
         MOV     v5,#0
@@ -2016,7 +1802,7 @@ LABEL(muluadd_loop_down_l1)
         SUBS    a4,a4,#1                // len--
         BNE     muluadd_loop_down_l1    // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1-v5,pc}^
+        LDMFD   sp!,{v1-v5,pc}
 #endif
 
 // extern void mulusub_loop_down (uintD digit, uintD* sourceptr, uintD* destptr, uintC len);
@@ -2045,7 +1831,7 @@ LABEL(mulusub_loop_down_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulusub_loop_down_l1    // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1,v5,pc}^
+        LDMFD   sp!,{v1,v5,pc}
 #else
         STMFD   sp!,{v1-v5,lr}
         MOV     v5,#0
@@ -2061,7 +1847,7 @@ LABEL(mulusub_loop_down_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulusub_loop_down_l1    // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1-v5,pc}^
+        LDMFD   sp!,{v1-v5,pc}
 #endif
 
 #endif
@@ -2097,7 +1883,7 @@ GLABEL(or_loop_down)
         STRGT   ip,[a1]
 LABEL(or_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(or_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2109,7 +1895,7 @@ LABEL(or_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     or_loop_down_l2         // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void xor_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2140,7 +1926,7 @@ GLABEL(xor_loop_down)
         STRGT   ip,[a1]
 LABEL(xor_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(xor_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2152,7 +1938,7 @@ LABEL(xor_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     xor_loop_down_l2        // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void and_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2183,7 +1969,7 @@ GLABEL(and_loop_down)
         STRGT   ip,[a1]
 LABEL(and_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(and_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2195,7 +1981,7 @@ LABEL(and_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     and_loop_down_l2        // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void eqv_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2230,7 +2016,7 @@ GLABEL(eqv_loop_down)
         STRGT   ip,[a1]
 LABEL(eqv_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(eqv_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2246,7 +2032,7 @@ LABEL(eqv_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     eqv_loop_down_l2        // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void nand_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2281,7 +2067,7 @@ GLABEL(nand_loop_down)
         STRGT   ip,[a1]
 LABEL(nand_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(nand_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2297,7 +2083,7 @@ LABEL(nand_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     nand_loop_down_l2       // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void nor_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2332,7 +2118,7 @@ GLABEL(nor_loop_down)
         STRGT   ip,[a1]
 LABEL(nor_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(nor_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2348,7 +2134,7 @@ LABEL(nor_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     nor_loop_down_l2        // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void andc2_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2379,7 +2165,7 @@ GLABEL(andc2_loop_down)
         STRGT   ip,[a1]
 LABEL(andc2_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(andc2_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2391,7 +2177,7 @@ LABEL(andc2_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     andc2_loop_down_l2      // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void orc2_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2426,7 +2212,7 @@ GLABEL(orc2_loop_down)
         STRGT   ip,[a1]
 LABEL(orc2_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(orc2_loop_down_l2)
         LDMDB   a2!,{a3,v1,v2,ip}       // load 4 words in one go
@@ -2442,7 +2228,7 @@ LABEL(orc2_loop_down_l2)
         STMDB   a1!,{v3,v4,v5,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     orc2_loop_down_l2       // if count still positive then loop
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern void not_loop_down (uintD* xptr, uintC count);
 //       entry
@@ -2469,7 +2255,7 @@ GLABEL(not_loop_down)
         STRGT   a3,[a1]
 LABEL(not_loop_down_l1)
         BICS    a4,a2,#3                // set counter to multiple of 4
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{lr}                // save work regs
 LABEL(not_loop_down_l2)
         LDMDB   a1,{a2,a3,ip,lr}        // load 4 words in one go,NO writeback
@@ -2480,7 +2266,7 @@ LABEL(not_loop_down_l2)
         STMDB   a1!,{a2,a3,ip,lr}       // store 4 results
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     not_loop_down_l2        // if count still positive then loop
-        LDMFD   sp!,{pc}^               // restore work regs and return
+        LDMFD   sp!,{pc}                // restore work regs and return
 
 // extern void and_test_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2500,13 +2286,13 @@ GLABEL(and_test_loop_down)
         LDR     ip,[a1,#-4]!            // to align the total to a multiple
         TST     ip,a4                   // of 4 words
         MOVNE   a1,#1                   // return TRUE if AND_TEST ok
-        MOVNES  pc,lr
+        BXNE    lr
         BCC     and_test_loop_down_l1   // better to branch than skip instrs.
         LDRGE   a4,[a2,#-4]!
         LDRGE   ip,[a1,#-4]!
         TSTGE   ip,a4
         MOVNE   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
         ANDS    a4,a3,#3
         CMP     a4,#2
         BLE     and_test_loop_down_l1   // better to branch than skip instrs.
@@ -2514,11 +2300,11 @@ GLABEL(and_test_loop_down)
         LDRGT   ip,[a1,#-4]!
         TSTGT   ip,a4
         MOVNE   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
 LABEL(and_test_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // return FALSE
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v6,lr}          // save work regs
         MOV     v6,a1                   // move xptr to v6
         MOV     a1,#1                   // set result to TRUE
@@ -2529,11 +2315,11 @@ LABEL(and_test_loop_down_l2)
         TSTEQ   v4,v1
         TSTEQ   v5,v2
         TSTEQ   lr,ip
-        LDMNEFD sp!,{v1-v6,pc}^
+        LDMNEFD sp!,{v1-v6,pc}
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     and_test_loop_down_l2   // if count still positive then loop
         MOV     a1,#0
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern void compare_loop_down (uintD* xptr, uintD* yptr, uintC count);
 //       entry
@@ -2556,7 +2342,7 @@ GLABEL(compare_loop_down)
         CMP     ip,a4                   // of 4 words
         MVNLO   a1,#0                   // x < y -> -1
         MOVHI   a1,#1                   // x > y -> +1
-        MOVNES  pc,lr                   // and return result if not equal
+        BXNE    lr                      // and return result if not equal
         ANDS    a4,a3,#3
         CMP     a4,#2
         BLT     compare_loop_down_l1    // need to branch 'cos PSR used
@@ -2565,7 +2351,7 @@ GLABEL(compare_loop_down)
         CMP     ip,a4
         MVNLO   a1,#0
         MOVHI   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
         ANDS    a4,a3,#3
         CMP     a4,#2
         BLE     compare_loop_down_l1    // need to branch 'cos PSR used
@@ -2574,11 +2360,11 @@ GLABEL(compare_loop_down)
         CMP     ip,a4
         MVNLO   a1,#0
         MOVHI   a1,#1
-        MOVNES  pc,lr
+        BXNE    lr
 LABEL(compare_loop_down_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // xptr[] == yptr[] -> 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v6,lr}          // save work regs
         MOV     v6,a1                   // move xptr to v6
         MOV     a1,#1                   // set result to +1
@@ -2590,11 +2376,11 @@ LABEL(compare_loop_down_l2)
         CMPEQ   v4,v1
         CMPEQ   v3,a3
         MVNLO   a1,#0                   // x < y -> -1 (a1 already holds +1)
-        LDMNEFD sp!,{v1-v6,pc}^
+        LDMNEFD sp!,{v1-v6,pc}
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     compare_loop_down_l2    // if count still positive then loop
         MOV     a1,#0
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD addto_loop_up (uintD* sourceptr, uintD* destptr, uintC count);
 //       entry
@@ -2648,11 +2434,11 @@ LABEL(add_loop_up_l0)                   // at least one add has happened
         BICS    a4,a4,#3                // set counter to multiple of 4
         BNE     add_loop_up_l3          // branch if more adds to do
         ADCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{v6,pc}^            // and return
+        LDMEQFD sp!,{v6,pc}             // and return
 LABEL(add_loop_up_l1)
         BICS    a4,a4,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // no adds, so C = 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         CMN     a4,#0                   // clear carry bit
         STMFD   sp!,{v6,lr}
 LABEL(add_loop_up_l3)
@@ -2669,7 +2455,7 @@ LABEL(add_loop_up_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     add_loop_up_l2          // if count non-zero then loop
         ADC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD inc_loop_up (uintD* ptr, uintC count);
 //       entry
@@ -2688,11 +2474,11 @@ GLABEL(inc_loop_up)
         ADDS    a4,a4,#1                // align the total to a multiple of 2
         STR     a4,[a1],#4
         MOVNE   a1,#0                   // set result to 0
-        MOVNES  pc,lr                   // return 0 if non-zero result
+        BXNE    lr                      // return 0 if non-zero result
 LABEL(inc_loop_up_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
         MOVEQ   a1,#1                   // return 1
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         MOV     ip,a1                   // move ptr to ip
         MOV     a1,#0                   // set result to 0
         ANDS    a3,a4,#3
@@ -2701,10 +2487,10 @@ LABEL(inc_loop_up_l1)
         ADDS    a2,a2,#1                // INC the two words
         ADDEQS  a3,a3,#1                // stopping when first word non-zero
         STMIA   ip!,{a2,a3}             // store 2 results
-        MOVNES  pc,lr                   // return 0 if any result non-zero
+        BXNE    lr                      // return 0 if any result non-zero
         SUBS    a4,a4,#2                // decrement counter by 2
         MOVEQ   a1,#1                   // if finished loop then
-        MOVEQS  pc,lr                   // return 1
+        BXEQ    lr                      // return 1
 LABEL(inc_loop_up_l3)                   // now a multiple of 4 words
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(inc_loop_up_l2)
@@ -2714,11 +2500,11 @@ LABEL(inc_loop_up_l2)
         ADDEQS  v1,v1,#1
         ADDEQS  lr,lr,#1
         STMIA   ip!,{a2,a3,v1,lr}       // store 4 results
-        LDMNEFD sp!,{v1,pc}^            // return 0 if any result non-zero
+        LDMNEFD sp!,{v1,pc}             // return 0 if any result non-zero
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     inc_loop_up_l2          // if count still positive then loop
         MOV     a1,#1
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return 1
+        LDMFD   sp!,{v1,pc}             // restore work regs and return 1
 
 // extern uintD sub_loop_up (uintD* sourceptr1, uintD* sourceptr2, uintD* destptr, uintC count);
 //       entry
@@ -2745,7 +2531,7 @@ GLABEL(sub_loop_up)
 LABEL(sub_loop_up_l4)                   // drop through for better instr. timings
         BICS    a4,a4,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{v6,pc}^            // and return
+        LDMEQFD sp!,{v6,pc}             // and return
         STMFD   sp!,{v1-v5}             // save work regs
         B       sub_loop_up_l2          // branch if more subtracts to do
 LABEL(sub_loop_up_l0)
@@ -2763,7 +2549,7 @@ LABEL(sub_loop_up_l0)
 LABEL(sub_loop_up_l1)
         BICS    a4,a4,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // no subtracts, so C = 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         CMP     a4,#0                   // set carry bit, since a4 > 0
         STMFD   sp!,{v1-v6,lr}          // save work regs
 LABEL(sub_loop_up_l2)
@@ -2778,7 +2564,7 @@ LABEL(sub_loop_up_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     sub_loop_up_l2          // if count non-zero then loop
         SBC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD subx_loop_up (uintD* sourceptr1, uintD* sourceptr2, uintD* destptr, uintC count, uintD carry);
 //       entry
@@ -2809,7 +2595,7 @@ LABEL(subx_loop_up_lsub)
 LABEL(subx_loop_up_l4)                  // drop through for better instr. timings
         BICS    a4,a4,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{v6,pc}^            // and return
+        LDMEQFD sp!,{v6,pc}             // and return
         STMFD   sp!,{v1-v5}             // save work regs
         B       subx_loop_up_l2         // branch if more subtracts to do
 LABEL(subx_loop_up_l0)
@@ -2827,7 +2613,7 @@ LABEL(subx_loop_up_l0)
 LABEL(subx_loop_up_l1)
         BICS    a4,a4,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{v1-v6,lr}          // save work regs
 LABEL(subx_loop_up_l2)
         LDMIA   a2!,{v1,v2,v3,ip}       // load 4 words in one go
@@ -2841,7 +2627,7 @@ LABEL(subx_loop_up_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     subx_loop_up_l2         // if count non-zero then loop
         SBC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
 // extern uintD subfrom_loop_up (uintD* sourceptr, uintD* destptr, uintC count);
 //       entry
@@ -2867,7 +2653,7 @@ GLABEL(subfrom_loop_up)
 LABEL(subfrom_loop_up_l4)                    // drop through for better instr. timings
         BICS    a4,a3,#3                // set counter to multiple of 4
         SBCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMEQFD sp!,{pc}^               // and return
+        LDMEQFD sp!,{pc}                // and return
         STMFD   sp!,{v1-v5}             // save work regs
         B       subfrom_loop_up_l2      // branch if more subtracts to do
 LABEL(subfrom_loop_up_l0)
@@ -2885,7 +2671,7 @@ LABEL(subfrom_loop_up_l0)
 LABEL(subfrom_loop_up_l1)
         BICS    a4,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,#0                   // no subtracts, so C = 0
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         CMP     a4,#0                   // set carry bit, since a4 > 0
         STMFD   sp!,{v1-v5,lr}          // save work regs
 LABEL(subfrom_loop_up_l2)
@@ -2900,7 +2686,7 @@ LABEL(subfrom_loop_up_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     subfrom_loop_up_l2      // if count non-zero then loop
         SBC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{v1-v5,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v5,pc}          // restore work regs and return
 
 // extern uintD dec_loop_up (uintD* ptr, uintC count);
 //       entry
@@ -2919,11 +2705,11 @@ GLABEL(dec_loop_up)
         SUBS    a4,a4,#1                // align the total to a multiple of 2
         STR     a4,[a1],#4
         MOVCS   a1,#0                   // set result to 0
-        MOVCSS  pc,lr                   // return 0 if non-zero result
+        BXCS    lr                      // return 0 if non-zero result
 LABEL(dec_loop_up_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
         MVNEQ   a1,#0                   // return -1
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         MOV     ip,a1                   // move ptr to ip
         MOV     a1,#0                   // set result to 0
         ANDS    a3,a4,#3
@@ -2932,10 +2718,10 @@ LABEL(dec_loop_up_l1)
         SUBS    a2,a2,#1                // DEC the two words
         SUBCCS  a3,a3,#1                // stopping when first word non-zero
         STMIA   ip!,{a2,a3}             // store 2 results
-        MOVCSS  pc,lr                   // return 0 if any result non-zero
+        BXCS    lr                      // return 0 if any result non-zero
         SUBS    a4,a4,#2                // decrement counter by 2
         MVNEQ   a1,#0                   // if finished loop then
-        MOVEQS  pc,lr                   // return -1
+        BXEQ    lr                      // return -1
 LABEL(dec_loop_up_l3)                   // now a multiple of 4 words
         STMFD   sp!,{v1,lr}             // save work regs
 LABEL(dec_loop_up_l2)
@@ -2945,11 +2731,11 @@ LABEL(dec_loop_up_l2)
         SUBCCS  v1,v1,#1
         SUBCCS  lr,lr,#1
         STMIA   ip!,{a2,a3,v1,lr}       // store 4 results
-        LDMCSFD sp!,{v1,pc}^            // return 0 if any carry
+        LDMCSFD sp!,{v1,pc}             // return 0 if any carry
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     dec_loop_up_l2          // if count still positive then loop
         MVN     a1,#0
-        LDMFD   sp!,{v1,pc}^            // restore work regs and return -1
+        LDMFD   sp!,{v1,pc}             // restore work regs and return -1
 
 // extern void neg_loop_up (uintD* ptr, uintC count);
 //       entry
@@ -2962,23 +2748,23 @@ LABEL(dec_loop_up_l2)
         EXPORT(neg_loop_up)             // word aligned neg loop up
         DECLARE_FUNCTION(neg_loop_up)
 GLABEL(neg_loop_up)
-        CMPS    a2,#0                   // count = 0 ?
+        CMP     a2,#0                   // count = 0 ?
         MOVEQ   a1,#0                   // yup, so return 0
-        MOVEQS  pc,lr
+        BXEQ    lr
 LABEL(neg_loop_up_l1)                   // skip all the zero words first
         LDR     a3,[a1],#4              // compare words against zero
-        CMPS    a3,#0                   // upwards in memory
+        CMP     a3,#0                   // upwards in memory
         BNE     neg_loop_up_l2          // non-zero, so negate rest of words
         SUBS    a2,a2,#1                // reduce count of words
         BNE     neg_loop_up_l1          // more ?, so loop
         MOV     a1,#0                   // return 0
-        MOVS    pc,lr
+        BX      lr
 LABEL(neg_loop_up_l2)
         RSB     a3,a3,#0                // first non-zero word = -word
         STR     a3,[a1,#-4]
         SUBS    a2,a2,#1
         MVNEQ   a1,#0                   // done ? -> return -1
-        MOVEQS  pc,lr
+        BXEQ    lr
                                         // now NOT rest of the words
         ANDS    a3,a2,#3                // multiple of 4 words ?
         BEQ     neg_loop_up_l3          // yup, so branch
@@ -2996,7 +2782,7 @@ LABEL(neg_loop_up_l2)
 LABEL(neg_loop_up_l3)
         BICS    a4,a2,#3                // set counter to multiple of 4
         MVNEQ   a1,#0                   // set result to -1
-        MOVEQS  pc,lr                   // if zero then we're done
+        BXEQ    lr                      // if zero then we're done
         STMFD   sp!,{lr}                // save work regs
 LABEL(neg_loop_up_l4)
         LDMIA   a1,{a2,a3,ip,lr}        // load 4 words in one go,NO writeback
@@ -3008,7 +2794,7 @@ LABEL(neg_loop_up_l4)
         SUBS    a4,a4,#4                // decrement counter by 4
         BGT     neg_loop_up_l4          // if count still positive then loop
         MVN     a1,#0                   // set result to -1
-        LDMFD   sp!,{pc}^               // restore work regs and return -1
+        LDMFD   sp!,{pc}                // restore work regs and return -1
 
 // extern uintD shift1left_loop_up (uintD* ptr, uintC count);
 //       entry
@@ -3029,7 +2815,7 @@ GLABEL(shift1left_loop_up)
 LABEL(shift1left_loop_up_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
         ADCEQ   a1,a4,a4                // if zero set result to C (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        BXEQ    lr                      // and return
         ANDS    a3,a4,#3                // multiple of 4 words ?
         BEQ     shift1left_loop_up_l3   // yup, so branch
         LDMIA   a1,{a2,a3}              // load 2 words in one go
@@ -3038,7 +2824,7 @@ LABEL(shift1left_loop_up_l1)
         STMIA   a1!,{a2,a3}             // store 2 results
         BICS    a4,a4,#2                // decrement counter by 2
         ADCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        BXEQ    lr                      // and return
 LABEL(shift1left_loop_up_l3)            // now a multiple of 4 words
         STMFD   sp!,{lr}                // save work regs
 LABEL(shift1left_loop_up_l2)
@@ -3052,7 +2838,7 @@ LABEL(shift1left_loop_up_l2)
         TEQ     a4,#0                   // are we done ?
         BNE     shift1left_loop_up_l2   // if count non-zero then loop
         ADC     a1,a4,a4                // set result to Carry (a4 is 0)
-        LDMFD   sp!,{pc}^               // restore work regs and return 1
+        LDMFD   sp!,{pc}                // restore work regs and return 1
 
 // extern uintD shiftleft_loop_up (uintD* ptr, uintC count, uintC i, uintD carry);
 //       entry
@@ -3087,7 +2873,7 @@ GLABEL(shiftleft_loop_up)
 LABEL(shiftleft_loop_up_l1)
         BICS    ip,a2,#3                // set counter to multiple of 4
         MOVEQ   a1,a4                   // if zero then we're done
-        LDMEQFD sp!,{v6,pc}^            // so return last shift out
+        LDMEQFD sp!,{v6,pc}             // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftleft_loop_up_l2)
         LDMIA   a1,{v1,v2,v3,lr}        // load 4 words in one go
@@ -3103,7 +2889,7 @@ LABEL(shiftleft_loop_up_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftleft_loop_up_l2    // if count still positive then loop
         MOV     a1,a4                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v6,pc}^      // restore work regs and return
+        LDMFD   sp!,{v1-v3,v6,pc}       // restore work regs and return
 
 #endif
 
@@ -3141,7 +2927,7 @@ GLABEL(shiftleftcopy_loop_up)
 LABEL(shiftleftcopy_loop_up_l1)
         BICS    ip,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,v5                   // if zero then we're done
-        LDMEQFD sp!,{v5,v6,pc}^         // so return last shift out
+        LDMEQFD sp!,{v5,v6,pc}          // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftleftcopy_loop_up_l2)
         LDMIA   a1!,{v1,v2,v3,lr}       // load 4 words in one go
@@ -3157,7 +2943,7 @@ LABEL(shiftleftcopy_loop_up_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftleftcopy_loop_up_l2 // if count still positive then loop
         MOV     a1,v5                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v5,v6,pc}^   // restore work regs and return
+        LDMFD   sp!,{v1-v3,v5,v6,pc}    // restore work regs and return
 
 #if !CL_DS_BIG_ENDIAN_P
 
@@ -3176,35 +2962,35 @@ GLABEL(shift1right_loop_down)
         ANDS    a3,a2,#1                // multiple of 2 words ?
         BEQ     shift1right_loop_down_l1 // yup, so branch
         LDR     a4,[a1,#-4]!            // shift right the first word
-        MOVS    a4,a4,RRX
+        MOVS    a4,a4,rrx
         STR     a4,[a1]
 LABEL(shift1right_loop_down_l1)
         BICS    a4,a2,#1                // set counter to multiple of 2
-        MOVEQ   a1,a4,RRX               // if zero set result to C (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        MOVEQ   a1,a4,rrx               // if zero set result to C (a4 is 0)
+        BXEQ    lr                      // and return
         ANDS    a3,a4,#3                // multiple of 4 words ?
         BEQ     shift1right_loop_down_l3 // yup, so branch
         LDMDB   a1,{a2,a3}              // load 2 words in one go
-        MOVS    a3,a3,RRX               // shift right the two words
-        MOVS    a2,a2,RRX
+        MOVS    a3,a3,rrx               // shift right the two words
+        MOVS    a2,a2,rrx
         STMDB   a1!,{a2,a3}             // store 2 results
         BICS    a4,a4,#2                // decrement counter by 2
         ADCEQ   a1,a4,a4                // set result to Carry (a4 is 0)
-        MOVEQS  pc,lr                   // and return
+        BXEQ    lr                      // and return
 LABEL(shift1right_loop_down_l3)         // now a multiple of 4 words
         STMFD   sp!,{lr}                // save work regs
 LABEL(shift1right_loop_down_l2)
         LDMDB   a1,{a2,a3,ip,lr}        // load 4 words in one go
-        MOVS    lr,lr,RRX               // shift right the four words
-        MOVS    ip,ip,RRX
-        MOVS    a3,a3,RRX
-        MOVS    a2,a2,RRX
+        MOVS    lr,lr,rrx               // shift right the four words
+        MOVS    ip,ip,rrx
+        MOVS    a3,a3,rrx
+        MOVS    a2,a2,rrx
         STMDB   a1!,{a2,a3,ip,lr}       // store 4 results
         SUB     a4,a4,#4                // decrement counter by 4
         TEQ     a4,#0                   // are we done ?
         BNE     shift1right_loop_down_l2 // if count non-zero then loop
-        MOV     a1,a4,RRX               // set result to Carry (a4 is 0)
-        LDMFD   sp!,{pc}^               // restore work regs and return 1
+        MOV     a1,a4,rrx               // set result to Carry (a4 is 0)
+        LDMFD   sp!,{pc}                // restore work regs and return 1
 
 // extern uintD shiftright_loop_down (uintD* ptr, uintC count, uintC i);
 //       entry
@@ -3240,7 +3026,7 @@ LABEL(shiftright_loop_down_l0)
 LABEL(shiftright_loop_down_l1)
         BICS    ip,a2,#3                // set counter to multiple of 4
         MOVEQ   a1,a4                   // if zero then we're done
-        LDMEQFD sp!,{v6,pc}^            // so return last shift out
+        LDMEQFD sp!,{v6,pc}             // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftright_loop_down_l2)
         LDMDB   a1,{a2,v1,v2,v3}        // load 4 words in one go
@@ -3256,7 +3042,7 @@ LABEL(shiftright_loop_down_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftright_loop_down_l2 // if count still positive then loop
         MOV     a1,a4                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v6,pc}^      // restore work regs and return
+        LDMFD   sp!,{v1-v3,v6,pc}       // restore work regs and return
 
 // extern uintD shiftrightsigned_loop_down (uintD* ptr, uintC count, uintC i);
 //       entry
@@ -3313,7 +3099,7 @@ LABEL(shiftrightcopy_loop_down_l0)
 LABEL(shiftrightcopy_loop_down_l1)
         BICS    ip,a3,#3                // set counter to multiple of 4
         MOVEQ   a1,v5                   // if zero then we're done
-        LDMEQFD sp!,{v5,v6,pc}^         // so return last shift out
+        LDMEQFD sp!,{v5,v6,pc}          // so return last shift out
         STMFD   sp!,{v1-v3}             // save work regs
 LABEL(shiftrightcopy_loop_down_l2)
         LDMDB   a1!,{a3,v1,v2,v3}       // load 4 words in one go
@@ -3329,7 +3115,7 @@ LABEL(shiftrightcopy_loop_down_l2)
         SUBS    ip,ip,#4                // decrement counter by 4
         BGT     shiftrightcopy_loop_down_l2 // if count still positive then loop
         MOV     a1,v5                   // result = last shift out
-        LDMFD   sp!,{v1-v3,v5,v6,pc}^   // restore work regs and return
+        LDMFD   sp!,{v1-v3,v5,v6,pc}    // restore work regs and return
 
 #ifndef HAVE_umull
 // mulu32_64_vregs
@@ -3354,7 +3140,7 @@ LABEL(mulu32_64_vregs)
         ADDCS   v2,v2,#0x10000          // carry from above add
         ADDS    v1,v4,ip,LSL #16        // x is now bottom 32 bits of result
         ADC     ip,v2,ip,LSR #16        // hi is top 32 bits
-        MOVS    pc,lr
+        BX      lr
 #endif
 
 // extern uintD mulusmall_loop_up (uintD digit, uintD* ptr, uintC len, uintD newdigit);
@@ -3371,7 +3157,7 @@ LABEL(mulu32_64_vregs)
 GLABEL(mulusmall_loop_up)
         CMP     a3,#0
         MOVEQ   a1,a4
-        MOVEQS  pc,lr
+        BXEQ    lr
 #ifdef HAVE_umull
         STMFD   sp!,{v1,lr}
 LABEL(mulusmall_loop_up_l1)
@@ -3383,29 +3169,20 @@ LABEL(mulusmall_loop_up_l1)
         SUBS    a3,a3,#1                // len--
         BNE     mulusmall_loop_up_l1    // until len==0
         MOV     a1,a4                   // return carry
-        LDMFD   sp!,{v1,pc}^
+        LDMFD   sp!,{v1,pc}
 #else
-        STMFD   sp!,{v1-v2,lr}
+        STMFD   sp!,{v1-v4,lr}
 LABEL(mulusmall_loop_up_l1)
         LDR     ip,[a2]
 
-//      BL      mulu32_64_vregs         // muluD(digit,*ptr,hi=,lo=)
-// replaced by multiplication of a small x = a1 and a big y = ip :
-        MOV     v1,ip,LSR #16           // top half of y
-        BIC     ip,ip,v1,LSL #16        // bottom half of y
-        MUL     v2,a1,v1                // middle section of result
-        MUL     v1,a1,ip                // low section of result
-        MOV     ip,#0                   // high section of result
-        ADDS    v1,v1,v2,LSL #16        // bottom 32 bits of result
-        ADC     ip,ip,v2,LSR #16        // top 32 bits of result
-
+        BL      mulu32_64_vregs         // muluD(digit,*ptr,hi=,lo=)
         ADDS    v1,v1,a4                // lo += carry
         ADC     a4,ip,#0                // if (lo<carry) { hi += 1 }; carry=hi
         STR     v1,[a2],#4              // *ptr++ = lo
         SUBS    a3,a3,#1                // len--
         BNE     mulusmall_loop_up_l1    // until len==0
         MOV     a1,a4                   // return carry
-        LDMFD   sp!,{v1-v2,pc}^
+        LDMFD   sp!,{v1-v4,pc}
 #endif
 
 // extern void mulu_loop_up (uintD digit, uintD* sourceptr, uintD* destptr, uintC len);
@@ -3431,7 +3208,7 @@ LABEL(mulu_loop_up_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulu_loop_up_l1         // until len==0
         STR     v5,[a3],#4              // *destptr++ = carry
-        LDMFD   sp!,{v1,v5,pc}^
+        LDMFD   sp!,{v1,v5,pc}
 #else
         STMFD   sp!,{v1-v5,lr}
         MOV     v5,#0
@@ -3444,7 +3221,7 @@ LABEL(mulu_loop_up_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulu_loop_up_l1         // until len==0
         STR     v5,[a3],#4              // *destptr++ = carry
-        LDMFD   sp!,{v1-v5,pc}^
+        LDMFD   sp!,{v1-v5,pc}
 #endif
 
 // extern void muluadd_loop_up (uintD digit, uintD* sourceptr, uintD* destptr, uintC len);
@@ -3473,7 +3250,7 @@ LABEL(muluadd_loop_up_l1)
         SUBS    a4,a4,#1                // len--
         BNE     muluadd_loop_up_l1      // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1,v5,pc}^
+        LDMFD   sp!,{v1,v5,pc}
 #else
         STMFD   sp!,{v1-v5,lr}
         MOV     v5,#0
@@ -3489,7 +3266,7 @@ LABEL(muluadd_loop_up_l1)
         SUBS    a4,a4,#1                // len--
         BNE     muluadd_loop_up_l1      // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1-v5,pc}^
+        LDMFD   sp!,{v1-v5,pc}
 #endif
 
 // extern void mulusub_loop_up (uintD digit, uintD* sourceptr, uintD* destptr, uintC len);
@@ -3518,7 +3295,7 @@ LABEL(mulusub_loop_up_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulusub_loop_up_l1      // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1,v5,pc}^
+        LDMFD   sp!,{v1,v5,pc}
 #else
         STMFD   sp!,{v1-v5,lr}
         MOV     v5,#0
@@ -3534,7 +3311,7 @@ LABEL(mulusub_loop_up_l1)
         SUBS    a4,a4,#1                // len--
         BNE     mulusub_loop_up_l1      // until len==0
         MOV     a1,v5                   // return carry
-        LDMFD   sp!,{v1-v5,pc}^
+        LDMFD   sp!,{v1-v5,pc}
 #endif
 
 #endif
@@ -3575,7 +3352,7 @@ GLABEL(shiftxor_loop_up)
 LABEL(shiftxor_loop_up_l1)
         BICS    a3,a3,#3                // set counter to multiple of 4
         STREQ   ip,[a1]
-        LDMEQFD sp!,{v5,v6,pc}^         // return if done
+        LDMEQFD sp!,{v5,v6,pc}          // return if done
         STMFD   sp!,{v1-v4}             // save work regs
 LABEL(shiftxor_loop_up_l2)
         LDMIA   a2!,{v3,v4,v5,v6}       // load 4 words yptr[0..3] in one go
@@ -3595,6 +3372,6 @@ LABEL(shiftxor_loop_up_l2)
         SUBS    a3,a3,#4                // decrement counter by 4
         BGT     shiftxor_loop_up_l2
         STR     ip,[a1]
-        LDMFD   sp!,{v1-v6,pc}^         // restore work regs and return
+        LDMFD   sp!,{v1-v6,pc}          // restore work regs and return
 
         END

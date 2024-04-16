@@ -29,7 +29,6 @@
 #ifndef FEELPP_HEATSHIELDMINIMALVERSION_HPP
 #define FEELPP_HEATSHIELDMINIMALVERSION_HPP 1
 
-#include <boost/timer.hpp>
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -82,8 +81,8 @@ public:
     typedef typename super_type::bdf_ptrtype bdf_ptrtype;
 
     HeatShieldMinimalVersion() : super_type( "thermalblockminver" ) {}
-        
-    
+
+
     //! initialization of the model
     void initModel();
 
@@ -162,9 +161,9 @@ void HeatShieldMinimalVersion<Order>::initModel()
 
     auto energy = form2( _trial=this->Xh, _test=this->Xh);
     energy =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) ) +
-        integrate(  markedfaces( mesh, "left" ), 0.01 * idt( u )*id( v ) ) +
-        integrate(  markedfaces( mesh, "gamma_holes" ), 0.001 * idt( u )*id( v ) )
+        integrate(  _range=elements( mesh ),                   _expr=gradt( u )*trans( grad( v ) ) ) +
+        integrate(  _range=markedfaces( mesh, "left" ),        _expr=0.01 * idt( u )*id( v ) ) +
+        integrate(  _range=markedfaces( mesh, "gamma_holes" ), _expr=0.001 * idt( u )*id( v ) )
         ;
     this->addEnergyMatrix( energy );
     this->addMassMatrix(mass);

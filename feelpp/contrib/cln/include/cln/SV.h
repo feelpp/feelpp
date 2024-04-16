@@ -75,6 +75,26 @@ public:
 	{ return operator[]((unsigned long)index); }
 	T & operator[] (int index)
 	{ return operator[]((unsigned long)index); }
+	#if long_bitsize < pointer_bitsize
+	const T & operator[] (unsigned long long index) const
+	{
+		#ifndef CL_SV_NO_RANGECHECKS
+		if (!(index < size())) throw runtime_exception();
+		#endif
+		return data()[index];
+	}
+	T & operator[] (unsigned long long index)
+	{
+		#ifndef CL_SV_NO_RANGECHECKS
+		if (!(index < size())) throw runtime_exception();
+		#endif
+		return data()[index];
+	}
+	const T & operator[] (long long index) const
+	{ return operator[]((unsigned long long)index); }
+	T & operator[] (long long index)
+	{ return operator[]((unsigned long long)index); }
+	#endif
 public: /* ugh */
 	// Constructor.
 	cl_SV_inner (std::size_t l) : len (l) {}
@@ -142,6 +162,20 @@ public:
 	{ return operator[]((unsigned long)index); }
 	T & operator[] (int index)
 	{ return operator[]((unsigned long)index); }
+	#if long_bitsize < pointer_bitsize
+	const T & operator[] (unsigned long long index) const
+	{
+		return ((const cl_heap_SV<T> *) this->pointer)->v[index];
+	}
+	T & operator[] (unsigned long long index)
+	{
+		return ((cl_heap_SV<T> *) this->pointer)->v[index];
+	}
+	const T & operator[] (long long index) const
+	{ return operator[]((unsigned long long)index); }
+	T & operator[] (long long index)
+	{ return operator[]((unsigned long long)index); }
+	#endif
 	// Constructors.
 	cl_SV (const cl_SV&);
 	// Assignment operators.

@@ -106,7 +106,7 @@ const cl_R read_real (const cl_read_flags& flags, const char * string, const cha
 		var cl_signean sign = 0;
 		if (ptr == string_limit) goto not_rational_syntax;
 		switch (*ptr) {
-			case '-': sign = ~sign;
+			case '-': sign = ~sign; // fallthrough
 			case '+': ptr++;
 			default: break;
 		}
@@ -159,19 +159,17 @@ not_rational_syntax:
 		var cl_signean sign = 0;
 		if (ptr == string_limit) goto not_float_syntax;
 		switch (*ptr) {
-			case '-': sign = ~sign;
+			case '-': sign = ~sign; // fallthrough
 			case '+': ptr++;
 			default: break;
 		}
 		var const char * ptr_after_sign = ptr;
 		var const char * ptr_after_intpart = skip_digits(ptr_after_sign,string_limit,float_base);
-		var bool have_dot = false;
 		var const char * ptr_before_fracpart = ptr_after_intpart;
 		var const char * ptr_after_fracpart = ptr_after_intpart;
 		ptr = ptr_after_intpart;
 		if (ptr != string_limit)
 		  if (*ptr == '.') {
-			have_dot = true;
 			ptr_before_fracpart = ptr+1;
 			ptr_after_fracpart = skip_digits(ptr_before_fracpart,string_limit,float_base);
 		}
@@ -253,7 +251,7 @@ not_rational_syntax:
 		,	if (!(flags.syntax & syntax_sfloat)) goto not_float_syntax;
 		,	if (!(flags.syntax & syntax_ffloat)) goto not_float_syntax;
 		,	if (!(flags.syntax & syntax_dfloat)) goto not_float_syntax;
-		,	unused len;
+		,	cl_unused len;
 			if (!(flags.syntax & syntax_lfloat)) goto not_float_syntax;
 		);
 		at_end_of_parse(ptr_after_prec);

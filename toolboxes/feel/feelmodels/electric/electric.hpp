@@ -74,16 +74,16 @@ public:
 
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_electric_type;
 
     // function space electric-potential
     typedef BasisPotentialType basis_electricpotential_type;
-    static const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
+    static inline const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;
@@ -117,7 +117,7 @@ public:
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
     element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
@@ -172,17 +172,17 @@ public :
         {
             auto const& v = this->fieldElectricPotential();
             auto electricFieldExpr = -trans(gradv( v ) );
-            std::map<std::string,std::vector<std::tuple<std::decay_t<decltype(electricFieldExpr)>, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprElectricField;
+            std::map<std::string,std::vector<std::tuple<std::decay_t<decltype(electricFieldExpr)>, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprElectricField;
             mapExprElectricField[prefixvm(prefix,"electric-field")].push_back( std::make_tuple( electricFieldExpr, M_rangeMeshElements, "element" ) );
 
             typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)) _expr_scalar_type;
-            std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
+            std::map<std::string,std::vector<std::tuple<_expr_scalar_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprScalar;
 
             typedef std::decay_t<decltype(-_expr_scalar_type{}*trans(gradv(v)))> expr_current_density_type;
-            std::map<std::string,std::vector<std::tuple< expr_current_density_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprCurrentDensity;
+            std::map<std::string,std::vector<std::tuple< expr_current_density_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprCurrentDensity;
 
             typedef std::decay_t<decltype(_expr_scalar_type{}*inner(gradv(v)))> expr_joules_losses_type;
-            std::map<std::string,std::vector<std::tuple< expr_joules_losses_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprJoulesLosses;
+            std::map<std::string,std::vector<std::tuple< expr_joules_losses_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprJoulesLosses;
 
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
@@ -224,7 +224,8 @@ public :
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -241,9 +242,11 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -362,7 +365,7 @@ public :
 
 private :
 
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     space_electricpotential_ptrtype M_XhElectricPotential;
     element_electricpotential_ptrtype M_fieldElectricPotential;

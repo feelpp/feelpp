@@ -9,10 +9,6 @@ namespace cln {
 
 // Symbols are just strings, uniquified through a global hash table.
 
-#if (defined(__alpha__) && !defined(__GNUC__))
-struct hashuniq;
-#endif
-
 struct cl_symbol : public cl_rcpointer {
 public:
 	// Conversion to string.
@@ -45,7 +41,7 @@ inline bool equal (const cl_symbol& s1, const cl_symbol& s2)
 }
 
 // Hash code.
-extern unsigned long hashcode (const cl_symbol& s);
+extern uintptr_t hashcode (const cl_symbol& s);
 
 }  // namespace cln
 

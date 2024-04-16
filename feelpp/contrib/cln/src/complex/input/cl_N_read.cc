@@ -108,7 +108,7 @@ const cl_N read_complex (const cl_read_flags& flags, const char * string, const 
 		var cl_signean sign = 0;
 		if (ptr == string_limit) goto not_rational_syntax;
 		switch (*ptr) {
-			case '-': sign = ~sign;
+			case '-': sign = ~sign; // fallthrough
 			case '+': ptr++;
 			default: break;
 		}
@@ -158,19 +158,17 @@ not_rational_syntax:
 		var cl_signean sign = 0;
 		if (ptr == string_limit) goto not_float_syntax;
 		switch (*ptr) {
-			case '-': sign = ~sign;
+			case '-': sign = ~sign; // fallthrough
 			case '+': ptr++;
 			default: break;
 		}
 		var const char * ptr_after_sign = ptr;
 		var const char * ptr_after_intpart = skip_digits(ptr_after_sign,string_limit,float_base);
-		var bool have_dot = false;
 		var const char * ptr_before_fracpart = ptr_after_intpart;
 		var const char * ptr_after_fracpart = ptr_after_intpart;
 		ptr = ptr_after_intpart;
 		if (ptr != string_limit)
 		  if (*ptr == '.') {
-			have_dot = true;
 			ptr_before_fracpart = ptr+1;
 			ptr_after_fracpart = skip_digits(ptr_before_fracpart,string_limit,float_base);
 		}
@@ -252,7 +250,7 @@ not_rational_syntax:
 		,	if (!(flags.syntax & syntax_sfloat)) goto not_float_syntax;
 		,	if (!(flags.syntax & syntax_ffloat)) goto not_float_syntax;
 		,	if (!(flags.syntax & syntax_dfloat)) goto not_float_syntax;
-		,	unused len;
+		,	cl_unused len;
 			if (!(flags.syntax & syntax_lfloat)) goto not_float_syntax;
 		);
 		return read_complex_number_rest(flags,ptr_after_prec,string,string_limit,end_of_parse,
@@ -303,7 +301,7 @@ not_complex_syntax:
 
 static const cl_N read_complex_number_rest (const cl_read_flags& flags, const char * string_rest, const char * string, const char * string_limit, const char * * end_of_parse, const cl_R& x)
 {
-	unused string;
+	cl_unused string;
 	if ((flags.syntax & syntax_complex) && (flags.lsyntax & lsyntax_algebraic)) {
 		// Finish reading the "+yi" part of "x+yi".
 		// We allow "y" to begin with a '-'.
@@ -318,7 +316,7 @@ static const cl_N read_complex_number_rest (const cl_read_flags& flags, const ch
 			return complex(0,x);
 		}
 		switch (*ptr) {
-			case '+': ptr++;
+			case '+': ptr++; // fallthrough
 			case '-': break;
 			default: goto not_complex_syntax;
 		}

@@ -1291,13 +1291,17 @@ public:
 
         }
 
-    template<typename ExprType>
+    template<typename ExprType,
+             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 0 ,bool> = true >
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type& Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
         Ihloc.setZero();
+
+        int nPoints = expr.nPoints();
+
 
         for( int e = 0; e < convex_type::numEdges; ++e )
         {
@@ -1306,6 +1310,8 @@ public:
             for ( int l = 0; l < nDofPerEdge; ++l )
             {
                 int q = e*nDofPerEdge+l;
+                CHECK( q < nPoints) << "worng point eval" << q << " vs " << nPoints;
+
                 for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
                 {
                     int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
@@ -1321,6 +1327,65 @@ public:
                 }
             }
         }
+    }
+
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc, std::vector<uint16_type> const& mapExprPointToDofPoint ) const
+        {
+            //CHECK( false ) << "TODO";
+            return this->interpolateBasisFunction( std::forward<ExprType>( expr ), Ihloc );
+        }
+
+    template<typename ExprType,
+             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 1 ,bool> = true >
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type& Ihloc ) const
+    {
+        using shape = typename std::decay_t<ExprType>::shape;
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
+        Ihloc.setZero();
+        int nPoints = expr.nPoints();
+
+        for( int e = 0; e < face_type::numEdges; ++e )
+        {
+            int edgeid_in_element;
+            if( nDim <= 2 )
+                edgeid_in_element = expr.geom()->element().fToE( expr.geom()->faceId(), expr.geom()->faceId());
+            else
+                edgeid_in_element = expr.geom()->element().fToE( expr.geom()->faceId(), e);
+
+            expr.geom()->edgeTangent(edgeid_in_element, t, true);
+
+            int sign = 1;
+#if 1
+            if ( expr.geom()->element().edgePermutation( expr.geom()->faceId() ).value() == 2 )///*face_type::permutation_type*/ /*edge_permutation_type*/::REVERSE_PERMUTATION )
+                sign = -1;
+#endif
+
+
+            for ( int l = 0; l < nDofPerEdge; ++l )
+            {
+                int q = e*nDofPerEdge+l;
+                int q2 = edgeid_in_element*nDofPerEdge+l;
+                CHECK( q < nPoints) << "wrong point eval" << q << " vs " << nPoints;
+
+                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+                {
+                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+
+                    for ( uint16_type c = 0; c < ncomp; ++c )
+                    {
+                        uint16_type I = expr_basis_t::nLocalDof*c + i;
+                        for( int c1 = 0; c1 < shape::M; ++c1 )
+                        {
+                            Ihloc(I,q2) += sign*expr.evaliq( I, c1, 0, q )*t(c1);
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
 

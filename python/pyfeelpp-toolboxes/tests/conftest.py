@@ -3,7 +3,7 @@ import sys
 
 import py
 import pytest
-import feelpp
+import feelpp.core as fppc
 import feelpp.toolboxes.core as tb
 log = getLogger(__name__)
 MPI_ARGS = ("mpirun", "-n")
@@ -23,19 +23,20 @@ def has_mpi4py():
 class InitFeelpp:
     def __init__(self,config):
         try:
-            print('xxx call init_feelpp;', __file__)
+            print('[conftest] init_feelpp;', __file__, flush=True)
             sys.argv=['test_pyfeelpptoolboxes']
-            self.e = feelpp.Environment(
-                sys.argv, opts= feelpp.backend_options("Iv")
+            self.e = fppc.Environment(
+                sys.argv, opts= fppc.backend_options("Iv")
                                 .add(tb.toolboxes_options("electric"))
                                 .add(tb.toolboxes_options("fluid"))
                                 .add(tb.toolboxes_options("heat"))
                                 .add(tb.toolboxes_options("solid"))
-                                .add(tb.toolboxes_options("solid"))
+                                .add(tb.toolboxes_options("heat-fluid"))
+                                .add(tb.toolboxes_options("thermo-electric"))
                                 .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes")),
                 config=config
                                 )
-            print('is master? ', feelpp.Environment.worldCommPtr().isMasterRank())
+            print('[conftest] is master? ', fppc.Environment.worldCommPtr().isMasterRank(),flush=True)
         except Exception as err:
             print('Exception caught while initializing Feel++: '.format(err))
             return 
@@ -43,4 +44,4 @@ class InitFeelpp:
 
 @pytest.fixture(scope="session", autouse=True)
 def init_feelpp():
-    return InitFeelpp(feelpp.globalRepository("pyfeelpptoolboxes-tests"))
+    return InitFeelpp(fppc.globalRepository("pyfeelpptoolboxes-tests"))

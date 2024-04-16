@@ -21,37 +21,37 @@ static const _cl_ring_element null_op0 (cl_heap_ring* R)
 
 static const _cl_ring_element null_op1 (cl_heap_ring* R, const _cl_ring_element& x)
 {
-	unused x;
+	cl_unused x;
 	return _cl_ring_element(R, (cl_I)0);
 }
 
 static const _cl_ring_element null_op2 (cl_heap_ring* R, const _cl_ring_element& x, const _cl_ring_element& y)
 {
-	unused x;
-	unused y;
+	cl_unused x;
+	cl_unused y;
 	return _cl_ring_element(R, (cl_I)0);
 }
 
 static void null_fprint (cl_heap_ring* R, std::ostream& stream, const _cl_ring_element& x)
 {
-	unused R;
-	unused x;
+	cl_unused R;
+	cl_unused x;
 	fprint(stream,"0");
 }
 
 static bool null_equal (cl_heap_ring* R, const _cl_ring_element& x, const _cl_ring_element& y)
 {
-	unused R;
-	unused x;
-	unused y;
+	cl_unused R;
+	cl_unused x;
+	cl_unused y;
 	return true;
 }
 
 #define null_zero null_op0
 static bool null_zerop (cl_heap_ring* R, const _cl_ring_element& x)
 {
-	unused R;
-	unused x;
+	cl_unused R;
+	cl_unused x;
 	return true;
 }
 #define null_plus null_op2
@@ -61,15 +61,15 @@ static bool null_zerop (cl_heap_ring* R, const _cl_ring_element& x)
 #define null_one null_op0
 static const _cl_ring_element null_canonhom (cl_heap_ring* R, const cl_I& x)
 {
-	unused x;
+	cl_unused x;
 	return _cl_ring_element(R, (cl_I)0);
 }
 #define null_mul null_op2
 #define null_square null_op1
 static const _cl_ring_element null_expt_pos (cl_heap_ring* R, const _cl_ring_element& x, const cl_I& y)
 {
-	unused x;
-	unused y;
+	cl_unused x;
+	cl_unused y;
 	return _cl_ring_element(R, (cl_I)0);
 }
 
@@ -126,7 +126,7 @@ static void cl_null_ring_destructor (cl_heap* pointer)
 
 static void cl_null_ring_dprint (cl_heap* pointer)
 {
-	unused pointer;
+	cl_unused pointer;
 	fprint(cl_debugout, "(cl_null_ring) cl_0_ring");
 }
 

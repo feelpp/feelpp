@@ -1,10 +1,10 @@
-lib_LTLIBRARIES = libfeelpp_cln.la
+lib_LTLIBRARIES = libcln.la
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src -I$(top_builddir)/include -I$(top_builddir)/src
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/autoconf
-libfeelpp_cln_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
+libcln_la_LDFLAGS = -version-info $(LT_VERSION_INFO)
 
-libfeelpp_cln_la_SOURCES = \
+libcln_la_SOURCES = \
 base/cl_N.h \
 base/cl_alloca.cc \
 base/cl_alloca.h \
@@ -946,7 +946,7 @@ vector/output/cl_GV_number_aprint.cc \
 vector/output/cl_SV_aprint.cc \
 vector/output/cl_SV_number_aprint.cc
 
-nodist_libfeelpp_cln_la_SOURCES = \
+nodist_libcln_la_SOURCES = \
 base/digitseq/cl_asm.S \
 polynomial/elem/cl_asm_GF2.S
 
@@ -985,4 +985,9 @@ EXTRA_DIST = $(ASMFILES) $(MORE_ASMFILES)
 DISTCLEANFILES = \
 base/digitseq/cl_asm.S \
 polynomial/elem/cl_asm_GF2.S
+
+# Remove .deps directories created by 'configure'.
+# I would say that this left-over is an Automake 1.16.1 bug.
+distclean-local:
+	rm -rf $(DEPDIR) */$(DEPDIR) */*/$(DEPDIR) */*/*/$(DEPDIR)
 

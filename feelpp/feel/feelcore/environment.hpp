@@ -1,31 +1,31 @@
 //! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//! 
+//!
 //! This file is part of the Feel library
-//! 
+//!
 //! Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! Date: 2010-04-14
-//! 
+//!
 //! Copyright (C) 2010-2012 Université Joseph Fourier (Grenoble I)
-//! 
+//!
 //! This library is free software; you can redistribute it and/or
 //! modify it under the terms of the GNU Lesser General Public
 //! License as published by the Free Software Foundation; either
 //! version 2.1 of the License, or (at your option) any later version.
-//! 
+//!
 //! This library is distributed in the hope that it will be useful,
 //! but WITHOUT ANY WARRANTY; without even the implied warranty of
 //! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //! Lesser General Public License for more details.
-//! 
+//!
 //! You should have received a copy of the GNU Lesser General Public
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//! 
-//! 
+//!
+//!
 //! \file environment.hpp
 //! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! \date 2010-04-14
-//! 
+//!
 #ifndef FEELPP_ENVIRONMENT_HPP
 #define FEELPP_ENVIRONMENT_HPP 1
 
@@ -45,20 +45,6 @@
 #include <boost/property_tree/ptree_fwd.hpp>
 
 #include <feel/feelcore/feel.hpp>
-
-#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-
-#if defined(FEELPP_HAS_PYBIND11)
-#include <pybind11/pybind11.h>
-#endif
-
-#if defined(FEELPP_HAS_BOOST_PYTHON)
-#include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
-
-//#include <mpi4py/mpi4py.h>
-#endif // FEELPP_HAS_BOOST_PYTHON
-#endif // FEELPP_ENABLE_PYTHON_WRAPPING
 
 
 #include <boost/uuid/uuid.hpp>            // uuid class
@@ -87,6 +73,10 @@
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
+namespace pybind11
+{
+class list;
+}
 namespace Feel
 {
 namespace tc = termcolor;
@@ -95,6 +85,7 @@ namespace uuids =  boost::uuids;
 
 // boost::error_info typedef that holds the stacktrace:
 using traced = boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace>;
+
 
 /**
  * @brief helper class for throwing any exception with stacktrace:
@@ -159,21 +150,21 @@ struct FEELPP_EXPORT MemoryUsage
 //! default \c makeAbout function to define the \c AboutData structure of the Feel++
 //! application
 //! @param name name or short name of the application
-//! 
+//!
 FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 
-//! 
+//!
 //! @class Environment "Environment"
 //! @ingroup Core
 //! @brief Initialize, finalize, and query the Feel++ environment.
 //! @ingroup Core
-//! 
+//!
 //! The @c Environment class is used to initialize, finalize, and
 //! query the Feel++ environment. It will typically be used in the @c
 //! main() function of a program, which will create a single instance
 //! of @c Environment initialized with the arguments passed to the
 //! program:
-//! 
+//!
 //! @code
 //! int main(int argc, char* argv[])
 //! {
@@ -200,10 +191,10 @@ FEELPP_EXPORT AboutData makeAboutDefault( std::string name );
 //! The instance of @c Environment will initialize Feel++ (by calling @c MPI, @c
 //! PETSc, @c SLEPc or Logging initialization routines) in its constructor
 //! and finalize in its destructor.
-//! 
+//!
 //! @author Christophe Prud'homme
 //! @see Application
-//! 
+//!
 class FEELPP_EXPORT Environment
 :   boost::noncopyable,
     public JournalManager
@@ -252,10 +243,10 @@ public:
 
     /**
      * @brief Construct a new Environment object
-     * 
+     *
      * @param argc number of command line aguments
      * @param argv command line aguments
-     * @param lvl level of threading in MPI 
+     * @param lvl level of threading in MPI
      * @param desc command line options for application
      * @param desc_lib command line options for library
      * @param about about data structure
@@ -271,7 +262,7 @@ public:
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
     /**
      * @brief Construct a new Environment object
-     * 
+     *
      * @param arg sys arg
      * @param desc description of the options
      * @param directory directory to save the results
@@ -491,8 +482,8 @@ public:
     }
 
     /**
-     * @brief Set the Configuration from a File 
-     * 
+     * @brief Set the Configuration from a File
+     *
      * @param filename filename of the config file
      */
     static void setConfigFile( std::string const& filename );
@@ -558,8 +549,8 @@ public:
 
     /**
      * @brief get the repository info
-     * 
-     * @return Repository& 
+     *
+     * @return Repository&
      */
     static Repository& repository() { return S_repository; }
 
@@ -650,7 +641,7 @@ public:
     }
 
     //! \return the root repository (default: \c $HOME/feel)
-    static std::string const& rootRepository();
+    static fs::path const& rootRepository();
 
     /**
      * Find a file. The lookup is as follows:
@@ -781,7 +772,13 @@ public:
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
 
-    //! 
+    //! get the log verbosity level
+    static int logVerbosityLevel() { return FLAGS_v; }
+
+    //! set the verbosity level of the VLOG macro
+    static void setLogVerbosityLevel( int logVerbosity );
+
+    //!
     //!  set log files
     //!  \param prefix prefix for log filenames
     FEELPP_DEPRECATED static void setLogs( std::string const& prefix );
@@ -804,7 +801,7 @@ public:
     //! LOG(INFO) << "Feel++ uses logging";
     //! Environment::stopLogging();
     //! \endcode
-    //! 
+    //!
     //! \code
     //! Environment::startLogging();
     //! LOG(INFO) << "Feel++ uses logging";
@@ -861,12 +858,12 @@ public:
     static std::string expand( std::string const& expr );
 
     /**
-     * try find remotely the file \p fname 
-     * \param fname filename 
+     * try find remotely the file \p fname
+     * \param fname filename
      * \param subdir ubdirectory to store the file that may be downloaded
      * @return the filename
-     */ 
-    static std::string findFileRemotely( std::string const& fname, std::string const& subdir = "" ); 
+     */
+    static std::string findFileRemotely( std::string const& fname, std::string const& subdir = "" );
     //@}
 
 private:
@@ -923,6 +920,7 @@ private:
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
+    static inline bool S_initialized = false;
     static inline bool S_aborted = false;
     static inline bool S_init_python = true;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;

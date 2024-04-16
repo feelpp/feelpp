@@ -8,15 +8,13 @@
 
 namespace cln {
 
-// Undocumented input functions
+// Input functions
 
 // The following does strictly the same as the general read_complex.
 // It is here only so that you don't need the complex number reader
 // in order to read an rational number. ("Treeshaking")
 extern const cl_R read_real (const cl_read_flags& flags, const char * string, const char * string_limit, const char * * end_of_parse);
 extern const cl_R read_real (std::istream& stream, const cl_read_flags& flags);
-
-// Documented input functions
 
 inline std::istream& operator>> (std::istream& stream, cl_R& result)
 {
@@ -26,10 +24,7 @@ inline std::istream& operator>> (std::istream& stream, cl_R& result)
 }
 
 
-// Undocumented output functions
-
-
-// Documented output functions
+// Output functions
 
 // Gibt eine Zahl aus.
 // print_real(stream,flags,z);

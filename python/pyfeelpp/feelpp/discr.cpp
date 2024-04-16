@@ -22,8 +22,9 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <fmt/core.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/eigen.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
@@ -36,7 +37,7 @@
 #include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/stl_bind.h>
+
 
 namespace py = pybind11;
 using namespace Feel;
@@ -124,7 +125,10 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def("mesh",static_cast<mesh_ptr_t const&(space_t::*)() const>(&space_t::mesh), "get the mesh of the function space")
         .def("element",static_cast<element_t (space_t::*)(std::string const&, std::string const&)>(&space_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
         .def("elementFromExpr",static_cast<element_t (space_t::*)(std::string const&, std::string const&, std::string const& )>(&space_t::elementFromExpr), "get an element of the function space interpolating the expression", py::arg("expr"),py::arg("name")="u", py::arg("desc")="u")
-        .def("elementFromVec",static_cast<element_t (space_t::*)(std::shared_ptr<Vector<double>> const&, int)>(&space_t::element), "get an element from a vector")
+        .def("element", []( std::shared_ptr<space_t> & Xh, Vector<double> const& v, int blockIdStart ) { return Xh->element( v );
+            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")     
+        .def("element", []( std::shared_ptr<space_t> & Xh, VectorPetsc<double> const& v, int blockIdStart ) { return Xh->element( v, blockIdStart );
+            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")      
         ;
 
     // Element
@@ -137,7 +141,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def( "min", static_cast<double ( element_t::* )() const>( &element_t::min ), "get the minimum of the element vector representation" )
         .def( "max", static_cast<double ( element_t::* )() const>( &element_t::max ), "get the maximum of the element vector representation" )
         .def( "save", &element_t::saveImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "save functionspace element in file " )
-        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", "load functionspace element from file " )
+        .def( "load", &element_t::loadImpl, py::arg( "path" ), py::arg( "name" ), py::arg( "type" ) = "default", py::arg( "suffix" ) = "", py::arg( "sep" ) = "", py::arg("space_path") = "", "load functionspace element from file " )
         .def( py::self + py::self )
         .def( py::self - py::self )
         .def( double() + py::self )
@@ -160,11 +164,11 @@ void defDiscr(py::module &m, std::string const& suffix = "")
     }, py::arg("filename"), "print element to matlab format");
     if constexpr ( space_t::is_scalar )
     {
-        elt.def( "on", static_cast<void ( element_t::* )( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool )>( &element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>, Expr<GinacEx<2>>> ),
+        elt.def( "on", static_cast<void ( element_t::* )( Range<mesh_ptr_t,MESH_ELEMENTS> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool )>( &element_t::template onImpl<Range<mesh_ptr_t,MESH_ELEMENTS>, Expr<GinacEx<2>>> ),
                  py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
                  py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
     }
-    elt.def( "on", []( element_t& element, elements_reference_wrapper_t<mesh_ptr_t> const& r, 
+    elt.def( "on", []( element_t& element, Range<mesh_ptr_t,MESH_ELEMENTS> const& r, 
                         Expr<GinacMatrix<element_t::nComponents1,element_t::nComponents2,2>> const& e, std::string const& p, GeomapStrategyType g, bool a, bool v ){
                             element.on( _range=r, _expr=e );
                     },
@@ -177,11 +181,11 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
         ;
 #endif        
-    m.def( "normL2", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_norml2<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
-    m.def( "normH1", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_normh1<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
-    m.def( "mean", static_cast<eigen_v_t (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_mean<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
-    m.def( "mean", static_cast<eigen_v_t ( * )( faces_reference_wrapper_t<mesh_ptr_t> const&, element_t const& )>( &f_mean<faces_reference_wrapper_t<mesh_ptr_t> const&, element_t const&> ), "compute mean of function over a range of facets", py::arg( "range" ), py::arg( "expr" ) );
-    m.def( "minmax", static_cast<std::tuple<double,double,eigen_v2_t> (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_minmax<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute min max argmin argmax of a function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "normL2", static_cast<double (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_norml2<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "normH1", static_cast<double (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_normh1<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "mean", static_cast<eigen_v_t (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_mean<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "mean", static_cast<eigen_v_t ( * )( Range<mesh_ptr_t,MESH_FACES> const&, element_t const& )>( &f_mean<Range<mesh_ptr_t,MESH_FACES> const&, element_t const&> ), "compute mean of function over a range of facets", py::arg( "range" ), py::arg( "expr" ) );
+    m.def( "minmax", static_cast<std::tuple<double,double,eigen_v2_t> (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_minmax<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute min max argmin argmax of a function over a range of elements", py::arg("range"), py::arg("expr") );
 
 }
 template<typename space_t>

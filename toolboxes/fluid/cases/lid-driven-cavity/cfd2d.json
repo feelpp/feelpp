@@ -1,4 +1,3 @@
-// -*- mode: javascript -*-
 {
     /*
       References :
@@ -9,12 +8,22 @@
     "Models":
     {
         "fluid":{
-            "equations":"Navier-Stokes"
+            "setup":
+            {
+                "equation":"Navier-Stokes"
+                ,"formulation":"conservative"//"skew-symmetric"
+                //"formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
+            }
         }
     },
     "Parameters":
     {
-        "Re":"400"
+        "Re":1000, // 400, 800, 1000, 4000, 10000, 20000
+        "hfar":0.01,
+        "hclose_wall":"hfar/5:hfar",
+        //"hclose_wall":"hfar/10:hfar",
+        "d2r_bounded_wall":"min(meshes_fluid_distanceToRange_wall_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall_normalized_min_max",
+        "mymetric_wall":"hclose_wall+(hfar-hclose_wall)*d2r_bounded_wall:hclose_wall:hfar:d2r_bounded_wall"
     },
     "Meshes":
     {
@@ -22,8 +31,26 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/cfd2d.geo"
-                //"hsize":0.01
+                "filename":"$cfgdir/cfd2d.geo",//,
+                "hsize":0.01
+            },
+            "DistanceToRange":
+            {
+                "wall":
+                {
+                    "markers":["moving-wall","noslip-wall"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":
+            {
+                "metric":"mymetric_wall:mymetric_wall",
+                "events":{
+                    "after_import":{}
+                },
+                "setup":{
+                    "verbose":1//-1
+                }
             }
         }
     },
@@ -43,14 +70,17 @@
                 "moving-wall":
                 {
                     "expr":"{1,0}"
+                    //,"method":"nitsche"
                 },
                 "noslip-wall":
                 {
                     "expr":"{0,0}"
+                    //,"method":"nitsche"
                 },
                 "noslip-corner":
                 {
                     "expr":"{0,0}"
+                    //"expr":"{1,0}"
                 }
             }
         }
@@ -110,5 +140,4 @@
             }
         }
     }
-
 }

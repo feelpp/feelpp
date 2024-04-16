@@ -8,7 +8,7 @@ dnl the same distribution terms as the rest of that program.
 
 dnl From Bruno Haible, Marcus Daniels, Sam Steingold.
 
-AC_PREREQ(2.57)
+AC_PREREQ([2.69])
 
 AC_DEFUN([CL_GETTIMEOFDAY],
 [AC_BEFORE([$0], [CL_TIMES_CLOCK])
@@ -20,14 +20,12 @@ CL_PROTO_TRY([
 #include <sys/types.h>
 #include <sys/time.h>
 ], [int gettimeofday (struct timeval * tp, struct timezone * tzp);],
-[int gettimeofday();],
 cl_cv_proto_gettimeofday_dots=no
 cl_cv_proto_gettimeofday_arg2="struct timezone *", [
 CL_PROTO_TRY([
 #include <sys/types.h>
 #include <sys/time.h>
 ], [int gettimeofday (struct timeval * tp, void * tzp);],
-[int gettimeofday();],
 cl_cv_proto_gettimeofday_dots=no
 cl_cv_proto_gettimeofday_arg2="void *",
 cl_cv_proto_gettimeofday_dots=yes

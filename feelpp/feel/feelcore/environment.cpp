@@ -32,15 +32,17 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#include <pybind11/embed.h>
+#if defined(FEELPP_HAS_PYBIND11)
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/embed.h>
+#endif
+
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
@@ -103,7 +105,7 @@ void DebugWait(int rank)
     if(rank == 0) {
         std::cin >> a;
         std::cout << rank << ": Starting now\n";
-    } 
+    }
 
     MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
     std::cout << rank << ": Starting now\n";
@@ -309,7 +311,7 @@ Environment::Environment()
 //! Constructor
 Environment::Environment( int& argc, char**& argv )
     :
-    Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(), 
+    Environment( argc, argv, mpi::threading::single, feel_nooptions(), feel_options(),
                  makeAboutDefault(argv[0]), globalRepository( makeAboutDefault(argv[0]).appName() ) )
 {
 }
@@ -319,7 +321,7 @@ Environment::Environment( int& argc, char**& argv )
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
 struct PythonArgs
 {
-#if defined(FEELPP_HAS_BOOST_PYTHON) 
+#if defined(FEELPP_HAS_BOOST_PYTHON)
     PythonArgs( boost::python::list arg )
         {
             if ( argv == nullptr )
@@ -327,7 +329,7 @@ struct PythonArgs
                 /* Convert python options into argc/argv format */
 
                 argc = boost::python::len( arg );
-                
+
                 argv =new char* [argc+1];
                 boost::python::stl_input_iterator<std::string> begin( arg ), end;
                 int i=0;
@@ -358,7 +360,7 @@ struct PythonArgs
                 argv[i++] = strdup( std::string(pybind11::str(item) ).c_str() );
                 argv[argc]=nullptr;
             }
-            
+
         }
     static int argc;
     static char** argv;
@@ -405,7 +407,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = PetscInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = PetscInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = PetscInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -422,7 +424,7 @@ Environment::initPetsc( int * argc, char *** argv )
     {
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
-            ierr = SlepcInitialize( argc, argv, PETSC_NULL, PETSC_NULL );
+            ierr = SlepcInitialize( argc, argv, PETSC_IGNORE, PETSC_IGNORE );
         else
             ierr = SlepcInitializeNoArguments();
         CHKERRABORT( *S_worldcomm,ierr );
@@ -439,6 +441,11 @@ Environment::Environment( int argc, char** argv,
                           AboutData const& about,
                           Repository::Config const& config )
 {
+    // we can initialized only once
+    if (S_initialized)
+        return;
+    S_initialized = true;
+
     if ( argc == 0 )
     {
 #if BOOST_VERSION >= 105500
@@ -465,7 +472,7 @@ Environment::Environment( int argc, char** argv,
     cout.attachWorldComm( S_worldcomm );
     cerr.attachWorldComm( S_worldcomm );
     clog.attachWorldComm( S_worldcomm );
-    
+
 #if 0
     // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
     for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
@@ -504,7 +511,7 @@ Environment::Environment( int argc, char** argv,
 #endif
 
 
-    
+
 
     S_desc_app = std::make_shared<po::options_description>( desc );
     S_desc_lib = std::make_shared<po::options_description>( desc_lib );
@@ -566,7 +573,7 @@ Environment::Environment( int argc, char** argv,
     tic();
     cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
          <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
-    
+
 #if 0
     if ( S_vm.count( "nochdir" ) == 0 )
     {
@@ -601,14 +608,14 @@ Environment::Environment( int argc, char** argv,
         d /= S_vm["repository.case"].as<std::string>();
         directory = d.string();
     }
-    
+
     changeRepository( _directory = boost::format{ directory.string() } );
 #endif
 
     if ( S_vm.count( "dirs" ) == 1 )
     {
-        cout<< "- root: " << rootRepository() << std::endl 
-            << "-  app: " << appRepository() << std::endl 
+        cout<< "- root: " << rootRepository() << std::endl
+            << "-  app: " << appRepository() << std::endl
             // << "-  geo: " << geoRepository() << std::endl
             << "- home: " << expand("$home") << std::endl
             << "-  cfg: " << expand("$cfgdir") << std::endl
@@ -670,7 +677,7 @@ Environment::Environment( int argc, char** argv,
         journaldbconf.authsrc = S_vm["journal.database.authsrc"].as<std::string>();
     if( S_vm.count( "journal.database.collection" ) )
         journaldbconf.collection = S_vm["journal.database.collection"].as<std::string>();
-    Environment::journalDBConfig( journaldbconf ); 
+    Environment::journalDBConfig( journaldbconf );
     Feel::MongoCxx::instance();
 #endif
 
@@ -763,7 +770,7 @@ Environment::~Environment()
     cout << summary << std::endl;
     cout << "[ Stopping Feel++ ] " << tc::green << "application " << S_about.appName()
          << " execution time " << t << "s" << tc::reset << std::endl;
- 
+
 #if defined(FEELPP_HAS_HARTS)
     /* if we used hwloc, we free topology data */
     Environment::destroyHwlocTopology();
@@ -955,7 +962,7 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
     {
         for ( boost::shared_ptr<po::option_description> option : o.second )
         {
-            //Informations about the option
+            //Information about the option
             std::string optName = option->format_name().erase( 0,2 ); //Putting the option name in a variable for easier manipulations
             std::string defVal = ""; //option->format_parameter(); //Putting the option default value in a variable for easier manipulations
             std::string desc=option->description(); // Option description
@@ -1243,6 +1250,12 @@ Environment::generateOLFiles( int argc, char** argv, std::string const& appName 
 
 }
 
+void
+Environment::setLogVerbosityLevel( int v )
+{
+    LOG(INFO) << fmt::format( "set log verbosity level to {}, previously {}", v, Environment::logVerbosityLevel() );
+    FLAGS_v = v;
+}
 void
 Environment::processGenericOptions()
 {
@@ -1620,7 +1633,7 @@ Environment::doOptions( int argc, char** argv,
         LOG( WARNING ) << "Command line or config file option parsing error: " << e.what() << "\n"
                        << "  o faulty option: " << e.get_option_name() << "\n"
                        << "Warning: the .cfg file or some options may not have been read properly\n";
-                       
+
     }
 
     catch ( boost::program_options::ambiguous_option const& e )
@@ -1675,7 +1688,7 @@ Environment::setConfigFile( std::string const& cfgfile )
 bool
 Environment::initialized()
 {
-    return mpi::environment::initialized() ;
+    return S_initialized;
 }
 
 bool Environment::aborted()
@@ -1688,7 +1701,7 @@ Environment::finalized()
     return mpi::environment::finalized();
 }
 
-mpi::threading::level 
+mpi::threading::level
 Environment::threadLevel()
 {
     return mpi::environment::thread_level();
@@ -1705,11 +1718,12 @@ Environment::abort( int error_code )
     return mpi::environment::abort( error_code );
 }
 
-std::string const&
+fs::path const&
 Environment::rootRepository()
 {
-    return S_rootdir.string();
+    return S_rootdir;
 }
+
 std::string
 Environment::findFile( std::string const& filename, std::vector<std::string> paths )
 {
@@ -1733,14 +1747,14 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
     }
 
 #endif
-    
+
     auto filename_ = fs::path(filename).filename().string();
     for( auto const& ps : paths )
     {
-        
+
         fs::path p( Environment::expand(ps) );
         if ( fs::exists( p / filename_ ) )
-            
+
             return ( p / filename_ ).string();
     }
     // look in to paths list from end-1 to begin
@@ -1940,7 +1954,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
          << " . " << Environment::about().appName() << " files are stored in " << tc::red << Environment::appRepository()
          << tc::reset << std::endl;
     cout << " .. logfiles :" << Environment::logsRepository() << std::endl;
-    
+
     // eventually cleanup
     if ( remove )
     {
@@ -1984,7 +1998,7 @@ Environment::updateInformationObject( nl::json & p ) const
                     { "number_of_processors", Environment::numberOfProcessors() }
                 } ) );
 
-        // Softwares
+        // Software
         p["/software/boost/version"_json_pointer] = BOOST_LIB_VERSION;
 #if BOOST_VERSION >= 106700
         std::stringstream mpi_version;
@@ -2005,7 +2019,6 @@ Environment::updateInformationObject( nl::json & p ) const
                         { "major", PETSC_VERSION_MAJOR },
                         { "minor", PETSC_VERSION_MINOR },
                         { "subminor", PETSC_VERSION_SUBMINOR },
-                        { "patch", PETSC_VERSION_PATCH },
                         { "release", PETSC_VERSION_RELEASE }
                     } },
                 { "date", {
@@ -2476,7 +2489,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${top_builddir}", topBuildDir );
     boost::replace_all( res, "${cfgdir}", cfgDir );
     boost::replace_all( res, "${home}", homeDir );
-    boost::replace_all( res, "${repository}", Environment::rootRepository() );
+    boost::replace_all( res, "${repository}", Environment::rootRepository().string() );
     boost::replace_all( res, "${appdir}", Environment::appRepository() );
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
@@ -2490,7 +2503,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$top_builddir", topBuildDir );
     boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
-    boost::replace_all( res, "$repository", Environment::rootRepository() );
+    boost::replace_all( res, "$repository", Environment::rootRepository().string() );
     boost::replace_all( res, "$appdir", Environment::appRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );

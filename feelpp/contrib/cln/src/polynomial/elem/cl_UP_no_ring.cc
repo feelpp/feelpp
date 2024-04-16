@@ -15,38 +15,38 @@ namespace cln {
 
 static const _cl_UP dummy_op0 (cl_heap_univpoly_ring* R)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_ring_exception();
 }
 
 static const _cl_UP dummy_op1 (cl_heap_univpoly_ring* R, const _cl_UP& x)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x);
 }
 
 static const _cl_UP dummy_op2 (cl_heap_univpoly_ring* R, const _cl_UP& x, const _cl_UP& y)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x, y);
 }
 
 static void dummy_fprint (cl_heap_univpoly_ring* R, std::ostream& stream, const _cl_UP& x)
 {
-	unused R;
-	unused stream;
+	cl_unused R;
+	cl_unused stream;
 	throw uninitialized_exception(x);
 }
 static bool dummy_equal (cl_heap_univpoly_ring* R, const _cl_UP& x, const _cl_UP& y)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x, y);
 }
 
 #define dummy_zero dummy_op0
 static bool dummy_zerop (cl_heap_univpoly_ring* R, const _cl_UP& x)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x);
 }
 #define dummy_plus dummy_op2
@@ -56,7 +56,7 @@ static bool dummy_zerop (cl_heap_univpoly_ring* R, const _cl_UP& x)
 #define dummy_one dummy_op0
 static const _cl_UP dummy_canonhom (cl_heap_univpoly_ring* R, const cl_I& x)
 {
-	unused R;
+	cl_unused R;
 	(void)&x; // unused x;
 	throw uninitialized_ring_exception();
 }
@@ -64,63 +64,63 @@ static const _cl_UP dummy_canonhom (cl_heap_univpoly_ring* R, const cl_I& x)
 #define dummy_square dummy_op1
 static const _cl_UP dummy_expt_pos (cl_heap_univpoly_ring* R, const _cl_UP& x, const cl_I& y)
 {
-	unused R;
+	cl_unused R;
 	(void)&y; // unused y;
 	throw uninitialized_exception(x);
 }
 
 static const _cl_UP dummy_scalmul (cl_heap_univpoly_ring* R, const cl_ring_element& x, const _cl_UP& y)
 {
-	unused R;
-	unused x;
+	cl_unused R;
+	cl_unused x;
 	throw uninitialized_exception(y);
 }
 
 static sintL dummy_degree (cl_heap_univpoly_ring* R, const _cl_UP& x)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x);
 }
 static sintL dummy_ldegree (cl_heap_univpoly_ring* R, const _cl_UP& x)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x);
 }
 static const _cl_UP dummy_monomial (cl_heap_univpoly_ring* R, const cl_ring_element& x, uintL e)
 {
-	unused R;
-	unused x;
-	unused e;
+	cl_unused R;
+	cl_unused x;
+	cl_unused e;
 	throw uninitialized_ring_exception();
 }
 static const cl_ring_element dummy_coeff (cl_heap_univpoly_ring* R, const _cl_UP& x, uintL index)
 {
-	unused R;
-	unused index;
+	cl_unused R;
+	cl_unused index;
 	throw uninitialized_exception(x);
 }
 static const _cl_UP dummy_create (cl_heap_univpoly_ring* R, sintL deg)
 {
-	unused R;
-	unused deg;
+	cl_unused R;
+	cl_unused deg;
 	throw uninitialized_ring_exception();
 }
 static void dummy_set_coeff (cl_heap_univpoly_ring* R, _cl_UP& x, uintL index, const cl_ring_element& y)
 {
-	unused R;
-	unused index;
-	unused y;
+	cl_unused R;
+	cl_unused index;
+	cl_unused y;
 	throw uninitialized_exception(x);
 }
 static void dummy_finalize (cl_heap_univpoly_ring* R, _cl_UP& x)
 {
-	unused R;
+	cl_unused R;
 	throw uninitialized_exception(x);
 }
 static const cl_ring_element dummy_eval (cl_heap_univpoly_ring* R, const _cl_UP& x, const cl_ring_element& y)
 {
-	unused R;
-	unused y;
+	cl_unused R;
+	cl_unused y;
 	throw uninitialized_exception(x);
 }
 

@@ -28,6 +28,7 @@
 //#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmor/crbenums.hpp>
+#include <feel/feelmor/crbplugin_interface.hpp>
 
 namespace Feel
 {
@@ -35,6 +36,15 @@ namespace Feel
 class CRBModelDB
 {
 public :
+
+    struct MetaData
+    {
+        fs::path json_path;
+        std::string model_name;
+        std::string plugin_name;
+        std::string plugin_libname;
+    };
+
     CRBModelDB( std::string const& name, std::string const& root = Environment::rootRepository() )
         :
         CRBModelDB( name, Environment::randomUUID( true ), root )
@@ -55,10 +65,106 @@ public :
     void updateIdFromDBLast( crb::last last );
     void updateIdFromId( std::string const& uid );
 
+    /**
+     * @brief select a DB id from an attribute
+     *
+     * @param from type of attribute to consider
+     * @param name optional string to select the db like the uid or the name
+     */
+    void updateId( crb::attribute from, std::optional<std::string> const& name = std::nullopt );
+
+    /**
+     * @brief select a DB id from an attribute
+     *
+     * @param from type of attribute to consider
+     * @param name optional string to select the db like the uid or the name
+     */
+    void updateId( std::string const& from, std::optional<std::string> const& name = std::nullopt )
+    {
+        updateId( crb::attributeFromString( from ), name );
+    }
+
+    /**
+     * @brief get DB metadata from an attribute
+     *
+     * @param from type of attribute to consider
+     * @param name optional string to select the db like the uid or the name
+     */
+    MetaData loadDBMetaData( crb::attribute from, std::optional<std::string> const& name = std::nullopt );
+
+    /**
+     * @brief get DB metadata from an attribute
+     *
+     * @param from type of attribute to consider
+     * @param name optional string to select the db like the uid or the name
+     */
+    MetaData loadDBMetaData( std::string const& from, std::optional<std::string> const& name = std::nullopt )
+    {
+        return loadDBMetaData( crb::attributeFromString( from ), name );
+    }
+
+    /**
+     * @brief load DB plugin from metadata
+     *
+     * @param metadata
+     * @param load_type load "rb", "fe", or "all"
+     *
+     * \code {.cpp}
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::rb) );
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::fe) );
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::all) );
+     * \endcode
+     *
+     *
+     * @return std::shared_ptr<CRBPluginAPI>
+     */
+    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string const& load ) const;
+
+    /**
+     * @brief load DB plugin from metadata
+     *
+     * @param metadata
+     * @param load_type load "rb", "fe", or "all"
+     * @param pluginlibdir directory where to find the plugin library
+     *
+     * \code {.cpp}
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::rb) );
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::fe) );
+     * auto p = loadDBPlugin( metadata, crb::loadToString(crb::load::all) );
+     * \endcode
+     *
+     *
+     * @return std::shared_ptr<CRBPluginAPI>
+     */
+    std::shared_ptr<CRBPluginAPI> loadDBPlugin( MetaData const& metadata, std::string const& load, std::string const& pluginlibdir ) const;
+
     static uuids::uuid idFromDBFilename( std::string const& name, std::string const& filename );
     static uuids::uuid idFromDBLast( std::string const& name, crb::last last, std::string const& root = Environment::rootRepository() );
     static uuids::uuid idFromId( std::string const& name, std::string const& uid, std::string const& root = Environment::rootRepository() );
 
+    template <typename ... Ts>
+    static std::shared_ptr<CRBModelDB> New( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& filename = args.get(_filename);
+
+            std::string modelname;
+            std::ifstream ifs( filename );
+            nl::json jarg = nl::json::parse(ifs,nullptr,true,true);
+            if ( jarg.contains( "crbmodel" ) )
+            {
+                auto const& j_crbmodel = jarg.at( "crbmodel" );
+                modelname = j_crbmodel.at( "name" ).get<std::string>();
+            }
+            uuids::uuid uid = uuids::nil_uuid();
+            if ( jarg.contains( "uuid" ) )
+                uid = boost::lexical_cast<uuids::uuid>( jarg.at( "uuid" ).template get<std::string>() );
+
+            // TODO root_dir?
+            return std::make_shared<CRBModelDB>( modelname,uid );
+        }
+private :
+    static std::string jsonFilename( std::string const& name );
 private :
     std::string M_name;
     std::string M_root;

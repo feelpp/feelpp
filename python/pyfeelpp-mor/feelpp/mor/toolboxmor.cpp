@@ -17,10 +17,10 @@
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
 //!
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/functional.h>
-// #include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/functional.h>
+// #include <feel/feelpython/pybind11/eigen.h>
 
 #include <feel/feelmor/crb.hpp>
 #include <feel/feelmor/toolboxmor.hpp>
@@ -115,7 +115,7 @@ void defToolboxMor(py::module &m)
         // .def(py::init<>(), "init")
         ;
     std::string crbmodelnew_name = std::string("crbmodel_toolboxmor_") + std::to_string(nDim) +std::string("d");
-    m.def(crbmodelnew_name.c_str(), [](std::shared_ptr<mor_t>& m) { return std::make_shared<CRBModel<mor_t> >(m, crb::stage::offline); }," return a pointer on crbmodel");
+    m.def(crbmodelnew_name.c_str(), [](std::shared_ptr<mor_t>& m,std::string const& name="toolboxmor") { return std::make_shared<CRBModel<mor_t> >(name,m, crb::stage::offline); }," return a pointer on crbmodel");
 
     std::string crbclass_name = std::string("CRB_") + pyclass_name;
     py::class_<CRB<CRBModel<mor_t> >,std::shared_ptr<CRB<CRBModel<mor_t> > > >(m, crbclass_name.c_str())

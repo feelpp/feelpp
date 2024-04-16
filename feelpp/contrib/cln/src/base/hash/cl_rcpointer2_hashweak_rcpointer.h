@@ -14,10 +14,10 @@ static inline bool equal (const cl_rcpointer& x, const cl_rcpointer& y)
 { return (x.pointer == y.pointer); }
 
 // Hash code. Luckily objects don't move around in memory.
-inline unsigned long hashcode (const cl_rcpointer& x1, const cl_rcpointer& x2)
+inline uintptr_t hashcode (const cl_rcpointer& x1, const cl_rcpointer& x2)
 {
-	var unsigned long hashcode1 = (unsigned long)x1.pointer;
-	var unsigned long hashcode2 = (unsigned long)x2.pointer;
+	var uintptr_t hashcode1 = (uintptr_t)x1.pointer;
+	var uintptr_t hashcode2 = (uintptr_t)x2.pointer;
 	hashcode2 = (hashcode2 << 5) | (hashcode2 >> (long_bitsize-5)); // rotate
 	return hashcode1 ^ hashcode2;
 }

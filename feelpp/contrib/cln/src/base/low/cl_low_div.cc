@@ -10,13 +10,11 @@
 // Implementation.
 
 #ifdef NEED_VAR_divu_16_rest
-extern "C" {
-uint16 divu_16_rest;
-}
+extern "C" { uint16 divu_16_rest; }
 #endif
 
 #ifdef NEED_FUNCTION_divu_3216_1616_
-uint16 divu_16_rest;
+extern "C" { uint16 divu_16_rest; }
 namespace cln {
 #if 1
 // Most processors have a good 32 by 32 bit division, use that.
@@ -103,11 +101,11 @@ uint32 divu_3232_3232_(uint32 x, uint32 y)
 #endif
 
 #ifdef NEED_VAR_divu_32_rest
-uint32 divu_32_rest;
+extern "C" { uint32 divu_32_rest; }
 #endif
 
 #ifdef NEED_FUNCTION_divu_6432_3232_
-uint32 divu_32_rest;
+extern "C" { uint32 divu_32_rest; }
 namespace cln {
 uint32 divu_6432_3232_(uint32 xhi, uint32 xlo, uint32 y)
 // Methode:
@@ -209,9 +207,7 @@ uint32 divu_6432_3232_(uint32 xhi, uint32 xlo, uint32 y)
 #endif
 
 #ifdef NEED_VAR_divu_64_rest
-extern "C"{
-uint64 divu_64_rest;
-}
+extern "C" { uint64 divu_64_rest; }
 #endif
 
 #ifdef NEED_FUNCTION_divu_6464_6464_
@@ -380,3 +376,4 @@ uint64 divu_12864_6464_(uint64 xhi, uint64 xlo, uint64 y)
 }   } }
 }  // namespace cln
 #endif
+

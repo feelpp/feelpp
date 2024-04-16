@@ -26,7 +26,6 @@ if(DEFINED PROJECT_NAME)
   set( MOR_SUBPROJECT ON )
 endif()
 
-
 project(mor)
   
 
@@ -35,7 +34,8 @@ set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
-if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "mor" )
+list(FIND FEELPP_COMPONENT "mor" COMPONENT_MOR )
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR  MOR_COMPONENT GREATER -1 )
   find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
     message(WARNING "[mor] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
@@ -74,7 +74,8 @@ set(FEELPP_MOR_LIBRARIES)
 INCLUDE(CTest)
 ENABLE_TESTING()
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules ${CMAKE_MODULE_PATH})
+include(feelpp.dirs OPTIONAL)
 include(feelpp.macros.mor)
 add_subdirectory(cmake)
 
@@ -83,7 +84,7 @@ if ( FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND )
   add_subdirectory(apps)
 
 
-
+  add_subdirectory(contrib)
 
 if ( FEELPP_ENABLE_MOR_MORDICUS )
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mordicus/src/cpp )
@@ -118,6 +119,10 @@ install(EXPORT feelpp-mor-export-targets
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-mor.package.cmake)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
+endif()
+
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research )
+  ADD_SUBDIRECTORY ( research )
 endif()
 
 endif(FEELPP_FOUND AND FEELPP_TOOLBOXES_FOUND)

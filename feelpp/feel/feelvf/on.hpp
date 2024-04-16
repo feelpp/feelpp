@@ -149,11 +149,11 @@ public:
     static const size_type context = OnExpr::context|vm::POINT;
     static const size_type is_terminal = false;
 
-    //static const uint16_type imorder = OnExpr::imorder;
+    //static inline const uint16_type imorder = OnExpr::imorder;
     //static const bool imIsPoly = OnExpr::imIsPoly;
 
-    using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
-    using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;
+    using on_type =  typename ElementRange::idim_t;
+    using element_iterator =  typename ElementRange::iterator_t;
 
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
@@ -181,7 +181,7 @@ public:
     using trial_basis = typename element_type::functionspace_type::basis_type;
 
 
-    static const uint16_type nComponents = element_type::nComponents;
+    static inline const uint16_type nComponents = element_type::nComponents;
 
     //@}
 
@@ -198,8 +198,8 @@ public:
                       double value_on_diag )
         :
         M_elts(),
-        M_eltbegin( __elts.template get<1>() ),
-        M_eltend( __elts.template get<2>() ),
+        M_eltbegin( __elts.begin() ),
+        M_eltend( __elts.end() ),
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
@@ -217,8 +217,8 @@ public:
                       double value_on_diag )
         :
         M_elts(),
-        M_eltbegin( __elts.template get<1>() ),
-        M_eltend( __elts.template get<2>() ),
+        M_eltbegin( __elts.begin() ),
+        M_eltend( __elts.end() ),
         M_uFromRValue( std::make_shared<element_type>( std::forward<element_type>(__u) ) ),
         M_u( *M_uFromRValue ),
         M_rhs( __rhs ),
@@ -245,8 +245,8 @@ public:
     {
         if ( __elts.size() )
         {
-            M_eltbegin = __elts.begin()->template get<1>();
-            M_eltend = __elts.begin()->template get<2>();
+            M_eltbegin = __elts.begin()->begin();
+            M_eltend = __elts.begin()->end();
         }
     }
     IntegratorOnExpr( IntegratorOnExpr const& ioe ) = default;
@@ -372,8 +372,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAElt = false;
     for( auto& lit : M_elts )
     {
-        elt_it = lit.template get<1>();
-        elt_en = lit.template get<2>();
+        elt_it = lit.begin();
+        elt_en = lit.end();
         if ( elt_it != elt_en )
         {
             findAElt=true;
@@ -398,8 +398,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         for( auto& lit : M_elts )
         {
-            elt_it = lit.template get<1>();
-            elt_en = lit.template get<2>();
+            elt_it = lit.begin();
+            elt_en = lit.end();
             DVLOG(2) << "element nb: " << std::distance(elt_it,elt_en);
             for ( ; elt_it != elt_en; ++elt_it )
             {
@@ -483,7 +483,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     typedef std::shared_ptr<gm_type> gm_ptrtype;
     static const size_type gmc_v = is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ? context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL : context;
 
-    static const uint16_type nDim = geoshape_type::nDim;
+    constexpr uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
@@ -509,8 +509,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAFace = false;
     for( auto& lit : M_elts )
     {
-        __face_it = lit.template get<1>();
-        __face_en = lit.template get<2>();
+        __face_it = lit.begin();
+        __face_en = lit.end();
         if ( __face_it != __face_en )
         {
             findAFace=true;
@@ -523,8 +523,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         bool findAFaceToInit=false;
         for( auto& lit : M_elts )
         {
-            __face_it = lit.template get<1>();
-            __face_en = lit.template get<2>();
+            __face_it = lit.begin();
+            __face_en = lit.end();
             for( ; __face_it != __face_en; ++__face_it )
             {
                 if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
@@ -594,8 +594,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
-        __face_it = lit.template get<1>();
-        __face_en = lit.template get<2>();
+        __face_it = lit.begin();
+        __face_en = lit.end();
         for ( ;
               __face_it != __face_en;//this->endElement();
               ++__face_it )
@@ -752,8 +752,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAEdge = false;
     for( auto& lit : M_elts )
     {
-        edge_it = lit.template get<1>();
-        edge_en = lit.template get<2>();
+        edge_it = lit.begin();
+        edge_en = lit.end();
         if ( edge_it != edge_en )
         {
             findAEdge=true;
@@ -799,8 +799,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         for( auto& lit : M_elts )
         {
-            edge_it = lit.template get<1>();
-            edge_en = lit.template get<2>();
+            edge_it = lit.begin();
+            edge_en = lit.end();
             DVLOG(2) << "edge nb: " << std::distance(edge_it,edge_en);
             for ( ;
                   edge_it != edge_en;//this->endElement();
@@ -935,8 +935,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAPt = false;
     for( auto& lit : M_elts )
     {
-        pt_it = lit.template get<1>();
-        pt_en = lit.template get<2>();
+        pt_it = lit.begin();
+        pt_en = lit.end();
         if ( pt_it != pt_en )
         {
             findAPt=true;
@@ -949,8 +949,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         bool findAPtToInit=false;
         for( auto& lit : M_elts )
         {
-            pt_it = lit.template get<1>();
-            pt_en = lit.template get<2>();
+            pt_it = lit.begin();
+            pt_en = lit.end();
             for( ; pt_it != pt_en; ++pt_it )
             {
                 if ( boost::unwrap_ref( *pt_it).elements().size() )
@@ -992,8 +992,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         for( auto& lit : M_elts )
         {
-            pt_it = lit.template get<1>();
-            pt_en = lit.template get<2>();
+            pt_it = lit.begin();
+            pt_en = lit.end();
             DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " nb: " << std::distance(pt_it,pt_en);
 
             if ( pt_it == pt_en )

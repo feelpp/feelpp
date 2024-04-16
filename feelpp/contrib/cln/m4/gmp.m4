@@ -8,16 +8,16 @@ dnl the same distribution terms as the rest of that program.
 
 dnl From Richard B. Kreckel.
 
-AC_PREREQ(2.13)
+AC_PREREQ([2.69])
 
 dnl Is the gmp header file new enough? (should be implemented with an argument)
 AC_DEFUN([CL_GMP_H_VERSION],
 [AC_CACHE_CHECK([for recent enough gmp.h], cl_cv_new_gmp_h, [
-  AC_TRY_CPP([#include <gmp.h>
+  AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <gmp.h>
 #if !defined(__GNU_MP_VERSION) || (__GNU_MP_VERSION < 3)
  #error "ancient gmp.h"
-#endif],
-cl_cv_new_gmp_h="yes", cl_cv_new_gmp_h="no")
+#endif]])],
+[cl_cv_new_gmp_h="yes"], [cl_cv_new_gmp_h="no"])
 ])])dnl
 
 dnl Does libgmp provide some functionality introduced in version 3.0?
@@ -25,8 +25,8 @@ AC_DEFUN([CL_GMP_CHECK],
 [AC_CACHE_CHECK([for working libgmp], cl_cv_new_libgmp, [
     SAVELIBS=$LIBS
     LIBS="$LIBS -lgmp"
-    AC_TRY_LINK([#include <gmp.h>],[mpn_divexact_by3(0,0,0)],
-cl_cv_new_libgmp="yes", cl_cv_new_libgmp="no")
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <gmp.h>]], [[mpn_divexact_by3(0,0,0)]])],
+                   [cl_cv_new_libgmp="yes"], [cl_cv_new_libgmp="no"])
     LIBS=$SAVELIBS])
     if test "$cl_cv_new_libgmp" = yes; then
       LIBS="$LIBS -lgmp"
@@ -52,7 +52,7 @@ AC_DEFUN([CL_GMP_SET_UINTD],
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <gmp.h>
 	 template<bool COND> struct Static_Assert;
 	 template<> struct Static_Assert<true> { };
-	 Static_Assert<sizeof(mp_limb_t) > sizeof(long)> check;]], [[]])],
+	 Static_Assert<(sizeof(mp_limb_t) > sizeof(long))> check;]], [[]])],
 	 [cl_gmp_demands='GMP_DEMANDS_UINTD_LONG_LONG'], [])
     if test "x$cl_gmp_demands" = "xUNKNOWN"; then
 	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <gmp.h>
@@ -119,7 +119,7 @@ case $with_gmp in
     LDFLAGS="$LDFLAGS -L${withval}/lib"
     AC_LIB_LINKFLAGS_FROM_LIBS([GMP_RPATH_CFG], [$LDFLAGS])
     LDFLAGS="$GMP_RPATH_CFG $LDFLAGS"
-    AC_MSG_NOTICE([Using "\"$LDFLAGS\"" rpath to link with GMP])
+    AC_MSG_NOTICE([Using "$LDFLAGS" rpath to link with GMP])
     CL_GMP_H_VERSION
     if test "$cl_cv_new_gmp_h" = yes; then
       CL_GMP_CHECK

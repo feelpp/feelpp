@@ -29,8 +29,8 @@ const cl_SF futruncate (const cl_SF& x)
       if (uexp <= SF_exp_mid) // e<=0 ?
         { // Exponent auf 1, Mantisse auf .1000...000 setzen.
           return cl_SF_from_word(
-            (x.word & ~(bit(SF_exp_len+SF_exp_shift)-bit(SF_exp_shift)
-                        + bit(SF_mant_len+SF_mant_shift)-bit(SF_mant_shift)))
+            (x.word & ~(((bit(SF_exp_len)-1)<<SF_exp_shift)
+                        + ((bit(SF_mant_len)-1)<<SF_mant_shift)))
             | ((cl_uint)(SF_exp_mid+1) << SF_exp_shift)
             | ((cl_uint)0 << SF_mant_shift)
             );

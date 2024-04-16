@@ -43,6 +43,7 @@ void print_rational (std::ostream& stream, const cl_print_rational_flags& flags,
 				fprintchar(stream,'.');
 				return;
 			}
+			// fallthrough
 		default:
 			// Basis in #nR-Schreibweise ausgeben:
 			fprintchar(stream,'#');

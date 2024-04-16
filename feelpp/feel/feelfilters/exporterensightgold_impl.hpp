@@ -516,7 +516,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     if ( buildNewCache )
     {
         tic();
-        M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get() );
+        M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get(), false, this->meshFragmentation() );
         toc( "ExporterEnsightGold::writeGeoFiles init cache", FLAGS_v > 0 );
         // clear others caches with export of fields
         M_mapNodalArrayToDofId.clear();
@@ -942,7 +942,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     //VLOG(1) << "material : " << m << " local nb element: " << std::distance(lelt_it, lelt_en );
     M_cache_mp.try_emplace( markerid, mesh.get(), this->worldComm(), allelt_it, allelt_en, true, true, true );
     auto& mp = M_cache_mp.at( markerid );
-    
+
     VLOG(1) << "mesh pts size : " << mp.ids.size();
     // part
 
@@ -1057,7 +1057,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
     M_cache_mp.try_emplace( markerid, mesh.get(), this->worldComm(), lelt_it, lelt_en, true, true, true );
     mp = M_cache_mp.at( markerid );
-    
+
     int32_t gnole = mp.globalNumberOfElements();
     //LOG(INFO) << "Global nb elements: " << gnole << std::endl;
     if( this->worldComm().isMasterRank() )
@@ -1376,7 +1376,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles( timeset_ptrtype __ts, step_
     LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Nodal: " << nNodalFields;
     LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Element: " << nElementFields;
 
-    // prepare some common informations
+    // prepare some common information
     auto __firstActiveStep = __ts->firstActiveStep();
     bool isFirstStep = (__step->activeIndex() == __firstActiveStep->activeIndex());
     std::ostringstream ossFilenameStepIndex;
@@ -1733,8 +1733,8 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         //const int np = __step->mesh()->numLocalVertices();
 
                         auto const& r =  mp.rangeElement( part );
-                        auto elt_it = r.template get<1>();
-                        auto elt_en = r.template get<2>();
+                        auto elt_it = r.begin();
+                        auto elt_en = r.end();
                         for ( ; elt_it != elt_en; ++elt_it )
                         {
                             auto const& elt = unwrap_ref( *elt_it );
@@ -1787,8 +1787,8 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                     VLOG(1) << "field size=" << __field_size;
                     __field = Eigen::VectorXf::Zero( __field_size );
                     auto const& r =  mp.rangeElement( part );
-                    auto elt_it = r.template get<1>();
-                    auto elt_en = r.template get<2>();
+                    auto elt_it = r.begin();
+                    auto elt_en = r.end();
                     for ( ; elt_it != elt_en; ++elt_it )
                     {
                         auto const& elt = unwrap_ref( *elt_it );

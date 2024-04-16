@@ -15,7 +15,7 @@ namespace cln {
 
 CL_INLINE uintC CL_INLINE_DECL(float_digits) (const cl_SF& x)
 {
-	unused x;
+	cl_unused x;
 	return SF_mant_len+1; // 17
 }
 

@@ -1,3 +1,72 @@
+2024-01-22, version 1.3.7
+=========================
+
+Other changes
+-------------
+
+* Fixed compilation on ARM platforms.
+* Add support for LoongArch.
+
+
+2019-12-05, version 1.3.6
+=========================
+
+Other changes
+-------------
+
+* Fixed cross-compilation (broken in 1.3.5).
+
+
+2019-11-17, version 1.3.5
+=========================
+
+Implementation changes
+----------------------
+
+* Fix bug in scale_float() throwing underflow_exception.
+
+Other changes
+-------------
+
+* Support builds on:
+  - 64-bit MinGW
+  - Elbrus 2000
+  - Risc-V64
+  - MIPS release 6
+
+
+2014-10-16, version 1.3.4
+=========================
+
+Implementation changes
+----------------------
+
+* Fix input of huge floats.
+
+Other changes
+-------------
+
+* Support the AArch64 and the Mips64 ABIs.
+
+
+2013-07-21, version 1.3.3
+=========================
+
+Implementation changes
+----------------------
+
+* Fix integer input of leading zeros in power-of-two base.
+
+* Fix several floating-poing conversion bugs involving huge numbers.
+
+* Fix bug that would set input stream fail state when reading a number at EOF.
+
+Other changes
+-------------
+
+* Support the x32 ABI.
+
+
 2011-05-08, version 1.3.2
 =========================
 

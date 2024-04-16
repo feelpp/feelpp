@@ -9,15 +9,16 @@
 
 // Implementation.
 
-#define denominator inline_denominator
 #include "rational/cl_RA.h"
-#undef denominator
 
 namespace cln {
 
 const cl_I denominator (const cl_RA& r)
 {
-	return inline_denominator(r);
+	if (integerp(r))
+		return 1;
+	else
+		return TheRatio(r)->denominator;
 }
 
 }  // namespace cln

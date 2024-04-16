@@ -177,6 +177,9 @@ struct matrix_node
     typedef ublas::matrix<T, ublas::column_major>  type;
 };
 
+template <typename T = double>
+using matrix_node_t = ublas::matrix<T, ublas::column_major>;
+
 //! Eigen type to map matrix_type (row major)
 template<typename T = double>
 using em_matrix_row_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>>;
@@ -189,9 +192,59 @@ using em_matrix_col_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dyna
 template<typename T = double>
 using em_cmatrix_col_type = Eigen::Map<const Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>>;
 
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( matrix_node_t<T>& m )
+{
+    return em_matrix_col_type<T>( m.data().begin(), m.size1(), m.size2() );
+}
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( matrix_node_t<T> const& m )
+{
+    return em_cmatrix_col_type<T>( m.data().begin(), m.size1(), m.size2() );
+}
+
 //! Eigen type to map node_type
 template<typename T = double>
 using em_node_type = Eigen::Map<Eigen::Matrix<T,Eigen::Dynamic,1>>;
+
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( node_t<T>& m )
+{
+    return em_matrix_col_type<T>( m.data().begin(), m.size(), 1 );
+}
+/**
+ * @brief get the eigen const map of a matrix node
+ *
+ * @tparam T  ublasnumerical type to wrap
+ * @param m matrix_node
+ * @return auto Eigen::Map
+ */
+template <typename T>
+auto emap( node_t<T> const& m )
+{
+    return em_cmatrix_col_type<T>( m.data().begin(), m.size(), 1 );
+}
 
 //!
 //! Tensor map to a ublas_type
@@ -206,6 +259,11 @@ using eigen_vector_type = Eigen::Matrix<T,Dim,1>;
 
 template<typename T=double>
 using eigen_vector_x_type = Eigen::Matrix<T,Eigen::Dynamic,1>;
+template <typename T = double>
+using eigen_vector_x_col_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+
+template <int Dim, typename T = double>
+using eigen_vector_x_row_type = Eigen::Matrix<T, 1, Eigen::Dynamic>;
 
 template<int Dim,typename T=double>
 using vector_eigen_vector_type = std::vector<eigen_vector_type<Dim,T>,Eigen::aligned_allocator<eigen_vector_type<Dim,T>>>;
@@ -218,6 +276,9 @@ using eigen_matrix_xx_row_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,E
 
 template<typename T=double>
 using eigen_matrix_xx_col_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>;
+
+template <typename T = double>
+using eigen_matrix_xx_type = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 template<int N, int P,typename T=double>
 using vector_eigen_matrix_type = std::vector<eigen_matrix_type<N,P,T>,Eigen::aligned_allocator<eigen_matrix_type<N,P,T>>>;
@@ -479,8 +540,11 @@ clean( T& t,
 {
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::if_then( lambda::_1  < lambda::constant( treshold ) && lambda::_1  > -lambda::constant( treshold ),
-                                    lambda::_1 = lambda::constant( new_value ) ) );
+                   [new_value,treshold]( auto& t )
+                   {
+                       if ( std::abs( t ) < treshold )
+                            t = new_value;
+                   } );
 }
 
 template<typename T>
@@ -521,7 +585,7 @@ randomize( T& t )
 
     std::for_each( t.data().begin(),
                    t.data().end(),
-                   lambda::_1 = lambda::bind<value_type>( uni ) );
+                   [&uni]( auto& t ){ t = uni; } );
 
 }
 

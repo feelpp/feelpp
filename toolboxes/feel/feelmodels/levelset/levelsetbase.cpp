@@ -1486,7 +1486,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    elements_reference_wrapper_t<mesh_type> myrange = boost::make_tuple(
+    Range<mesh_type,MESH_ELEMENTS> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
@@ -1524,7 +1524,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    elements_reference_wrapper_t<mesh_type> myrange = boost::make_tuple(
+    Range<mesh_type,MESH_ELEMENTS> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
@@ -1896,7 +1896,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
                   //<< "\n      * hj pseudo time step dtau : " << hj_dtau
                   //<< "\n      * hj stabilization : SUPG"
                   //<< "\n      * hj coeff stab : " << option( prefixvm(M_prefix,"hj-coeff-stab")).template as<double>()
-                  //<< "\n      * hj tolerence on dist to dist error : "<<hj_tol;
+                  //<< "\n      * hj tolerance on dist to dist error : "<<hj_tol;
         //}
         //else
         //{

@@ -3,7 +3,13 @@
 #include "cl_config.h"
 #include "base/digitseq/cl_DS_endian.h"
 
-#ifndef NO_ASM
+#ifdef _MSC_VER
+/* m$vc does not grok AT&T asm */
+#undef NO_ASM_LOOPS
+#define NO_ASM_LOOPS
+#endif
+
+#if !defined(NO_ASM) && !defined(NO_ASM_LOOPS)
 
 #if defined(__m68k__) && (intCsize==16)
   #include "cl_asm_m68k.h"

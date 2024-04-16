@@ -12,28 +12,6 @@
 #include "float/ffloat/cl_FF.h"
 #include "integer/cl_I.h"
 
-#if defined(__mips__) && !defined(__GNUC__)
-
-// Workaround SGI Irix 6.2 C++ 7.0 bug.
-
-#include "float/cl_F.h"
-#include "dfloat/cl_DF.h"
-
-namespace cln {
-
-CL_INLINE const cl_idecoded_float CL_INLINE_DECL(integer_decode_float) (const cl_FF& x)
-{
-	var cl_idecoded_float sem = integer_decode_float(cl_FF_to_DF(x));
-	return cl_idecoded_float(sem.mantissa >> (DF_mant_len-FF_mant_len),
-	                         sem.exponent + (DF_mant_len-FF_mant_len),
-	                         sem.sign
-	                        );
-}
-
-}  // namespace cln
-
-#else
-
 namespace cln {
 
 CL_INLINE const cl_idecoded_float CL_INLINE_DECL(integer_decode_float) (const cl_FF& x)
@@ -56,5 +34,3 @@ CL_INLINE const cl_idecoded_float CL_INLINE_DECL(integer_decode_float) (const cl
 }
 
 }  // namespace cln
-
-#endif

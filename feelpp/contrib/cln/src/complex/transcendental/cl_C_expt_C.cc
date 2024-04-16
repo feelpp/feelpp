@@ -89,7 +89,7 @@ inline const cl_N expt_0 (const cl_N& x)
 	}
 #else
 	// Exponent exakt 0 -> Ergebnis exakt 1
-	unused x;
+	cl_unused x;
 	return 1;
 #endif
 }

@@ -19,13 +19,13 @@ namespace cln {
 
 static void RA_fprint (cl_heap_ring* R, std::ostream& stream, const _cl_ring_element& x)
 {
-	unused R;
+	cl_unused R;
 	fprint(stream,The(cl_RA)(x));
 }
 
 static bool RA_equal (cl_heap_ring* R, const _cl_ring_element& x, const _cl_ring_element& y)
 {
-	unused R;
+	cl_unused R;
 	return equal(The(cl_RA)(x),The(cl_RA)(y));
 }
 
@@ -36,7 +36,7 @@ static const _cl_ring_element RA_zero (cl_heap_ring* R)
 
 static bool CL_FLATTEN RA_zerop (cl_heap_ring* R, const _cl_ring_element& x)
 {
-	unused R;
+	cl_unused R;
 	return zerop_inline(The(cl_RA)(x));
 }
 
@@ -137,7 +137,7 @@ static void cl_rational_ring_destructor (cl_heap* pointer)
 
 static void cl_rational_ring_dprint (cl_heap* pointer)
 {
-	unused pointer;
+	cl_unused pointer;
 	fprint(cl_debugout, "(cl_rational_ring) cl_RA_ring");
 }
 

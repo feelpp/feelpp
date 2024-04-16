@@ -40,13 +40,13 @@ endif()
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ginsh_fcn_help.h
-	COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ginsh_fcn_help.py -o ginsh_fcn_help.h ${CMAKE_CURRENT_SOURCE_DIR}/ginsh.1.in
+	COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ginsh_fcn_help.py -o ginsh_fcn_help.h ${CMAKE_CURRENT_SOURCE_DIR}/ginsh.1.in
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ginsh.1.in ${CMAKE_CURRENT_SOURCE_DIR}/ginsh_fcn_help.py
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ginsh_op_help.h
-	COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ginsh_op_help.py -o ginsh_op_help.h ${CMAKE_CURRENT_SOURCE_DIR}/ginsh.1.in
+	COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ginsh_op_help.py -o ginsh_op_help.h ${CMAKE_CURRENT_SOURCE_DIR}/ginsh.1.in
 	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ginsh.1.in ${CMAKE_CURRENT_SOURCE_DIR}/ginsh_op_help.py
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 

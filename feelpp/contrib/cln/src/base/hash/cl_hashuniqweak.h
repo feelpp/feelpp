@@ -47,8 +47,8 @@ private:
 		if (ht->_count < 100)
 			return false;
 		// Do a garbage collection.
-		var long removed = 0;
-		for (long i = 0; i < ht->_size; i++)
+		var intptr_t removed = 0;
+		for (intptr_t i = 0; i < ht->_size; i++)
 		    if (ht->_entries[i].next >= 0) {
 			var value_type& v = ht->_entries[i].entry.val;
 			if (!v.pointer_p() || (v.heappointer->refcount == 1)) {

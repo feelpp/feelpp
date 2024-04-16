@@ -82,7 +82,7 @@ static const _cl_UP modint_zero (cl_heap_univpoly_ring* UPR)
 
 static bool modint_zerop (cl_heap_univpoly_ring* UPR, const _cl_UP& x)
 {
-	unused UPR;
+	cl_unused UPR;
  {	DeclarePoly(cl_GV_MI,x);
 	var sintL xlen = x.size();
 	if (xlen == 0)
@@ -348,7 +348,7 @@ static const _cl_UP modint_scalmul (cl_heap_univpoly_ring* UPR, const cl_ring_el
 
 static sintL modint_degree (cl_heap_univpoly_ring* UPR, const _cl_UP& x)
 {
-	unused UPR;
+	cl_unused UPR;
  {	DeclarePoly(cl_GV_MI,x);
 	return (sintL) x.size() - 1;
 }}

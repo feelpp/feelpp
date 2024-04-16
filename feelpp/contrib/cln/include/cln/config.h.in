@@ -4,12 +4,11 @@
 #include "cln/host_cpu.h"
 #include "cln/version.h"
 
-/* 
- * FIXME: this should not be exposed to user. Or at least it should be
- * renamed to CL_HAVE_LONGLONG or something like that.
+/**
+ * Alignment of a `void*'. CLN needs it to distinguish between pointers
+ * and immediate values.
  */
-/* compiler supports the `long long' type */
-#undef HAVE_LONGLONG
+#undef cl_word_alignment
 
 /* 
  * Numbers in the heap are stored as "digit" (or "limb" in GMP speak)

@@ -34,6 +34,7 @@
 #include <string>
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/info.hpp>
 
 
 
@@ -384,7 +385,7 @@ public:
     void setBugAddress( std::string const & bugAddress );
 
     /**
-     * Defines the product name wich will be used in the KBugReport dialog.
+     * Defines the product name which will be used in the KBugReport dialog.
      * By default it's the appName, but you can overwrite it here to provide
      * support for special components e.g. 'product/component' like
      * 'kontact/summary'.
@@ -516,7 +517,7 @@ AboutData about( Ts && ... v )
     std::string const& copyright = args.get_else( _copyright, "Copyright (C) Feel++ Consortium" );
     std::string const& home = args.get_else( _home, "http://www.feelpp.org" );
     std::string const& bugs = args.get_else( _bugs, "feelpp-devel@feelpp.org" );
-    std::string const& version = args.get_else( _version, "Feel::Info::versionString()" );
+    std::string const& version = args.get_else( _version, Feel::Info::versionString() );
 
      AboutData a( name, name, version, desc,
                  license, copyright, "", home, bugs );

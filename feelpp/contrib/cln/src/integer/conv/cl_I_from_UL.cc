@@ -11,7 +11,7 @@
 
 #include "cln/number.h"
 
-#if (cl_value_len <= 32)
+#if (cl_value_len <= 32) || (long_bitsize==32)
 
 #include "base/digitseq/cl_DS.h"
 
@@ -19,6 +19,7 @@ namespace cln {
 
 cl_private_thing cl_I_constructor_from_UL (uint32 wert)
 {
+#if (cl_value_len <= 32)
 	if ((wert & minus_bit(cl_value_len-1)) == 0)
 	   // Bits, die nicht in den Fixnum-Wert >= 0 reinpassen.
 		return (cl_private_thing)(cl_combine(cl_FN_tag,wert));
@@ -26,10 +27,10 @@ cl_private_thing cl_I_constructor_from_UL (uint32 wert)
 	// (dessen Länge  bn_minlength <= n <= ceiling((32+1)/intDsize)  erfüllt)
 	#define UL_maxlength  ceiling(32+1,intDsize)
 	#define IF_LENGTH(i)  \
-	  if ((bn_minlength <= i) && (i <= UL_maxlength))	\
-	    if (!(i+1 <= UL_maxlength)				\
+	  if ((bn_minlength <= i) && (i <= UL_maxlength)	\
+	    && (!(i+1 <= UL_maxlength)				\
 	        || ((uint32)wert < (uint32)bitc(i*intDsize-1))	\
-	       )
+	     ) )
 	IF_LENGTH(1)
 		{ var cl_heap_bignum* ptr = allocate_bignum(1);
 		  arrayLSref(ptr->data,1,0) = wert;
@@ -89,6 +90,10 @@ cl_private_thing cl_I_constructor_from_UL (uint32 wert)
 	#endif
 	#undef IF_LENGTH
 	#undef UL_maxlength
+#else // cl_value_len > 32
+	// All bits fit in a fixnum value >= 0.
+	return (cl_private_thing)(cl_combine(cl_FN_tag,wert));
+#endif
 }
 
 }  // namespace cln

@@ -10,7 +10,7 @@ namespace cln {
 
 // Requirements:
 // - function  bool equal (key1_type,key1_type);
-// - function  unsigned long hashcode (key1_type);
+// - function  uintptr_t hashcode (key1_type);
 
 template <class key1_type>
 struct cl_htsetentry {
@@ -35,7 +35,7 @@ public:
     // Lookup (htref alias gethash).
     bool get (const key1_type& key)
     {
-        var long index = this->_slots[hashcode(key) % this->_modulus] - 1;
+        var intptr_t index = this->_slots[hashcode(key) % this->_modulus] - 1;
         while (index >= 0) {
             if (!(index < this->_size))
                 throw runtime_exception();
@@ -48,10 +48,10 @@ public:
     // Store (htset alias puthash).
     void put (const key1_type& key)
     {
-        var unsigned long hcode = hashcode(key);
+        var uintptr_t hcode = hashcode(key);
         // Search whether it is already there.
         {
-            var long index = this->_slots[hcode % this->_modulus] - 1;
+            var intptr_t index = this->_slots[hcode % this->_modulus] - 1;
             while (index >= 0) {
                 if (!(index < this->_size))
                     throw runtime_exception();
@@ -62,8 +62,8 @@ public:
         }
         // Put it into the table.
         prepare_store();
-        var long hindex = hcode % this->_modulus; // _modulus may have changed!
-        var long index = this->get_free_index();
+        var intptr_t hindex = hcode % this->_modulus; // _modulus may have changed!
+        var intptr_t index = this->get_free_index();
         new (&this->_entries[index].entry) cl_htsetentry<key1_type> (key);
         this->_entries[index].next = this->_slots[hindex];
         this->_slots[hindex] = 1+index;
@@ -72,9 +72,9 @@ public:
     // Remove (htrem alias remhash).
     void remove (const key1_type& key)
     {
-        var long* _index = &this->_slots[hashcode(key) % this->_modulus];
+        var intptr_t* _index = &this->_slots[hashcode(key) % this->_modulus];
         while (*_index > 0) {
-            var long index = *_index - 1;
+            var intptr_t index = *_index - 1;
             if (!(index < this->_size))
                 throw runtime_exception();
             if (equal(key,this->_entries[index].entry.key)) {
@@ -100,7 +100,6 @@ private:
     // This may change the table's size!
     void prepare_store ()
     {
-      #if !(defined(__sparc__) && !defined(__GNUC__))
         if (this->_freelist < -1)
             return;
         // Can we make room?
@@ -109,34 +108,27 @@ private:
                 return;
         // No! Have to grow the hash table.
         grow();
-      #else
-        // workaround Sun C++ 4.1 inline function compiler bug
-        if (this->_freelist >= -1) {
-            if (!this->_garcol_fun(this) || (this->_freelist >= -1))
-                grow();
-        }
-      #endif
     }
     void grow ()
     {
-        var long new_size = this->_size + (this->_size >> 1) + 1; // _size*1.5
-        var long new_modulus = inherited::compute_modulus(new_size);
-        var void* new_total_vector = malloc_hook(new_modulus*sizeof(long) + new_size*sizeof(htxentry));
-        var long* new_slots = (long*) ((char*)new_total_vector + 0);
-        var htxentry* new_entries = (htxentry *) ((char*)new_total_vector + new_modulus*sizeof(long));
-        for (var long hi = new_modulus-1; hi >= 0; hi--)
+        var intptr_t new_size = this->_size + (this->_size >> 1) + 1; // _size*1.5
+        var intptr_t new_modulus = inherited::compute_modulus(new_size);
+        var void* new_total_vector = malloc_hook(new_modulus*sizeof(intptr_t) + new_size*sizeof(htxentry));
+        var intptr_t* new_slots = (intptr_t*) ((char*)new_total_vector + 0);
+        var htxentry* new_entries = (htxentry *) ((char*)new_total_vector + new_modulus*sizeof(intptr_t));
+        for (var intptr_t hi = new_modulus-1; hi >= 0; hi--)
             new_slots[hi] = 0;
-        var long free_list_head = -1;
-        for (var long i = new_size-1; i >= 0; i--) {
+        var intptr_t free_list_head = -1;
+        for (var intptr_t i = new_size-1; i >= 0; i--) {
             new_entries[i].next = free_list_head;
             free_list_head = -2-i;
         }
         var htxentry* old_entries = this->_entries;
-        for (var long old_index = 0; old_index < this->_size; old_index++)
+        for (var intptr_t old_index = 0; old_index < this->_size; old_index++)
             if (old_entries[old_index].next >= 0) {
                 var key1_type& key = old_entries[old_index].entry.key;
-                var long hindex = hashcode(key) % new_modulus;
-                var long index = -2-free_list_head;
+                var intptr_t hindex = hashcode(key) % new_modulus;
+                var intptr_t index = -2-free_list_head;
                 free_list_head = new_entries[index].next;
                 new (&new_entries[index].entry) cl_htsetentry<key1_type> (key);
                 new_entries[index].next = new_slots[hindex];

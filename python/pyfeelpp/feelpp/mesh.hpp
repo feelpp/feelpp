@@ -24,10 +24,10 @@
 #ifndef FEELPP_PYFEELPP_MESH_HPP
 #define FEELPP_PYFEELPP_MESH_HPP 1
 #include <regex>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/eigen.h>
-#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/eigen.h>
+#include <feel/feelpython/pybind11/json.h>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -50,30 +50,23 @@ namespace py = pybind11;
 
 using namespace Feel;
 
-template<typename MeshT>
-std::shared_ptr<MeshT>
-loadmesh( std::shared_ptr<MeshT> const& m, std::string const& n, double h )
-{
-    
-    return loadMesh( _mesh=new MeshT, _filename=n, _h=h );
-}
 
 template<typename MeshT>
-elements_pid_t<MeshT>
+Range<MeshT,MESH_ELEMENTS>
 elementsByPid( MeshT m ) 
 {
     return elements( m );
 }
 
 template<typename MeshT>
-markedelements_t<MeshT>
+Range<MeshT,MESH_ELEMENTS>
 elementsByMarker( MeshT m, std::string const& tag ) 
 {
     return markedelements( m, tag );
 }
 
 template<typename MeshT>
-boundaryfaces_t<MeshT>
+Range<MeshT,MESH_FACES>
 boundaryfacesByPid( MeshT m ) 
 {
     return boundaryfaces( m );
@@ -81,18 +74,40 @@ boundaryfacesByPid( MeshT m )
 
 template<typename MeshT>
 auto
-nElementsTuple( elements_pid_t<MeshT> const& r, bool global ) 
+nElementsTuple( Range<MeshT,MESH_ELEMENTS> const& r, bool global ) 
 {
     return nelements( r, global );
 }
 
 template<typename MeshT>
 auto
-nFacesTuple( faces_reference_wrapper_t<MeshT> const& r, bool global ) 
+nFacesTuple( Range<MeshT,MESH_FACES> const& r, bool global ) 
 {
     return nelements( r, global );
 }
 
+/**
+ * @fn load(mesh, name, h, verbose)
+ * @brief load a geometry or a mesh from a file
+ * @ingroup pyfeelpp
+ *
+ * @param filename the filename
+ * @param h the characteristic length (only in the case of the geometry)
+ * @param verbose the verbosity level (0: no output, 1: output, >1: mesh generation information if available)
+ *
+ * @code
+ * import feelpp
+ * m = feelpp.load(mesh=feelpp.mesh(dim=2),name="square.geo",verbose=1)
+ * @endcode
+ */
+
+/**
+ * @fn _mesh
+ * @brief Python Mesh bindings
+ *
+ * @tparam MeshT
+ * @param m
+ */
 template<typename MeshT>
 void defMesh(py::module &m)
 {
@@ -135,34 +150,59 @@ void defMesh(py::module &m)
         .def("hMax",&mesh_t::hMax,"get the maximum edge length of the mesh")
         .def("updateMeasures",&mesh_t::updateMeasures,"update the measures of the mesh")
         .def("measure",&mesh_t::measure,py::arg("parallel") = true,"get the measure of the mesh")
-        .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh");
+        .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh")
+        .def("markerNames",[](mesh_ptr_t const& self ) {
+                return self->markerNames();
+            }, "get the list of marker names" )
+        ;
 
-    pyclass_name = std::string("simplex_elements_reference_wrapper_")+suffix;
-    py::class_<elements_reference_wrapper_t<mesh_ptr_t>>(m,pyclass_name.c_str())
+    pyclass_name = std::string("range_mesh_elements_")+suffix;
+    py::class_<Range<mesh_t,MESH_ELEMENTS>>(m,pyclass_name.c_str())
         .def(py::init<>());
-    pyclass_name = std::string("faces_reference_wrapper_")+suffix;
-    py::class_<faces_reference_wrapper_t<mesh_ptr_t>>(m,pyclass_name.c_str())
+    pyclass_name = std::string("range_mesh_faces_")+suffix;
+    py::class_<Range<mesh_t,MESH_FACES>>(m,pyclass_name.c_str())
         .def(py::init<>());
+
+    pyclass_name = std::string( "range_mesh_elements_ptr_" ) + suffix;
+    py::class_<Range<mesh_ptr_t, MESH_ELEMENTS>>( m, pyclass_name.c_str() )
+        .def( py::init<>() );
+    pyclass_name = std::string( "range_mesh_faces_ptr_" ) + suffix;
+    py::class_<Range<mesh_ptr_t, MESH_FACES>>( m, pyclass_name.c_str() )
+        .def( py::init<>() );
 
     pyclass_name = std::string("mesh_support_")+suffix;
     py::class_<MeshSupport<mesh_t>,std::shared_ptr<MeshSupport<mesh_t>>>(m,pyclass_name.c_str())
         .def(py::init<mesh_ptr_t const&>(),py::arg("mesh"))
-        .def(py::init<mesh_ptr_t const&, elements_reference_wrapper_t<mesh_t> const&>(),py::arg("mesh"), py::arg("range"))
+        .def(py::init<mesh_ptr_t const&, Range<mesh_t,MESH_ELEMENTS> const&>(),py::arg("mesh"), py::arg("range"))
         ;
 
     pyclass_name = std::string("mesh_support_vector_")+suffix;
     py::class_<fusion::vector<std::shared_ptr<MeshSupport<mesh_t>>>>(m,pyclass_name.c_str())
         .def(py::init<>());
-        
 
-    // load mesh
-    m.def("load",&loadmesh<mesh_t>,"load a mesh from a file");
+    m.def(
+        "load", 
+        []( mesh_ptr_t m, std::string const& n, double h, int verbose )
+        { 
+            return loadMesh( _mesh=new mesh_t, _filename=n, _h=h, _verbose=verbose );
+        },
+        "load a mesh from a file", py::arg("mesh"), py::arg("name"), py::arg("h")=0.1, py::arg("verbose") = 1 );
 
+    
     m.def("elements", &elementsByPid<mesh_ptr_t>,"get iterator over the elements of the mesh", py::arg("mesh"));
     m.def("markedelements", &elementsByMarker<mesh_ptr_t>,"get iterator over the marked elements of the mesh", py::arg("mesh"),py::arg("tag"));
     m.def("boundaryfaces", &boundaryfacesByPid<mesh_ptr_t>,"get iterator over the boundary faces of the mesh", py::arg("mesh"));
-    m.def( "nelements", []( markedelements_t<mesh_ptr_t> const& range, bool global ) { return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
-    m.def( "nelements", []( markedfaces_t<mesh_ptr_t> const& range, bool global ) { return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( Range<mesh_t,MESH_ELEMENTS> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def(
+        "nelements", []( Range<mesh_ptr_t, MESH_ELEMENTS> const& range, bool global )
+        { return nelements( range, global ); },
+        "get the number of elements in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( Range<mesh_t,MESH_FACES> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+    m.def( "nelements", []( Range<mesh_ptr_t,MESH_FACES> const& range, bool global ) {
+        return nelements( range, global ); }, "get the number of facets in range, the local one if global is false", py::arg( "range" ), py::arg( "global" ) = true );
+
 //    m.def("nfaces",(decltype(&nFacesTuple<mesh_ptr_t>))  &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
     m.def(
@@ -240,11 +280,16 @@ void defMesh(py::module &m)
             },
             py::arg( "mesh" ), "create a Remesher data structure", py::return_value_policy::copy );
         m.def(
+            "remesher", []( mesh_ptr_t const& r, nl::json const& j )
+            { return std::make_shared<Remesh<mesh_t>>( r, j ); },
+            py::arg( "mesh" ), py::arg("params"), "create a Remesher data structure parametrized with a json", py::return_value_policy::copy );
+#if 0              
+        m.def(
             "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts ) {
                 return std::make_shared<Remesh<mesh_t>>( r, req_elts );
             },
             py::return_value_policy::copy,py::arg( "mesh" ), py::arg( "required_elts" ), "create a Remesher data structure" );
-#if 0            
+          
         m.def(
             "remesher", []( mesh_ptr_t const& r, std::vector<std::string> const& req_elts, std::vector<std::string> const& req_facets ) {
                 return std::make_shared<Remesh<mesh_t>>(  r, req_elts, req_facets );
@@ -277,13 +322,13 @@ void defMesh(py::module &m)
             "create a Remesher data structure" );
     }
     m.def(
-        "createSubmesh", []( mesh_ptr_t const& m, markedelements_t<mesh_ptr_t> const& range )
+        "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_ELEMENTS> const& range )
         { return createSubmesh( _mesh = m, _range = range ); },
         py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of elements" ).c_str() );
     if constexpr ( mesh_t::nDim >= 2 )
     {
         m.def(
-            "createSubmesh", []( mesh_ptr_t const& m, markedfaces_t<mesh_ptr_t> const& range )
+            "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_FACES> const& range )
             { return createSubmesh( _mesh = m, _range = range ); },
             py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of facets" ).c_str() );
     }

@@ -1,10 +1,19 @@
 steps:
- - name: ':$TARGET, ${CXX} :docker: :rocket:'
-   command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
-   if: build.message !~ /skip feelpp/
-   agents:
-     docker: true
-#   artifact_paths: Testing/junit-*.xml
+ - group: "feelpp ${CXX} :hammer: :docker:"
+   steps:
+    - label: '{{matrix}}'
+      command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
+      env:
+       TARGET: "{{matrix}}"
+      matrix:
+       - "ubuntu:22.04"
+       - "ubuntu:20.04"
+       - "debian:11"
+       - "debian:12"
+      if: build.message !~ /skip feelpp/ &&
+          build.message !~ /skip components/ 
+      agents:
+        docker: true
  - wait: ~
    if: build.message !~ /skip feelpp/
    continue_on_failure: false
@@ -13,40 +22,140 @@ steps:
  #      artifacts: Testing/junit-*.xml
  #      fail-build-on-error: true
  #  if: build.message !~ /skip feelpp/
- - trigger: "pkg-feelpp"
-   label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
-   async: true
-   if: |
-     ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
-     build.message !~ /skip feelpp/
+ - group: "feelpp ${CXX} :hammer: :package:"
+   steps:
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 22.04/jammy Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "jammy"
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 20.04/focal Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "focal"
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 23.10/mantic Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "mantic"
+    - trigger: "pkg-feelpp"
+      label: ":package: :ubuntu: 23.04/lunar Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "lunar"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: 11/bullseye Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "bullseye"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: 12/bookworm Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "bookworm"          
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: testing Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "testing"
+    - trigger: "pkg-feelpp"
+      label: ":package: :debian: sid Feel++ ${BUILDKITE_BRANCH}"
+      async: true
+      if: |
+        ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+        build.message !~ /skip pkg/
+      build:
+        env:
+          DIST: "sid"
  - wait
- - name: ':$TARGET, $CXX, feelpp-testsuite :hammer: :docker: :rocket:'
-   command: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
-   if: |
-     build.message !~ /skip tests/ &&
-     build.message !~ /skip components/ 
-   agents:
-     docker: true
- - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer: :docker: :rocket:'
-   command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
-   if: |
-     build.message !~ /skip toolboxes/ &&
-     build.message !~ /skip components/
-   agents:
-     docker: true
+ - group: "feelpp-testsuite ${CXX} :hammer: :docker:"
+   steps:
+    - label: '{{matrix}}'
+      command: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
+      env:
+       TARGET: "{{matrix}}"
+      matrix:
+       - "ubuntu:22.04"
+#       - "ubuntu:20.04"
+       - "debian:12"
+      if: |
+        build.message !~ /skip tests/ &&
+        build.message !~ /skip components/ 
+      agents:
+        docker: true
+ - group: "feelpp-toolboxes ${CXX} :hammer: :docker:"
+   steps:
+    - label: '{{matrix}}'
+      command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
+      env:
+       TARGET: "{{matrix}}"
+      matrix:
+       - "ubuntu:22.04"
+#       - "ubuntu:20.04"
+       - "debian:12"
+      if: |
+        build.message !~ /skip toolboxes/ &&
+        build.message !~ /skip components/
+      agents:
+        docker: true
  - wait
- - name: ':$TARGET, $CXX, feelpp-mor :hammer: :docker: :rocket:'
-   command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
-   if: |
-     (build.message !~ /skip mor/) &&
-     (build.message !~ /skip components/)
-   agents:
-     docker: true
+ - group: "feelpp-mor ${CXX} :hammer: :docker:"
+   steps:
+    - label: '{{matrix}}'
+      command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
+      env:
+       TARGET: "{{matrix}}"
+      matrix:
+       - "ubuntu:22.04"
+#       - "ubuntu:20.04"
+       - "debian:12"
+      if: |
+        (build.message !~ /skip mor/) &&
+        (build.message !~ /skip components/)
+      agents:
+        docker: true
  - wait
- - name: ':$TARGET, $CXX, feelpp-python :python: :hammer: :docker: :rocket:'
-   command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
-   if: |
-     (build.message !~ /skip python/) &&
-     (build.message !~ /skip components/)
-   agents:
-     docker: true
+ - group: "feelpp-python ${CXX} :python: :hammer: :docker:"
+   steps:
+    - name: '{{matrix}}'
+      command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
+      env:
+       TARGET: "{{matrix}}"
+      matrix:
+       - "ubuntu:22.04"
+#       - "ubuntu:20.04"   
+       - "debian:12"
+      if: |
+        (build.message !~ /skip python/) &&
+        (build.message !~ /skip components/)
+      agents:
+        docker: true

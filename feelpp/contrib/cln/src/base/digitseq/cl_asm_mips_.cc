@@ -88,9 +88,14 @@
         DECLARE_FUNCTION(mulu32_)
         .ent mulu32_ // Input in $4,$5, Output in $2,mulu32_high
 mulu32_:
+#if __mips_isa_rev >= 6
+        mulu $2,$5,$4           // arg1 * arg2, lo
+        muhu $6,$5,$4           // arg1 * arg2, hi
+#else
         multu $5,$4             // arg1 * arg2
         mfhi $6                 // hi
         mflo $2                 // lo
+#endif
         sw $6,mulu32_high       // hi abspeichern // Adressierung?? Deklaration??
         j $31                   // return
         .end mulu32_

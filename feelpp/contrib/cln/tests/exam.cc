@@ -11,6 +11,8 @@ extern int test_sfloat();
 extern int test_ffloat();
 extern int test_dfloat();
 extern int test_lfloat();
+extern int test_factorial();
+extern int test_doublefactorial();
 
 int test_elementary (void)
 {
@@ -35,6 +37,8 @@ int test_all (void)
 	error |= test_gcd();
 	error |= test_xgcd();
 	error |= test_sqrtp();
+	error |= test_factorial();
+	error |= test_doublefactorial();
 	return error;
 }
 

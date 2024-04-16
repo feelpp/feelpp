@@ -173,12 +173,10 @@ inline const cl_F operator+ (const long x, const cl_F& y)
 	{ return cl_I(x) + y; }
 inline const cl_F operator+ (const unsigned long x, const cl_F& y)
 	{ return cl_I(x) + y; }
-#ifdef HAVE_LONGLONG
 inline const cl_F operator+ (const long long x, const cl_F& y)
 	{ return cl_I(x) + y; }
 inline const cl_F operator+ (const unsigned long long x, const cl_F& y)
 	{ return cl_I(x) + y; }
-#endif
 inline const cl_F operator+ (const float x, const cl_F& y)
 	{ return cl_F(x) + y; }
 inline const cl_F operator+ (const double x, const cl_F& y)
@@ -191,12 +189,10 @@ inline const cl_F operator+ (const cl_F& x, const long y)
 	{ return x + cl_I(y); }
 inline const cl_F operator+ (const cl_F& x, const unsigned long y)
 	{ return x + cl_I(y); }
-#ifdef HAVE_LONGLONG
 inline const cl_F operator+ (const cl_F& x, const long long y)
 	{ return x + cl_I(y); }
 inline const cl_F operator+ (const cl_F& x, const unsigned long long y)
 	{ return x + cl_I(y); }
-#endif
 inline const cl_F operator+ (const cl_F& x, const float y)
 	{ return x + cl_F(y); }
 inline const cl_F operator+ (const cl_F& x, const double y)
@@ -222,12 +218,10 @@ inline const cl_F operator- (const long x, const cl_F& y)
 	{ return cl_I(x) - y; }
 inline const cl_F operator- (const unsigned long x, const cl_F& y)
 	{ return cl_I(x) - y; }
-#ifdef HAVE_LONGLONG
 inline const cl_F operator- (const long long x, const cl_F& y)
 	{ return cl_I(x) - y; }
 inline const cl_F operator- (const unsigned long long x, const cl_F& y)
 	{ return cl_I(x) - y; }
-#endif
 inline const cl_F operator- (const float x, const cl_F& y)
 	{ return cl_F(x) - y; }
 inline const cl_F operator- (const double x, const cl_F& y)
@@ -240,12 +234,10 @@ inline const cl_F operator- (const cl_F& x, const long y)
 	{ return x - cl_I(y); }
 inline const cl_F operator- (const cl_F& x, const unsigned long y)
 	{ return x - cl_I(y); }
-#ifdef HAVE_LONGLONG
 inline const cl_F operator- (const cl_F& x, const long long y)
 	{ return x - cl_I(y); }
 inline const cl_F operator- (const cl_F& x, const unsigned long long y)
 	{ return x - cl_I(y); }
-#endif
 inline const cl_F operator- (const cl_F& x, const float y)
 	{ return x - cl_F(y); }
 inline const cl_F operator- (const cl_F& x, const double y)
@@ -283,12 +275,10 @@ inline const cl_R operator* (const long x, const cl_F& y)
 	{ return cl_I(x) * y; }
 inline const cl_R operator* (const unsigned long x, const cl_F& y)
 	{ return cl_I(x) * y; }
-#ifdef HAVE_LONGLONG
 inline const cl_R operator* (const long long x, const cl_F& y)
 	{ return cl_I(x) * y; }
 inline const cl_R operator* (const unsigned long long x, const cl_F& y)
 	{ return cl_I(x) * y; }
-#endif
 inline const cl_F operator* (const float x, const cl_F& y)
 	{ return cl_F(x) * y; }
 inline const cl_F operator* (const double x, const cl_F& y)
@@ -301,12 +291,10 @@ inline const cl_R operator* (const cl_F& x, const long y)
 	{ return x * cl_I(y); }
 inline const cl_R operator* (const cl_F& x, const unsigned long y)
 	{ return x * cl_I(y); }
-#ifdef HAVE_LONGLONG
 inline const cl_R operator* (const cl_F& x, const long long y)
 	{ return x * cl_I(y); }
 inline const cl_R operator* (const cl_F& x, const unsigned long long y)
 	{ return x * cl_I(y); }
-#endif
 inline const cl_F operator* (const cl_F& x, const float y)
 	{ return x * cl_F(y); }
 inline const cl_F operator* (const cl_F& x, const double y)
@@ -331,12 +319,10 @@ inline const cl_F operator/ (const cl_F& x, const long y)
 	{ return x / cl_I(y); }
 inline const cl_F operator/ (const cl_F& x, const unsigned long y)
 	{ return x / cl_I(y); }
-#ifdef HAVE_LONGLONG
 inline const cl_F operator/ (const cl_F& x, const long long y)
 	{ return x / cl_I(y); }
 inline const cl_F operator/ (const cl_F& x, const unsigned long long y)
 	{ return x / cl_I(y); }
-#endif
 inline const cl_F operator/ (const cl_F& x, const float y)
 	{ return x / cl_F(y); }
 inline const cl_F operator/ (const cl_F& x, const double y)
@@ -349,12 +335,10 @@ inline const cl_R operator/ (const long x, const cl_F& y)
 	{ return cl_I(x) / y; }
 inline const cl_R operator/ (const unsigned long x, const cl_F& y)
 	{ return cl_I(x) / y; }
-#ifdef HAVE_LONGLONG
 inline const cl_R operator/ (const long long x, const cl_F& y)
 	{ return cl_I(x) / y; }
 inline const cl_R operator/ (const unsigned long long x, const cl_F& y)
 	{ return cl_I(x) / y; }
-#endif
 inline const cl_F operator/ (const float x, const cl_F& y)
 	{ return cl_F(x) / y; }
 inline const cl_F operator/ (const double x, const cl_F& y)

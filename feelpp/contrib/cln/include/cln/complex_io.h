@@ -8,12 +8,10 @@
 
 namespace cln {
 
-// Undocumented input functions
+// Input functions
 
 extern const cl_N read_complex (const cl_read_flags& flags, const char * string, const char * string_limit, const char * * end_of_parse);
 extern const cl_N read_complex (std::istream& stream, const cl_read_flags& flags);
-
-// Documented input functions
 
 inline std::istream& operator>> (std::istream& stream, cl_N& result)
 {
@@ -23,10 +21,7 @@ inline std::istream& operator>> (std::istream& stream, cl_N& result)
 }
 
 
-// Undocumented output functions
-
-
-// Documented output functions
+// Output functions
 
 // Gibt eine komplexe Zahl aus.
 // print_complex(stream,z);

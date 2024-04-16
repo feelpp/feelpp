@@ -51,6 +51,7 @@
 #include <feel/feelvf/unaryfunctor.hpp>
 #include <feel/feelvf/binaryfunctor.hpp>
 #include <feel/feelvf/arithmetic.hpp>
+#include <feel/feelvf/cst.hpp>
 
 namespace Feel
 {
@@ -193,9 +194,9 @@ sign( T const& x )
                                                                         \
         bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) ); } \
                                                                         \
-        evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const \
+        evaluate_type evaluate( bool p ) const \
         {                                                               \
-            auto eval = M_expr_1.evaluate(p,worldcomm);                 \
+            auto eval = M_expr_1.evaluate(p);                           \
             evaluate_type res(eval.rows(),eval.cols());                 \
             for ( uint16_type i=0;i< eval.rows();++i )                  \
                 for ( uint16_type j=0;j< eval.cols();++j )              \
@@ -442,10 +443,10 @@ sign( T const& x )
                                                                         \
         bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && M_expr_2.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) && ( M_expr_2.polynomialOrder() == 0 ) ); } \
                                                                         \
-        evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const \
+        evaluate_type evaluate( bool p ) const                          \
         {                                                               \
-            auto eval1 = M_expr_1.evaluate(p,worldcomm);                \
-            auto eval2 = M_expr_2.evaluate(p,worldcomm);                \
+            auto eval1 = M_expr_1.evaluate(p);                          \
+            auto eval2 = M_expr_2.evaluate(p);                          \
             CHECK( eval1.rows() == eval2.rows() && eval1.cols() == eval2.cols() ) << "should be have same shape"; \
             evaluate_type res(eval1.rows(),eval1.cols());               \
             for ( uint16_type i=0;i< eval1.rows();++i )                 \

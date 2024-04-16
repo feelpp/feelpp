@@ -39,26 +39,23 @@ namespace detail
 template<typename ArgExprType,typename ArgRangeType,typename ArgQuadType,typename ArgQuad1Type>
 struct integrate_type
  {
-     using _expr_type = std::decay_t<ArgExprType>;
-     using _range_type = typename Feel::detail::quadptlocrangetype< std::decay_t<ArgRangeType> >::type;
+    using _expr_type = std::decay_t<ArgExprType>;
+    using _range_type = typename Feel::detail::quadptlocrangetype< std::decay_t<ArgRangeType> >::type;
 
-     typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
-     static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
-     using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
-
-     using expr_order_t = Feel::vf::ExpressionOrder<_range_type,_expr_type>;
-     //using _value_type = typename _expr_type::value_type;
-     using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
-
-     using __quad_type = std::decay_t<ArgQuadType>;
-     using __quad1_type = std::decay_t<ArgQuad1Type>;
-     using _im_type = Feel::vf::detail::integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
-     using _quad_type = typename _im_type::_quad_type;
-     using _quad1_type = typename _im_type::_quad1_type;
-
-     typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
-
-     typedef std::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
+    using _element_iterator = typename _range_type::iterator_t;
+    using _element_type = typename _range_type::iterator_t;
+    static inline const uint16_type geoOrder = _element_type::nOrder;
+    
+    using expr_order_t = Feel::vf::ExpressionOrder<_range_type,_expr_type>;
+    //using _value_type = typename _expr_type::value_type;
+    using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
+    using __quad_type = std::decay_t<ArgQuadType>;
+    using __quad1_type = std::decay_t<ArgQuad1Type>;
+    using _im_type = Feel::vf::detail::integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
+    using _quad_type = typename _im_type::_quad_type;
+    using _quad1_type = typename _im_type::_quad1_type;
+    typedef Expr<Integrator<_range_type, _quad_type, _expr_type, _quad1_type> > expr_type;
+    typedef std::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
  };
 
 } // detail

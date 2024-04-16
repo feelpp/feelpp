@@ -8,7 +8,7 @@
 
 namespace cln {
 
-// Undocumented input functions
+// Input functions
 
 // Wandelt eine Zeichenkette mit Float-Syntax in ein Float um.
 // read_float(base,sign,string,index1,index4,index2,index3)
@@ -34,8 +34,6 @@ extern const cl_F read_float (unsigned int base, float_format_t prec,
 extern const cl_F read_float (const cl_read_flags& flags, const char * string, const char * string_limit, const char * * end_of_parse);
 extern const cl_F read_float (std::istream& stream, const cl_read_flags& flags);
 
-// Documented input functions
-
 inline std::istream& operator>> (std::istream& stream, cl_F& result)
 {
 	extern cl_read_flags cl_F_read_flags;
@@ -44,10 +42,7 @@ inline std::istream& operator>> (std::istream& stream, cl_F& result)
 }
 
 
-// Undocumented output functions
-
-
-// Documented output functions
+// Output functions
 
 // Gibt ein Float aus.
 // print_float(stream,z);

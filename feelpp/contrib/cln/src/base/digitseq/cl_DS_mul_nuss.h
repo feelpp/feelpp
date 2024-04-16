@@ -1229,7 +1229,7 @@ static void mulu_nuss_cyclic (const uintL n, const uintC N, // N = 2^n
                               nuss_outword * z // N words result
                              )
 {
-	unused N;
+	cl_unused N;
 	#if 0 // always n > 0
 	if (n == 0) {
 		// z[0] := x0 y0

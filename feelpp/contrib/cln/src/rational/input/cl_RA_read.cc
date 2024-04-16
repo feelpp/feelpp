@@ -99,7 +99,7 @@ const cl_RA read_rational (const cl_read_flags& flags, const char * string, cons
 		var cl_signean sign = 0;
 		if (ptr == string_limit) goto not_rational_syntax;
 		switch (*ptr) {
-			case '-': sign = ~sign;
+			case '-': sign = ~sign; // fallthrough
 			case '+': ptr++;
 			default: break;
 		}

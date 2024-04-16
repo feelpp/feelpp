@@ -89,12 +89,7 @@ const cl_LF fround (const cl_LF& x)
       var uintC bitcount = exp % intDsize; // zu kopierende Bits danach, >=0, <intDsize
       var uintD mask = minus_bit(intDsize-bitcount-1); // Maske mit bitcount+1 Bits
       {var const uintD* mantptr = LF_MSDptr(x) mspop count;
-       #if !(defined(__GNUC__) && (__GNUC__ == 2) && (__GNUC_MINOR__ == 7))
        if ((mspref(mantptr,0) & -mask) ==0) goto ab; // Bit 16n-e-1 =0 -> abrunden
-       #else
-       // Work around gcc-2.7.x bug on i386/ELF
-       if ((mspref(mantptr,0) & ((~mask)+1)) ==0) goto ab; // Bit 16n-e-1 =0 -> abrunden
-       #endif
        if (!((mspref(mantptr,0) & ~mask) ==0)) goto auf; // Bit 16n-e-1 =1 und Bits 16n-e-2..0 >0 -> aufrunden
        if (test_loop_msp(mantptr mspop 1,len-count-1)) goto auf;
        // round-to-even, je nach Bit 16n-e :

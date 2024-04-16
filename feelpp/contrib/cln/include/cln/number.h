@@ -121,7 +121,6 @@ inline _class_& _class_::operator= (const unsigned long wert)		\
 }
 #endif
 
-#ifdef HAVE_LONGLONG
 #if (long_long_bitsize==64)
 // `long' == `sintQ', `unsigned long' == `uintQ'.
 #define CL_DEFINE_LONGLONG_CONSTRUCTORS(_class_)  \
@@ -150,7 +149,6 @@ inline _class_& _class_::operator= (const unsigned long long wert)	\
 	pointer = cl_I_constructor_from_UQ(wert);			\
 	return *this;							\
 }
-#endif
 #endif
 
 namespace cln {
@@ -205,10 +203,8 @@ public:
 	cl_number (const unsigned int);	// argument must be < 2^29
 	cl_number (const long);
 	cl_number (const unsigned long);
-#ifdef HAVE_LONGLONG
 	cl_number (const long long);
 	cl_number (const unsigned long long);
-#endif
 	cl_number (const float);
 	cl_number (const double);
 	cl_number& operator= (const int);	// |argument| must be < 2^29
@@ -217,10 +213,8 @@ public:
 	cl_number& operator= (const unsigned long);
 	cl_number& operator= (const float);
 	cl_number& operator= (const double);
-#ifdef HAVE_LONGLONG
 	cl_number& operator= (const long long);
 	cl_number& operator= (const unsigned long long);
-#endif
 // Other constructors.
 //	cl_number (const char *);
 // Private pointer manipulations.
@@ -241,10 +235,8 @@ CL_DEFINE_INT_CONSTRUCTORS(cl_number)
 CL_DEFINE_INT_ASSIGNMENT_OPERATORS(cl_number)
 CL_DEFINE_LONG_CONSTRUCTORS(cl_number)
 CL_DEFINE_LONG_ASSIGNMENT_OPERATORS(cl_number)
-#ifdef HAVE_LONGLONG
 CL_DEFINE_LONGLONG_CONSTRUCTORS(cl_number)
 CL_DEFINE_LONGLONG_ASSIGNMENT_OPERATORS(cl_number)
-#endif
 CL_DEFINE_FLOAT_CONSTRUCTOR(cl_number)
 CL_DEFINE_DOUBLE_CONSTRUCTOR(cl_number)
 
@@ -257,7 +249,8 @@ template<class type>
 inline const type& the(const cl_number& x)
 {
 	// check that sizeof(type)==sizeof(cl_number)
-	typedef int assertion1 [1 - 2 * (sizeof(type) != sizeof(cl_number))];
+	static_assert(sizeof(type)==sizeof(cl_number),
+	              "sizeof(type)!=sizeof(cl_number)");
 	return *(const type *) &x;
 }
 // Conversions to subtypes without checking, macro version:

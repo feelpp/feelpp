@@ -94,7 +94,7 @@ int main( int argc, char** argv)
     auto normV = normL2( elements(model->mesh()), idv(VFE) );
     auto normT = normL2( elements(model->mesh()), idv(TFE) );
     boost::format fmter("%1% %|14t|%2% %|28t|%3% %|42t|%4% %|56t|%5%\n");
-    fs::ofstream file( "cvg.dat" );
+    std::ofstream file( "cvg.dat" );
     if( file && Environment::isMasterRank() )
     {
         file << fmter % "N" % "errV" % "relErrV" % "errT" % "relErrT";

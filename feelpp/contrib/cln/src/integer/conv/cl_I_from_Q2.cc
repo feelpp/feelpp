@@ -92,12 +92,12 @@ cl_private_thing cl_I_constructor_from_Q2 (sint64 wert_hi, uint64 wert_lo)
 	#endif
 	if (wert_hi >= 0) {
 		#define IF_LENGTH(i)  \
-		  if ((bn_minlength <= i) && (i*intDsize <= 128))	\
-		    if (!((i+1)*intDsize <= 128)			\
+		  if ((bn_minlength <= i) && (i*intDsize <= 128)	\
+		    && (!((i+1)*intDsize <= 128)			\
 		        || (i*intDsize-1 < 64				\
 		            ? ((wert_hi == 0) && (wert_lo < (uint64)bitc(i*intDsize-1))) \
 		            : ((uint64)wert_hi < (uint64)bitc(i*intDsize-1-64)) \
-		       )   )
+		     ) )   )
 		#define ALLOC(i)  \
 		  var cl_heap_bignum* ptr = allocate_bignum(i);
 		#define OK  \
@@ -143,12 +143,12 @@ cl_private_thing cl_I_constructor_from_Q2 (sint64 wert_hi, uint64 wert_lo)
 		#undef IF_LENGTH
 	} else {
 		#define IF_LENGTH(i)  \
-		  if ((bn_minlength <= i) && (i*intDsize <= 128))	\
-		    if (!((i+1)*intDsize <= 128)		       	\
+		  if ((bn_minlength <= i) && (i*intDsize <= 128)	\
+		    && (!((i+1)*intDsize <= 128)		       	\
 		        || (i*intDsize-1 < 64				\
 		            ? ((wert_hi == ~(sint64)0) && (wert_lo >= (uint64)(-bitc(i*intDsize-1)))) \
 		            : ((uint64)wert_hi >= (uint64)(-bitc(i*intDsize-1-64))) \
-		       )   )
+		     ) )   )
 		IF_LENGTH(1)
 			goto bignum1;
 		IF_LENGTH(2)

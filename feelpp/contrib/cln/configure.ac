@@ -1,32 +1,23 @@
 dnl run autoreconf -iv to produce the configure script.
 
-m4_define([cl_version_major], [1])
-m4_define([cl_version_minor], [3])
-m4_define([cl_version_patchlevel], [2])
+m4_define([cl_version_major], CL_GET_VERSION([MAJOR]))
+m4_define([cl_version_minor], CL_GET_VERSION([MINOR]))
+m4_define([cl_version_patchlevel], CL_GET_VERSION([PATCHLEVEL]))
 m4_define([cl_version], [cl_version_major.cl_version_minor.cl_version_patchlevel])
 
 dnl Libtool's library version information for CLN.
-dnl (Not to be confused with CLN's release version.)
-dnl Making new releases:
-dnl * increment cl_lt_revision,
-dnl * if any interfaces have been added, removed, or changed, then increment
-dnl   cl_lt_current and set cl_lt_revision to 0,
-dnl * if any interfaces have been added, then increment cl_lt_age,
-dnl * if any interfaces have been removed, set cl_lt_age to 0.
-dnl (On many systems, $(cl_lt_current):$(cl_lt_revision):$(cl_lt_age) results in
-dnl libcln.so.$(cl_lt_current)-$(cl_lt_age).)
-m4_define([cl_lt_current], [6])
-m4_define([cl_lt_revision], [2])
-m4_define([cl_lt_age], [0])
+m4_define([cl_lt_current], CL_GET_LTVERSION([CURRENT]))
+m4_define([cl_lt_revision], CL_GET_LTVERSION([REVISION]))
+m4_define([cl_lt_age], CL_GET_LTVERSION([AGE]))
 m4_define([cl_lt_version], [cl_lt_current:cl_lt_revision:cl_lt_age])
 
-AC_INIT([cln], cl_version)
-AC_PREREQ(2.59)
+AC_INIT([cln],[cl_version])
+AC_PREREQ([2.69])
 AC_CONFIG_SRCDIR(src/integer/gcd/cl_I_gcd.cc)
-AC_CONFIG_AUX_DIR([autoconf])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_HEADERS(autoconf/cl_config.h include/cln/config.h include/cln/host_cpu.h include/cln/version.h src/base/cl_base_config.h src/base/cl_gmpconfig.h src/timing/cl_t_config.h)
-AM_INIT_AUTOMAKE([foreign 1.10 dist-bzip2])
+AC_CONFIG_HEADERS(autoconf/cl_config.h include/cln/config.h include/cln/host_cpu.h src/base/cl_base_config.h src/base/cl_gmpconfig.h src/timing/cl_t_config.h)
+AM_INIT_AUTOMAKE([foreign 1.10 dist-bzip2 subdir-objects])
 AH_TOP([#ifndef _CL_CONFIG_H])
 AH_TOP([#define _CL_CONFIG_H])
 AH_TOP([#include "cln/host_cpu.h"])
@@ -55,46 +46,34 @@ AC_PROG_INSTALL
 dnl
 dnl           check for host type
 dnl
-CL_CANONICAL_HOST(autoconf)
+CL_CANONICAL_HOST
                       dnl sets variables host, host_cpu, host_vendor, host_os
 CL_CANONICAL_HOST_CPU
                       dnl DEFS __${host_cpu}__
 case $host_os in
-    *mingw*)
-     AC_DISABLE_SHARED
   dnl Shared libraries are not supported on some platforms [yet]
+  mingw* | windows*)
+    AC_DISABLE_SHARED
     ;;
-    *)
-     AC_ENABLE_SHARED
+  *)
+    AC_ENABLE_SHARED
     ;;
 esac
-AC_PROG_LIBTOOL
+LT_INIT
                       dnl sets variable LIBTOOL
 
 LT_VERSION_INFO=cl_lt_version
 AC_SUBST(LT_VERSION_INFO)
-
-dnl release version
-CL_VERSION_MAJOR=cl_version_major
-CL_VERSION_MINOR=cl_version_minor
-CL_VERSION_PATCHLEVEL=cl_version_patchlevel
-dnl release version for cln/config.h, so it can be tested by the preprocessor
-AC_DEFINE_UNQUOTED(CL_VERSION_MAJOR, $CL_VERSION_MAJOR, [Major version number of CLN])
-AC_DEFINE_UNQUOTED(CL_VERSION_MINOR, $CL_VERSION_MINOR, [Minor version number of CLN])
-AC_DEFINE_UNQUOTED(CL_VERSION_PATCHLEVEL, $CL_VERSION_PATCHLEVEL, [Patchlevel version number of CLN])
-dnl concatenated release version
 CL_VERSION=cl_version
-AC_DEFINE_UNQUOTED(CL_VERSION, $CL_VERSION, [CLN release number])
 AC_SUBST(CL_VERSION)
 
 dnl           checks for compiler characteristics
 dnl
 AC_LANG([C++])
+AX_CXX_COMPILE_STDCXX([11], [ext], [optional])
 dnl
-CL_LONGLONG
-                      dnl DEFS HAVE_LONGLONG
-CL_LONGDOUBLE
-                      dnl DEFS HAVE_LONGDOUBLE
+AC_CHECK_ALIGNOF([void*])
+AC_DEFINE_UNQUOTED([cl_word_alignment], [$ac_cv_alignof_voidp], [Normal alignment of void*])
 dnl
 dnl           checks for header files
 dnl
@@ -112,12 +91,8 @@ CL_GETTIMEOFDAY
                       dnl DEFS HAVE_GETTIMEOFDAY, GETTIMEOFDAY_DOTS, GETTIMEOFDAY_TZP_T
 ac_cv_func_ftime=no
                       dnl don't use ftime(3) even if it's available
-CL_TIMES_CLOCK
-                      dnl DEFS HAVE_TIMES_CLOCK
 CL_RUSAGE
                       dnl DEFS HAVE_SYS_RESOURCE_H, HAVE_GETRUSAGE, HAVE_SYS_TIMES_H
-CL_PERROR
-                      dnl DEFS HAVE_PERROR_DECL
 CL_ATTRIBUTE_FLATTEN
                       dnl DEFS CL_HAVE_ATTRIBUTE_FLATTEN
 dnl
@@ -145,4 +120,5 @@ AC_LIB_LINKFLAGS_FROM_LIBS([CLNLIB_RPATH], [$CLNLIB_LIBS])
 dnl
 dnl           That's it.
 dnl
-AC_OUTPUT([Makefile src/Makefile tests/Makefile examples/Makefile doc/Makefile benchmarks/Makefile cln.spec cln.pc])
+AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile examples/Makefile doc/Makefile benchmarks/Makefile cln.spec cln.pc])
+AC_OUTPUT

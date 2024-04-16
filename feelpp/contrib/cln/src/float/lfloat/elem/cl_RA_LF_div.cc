@@ -23,8 +23,8 @@ const cl_R cl_RA_LF_div (const cl_RA& x, const cl_LF& y)
 		return cl_I_LF_div(x,y);
 	} else {
 		DeclareType(cl_RT,x);
-		var const cl_I& u = TheRatio(x)->numerator;
-		var const cl_I& v = TheRatio(x)->denominator; // v /= 0
+		var const cl_I& u = numerator(x);
+		var const cl_I& v = denominator(x); // v /= 0
 		return cl_I_LF_div(u,The(cl_LF)(cl_LF_I_mul(y,v)));
 	}
 }

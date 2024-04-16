@@ -33,7 +33,7 @@ public :
     RangeDistributionByMaterialName( RangeDistributionByMaterialName && ) = default;
 
     //! init material range of elements
-    void init( std::map<std::string, std::tuple<elements_reference_wrapper_t<MeshType>,elements_reference_wrapper_t<MeshType>> > const& rangeMeshElementsByMaterial )
+    void init( std::map<std::string, std::tuple<Range<MeshType,MESH_ELEMENTS>,Range<MeshType,MESH_ELEMENTS>> > const& rangeMeshElementsByMaterial )
         {
             for ( auto const& rangeMat : rangeMeshElementsByMaterial )
             {
@@ -49,25 +49,22 @@ public :
 
 
     //! return map of range of faces by material for a given type
-    std::map<std::string,faces_reference_wrapper_t<MeshType>> const& rangeMeshFacesByMaterial( std::string const& type ) const
+    std::map<std::string, Range<MeshType,MESH_FACES>> const& rangeMeshFacesByMaterial( std::string const& type ) const
         {
             auto itFindType = M_rangeMeshFacesByMaterial.find( type );
-            CHECK( itFindType != M_rangeMeshFacesByMaterial.end() ) << "type doesnot find " << type;
+            CHECK( itFindType != M_rangeMeshFacesByMaterial.end() ) << "type does not find " << type;
             return itFindType->second;
         }
 
     //! update map of range of faces by material for a given type
-    void update( std::string const& type, faces_reference_wrapper_t<MeshType> const& rangeFaces )
+    void update( std::string const& type, Range<MeshType,MESH_FACES> const& rangeFaces )
         {
             auto & rangeMatFaces = M_rangeMeshFacesByMaterial[type];
             for ( std::string const& matName : M_matNames )
             {
                 if ( rangeMatFaces.find( matName ) == rangeMatFaces.end() )
                 {
-                    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myfaces( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
-                    rangeMatFaces[matName] = boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                                                                myfaces->begin(), myfaces->end(),
-                                                                myfaces );
+                    rangeMatFaces[matName] = Range<MeshType,MESH_FACES>(rangeFaces.mesh());
                 }
             }
 
@@ -86,9 +83,7 @@ public :
                         continue;
                     std::string const& matName = itFindEltId->second;
                     CHECK( rangeMatFaces.find( matName ) != rangeMatFaces.end() ) << "invalid matName " << matName;
-                    boost::get<3>( rangeMatFaces[matName] )->push_back( faceWrap );
-                    boost::get<1>( rangeMatFaces[matName] ) = boost::get<3>( rangeMatFaces[matName] )->begin();
-                    boost::get<2>( rangeMatFaces[matName] ) = boost::get<3>( rangeMatFaces[matName] )->end();
+                    rangeMatFaces[matName].push_back( faceWrap );
                 }
             }
         }
@@ -96,7 +91,7 @@ private :
 
     std::set<std::string> M_matNames;
     std::unordered_map<size_type,std::string> M_mapEltIdToMatName;
-    std::map<std::string,std::map<std::string,faces_reference_wrapper_t<MeshType>>> M_rangeMeshFacesByMaterial;
+    std::map<std::string,std::map<std::string,Range<MeshType,MESH_FACES>>> M_rangeMeshFacesByMaterial;
 
 };
 

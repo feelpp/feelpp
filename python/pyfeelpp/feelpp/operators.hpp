@@ -22,7 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #pragma once
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 #include <fmt/core.h>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -31,11 +31,10 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/eigen.h>
 #include <boost/algorithm/string.hpp>
 namespace py = pybind11;
 namespace Feel
@@ -65,8 +64,8 @@ void defOperator( py::module& m )
         suffix = std::string("Pdhv");
     std::string pyclass_name = fmt::format( "Mass_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
-    using elements_iterator_range_t = elements_reference_wrapper_t<mesh_t>;
-    using faces_iterator_range_t = faces_reference_wrapper_t<mesh_t>;
+    using elements_iterator_range_t = Range<mesh_ptr_t,MESH_ELEMENTS>;
+    using faces_iterator_range_t = Range<mesh_ptr_t,MESH_FACES>;
 
     m.def("on", []( space_ptr_t const& domain, space_ptr_t const& image, 
                   elements_iterator_range_t const& r, 

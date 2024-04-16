@@ -181,12 +181,6 @@ const cl_LF compute_pi_ramanujan_163 (uintC len)
 }
 // Bit complexity (N := len): O(N^2).
 
-#if defined(__mips__) && !defined(__GNUC__) // workaround SGI CC bug
-#define A A_fast
-#define B B_fast
-#define J3 J3_fast
-#endif
-
 const cl_LF compute_pi_ramanujan_163_fast (uintC len)
 {
 	// Same formula as above, using a binary splitting evaluation.

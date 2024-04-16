@@ -68,12 +68,12 @@ cl_private_thing cl_I_constructor_from_UL2 (uint32 wert_hi, uint32 wert_lo)
 	#define FILL_9	FILL_1_DIGIT(9,8,0); FILL_4_DIGIT(9,4,wert_hi); FILL_4_DIGIT(9,0,wert_lo);
 	#endif
 	#define IF_LENGTH(i)  \
-	  if ((bn_minlength <= i) && (i <= UL2_maxlength))	\
-	    if (!(i+1 <= UL2_maxlength)				\
+	  if ((bn_minlength <= i) && (i <= UL2_maxlength)	\
+	    && (!(i+1 <= UL2_maxlength)				\
 	        || (i*intDsize-1 < 32				\
 	            ? ((wert_hi == 0) && (wert_lo < (uint32)bitc(i*intDsize-1))) \
 	            : (wert_hi < (uint32)bitc(i*intDsize-1-32)) \
-	       )   )
+	     ) )   )
 	#define ALLOC(i)  \
 	  var cl_heap_bignum* ptr = allocate_bignum(i);
 	#define OK  \

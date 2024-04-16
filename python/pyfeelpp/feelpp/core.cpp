@@ -3,7 +3,7 @@
 //! This file is part of the Feel++ library
 //!
 //! Copyright (C) 2017-present Feel++ Consortium
-//! 
+//!
 //! This library is free software; you can redistribute it and/or
 //! modify it under the terms of the GNU Lesser General Public
 //! License as published by the Free Software Foundation; either
@@ -25,16 +25,14 @@
 //!
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelpython/pybind11/json.h>
 #include <feel/feelcore/repository.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
-#include "mpi_caster.hpp"
-#include <boost/parameter/binding.hpp>
-#include <boost/parameter/keyword.hpp>
-#include <boost/parameter/preprocessor.hpp>
+#include <feel/feelpython/pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/stl_bind.h>
+#include <feel/feelpython/pybind11/mpi.h>
+#include <pybind11/stl/filesystem.h>
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 
@@ -52,15 +50,15 @@ PYBIND11_MODULE(_core, m )
     if (import_mpi4py()<0) return ;
 
     /**
-     * @brief bind boost filesystem
-     * 
+     * @brief bind std filesystem
+     *
      */
     py::class_<fs::path>(m, "Path")
         .def(py::init<std::string>())
         .def("string",&fs::path::native,"convert path to string")
         ;
-    py::implicitly_convertible<std::string, boost::filesystem::path>();
-    
+    py::implicitly_convertible<std::string, fs::path>();
+
     py::class_<po::options_description>(m,"OptionsDescription")
         .def(py::init<>())
         .def("add",static_cast<po::options_description & (po::options_description::*)(po::options_description const& )>(&po::options_description::add), "add options description",py::arg("desc"));
@@ -103,7 +101,7 @@ PYBIND11_MODULE(_core, m )
             }, py::keep_alive<0, 1>()) /* Keep vector alive while iterator is used */;
     //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
     m.def( "makeWorldsComm", static_cast<worldscomm_ptr_t (*)(int, worldcomm_ptr_t const& )>(&Feel::makeWorldsComm), py::arg("n")=1, py::arg("worldComm"), "create a vector of WorldComm with n entries" );
-    
+
     py::class_<Repository::Owner>( m, "Owner" )
         .def_readwrite( "name", &Repository::Owner::name )
         .def_readwrite( "email", &Repository::Owner::email )
@@ -149,6 +147,10 @@ PYBIND11_MODULE(_core, m )
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def_static("initialized",&Feel::Environment::initialized, "return true if MPI is initialized, false otherwise",py::return_value_policy::copy)
         .def_static("finalized",&Feel::Environment::finalized, "return true if MPI is finalized, false otherwise",py::return_value_policy::copy)
+
+        .def_static("setLogVerbosityLevel",&Feel::Environment::setLogVerbosityLevel, "set the log verbosity level",py::arg("level"))
+        .def_static("logVerbosityLevel",&Feel::Environment::logVerbosityLevel, "return the log verbosity level")
+
         .def_static("numberOfProcessors",&Feel::Environment::numberOfProcessors, "return numberOfProcessors",py::return_value_policy::copy)
         .def_static("rank",&Feel::Environment::rank, "return process rank",py::return_value_policy::copy)
         .def_static("masterRank",&Feel::Environment::masterRank, "return master rank",py::return_value_policy::copy)
@@ -168,6 +170,7 @@ PYBIND11_MODULE(_core, m )
         .def_static("setConfigFile",&Feel::Environment::setConfigFile,"set config file and update variable map",py::arg("filename"))
         .def_static("changeRepository", []( std::string const& fmt,  Location l, bool subdir )
             { Feel::Environment::changeRepository(_directory=boost::format(fmt),_location=location(l),_subdir=subdir); },py::arg("directory"), py::arg("location")=Location::global, py::arg("subdir")=true,"change repository")
+        .def_static("saveTimers",&Feel::Environment::saveTimers,"save timers and display them if @c display is set to True",py::arg("display")=false)
         ;
 
     py::class_<Info>(m,"Info")
@@ -184,9 +187,9 @@ PYBIND11_MODULE(_core, m )
         ;
     py::class_<std::vector<bool>>(m,"vector_bool").def(py::init<>());
 
-    
+
     bindRemoteData( m );
-    
+
     m.def( "feel_options", &Feel::feel_options, py::arg("prefix")="", "create feelpp options with optional prefix" );
     m.def( "feel_nooptions", &Feel::feel_nooptions, "create feelpp options with optional prefix" );
     m.def( "case_options", [](int dimension = 3, std::string discr="" ){

@@ -8,7 +8,7 @@ dnl the same distribution terms as the rest of that program.
 
 dnl From Bruno Haible, Marcus Daniels, Sam Steingold, Peter Burwood, Sam Steingold.
 
-AC_PREREQ(2.57)
+AC_PREREQ([2.57])
 
 AC_DEFUN([CL_RUSAGE],
 [AC_CHECK_HEADERS(sys/resource.h sys/times.h)dnl
@@ -31,12 +31,11 @@ if test $ac_cv_header_sys_resource_h = yes; then
 #include <sys/resource.h>
 ],
 [int getrusage (int who, struct rusage * rusage);],
-[int getrusage();],
 [cl_cv_proto_getrusage_arg1="int"],
 [cl_cv_proto_getrusage_arg1="enum __rusage_who"])
 ], [extern int getrusage ($cl_cv_proto_getrusage_arg1, struct rusage *);])dnl
     AC_CACHE_CHECK(whether getrusage works, cl_cv_func_getrusage_works, [
-    AC_TRY_RUN([
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <sys/types.h> /* NetBSD 1.0 needs this */
 #include <sys/time.h>
@@ -67,11 +66,11 @@ int main ()
   /* getrusage is defined but does not work. */
   /*fprintf(stderr,"failure after %d runs\n",count);*/
   return 1;
-}],
-cl_cv_func_getrusage_works=yes,
-cl_cv_func_getrusage_works=no,
+}]])],
+[cl_cv_func_getrusage_works=yes],
+[cl_cv_func_getrusage_works=no],
 dnl When cross-compiling, don't assume anything.
-cl_cv_func_getrusage_works="guessing no")])
+[cl_cv_func_getrusage_works="guessing no"])])
   fi
   if test "$cl_cv_func_getrusage_works" = yes; then
     AC_DEFINE(HAVE_GETRUSAGE,,[have <sys/time.h>, the getrusage() function, the struct rusage type, and <sys/resource.h> defines RUSAGE_SELF])

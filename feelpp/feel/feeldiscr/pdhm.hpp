@@ -123,7 +123,7 @@ template<int Order,
          int Tag = 0>
 inline
 Pdhms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pdhms( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pdhms( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 {
     return Pdhms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                       _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),

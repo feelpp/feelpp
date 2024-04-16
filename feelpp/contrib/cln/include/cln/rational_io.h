@@ -8,7 +8,7 @@
 
 namespace cln {
 
-// Undocumented input functions
+// Input functions
 
 // Wandelt eine Zeichenkette mit Rational-Syntax in eine rationale Zahl um.
 // read_rational(base,sign,string,index1,index3,index2)
@@ -29,8 +29,6 @@ extern const cl_RA read_rational (unsigned int base,
 extern const cl_RA read_rational (const cl_read_flags& flags, const char * string, const char * string_limit, const char * * end_of_parse);
 extern const cl_RA read_rational (std::istream& stream, const cl_read_flags& flags);
 
-// Documented input functions
-
 inline std::istream& operator>> (std::istream& stream, cl_RA& result)
 {
 	extern cl_read_flags cl_RA_read_flags;
@@ -39,7 +37,7 @@ inline std::istream& operator>> (std::istream& stream, cl_RA& result)
 }
 
 
-// Undocumented output functions
+// Output functions
 
 // Gibt eine rationale Zahl aus.
 // print_rational(stream,base,z);
@@ -47,9 +45,6 @@ inline std::istream& operator>> (std::istream& stream, cl_RA& result)
 // > base: Basis (>=2, <=36)
 // > stream: Stream
 extern void print_rational (std::ostream& stream, unsigned int base, const cl_RA& z);
-
-
-// Documented output functions
 
 // Gibt eine Zahl aus.
 // print_rational(stream,flags,z);

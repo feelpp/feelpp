@@ -13,11 +13,7 @@ namespace cln {
 
 static void cl_svector_ringelt_destructor (cl_heap* pointer)
 {
-#if (defined(__mips__) || defined(__mips64__)) && !defined(__GNUC__) // workaround SGI CC bug
-	(*(cl_heap_SV_ringelt*)pointer).~cl_heap_SV();
-#else
 	(*(cl_heap_SV_ringelt*)pointer).~cl_heap_SV_ringelt();
-#endif
 }
 
 // XXX: this ought to be static const, but it would be impossible to

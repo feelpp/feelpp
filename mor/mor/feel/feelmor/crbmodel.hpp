@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-08-09
  */
-#ifndef __CRBModel_H
-#define __CRBModel_H 1
+#ifndef FEELPP_MOR_CRBModel_H
+#define FEELPP_MOR_CRBModel_H
 
 //#include <boost/shared_ptr.hpp>
 
@@ -49,6 +49,7 @@
 
 //#include <feel/feelfilters/gmsh.hpp>
 
+#include <feel/feelmor/crbmodeldb.hpp>
 #include <feel/feelmor/crbmodelbase.hpp>
 
 namespace Feel
@@ -115,7 +116,6 @@ public:
     //! reduced basis function space type
     typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
     typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
-
 
     //! element of the functionspace type
     typedef typename model_type::space_type::element_type element_type;
@@ -192,6 +192,8 @@ public:
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
+    using rbbdf_type = Bdf<rbfunctionspace_type>;
+    using rbbdf_ptrtype = std::shared_ptr<rbbdf_type>;
 
     typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
     typedef std::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
@@ -216,13 +218,23 @@ public:
      */
     //@{
 
-    CRBModel( crb::stage stage, int level = 0 )
+    CRBModel( std::string const& name, crb::stage stage, int level = 0 )
         :
-        CRBModel( std::make_shared<model_type>(), stage, level )
-    {
-    }
-    CRBModel( model_ptrtype const& model, crb::stage stage, int level = 0 )
+        CRBModel( name, Environment::randomUUID( true ), stage, level )
+    {}
+    CRBModel( std::string const& name, uuids::uuid const& uid, crb::stage stage, int level = 0 )
         :
+        CRBModel( std::make_shared<CRBModelDB>(name,uid),
+                  std::make_shared<model_type>(), stage, level )
+        {}
+    CRBModel( std::string const& name, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        CRBModel( std::make_shared<CRBModelDB>(name,Environment::randomUUID( true )), model, stage, level )
+        {}
+
+    CRBModel( std::shared_ptr<CRBModelDB> crbModelDb, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        M_crbModelDb( crbModelDb ),
         M_level( level ),
         M_Aqm(),
         M_InitialGuessV(),
@@ -253,8 +265,82 @@ public:
         M_outputIndex(ioption(_prefix=M_prefix,_name="crb.output-index")),
         M_useLinearModel(boption(_prefix=M_prefix,_name="crb.use-linear-model"))
         {
+
+            M_model->attach( M_crbModelDb );
+            bool M_rebuildDb = boption(_prefix=M_prefix,_name="crb.rebuild-database");
+            int M_dbLoad = ioption(_prefix=M_prefix, _name="crb.db.load" );
+            std::string M_dbFilename = soption(_prefix=M_prefix, _name="crb.db.filename");
+            std::string M_dbId = soption(_prefix=M_prefix,_name="crb.db.id");
+            int M_dbUpdate = ioption(_prefix=M_prefix, _name="crb.db.update" );
+            if ( !M_rebuildDb )
+            {
+                switch ( M_dbLoad )
+                {
+                case 0 :
+                    M_crbModelDb->updateIdFromDBFilename( M_dbFilename );
+                    break;
+                case 1:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::created );
+                    break;
+                case 2:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::modified );
+                    break;
+                case 3:
+                    M_crbModelDb->updateIdFromId( M_dbId );
+                    break;
+                }
+            }
+            else
+            {
+                switch ( M_dbUpdate )
+                {
+                case 0 :
+                    M_crbModelDb->updateIdFromDBFilename( M_dbFilename );
+                    break;
+                case 1:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::created );
+                    break;
+                case 2:
+                    M_crbModelDb->updateIdFromDBLast( crb::last::modified );
+                    break;
+                case 3:
+                    M_crbModelDb->updateIdFromId( M_dbId );
+                    break;
+                default:
+                    // don't do anything and let the system pick up a new unique id
+                    break;
+                }
+            }
+
             if ( stage == crb::stage::offline )
+            {
+                // create a first crb.json file if not exist already
+                if ( this->worldComm().isMasterRank() )
+                {
+                    fs::path jsonPath = fs::path(M_crbModelDb->dbRepository())/M_crbModelDb->jsonFilename();
+                    if ( !fs::exists( jsonPath.parent_path() ) )
+                        fs::create_directories( jsonPath.parent_path() );
+                    if ( !fs::exists( jsonPath ) )
+                    {
+                        nl::json j_init;
+                        j_init["uuid"] = uuids::to_string(this->uuid());
+                        std::ofstream o(jsonPath.string());
+                        o << j_init.dump(/*1*/);
+                    }
+                }
+                this->worldComm().barrier();
+
                 this->init();
+            }
+            if ( stage == crb::stage::online )
+            {
+                if ( !this->isSteady() )
+                {
+                    M_numberOfTimeStep = 1 + ( M_model->timeFinal() - M_model->timeInitial() ) / M_model->timeStep();
+                    LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps to store = {}, timeInitial = {}, timeFinal = {}, timeStep = {}",
+                                              M_numberOfTimeStep, M_model->timeInitial(), M_model->timeFinal(), M_model->timeStep() );
+                }
+            }
         }
 
 
@@ -414,6 +500,20 @@ public:
             for ( double t=timeInitial();t<=(timeFinal()+1e-9);t+=timeStep() )
                 ++M_numberOfTimeStep;
         }
+        LOG(INFO) << fmt::format( "CRBModel::init() : number of time steps = {}", M_numberOfTimeStep );
+
+
+
+        if ( countoption( _name="crb.copy-files-inside-db.path",_prefix=this->prefix() ) > 0 )
+        {
+            int cpt = 0;
+            for ( std::string const& filepathstr : vsoption( _name="crb.copy-files-inside-db.path",_prefix=this->prefix() ) )
+            {
+                auto filepath = fs::path( Environment::expand(filepathstr) );
+                M_model->addModelData( fmt::format("copy_files_inside_db_{}",cpt++), filepath );
+            }
+        }
+
     }
 
     //@}
@@ -1126,19 +1226,32 @@ public:
             if ( !M_model )
                 return;
 
-            if ( !M_model->additionalModelFiles().empty() )
+            if ( !M_model->additionalModelData().empty() )
             {
-                for ( auto const& inputFilenamePair : M_model->additionalModelFiles() )
+                for ( auto & [key,mdata] : M_model->additionalModelData() )
                 {
-                    std::string const& inputFilename = inputFilenamePair.second;
-                    fs::path inputPath = inputFilename;
-                    fs::path relativeDbPath = fs::path(inputFilename).filename();
-                    fs::path copyPath = fs::path(dir)/relativeDbPath;
-                    boost::system::error_code ec;
+                    // TODO move this code in AdditionalModelData class
+                    mdata.prepareSave();
+                    std::string const& relPath = mdata.relativeFilePathInDatabase();
+                    fs::path newFilePath = fs::path(dir)/relPath;
+                    fs::path parentNewFilePath = newFilePath.parent_path();
                     if ( M_model->worldComm().isMasterRank() )
-                        fs::copy_file( inputPath, copyPath, fs::copy_option::overwrite_if_exists, ec );
-                    // replace entry with copy path
-                    M_model->addModelFile( inputFilenamePair.first, relativeDbPath.string() );
+                    {
+                        if ( !fs::exists( parentNewFilePath ) )
+                            fs::create_directories( parentNewFilePath );
+                        if ( mdata.template has<nl::json>() )
+                        {
+                            auto const& jsonData = mdata.template data<nl::json>();
+                            std::ofstream o(newFilePath);
+                            o << jsonData.dump(/*1*/);
+                        }
+                        else if ( mdata.template has<fs::path>() )
+                        {
+                            fs::path const& inputPath = mdata.template data<fs::path>();
+                            fs::copy_file( inputPath, newFilePath, fs::copy_options::overwrite_existing );
+                        }
+                    }
+                    mdata.setOnDisk();
                 }
                 M_model->worldComm().barrier();
             }
@@ -2790,28 +2903,28 @@ public:
     {
         double timestep = 1e30;
         if ( !this->isSteady() )
-            timestep = this->bdfModel()->timeStep();
+            timestep = this->model()->timeStep();
         return timestep;
     }
     double timeInitial() const override
     {
         double timeinitial = 0.;
         if ( !this->isSteady() )
-            timeinitial = this->bdfModel()->timeInitial();
+            timeinitial = this->model()->timeInitial();
         return timeinitial;
     }
     double timeFinal() const override
     {
         double timefinal=1e30;
         if ( !this->isSteady() )
-            timefinal = this->bdfModel()->timeFinal();
+            timefinal = this->model()->timeFinal();
         return timefinal;
     }
     int timeOrder() const
     {
         int order = 0;
         if ( !this->isSteady() )
-            order = this->bdfModel()->timeOrder();
+            order = this->model()->timeOrder();
         return order;
     }
 
@@ -2854,6 +2967,7 @@ public:
 
 protected:
 
+    std::shared_ptr<CRBModelDB> M_crbModelDb;
     std::string M_prefix;
     int M_level = 0;
 
@@ -3511,7 +3625,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
     double bdf_coeff ;
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3532,7 +3646,6 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         {
             M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs, _rebuild=true);
         }
-        mybdf->shiftRight(u);
     }
 
     return u;
@@ -3592,7 +3705,7 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
     int iter=0;
     double norm=0;
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3620,8 +3733,6 @@ CRBModel<TruthModelType>::solveFemMonolithicFormulation( parameter_type const& m
             {
                 M_backend_primal->solve( _matrix=A , _solution=u, _rhs=F[0], _rebuild=true);
             }
-
-            mybdf->shiftRight(u);
 
             if( is_linear )
                 norm = 0;
@@ -3762,7 +3873,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     auto vec_bdf_poly = M_backend->newVector( Xh );
 
 
-    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*initialGuess); !mybdf->isFinished(); mybdf->next(u) )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -3797,7 +3908,6 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(u);
     }
     return u;
 }
@@ -3957,7 +4067,7 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         udu=*dual_initial_field;
     }
 
-    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next(udu) )
     {
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
@@ -3990,8 +4100,6 @@ CRBModel<TruthModelType>::solveFemDualMonolithicFormulation( parameter_type cons
         M_preconditioner_dual->setMatrix( Adu );
 
         M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
-
-        mybdf->shiftRight(udu);
     }
 
     return udu;
@@ -4126,7 +4234,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     }
 
 
-    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
+    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next(udu) )
     {
         iter=0;
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
@@ -4167,7 +4275,6 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 norm = this->computeNormL2( uold , udu );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
-        mybdf->shiftRight(udu);
     }
     return udu;
 }

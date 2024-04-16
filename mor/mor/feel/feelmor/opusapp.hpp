@@ -7,7 +7,7 @@
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2011-present Feel++ Consortium
-  
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -128,24 +128,27 @@ public:
     OpusApp()
         :
         super(),
-        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
+        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) ),
+        use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
         }
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options(ad.appName())
-               .add( od )
-               .add( crbOptions() )
-               .add( eimOptions() )
-               .add( crbSEROptions() )
-               .add( podOptions() )),
-        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
+        OpusApp(ad, od,  ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
         {
-            this->init();
         }
-
+    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+        :
+        OpusApp(ad, od,  ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
+        {
+        }
+    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
+        :
+        OpusApp(ad,od,mode)
+        {}
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
         super( ad, opusapp_options( ad.appName() )
@@ -154,35 +157,14 @@ public:
                .add( eimOptions() )
                .add( crbSEROptions() )
                .add( podOptions() )),
-        M_mode( mode )
+        M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
+        M_mode( mode ),
+        use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
         }
 
-    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
-        :
-        super( ad, opusapp_options( ad.appName() )
-               .add( od )
-               .add( crbOptions() )
-               .add( eimOptions() )
-               .add( crbSEROptions() )
-               .add( podOptions() )),
-        M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) )
-        {
-            this->init();
-        }
-    OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
-        :
-        super( ad, opusapp_options( ad.appName() )
-               .add( od )
-               .add( crbOptions() )
-               .add( eimOptions() )
-               .add( crbSEROptions() )
-               .add( podOptions() )),
-        M_mode( mode )
-        {
-            this->init();
-        }
+private:
     void init()
         {
             try
@@ -206,16 +188,23 @@ public:
             }
 
         }
+public:
     /**
      * \return a new CRB shared pointer
      */
     crb_ptrtype newCRB( int level=0 )
         {
-            model = std::make_shared<crbmodel_type>(crb::stage::offline,level);
+            model = std::make_shared<crbmodel_type>(M_modelName,crb::stage::offline,level);
             return crb_type::New(model->model()->modelName(), model, crb::stage::offline );
         }
     crb_ptrtype & crbPtr() { return crb; }
     crb_ptrtype const& crbPtr() const { return crb; }
+
+    /* Get parameter space associated to model */
+    auto getParameterSpace() const { return model->parameterSpace(); }
+    
+    /* Returns CRB objects */
+    crb_ptrtype getCRB() const { return this->crb; }
 
     void setMode( std::string const& mode )
         {
@@ -403,11 +392,63 @@ public:
             fs::current_path( M_current_path );
         }
 
-        /* Returns CRB objects */
-        crb_ptrtype getCRB()
-        {
-            return this->crb;
-        }
+
+    /**
+     * @brief Compute the FEM solution for a given parameter \p mu
+     * 
+     * @param mu parameter
+     * @param use_newton use Newton method (default true)
+     * @return element_type solution of the FEM problem
+     */
+    element_type getFEMsolution( parameter_type const& mu, bool use_newton=true )
+    {
+        element_type u_pfem;
+        if( use_newton )
+            u_pfem =  model->solveFemUsingAffineDecompositionNewton( mu );
+        else
+            u_pfem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
+        return u_pfem;
+    }
+
+    /**
+     * @brief Compute the RB solution for a given parameter mu
+     * 
+     * @param mu parameter
+     * @param N size of the reduced basis (default -1, i.e. use the maximum size)
+     * @return auto tuple composed of uN, output, errorBound
+     */
+    auto getRBsolution( parameter_type const &mu, int N = -1 )
+    {
+        vectorN_type time_crb;
+        double online_tol = doption(_name="crb.online-tolerance");
+        bool print_rb_matrix = boption(_name="crb.print-rb-matrix");
+
+        auto o = crb->run( mu, time_crb, online_tol, N, print_rb_matrix);
+        auto uN = o.coefficients();
+        double errorBound = o.errorbound();
+        double output = o.output();
+
+        return std::make_tuple( uN, output, errorBound );
+    }
+
+    /**
+     * @brief Compute the effectivity of the RB solution for a given parameter \p mu
+     * 
+     * @param mu parameter
+     * @param N size of the reduced basis (default -1, i.e. use the maximum size)
+     * @return double effectivity $\eta_N^s(\mu) = \frac{\Delta_N^s(\mu)}{s(\mu) - s_N(\mu)}$
+     */
+    double computeEffectivity( parameter_type const &mu, int N = -1 )
+    {
+        element_type u_pfem = getFEMsolution( mu, use_newton_ );
+        auto sol_rbm = getRBsolution( mu, N );
+        double output_crb = std::get<1>(sol_rbm);
+        double output_fem = model->output( 1, mu, u_pfem, false );
+        double error_bound = std::get<2>(sol_rbm);
+
+        return error_bound / math::abs( output_crb - output_fem );        
+    }
+
 
 private:
     int printParameterHdr( std::ostream& os, int N, std::vector<std::string> outputhdrs )
@@ -909,8 +950,10 @@ private:
     }
 
 private:
+    std::string M_modelName;
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
+    bool use_newton_;
 
     crb_ptrtype crb;
 

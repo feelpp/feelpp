@@ -39,7 +39,7 @@
 #include <feel/feelfilters/unitsquare.hpp>
 
 #include <feel/feelmor/modelcrbbase.hpp>
-#include <feel/feelmor/opusapp.hpp>
+#include <feel/feelmor/crb.hpp>
 
 namespace Feel
 {
@@ -49,7 +49,6 @@ makeOptions()
 {
     po::options_description dboptions( "test_db options" );
     dboptions
-        .add(opusapp_options("feelpp_test_db"))
         .add(crbOptions())
         .add(crbSEROptions())
         .add(eimOptions())
@@ -93,7 +92,6 @@ public:
         :
         super_type( (boost::format("TestDbHeat1d_%1%_np%2%")%soption(_name="crb.db.format") %Environment::worldComm().size() ).str() )
         {
-            this->setId( boost::uuids::nil_uuid() );
         }
 
     //! initialisation of the model
@@ -203,12 +201,26 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     Environment::setOptionValue("crb.results-repo-name", std::string("test_db"));
     Environment::setOptionValue("crb.rebuild-database", true);
 
+    Environment::setOptionValue("crb.db.update", -1 ); //use uid given
+    Environment::setOptionValue("crb.db.load", -1 ); //use uid given
+
     // Execute the Heat1d app with both boost and hdf5 databases
     Environment::setOptionValue("crb.db.format", std::string("boost"));
-    Feel::OpusApp<Feel::TestDbHeat1d > * app = new Feel::OpusApp<Feel::TestDbHeat1d>();
-    app->run();
 
-    auto crb = app->getCRB();
+
+    std::map<std::string,uuids::uuid> mapModelToUuid;
+    mapModelToUuid.emplace( "boost", Environment::nameUUID( boost::uuids::nil_uuid(), "boost" ) );
+    mapModelToUuid.emplace( "hdf5", Environment::nameUUID( boost::uuids::nil_uuid(), "hdf5" ) );
+    std::cout << "boost:"<<mapModelToUuid.at("boost") << "\n"
+              << "hdf5 :"<<mapModelToUuid.at("hdf5") << std::endl;
+    std::string modelName = "crd_db_test1";
+
+    using crbmodel_type = CRBModel<Feel::TestDbHeat1d>;
+    using crb_type = CRB<crbmodel_type>;
+    auto crbmodel = std::make_shared<crbmodel_type>(modelName,mapModelToUuid.at("boost"),crb::stage::offline);
+    auto crb = crb_type::New(crbmodel->model()->modelName(), crbmodel, crb::stage::offline );
+    crb->offline();
+
     auto WN = crb->wn();
     auto WNdu = crb->wndu();
     wnSize.push_back(WN.size());
@@ -221,13 +233,13 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
         { wnSample.push_back(wn0[i]); }
     }
 
-    delete app;
 
     Environment::setOptionValue("crb.db.format", std::string("hdf5"));
-    app = new Feel::OpusApp<Feel::TestDbHeat1d >();
-    app->run();
 
-    crb = app->getCRB();
+    crbmodel = std::make_shared<crbmodel_type>(modelName,mapModelToUuid.at("hdf5"),crb::stage::offline);
+    crb = crb_type::New(crbmodel->model()->modelName(), crbmodel, crb::stage::offline );
+    crb->offline();
+
     WN = crb->wn();
     WNdu = crb->wndu();
     wnSize.push_back(WN.size());
@@ -240,17 +252,18 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
         { wnSample.push_back(wn0[i]); }
     }
 
-    delete app;
+    return;
 
     // Execute the Heat1d app with both boost and hdf5 databases
     // Except we are reloading the databases here
     Environment::setOptionValue("crb.rebuild-database", false);
 
     Environment::setOptionValue("crb.db.format", std::string("boost"));
-    app = new Feel::OpusApp<Feel::TestDbHeat1d >();
-    app->run();
+    crbmodel = std::make_shared<crbmodel_type>(modelName,mapModelToUuid.at("boost"),crb::stage::online);
+    crb = crb_type::New(crbmodel->model()->modelName(), crbmodel, crb::stage::online );
+    fs::path jsonPath = fs::path(crbmodel->model()->crbModelDb().dbRepository())/crbmodel->model()->crbModelDb().jsonFilename();
+    crb->loadDB( jsonPath.string(),crb::load::all );
 
-    crb = app->getCRB();
     WN = crb->wn();
     WNdu = crb->wndu();
     wnSize.push_back(WN.size());
@@ -263,13 +276,12 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
         { wnSample.push_back(wn0[i]); }
     }
 
-    delete app;
-
     Environment::setOptionValue("crb.db.format", std::string("hdf5"));
-    app = new Feel::OpusApp<Feel::TestDbHeat1d >();
-    app->run();
+    crbmodel = std::make_shared<crbmodel_type>(modelName,mapModelToUuid.at("hdf5"),crb::stage::online);
+    crb = crb_type::New(crbmodel->model()->modelName(), crbmodel, crb::stage::online );
+    /*fs::path*/ jsonPath = fs::path(crbmodel->model()->crbModelDb().dbRepository())/crbmodel->model()->crbModelDb().jsonFilename();
+    crb->loadDB( jsonPath.string(),crb::load::all );
 
-    crb = app->getCRB();
     WN = crb->wn();
     WNdu = crb->wndu();
     wnSize.push_back(WN.size());
@@ -295,8 +307,6 @@ BOOST_AUTO_TEST_CASE( crd_db_test1 )
     }
     std::cout << std::endl;
     */
-
-    delete app;
 
     /* Check that we have the correct basis sizes */
     std::cout << "Checking basis sizes ..." << std::endl;

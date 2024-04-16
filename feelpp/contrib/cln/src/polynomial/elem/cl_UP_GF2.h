@@ -17,7 +17,7 @@ static bool gf2_equal (cl_heap_univpoly_ring* UPR, const _cl_UP& x, const _cl_UP
 {{
 	DeclarePoly(cl_GV_MI,x);
 	DeclarePoly(cl_GV_MI,y);
-	unused UPR;
+	cl_unused UPR;
 	var const cl_heap_GV_I_bits1 * xv = (const cl_heap_GV_I_bits1 *) x.heappointer;
 	var const cl_heap_GV_I_bits1 * yv = (const cl_heap_GV_I_bits1 *) y.heappointer;
 	var uintL xlen = xv->v.size();
@@ -91,7 +91,7 @@ static const _cl_UP gf2_plus (cl_heap_univpoly_ring* UPR, const _cl_UP& x, const
 // In characteristic 2, -x = x.
 static const _cl_UP gf2_uminus (cl_heap_univpoly_ring* UPR, const _cl_UP& x)
 {
-	unused UPR;
+	cl_unused UPR;
 	return x;
 }
 

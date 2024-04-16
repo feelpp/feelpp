@@ -25,7 +25,7 @@ static inline void eval__series_aux (uintC N1, uintC N2,
                                      const cl__series& args,
                                      cl_I* T)
 {
-	unused args;
+	cl_unused args;
 	*T = N2-N1;
 }
 

@@ -27,11 +27,7 @@ namespace cln {
 
 static void cl_gvector_integer_destructor (cl_heap* pointer)
 {
-#if (defined(__mips__) || defined(__mips64__)) && !defined(__GNUC__) // workaround SGI CC bug
-	(*(cl_heap_GV_I*)pointer).~cl_heap_GV();
-#else
 	(*(cl_heap_GV_I*)pointer).~cl_heap_GV_I();
-#endif
 }
 
 // XXX: Ugh, this needs to be non-const (and non-static) for overriding
@@ -73,9 +69,9 @@ static inline cl_GV_I_vectorops* outcast (cl_GV_vectorops<cl_I>* vectorops)
 struct cl_heap_GV_I_general : public cl_heap_GV_I {
 	cl_I data[1];
 	// Standard allocation disabled.
-	void* operator new (size_t size) { unused size; throw runtime_exception(); }
+	void* operator new (size_t size) = delete;
 	// Standard deallocation disabled.
-	void operator delete (void* ptr) { unused ptr; throw runtime_exception(); }
+	void operator delete (void* ptr) = delete;
 	// No default constructor.
 	cl_heap_GV_I_general ();
 };
@@ -143,9 +139,9 @@ cl_heap_GV_I* cl_make_heap_GV_I (std::size_t len)
 struct cl_heap_GV_I_bits##m : public cl_heap_GV_I {			\
 	uint_t data[1];							\
 	/* Standard allocation disabled. */				\
-	void* operator new (size_t size) { unused size; throw runtime_exception(); } \
+	void* operator new (size_t size) = delete;			\
 	/* Standard deallocation disabled. */				\
-	void operator delete (void* ptr) { unused ptr; throw runtime_exception(); } \
+	void operator delete (void* ptr) = delete;			\
 	/* No default constructor. */					\
 	cl_heap_GV_I_bits##m ();					\
 };									\
@@ -184,7 +180,7 @@ static cl_GV_I_vectorops bits##m##_vectorops = {{			\
 
 static void bits_do_delete (cl_GV_inner<cl_I>* vec)
 {
-	unused vec;
+	cl_unused vec;
 }
 
 // Copy bits srcptr.bits[srcindex..srcindex+count-1] into destptr.bits[destindex..destindex+count-1].

@@ -1001,6 +1001,9 @@ macro(feelpp_get_environment)
   if ( FEELPP_HAS_PYTHON )
     get_property( FEELPP_PYTHON_MODULE_PATH TARGET Feelpp::feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH )
   endif()
+  get_property( LSB_RELEASE_ID_SHORT TARGET Feelpp::feelpp PROPERTY LSB_RELEASE_ID_SHORT )
+  get_property( LSB_RELEASE_VERSION_SHORT TARGET Feelpp::feelpp PROPERTY LSB_RELEASE_VERSION_SHORT )
+  get_property( LSB_RELEASE_CODENAME_SHORT TARGET Feelpp::feelpp PROPERTY LSB_RELEASE_CODENAME_SHORT )
 endmacro()
 
 #

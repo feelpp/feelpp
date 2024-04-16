@@ -29,6 +29,7 @@
 #ifndef __EXPORTERENSIGHT_CPP
 #define __EXPORTERENSIGHT_CPP
 
+#include <fmt/core.h>
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
@@ -609,7 +610,7 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
             for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __step->mesh() ) )
             {
                 auto const& [range,mIds,fragmentName] = fragmentData;
-                sprintf( buffer, "part %d",fragmentId );
+                fmt::format_to_n( buffer, 80, "part {}", fragmentId );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "part " << buffer << "\n";
                 strcpy( buffer, this->elementType().c_str() );
@@ -620,8 +621,8 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
                 if ( itFindMapElementArrayToDofId == M_mapElementArrayToDofId.end() )
                 {
                     auto rangeMarkedElements = range;
-                    auto elt_m_it = boost::get<1>( rangeMarkedElements );
-                    auto const elt_m_en = boost::get<2>( rangeMarkedElements );
+                    auto elt_m_it = rangeMarkedElements.begin();
+                    auto const elt_m_en = rangeMarkedElements.end();
                     index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
                     m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
                     auto & mapArrayToDofId =  M_mapElementArrayToDofId[fragmentId];
@@ -718,11 +719,11 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     {
         auto const& [range,mIds,fragmentName] = fragmentData;
 
-        sprintf( buffer, "part %d",fragmentId );
+        fmt::format_to_n( buffer, 80, "part {}",fragmentId );
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Marker %d (%s)", fragmentId, fragmentName.substr(0, 32).c_str());
+        fmt::format_to_n( buffer, 80, "Marker {} ({})", fragmentId, fragmentName.substr(0, 32).c_str());
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
@@ -730,8 +731,8 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
         auto rangeMarkedElements = range;
-        auto elt_it = boost::get<1>( rangeMarkedElements );
-        auto const elt_en = boost::get<2>( rangeMarkedElements );
+        auto elt_it = rangeMarkedElements.begin();
+        auto const elt_en = rangeMarkedElements.end();
 
         //	int __ne = __mesh->numElements();
         //int __ne = p_it->second;
@@ -753,7 +754,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
         std::vector<int> eids( __mesh->numLocalVertices()*__ne );
         size_type e= 0;
-        elt_it = boost::get<3>( rangeMarkedElements )->begin();
+        elt_it = rangeMarkedElements.begin();
         for ( ; elt_it != elt_en; ++elt_it, ++e )
         {
             auto const& elt = boost::unwrap_ref( *elt_it );

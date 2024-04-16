@@ -37,7 +37,11 @@ const cl_LF scale_float (const cl_LF& x, sintC delta)
 	if (   ((uintE)(-(uexp = uexp+udelta)) <= (uintE)(-udelta)) // oder Exponent-Unterlauf?
 	    || (uexp < LF_exp_low) // oder Exponent zu klein?
 	   )
-	  { throw floating_point_underflow_exception(); }
+	  { if (underflow_allowed())
+	    { throw floating_point_underflow_exception(); }
+	    else
+	    { return encode_LF0(TheLfloat(x)->len); } // Ergebnis 0.0
+	  }
       }
       var uintC len = TheLfloat(x)->len;
       return encode_LFu(TheLfloat(x)->sign,uexp,arrayMSDptr(TheLfloat(x)->data,len),len);

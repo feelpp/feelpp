@@ -57,7 +57,7 @@ cl_heap_modint_ring::cl_heap_modint_ring (cl_I m, cl_modint_setops* setopv, cl_m
 
 static bool modint_equal (cl_heap_modint_ring* R, const _cl_MI& x, const _cl_MI& y)
 {
-	unused R;
+	cl_unused R;
 	return equal(x.rep,y.rep);
 }
 

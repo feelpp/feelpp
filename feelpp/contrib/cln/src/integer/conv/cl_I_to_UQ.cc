@@ -34,15 +34,15 @@ uint64 cl_I_to_UQ (const cl_I& obj)
 		if ((sintD)mspref(arrayMSDptr(bn->data,len),0) < 0)
 			goto bad;
 		#define IF_LENGTH(i)  \
-		  if (bn_minlength <= i) /* genau i Digits überhaupt möglich? */\
-		    if (len == i) /* genau i Digits? */				\
-		      /* 2^((i-1)*intDsize-1) <= obj < 2^(i*intDsize-1) */	\
-		      if ( (i*intDsize-1 > 64)					\
-		           && ( ((i-1)*intDsize-1 >= 64)			\
-		                || (mspref(arrayMSDptr(bn->data,len),0) >= (uintD)bitc(64-(i-1)*intDsize)) \
-		         )    )							\
-		        goto bad;						\
-			else
+		  if ((bn_minlength <= i) /* genau i Digits überhaupt möglich? */	\
+		    && (len == i) /* genau i Digits? */					\
+		    /* 2^((i-1)*intDsize-1) <= obj < 2^(i*intDsize-1) */		\
+		    && ( (i*intDsize-1 > 64)						\
+		         && ( ((i-1)*intDsize-1 >= 64)					\
+		              || (mspref(arrayMSDptr(bn->data,len),0) >= (uintD)bitc(64-(i-1)*intDsize)) \
+		     ) )    )								\
+		    goto bad;								\
+		    else
 		#if (intDsize==64)
 		IF_LENGTH(1)
 			return (uint64)arrayLSref(bn->data,1,0);

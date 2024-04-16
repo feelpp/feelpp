@@ -13,25 +13,8 @@ namespace cln {
 // is sufficient. Is also has the advantage of being mostly non-interrupting.
 
 
-// An object is either a pointer to heap allocated data
-//              or immediate data.
-
+// An object is either a pointer to heap allocated data or immediate data.
 // It is possible to distinguish these because pointers are aligned.
-// cl_uint_alignment is the guaranteed alignment of a `void*' or `long'
-// in memory. Must be > 1.
-#if defined(__m68k__)
-  #define cl_word_alignment  2
-#endif
-#if defined(__i386__) || defined(__mips__) || defined(__mipsel__) || (defined(__sparc__) && !defined(__arch64__)) || defined(__hppa__) || defined(__arm__) || defined(__rs6000__) || defined(__m88k__) || defined(__convex__) || (defined(__s390__) && !defined(__s390x__)) || defined(__sh__)
-  #define cl_word_alignment  4
-#endif
-#if defined(__alpha__) || defined(__ia64__) || defined(__mips64__) || defined(__powerpc64__) || (defined(__sparc__) && defined(__arch64__)) || defined(__x86_64__) || defined(__s390x__)
-  #define cl_word_alignment  8
-#endif
-#if !defined(cl_word_alignment)
-  #error "Define cl_word_alignment for your CPU!"
-#endif
-
 
 // Four basic classes are introduced:
 //
@@ -94,8 +77,8 @@ inline bool cl_immediate_p (cl_uint word)
 #define cl_tag_shift	0
 #define cl_value_shift  (cl_tag_len+cl_tag_shift)
 #define cl_value_len	(cl_pointer_size - cl_value_shift)
-#define cl_tag_mask	(((1UL << cl_tag_len) - 1) << cl_tag_shift)
-#define cl_value_mask	(((1UL << cl_value_len) - 1) << cl_value_shift)
+#define cl_tag_mask	((((cl_uint)1 << cl_tag_len) - 1) << cl_tag_shift)
+#define cl_value_mask	((((cl_uint)1 << cl_value_len) - 1) << cl_value_shift)
 
 // Return the tag of a word.
 inline cl_uint cl_tag (cl_uint word)
@@ -111,26 +94,27 @@ inline cl_uint cl_value (cl_uint word)
 }
 
 // Return a word, combining a value and a tag.
-inline cl_uint cl_combine (cl_uint tag, cl_uint value)
+inline cl_uint cl_combine_impl (cl_uint tag, cl_uint value)
 {
 	return (value << cl_value_shift) + (tag << cl_tag_shift);
 }
-inline cl_uint cl_combine (cl_uint tag, cl_sint value)
+inline cl_uint cl_combine_impl (cl_uint tag, cl_sint value)
 {
 	// This assumes cl_value_shift + cl_value_len == cl_pointer_size.
 	return (value << cl_value_shift) + (tag << cl_tag_shift);
 }
-// Keep the compiler happy.
 inline cl_uint cl_combine (cl_uint tag, unsigned int value)
-{ return cl_combine(tag, (cl_uint)value); }
+{ return cl_combine_impl(tag, (cl_uint)value); }
 inline cl_uint cl_combine (cl_uint tag, int value)
-{ return cl_combine(tag, (cl_sint)value); }
-#ifdef HAVE_LONGLONG
+{ return cl_combine_impl(tag, (cl_sint)value); }
+inline cl_uint cl_combine (cl_uint tag, unsigned long value)
+{ return cl_combine_impl(tag, (cl_uint)value); }
+inline cl_uint cl_combine (cl_uint tag, long value)
+{ return cl_combine_impl(tag, (cl_sint)value); }
 inline cl_uint cl_combine (cl_uint tag, unsigned long long value)
-{ return cl_combine(tag, (cl_uint)value); }
+{ return cl_combine_impl(tag, (cl_uint)value); }
 inline cl_uint cl_combine (cl_uint tag, long long value)
-{ return cl_combine(tag, (cl_uint)value); }
-#endif
+{ return cl_combine_impl(tag, (cl_uint)value); }
 
 // Definition of the tags.
 #if !defined(CL_WIDE_POINTERS)
@@ -327,11 +311,7 @@ public:
 	cl_private_thing _as_cl_private_thing () const;
 // Private constructor.
 	cl_gcobject (cl_private_thing p)
-		#if !(defined(__alpha__) && !defined(__GNUC__))
 		: pointer (p) {}
-		#else
-		{ pointer = p; }
-		#endif
 // Debugging output.
 	void debug_print () const;
 // Ability to place an object at a given address.
@@ -377,11 +357,7 @@ public:
 	cl_private_thing _as_cl_private_thing () const;
 // Private constructor.
 	cl_gcpointer (cl_private_thing p)
-		#if !(defined(__alpha__) && !defined(__GNUC__))
 		: pointer (p) {}
-		#else
-		{ pointer = p; }
-		#endif
 // Debugging output.
 	void debug_print () const;
 // Ability to place an object at a given address.
@@ -427,11 +403,7 @@ public:
 	cl_private_thing _as_cl_private_thing () const;
 // Private constructor.
 	cl_rcobject (cl_private_thing p)
-		#if !(defined(__alpha__) && !defined(__GNUC__))
 		: pointer (p) {}
-		#else
-		{ pointer = p; }
-		#endif
 // Debugging output.
 	void debug_print () const;
 // Ability to place an object at a given address.
@@ -477,11 +449,7 @@ public:
 	cl_private_thing _as_cl_private_thing () const;
 // Private constructor.
 	cl_rcpointer (cl_private_thing p)
-		#if !(defined(__alpha__) && !defined(__GNUC__))
 		: pointer (p) {}
-		#else
-		{ pointer = p; }
-		#endif
 // Debugging output.
 	void debug_print () const;
 // Ability to place an object at a given address.
@@ -554,7 +522,7 @@ inline cl_private_thing as_cl_private_thing (const cl_rcpointer& x)
   #define CL_DEFINE_CONVERTER(target_class)  \
     operator const target_class & () const				\
     {									\
-      typedef int assert1 [2*(sizeof(target_class)==sizeof(*this))-1];	\
+      int (*dummy1)(int assert1 [2*(sizeof(target_class)==sizeof(*this))-1]); (void)dummy1; \
       return * (const target_class *) (void*) this;			\
     }
 

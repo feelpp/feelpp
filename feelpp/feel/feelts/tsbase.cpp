@@ -238,7 +238,7 @@ TSBase::init()
         {
             DVLOG(2) << "[TSBase::init()] loading metadata from " << M_path_save.string() << "\n";
 
-            fs::ifstream ifs( thepath );
+            std::ifstream ifs( thepath );
             boost::archive::text_iarchive ia( ifs );
             ia >> BOOST_SERIALIZATION_NVP( *this );
 
@@ -312,7 +312,7 @@ TSBase::init()
 void
 TSBaseMetadata::load()
 {
-    fs::ifstream ifs;
+    std::ifstream ifs;
 
     if ( M_ts.restartPath().empty() )
     {   // Default metadata path.
@@ -336,7 +336,7 @@ TSBaseMetadata::save()
     // only master process write
     if ( M_ts.worldComm().isMasterRank() )
     {
-        fs::ofstream ofs( M_ts.path() / "metadata" );
+        std::ofstream ofs( M_ts.path() / "metadata" );
 
         boost::archive::text_oarchive oa( ofs );
         oa << BOOST_SERIALIZATION_NVP( ( TSBase const& )M_ts );

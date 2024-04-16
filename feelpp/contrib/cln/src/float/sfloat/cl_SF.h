@@ -27,7 +27,7 @@ namespace cln {
 
 // Builds a float from the immediate word.
 inline cl_SF::cl_SF (struct cl_sfloat * null, cl_uint w)
-	: cl_F ((cl_private_thing) w) { unused null; }
+	: cl_F ((cl_private_thing) w) { cl_unused null; }
 inline const cl_SF cl_SF_from_word (cl_uint word)
 {
 	return cl_SF((struct cl_sfloat *) 0, word);
@@ -89,7 +89,7 @@ inline uintL SF_mant (const cl_SF& x)
       { zero_statement } /* e=0 -> Zahl 0.0 */				\
       else								\
       { exp_zuweisung (sintL)(uexp - SF_exp_mid);	/* Exponent */	\
-        unused (sign_zuweisung SF_sign(_x));		/* Vorzeichen */\
+        cl_unused (sign_zuweisung SF_sign(_x));		/* Vorzeichen */\
         mant_zuweisung SF_mant(_x);			/* Mantisse */  \
   }   }
 

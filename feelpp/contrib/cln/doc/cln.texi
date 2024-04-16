@@ -35,9 +35,9 @@ This manual documents @sc{cln}, a Class Library for Numbers.
 Published by Bruno Haible, @code{<haible@@clisp.cons.org>} and
 Richard B. Kreckel, @code{<kreckel@@ginac.de>}.
 
-Copyright (C)  Bruno Haible 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008.
-Copyright (C)  Richard B. Kreckel 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012.
-Copyright (C)  Alexei Sheplyakov 2008, 2010.
+Copyright (C)  Bruno Haible 1988 - 2024.
+Copyright (C)  Richard B. Kreckel 2000 - 2024.
+Copyright (C)  Alexei Sheplyakov 2008 - 2010.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -71,10 +71,11 @@ by the author.
 @author @uref{http://www.ginac.de/CLN}
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} Bruno Haible 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008.
+Copyright @copyright{} Bruno Haible 1988 - 2024.
 @sp 0
-Copyright @copyright{} Richard B. Kreckel 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011.
-Copyright @copyright{} Alexei Sheplyakov 2008, 2010.
+Copyright @copyright{} Richard B. Kreckel 2000 - 2024.
+@sp 0
+Copyright @copyright{} Alexei Sheplyakov 2008 - 2010.
 
 @sp 2
 Published by Bruno Haible, @code{<haible@@clisp.cons.org>} and
@@ -118,6 +119,7 @@ by the authors.
 * Customizing::                 
 * Index::
 
+@detailmenu
  --- The Detailed Node Listing ---
 
 Installation
@@ -230,6 +232,7 @@ Customizing
 * Customizing I/O::             
 * Customizing the memory allocator::  
 
+@end detailmenu
 @end menu
 
 @node Introduction
@@ -392,8 +395,8 @@ This section describes how to install the CLN package on your system.
 @node C++ compiler
 @subsection C++ compiler
 
-To build CLN, you need a C++ compiler.
-GNU @code{g++ 4.0.0} or newer is recommended.
+To build CLN, you need a C++11 compiler.
+GNU @code{g++ 4.8.1} or newer is recommended.
 
 The following C++ features are used:
 classes, member functions, overloading of functions and operators,
@@ -481,12 +484,12 @@ Examples:
 $ CC="gcc" CFLAGS="-O" CXX="g++" CXXFLAGS="-O" ./configure
 @end example
 @example
-$ CC="gcc -V 3.2.3" CFLAGS="-O2 -finline-limit=1000" \
-  CXX="g++ -V 3.2.3" CXXFLAGS="-O2 -finline-limit=1000" \
+$ CC=gcc CFLAGS="-O2 -finline-limit=1000" \
+  CXX=g++ CXXFLAGS="-O2 -finline-limit=1000" \
   CPPFLAGS="-DNO_ASM" ./configure
 @end example
 @example
-$ CC="gcc-4.2" CFLAGS="-O2" CXX="g++-4.2" CXXFLAGS="-O2" ./configure
+$ CC="gcc-9" CFLAGS="-O2" CXX="g++-9" CXXFLAGS="-O2" ./configure
 @end example
 
 Note that for these environment variables to take effect, you have to set
@@ -3284,15 +3287,15 @@ return the same polynomial ring.
 
 @item cl_univpoly_complex_ring find_univpoly_ring (const cl_complex_ring& R)
 @cindex @code{find_univpoly_ring ()}
-@itemx cl_univpoly_complex_ring find_univpoly_ring (const cl_complex_ring& R, const cl_symbol& varname)
-@itemx cl_univpoly_real_ring find_univpoly_ring (const cl_real_ring& R)
-@itemx cl_univpoly_real_ring find_univpoly_ring (const cl_real_ring& R, const cl_symbol& varname)
-@itemx cl_univpoly_rational_ring find_univpoly_ring (const cl_rational_ring& R)
-@itemx cl_univpoly_rational_ring find_univpoly_ring (const cl_rational_ring& R, const cl_symbol& varname)
-@itemx cl_univpoly_integer_ring find_univpoly_ring (const cl_integer_ring& R)
-@itemx cl_univpoly_integer_ring find_univpoly_ring (const cl_integer_ring& R, const cl_symbol& varname)
-@itemx cl_univpoly_modint_ring find_univpoly_ring (const cl_modint_ring& R)
-@itemx cl_univpoly_modint_ring find_univpoly_ring (const cl_modint_ring& R, const cl_symbol& varname)
+@item cl_univpoly_complex_ring find_univpoly_ring (const cl_complex_ring& R, const cl_symbol& varname)
+@item cl_univpoly_real_ring find_univpoly_ring (const cl_real_ring& R)
+@item cl_univpoly_real_ring find_univpoly_ring (const cl_real_ring& R, const cl_symbol& varname)
+@item cl_univpoly_rational_ring find_univpoly_ring (const cl_rational_ring& R)
+@item cl_univpoly_rational_ring find_univpoly_ring (const cl_rational_ring& R, const cl_symbol& varname)
+@item cl_univpoly_integer_ring find_univpoly_ring (const cl_integer_ring& R)
+@item cl_univpoly_integer_ring find_univpoly_ring (const cl_integer_ring& R, const cl_symbol& varname)
+@item cl_univpoly_modint_ring find_univpoly_ring (const cl_modint_ring& R)
+@item cl_univpoly_modint_ring find_univpoly_ring (const cl_modint_ring& R, const cl_symbol& varname)
 These functions are equivalent to the general @code{find_univpoly_ring},
 only the return type is more specific, according to the base ring's type.
 @end table

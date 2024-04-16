@@ -11,7 +11,7 @@
 
 #include "cln/number.h"
 
-#if (cl_value_len < 32)
+#if (cl_value_len < 32) || (long_bitsize==32)
 
 #include "base/digitseq/cl_DS.h"
 
@@ -19,6 +19,7 @@ namespace cln {
 
 cl_private_thing cl_I_constructor_from_L (sint32 wert)
 {
+#if (cl_value_len < 32)
 	var uint32 test = wert & minus_bit(cl_value_len-1);
 	// test enthält die Bits, die nicht in den Fixnum-Wert >= 0 reinpassen.
 	if ((test == 0) || (test == (uint32)minus_bit(cl_value_len-1)))
@@ -44,10 +45,10 @@ cl_private_thing cl_I_constructor_from_L (sint32 wert)
 	}
 	if (wert >= 0) {
 		#define IF_LENGTH(i)  \
-		  if ((bn_minlength <= i) && (i*intDsize <= 32))	\
-		    if (!((i+1)*intDsize <= 32)				\
+		  if ((bn_minlength <= i) && (i*intDsize <= 32)		\
+		    && (!((i+1)*intDsize <= 32)				\
 		        || ((uint32)wert < (uint32)bitc(i*intDsize-1))	\
-		       )
+		     ) )
 		#if (intDsize <= 32)
 		IF_LENGTH(1)
 			bignum1:
@@ -87,10 +88,10 @@ cl_private_thing cl_I_constructor_from_L (sint32 wert)
 		#undef IF_LENGTH
 	} else {
 		#define IF_LENGTH(i)  \
-		  if ((bn_minlength <= i) && (i*intDsize <= 32))	\
-		    if (!((i+1)*intDsize <= 32)				\
+		  if ((bn_minlength <= i) && (i*intDsize <= 32)		\
+		    && (!((i+1)*intDsize <= 32)				\
 		        || ((uint32)wert >= (uint32)(-bitc(i*intDsize-1))) \
-		       )
+		     ) )
 		#if (intDsize <= 32)
 		IF_LENGTH(1)
 			goto bignum1;
@@ -109,6 +110,10 @@ cl_private_thing cl_I_constructor_from_L (sint32 wert)
 	}
 	#endif
 	NOTREACHED
+#else // cl_value_len >= 32
+	// All bits fit in a fixnum value.
+	return (cl_private_thing)(cl_combine(cl_FN_tag,wert));
+#endif
 }
 
 }  // namespace cln

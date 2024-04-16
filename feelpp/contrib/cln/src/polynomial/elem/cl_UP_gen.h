@@ -78,7 +78,7 @@ static const _cl_UP gen_zero (cl_heap_univpoly_ring* UPR)
 
 static bool gen_zerop (cl_heap_univpoly_ring* UPR, const _cl_UP& x)
 {
-	unused UPR;
+	cl_unused UPR;
  {	DeclarePoly(cl_SV_ringelt,x);
 	var sintL xlen = x.size();
 	if (xlen == 0)
@@ -332,7 +332,7 @@ static const _cl_UP gen_scalmul (cl_heap_univpoly_ring* UPR, const cl_ring_eleme
 
 static sintL gen_degree (cl_heap_univpoly_ring* UPR, const _cl_UP& x)
 {
-	unused UPR;
+	cl_unused UPR;
  {	DeclarePoly(cl_SV_ringelt,x);
 	return (sintL) x.size() - 1;
 }}

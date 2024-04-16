@@ -3,6 +3,7 @@
 #ifndef _CL_EXCEPTION_H
 #define _CL_EXCEPTION_H
 
+#include <string>
 #include <stdexcept>
 
 namespace cln {
@@ -11,7 +12,7 @@ namespace cln {
 class runtime_exception : public std::runtime_error {
 public:
 	runtime_exception ()
-		: std::runtime_error("runtime error") {}
+		: std::runtime_error(std::string()) {}
 	explicit runtime_exception (const std::string & what)
 		: std::runtime_error(what) {}
 };

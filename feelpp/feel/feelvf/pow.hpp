@@ -108,10 +108,10 @@ public:
         return M_expr_2;
     }
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            auto eval1 = M_expr_1.evaluate(p,worldcomm);
-            auto eval2 = M_expr_2.evaluate(p,worldcomm);
+            auto eval1 = M_expr_1.evaluate(p);
+            auto eval2 = M_expr_2.evaluate(p);
             evaluate_type res(eval1.rows(),eval1.cols());
             for ( uint16_type i=0;i< eval1.rows();++i )
                 for ( uint16_type j=0;j< eval1.cols();++j )

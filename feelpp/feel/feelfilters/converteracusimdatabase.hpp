@@ -78,7 +78,7 @@ public :
 
     void setAcusimRepository( std::string const& idir )
         {
-            M_acusimRepository = fs::system_complete( idir );
+            M_acusimRepository = fs::canonical( idir );
         }
     void setAcusimProblemName(std::string const& name )
         {
@@ -583,7 +583,7 @@ ConverterAcusimDatabase<MeshType>::loadFieldInfo()
     if ( this->worldComm().isMasterRank() )
     {
         std::cout << "---------------------------------------------\n"
-                  << "Field avalaible in Acusim Database :\n";
+                  << "Field available in Acusim Database :\n";
         for ( auto const& fieldInfo : M_fieldNameToFieldInfo )
             std::cout << " - " << fieldInfo.first << " [" << std::get<1>( fieldInfo.second ) << "] \n";
         std::cout << "---------------------------------------------\n";

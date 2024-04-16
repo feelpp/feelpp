@@ -28,5 +28,7 @@ feelpp_add_application( mesh SRCS 02-mesh.cpp LINK_LIBRARIES  benchmark EXEC B_M
 feelpp_add_application( space SRCS 03-space.cpp LINK_LIBRARIES  benchmark EXEC B_SPACE )
 feelpp_add_application( integrate SRCS 04-integrate.cpp LINK_LIBRARIES  benchmark EXEC B_INTEGRATE )
 feelpp_add_application( gmc SRCS gmc.cpp LINK_LIBRARIES  benchmark EXEC B_GMC )
-feelpp_add_application( taskflow SRCS 99-taskflow.cpp LINK_LIBRARIES Feelpp::feelpp_taskflow )
+if ( FEELPP_ENABLE_SPECX )
+    feelpp_add_application( specx SRCS 99-specx.cpp LINK_LIBRARIES Feelpp::feelpp_specx )
+endif()
 add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} ${B_GMC})

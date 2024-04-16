@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 
 from feelpp.toolboxes.core import *
 
@@ -24,7 +24,6 @@ def mixedpoisson(dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", physic
     dim -- the dimension (default: 2)
     order -- the polynomial order for the fields : potential, flux, displacement, stress and associated traces (default: 1)
     prefix -- application prefix for the HDG poisson
-    prefix_toolbox -- toolbox prefix
     physic -- physic to use
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     subprefix -- subprefix
@@ -33,7 +32,7 @@ def mixedpoisson(dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", physic
     if not has_hdg:
         raise Exception('HDG toolbox is not enabled in Feel++')
     if worldComm is None:
-        worldComm=feelpp.Environment.worldCommPtr()
+        worldComm=fppc.Environment.worldCommPtr()
     key='mixedpoisson('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)

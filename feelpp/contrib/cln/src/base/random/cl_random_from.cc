@@ -1,7 +1,7 @@
 // random_state constructor.
 
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__CYGWIN__)
 #include <windows.h> // For GetCurrentProcessId(), must be included first, sorry.
 #endif
 
@@ -24,53 +24,37 @@
 #include <unistd.h> // declares getpid()
 
 #if defined(HAVE_GETTIMEOFDAY)
-
 #include <sys/time.h>
-#ifdef GETTIMEOFDAY_DOTS
-  extern "C" int gettimeofday (struct timeval * tp, ...);
-#else
-  extern "C" int gettimeofday (struct timeval * tp, GETTIMEOFDAY_TZP_T tzp);
-#endif
 
 namespace cln {
 inline uint32 get_seed (void)
 {
 	var struct timeval tv;
-	gettimeofday(&tv,0);
+	gettimeofday(&tv,NULL);
 	return highlow32(tv.tv_sec,tv.tv_usec); // 16+16 zufällige Bits
 }
 }  // namespace cln
 
-#elif defined(HAVE_TIMES_CLOCK)
-
-#include <ctime>
-#ifndef CLK_TCK
-#include <sys/time.h>
 #endif
-#include <sys/times.h>
-extern "C" clock_t times (struct tms * buffer);
+
+#elif defined(_WIN32) && !defined(__CYGWIN__)
+
+/* <windows.h> included above. */
 
 namespace cln {
 inline uint32 get_seed (void)
 {
-	var struct tms tmsbuf;
-	var uint32 seed_lo = times(&tmsbuf);
-	return seed_lo + tmsbuf.tms_utime + tmsbuf.tms_stime;
-}
-}  // namespace cln
+	FILETIME current_time;
 
-#endif
+	GetSystemTimeAsFileTime (&current_time);
 
-#elif defined(_WIN32)
-#include <sys/time.h>
-#include <sys/timeb.h>
-
-namespace cln {
-inline uint32 get_seed (void)
-{
-	struct timeb timebuf;
-	ftime(&timebuf);
-	return highlow32(timebuf.time, (long)(timebuf.millitm)*1000);
+	/* Convert from FILETIME to 'struct timeval'.  */
+	/* FILETIME: <https://docs.microsoft.com/en-us/windows/desktop/api/minwinbase/ns-minwinbase-filetime> */
+	ULONGLONG since_1601 =
+		((ULONGLONG) current_time.dwHighDateTime << 32)
+		| (ULONGLONG) current_time.dwLowDateTime;
+	/* Divide by 20 ms, and take the low-order 32 bits. */
+	return (ULONG) (since_1601 / 2000000);
 }
 }  // namespace cln
 
@@ -93,7 +77,7 @@ random_state::random_state ()
 #elif defined(__OpenBSD__)
 	seed_lo = arc4random();
 	seed_hi = arc4random();
-#elif defined(_WIN32)
+#elif defined(_WIN32) && !defined(__CYGWIN__)
 	seed_lo = get_seed();
 	seed_hi = (rand() << 8) ^ (uintL)(GetCurrentProcessId());
 #elif defined(__atarist)

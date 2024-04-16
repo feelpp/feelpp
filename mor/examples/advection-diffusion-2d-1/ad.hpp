@@ -24,7 +24,6 @@
 #ifndef __AdvectionDiffusion_H
 #define __AdvectionDiffusion_H 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>
@@ -293,13 +292,13 @@ public:
      * create a new matrix
      * \return the newly created matrix
      */
-    sparse_matrix_ptrtype newMatrix() const;
+    // sparse_matrix_ptrtype newMatrix() const;
 
     /**
      * create a new vector
      * \return the newly created vector
      */
-     vector_ptrtype newVector() const;
+    //  vector_ptrtype newVector() const;
 
     /**
      * \brief Returns the affine decomposition

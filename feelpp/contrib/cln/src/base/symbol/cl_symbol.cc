@@ -21,7 +21,7 @@ inline const cl_string hashkey (const cl_symbol& sym)
 // A symbol points to a string, so to convert cl_string -> cl_symbol, we just
 // take the pointer and put it into a cl_symbol.
 inline cl_symbol::cl_symbol (struct hashuniq * null, const cl_string& s)
-	: cl_rcpointer (as_cl_private_thing(s)) { unused null; }
+	: cl_rcpointer (as_cl_private_thing(s)) { cl_unused null; }
 
 typedef cl_htuniqentry<cl_string,cl_symbol> cl_htentry_from_string_to_symbol;
 
@@ -31,11 +31,7 @@ typedef _cl_hashtable_iterator<cl_htentry_from_string_to_symbol> cl_hashtable_fr
 
 static void cl_hashtable_from_string_to_symbol_destructor (cl_heap* pointer)
 {
-#if (defined(__mips__) || defined(__mips64__)) && !defined(__GNUC__) // workaround SGI CC bug
-	(*(cl_heap_hashtable_from_string_to_symbol*)pointer).~cl_heap_weak_hashtable_uniq();
-#else
 	(*(cl_heap_hashtable_from_string_to_symbol*)pointer).~cl_heap_hashtable_from_string_to_symbol();
-#endif
 }
 
 

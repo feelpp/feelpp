@@ -54,7 +54,7 @@ public:
 
     static const size_type context = vm::DYNAMIC;
     static const bool is_terminal = false;
-    static const uint16_type imorder = Order;
+    static inline const uint16_type imorder = Order;
     static const bool imIsPoly = false;
 
     template<typename Funct>
@@ -335,7 +335,7 @@ public:
     }
 
     value_type
-    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    evaluate( bool parallel = true ) const
     {
         int no = 1;
         int ni = M_syms.size();

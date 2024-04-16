@@ -25,12 +25,10 @@ SET( SRC
   marker.cpp
   entities.cpp
   regiontree.cpp kdtree.cpp
-  functors.cpp
+  functors.cpp bvh.cpp
   meshbase.cpp
   remesher.cpp
-    )
+  )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
 feel_append_src(feelmesh "${SRC};${HDR}")
-
-

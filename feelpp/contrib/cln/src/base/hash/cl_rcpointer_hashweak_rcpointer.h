@@ -14,8 +14,8 @@ static inline bool equal (const cl_rcpointer& x, const cl_rcpointer& y)
 { return (x.pointer == y.pointer); }
 
 // Hash code. Luckily objects don't move around in memory.
-inline unsigned long hashcode (const cl_rcpointer& x)
-{ return (unsigned long)x.pointer; }
+inline uintptr_t hashcode (const cl_rcpointer& x)
+{ return (uintptr_t)x.pointer; }
 
 typedef cl_htentry1<cl_rcpointer,cl_rcpointer> cl_htentry_from_rcpointer_to_rcpointer;
 

@@ -120,6 +120,7 @@ using local = NA::named_argument_t<struct local_tag>;
 // parameter for exporter
 using geo = NA::named_argument_t<struct geo_tag>;
 using fileset = NA::named_argument_t<struct fileset_tag>;
+using byparts = NA::named_argument_t<struct byparts_tag>;
 // parameter for description of geometries
 using h = NA::named_argument_t<struct h_tag>;
 using scale = NA::named_argument_t<struct scale_tag>;
@@ -151,6 +152,7 @@ using depends = NA::named_argument_t<struct depends_tag>;
 using optimize3d_netgen = NA::named_argument_t<struct optimize3d_netgen_tag>;
 using pre = NA::named_argument_t<struct pre_tag>;
 using post = NA::named_argument_t<struct post_tag>;
+using op = NA::named_argument_t<struct op_tag>;
 
 // parameter for adapt
 using required_elts = NA::named_argument_t<struct required_elts_tag>;
@@ -197,6 +199,13 @@ using quad = NA::named_argument_t<struct quad_tag>;
 using quad1 = NA::named_argument_t<struct quad1_tag>;
 using arg = NA::named_argument_t<struct arg_tag>;
 
+// for filters
+using min = NA::named_argument_t<struct min_tag>;
+using max = NA::named_argument_t<struct min_tag>;
+using value = NA::named_argument_t<struct value_tag>;
+using selector = NA::named_argument_t<struct selector_tag>;
+
+
 using quadptloc = NA::named_argument_t<struct quadptloc_tag>;
 
 using extended_doftable = NA::named_argument_t<struct extended_doftable_tag>;
@@ -221,6 +230,9 @@ using rank_proc_in_files_name = NA::named_argument_t<struct rank_proc_in_files_n
 using freq = NA::named_argument_t<struct freq_tag>;
 using n_consecutive_save = NA::named_argument_t<struct n_consecutive_save_tag>;
 
+using pid = NA::named_argument_t<struct pid_tag>;
+
+using marker_type = NA::named_argument_t<struct marker_type_tag>;
 using markerName = NA::named_argument_t<struct markerName_tag>;
 using markerAll = NA::named_argument_t<struct markerAll_tag>;
 using marker1 = NA::named_argument_t<struct marker1_tag>;
@@ -247,6 +259,7 @@ using element2 = NA::named_argument_t<struct element2_tag>;
 using parameter = NA::named_argument_t<struct parameter_tag>;
 using sampling = NA::named_argument_t<struct sampling_tag>;
 using context = NA::named_argument_t<struct context_tag>;
+using context_at_compile_time = NA::named_argument_t<struct context_at_compile_time_tag>;
 using context2 = NA::named_argument_t<struct context2_tag>;
 using mpi_communications = NA::named_argument_t<struct mpi_communications_tag>;
 using properties_space = NA::named_argument_t<struct properties_space_tag>;
@@ -275,6 +288,7 @@ using currentElt = NA::named_argument_t<struct currentElt_tag>;
 using newElt = NA::named_argument_t<struct newElt_tag>;
 using space = NA::named_argument_t<struct space_tag>;
 using space2 = NA::named_argument_t<struct space2_tag>;
+using space_path = NA::named_argument_t<struct space_path_tag>;
 using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
 using min_theta = NA::named_argument_t<struct min_theta_tag>;
 using forceRelaxation = NA::named_argument_t<struct forceRelaxation_tag>;
@@ -327,6 +341,9 @@ using keyword = NA::named_argument_t<struct keyword_tag>;
 using repository = NA::named_argument_t<struct repository_tag>;
 using physic = NA::named_argument_t<struct physic_tag>;
 
+using quality = NA::named_argument_t<struct quality_tag>;
+using robust = NA::named_argument_t<struct robust_tag>;
+using ray = NA::named_argument_t<struct ray_tag>;
 
 } // namespace na
 
@@ -415,6 +432,7 @@ inline constexpr auto& _local = NA::identifier<na::local>;
 // parameter for exporter
 inline constexpr auto& _geo = NA::identifier<na::geo>;
 inline constexpr auto& _fileset = NA::identifier<na::fileset>;
+inline constexpr auto& _byparts = NA::identifier<na::byparts>;
 // parameter for description of geometries
 inline constexpr auto& _h = NA::identifier<na::h>;
 inline constexpr auto& _scale = NA::identifier<na::scale>;
@@ -446,7 +464,7 @@ inline constexpr auto& _depends = NA::identifier<na::depends>;
 inline constexpr auto& _optimize3d_netgen = NA::identifier<na::optimize3d_netgen>;
 inline constexpr auto& _pre = NA::identifier<na::pre>;
 inline constexpr auto& _post = NA::identifier<na::post>;
-
+inline constexpr auto& _op = NA::identifier<na::op>;
 // parameter for adapt
 inline constexpr auto& _required_elts = NA::identifier<na::required_elts>;
 inline constexpr auto& _required_facets = NA::identifier<na::required_facets>;
@@ -516,6 +534,9 @@ inline constexpr auto& _rank_proc_in_files_name = NA::identifier<na::rank_proc_i
 inline constexpr auto& _freq = NA::identifier<na::freq>;
 inline constexpr auto& _n_consecutive_save = NA::identifier<na::n_consecutive_save>;
 
+inline constexpr auto& _pid = NA::identifier<na::pid>;
+
+inline constexpr auto& _marker_type = NA::identifier<na::marker_type>;
 inline constexpr auto& _markerName = NA::identifier<na::markerName>;
 inline constexpr auto& _markerAll = NA::identifier<na::markerAll>;
 inline constexpr auto& _marker1 = NA::identifier<na::marker1>;
@@ -542,6 +563,7 @@ inline constexpr auto& _element2 = NA::identifier<na::element2>;
 inline constexpr auto& _parameter = NA::identifier<na::parameter>;
 inline constexpr auto& _sampling = NA::identifier<na::sampling>;
 inline constexpr auto& _context = NA::identifier<na::context>;
+inline constexpr auto& _context_at_compile_time = NA::identifier<na::context_at_compile_time>;
 inline constexpr auto& _context2 = NA::identifier<na::context2>;
 inline constexpr auto& _mpi_communications = NA::identifier<na::mpi_communications>;
 inline constexpr auto& _properties_space = NA::identifier<na::properties_space>;
@@ -570,6 +592,7 @@ inline constexpr auto& _currentElt = NA::identifier<na::currentElt>;
 inline constexpr auto& _newElt = NA::identifier<na::newElt>;
 inline constexpr auto& _space = NA::identifier<na::space>;
 inline constexpr auto& _space2 = NA::identifier<na::space2>;
+inline constexpr auto& _space_path = NA::identifier<na::space_path>;
 inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;
 inline constexpr auto& _min_theta = NA::identifier<na::min_theta>;
 inline constexpr auto& _forceRelaxation = NA::identifier<na::forceRelaxation>;
@@ -621,6 +644,14 @@ inline constexpr auto& _keyword = NA::identifier<na::keyword>;
 inline constexpr auto& _repository = NA::identifier<na::repository>;
 inline constexpr auto& _physic = NA::identifier<na::physic>;
 
+inline constexpr auto& _min = NA::identifier<na::min>;
+inline constexpr auto& _max = NA::identifier<na::max>;
+inline constexpr auto& _value = NA::identifier<na::value>;
+inline constexpr auto& _selector = NA::identifier<na::selector>;
+
+inline constexpr auto& _quality = NA::identifier<na::quality>;
+inline constexpr auto& _robust = NA::identifier<na::robust>;
+inline constexpr auto& _ray = NA::identifier<na::ray>;
 
 } // Feel
 

@@ -11,9 +11,9 @@
 
 namespace cln {
 
-unsigned long hashcode (const cl_I& x)
+uintptr_t hashcode (const cl_I& x)
 {
-	var unsigned long code = 0x814BE3A5;
+	var uintptr_t code = 0x814BE3A5;
 	// We walk through all limbs. It may take some time for very large
 	// integers, but it's better than completely ignoring some limbs.
 	if (fixnump(x)) {
@@ -31,8 +31,8 @@ unsigned long hashcode (const cl_I& x)
 		for (; len > 0; len--) {
 			var uintD c = msprefnext(MSDptr);
 			code = (code << 5) | (code >> 27); // rotate left 5 bits
-			code += (long)c << 16;
-			code ^= (long)c;
+			code += (intptr_t)c << 16;
+			code ^= (intptr_t)c;
 			code &= 0xFFFFFFFF;
 		}
 	}

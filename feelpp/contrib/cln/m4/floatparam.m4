@@ -1,14 +1,13 @@
-# floatparam.m4 serial 1
-dnl Copyright (C) 2005 Free Software Foundation, Inc.
+# floatparam.m4 serial 3  -*- Autoconf -*-
+dnl Copyright (C) 2005-2008, 2017 Free Software Foundation, Inc.
 dnl This file is free software; the Free Software Foundation
 dnl gives unlimited permission to copy and/or distribute it,
 dnl with or without modifications, as long as this notice is preserved.
 
-dnl From Bruno Haible.
+dnl From Bruno Haible, Sam Steingold.
 
 AC_DEFUN([CL_FLOATPARAM_CROSS],
 [
-  AC_REQUIRE([CL_LONGDOUBLE])
   cl_machine_file_h=$1
   {
     echo "/* Rounding modes, for use below */"
@@ -17,25 +16,29 @@ AC_DEFUN([CL_FLOATPARAM_CROSS],
     echo "#define rounds_to_infinity       2  /* 1 ulp */"
     echo "#define rounds_to_minus_infinity 3  /* 1 ulp */"
     echo
-    for type in float double "`if test $cl_cv_c_longdouble = yes; then echo 'long double'; fi`"; do
+    for type in float double "long double"; do
       if test -n "$type"; then
         epsilon_bits=-1; y="($type)1.0"
         while true; do
-          AC_TRY_COMPILE([],
-            [typedef int verify[2*(
-               (($type)(($type)1.0 + ($type)($y)) == ($type)1.0)
-               || ($type)(($type)(($type)1.0 + ($type)($y)) - ($type)1.0) != ($type)($y)
-             ) - 1];],
+          AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([],
+               [[typedef int verify[2*(
+                  (($type)(($type)1.0 + ($type)($y)) == ($type)1.0)
+                  || ($type)(($type)(($type)1.0 + ($type)($y)) - ($type)1.0) != ($type)($y)
+                 ) - 1];]])
+            ],
             [break;])
           epsilon_bits=`expr $epsilon_bits + 1`; y="$y * ($type)0.5"
         done
         negepsilon_bits=-1; y="($type)-1.0"
         while true; do
-          AC_TRY_COMPILE([],
-            [typedef int verify[2*(
-               (($type)(($type)1.0 + ($type)($y)) == ($type)1.0)
-               || ($type)(($type)(($type)1.0 + ($type)($y)) - ($type)1.0) != ($type)($y)
-             ) - 1];],
+          AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([],
+               [[typedef int verify[2*(
+                  (($type)(($type)1.0 + ($type)($y)) == ($type)1.0)
+                  || ($type)(($type)(($type)1.0 + ($type)($y)) - ($type)1.0) != ($type)($y)
+                 ) - 1];]])
+            ],
             [break;])
           negepsilon_bits=`expr $negepsilon_bits + 1`; y="$y * ($type)0.5"
         done
@@ -67,31 +70,39 @@ AC_DEFUN([CL_FLOATPARAM_CROSS],
         zs2="($type)(($type)-1.0 + ($type)(-5.6)*$x)"
         rounds=
         if test -z "$rounds"; then
-          AC_TRY_COMPILE([],
-            [typedef int verify[2*(
-               $ys1 == $y1 && $ys2 == $y2 && $zs1 == $z1 && $zs2 == $z2
-             ) - 1];],
+          AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([],
+               [[typedef int verify[2*(
+                  $ys1 == $y1 && $ys2 == $y2 && $zs1 == $z1 && $zs2 == $z2
+                 ) - 1];]])
+            ],
             [rounds=rounds_to_nearest])
         fi
         if test -z "$rounds"; then
-          AC_TRY_COMPILE([],
-            [typedef int verify[2*(
-               $ys1 == $y1 && $ys2 == $y1 && $zs1 == $z1 && $zs2 == $z1
-             ) - 1];],
+          AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([],
+               [[typedef int verify[2*(
+                  $ys1 == $y1 && $ys2 == $y1 && $zs1 == $z1 && $zs2 == $z1
+                 ) - 1];]])
+            ],
             [rounds=rounds_to_zero])
         fi
         if test -z "$rounds"; then
-          AC_TRY_COMPILE([],
-            [typedef int verify[2*(
-               $ys1 == $y2 && $ys2 == $y2 && $zs1 == $z1 && $zs2 == $z1
-             ) - 1];],
+          AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([],
+               [[typedef int verify[2*(
+                  $ys1 == $y2 && $ys2 == $y2 && $zs1 == $z1 && $zs2 == $z1
+                 ) - 1];]])
+            ],
             [rounds=rounds_to_infinity])
         fi
         if test -z "$rounds"; then
-          AC_TRY_COMPILE([],
-            [typedef int verify[2*(
-               $ys1 == $y1 && $ys2 == $y1 && $zs1 == $z2 && $zs2 == $z2
-             ) - 1];],
+          AC_COMPILE_IFELSE(
+            [AC_LANG_PROGRAM([],
+               [[typedef int verify[2*(
+                  $ys1 == $y1 && $ys2 == $y1 && $zs1 == $z2 && $zs2 == $z2
+                 ) - 1];]])
+            ],
             [rounds=rounds_to_minus_infinity])
         fi
         if test -n "$rounds"; then
@@ -108,17 +119,23 @@ AC_DEFUN([CL_FLOATPARAM_CROSS],
     dnl 2.5495230282078065     = { 0x40 0x04 0x65 0x6C 0x54 0x54 0x69 0x4C } ..elTTiL
     dnl 1.4139248369879473e214 = { 0x6C 0x65 0x00 0x00 0x4C 0x69 0x54 0x54 } le..LiTT
     double_wordorder_bigendian_p=
-    AC_TRY_COMPILE([double a[9] = {
-       0, 2.5479915693083957, 0, 1.4396527506122064e164,
-       0, 2.5495230282078065, 0, 1.4139248369879473e214,
-       0 };], [], [
-      if grep LiTTle conftest.$ac_objext >/dev/null ; then
-        double_wordorder_bigendian_p=0
-      else
-        if grep bIgeN conftest.$ac_objext >/dev/null ; then
-          double_wordorder_bigendian_p=1
-        fi
-      fi])
+    AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([[
+         double a[9] = {
+           0, 2.5479915693083957, 0, 1.4396527506122064e164,
+           0, 2.5495230282078065, 0, 1.4139248369879473e214,
+           0 };
+         ]],
+         [])
+      ],
+      [if grep LiTTle conftest.$ac_objext >/dev/null; then
+         double_wordorder_bigendian_p=0
+       else
+         if grep bIgeN conftest.$ac_objext >/dev/null; then
+           double_wordorder_bigendian_p=1
+         fi
+       fi
+      ])
     if test -n "$double_wordorder_bigendian_p"; then
       echo "#define double_wordorder_bigendian_p $double_wordorder_bigendian_p"
     else

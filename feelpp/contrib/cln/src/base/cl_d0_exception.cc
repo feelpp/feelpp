@@ -1,5 +1,5 @@
 // division_by_0_exception().
-#include <string>
+
 // General includes.
 #include "base/cl_sysdep.h"
 

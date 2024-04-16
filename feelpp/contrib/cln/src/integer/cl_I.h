@@ -27,7 +27,7 @@ namespace cln {
 
 // Private fixnum constructor.
 inline cl_I::cl_I (struct cl_fixnum * null, cl_uint w)
-	: cl_RA ((cl_private_thing) w) { unused null; }
+	: cl_RA ((cl_private_thing) w) { cl_unused null; }
 inline const cl_I cl_I_from_word (cl_uint w)
 {
 	return cl_I((struct cl_fixnum *) 0, w);
@@ -78,7 +78,7 @@ inline cl_I::cl_I (cl_heap_bignum* ptr)
 
 // Type tests.
 inline bool integerp (const cl_I& x)
-	{ unused x; return true; }
+	{ cl_unused x; return true; }
 inline bool fixnump (const cl_I& x)
 	{ return !x.pointer_p(); }
 inline bool bignump (const cl_I& x)
@@ -546,9 +546,9 @@ inline sintD FN_MSD (cl_uint word)
           lspref(destLSDptr,3) = FN_LSD3(word);				\
         }								\
     }									\
-  unused (MSDptr_zuweisung (destLSDptr) lspop len_from_FN_to_NDS);	\
-  unused (len_zuweisung len_from_FN_to_NDS);				\
-  unused (LSDptr_zuweisung (destLSDptr));				\
+  cl_unused (MSDptr_zuweisung (destLSDptr) lspop len_from_FN_to_NDS);	\
+  cl_unused (len_zuweisung len_from_FN_to_NDS);				\
+  cl_unused (LSDptr_zuweisung (destLSDptr));				\
 }
 
 // Bignum to Normalized Digit sequence, Kopieren unnötig
@@ -558,14 +558,14 @@ inline sintD FN_MSD (cl_uint word)
 #if CL_DS_BIG_ENDIAN_P
   #define BN_to_NDS_nocopy(obj, MSDptr_zuweisung,len_zuweisung,LSDptr_zuweisung)  \
     { var Bignum bn_from_BN_to_NDS_nocopy = TheBignum(obj);		\
-      unused (MSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[0]);	\
-      unused (LSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[(uintP)( len_zuweisung bn_from_BN_to_NDS_nocopy->length )]);		\
+      cl_unused (MSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[0]);	\
+      cl_unused (LSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[(uintP)( len_zuweisung bn_from_BN_to_NDS_nocopy->length )]);		\
     }
 #else
   #define BN_to_NDS_nocopy(obj, MSDptr_zuweisung,len_zuweisung,LSDptr_zuweisung)  \
     { var Bignum bn_from_BN_to_NDS_nocopy = TheBignum(obj);		\
-      unused (LSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[0]);	\
-      unused (MSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[(uintP)( len_zuweisung bn_from_BN_to_NDS_nocopy->length )]);		\
+      cl_unused (LSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[0]);	\
+      cl_unused (MSDptr_zuweisung (const uintD*) &bn_from_BN_to_NDS_nocopy->data[(uintP)( len_zuweisung bn_from_BN_to_NDS_nocopy->length )]);		\
     }
 #endif
   inline const uintD* BN_MSDptr (const cl_I& obj)
@@ -712,7 +712,7 @@ inline sintD FN_MSD (cl_uint word)
 
 
 // Hash code.
-  extern unsigned long hashcode (const cl_I& x);
+  extern uintptr_t hashcode (const cl_I& x);
 
 
 // A fixnum (cl_FN) is an immediate integer.
@@ -726,9 +726,9 @@ public:
 };
 
 inline bool fixnump (const cl_FN& x)
-	{ unused x; return true; }
+	{ cl_unused x; return true; }
 inline bool bignump (const cl_FN& x)
-	{ unused x; return false; }
+	{ cl_unused x; return false; }
 
 inline bool minusp (const cl_FN& x)
 {
@@ -748,16 +748,16 @@ public:
 };
 
 inline bool fixnump (const cl_BN& x)
-	{ unused x; return false; }
+	{ cl_unused x; return false; }
 inline bool bignump (const cl_BN& x)
-	{ unused x; return true; }
+	{ cl_unused x; return true; }
 
 inline bool minusp (const cl_BN& x)
 {
 	return (sintD)mspref(arrayMSDptr(TheBignum(x)->data,TheBignum(x)->length),0) < 0;
 }
 inline bool zerop (const cl_BN& x)
-	{ unused x; return false; }
+	{ cl_unused x; return false; }
 
 }  // namespace cln
 

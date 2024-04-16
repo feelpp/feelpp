@@ -8,7 +8,7 @@
 
 namespace cln {
 
-// Undocumented input functions
+// Input functions
 
 // Wandelt eine Zeichenkette mit Integer-Syntax in ein Integer um.
 // Punkte werden überlesen.
@@ -29,8 +29,6 @@ extern const cl_I read_integer (unsigned int base,
 extern const cl_I read_integer (const cl_read_flags& flags, const char * string, const char * string_limit, const char * * end_of_parse);
 extern const cl_I read_integer (std::istream& stream, const cl_read_flags& flags);
 
-// Documented input functions
-
 inline std::istream& operator>> (std::istream& stream, cl_I& result)
 {
 	extern cl_read_flags cl_I_read_flags;
@@ -39,7 +37,7 @@ inline std::istream& operator>> (std::istream& stream, cl_I& result)
 }
 
 
-// Undocumented output functions
+// Output functions
 
 // Liefert zu einem Integer >=0  (write-to-string integer :base 10 :radix nil),
 // also die Ziffernfolge als String.
@@ -54,9 +52,6 @@ extern char * cl_decimal_string (const cl_I& x);
 extern void print_integer (std::ostream& stream, unsigned int base, const cl_I& z);
 // Dasselbe als String. Mit malloc_hook() alloziert, mit free_hook() freizugeben.
 extern char * print_integer_to_string (unsigned int base, const cl_I& z);
-
-
-// Documented output functions
 
 inline void fprintdecimal (std::ostream& stream, const cl_I& x)
 {

@@ -31,6 +31,7 @@
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
+
 #include <feel/feelmesh/intersect.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 //#include <feel/feelvf/vf.hpp>
@@ -48,6 +49,7 @@
 #include <feel/feelvf/unary.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelmesh/ranges.hpp>
 
 namespace Feel
 {
@@ -109,8 +111,8 @@ public :
 
     typedef FsFunctionalLinear<DualImageSpace> image_element_type;
 
-    typedef elements_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_elements_type;
-    typedef faces_reference_wrapper_t<typename dual_image_space_type::mesh_type> range_faces_type;
+    typedef Range<typename dual_image_space_type::mesh_type, MESH_ELEMENTS> range_elements_type;
+    typedef Range<typename dual_image_space_type::mesh_type, MESH_FACES> range_faces_type;
 #if 0
     template<typename Args,typename IntEltsDefault>
     struct integrate_type
@@ -118,7 +120,7 @@ public :
         typedef vf::detail::clean_type<Args,tag::expr> _expr_type;
         typedef vf::detail::clean2_type<Args,tag::range,IntEltsDefault> _range_type;
         typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
-        static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
+        static inline const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
 
         using expr_order_t = ExpressionOrder<_range_type,_expr_type>;
         using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
@@ -241,8 +243,7 @@ public :
     template<typename Range, typename Expr, typename Elem>
     void applyOn( Range range, Expr const& expr, Elem const& de )
     {
-        typedef typename boost::tuples::template element<0, Range>::type idim_type;
-        applyOn( range, expr, de, mpl::int_<idim_type::value>() );
+        applyOn( range, expr, de, mpl::int_<Range::entities()>() );
     }
 
     template<typename RangeT, typename ExprT>
@@ -296,13 +297,14 @@ public :
         //typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
         //typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
-        typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
-        static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
-        static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
-        static const uint16_type quadOrderId = nOrderImageSpace*geoOrder;
-        static const uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
-        static const uint16_type quad1OrderId = nOrderImageSpace;
-        static const uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
+        using element_iterator = typename therange_type::iterator_t;
+        using element_t = typename therange_type::element_t;
+        constexpr uint16_type geoOrder = element_t::nOrder;
+        constexpr uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
+        constexpr uint16_type quadOrderId = nOrderImageSpace*geoOrder;
+        constexpr uint16_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
+        constexpr uint16_type quad1OrderId = nOrderImageSpace;
+        constexpr uint16_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
 
         auto sol = this->dualImageSpace()->element();
 
@@ -502,12 +504,12 @@ private :
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
         typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
-        static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
-        static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
-        const quad_order_type quadOrder = quad.order();//thequad_type::CompileTimeOrder;
-        static const quad_order_type quadOrderId = nOrderImageSpace*geoOrder;
-        const quad_order_type quad1Order = quad1.order();//thequad1_type::CompileTimeOrder;
-        static const quad_order_type quad1OrderId = nOrderImageSpace;
+        constexpr uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
+        constexpr uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
+        constexpr quad_order_type quadOrder = quad.order();//thequad_type::CompileTimeOrder;
+        constexpr quad_order_type quadOrderId = nOrderImageSpace*geoOrder;
+        constexpr quad_order_type quad1Order = quad1.order();//thequad1_type::CompileTimeOrder;
+        constexpr quad_order_type quad1OrderId = nOrderImageSpace;
 
         //auto uImage = this->dualImageSpace()->element();
         auto uDomain = this->domainSpace()->element();
@@ -536,15 +538,16 @@ private :
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad)>::type >::type thequad_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(quad1)>::type >::type thequad1_type;
         typedef typename boost::remove_reference<typename boost::remove_const< decltype(range)>::type >::type therange_type;
-        typedef typename boost::tuples::template element<1, therange_type>::type element_iterator;
-        static const uint16_type geoOrder = boost::unwrap_reference<typename element_iterator::value_type>::type::nOrder;
-        static const uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
+        using element_iterator = typename therange_type::iterator_t;
+        using element_t = typename therange_type::element_t;
+        constexpr uint16_type geoOrder = element_t::nOrder;
+        constexpr uint16_type nOrderImageSpace = dual_image_space_type::basis_type::nOrder;
         const quad_order_type quadOrder = quad.order();//thequad_type::CompileTimeOrder;
-        static const quad_order_type quadOrderId = nOrderImageSpace*geoOrder;
-        static const quad_order_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
+        constexpr quad_order_type quadOrderId = nOrderImageSpace*geoOrder;
+        constexpr quad_order_type quadOrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1)*geoOrder:0;
         const quad_order_type quad1Order = quad1.order();//thequad1_type::CompileTimeOrder;
-        static const quad_order_type quad1OrderId = nOrderImageSpace;
-        static const quad_order_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
+        constexpr quad_order_type quad1OrderId = nOrderImageSpace;
+        constexpr quad_order_type quad1OrderGrad = (nOrderImageSpace>0)?(nOrderImageSpace-1):0;
 
         auto uImage = this->dualImageSpace()->element();
         auto uDomain = this->domainSpace()->element();

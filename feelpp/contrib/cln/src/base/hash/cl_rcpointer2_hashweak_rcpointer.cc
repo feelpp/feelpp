@@ -15,11 +15,7 @@ namespace cln {
 
 static void cl_weak_hashtable_from_rcpointer2_to_rcpointer_destructor (cl_heap* pointer)
 {
-#if (defined(__mips__) || defined(__mips64__)) && !defined(__GNUC__) // workaround SGI CC bug
-	(*(cl_heap_weak_hashtable_from_rcpointer2_to_rcpointer*)pointer).~cl_heap_weak_hashtable_2();
-#else
 	(*(cl_heap_weak_hashtable_from_rcpointer2_to_rcpointer*)pointer).~cl_heap_weak_hashtable_from_rcpointer2_to_rcpointer();
-#endif
 }
 
 cl_class cl_class_weak_hashtable_from_rcpointer2_to_rcpointer = {

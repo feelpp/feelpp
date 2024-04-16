@@ -110,8 +110,8 @@ endmacro(mor_add_executable)
 macro(mor_add_library)
 
   PARSE_ARGUMENTS(mor_LIB
-    "SRCS;LINK_LIBRARIES;PROJECT;EXEC;MAN;EXPORT"
-    "TEST;NOHEADER"
+    "SRCS;LINK_LIBRARIES;PROJECT;DEFS;EXEC;MAN;EXPORT"
+    "TEST;NOHEADER;PLUGIN"
     ${ARGN}
     )
   CAR(mor_LIB_NAME ${mor_LIB_DEFAULT_ARGS})
@@ -122,30 +122,47 @@ macro(mor_add_library)
     MESSAGE("    Link libraries: ${mor_LIB_LINK_LIBRARIES}")
   endif()
 
-  if ( mor_LIB_PROJECT )
-    set(execname feelpp_mor_${mor_LIB_PROJECT}_${mor_LIB_NAME})
+  if ( mor_LIB_PLUGIN )
+    set(MOR_PREFIX "feelpp_mor_plugin")
   else()
-    set(execname feelpp_mor_${mor_LIB_NAME})
+    set(MOR_PLUGIN "feelpp_mor")
+  endif()
+  if ( mor_LIB_PROJECT )
+    set(execname ${MOR_PREFIX}_${mor_LIB_PROJECT}_${mor_LIB_NAME})
+  else()
+    set(execname ${MOR_PREFIX}_${mor_LIB_NAME})
   endif()
   if  (mor_LIB_EXEC )
     set( ${mor_LIB_EXEC} ${execname} )
   endif()
   add_library(${execname}  SHARED  ${mor_LIB_SRCS} )
-  set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
-  target_compile_options(${execname} PRIVATE -fvisibility=hidden)
-  
+  if ( NOT mor_LIB_PLUGIN )
+    set_target_properties(${execname} PROPERTIES VERSION 1 SOVERSION 1)
+  endif()
+  if ( mor_LIB_DEFS )
+    set_target_properties(${execname} PROPERTIES COMPILE_DEFINITIONS ${mor_LIB_DEFS})
+  endif()
+  # -fvisibility=hidden not always work (macos, toolbox_heat...)
+  #target_compile_options(${execname} PRIVATE -fvisibility=hidden)
+
   target_include_directories( ${execname} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/feelpp/mor/${mor_LIB_NAME}>  )
 
   target_link_libraries( ${execname} PUBLIC ${mor_LIB_LINK_LIBRARIES} Feelpp::feelpp_mor   )
   set_property(TARGET ${execname} PROPERTY LABELS mor)
-  INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
-    )
 
+  if(mor_LIB_PLUGIN)
+    INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
+      LIBRARY DESTINATION ${FEELPP_LIBDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
+      )
+  else()
+    INSTALL(TARGETS ${execname} EXPORT ${mor_LIB_EXPORT}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp/mor/${mor_LIB_NAME}
+      )
+  endif()
 endmacro(mor_add_library)
 #
 # mor_add_python_module
@@ -200,12 +217,16 @@ endmacro(mor_add_python_module)
 macro(mor_add_model)
 
   PARSE_ARGUMENTS(mor_MODEL
-    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;GEO;MSH"
+    "HDRS;SRCS;LINK_LIBRARIES;CFG;XML;SCRIPTS;CLASS;DEFS;GEO;MSH;OPT"
     "TEST;ADD_OT"
     ${ARGN}
     )
   CAR(mor_MODEL_SHORT_NAME ${mor_MODEL_DEFAULT_ARGS})
   CDR(mor_MODEL_LONG_NAME ${mor_MODEL_DEFAULT_ARGS})
+
+  if (NOT DEFINED mor_MODEL_OPT)
+    set(mor_MODEL_OPT ${mor_MODEL_SHORT_NAME})
+  endif()
 
   if ( FEELPP_ENABLE_VERBOSE_CMAKE )
     MESSAGE("*** Arguments for Crb models ${mor_MODEL_SHORT_NAME}(${mor_MODEL_LONG_NAME})")
@@ -232,8 +253,8 @@ macro(mor_add_model)
 int main( int argc, char** argv )
 {
     using namespace Feel\;
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=opusapp_options(\"${mor_MODEL_SHORT_NAME}\")
+    Feel::Environment env( _argc = argc, _argv = argv,
+                           _desc = opusapp_options(\"${mor_MODEL_OPT}\")
                            .add(crbOptions())
                            .add(crbSEROptions())
                            .add(make${mor_MODEL_LONG_NAME}Options())
@@ -243,7 +264,7 @@ int main( int argc, char** argv )
                            .add(backend_options(\"backend-dual\"))
                            .add(backend_options(\"backend-l2\"))
                            .add(bdf_options(\"${mor_MODEL_LONG_NAME}\")),
-                           _about=make${mor_MODEL_LONG_NAME}About( \"${mor_MODEL_SHORT_NAME}\" ) )\;
+                           _about = make${mor_MODEL_LONG_NAME}About( \"${mor_MODEL_OPT}\" ) )\;
 
     Feel::OpusApp<Feel::${mor_MODEL_CLASS} > app\;
     app.run()\;

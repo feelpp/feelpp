@@ -45,7 +45,7 @@ namespace Feel
  * \class Principal
  * \brief Principal modified functions
  *
- * This class is a useful class to construct multidimensionnal
+ * This class is a useful class to construct multidimensional
  * boundary adapted expansions basis.
  * It is constructed following the section 3.2.3.1 of
  * the book from Sherwin and Karniadakis "Spectral/hp

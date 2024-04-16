@@ -41,13 +41,14 @@ bool ldb_extract_test (const cl_I& x, uintC p, uintC q)
       // Ein AND 2^(q+1)-1 erreicht dies.
       // Vom letzten Digit müssen die hinteren p Bits unberücksichtigt bleiben.
       // Ein AND -2^p erreicht dies.
-      if (--len==0)
+      if (--len==0) {
         // 1 Digit maßgeblich, wird von beiden Seiten angeschnitten:
         // Ein AND 2^(q+1)-2^p erreicht dies.
         if (!(((uintD)(bitm(q+1)-bit(p)) & mspref(MSDptr,0)) == 0))
           return true;
-          else
+        else
           return false;
+      }
       // mindestens 2 Digits. Teste erst die Randdigits, dann die inneren:
       if (!(((msprefnext(MSDptr) & (uintD)(bitm(q+1)-1)) == 0) &&
             ((lsprefnext(LSDptr) & (uintD)(minus_bit(p))) == 0)

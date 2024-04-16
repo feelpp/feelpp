@@ -255,14 +255,6 @@ class ModelNumerical : virtual public ModelBase,
 
         virtual void initPostProcess();
 
-        auto symbolsExprParameter() const
-            {
-                if ( this->hasModelProperties() )
-                    return this->modelProperties().parameters().symbolsExpr();
-                else
-                    return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
-            }
-
         template <typename MeshType,typename SymbolsExprType>
         void initPostProcessMeshes( SymbolsExprType const& se )
             {
@@ -412,7 +404,7 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
 
                     if constexpr ( !is_hcurl_conforming_v<typename std::decay_t<decltype(u)>::functionspace_type::fe_type> )
                     {
-                        if constexpr (RangeTraits<RangeType>::element_type::nDim > 2 )
+                        if constexpr (element_t<RangeType>::nDim > 2 )
                         {
                             if ( !listMarkerEdges.empty() )
                                 u.on(_range=markededges(u.mesh(),listMarkerEdges),_expr=theExpr,_geomap=geomapStrategy);
@@ -441,7 +433,7 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
 
     std::set<std::string> /*const&*/ fieldsNamesToExport = this->postProcessExportsFields( tag );
 #if 1
-    std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<typename ExporterType::mesh_type>, std::set<std::string> > > > mapExportsExpr;
+    std::map<std::string,std::vector<std::tuple<ModelExpression, Range<typename ExporterType::mesh_type,MESH_ELEMENTS>, std::set<std::string> > > > mapExportsExpr;
     if ( this->hasModelProperties() )
     {
         auto mesh = exporter->defaultTimeSet()->mesh();
@@ -544,7 +536,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
                                 {
                                     using _expr_shape = typename std::decay_t<decltype(theexpr)>::template evaluator_t<typename  decay_type<ExporterType>::mesh_type::element_type>::shape;
-                                    if constexpr ( _expr_shape::is_tensor2 && _expr_shape::M > 1 && _expr_shape::N > 1 ) // tensor2 asym is not supported with ParaView -> export each components in wating
+                                    if constexpr ( _expr_shape::is_tensor2 && _expr_shape::M > 1 && _expr_shape::N > 1 ) // tensor2 asym is not supported with ParaView -> export each components in waiting
                                         {
                                             for ( int i=0;i<_expr_shape::M;++i )
                                                 for ( int j=0;j<_expr_shape::N;++j )
@@ -576,7 +568,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                         constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                                                         if ( theexprBIS.template hasExpr<ni,nj>() )
                                                         {
-                                                            if constexpr ( ni == nj && ni > 1 )  // tensor2 asym is not supported with ParaView -> export each components in wating 
+                                                            if constexpr ( ni == nj && ni > 1 )  // tensor2 asym is not supported with ParaView -> export each components in waiting 
                                                             {
                                                                 for ( int i=0;i<ni;++i )
                                                                     for ( int j=0;j<nj;++j )

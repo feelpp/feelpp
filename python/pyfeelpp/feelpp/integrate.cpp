@@ -21,15 +21,14 @@
 //! @date 23 Jul 2021
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/meshstructured.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <mpi4py/mpi4py.h>
-#include <pybind11/eigen.h>
+#include <feel/feelpython/pybind11/eigen.h>
 #include <feel/feelcore/environment.hpp>
            namespace py = pybind11;
 
@@ -44,13 +43,21 @@ void defIntegrate( py::module& m )
     constexpr int RealDim = MeshT::nRealDim;
 
     m.def(
-        "integrate", []( elements_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order )
+        "integrate", []( Range<mesh_t,MESH_ELEMENTS> const& r, std::string const& e, int quad_order )
+        { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
+        py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of elements" );
+    m.def(
+        "integrate", []( Range<mesh_ptr_t,MESH_ELEMENTS> const& r, std::string const& e, int quad_order )
         { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
         py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of elements" );
     if constexpr ( mesh_t::nDim > 1 )
     {
         m.def(
-            "integrate", []( faces_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order )
+            "integrate", []( Range<mesh_t,MESH_FACES> const& r, std::string const& e, int quad_order )
+            { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
+            py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of facets" );
+        m.def(
+            "integrate", []( Range<mesh_ptr_t,MESH_FACES> const& r, std::string const& e, int quad_order )
             { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
             py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of facets" );
     }
@@ -58,7 +65,7 @@ void defIntegrate( py::module& m )
     if constexpr ( mesh_t::nDim == 3 )
     {
         m.def(
-            "Integrate", []( edges_reference_wrapper_t<mesh_t> const& r, std::string const& e, int quad_order )
+            "Integrate", []( Range<mesh_t,MESH_EDGES> const& r, std::string const& e, int quad_order )
             { return integrate( _range = r, _expr = expr( e ), _quad = quad_order ).evaluate(); },
             py::arg( "range" ), py::arg( "expr" ) = "1", py::arg( "quad" ) = 1, "compute the integral of the expression over the range of edges" );
     }

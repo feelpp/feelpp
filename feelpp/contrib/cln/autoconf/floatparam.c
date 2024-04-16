@@ -9,9 +9,7 @@ typedef int boolean;
 #define TRUE  1
 #define FALSE 0
 
-#ifdef HAVE_LONGDOUBLE
 typedef long double ldouble;
-#endif
 
 static void header (void)
 {
@@ -81,9 +79,7 @@ static boolean equalfn (volatile type* x, volatile type* y)		\
 
 check(float,"float","float",equal_float,main_float)
 check(double,"double","double",equal_double,main_double)
-#ifdef HAVE_LONGDOUBLE
 check(ldouble,"long_double","long double",equal_ldouble,main_ldouble)
-#endif
 
 /* Some systems (arm/linux) store doubles as little endian but with higher
  * and lower word reversed. */
@@ -104,14 +100,12 @@ static void flipped_double (void)
   printf("\n");
 }
 	 
-int main()
-{
+int main(int argc, char *argv[])
+{ if (freopen(argc==1 ? "conftest.h" : argv[1], "w", stdout) == NULL) return 1;
   header();
   main_float();
   main_double();
-#ifdef HAVE_LONGDOUBLE
   main_ldouble();
-#endif
   flipped_double();
 
   if (ferror(stdout) || fclose(stdout)) return 1;

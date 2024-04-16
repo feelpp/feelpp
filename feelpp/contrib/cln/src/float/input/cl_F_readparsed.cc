@@ -36,7 +36,7 @@ const cl_F read_float (unsigned int base, float_format_t prec, cl_signean sign, 
 			ptr++; exp_len--; // Exponentmarker überlesen
 			var cl_signean exp_sign = 0; // Exponenten-Vorzeichen
 			switch (*ptr) {
-				case '-': exp_sign = ~exp_sign; // Vorzeichen := negativ
+				case '-': exp_sign = ~exp_sign; // fallthrough
 				case '+': ptr++; exp_len--; // Exponenten-Vorzeichen überlesen
 				default: ;
 			}

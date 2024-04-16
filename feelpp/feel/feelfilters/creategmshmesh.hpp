@@ -101,6 +101,7 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
 
     if ( worldcomm->isActive() )
     {
+        VLOG(1) << fmt::format( "[createGMSHMesh]: active om rank {}", worldcomm->isActive() );
         desc->setDimension( mesh->nDim );
         desc->setOrder( mesh->nOrder );
         desc->setWorldComm( Environment::worldCommSeqPtr()/*worldcomm*/ );
@@ -128,7 +129,7 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
                 VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
                 fname = desc->refine( fname, refine, parametricnodes );
             }
-
+            VLOG(1) << fmt::format("[creategmshmesh] importing mesh file: {}", fname );
             ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, (partitions > 1)? Environment::worldCommSeqPtr() : worldcomm );
 
             // need to replace physical_regions by elementary_regions for specific meshes
@@ -160,17 +161,19 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
                 else
                     fname = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
                 io_t io( fname );
-                std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
+                std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
                 io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
 #endif
             }
             else
             {
+                VLOG(1) << fmt::format( "[creategmshmesh] import sequential mesh scale : {}, update ; {} ", scale, update );
                 import.setScaling( scale );
                 _mesh->accept( import );
                 _mesh->components().reset();
                 _mesh->components().set( update );
                 _mesh->updateForUse();
+                VLOG(1) << fmt::format("[creategmshmesh] update mesh done" );
             }
         }
 #if defined(FEELPP_HAS_HDF5)

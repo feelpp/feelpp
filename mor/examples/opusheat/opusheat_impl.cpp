@@ -33,7 +33,21 @@ template<bool IsStationary>
 OpusHeat<IsStationary>::OpusHeat()
     :
     super_type((IsStationary)?"OpusHeat_stationary":"OpusHeat")
-{}
+{
+    this->setPluginName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_NAME));
+    this->setPluginLibName( BOOST_PP_STRINGIZE(FEELPP_MOR_PLUGIN_LIBNAME) );
+
+    std::cout << fmt::format("[OpusHeat] plugin.name={}, plugin.libname={}",this->pluginName(),this->pluginLibName()) << std::endl;
+    LOG( INFO ) << fmt::format( "[OpusHeat] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
+
+    if ( countoption( _name="bdf.time-initial" )  )
+    {
+        this->setTimeInitial( doption(_name="bdf.time-initial") );
+        this->setTimeFinal( doption(_name="bdf.time-final") );
+        this->setTimeStep( doption(_name="bdf.time-step") );
+        this->setTimeOrder( ioption(_name="bdf.order") );
+    }
+}
 
 template<bool IsStationary>
 void
@@ -96,6 +110,8 @@ template<bool IsStationary>
 void
 OpusHeat<IsStationary>::initModel()
 {
+    std::cout << fmt::format( "[OpusHeat::initModel] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
+    LOG( INFO ) << fmt::format( "[OpusHeat::initModel] plugin.name={}, plugin.libname={}", this->pluginName(), this->pluginLibName() ) << std::endl;
 
     auto mesh = loadMesh( _mesh=new typename OpusHeatConfig<IsStationary>::mesh_type,
                           //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES),
@@ -104,8 +120,8 @@ OpusHeat<IsStationary>::initModel()
 
     if( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "Number of local dof " << this->Xh->nLocalDof() << "\n";
-        std::cout << "Number of dof " << this->Xh->nDof() << "\n";
+        std::cout << fmt::format( "[OpusHeat::initModel] Number of local dof={} Number of dof = {}", this->Xh->nLocalDof(), this->Xh->nDof() ) << "\n";
+        LOG( INFO ) << fmt::format( "[OpusHeat::initModel] Number of local dof={} Number of dof = {}", this->Xh->nLocalDof(), this->Xh->nDof() ) << "\n";
     }
 
     for ( std::string const& marker : std::vector<std::string>({"AIR","PCB","IC1","IC2"}) )
@@ -199,9 +215,9 @@ OpusHeat<IsStationary>::assembleData()
     if( true ) //boption("do-not-use-operators-free") )
     {
         for (int k = 0 ; k<this->M_Aq.size() ; ++k)
-            this->M_Aq[k] = backend()->newMatrix( this->Xh, this->Xh );
+            this->M_Aq[k] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
         if ( super_type::is_time_dependent )
-            this->M_Mq[0] = backend()->newMatrix( this->Xh, this->Xh );
+            this->M_Mq[0] = backend()->newMatrix( _test=this->Xh, _trial=this->Xh );
         for (int k = 0 ; k<this->M_Fq[0].size() ; ++k)
             this->M_Fq[0][k] = backend()->newVector( this->Xh );
         this->M_Fq[1][0] = backend()->newVector( this->Xh );

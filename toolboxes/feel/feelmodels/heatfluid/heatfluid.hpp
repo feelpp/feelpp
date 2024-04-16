@@ -79,7 +79,7 @@ public:
     typedef typename fluid_model_type::mesh_type mesh_fluid_type;
     typedef mesh_fluid_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    static const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nDim = mesh_type::nDim;
 
     // materials properties
     typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
@@ -107,6 +107,8 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initPostProcess() override;
+    void initAlgebraicModel();
+    void initAlgebraicFactory();
     void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 public :
     // update for use
@@ -125,6 +127,8 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
+
+    void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
     heat_model_ptrtype heatModel() { return M_heatModel; }
@@ -154,7 +158,8 @@ public :
     auto modelFields( std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( this->heatModel()->modelFields( this->heatModel()->keyword() ),
-                                                  this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
+                                                  this->fluidModel()->modelFields( this->fluidModel()->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
         {
@@ -163,19 +168,21 @@ public :
     auto modelFields( vector_ptrtype solHeat, size_type rowStartInVectorHeat, vector_ptrtype solFluid, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( this->heatModel()->modelFields( solHeat, rowStartInVectorHeat, this->heatModel()->keyword() ),
-                                                  this->fluidModel()->modelFields( solFluid, rowStartInVectorFluid, this->fluidModel()->keyword() ) );
+                                                  this->fluidModel()->modelFields( solFluid, rowStartInVectorFluid, this->fluidModel()->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
     auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
                       std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
                       std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( this->heatModel()->modelFields( vectorDataHeat, this->heatModel()->keyword() ),
-                                                  this->fluidModel()->modelFields( vectorDataFluid, this->fluidModel()->keyword() ) );
+                                                  this->fluidModel()->modelFields( vectorDataFluid, this->fluidModel()->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
     template <typename ModelFieldsHeatType,typename ModelFieldsFluidType>
     auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsFluidType const& mfieldsFluid, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsFluid );
+            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsFluid, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid ) const
@@ -195,7 +202,7 @@ public :
             auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
             auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             auto sePhysics = this->symbolsExprPhysics( this->physics() );

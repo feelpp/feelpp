@@ -60,7 +60,7 @@
 static inline void assign (const uintC R, const uintC chlen,
                            const uintD* a, uintD* r)
 {
-	unused R;
+	cl_unused R;
 	copy_loop_lsp(a,r,chlen);
 }
 
@@ -68,7 +68,7 @@ static inline void assign (const uintC R, const uintC chlen,
 static void addm (const uintC R, const uintC chlen,
                   const uintD* a, const uintD* b, uintD* r)
 {
-	unused R;
+	cl_unused R;
 	// r := a+b.
 	add_loop_lsp(a,b, r, chlen);
 #if 0
@@ -96,7 +96,7 @@ static void addm (const uintC R, const uintC chlen,
 static void subm (const uintC R, const uintC chlen,
                   const uintD* a, const uintD* b, uintD* r)
 {
-	unused R;
+	cl_unused R;
 	// r := a-b.
 	sub_loop_lsp(a,b, r, chlen);
 #if 0
@@ -178,7 +178,7 @@ static void shiftleftm (const uintC R, const uintC chlen,
 static void mulm (const uintC R, const uintC chlen,
                   const uintD* a, const uintD* b, uintD* r)
 {
-	unused R;
+	cl_unused R;
 	// The leading digits are very likely to be 0.
 	var uintP a_len = chlen;
 	if (lspref(a,a_len-1) == 0)
@@ -233,7 +233,7 @@ static void mulm (const uintC R, const uintC chlen,
 static void shiftm (const uintC R, const uintC chlen,
                     const uintD* a, uintD* b)
 {
-	unused R;
+	cl_unused R;
 	shiftrightcopy_loop_msp(a lspop chlen,b lspop chlen,chlen,1,0);
 	if (lspref(a,0) & 1) {
 		// ((a + p) >> 1) = (a >> 1) + (p>>1) + 1.

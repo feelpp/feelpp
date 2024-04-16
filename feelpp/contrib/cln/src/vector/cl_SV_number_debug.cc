@@ -17,8 +17,8 @@ namespace cln {
 
 static void print_for_debug (std::ostream& stream, const cl_print_flags& flags, const cl_number& z)
 {
-	unused stream; // must be cl_debugout
-	unused flags; // must be default_print_flags
+	cl_unused stream; // must be cl_debugout
+	cl_unused flags; // must be default_print_flags
 	z.debug_print();
 }
 

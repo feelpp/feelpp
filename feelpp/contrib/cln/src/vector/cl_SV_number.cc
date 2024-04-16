@@ -12,11 +12,7 @@ namespace cln {
 
 static void cl_svector_number_destructor (cl_heap* pointer)
 {
-#if (defined(__mips__) || defined(__mips64__)) && !defined(__GNUC__) // workaround SGI CC bug
-	(*(cl_heap_SV_number*)pointer).~cl_heap_SV();
-#else
 	(*(cl_heap_SV_number*)pointer).~cl_heap_SV_number();
-#endif
 }
 
 // XXX: ugh, this needs to be non-static (and non-const) so redefining

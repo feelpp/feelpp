@@ -21,7 +21,7 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
-#include <pybind11/pybind11.h>
+#include <feel/feelpython/pybind11/pybind11.h>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/solid/solidmechanics.hpp>
@@ -66,6 +66,10 @@ void defSM(py::module &m)
                      "Initialize the solid mechanics toolbox"
                      )
         .def("init",&sm_t::init, "initialize the solid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
+        .def("mesh",static_cast<typename sm_t::mesh_ptrtype  (sm_t::*)() const>(&sm_t::mesh), "get the mesh")
+        .def("setMesh",static_cast<void (sm_t::*)(typename sm_t::mesh_ptrtype const&)>(&sm_t::setMesh), "set the mesh of the toolbox",py::arg("mesh"))
+        .def("updateParameterValues", &sm_t::updateParameterValues, "update parameter values" )
+
         .def("is1dReducedModel",&sm_t::is1dReducedModel, "returns true if 1D reduced model, false otherwise")
         .def("isStandardModel",&sm_t::isStandardModel, "returns true if standard model, false otherwise")
         

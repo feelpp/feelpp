@@ -96,7 +96,7 @@ const cl_I read_integer (const cl_read_flags& flags, const char * string, const 
 		var cl_signean sign = 0;
 		if (ptr == string_limit) goto not_integer_syntax;
 		switch (*ptr) {
-			case '-': sign = ~sign;
+			case '-': sign = ~sign; // fallthrough
 			case '+': ptr++;
 			default: break;
 		}

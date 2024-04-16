@@ -83,9 +83,9 @@ public:
 };
 
 inline bool realp (const cl_C& x)
-	{ unused x; return false; }
+	{ cl_unused x; return false; }
 inline bool complexp (const cl_C& x)
-	{ unused x; return true; }
+	{ cl_unused x; return true; }
 
 
 // Liefert zu reellen Zahlen a und b /= Fixnum 0 die komplexe Zahl a+bi.

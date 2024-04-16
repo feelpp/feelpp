@@ -82,7 +82,7 @@ inline sint32 sign_of_sintD (sintD wert)
   #if (intDsize==16)
     #define muluD  mulu16
   #endif
-  #if (intDsize==32) && defined(HAVE_LONGLONG)
+  #if (intDsize==32)
     #define muluD(arg1,arg2)  ((uintDD)(uintD)(arg1)*(uintDD)(uintD)(arg2))
   #endif
 #else
@@ -117,7 +117,7 @@ inline sint32 sign_of_sintD (sintD wert)
   #if (intDsize==16)
     #define divuD  divu_3216_1616
   #endif
-  #if (intDsize==32) && defined(HAVE_LONGLONG)
+  #if (intDsize==32)
     #define divuD(x,y,q_zuweisung,r_zuweisung) \
       { var uint64 __x = (x);                                 \
         var uint32 __y = (y);                                 \

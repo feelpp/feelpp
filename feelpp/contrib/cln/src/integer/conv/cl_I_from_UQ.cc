@@ -26,10 +26,10 @@ cl_private_thing cl_I_constructor_from_UQ (uint64 wert)
 	// (dessen Länge  bn_minlength <= n <= ceiling((32+1)/intDsize)  erfüllt)
 	#define UQ_maxlength  ceiling(64+1,intDsize)
 	#define IF_LENGTH(i)  \
-	  if ((bn_minlength <= i) && (i <= UQ_maxlength))	\
-	    if (!(i+1 <= UQ_maxlength)				\
+	  if ((bn_minlength <= i) && (i <= UQ_maxlength)	\
+	    && (!(i+1 <= UQ_maxlength)				\
 	        || ((uint64)wert < ((uint64)1 << (i*intDsize-1 < 64 ? i*intDsize-1 : 0))) \
-	       )
+	     ) )
 	IF_LENGTH(1)
 		{ var cl_heap_bignum* ptr = allocate_bignum(1);
 		  arrayLSref(ptr->data,1,0) = (uintD)wert;

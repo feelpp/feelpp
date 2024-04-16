@@ -30,9 +30,9 @@ as_error_msg (const cl_number& obj, const char * typestring, const char * filena
 	fprint(buf, obj);
 #else
 	fprint(buf, "@0x");
-	fprinthexadecimal(buf, (unsigned long)(void*)&obj);
+	fprinthexadecimal(buf, (uintptr_t)(void*)&obj);
 	fprint(buf, ": 0x");
-	fprinthexadecimal(buf, (unsigned long)obj.word);
+	fprinthexadecimal(buf, (uintptr_t)obj.word);
 #endif
 	return buf.str();
 }

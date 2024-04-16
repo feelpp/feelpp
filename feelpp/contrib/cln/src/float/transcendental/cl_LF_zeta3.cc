@@ -41,7 +41,7 @@ const cl_LF zeta3 (uintC len)
 			  n (0) {}
 	} series;
 	// Method:
-	//            /infinity                                  \ 
+	//            /infinity                                  \ 
 	//            | -----       (n + 1)       2              |
 	//        1   |  \      (-1)        (205 n  - 160 n + 32)|
 	//        -   |   )     ---------------------------------|

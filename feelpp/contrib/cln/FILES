@@ -51,6 +51,7 @@ Files in this package:
 
         configure       configuration script
         configure.in    autoconf source for the configuration script
-        autoconf/*      auxiliary configuration scripts
+        autoconf/*      configuration support
+        build-aux/*     auxiliary build scripts
         m4/*            autoconf's driver macros
         Makefile.in     Makefile master

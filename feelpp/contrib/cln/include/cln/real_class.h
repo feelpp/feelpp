@@ -22,10 +22,8 @@ public:
 	cl_R (const unsigned int);	// argument must be < 2^29
 	cl_R (const long);
 	cl_R (const unsigned long);
-#ifdef HAVE_LONGLONG
 	cl_R (const long long);
 	cl_R (const unsigned long long);
-#endif
 	cl_R (const float);
 	cl_R (const double);
 	cl_R& operator= (const int);		// |argument| must be < 2^29
@@ -34,10 +32,8 @@ public:
 	cl_R& operator= (const unsigned long);
 	cl_R& operator= (const float);
 	cl_R& operator= (const double);
-#ifdef HAVE_LONGLONG
 	cl_R& operator= (const long long);
 	cl_R& operator= (const unsigned long long);
-#endif
 // Other constructors.
 	cl_R (const char *);
 // Private constructor.
@@ -64,10 +60,8 @@ CL_DEFINE_INT_CONSTRUCTORS(cl_R)
 CL_DEFINE_INT_ASSIGNMENT_OPERATORS(cl_R)
 CL_DEFINE_LONG_CONSTRUCTORS(cl_R)
 CL_DEFINE_LONG_ASSIGNMENT_OPERATORS(cl_R)
-#ifdef HAVE_LONGLONG
 CL_DEFINE_LONGLONG_CONSTRUCTORS(cl_R)
 CL_DEFINE_LONGLONG_ASSIGNMENT_OPERATORS(cl_R)
-#endif
 CL_DEFINE_FLOAT_CONSTRUCTOR(cl_R)
 CL_DEFINE_DOUBLE_CONSTRUCTOR(cl_R)
 

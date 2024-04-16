@@ -34,7 +34,6 @@
 
 #include <boost/type_traits.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 #include <boost/icl/type_traits/is_map.hpp>
@@ -282,7 +281,7 @@ public:
             return M_geoParamMap;
         }
 
-    std::map<std::string, std::string>& geoParameters() 
+    std::map<std::string, std::string>& geoParameters()
         {
             return M_geoParamMap;
         }
@@ -399,16 +398,7 @@ public:
      * set Gmsh verbosity
      * \param val the verbosity level
      */
-    void setVerbosity( int val )
-        {
-#if defined( FEELPP_HAS_GMSH_H )
-#if !defined( FEELPP_HAS_GMSH_API )
-            // Feel::cout << "Get GMSH Verbosity : " << Msg::GetVerbosity() << std::endl;
-            // Feel::cout << "Set GMSH Verbosity to " << val << std::endl;
-            Msg::SetVerbosity( val );
-#endif
-#endif
-        }
+    void setVerbosity( int val );
 
     /**
      * set the order of the elements of the mesh it can be either
@@ -761,6 +751,8 @@ protected:
 
     //! bounding box
     std::vector<std::pair<double,double> > M_I;
+    //! verbosity level
+    int M_verbosity;
     //! characteristic length
     double M_h;
     //! number of discretization in X direction
