@@ -1,7 +1,7 @@
 import sys
 
 import feelpp.core as fppc
-import feelpp.toolboxes as fppt as fppt
+import feelpp.toolboxes as fppt
 
 e=fppc.Environment(sys.argv,opts=tb.toolboxes_options("electric"))
 
