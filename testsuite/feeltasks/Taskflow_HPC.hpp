@@ -1,3 +1,11 @@
+#include <assert.h>
+#include <stdio.h>
+#include <algorithm>
+#include <stdlib.h>
+#include <iostream>
+
+
+//Links for dev
 
 #include <thread>
 #include <vector>
@@ -8,7 +16,7 @@
 #include <sched.h>
 #include <pthread.h>
 
-#include<algorithm> 
+#include <algorithm> 
 #include <string>
 #include <utility>
 #include <functional>
@@ -19,6 +27,8 @@
 #include <list>
 #include <ranges>
 
+
+//Links Specx
 
 /*
 #include "SpDataAccessMode.hpp"
@@ -31,7 +41,6 @@
 #include "SpComputeEngine.hpp"
 #include "Speculation/SpSpeculativeModel.hpp"
 */
-
 
 #include <specx/Data/SpDataAccessMode.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
@@ -55,12 +64,19 @@
 //#define COMPILE_WITH_CUDA
 //#define COMPILE_WITH_HIP
 //#define COMPILE_WITH_CXX_20
+//#define USE_GPU_HIP  // <**** temporary
 
 
 #define MODE_NO_THREAD 0
 #define MODE_THREAD 1
 #define MODE_ASYNC 2
 #define MODE_SPECX 3
+
+//Links HIP
+#ifdef COMPILE_WITH_HIP
+    #include "hip/hip_runtime.h"
+    #include "hip/hip_runtime_api.h"
+#endif
 
 
 //=======================================================================================================================
@@ -238,11 +254,22 @@ struct VectorGPUCommunication{
 
 
 #ifdef NDEBUG
-#define HIP_ASSERT(x) x
+    #define HIP_ASSERT(x) x
 #else
-#define HIP_ASSERT(x) (assert((x)==hipSuccess))
+    #define HIP_ASSERT(x) (assert((x)==hipSuccess))
 #endif
 
+
+#ifdef USE_GPU_HIP
+template<typename Kernel, typename Input, typename Output>
+__global__ void run_on_gpu_kernel_1D(const Kernel kernel_function, int n, const Input* in, Output* out)
+{
+    int i = hipBlockDim_x*hipBlockIdx_x+hipThreadIdx_x;
+    if(i<n) {
+        kernel_function(i, in, out);
+    }
+}
+#endif
 
 
 
@@ -424,6 +451,19 @@ class Taskflow_HPC
         void close();
         void debriefingTasks();
         void getInformation();
+        void getGPUInformationError();
+
+        
+        //GPU-AMD-CUDA
+
+        #ifdef USE_GPU_HIP
+        template<typename Kernel, typename Input, typename Output>
+            void run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
+        template<typename Kernel, typename Input, typename Output>
+            void run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
+        template<typename Kernel, typename Input, typename Output>
+            void run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
+        #endif
 
 
 };
@@ -509,6 +549,79 @@ void Taskflow_HPC::getInformation()
         #endif
     }
 }
+
+
+void Taskflow_HPC::getGPUInformationError()
+{
+    #ifdef COMPILE_WITH_CUDA
+        cudaError_t num_err = cudaGetLastError();
+        if (num_err != cudaSuccess) {
+            std::cout<<"[INFO]: hip Error Name ="<<cudaGetErrorName(num_err)<<" "<<cudaGetErrorString(num_err)<<"\n";
+        }
+        num_err = cudaDeviceSynchronize();
+        if (num_err != cudaSuccess) {
+            std::cout<<"[INFO]: hip Error Name="<<cudaGetErrorName(err)<<" "<<cudaGetErrorString(num_err)<<"\n";
+        }
+    #endif
+
+    #ifdef COMPILE_WITH_HIP
+        hipError_t num_err = hipGetLastError();
+        if (num_err != hipSuccess) {
+            std::cout<<"[INFO]: hip Error Name ="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
+        }
+        err = hipDeviceSynchronize();
+        if (num_err != hipSuccess) {
+            std::cout<<"[INFO]: hip Error Name="<<hipGetErrorName(num_err))<<" "<<hipGetErrorString(num_err)<<"\n";
+        }
+    #endif
+}
+
+
+#ifdef USE_GPU_HIP
+template<typename Kernel, typename Input, typename Output>
+void Taskflow_HPC::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+{
+    typename Input::Scalar*  d_in;
+    typename Output::Scalar* d_out;
+    std::ptrdiff_t in_bytes  = in.size()  * sizeof(typename Input::Scalar);
+    std::ptrdiff_t out_bytes = out.size() * sizeof(typename Output::Scalar);
+    
+    HIP_ASSERT(hipMalloc((void**)(&d_in),  in_bytes));
+    HIP_ASSERT(hipMalloc((void**)(&d_out), out_bytes));
+    
+    HIP_ASSERT(hipMemcpy(d_in,  in.data(),  in_bytes,  hipMemcpyHostToDevice));
+    HIP_ASSERT(hipMemcpy(d_out, out.data(), out_bytes, hipMemcpyHostToDevice));
+    
+    dim3 grids( (n+int(blocks.x)-1)/int(blocks.x) );
+
+    hipDeviceSynchronize();
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(run_on_gpu_kernel_1D<Kernel,
+                        typename std::decay<decltype(*d_in)>::type,
+                        typename std::decay<decltype(*d_out)>::type>), 
+                dim3(grids), dim3(blocks), 0, 0, kernel_function, n, d_in, d_out);
+
+    getGPUInformationError();
+    
+    hipMemcpy(const_cast<typename Input::Scalar*>(in.data()),  d_in,  in_bytes,  hipMemcpyDeviceToHost);
+    hipMemcpy(out.data(), d_out, out_bytes, hipMemcpyDeviceToHost);
+    HIP_ASSERT(hipFree(d_in));
+    HIP_ASSERT(hipFree(d_out));
+}
+
+template<typename Kernel, typename Input, typename Output>
+void Taskflow_HPC::run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+{
+
+}
+
+template<typename Kernel, typename Input, typename Output>
+void Taskflow_HPC::run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+{
+
+}
+
+
+#endif
 
 template <typename ... Ts>
 auto Taskflow_HPC::parameters(Ts && ... ts)
