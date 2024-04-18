@@ -35,6 +35,10 @@
 //#include "UTester.hpp"
 //#include "utestUtils.hpp"
 
+#define DEVICE_FUNC __device__ __host__
+//#define USE_GPU_HIP
+
+
 
 #include "Taskflow_HPC.hpp"
 
@@ -1653,6 +1657,54 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
 	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T25> in ms since start :"<<run_time.count()<<"\n");
 }
 
+
+template<typename T>
+struct matrix_inverse {
+  EIGEN_DEVICE_FUNC
+  void operator()(int i, const typename T::Scalar* in, typename T::Scalar* out) const
+  {
+    using namespace Eigen;
+    T M(in+i);
+    Map<T> res(out+i*T::MaxSizeAtCompileTime);
+    res = M.inverse();
+  }
+};
+
+BOOST_AUTO_TEST_CASE( test_specx_26 )
+{
+    //for_each
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T26>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    #ifdef USE_GPU_HIP
+        int nthreads = 1;
+        Eigen::VectorXf in, out;
+        Eigen::VectorXcf cfin, cfout;
+        int data_size = nthreads * 9;
+        
+        in.setRandom(data_size);
+        in.setConstant(data_size,0);
+
+        in(0)=1;
+        in(4)=2;
+        in(8)=1;
+        out.setConstant(data_size, -1);
+        cfin.setRandom(data_size);
+        cfout.setConstant(data_size, -1);
+        Taskflow_HPC Taskflow_HPC_001(1,0);
+        Taskflow_HPC_001.qSave=true; 
+        Taskflow_HPC_001.qInfo=true; 
+        Taskflow_HPC_001.qViewChrono=true;
+        Taskflow_HPC_001.run_gpu_1D(matrix_inverse<Eigen::Matrix3f>(),dim3(128,1,1), nthreads, in, out);
+        Taskflow_HPC_001.run();
+        Taskflow_HPC_001.close();
+        Taskflow_HPC_001.debriefingTasks();
+    #endif
+
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T26> in ms since start :"<<run_time.count()<<"\n");
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()

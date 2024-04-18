@@ -60,6 +60,12 @@
 #include <napp/na.hpp>
 
 
+//Links Eigen
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+
+
+
 
 //#define COMPILE_WITH_CUDA
 //#define COMPILE_WITH_HIP
@@ -245,6 +251,9 @@ struct VectorGPUCommunication{
 // Nota: The objective is to provide a range of tools in the case of using a single variable in multithreading.
 // In the case of work with several variables use the class TasksDispatchComplex.
 
+//#define USE_jthread
+
+#define HIP_KERNEL_NAME(...) __VA_ARGS__
 
 #define HIP_CHECK(command) {               \
   hipError_t status = command;             \
@@ -261,14 +270,17 @@ struct VectorGPUCommunication{
 
 
 #ifdef USE_GPU_HIP
+
 template<typename Kernel, typename Input, typename Output>
 __global__ void run_on_gpu_kernel_1D(const Kernel kernel_function, int n, const Input* in, Output* out)
 {
     int i = hipBlockDim_x*hipBlockIdx_x+hipThreadIdx_x;
+    //int i = threadIdx.x + blockIdx.x*blockDim.x;
     if(i<n) {
         kernel_function(i, in, out);
     }
 }
+
 #endif
 
 
@@ -581,6 +593,7 @@ void Taskflow_HPC::getGPUInformationError()
 template<typename Kernel, typename Input, typename Output>
 void Taskflow_HPC::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
+    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
     typename Input::Scalar*  d_in;
     typename Output::Scalar* d_out;
     std::ptrdiff_t in_bytes  = in.size()  * sizeof(typename Input::Scalar);
@@ -592,12 +605,13 @@ void Taskflow_HPC::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, c
     HIP_ASSERT(hipMemcpy(d_in,  in.data(),  in_bytes,  hipMemcpyHostToDevice));
     HIP_ASSERT(hipMemcpy(d_out, out.data(), out_bytes, hipMemcpyHostToDevice));
     
+    //dim3 blocks(128);
     dim3 grids( (n+int(blocks.x)-1)/int(blocks.x) );
 
     hipDeviceSynchronize();
-    hipLaunchKernelGGL(HIP_KERNEL_NAME(run_on_gpu_kernel_1D<Kernel,
-                        typename std::decay<decltype(*d_in)>::type,
-                        typename std::decay<decltype(*d_out)>::type>), 
+    
+    hipLaunchKernelGGL(HIP_KERNEL_NAME(
+        run_on_gpu_kernel_1D<Kernel,typename std::decay<decltype(*d_in)>::type,typename std::decay<decltype(*d_out)>::type>), 
                 dim3(grids), dim3(blocks), 0, 0, kernel_function, n, d_in, d_out);
 
     getGPUInformationError();
@@ -605,19 +619,19 @@ void Taskflow_HPC::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, c
     hipMemcpy(const_cast<typename Input::Scalar*>(in.data()),  d_in,  in_bytes,  hipMemcpyDeviceToHost);
     hipMemcpy(out.data(), d_out, out_bytes, hipMemcpyDeviceToHost);
     HIP_ASSERT(hipFree(d_in));
-    HIP_ASSERT(hipFree(d_out));
+    HIP_ASSERT(hipFree(d_out));    
 }
 
 template<typename Kernel, typename Input, typename Output>
 void Taskflow_HPC::run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-
+    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
 }
 
 template<typename Kernel, typename Input, typename Output>
 void Taskflow_HPC::run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-
+    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
 }
 
 
