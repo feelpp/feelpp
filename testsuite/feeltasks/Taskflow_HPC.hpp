@@ -181,20 +181,6 @@ namespace Backend{
 
 namespace Frontend
 {
-/*
-    template <typename ... Ts>
-    void
-    runTask( Ts && ... ts )
-    {
-        auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-        auto && task = args.get(_task);
-        auto && parameters = args.get_else(_parameters,std::make_tuple());
-        Backend::Runtime runtime;
-
-        std::apply( [&runtime](auto... args){ runtime.task(args...); }, std::tuple_cat( Backend::makeSpData( parameters ), std::make_tuple( task ) ) );
-    }
-*/
-
     template <typename ... Ts>
     auto parameters(Ts && ... ts)
     {
@@ -285,6 +271,7 @@ __global__ void run_on_gpu_kernel_1D(const Kernel kernel_function, int n, const 
 
 
 
+
 void *WorkerInNumCPU(void *arg) {
     std::function<void()> *func = (std::function<void()>*)arg;
     (*func)();
@@ -292,7 +279,9 @@ void *WorkerInNumCPU(void *arg) {
 }
 
 
-class Taskflow_HPC
+namespace LEM {
+
+class Task
 {
     private:
         int nbThTotal;   
@@ -301,17 +290,19 @@ class Taskflow_HPC
         auto parameters(Ts && ... ts);
         bool QEmptyTask;
         bool QFlagDetachAlert;
+        
         SpTaskGraph<SpSpeculativeModel::SP_NO_SPEC> mytg;
         SpComputeEngine myce;
-        std::vector<int> idType;
-        std::vector<int> numTaskStatus;
+
+        std::vector<int>               idType;
+        std::vector<int>               numTaskStatus;
         std::vector<std::future<bool>> myfutures;
-        std::vector<std::future<bool>> myfutures_detach;
-        std::vector<std::thread> mythreads;
-        std::vector<pthread_t> mypthread_t; 
+        std::vector<std::future<bool>> myfuturesdetach;
+        std::vector<std::thread>       mythreads;
+        std::vector<pthread_t>         mypthread_t; 
 
         #ifdef COMPILE_WITH_CXX_20
-        std::vector<std::jthread> myjthreads; 
+        std::vector<std::jthread>      myjthreads; 
         #endif
 
         //pthread_t mypthread_t[100]; 
@@ -324,8 +315,23 @@ class Taskflow_HPC
         bool qFirstTask;
         int  idk;
         int  numLevelAction;
-        int nbThreadDetach;
+        int  nbThreadDetach;
         bool qReady;
+
+        bool qCUDA;
+        bool qHIP;
+
+        int  nbTh;
+        int  numTypeTh;
+
+        bool qDetach;
+        bool qYield;
+        bool qDeferred;
+        bool qUseIndex;
+
+        bool qViewChrono;
+        bool qInfo;
+        bool qSave;
 
         template <typename ... Ts> 
             auto common(Ts && ... ts);
@@ -335,26 +341,31 @@ class Taskflow_HPC
 
     public:
         //BEGIN::Small functions and variables to manage initialization parameters
-        int  nbTh;
-        int  numTypeTh;
-        bool qViewChrono;
-        bool qInfo;
-        bool qSave;
-        bool qDeferred;
-        bool qUseIndex;
-        bool qDetach;
-        bool qYield;
-        bool qCUDA;
-        bool qHIP;
+        
+        void setDetach           (bool b)  {  qDetach     = b; }
+        void setYield            (bool b)  {  qYield      = b; }
+        void setDeferred         (bool b)  {  qDeferred   = b; }
+        void setUseIndex         (bool b)  {  qUseIndex   = b; }
+        void setSave             (bool b)  {  qSave       = b; }
+        void setInfo             (bool b)  {  qInfo       = b; }
+        void setViewChrono       (bool b)  {  qViewChrono = b; }
+
+        bool isDetach            () const  {  return(qDetach);     } 
+        bool isYield             () const  {  return(qYield);      } 
+        bool isDeferred          () const  {  return(qDeferred);   } 
+        bool isSave              () const  {  return(qSave);       } 
+        bool isInfo              () const  {  return(qInfo);       } 
+        bool isViewChrono        () const  {  return(qViewChrono); } 
 
 
+        void setNbThread         (int v)   { nbTh=std::min(v,nbThTotal); }
+        int  getNbMaxThread      ()        { nbThTotal=std::thread::hardware_concurrency(); return(nbThTotal); }
+        int  getNbThreads        () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getCurrentNbOfWorkers()); } return val; }
+        int  getNbCpuWorkers     () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getNbCpuWorkers()); } return val; }
 
-        void setNbThread      (int v)   { nbTh=std::min(v,nbThTotal); }
-        int  getNbMaxThread   ()        { nbThTotal=std::thread::hardware_concurrency(); return(nbThTotal); }
-        int  getNbThreads     () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getCurrentNbOfWorkers()); } return val; }
-        int  getNbCpuWorkers  () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getNbCpuWorkers()); } return val; }
+        auto getIdThread         (int i);
+        int  getNbThreadPerBlock (int i);
 
-        auto getIdThread      (int i);
 
         long int  getTimeLaps ()        { return t_laps; }
 
@@ -374,10 +385,10 @@ class Taskflow_HPC
         //END::Small functions and variables to manage initialization parameters
 
 
-        Taskflow_HPC(void);
-        ~Taskflow_HPC(void);
+        Task(void);
+        ~Task(void);
 
-        explicit Taskflow_HPC(const int nbThread,int numTypeThread):mytg(),myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread))
+        explicit Task(const int nbThread,int numTypeThread):mytg(),myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread))
         {
             nbTh=nbThread;
             numTypeTh=numTypeThread;
@@ -399,7 +410,7 @@ class Taskflow_HPC
         }
         
         #ifdef COMPILE_WITH_CUDA
-            Taskflow_HPC() :
+            Task() :
                 mytg(), myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) {
                     SpCudaUtils::PrintInfo();
                     qCUDA=true;
@@ -409,7 +420,7 @@ class Taskflow_HPC
         #endif
 
         #ifdef COMPILE_WITH_HIP
-            Taskflow_HPC() :
+            Task() :
                 mytg(), myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) {
                     qHIP=true;
                     std::cout<<"[INFO]: Hip Mode\n";
@@ -475,6 +486,9 @@ class Taskflow_HPC
             void run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
         template<typename Kernel, typename Input, typename Output>
             void run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
+
+        template<typename Kernel, typename Input, typename Output>
+            void run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Output& out);
         #endif
 
 
@@ -482,12 +496,12 @@ class Taskflow_HPC
 
 
 
-Taskflow_HPC::Taskflow_HPC()
+Task::Task()
 {
     init();
 }
 
-Taskflow_HPC::~Taskflow_HPC()
+Task::~Task()
 {
     //Add somes   
     if ((numTypeTh==3) && (numLevelAction==3)) {  myce.stopIfNotAlreadyStopped(); } 
@@ -495,7 +509,7 @@ Taskflow_HPC::~Taskflow_HPC()
 }
 
 
-void Taskflow_HPC::init()
+void Task::init()
 {
     nbThTotal=std::thread::hardware_concurrency();
     nbTh=nbThTotal;
@@ -523,7 +537,31 @@ void Taskflow_HPC::init()
     #endif
 }
 
-void Taskflow_HPC::getInformation()
+int Task::getNbThreadPerBlock(int i)
+{
+    int numDevices=0;
+    #ifdef COMPILE_WITH_HIP
+        HIP_CHECK(hipGetDeviceCount(&numDevices));
+        if ((i>=0) && (i<numDevices))
+        {
+            HIP_CHECK(hipGetDeviceProperties(&devProp,i));
+            return(devProp.maxThreadsPerBlock);
+        }
+    #endif
+
+    #ifdef COMPILE_WITH_CUDA
+        cudaGetDeviceCount(&numDevices);
+        if ((i>=0) && (i<numDevices))
+        {
+            cudaGetDeviceProperties(&devProp,i);
+            return(devProp.maxThreadsPerBlock);
+        }
+    #endif
+}
+
+
+
+void Task::getInformation()
 {
     if (qInfo)
     {
@@ -540,10 +578,10 @@ void Taskflow_HPC::getInformation()
             std::cout<<std::endl;
             int numDevices=0;
             HIP_CHECK(hipGetDeviceCount(&numDevices));
-            std::cout<<"[INFO]: Get numDevice="<<numDevices<<"\n";
+            std::cout<<"[INFO]: Get numDevice                = "<<numDevices<<"\n";
             int deviceID=0;
             HIP_CHECK(hipGetDevice(&deviceID));
-            std::cout<<"[INFO]: Get deviceID="<<deviceID<<"\n";
+            std::cout<<"[INFO]: Get deviceID activated       = "<<deviceID<<"\n";
             deviceID=0;
             hipSetDevice(deviceID);
 
@@ -552,18 +590,67 @@ void Taskflow_HPC::getInformation()
             {
                 HIP_CHECK(hipSetDevice(i));
                 HIP_CHECK(hipGetDeviceProperties(&devProp,i));
-                std::cout<<"[INFO]: DeviceID        ="<<i<<std::endl;
-                std::cout<<"[INFO]: System minor    ="<< devProp.minor<<std::endl;
-                std::cout<<"[INFO]: System major    ="<< devProp.major<<std::endl;
-                std::cout<<"[INFO]: agent prop name ="<< devProp.name<<std::endl;
+                std::cout<<"[INFO]:"<<std::endl;
+                std::cout<<"[INFO]: DeviceID                     = "<<i<<std::endl;
+                std::cout<<"[INFO]: Agent prop name              = "<< devProp.name<<std::endl;
+                std::cout<<"[INFO]: System minor                 = "<< devProp.minor<<std::endl;
+                std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
+                std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
+                std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
+                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<<2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerBlock          = "<<devProp.maxThreadsPerBlock<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<<devProp.maxThreadsPerMultiProcessor<<std::endl;
+                std::cout<<"[INFO]: max ThreadsDim 3D            = "<<devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
+                std::cout<<"[INFO]: max Grid Size 3D             = "<<devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
+                std::cout<<"[INFO]: total Global Mem             = "<<devProp.totalGlobalMem<<std::endl;
+                std::cout<<"[INFO]: shared Mem Per Block         = "<<devProp.sharedMemPerBlock<<std::endl;
             }
+
             HIP_CHECK(hipSetDevice(0));
+            std::cout<<std::endl;
+        #endif
+
+
+        #ifdef COMPILE_WITH_CUDA
+            std::cout<<std::endl;
+            int numDevices=0;
+            cudaGetDeviceCount(&numDevices);
+            std::cout<<"[INFO]: Get numDevice                = "<<numDevices<<"\n";
+            int deviceID=0;
+            cudaGetDevice(&deviceID);
+            std::cout<<"[INFO]: Get deviceID activated       = "<<deviceID<<"\n";
+            deviceID=0;
+            cudaSetDevice(deviceID);
+
+            hipDeviceProp_t devProp;
+            for (int i = 0; i < numDevices; i++)
+            {
+                cudaSetDevice(i);
+                cudaGetDeviceProperties(&devProp,i);
+                std::cout<<"[INFO]:"<<std::endl;
+                std::cout<<"[INFO]: DeviceID                     = "<<i<<std::endl;
+                std::cout<<"[INFO]: Agent prop name              = "<< devProp.name<<std::endl;
+                std::cout<<"[INFO]: System minor                 = "<< devProp.minor<<std::endl;
+                std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
+                std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
+                std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
+                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<<2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerBlock          = "<<devProp.maxThreadsPerBlock<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<<devProp.maxThreadsPerMultiProcessor<<std::endl;
+                std::cout<<"[INFO]: max ThreadsDim 3D            = "<<devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
+                std::cout<<"[INFO]: max Grid Size 3D             = "<<devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
+                std::cout<<"[INFO]: total Global Mem             = "<<devProp.totalGlobalMem<<std::endl;
+                std::cout<<"[INFO]: shared Mem Per Block         = "<<devProp.sharedMemPerBlock<<std::endl;
+            }
+
+            cudaSetDevice(0);
+            std::cout<<std::endl;
         #endif
     }
 }
 
 
-void Taskflow_HPC::getGPUInformationError()
+void Task::getGPUInformationError()
 {
     #ifdef COMPILE_WITH_CUDA
         cudaError_t num_err = cudaGetLastError();
@@ -591,9 +678,12 @@ void Taskflow_HPC::getGPUInformationError()
 
 #ifdef USE_GPU_HIP
 template<typename Kernel, typename Input, typename Output>
-void Taskflow_HPC::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
+    std::chrono::steady_clock::time_point t_begin2,t_end2;
+    std::chrono::steady_clock::time_point t_begin3,t_end3;
+    t_begin2 = std::chrono::steady_clock::now();
     typename Input::Scalar*  d_in;
     typename Output::Scalar* d_out;
     std::ptrdiff_t in_bytes  = in.size()  * sizeof(typename Input::Scalar);
@@ -609,42 +699,64 @@ void Taskflow_HPC::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, c
     dim3 grids( (n+int(blocks.x)-1)/int(blocks.x) );
 
     hipDeviceSynchronize();
-    
+    t_begin3 = std::chrono::steady_clock::now();
+    //hipLaunchKernelGGL(..., blocks, threads, 0, 0, nbElement,.....);
     hipLaunchKernelGGL(HIP_KERNEL_NAME(
         run_on_gpu_kernel_1D<Kernel,typename std::decay<decltype(*d_in)>::type,typename std::decay<decltype(*d_out)>::type>), 
                 dim3(grids), dim3(blocks), 0, 0, kernel_function, n, d_in, d_out);
 
+    t_end3 = std::chrono::steady_clock::now();
     getGPUInformationError();
     
     hipMemcpy(const_cast<typename Input::Scalar*>(in.data()),  d_in,  in_bytes,  hipMemcpyDeviceToHost);
     hipMemcpy(out.data(), d_out, out_bytes, hipMemcpyDeviceToHost);
     HIP_ASSERT(hipFree(d_in));
     HIP_ASSERT(hipFree(d_out));    
+
+    t_end2 = std::chrono::steady_clock::now();
+    long int t_laps3= std::chrono::duration_cast<std::chrono::microseconds>(t_end3 - t_begin3).count();
+    long int t_laps2= std::chrono::duration_cast<std::chrono::microseconds>(t_end2 - t_begin2).count();
+    if (1==1) {
+        std::cout << "[INFO]: Elapsed microseconds inside: "<<t_laps3<< " us\n";    
+        std::cout << "[INFO]: Elapsed microseconds inside + memory copy: "<<t_laps2<< " us\n";
+        std::cout << "[INFO]: nb grids: "<<grids.x<<" "<<grids.y<<" "<<grids.z<< "\n";
+        std::cout << "[INFO]: nb block: "<<blocks.x<<" "<<blocks.y<<" "<<blocks.z<< "\n";
+    }
 }
 
 template<typename Kernel, typename Input, typename Output>
-void Taskflow_HPC::run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+void Task::run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
 }
 
 template<typename Kernel, typename Input, typename Output>
-void Taskflow_HPC::run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+void Task::run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
     if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
 }
+
+
+template<typename Kernel, typename Input, typename Output>
+void Task::run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Output& out)
+{
+  if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
+  for(int i=0; i<n; i++)
+    kernel_function(i, in.data(), out.data());
+}
+
 
 
 #endif
 
 template <typename ... Ts>
-auto Taskflow_HPC::parameters(Ts && ... ts)
+auto Task::parameters(Ts && ... ts)
 {
     return std::forward_as_tuple( std::forward<Ts>(ts)... );
 }
 
 template <typename ... Ts>
-    auto Taskflow_HPC::common(Ts && ... ts)
+    auto Task::common(Ts && ... ts)
 {
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_task);
@@ -655,7 +767,7 @@ template <typename ... Ts>
 
 
 template <typename ... Ts>
-void Taskflow_HPC::addTaskSimple( Ts && ... ts )
+void Task::addTaskSimple( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
     Backend::Runtime runtime;
@@ -664,7 +776,7 @@ void Taskflow_HPC::addTaskSimple( Ts && ... ts )
 
 
 template <typename ... Ts>
-void Taskflow_HPC::addTaskMultithread( Ts && ... ts )
+void Task::addTaskMultithread( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
     Backend::Runtime runtime;
@@ -681,14 +793,14 @@ void Taskflow_HPC::addTaskMultithread( Ts && ... ts )
     else
     {
         if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); 
+        myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
 }
 
 
 template <typename ... Ts>
-void Taskflow_HPC::addTaskAsync( Ts && ... ts )
+void Task::addTaskAsync( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
     Backend::Runtime runtime;
@@ -705,7 +817,7 @@ void Taskflow_HPC::addTaskAsync( Ts && ... ts )
     else
     {
         if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); 
+        myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
 
     usleep(1);
@@ -714,7 +826,7 @@ void Taskflow_HPC::addTaskAsync( Ts && ... ts )
 
 
 template <typename ... Ts>
-void Taskflow_HPC::addTaskSpecx( Ts && ... ts )
+void Task::addTaskSpecx( Ts && ... ts )
 {
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_task);
@@ -736,7 +848,7 @@ void Taskflow_HPC::addTaskSpecx( Ts && ... ts )
 
 #ifdef COMPILE_WITH_CXX_20
 template <typename ... Ts>
-void Taskflow_HPC::addTaskjthread( Ts && ... ts )
+void Task::addTaskjthread( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
     Backend::Runtime runtime;
@@ -753,7 +865,7 @@ void Taskflow_HPC::addTaskjthread( Ts && ... ts )
     else
     {
         if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfutures_detach.emplace_back(add_detach(LamdaTransfert)); 
+        myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
 }
@@ -761,7 +873,7 @@ void Taskflow_HPC::addTaskjthread( Ts && ... ts )
 
 
 template <typename ... Ts>
-void Taskflow_HPC::add( Ts && ... ts )
+void Task::add( Ts && ... ts )
 {
     numLevelAction=1;
     QEmptyTask=false;
@@ -787,7 +899,7 @@ void Taskflow_HPC::add( Ts && ... ts )
 }
 
 
-auto Taskflow_HPC::getIdThread(int i)
+auto Task::getIdThread(int i)
 {
     if ((i>0) && (i<idType.size()))
     {
@@ -820,7 +932,7 @@ auto Taskflow_HPC::getIdThread(int i)
 
 
 template <class InputIterator,typename ... Ts>
-    void Taskflow_HPC::for_each(InputIterator first, InputIterator last,Ts && ... ts)
+    void Task::for_each(InputIterator first, InputIterator last,Ts && ... ts)
 {
     qUseIndex=true; //Iterator used
     numLevelAction=1;
@@ -893,7 +1005,7 @@ template <class InputIterator,typename ... Ts>
 }
 
 
-void Taskflow_HPC::run()
+void Task::run()
 {
     if (QEmptyTask) { std::cout<<"[INFO]: Run failed empty task\n"; exit(0); }
     numLevelAction=2;
@@ -939,7 +1051,7 @@ void Taskflow_HPC::run()
     QEmptyTask=true;
 }
 
-void Taskflow_HPC::close()
+void Task::close()
 {
     if (QFlagDetachAlert) {
         if (qInfo) { std::cout<<"[INFO]: Detach processes are still running...\n"; }
@@ -947,9 +1059,9 @@ void Taskflow_HPC::close()
 
         if ((numTypeTh>0) && (numTypeTh<10))
         {
-            if (myfutures_detach.size()>0)
+            if (myfuturesdetach.size()>0)
             {
-                for( auto& r : myfutures_detach) {
+                for( auto& r : myfuturesdetach) {
                     //std::cout <<"Detach Status=" <<r.valid() << '\n';
                     r.wait(); 
                 }
@@ -964,13 +1076,13 @@ void Taskflow_HPC::close()
     if (numTypeTh==3) { myce.stopIfNotAlreadyStopped(); } //Specx
     if (!qFirstTask) { t_end = std::chrono::steady_clock::now(); qFirstTask=true;}
 
-    if (myfutures_detach.size()>0) { myfutures_detach.clear(); }
+    if (myfuturesdetach.size()>0) { myfuturesdetach.clear(); }
 
     if (qInfo) { std::cout<<"[INFO]: Close All Tasks and process\n"; }
     idk=0;
 }
 
-void Taskflow_HPC::debriefingTasks()
+void Task::debriefingTasks()
 {
     t_laps=std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count();
 
@@ -999,7 +1111,7 @@ void Taskflow_HPC::debriefingTasks()
 
 
 template<typename FctDetach>
-auto Taskflow_HPC::add_detach(FctDetach&& func) -> std::future<decltype(func())>
+auto Task::add_detach(FctDetach&& func) -> std::future<decltype(func())>
 {
     auto task   = std::packaged_task<decltype(func())()>(std::forward<FctDetach>(func));
     auto future = task.get_future();
@@ -1008,7 +1120,7 @@ auto Taskflow_HPC::add_detach(FctDetach&& func) -> std::future<decltype(func())>
 }
 
 template <typename ... Ts>
-void Taskflow_HPC::add(int numCPU,Ts && ... ts)
+void Task::add(int numCPU,Ts && ... ts)
 {
     //Run in num CPU
     mypthread_cpu.push_back(numCPU);
@@ -1048,7 +1160,7 @@ void Taskflow_HPC::add(int numCPU,Ts && ... ts)
 
 
 template <typename ... Ts>
-void Taskflow_HPC::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
+void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 {
     int nbTh=numCPU.size();
     pthread_t thread_array[nbTh];
@@ -1091,6 +1203,7 @@ void Taskflow_HPC::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
     }
 }
 
+}
 
 
 //================================================================================================================================

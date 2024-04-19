@@ -41,7 +41,7 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 BOOST_AUTO_TEST_SUITE( testspecx_suite )
 
 
-BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
+BOOST_AUTO_TEST_CASE( test_upper_layer_mesh_2 )
 {
     using namespace Feel;
     using mesh_t = Mesh<Simplex<3, 1, 3>>;
@@ -53,8 +53,12 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
 
     for(int NumThreads : {1,2,4,8,16})
     {
-        SpRuntime runtime( NumThreads );
-
+        LEM::Task TsK(NumThreads,3);
+        TsK.setSave(false);
+        TsK.setInfo(false);
+        TsK.setFileName("./Test_Mesh2");
+        TsK.getInformation();
+        
         double area = 0;
         auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
         tic();
@@ -64,29 +68,35 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
         for ( auto [i,r] : enumerate(ranges) )
         {
             int threadid = i;
-            auto const& ra = r;  
-            runtime.task( 
-                       SpWrite( area_vec( threadid ) ),
-                       [ra,NumThreads,threadid]( double& a ) 
-                       {
-                           for( element_t<range_t> const& e : ra )
-                           {
-                               a += e.measure();
-                           }
-                       } )
-                .setTaskName( fmt::format( "area-{}-{}", NumThreads, threadid ) );
+            auto const& ra = r;
+            
+            TsK.add(_parameters=Frontend::parameters(area_vec(threadid )),
+                _task= [ra,NumThreads,threadid]( double& a )
+                {
+                    for( element_t<range_t> const& e : ra )
+                    {
+                        a += e.measure();
+                    }
+                }
+            );
         }
-        runtime.waitAllTasks();
+        
+        TsK.run();
         BOOST_MESSAGE( fmt::format( "[waitall] areas: {}", area_vec ) );
         area = area_vec.sum();
         double t = toc(fmt::format( "measure-area-{}", NumThreads ) );
-        runtime.stopAllThreads();
+        TsK.close();
+        TsK.debriefingTasks();
+        
         BOOST_MESSAGE( fmt::format( "time for {} threads: {}, area: {}", NumThreads, t, area ) );
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
+
+
+
+BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_2 )
 {
     using namespace Feel;
     using mesh_t = Mesh<Simplex<3, 1, 3>>;
@@ -98,7 +108,11 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
 
     for ( int NumThreads : { 1, 2, 4, 8, 16 } )
     {
-        SpRuntime runtime( NumThreads );
+        LEM::Task TsK(NumThreads,3);
+        TsK.setSave(false);
+        TsK.setInfo(false);
+        TsK.setFileName("./Test_Integrate2");
+        TsK.getInformation();
 
         double area = 0;
         auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
@@ -110,23 +124,25 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
         {
             int threadid = i;
             auto const& ra = r;
-            runtime.task(
-                       SpWrite( area_vec( threadid ) ),
-                       [ra, NumThreads, threadid]( double& a )
-                       {
-                           a = integrate( _range=ra, _expr=expr("1") ).evaluate()(0,0);
-                       } )
-                .setTaskName( fmt::format( "area-{}-{}", NumThreads, threadid ) );
+            
+            TsK.add(_parameters=Frontend::parameters(area_vec(threadid )),
+                _task=[ra, NumThreads, threadid]( double& a )
+                {
+                    a = integrate( _range=ra, _expr=expr("1") ).evaluate()(0,0);
+                }
+            );
         }
-        runtime.waitAllTasks();
+        TsK.run();
         BOOST_MESSAGE( fmt::format( "[waitall] areas: {}", area_vec ) );
         area = area_vec.sum();
         double t = toc( fmt::format( "int-area-{}", NumThreads ) );
-        runtime.stopAllThreads();
+        TsK.close();
+        TsK.debriefingTasks();
         BOOST_MESSAGE( fmt::format( "time for {} threads: {}, area: {}", NumThreads, t, area ) );
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
 }
+
 
 
 

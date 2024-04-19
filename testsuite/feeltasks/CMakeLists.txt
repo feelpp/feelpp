@@ -26,5 +26,6 @@ set_directory_properties(PROPERTIES LABEL testtasks )
 
 feelpp_add_test( specx )
 feelpp_add_test( specx_mesh )
+feelpp_add_test( upper_layer )
 
 
