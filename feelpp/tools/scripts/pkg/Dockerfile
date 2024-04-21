@@ -12,7 +12,8 @@ RUN if test "$FLAVOR" = "ubuntu"; then \
         sed -i 's/http:\/\/archive.ubuntu.com\/ubuntu\//http:\/\/miroir.univ-lorraine.fr\/ubuntu\//' /etc/apt/sources.list; \
     fi
 RUN if test "$FLAVOR" = "debian"; then \
-        sed -i 's/http:\/\/deb.debian.org\/debian\//http:\/\/miroir.univ-lorraine.fr\/deb\//' /etc/apt/sources.list; \
+        NEW_MIRROR="http://miroir.univ-lorraine.fr/deb/" ;\
+        sed -i "s|URIs: .*|URIs: $NEW_MIRROR|" /etc/apt/sources.list.d/debian.sources;\
         fi
 RUN apt-get update \
         && apt-get install -y \
