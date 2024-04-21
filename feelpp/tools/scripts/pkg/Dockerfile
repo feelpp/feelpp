@@ -34,7 +34,7 @@ RUN if test "$FLAVOR" = "ubuntu"; then \
         echo "deb http://miroir.univ-lorraine.fr/ubuntu $DIST-proposed multiverse" |  tee -a /etc/apt/sources.list; \
     fi; \
     apt-get -qq update; \
-    apt-get -y install tzdata dos2unix;\
+    apt-get install -y tzdata dos2unix;\
     rm -rf /var/lib/apt/lists/*
 
 RUN wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg; \
