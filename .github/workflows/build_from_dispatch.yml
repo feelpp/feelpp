@@ -1,6 +1,26 @@
 name: Feel++ Builder
-run-name: "[${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}]"
+run-name: "Build Feel++ [ ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }} ] preset: ${{ github.event.client_payload.preset || inputs.preset }} "
 on: 
+   workflow_dispatch:
+    inputs:
+      flavor:
+        description: 'Distribution flavor'     
+        required: true
+        default: 'ubuntu'
+        type: choice
+        options: ['ubuntu', 'debian', 'fedora', 'spack']
+      version:
+        description: 'Version of the distribution'  
+        required: true
+        default: "36"
+        type: choice
+        options: ['20.04', '22.04', '23.10', '11', 'testing', 'sid', '36', '37', 'spack-openmpi','spack-mpich']
+      preset:
+        description: 'Preset to use'  
+        required: false
+        type: choice
+        default: "release-clang-cmake"
+        options: ['default', 'release-clang-cmake', 'release-clang-cpp20-cmake']
   repository_dispatch:
     types: [trigger-feelpp-build]
 
@@ -33,13 +53,13 @@ jobs:
             . /etc/profile.d/modules.sh
             module load mpi/openmpi-x86_64
           fi
-          cmake --preset default 
+          cmake --preset ${{ github.event.client_payload.preset || inputs.preset }} 
       - name:   Build feelpp
-        run: cmake --build --preset default -j20
+        run: cmake --build --preset ${{ github.event.client_payload.preset || inputs.preset }} -j20
       - name:   Build feelpp
-        run: cmake --build --preset default -t install/fast
+        run: cmake --build --preset ${{ github.event.client_payload.preset || inputs.preset }} -t install/fast
       - name: Package feelpp
-        run: cmake --build --preset default -t package
+        run: cmake --build --preset ${{ github.event.client_payload.preset || inputs.preset }} -t package
    #   - name: Upload feelpp
    #     uses: actions/upload-artifact@v2
    #     with:
