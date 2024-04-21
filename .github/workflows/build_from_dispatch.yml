@@ -2,41 +2,41 @@ name: Feelpp Builder
 run-name: "Build Feelpp [ ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }} ] preset: ${{ github.event.client_payload.preset || inputs.preset }} "
 on: 
    workflow_dispatch:
-    inputs:
-      flavor:
-        description: 'Distribution flavor'
-        required: true
-        default: 'ubuntu'
-        type: choice
-        options:
-          - 'ubuntu'
-          - 'debian'
-          - 'fedora'
-          - 'spack'
-      version:
-        description: 'Version of the distribution'  
-        required: true
-        default: "24.04"
-        type: choice
-        options: 
-          - '20.04' 
-          - '22.04'
-          - '24.04'
-          - '12'
-          - '37'
-          - 'openmpi'
-          - 'mpich'
-      preset:
-        description: 'Preset to use'  
-        required: false
-        type: choice
-        default: "release-clang-cmake"
-        options: 
-          - 'default'
-          - 'release-clang-cmake'
-          - 'release-clang-cpp20-cmake'
-  repository_dispatch:
-    types: [trigger-feelpp-build]
+     inputs:
+       flavor:
+         description: 'Distribution flavor'
+         required: true
+         default: 'ubuntu'
+         type: choice
+         options:
+         - 'ubuntu'
+         - 'debian'
+         - 'fedora'
+         - 'spack'
+       version:
+         description: 'Version of the distribution'  
+         required: true
+         default: "24.04"
+         type: choice
+         options: 
+         - '20.04' 
+         - '22.04'
+         - '24.04'
+         - '12'
+         - '37'
+         - 'openmpi'
+         - 'mpich'
+       preset:
+         description: 'Preset to use'  
+         required: false
+         type: choice
+         default: "release-clang-cmake"
+         options: 
+         - 'default'
+         - 'release-clang-cmake'
+         - 'release-clang-cpp20-cmake'
+   repository_dispatch:
+     types: [trigger-feelpp-build]
 
 jobs:
 
