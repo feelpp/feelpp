@@ -1,5 +1,5 @@
-name: Feel++ Builder
-run-name: "Build Feel++ [ ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }} ] preset: ${{ github.event.client_payload.preset || inputs.preset }} "
+name: Feelpp Builder
+run-name: "Build Feelpp [ ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }} ] preset: ${{ github.event.client_payload.preset || inputs.preset }} "
 on: 
    workflow_dispatch:
     inputs:
