@@ -42,10 +42,11 @@ RUN wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg; \
         echo "deb [signed-by=/etc/apt/trusted.gpg.d/feelpp.gpg] http://apt.feelpp.org/$FLAVOR/$DIST $DIST ${CHANNEL}" | tee -a /etc/apt/sources.list.d/feelpp.list; \
         rm -f feelpp.gpg; \
         apt-get update ;\
+        packages=$(apt-cache search '^feelpp-*' | grep -v 'dbgsym' | awk '{print $1}');\
         apt-get install -y --no-install-recommends \
                          g++ clang man-db make cmake rsync ipython3 \
                          python3-pip \
-                         'feelpp-*' 'libfeelpp1' 'python3-feelpp*'; \
+                         $packages 'libfeelpp1' 'python3-feelpp*'; \
         rm -rf /var/lib/apt/lists/* ;
 
 # install venv
