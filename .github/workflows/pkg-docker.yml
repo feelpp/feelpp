@@ -1,4 +1,5 @@
-name: Feelpp PKG Docker 
+name: Feelpp PKG Docker
+run-name: "PKG Docker Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
 on:
     workflow_dispatch:
       inputs:
