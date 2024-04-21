@@ -19,7 +19,7 @@ RUN apt-get update \
         vim \
         ssh \
         sudo \
-        wget gpg \
+        wget gpg git \
         software-properties-common ;\
         rm -rf /var/lib/apt/lists/*
 
@@ -47,10 +47,19 @@ RUN wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg; \
                          'feelpp-*' 'libfeelpp1' 'python3-feelpp*'; \
         rm -rf /var/lib/apt/lists/* ;
 
+# install venv
+RUN apt-get update; \
+    apt-get install -y python3-venv; \
+    rm -rf /var/lib/apt/lists/* ;
 
 RUN     echo "export FEELPP_REPOSITORY=/feel" >> ~feelpp/.bashrc;\
         echo "export OMPI_MCA_btl_vader_single_copy_mechanism=none" >> ~feelpp/.bashrc
 
 USER feelpp
 
-RUN pip3 install --no-cache-dir --upgrade pip setuptools wheel pyvista xvfbwrapper ipykernel plotly pandas
+
+RUN    python3 -m venv /home/feelpp/.venv \
+   &&  . /home/feelpp/.venv/bin/activate \
+   &&  pip3 install --no-cache-dir --upgrade pip setuptools wheel pyvista xvfbwrapper ipykernel plotly pandas trame trame-code tabulate
+
+CMD ["/bin/bash", "-c", "source /home/feelpp/.venv/bin/activate && exec /bin/bash"]
