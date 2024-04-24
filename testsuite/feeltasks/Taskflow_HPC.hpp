@@ -239,6 +239,8 @@ struct VectorGPUCommunication{
 
 //#define USE_jthread
 
+
+// Some macro functions for the AMD HIP GPU
 #define HIP_KERNEL_NAME(...) __VA_ARGS__
 
 #define HIP_CHECK(command) {               \
@@ -257,6 +259,7 @@ struct VectorGPUCommunication{
 
 #ifdef USE_GPU_HIP
 
+// GPU HIP function that executes a kernel task
 template<typename Kernel, typename Input, typename Output>
 __global__ void run_on_gpu_kernel_1D(const Kernel kernel_function, int n, const Input* in, Output* out)
 {
@@ -273,6 +276,7 @@ __global__ void run_on_gpu_kernel_1D(const Kernel kernel_function, int n, const 
 
 
 void *WorkerInNumCPU(void *arg) {
+    // Function used to run a task on a given CPU number.
     std::function<void()> *func = (std::function<void()>*)arg;
     (*func)();
     pthread_exit(NULL);
@@ -284,202 +288,204 @@ namespace LEM {
 class Task
 {
     private:
-        int nbThTotal;   
-        std::string FileName;
+        int M_nbThTotal;                                       // variable indicator of the total number of threads available
+        std::string M_FileName;                                // name of the recording file that will be used for the debriefing
         template <typename ... Ts>
-        auto parameters(Ts && ... ts);
-        bool QEmptyTask;
-        bool QFlagDetachAlert;
+        auto parameters(Ts && ... ts);                         // meta function to use multiple variables
+        bool M_qEmptyTask;                                     // variable indicator if there is no task
+        bool M_qFlagDetachAlert;                               // flag internal variable indicator for activation of the detach module
         
-        SpTaskGraph<SpSpeculativeModel::SP_NO_SPEC> mytg;
-        SpComputeEngine myce;
+        SpTaskGraph<SpSpeculativeModel::SP_NO_SPEC> M_mytg;    // Specx TaskGraph function 
+        SpComputeEngine M_myce;                                // Specx engine function 
 
-        std::vector<int>               idType;
-        std::vector<int>               numTaskStatus;
-        std::vector<std::future<bool>> myfutures;
-        std::vector<std::future<bool>> myfuturesdetach;
-        std::vector<std::thread>       mythreads;
-        std::vector<pthread_t>         mypthread_t; 
+        std::vector<int>               M_idType;                // This vector saves the thread type according to the task id number
+        std::vector<int>               M_numTaskStatus;         // This vector saves the thread type status according to the task id number
+        std::vector<std::future<bool>> M_myfutures;             // Vector table of std::future
+        std::vector<std::future<bool>> M_myfuturesdetach;       // Vector table of std::future detach
+        std::vector<std::thread>       M_mythreads;             // Vector table of std::thread
+        std::vector<pthread_t>         M_mypthread_t;           // Vector table of pthread_t
 
         #ifdef COMPILE_WITH_CXX_20
-        std::vector<std::jthread>      myjthreads; 
+            std::vector<std::jthread>      myjthreads;              // Vector table of <std::jthread
         #endif
 
-        //pthread_t mypthread_t[100]; 
-        pthread_attr_t mypthread_attr_t;
-        std::vector<int> mypthread_cpu; 
-        std::mutex mymtx;
+        //pthread_t M_mypthread_t[100]; 
+        pthread_attr_t                 M_mypthread_attr_t;      // An attribute set to supply to pthread_create()
+        std::vector<int>               M_mypthread_cpu;         // Vector table of thread with
+        std::mutex                     M_mymtx;                 // Mutex
         //std::promise<int> promise0;
-        std::chrono::steady_clock::time_point t_begin,t_end;
-        long int t_laps;
-        bool qFirstTask;
-        int  idk;
-        int  numLevelAction;
-        int  nbThreadDetach;
-        bool qReady;
+        std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
-        bool qCUDA;
-        bool qHIP;
+        // variables indicatrices utilisées par les fonctions set et get. Voir les descriptions ci-dessous.
+        long int M_t_laps;
+        bool M_qFirstTask;
+        int  M_idk;
+        int  M_numLevelAction;
+        int  M_nbThreadDetach;
+        bool M_qReady;
 
-        int  nbTh;
-        int  numTypeTh;
+        bool M_qCUDA;
+        bool M_qHIP;
 
-        bool qDetach;
-        bool qYield;
-        bool qDeferred;
-        bool qUseIndex;
+        int  M_nbTh;
+        int  M_numTypeTh;
 
-        bool qViewChrono;
-        bool qInfo;
-        bool qSave;
+        bool M_qDetach;
+        bool M_qYield;
+        bool M_qDeferred;
+        bool M_qUseIndex;
+
+        bool M_qViewChrono;
+        bool M_qInfo;
+        bool M_qSave;
 
         template <typename ... Ts> 
             auto common(Ts && ... ts);
 
-        void init();
+        void init(); // Function that initializes all variables we need
         
 
     public:
         //BEGIN::Small functions and variables to manage initialization parameters
         
-        void setDetach           (bool b)  {  qDetach     = b; }
-        void setYield            (bool b)  {  qYield      = b; }
-        void setDeferred         (bool b)  {  qDeferred   = b; }
-        void setUseIndex         (bool b)  {  qUseIndex   = b; }
-        void setSave             (bool b)  {  qSave       = b; }
-        void setInfo             (bool b)  {  qInfo       = b; }
-        void setViewChrono       (bool b)  {  qViewChrono = b; }
+        void setDetach           (bool b)  {  M_qDetach     = b; } // This function allows you to indicate to the next task whether it should be detached.
+        void setYield            (bool b)  {  M_qYield      = b; } // This function allows you to indicate to the next task whether it should be yield.
+        void setDeferred         (bool b)  {  M_qDeferred   = b; } // This function allows you to indicate to the next task whether it should be deferred. Used only for std::async part
+        void setUseIndex         (bool b)  {  M_qUseIndex   = b; } // 
+        void setSave             (bool b)  {  M_qSave       = b; } // Indicates whether to save debriefing data
+        void setInfo             (bool b)  {  M_qInfo       = b; } // Allows Indicates whether we must display progress information during the execution of the class.
+        void setViewChrono       (bool b)  {  M_qViewChrono = b; } // Allows Indicates whether to display time measurement information from the stopwatch.
 
-        bool isDetach            () const  {  return(qDetach);     } 
-        bool isYield             () const  {  return(qYield);      } 
-        bool isDeferred          () const  {  return(qDeferred);   } 
-        bool isSave              () const  {  return(qSave);       } 
-        bool isInfo              () const  {  return(qInfo);       } 
-        bool isViewChrono        () const  {  return(qViewChrono); } 
-
-
-        void setNbThread         (int v)   { nbTh=std::min(v,nbThTotal); }
-        int  getNbMaxThread      ()        { nbThTotal=std::thread::hardware_concurrency(); return(nbThTotal); }
-        int  getNbThreads        () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getCurrentNbOfWorkers()); } return val; }
-        int  getNbCpuWorkers     () const  { int val=nbTh; if (numTypeTh==3) { val=static_cast<int>(myce.getNbCpuWorkers()); } return val; }
-
-        auto getIdThread         (int i);
-        int  getNbThreadPerBlock (int i);
+        bool isDetach            () const  {  return(M_qDetach);     } // Indicates the state of the boolean variable isDetach
+        bool isYield             () const  {  return(M_qYield);      } // Indicates the state of the boolean variable isYield 
+        bool isDeferred          () const  {  return(M_qDeferred);   } // Indicates the state of the boolean variable isDeferred
+        bool isSave              () const  {  return(M_qSave);       } // Indicates the state of the boolean variable isSave
+        bool isInfo              () const  {  return(M_qInfo);       } // Indicates the state of the boolean variable isInfo 
+        bool isViewChrono        () const  {  return(M_qViewChrono); } // Indicates the state of the boolean variable isViewChrono
 
 
-        long int  getTimeLaps ()        { return t_laps; }
+        void setNbThread         (int v)   { M_nbTh=std::min(v,M_nbThTotal); } // Fix the desired number of threads
+        int  getNbMaxThread      ()        { M_nbThTotal=std::thread::hardware_concurrency(); return(M_nbThTotal); } // Gives the maximum number of threads
+        int  getNbThreads        () const  { int val=M_nbTh; if (M_numTypeTh==3) { val=static_cast<int>(M_myce.getCurrentNbOfWorkers()); } return val; } // Gives the number of threads used
+        int  getNbCpuWorkers     () const  { int val=M_nbTh; if (M_numTypeTh==3) { val=static_cast<int>(M_myce.getNbCpuWorkers()); } return val; } //Gives the number of CpuWorkers used
+
+        auto getIdThread         (int i);  // Gives the memory address of the thread used
+        int  getNbThreadPerBlock (int i);  // Gives the number of threads used per GPU block
+
+
+        long int  getTimeLaps ()        { return M_t_laps; } // Gives the time laps simulation
 
 
         #ifdef COMPILE_WITH_CUDA
             int getNbCudaWorkers() const {
-                return static_cast<int>(myce.getNbCudaWorkers());
-                }
+                return static_cast<int>(M_myce.getNbCudaWorkers());
+                } // Returns the total number of Cuda cards
         #endif
         #ifdef COMPILE_WITH_HIP
             int getNbHipWorkers() const {
-                return static_cast<int>(myce.getNbHipWorkers());
-            }
+                return static_cast<int>(M_myce.getNbHipWorkers());
+            } // Returns the total number of Hip cards
         #endif
             
-        void setFileName(std::string s) { FileName=s; }
+        void setFileName(std::string s) { M_FileName=s; } 
         //END::Small functions and variables to manage initialization parameters
 
 
-        Task(void);
-        ~Task(void);
+        Task(void);  // Constructor, initializes the default variables that are defined in the init() function.
+        ~Task(void); // Destructor is invoked automatically whenever an object is going to be destroyed. Closes the elements properly
 
-        explicit Task(const int nbThread,int numTypeThread):mytg(),myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread))
+        explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread)) // Class constructor in classic mode
         {
-            nbTh=nbThread;
-            numTypeTh=numTypeThread;
-            idk=0; numTaskStatus.clear(); qDetach=0; nbThreadDetach=0;
-            idType.clear(); 
-            t_begin = std::chrono::steady_clock::now();
-            qDeferred=false;
-            qReady=false;
+            M_nbTh=nbThread;
+            M_numTypeTh = M_numTypeThread;
+            M_idk=0; M_numTaskStatus.clear(); M_qDetach=0; M_nbThreadDetach=0;
+            M_idType.clear(); 
+            M_t_begin   = std::chrono::steady_clock::now();
+            M_qDeferred = false;
+            M_qReady    = false;
             
-            
-            if (numTypeTh==0) { } //No Thread
-            if (numTypeTh==1) { } //multithread
-            if (numTypeTh==2) { } //std::async
-            if (numTypeTh==3) { mytg.computeOn(myce); }
+            if (M_numTypeTh==0) { } // No Thread
+            if (M_numTypeTh==1) { } // multithread
+            if (M_numTypeTh==2) { } // std::async
+            if (M_numTypeTh==3) { M_mytg.computeOn(M_myce); } // Specx
 
-            if (numTypeTh==10) { pthread_attr_init(&mypthread_attr_t); }
+            if (M_numTypeTh==10) { pthread_attr_init(&M_mypthread_attr_t); } //pthread
 
             //getInformation();            
         }
         
         #ifdef COMPILE_WITH_CUDA
             Task() :
-                mytg(), myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) {
+                M_mytg(), M_myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) // Class constructor in mode using CUDA
+                {
                     SpCudaUtils::PrintInfo();
-                    qCUDA=true;
+                    M_qCUDA=true;
                     std::cout<<"[INFO]: Cuda Mode\n";
-                    mytg.computeOn(myce);
-            }
+                    M_mytg.computeOn(M_myce);
+                }
         #endif
 
         #ifdef COMPILE_WITH_HIP
             Task() :
-                mytg(), myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) {
-                    qHIP=true;
+                M_mytg(), M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in mode using HIP 
+                {
+                    M_qHIP=true;
                     std::cout<<"[INFO]: Hip Mode\n";
-                    mytg.computeOn(myce);
-            }
+                    M_mytg.computeOn(M_myce);
+                }
         #endif
 
         
 
-        template <class ClassFunc> void execOnWorkers(ClassFunc&& func) { myce.execOnWorkers(std::forward<ClassFunc>(func)); }
+        template <class ClassFunc> void execOnWorkers(ClassFunc&& func) { M_myce.execOnWorkers(std::forward<ClassFunc>(func)); } //Execute a ClassFunc on workers
   
         template <typename ... Ts>
-        void add( Ts && ... ts );
+        void add( Ts && ... ts ); // This main function allows you to add a task
 
             template <typename ... Ts>
-                void addTaskSimple( Ts && ... ts );
+                void addTaskSimple( Ts && ... ts ); // This subfunction allows you to add a simple task
 
             template <typename ... Ts>
-                void addTaskSpecx( Ts && ... ts );
+                void addTaskSpecx( Ts && ... ts ); // This subfunction allows you to add a specx task
 
             template <typename ... Ts>
-                void addTaskAsync( Ts && ... ts );
+                void addTaskAsync( Ts && ... ts ); // This subfunction allows you to add a std::async task
 
             template <typename ... Ts>
-                void addTaskMultithread( Ts && ... ts );
+                void addTaskMultithread( Ts && ... ts ); // This subfunction allows you to add a multithread task
 
             
             #ifdef COMPILE_WITH_CXX_20
             template <typename ... Ts>
-                void addTaskjthread( Ts && ... ts );
+                void addTaskjthread( Ts && ... ts ); // This subfunction allows you to add a jthread task. Only works under C++20
             #endif
 
 
-        //void add_CUDA();
-
         template <class InputIterator,typename ... Ts>
-            void for_each(InputIterator first, InputIterator last,Ts && ... ts);
+            void for_each(InputIterator first, InputIterator last,Ts && ... ts); // This function allows you to apply the same treatment to a set of elements of a task.
 
 
         template <typename ... Ts>
-            void add(int numCPU,Ts && ... ts);
+            void add(int numCPU,Ts && ... ts);  // Add a task on specific CPU number
 
 
         template<typename FctDetach>
-            auto add_detach(FctDetach&& func) -> std::future<decltype(func())>;
+            auto add_detach(FctDetach&& func) -> std::future<decltype(func())>; // Add a detach thread task
 
         template <typename ... Ts>
-            void runInCPUs(const std::vector<int> & numCPU,Ts && ... ts);
+            void runInCPUs(const std::vector<int> & numCPU,Ts && ... ts); // Execute all tasks on specific CPU number
         
-        void run();
-        void close();
-        void debriefingTasks();
-        void getInformation();
-        void getGPUInformationError();
+        void run();                     // Execution of all added tasks. 
+        void close();                   // Memory cleanup of all variables used before closing the class.
+        void debriefingTasks();         // Wrote a report on execution times and generated .dot .svg files regarding Specx and .csv to save the times.
+        void getInformation();          // Provides all information regarding graphics cards (CUDA and HIP)
+        void getGPUInformationError();  // Provides error types from the GPU (CUDA and HIP)
 
         
         //GPU-AMD-CUDA
 
         #ifdef USE_GPU_HIP
+        // set of functions allowing you to use eigen under Hip gpu.
         template<typename Kernel, typename Input, typename Output>
             void run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
         template<typename Kernel, typename Input, typename Output>
@@ -487,6 +493,7 @@ class Task
         template<typename Kernel, typename Input, typename Output>
             void run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
 
+        // set of functions allowing you to use eigen under Hip cpu. Juste to control the results
         template<typename Kernel, typename Input, typename Output>
             void run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Output& out);
         #endif
@@ -504,33 +511,33 @@ Task::Task()
 Task::~Task()
 {
     //Add somes   
-    if ((numTypeTh==3) && (numLevelAction==3)) {  myce.stopIfNotAlreadyStopped(); } 
+    if ((M_numTypeTh==3) && (M_numLevelAction==3)) {  M_myce.stopIfNotAlreadyStopped(); } 
     //Specx
 }
 
 
 void Task::init()
 {
-    nbThTotal=std::thread::hardware_concurrency();
-    nbTh=nbThTotal;
-    qInfo=true;
-    qSave=false;
-    qDeferred=false;
-    numTypeTh=0;
-    qUseIndex=false;
-    FileName="NoName";
-    qFirstTask=true;
-    idk=0;
-    numLevelAction=0;
-    qCUDA=false;
-    qHIP=false;
-    QEmptyTask=true;
-    QFlagDetachAlert=false;
-    nbThreadDetach=0;
-    qReady=false;
-    qYield=false;
-    mythreads.clear();
-    myfutures.clear();
+    M_nbThTotal=std::thread::hardware_concurrency();
+    M_nbTh             = M_nbThTotal;
+    M_qInfo            = true;
+    M_qSave            = false;
+    M_qDeferred        = false;
+    M_numTypeTh        = 0;
+    M_qUseIndex        = false;
+    M_FileName="NoName";
+    M_qFirstTask       = true;
+    M_idk              = 0;
+    M_numLevelAction   = 0;
+    M_qCUDA            = false;
+    M_qHIP             = false;
+    M_qEmptyTask       = true;
+    M_qFlagDetachAlert = false;
+    M_nbThreadDetach   = 0;
+    M_qReady           = false;
+    M_qYield           = false;
+    M_mythreads.clear();
+    M_myfutures.clear();
     
     #ifdef COMPILE_WITH_CXX_20
     myjthreads.clear();
@@ -563,16 +570,17 @@ int Task::getNbThreadPerBlock(int i)
 
 void Task::getInformation()
 {
-    if (qInfo)
+    // Provides all information regarding graphics cards CUDA and AMD
+    if (M_qInfo)
     {
-        if (numTypeTh== 0) { std::cout<<"[INFO]: Mode No Thread\n"; }
-        if (numTypeTh== 1) { std::cout<<"[INFO]: Mode Multithread\n"; }
-        if (numTypeTh== 2) { std::cout<<"[INFO]: Mode Std::async\n"; }
-        if (numTypeTh== 3) { std::cout<<"[INFO]: Mode Specx\n"; }
+        if (M_numTypeTh== 0) { std::cout<<"[INFO]: Mode No Thread\n"; }
+        if (M_numTypeTh== 1) { std::cout<<"[INFO]: Mode Multithread\n"; }
+        if (M_numTypeTh== 2) { std::cout<<"[INFO]: Mode Std::async\n"; }
+        if (M_numTypeTh== 3) { std::cout<<"[INFO]: Mode Specx\n"; }
 
-        if (numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
-        nbThTotal=getNbMaxThread(); 
-        std::cout<<"[INFO]: Nb max Thread="<<nbThTotal<<"\n";
+        if (M_numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
+        M_nbThTotal=getNbMaxThread(); 
+        std::cout<<"[INFO]: Nb max Thread="<<M_nbThTotal<<"\n";
 
         #ifdef COMPILE_WITH_HIP
             std::cout<<std::endl;
@@ -597,13 +605,16 @@ void Task::getInformation()
                 std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
                 std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
                 std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
-                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<<2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerBlock          = "<<devProp.maxThreadsPerBlock<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<<devProp.maxThreadsPerMultiProcessor<<std::endl;
-                std::cout<<"[INFO]: max ThreadsDim 3D            = "<<devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
-                std::cout<<"[INFO]: max Grid Size 3D             = "<<devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
-                std::cout<<"[INFO]: total Global Mem             = "<<devProp.totalGlobalMem<<std::endl;
-                std::cout<<"[INFO]: shared Mem Per Block         = "<<devProp.sharedMemPerBlock<<std::endl;
+                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
+                std::cout<<"[INFO]: max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
+                std::cout<<"[INFO]: max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
+                std::cout<<"[INFO]: warpSize:                    = "<< devProp.warpSize << "\n";
+                std::cout<<"[INFO]: regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
+                std::cout<<"[INFO]: concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
+                std::cout<<"[INFO]: total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
+                std::cout<<"[INFO]: shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
             }
 
             HIP_CHECK(hipSetDevice(0));
@@ -634,13 +645,16 @@ void Task::getInformation()
                 std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
                 std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
                 std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
-                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<<2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerBlock          = "<<devProp.maxThreadsPerBlock<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<<devProp.maxThreadsPerMultiProcessor<<std::endl;
-                std::cout<<"[INFO]: max ThreadsDim 3D            = "<<devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
-                std::cout<<"[INFO]: max Grid Size 3D             = "<<devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
-                std::cout<<"[INFO]: total Global Mem             = "<<devProp.totalGlobalMem<<std::endl;
-                std::cout<<"[INFO]: shared Mem Per Block         = "<<devProp.sharedMemPerBlock<<std::endl;
+                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
+                std::cout<<"[INFO]: max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
+                std::cout<<"[INFO]: max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
+                std::cout<<"[INFO]: warpSize:                    = "<< devProp.warpSize << "\n";
+                std::cout<<"[INFO]: regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
+                std::cout<<"[INFO]: concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
+                std::cout<<"[INFO]: total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
+                std::cout<<"[INFO]: shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
             }
 
             cudaSetDevice(0);
@@ -680,10 +694,10 @@ void Task::getGPUInformationError()
 template<typename Kernel, typename Input, typename Output>
 void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
-    std::chrono::steady_clock::time_point t_begin2,t_end2;
-    std::chrono::steady_clock::time_point t_begin3,t_end3;
-    t_begin2 = std::chrono::steady_clock::now();
+    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
+    std::chrono::steady_clock::time_point M_t_begin2,M_t_end2;
+    std::chrono::steady_clock::time_point M_t_begin3,M_t_end3;
+    M_t_begin2 = std::chrono::steady_clock::now();
     typename Input::Scalar*  d_in;
     typename Output::Scalar* d_out;
     std::ptrdiff_t in_bytes  = in.size()  * sizeof(typename Input::Scalar);
@@ -699,13 +713,13 @@ void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Inp
     dim3 grids( (n+int(blocks.x)-1)/int(blocks.x) );
 
     hipDeviceSynchronize();
-    t_begin3 = std::chrono::steady_clock::now();
+    M_t_begin3 = std::chrono::steady_clock::now();
     //hipLaunchKernelGGL(..., blocks, threads, 0, 0, nbElement,.....);
     hipLaunchKernelGGL(HIP_KERNEL_NAME(
         run_on_gpu_kernel_1D<Kernel,typename std::decay<decltype(*d_in)>::type,typename std::decay<decltype(*d_out)>::type>), 
                 dim3(grids), dim3(blocks), 0, 0, kernel_function, n, d_in, d_out);
 
-    t_end3 = std::chrono::steady_clock::now();
+    M_t_end3 = std::chrono::steady_clock::now();
     getGPUInformationError();
     
     hipMemcpy(const_cast<typename Input::Scalar*>(in.data()),  d_in,  in_bytes,  hipMemcpyDeviceToHost);
@@ -713,12 +727,12 @@ void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Inp
     HIP_ASSERT(hipFree(d_in));
     HIP_ASSERT(hipFree(d_out));    
 
-    t_end2 = std::chrono::steady_clock::now();
-    long int t_laps3= std::chrono::duration_cast<std::chrono::microseconds>(t_end3 - t_begin3).count();
-    long int t_laps2= std::chrono::duration_cast<std::chrono::microseconds>(t_end2 - t_begin2).count();
+    M_t_end2 = std::chrono::steady_clock::now();
+    long int M_t_laps3= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end3 - M_t_begin3).count();
+    long int M_t_laps2= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end2 - M_t_begin2).count();
     if (1==1) {
-        std::cout << "[INFO]: Elapsed microseconds inside: "<<t_laps3<< " us\n";    
-        std::cout << "[INFO]: Elapsed microseconds inside + memory copy: "<<t_laps2<< " us\n";
+        std::cout << "[INFO]: Elapsed microseconds inside: "<<M_t_laps3<< " us\n";    
+        std::cout << "[INFO]: Elapsed microseconds inside + memory copy: "<<M_t_laps2<< " us\n";
         std::cout << "[INFO]: nb grids: "<<grids.x<<" "<<grids.y<<" "<<grids.z<< "\n";
         std::cout << "[INFO]: nb block: "<<blocks.x<<" "<<blocks.y<<" "<<blocks.z<< "\n";
     }
@@ -727,24 +741,23 @@ void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Inp
 template<typename Kernel, typename Input, typename Output>
 void Task::run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
+    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
 }
 
 template<typename Kernel, typename Input, typename Output>
 void Task::run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
+    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
 }
 
 
 template<typename Kernel, typename Input, typename Output>
 void Task::run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Output& out)
 {
-  if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
+  if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
   for(int i=0; i<n; i++)
     kernel_function(i, in.data(), out.data());
 }
-
 
 
 #endif
@@ -785,15 +798,15 @@ void Task::addTaskMultithread( Ts && ... ts )
             return true; 
 	};
 
-    if (!qDetach)
+    if (!M_qDetach)
     {
         std::thread th(LamdaTransfert);
-        mythreads.push_back(std::move(th));
+        M_mythreads.push_back(std::move(th));
     }
     else
     {
-        if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
+        if (M_qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        M_myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
 }
@@ -809,15 +822,15 @@ void Task::addTaskAsync( Ts && ... ts )
             return true; 
 		};
 
-    if (!qDetach)
+    if (!M_qDetach)
     {
-        if (qDeferred) { myfutures.emplace_back(std::async(std::launch::deferred,LamdaTransfert));}
-        else           { myfutures.emplace_back(std::async(std::launch::async,LamdaTransfert)); }
+        if (M_qDeferred) { M_myfutures.emplace_back(std::async(std::launch::deferred,LamdaTransfert));}
+        else           { M_myfutures.emplace_back(std::async(std::launch::async,LamdaTransfert)); }
     }
     else
     {
-        if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
+        if (M_qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        M_myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
 
     usleep(1);
@@ -835,9 +848,9 @@ void Task::addTaskSpecx( Ts && ... ts )
 					Backend::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 				);
-    if (!qDetach)
+    if (!M_qDetach)
     {
-        std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tp);
+        std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
         usleep(0); std::atomic_int counter(0);
     }
     else
@@ -857,15 +870,15 @@ void Task::addTaskjthread( Ts && ... ts )
             return true; 
 	};
 
-    if (!qDetach)
+    if (!M_qDetach)
     {
         std::jthread th(LamdaTransfert);
         myjthreads.push_back(std::move(th));
     }
     else
     {
-        if (qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
-        myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
+        if (M_qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        M_myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
 }
@@ -875,13 +888,13 @@ void Task::addTaskjthread( Ts && ... ts )
 template <typename ... Ts>
 void Task::add( Ts && ... ts )
 {
-    numLevelAction=1;
-    QEmptyTask=false;
-    idk++; idType.push_back(numTypeTh); numTaskStatus.push_back(qDetach);
-    if (qDetach) { QFlagDetachAlert=true; nbThreadDetach++; }
-    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
-    //std::cout<<"numTypeTh="<<numTypeTh<<"\n";
-    switch(numTypeTh) {
+    M_numLevelAction=1;
+    M_qEmptyTask=false;
+    M_idk++; M_idType.push_back(M_numTypeTh); M_numTaskStatus.push_back(M_qDetach);
+    if (M_qDetach) { M_qFlagDetachAlert=true; M_nbThreadDetach++; }
+    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
+    //std::cout<<"M_numTypeTh="<<M_numTypeTh<<"\n";
+    switch(M_numTypeTh) {
         case 1: addTaskMultithread(std::forward<Ts>(ts)...); //multithread
         break;
         case 2: addTaskAsync(std::forward<Ts>(ts)...); //std::async
@@ -894,26 +907,26 @@ void Task::add( Ts && ... ts )
         #endif
         default: addTaskSimple(std::forward<Ts>(ts)...); //No Thread
     }
-    qDetach=false;
+    M_qDetach=false;
     //std::cout<<"[INFO] :ADD OK"<<std::endl;
 }
 
 
 auto Task::getIdThread(int i)
 {
-    if ((i>0) && (i<idType.size()))
+    if ((i>0) && (i<M_idType.size()))
     {
-        int nb=idType.size();
-        int numidType=idType[i];
+        int nb=M_idType.size();
+        int numM_idType=M_idType[i];
         int k=0; int ki=-1; bool qOn=true;
         while (qOn)
         {
-            if (idType[k]==numidType) { ki++; }
+            if (M_idType[k]==numM_idType) { ki++; }
             k++; if (k>i) { qOn=false; }
         }
 
-        switch(numidType) {
-            case 1: return(mythreads[ki].get_id());//multithread
+        switch(numM_idType) {
+            case 1: return(M_mythreads[ki].get_id());//multithread
             break;
             case 2:  //std::async
             break;
@@ -926,7 +939,7 @@ auto Task::getIdThread(int i)
 
         }
     }
-    return(mythreads[0].get_id());
+    return(M_mythreads[0].get_id());
 }
 
 
@@ -934,20 +947,20 @@ auto Task::getIdThread(int i)
 template <class InputIterator,typename ... Ts>
     void Task::for_each(InputIterator first, InputIterator last,Ts && ... ts)
 {
-    qUseIndex=true; //Iterator used
-    numLevelAction=1;
-    QEmptyTask=false;
-    if (qFirstTask) { t_begin = std::chrono::steady_clock::now(); qFirstTask=false;}
+    M_qUseIndex=true; //Iterator used
+    M_numLevelAction=1;
+    M_qEmptyTask=false;
+    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
     for ( ; first!=last; ++first )
     {
-        idk++; idType.push_back(numTypeTh);
+        M_idk++; M_idType.push_back(M_numTypeTh);
         auto const& ivdk = *first;
         //std::cout <<ivdk;
 
         auto args = NA::make_arguments( std::forward<Ts>(ts)... );
         auto && task = args.get(_task);
         auto && parameters = args.get_else(_parameters,std::make_tuple());
-        if (qUseIndex) { std::get<0>(parameters)=std::cref(ivdk); } 
+        if (M_qUseIndex) { std::get<0>(parameters)=std::cref(ivdk); } 
         auto tp=std::tuple_cat( 
 					Backend::makeSpData( parameters ), 
 					std::make_tuple( task ) 
@@ -955,42 +968,42 @@ template <class InputIterator,typename ... Ts>
 
         Backend::Runtime runtime;
 
-        if (numTypeTh==0) {
+        if (M_numTypeTh==0) {
             std::apply( [&runtime](auto... args){ runtime.task(args...); }, tp );
         }
 
-        if (numTypeTh==1) {
+        if (M_numTypeTh==1) {
             auto LamdaTransfert = [&]() {
 			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
             };
             std::thread th(LamdaTransfert);
-            mythreads.push_back(std::move(th));
+            M_mythreads.push_back(std::move(th));
             usleep(1);
         }
 
-        if (numTypeTh==2) {
+        if (M_numTypeTh==2) {
             auto LamdaTransfert = [&]() {
 			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
 		    };
 
-            if (qDeferred) { myfutures.emplace_back(std::async(std::launch::deferred,LamdaTransfert));}
-            else           { myfutures.emplace_back(std::async(std::launch::async,LamdaTransfert)); }
+            if (M_qDeferred) { M_myfutures.emplace_back(std::async(std::launch::deferred,LamdaTransfert));}
+            else           { M_myfutures.emplace_back(std::async(std::launch::async,LamdaTransfert)); }
             usleep(1);
         }
 
-        if (numTypeTh==3) {
+        if (M_numTypeTh==3) {
             auto tp=std::tuple_cat( 
 					Backend::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 			);
-            std::apply([&](auto &&... args) { mytg.task(args...).setTaskName("Op("+std::to_string(idk)+")"); },tp);
+            std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
             usleep(0); std::atomic_int counter(0);
         }
 
         #ifdef COMPILE_WITH_CXX_20
-        if (numTypeTh==4) {
+        if (M_numTypeTh==4) {
             auto LamdaTransfert = [&]() {
 			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -1007,61 +1020,61 @@ template <class InputIterator,typename ... Ts>
 
 void Task::run()
 {
-    if (QEmptyTask) { std::cout<<"[INFO]: Run failed empty task\n"; exit(0); }
-    numLevelAction=2;
-    if (qInfo) { std::cout<<"[INFO]: Run\n"; }
-    if (numTypeTh==0) { } //No Thread
-    if (numTypeTh==1) { 
-        for (std::thread &t : mythreads) { t.join();} 
+    if (M_qEmptyTask) { std::cout<<"[INFO]: Run failed empty task\n"; exit(0); }
+    M_numLevelAction=2;
+    if (M_qInfo) { std::cout<<"[INFO]: Run\n"; }
+    if (M_numTypeTh==0) { } //No Thread
+    if (M_numTypeTh==1) { 
+        for (std::thread &t : M_mythreads) { t.join();} 
     } //multithread
 
-    if (numTypeTh==2) { 
-        for( auto& r : myfutures){ auto a =  r.get(); }; 
+    if (M_numTypeTh==2) { 
+        for( auto& r : M_myfutures){ auto a =  r.get(); }; 
     } //std::async
 
-    if (numTypeTh==3) { 
+    if (M_numTypeTh==3) { 
         /*promise0.set_value(0);*/ 
-        mytg.waitAllTasks();
+        M_mytg.waitAllTasks();
     } //Specx
 
     #ifdef COMPILE_WITH_CXX_20
-    if (numTypeTh==4) { 
+    if (M_numTypeTh==4) { 
         for (std::jthread &t : myjthreads) { t.join();} 
     } //std::jthread
     #endif
 
-    if (numTypeTh==10) { 
-        for (int i = 0; i < mypthread_cpu.size(); i++) { 
+    if (M_numTypeTh==10) { 
+        for (int i = 0; i < M_mypthread_cpu.size(); i++) { 
             std::cout<<"[INFO]: Joint "<<i<<"\n";
-            pthread_join(mypthread_t[i], NULL); 
+            pthread_join(M_mypthread_t[i], NULL); 
         }
-        //pthread_attr_destroy(&mypthread_attr_t);
+        //pthread_attr_destroy(&M_mypthread_attr_t);
     } //In CPU
 
-    mythreads.clear();
-    myfutures.clear();
+    M_mythreads.clear();
+    M_myfutures.clear();
     #ifdef COMPILE_WITH_CXX_20
     myjthreads.clear();
     #endif
 
-    numTaskStatus.clear();
-    idType.clear();
+    M_numTaskStatus.clear();
+    M_idType.clear();
 
-    if (qInfo) { std::cout<<"[INFO]: All Tasks Accomplished\n"; }
-    QEmptyTask=true;
+    if (M_qInfo) { std::cout<<"[INFO]: All Tasks Accomplished\n"; }
+    M_qEmptyTask=true;
 }
 
 void Task::close()
 {
-    if (QFlagDetachAlert) {
-        if (qInfo) { std::cout<<"[INFO]: Detach processes are still running...\n"; }
-        if (qInfo) { std::cout<<"[INFO]: Please wait before closing.\n"; }
+    if (M_qFlagDetachAlert) {
+        if (M_qInfo) { std::cout<<"[INFO]: Detach processes are still running...\n"; }
+        if (M_qInfo) { std::cout<<"[INFO]: Please wait before closing.\n"; }
 
-        if ((numTypeTh>0) && (numTypeTh<10))
+        if ((M_numTypeTh>0) && (M_numTypeTh<10))
         {
-            if (myfuturesdetach.size()>0)
+            if (M_myfuturesdetach.size()>0)
             {
-                for( auto& r : myfuturesdetach) {
+                for( auto& r : M_myfuturesdetach) {
                     //std::cout <<"Detach Status=" <<r.valid() << '\n';
                     r.wait(); 
                 }
@@ -1069,42 +1082,42 @@ void Task::close()
         }      
     }
 
-    numLevelAction=3;
-    if (numTypeTh==0) {  } //No Thread
-    if (numTypeTh==1) {  } //multithread
-    if (numTypeTh==2) {  } //std::async
-    if (numTypeTh==3) { myce.stopIfNotAlreadyStopped(); } //Specx
-    if (!qFirstTask) { t_end = std::chrono::steady_clock::now(); qFirstTask=true;}
+    M_numLevelAction=3;
+    if (M_numTypeTh==0) {  } //No Thread
+    if (M_numTypeTh==1) {  } //multithread
+    if (M_numTypeTh==2) {  } //std::async
+    if (M_numTypeTh==3) { M_myce.stopIfNotAlreadyStopped(); } //Specx
+    if (!M_qFirstTask) { M_t_end = std::chrono::steady_clock::now(); M_qFirstTask=true;}
 
-    if (myfuturesdetach.size()>0) { myfuturesdetach.clear(); }
+    if (M_myfuturesdetach.size()>0) { M_myfuturesdetach.clear(); }
 
-    if (qInfo) { std::cout<<"[INFO]: Close All Tasks and process\n"; }
-    idk=0;
+    if (M_qInfo) { std::cout<<"[INFO]: Close All Tasks and process\n"; }
+    M_idk=0;
 }
 
 void Task::debriefingTasks()
 {
-    t_laps=std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count();
+    M_t_laps=std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
 
-    if (qViewChrono) {  
-        if (qInfo) { std::cout << "[INFO]: Elapsed microseconds: "<<t_laps<< " us\n"; }
+    if (M_qViewChrono) {  
+        if (M_qInfo) { std::cout << "[INFO]: Elapsed microseconds: "<<M_t_laps<< " us\n"; }
     }
 
-    if (qSave)
+    if (M_qSave)
     {
-        if (numTypeTh==3) { 
-            std::cout << "[INFO]: Save "<<FileName<< "\n";
-            mytg.generateDot(FileName+".dot",true); 
-            mytg.generateTrace(FileName+".svg",true); 
+        if (M_numTypeTh==3) { 
+            std::cout << "[INFO]: Save "<<M_FileName<< "\n";
+            M_mytg.generateDot(M_FileName+".dot",true); 
+            M_mytg.generateTrace(M_FileName+".svg",true); 
         }
 
         std::ofstream myfile;
-        myfile.open (FileName+".csv");
-        myfile << "Elapsed microseconds,"<< t_laps<<"\n";
-        myfile << "Nb max Thread,"<< nbThTotal<<"\n";
-        myfile << "Nb Thread used,"<< nbTh<<"\n";
-        myfile << "Nb Thread Detach used,"<<nbThreadDetach<<"\n";
-        myfile << "Mode,"<< numTypeTh<<"\n";
+        myfile.open (M_FileName+".csv");
+        myfile << "Elapsed microseconds,"<< M_t_laps<<"\n";
+        myfile << "Nb max Thread,"<< M_nbThTotal<<"\n";
+        myfile << "Nb Thread used,"<< M_nbTh<<"\n";
+        myfile << "Nb Thread Detach used,"<<M_nbThreadDetach<<"\n";
+        myfile << "Mode,"<< M_numTypeTh<<"\n";
         myfile.close();
     }
 } 
@@ -1123,7 +1136,7 @@ template <typename ... Ts>
 void Task::add(int numCPU,Ts && ... ts)
 {
     //Run in num CPU
-    mypthread_cpu.push_back(numCPU);
+    M_mypthread_cpu.push_back(numCPU);
     pthread_t new_thread;
     
 
@@ -1145,13 +1158,13 @@ void Task::add(int numCPU,Ts && ... ts)
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(numCPU, &cpuset);
-    pthread_attr_setaffinity_np(&mypthread_attr_t, sizeof(cpuset), &cpuset);
-    int ret=pthread_create(&new_thread,&mypthread_attr_t,WorkerInNumCPU,&func);
+    pthread_attr_setaffinity_np(&M_mypthread_attr_t, sizeof(cpuset), &cpuset);
+    int ret=pthread_create(&new_thread,&M_mypthread_attr_t,WorkerInNumCPU,&func);
     if (ret) { std::cerr << "Error in creating thread" << std::endl; }
 
-    mypthread_t.push_back(new_thread);
+    M_mypthread_t.push_back(new_thread);
 
-    //pthread_attr_destroy(&mypthread_attr_t);
+    //pthread_attr_destroy(&M_mypthread_attr_t);
 
     //vectorOfThreads.resize(NUM_THREADS);
 }
@@ -1162,19 +1175,19 @@ void Task::add(int numCPU,Ts && ... ts)
 template <typename ... Ts>
 void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 {
-    int nbTh=numCPU.size();
-    pthread_t thread_array[nbTh];
-    pthread_attr_t pta_array[nbTh];
+    int M_nbTh=numCPU.size();
+    pthread_t thread_array[M_nbTh];
+    pthread_attr_t pta_array[M_nbTh];
 
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_task);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
     Backend::Runtime runtime;
-    qUseIndex=true;
+    M_qUseIndex=true;
     
-    for (int i = 0; i < nbTh; i++) {
-        int const& idk = i;
-        if (qUseIndex) { std::get<0>(parameters)=idk; }
+    for (int i = 0; i < M_nbTh; i++) {
+        int const& M_idk = i;
+        if (M_qUseIndex) { std::get<0>(parameters)=M_idk; }
         auto tp=std::tuple_cat( 
                 Backend::makeSpData( parameters ), 
                         std::make_tuple( task ) 
@@ -1194,11 +1207,11 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
         if (pthread_create(&thread_array[i],&pta_array[i],WorkerInNumCPU,&func)) { std::cerr << "Error in creating thread" << std::endl; }
     }
 
-    for (int i = 0; i < nbTh; i++) {
+    for (int i = 0; i < M_nbTh; i++) {
             pthread_join(thread_array[i], NULL);
     }
 
-    for (int i = 0; i < nbTh; i++) {
+    for (int i = 0; i < M_nbTh; i++) {
             pthread_attr_destroy(&pta_array[i]);
     }
 }
