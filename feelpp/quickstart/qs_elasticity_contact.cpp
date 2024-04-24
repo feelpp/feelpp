@@ -1,6 +1,8 @@
-#include "qs_elasticity_contact_nitsche.hpp"
-#include "qs_elasticity_contact_penalty.hpp"
 #include "qs_elasticity_contact_static.hpp"
+#include "qs_elasticity_contact_dynamic.hpp"
+#include "qs_contact_lagrange.hpp"
+
+
 
 int main(int argc, char** argv)
 {
@@ -24,54 +26,84 @@ int main(int argc, char** argv)
 
         int dimension = specs["/Models/LinearElasticity/dimension"_json_pointer];
         int order = specs["/Models/LinearElasticity/order"_json_pointer];
+        int orderGeo = specs["/Models/LinearElasticity/orderGeo"_json_pointer];
         bool sta = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
-
+        std::string method = specs["/Collision/LinearElasticity/method"_json_pointer];
+        
         if ( dimension == 2 && order == 1)
         {
             if (sta)
             {
-                    ContactStatic<2, 1> ContactStatic(specs);
-                    ContactStatic.run();
+                ContactStatic<2, 1> ContactStatic(specs);
+                ContactStatic.run();
             }
             else 
             {
-                std::cout << "TODO" << std::endl;
+                if (orderGeo == 1)
+                {
+                    ContactDynamic<2,1,1> ContactDynamic(specs);
+                    ContactDynamic.run();
+                }
+                else if (orderGeo == 2)
+                {
+                    ContactDynamic<2,1,2> ContactDynamic(specs);
+                    ContactDynamic.run();
+                }
             }
         }
         else if ( dimension == 2 && order == 2)
         {
             if (sta)
             {
-                    ContactStatic<2, 2> ContactStatic(specs);
-                    ContactStatic.run();
+                ContactStatic<2, 2> ContactStatic(specs);
+                ContactStatic.run();
             }
             else 
             {
-                std::cout << "TODO" << std::endl;
+                if (orderGeo == 1)
+                {
+                    if (method.compare("lagrange") == 0)
+                    {
+                        ContactDynamicLagrange<2,2,1> ContactDynamicLagrange(specs);
+                        ContactDynamicLagrange.run();             
+                    }
+                    else 
+                    {
+                        ContactDynamic<2,2,1> ContactDynamic(specs);
+                        ContactDynamic.run();
+                    }
+                }
+                else if (orderGeo == 2)
+                {
+                    ContactDynamic<2,2,2> ContactDynamic(specs);
+                    ContactDynamic.run();
+                }
             }
         }
         else if ( dimension == 3 && order == 1)
         {
             if (sta)
             {
-                    ContactStatic<3, 1> ContactStatic(specs);
-                    ContactStatic.run();
+                ContactStatic<3, 1> ContactStatic(specs);
+                ContactStatic.run();
             }
             else 
             {
-                std::cout << "TODO" << std::endl;
+                ContactDynamic<3,1,1> ContactDynamic(specs);
+                ContactDynamic.run();
             }
         }
         else if ( dimension == 3 && order == 2)
         {
             if (sta)
             {
-                    ContactStatic<3, 2> ContactStatic(specs);
-                    ContactStatic.run();
+                ContactStatic<3, 2> ContactStatic(specs);
+                ContactStatic.run();
             }
             else 
             {
-                std::cout << "TODO" << std::endl;
+                ContactDynamic<3,2,1> ContactDynamic(specs);
+                ContactDynamic.run();
             }
         }
         else
