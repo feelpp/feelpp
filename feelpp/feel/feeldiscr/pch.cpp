@@ -11,16 +11,4 @@ template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<0,Scalar>>>;
 template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>>;
 template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>>;
 template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>>;
-
-
-template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<0,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<1,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<2,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<3,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-
-template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<0,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>,double, Periodicity <NoPeriodicity>,mortars<NoMortar>>;
-
 }

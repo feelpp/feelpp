@@ -39,7 +39,7 @@ class CMakeBuild(build_ext):
             '-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@',
             '-DCMAKE_INSTALL_PREFIX=@CMAKE_INSTALL_PREFIX@',
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-            '-DPYTHON_EXECUTABLE=' + sys.executable,
+            '-DPython3_EXECUTABLE=' + sys.executable,
             '-DFEELPP_DIR=@FEELPP_DIR@',
             '-DFEELPP_TOOLBOXES_DIR=@FEELPP_TOOLBOXES_DIR@']
 

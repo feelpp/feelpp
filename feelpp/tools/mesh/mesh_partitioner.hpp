@@ -115,7 +115,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
         fs::path inputDir = inputPathMesh.parent_path();
         std::string inputFilenameWithoutExt = inputPathMesh.stem().string();
 
-        std::vector<elements_reference_wrapper_t<mesh_type>> partitionByRange;
+        std::vector<Range<mesh_type,MESH_ELEMENTS>> partitionByRange;
         if ( Environment::vm().count("by-markers-desc") )
         {
             std::vector<std::string> inputMarkers = Environment::vm()["by-markers-desc"].template as<std::vector<std::string> >();
@@ -164,7 +164,15 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
             fs::path outputDirPath;
             if ( Environment::vm().count("odir") )
+            {
+                if ( !fs::exists( soption("odir") ) )
+                {
+                    // create the directory
+                    outputDirPath = fs::path( soption("odir") );
+                    fs::create_directories( outputDirPath );
+                }
                 outputDirPath = fs::canonical( soption("odir") );
+            }
             else
                 outputDirPath = fs::current_path();
             outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();

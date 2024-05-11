@@ -33,7 +33,7 @@
 namespace Feel {
 
 template<typename IteratorType, typename ...Args>
-using intersect_t = ext_entities_from_iterator_t<IteratorType>;
+using intersect_t = std::remove_const<decay_type<IteratorType>>;
 
 /**
  * this function takes a set of iterators over geometrical entities of the same
@@ -48,11 +48,11 @@ using intersect_t = ext_entities_from_iterator_t<IteratorType>;
  * auto submesh = createSubmesh( mesh, subset );
  * \endcode
  */
-template<typename IteratorType, typename... Args>
-FEELPP_EXPORT Feel::intersect_t<IteratorType>
-intersect( IteratorType&& it, Args&&... args )
+template<typename RangeType, typename... Args>
+FEELPP_EXPORT auto
+intersect( RangeType&& it, Args&&... args )
 {
-    return Feel::detail::intersect_impl( std::forward<IteratorType>(it), std::forward<Args>(args)... );
+    return Feel::detail::intersect_impl( std::forward<RangeType>(it), std::forward<Args>(args)... );
 }
 
 

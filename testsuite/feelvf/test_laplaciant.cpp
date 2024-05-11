@@ -62,8 +62,8 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_laplacian" ,
-                     "test_laplacian" ,
+    AboutData about( "test_laplaciant" ,
+                     "test_laplaciant" ,
                      "0.2",
                      "nD(n=2,3) test laplacian",
                      Feel::AboutData::License_GPL,

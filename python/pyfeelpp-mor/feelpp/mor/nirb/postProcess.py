@@ -6,6 +6,7 @@ import tikzplotlib
 import os
 from os.path import dirname, basename, isfile, join
 import glob
+import feelpp.core as fppc
 
 ## Functions to vizualise dataFrame
 

@@ -1,8 +1,42 @@
-name: Feel++ Builder
-run-name: "[${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}]"
+name: Feelpp Builder
+run-name: "Build Feelpp [ ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }} ] preset: ${{ github.event.client_payload.preset || inputs.preset }} "
 on: 
-  repository_dispatch:
-    types: [trigger-feelpp-build]
+   workflow_dispatch:
+     inputs:
+       flavor:
+         description: 'Distribution flavor'
+         required: true
+         default: 'ubuntu'
+         type: choice
+         options:
+         - 'ubuntu'
+         - 'debian'
+         - 'fedora'
+         - 'spack'
+       version:
+         description: 'Version of the distribution'  
+         required: true
+         default: "24.04"
+         type: choice
+         options: 
+         - '20.04' 
+         - '22.04'
+         - '24.04'
+         - '12'
+         - '37'
+         - 'openmpi'
+         - 'mpich'
+       preset:
+         description: 'Preset to use'  
+         required: false
+         type: choice
+         default: "release-clang-cmake"
+         options: 
+         - 'default'
+         - 'release-clang-cmake'
+         - 'release-clang-cpp20-cmake'
+   repository_dispatch:
+     types: [trigger-feelpp-build]
 
 jobs:
 
@@ -16,13 +50,13 @@ jobs:
     - run: echo ok go
 
   update_baseimage:
-    runs-on: self-docker-${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
+    runs-on: self-docker-${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }}
     needs: activate
     env:
-      flavor: ${{ github.event.client_payload.flavor }}
-      version: ${{ github.event.client_payload.version }}
-      tag: ${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
-    name: feelpp-runner:${{ github.event.client_payload.flavor }}-${{ github.event.client_payload.version }}
+      flavor: ${{ github.event.client_payload.flavor || inputs.flavor }}
+      version: ${{ github.event.client_payload.version || inputs.version }}
+      tag: ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }}
+    name: feelpp-runner:${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -33,13 +67,13 @@ jobs:
             . /etc/profile.d/modules.sh
             module load mpi/openmpi-x86_64
           fi
-          cmake --preset default 
+          cmake --preset ${{ github.event.client_payload.preset || inputs.preset }} 
       - name:   Build feelpp
-        run: cmake --build --preset default -j20
+        run: cmake --build --preset ${{ github.event.client_payload.preset || inputs.preset }} -j20
       - name:   Build feelpp
-        run: cmake --build --preset default -t install/fast
+        run: cmake --build --preset ${{ github.event.client_payload.preset || inputs.preset }} -t install/fast
       - name: Package feelpp
-        run: cmake --build --preset default -t package
+        run: cmake --build --preset ${{ github.event.client_payload.preset || inputs.preset }} -t package
    #   - name: Upload feelpp
    #     uses: actions/upload-artifact@v2
    #     with:

@@ -1,7 +1,7 @@
 import sys
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.solid import *
-e = feelpp.Environment(sys.argv, opts=toolboxes_options("solid"))
+e = fppc.Environment(sys.argv, opts=toolboxes_options("solid"))
 
 
 f=solid(dim=2,orderDisp=1)

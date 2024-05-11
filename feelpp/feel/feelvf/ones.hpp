@@ -148,7 +148,7 @@ public:
     {
         return M_values;
     }
-    constexpr evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+    constexpr evaluate_type evaluate( bool ) const
     {
         return M_values;
     }
