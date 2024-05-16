@@ -27,11 +27,28 @@ runApplicationFSI()
     auto add_force_term = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateLinear & data)
     {
         auto const& t = unwrap_ptr(FSImodel->solidModel());
-        contactForceModels<FEELPP_DIM,0>(t, data);
+        std::string wall_normal = (FEELPP_DIM==2)?std::string("{0.,1.}"):std::string("{0.,1.,0.}");
+        //double sigmaf = trans(expr<FEELPP_DIM,1>(wall_normal))*FSImodel->fieldNormalStressFromFluidPtr_solid();
+        //auto test = inner(expr<FEELPP_DIM,1>(wall_normal), idv(FSImodel->fieldNormalStressFromFluidPtr_solid()));
+        typename model_fsi_type::element_solid_normalstressfromfluid_ptrtype sigmaf = FSImodel->fieldNormalStressFromFluidPtr_solid();
+        contactForceModelsFSI<FEELPP_DIM,0,model_fsi_type>(t, sigmaf, data);
     };
+
+    /*
+    auto add_force_termR = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateResidual & data)
+    {
+        auto const& t = unwrap_ptr(FSImodel->solidModel());
+        std::string wall_normal = (FEELPP_DIM==2)?std::string("{0.,1.}"):std::string("{0.,1.,0.}");
+        //double sigmaf = trans(expr<FEELPP_DIM,1>(wall_normal))*FSImodel->fieldNormalStressFromFluidPtr_solid();
+        //auto test = inner(expr<FEELPP_DIM,1>(wall_normal), idv(FSImodel->fieldNormalStressFromFluidPtr_solid()));
+        typename model_fsi_type::element_solid_normalstressfromfluid_ptrtype sigmaf = FSImodel->fieldNormalStressFromFluidPtr_solid();
+        contactForceModelsFSI<FEELPP_DIM,1,model_fsi_type>(t, sigmaf, data);
+    };
+    */
 
 
     FSImodel->solidModel()->algebraicFactory()->addFunctionLinearAssembly( add_force_term );
+    //FSImodel->solidModel()->algebraicFactory()->addFunctionResidualAssembly( add_force_termR );
     // FSImodel->solidModel()->algebraicFactory()->addFunctionJacobianAssembly( std::bind( &self_type::updateLinearPDE_Solid,
     //                                                                             std::ref( *this ), std::placeholders::_1 ) );
     // FSImodel->solidModel()->algebraicFactory()->addFunctionResidualAssembly( std::bind( &self_type::updateLinearPDE_Solid,

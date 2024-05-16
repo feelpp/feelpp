@@ -348,6 +348,9 @@ public :
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 
+
+    element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
+
 private :
     void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
     void solveImpl1();
@@ -358,6 +361,8 @@ private :
     typedef typename fluid_type::operatorpcdbase_type operatorpcdbase_fluid_type;
     void initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD ) const;
     void updateInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD, DataUpdateBase & data ) const;
+
+
 private :
 
     fluid_ptrtype M_fluidModel;
@@ -435,7 +440,7 @@ private :
     space_solid_normalstressfromfluid_ptrtype M_spaceNormalStressFromFluid_solid;
     element_solid_normalstressfromfluid_ptrtype M_fieldNormalStressFromFluid_solid;
     typename solid_type::element_vectorial_ptrtype M_fieldVelocityInterfaceFromFluid_solid;
-    element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
+    //element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
     typename solid_type::element_vectorial_ptrtype fieldVelocityInterfaceFromFluidPtr_solid() const { return M_fieldVelocityInterfaceFromFluid_solid; }
     element_solid_normalstressfromfluid_type const& fieldNormalStressFromFluid_solid() const { return *M_fieldNormalStressFromFluid_solid; }
     typename solid_type::element_vectorial_type const& fieldVelocityInterfaceFromFluid_solid() const { return *M_fieldVelocityInterfaceFromFluid_solid; }

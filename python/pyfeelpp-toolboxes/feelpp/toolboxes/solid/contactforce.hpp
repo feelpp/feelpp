@@ -19,6 +19,8 @@
 #include <feel/feelvf/detail/ginacmatrix.hpp>
 #include <fmt/ostream.h>
 #include <feel/feelmesh/bvh.hpp>
+#include <feel/feelmodels/fsi/fsi.hpp>
+#include <feel/feeldiscr/minmax.hpp>
 
 #include "contactforceStatic.hpp"
 #include "contactforceDynamic.hpp"
@@ -48,6 +50,8 @@ contactForceModels(SolidMechanics const& t, DataType & data)
     // Get parameters form json
     std::string model = jsonCollisionForce["model"].get<std::string>(); 
     std::string type = jsonCollisionForce["type"].get<std::string>();
+    std::string method = jsonCollisionForce["method"].get<std::string>();
+    double epsilon = jsonCollisionForce["epsilon"].get<double>();
     std::vector<double> direction = jsonCollisionForce["walls"]["directions"].get<std::vector<double>>();
     double gamma0 = jsonCollisionForce["gamma_0"].get<double>();
     double theta =  jsonCollisionForce["theta"].get<double>();
@@ -73,7 +77,6 @@ contactForceModels(SolidMechanics const& t, DataType & data)
         // Type case : unilateral
         if (type.compare("unilateral") == 0)
         {
-
             if (nbr_walls == 1)
             {                
                 std::cout << " Steady collision algorithm " << std::endl;
@@ -104,8 +107,17 @@ contactForceModels(SolidMechanics const& t, DataType & data)
                 }
                 else 
                 {
-                    std::cout << " Dynamic collision algorithm " << std::endl;
-                    SingleUnilateralDynamic<nDim, residualType>(t, data, direction, gamma0, theta,setA, dispCondition, withMarker, raytracing, distance);
+                    if (method.compare("penalty") == 0)
+                    {
+                        std::cout << " Dynamic collision algorithm " << std::endl;
+                        SingleUnilateralDynamicPenalty<nDim, residualType>(t, data, direction, epsilon, distance);
+                    }
+                    else if (method.compare("nitsche") == 0)
+                    {
+                        std::cout << " Dynamic collision algorithm " << std::endl;
+                        SingleUnilateralDynamic<nDim, residualType>(t, data, direction, gamma0, theta,setA, dispCondition, withMarker, raytracing, distance);
+                    }
+
                 }
                 
             }   
@@ -122,3 +134,98 @@ contactForceModels(SolidMechanics const& t, DataType & data)
     }
 }
 
+
+template<int nDim, std::size_t residualType, typename FSIModel, typename SolidMechanics, typename DataType>
+void
+contactForceModelsFSI(SolidMechanics const& t, typename FSIModel::element_solid_normalstressfromfluid_ptrtype sigmafn, DataType & data)
+{
+    bool buildCstPart = data.buildCstPart();
+    if(buildCstPart)
+        return;
+    
+    std::cout << "apply fsi contact model" << std::endl;
+
+    // Get function sapces
+    auto Xh = t.functionSpaceDisplacement();
+   
+    auto const& u = t.fieldDisplacement();
+    
+    auto nw = vec(cst(0.),cst(-1.));
+    double g = 0;
+    
+    auto dist = Pch<1>(t.mesh())->element();
+    dist = project( _space=Pch<1>(t.mesh()), _range=elements( t.mesh() ), _expr = trans(nw)*(idv(u)));
+
+
+    auto [maxU,arg_maxU] = maxelt(_range=markedfaces(t.mesh(),"contact"), _element=dist);
+    std::cout << "maxU : " << maxU << std::endl;
+    
+    // maxU - g
+    if (maxU  >= -10)
+    {
+        std::cout << "Contact forces have to be applied" << std::endl;
+    
+    
+        /* Pour le premier cas on considère un rectangle: 
+        si max(u nw - g >= 0) alors tout le bord "contact" est en collision 
+        */ 
+
+        sparse_matrix_ptrtype& A = data.matrix();
+        vector_ptrtype& F = data.rhs();
+        //vector_ptrtype& F = data.residual();
+
+        auto bilinearFormDD = form2( _test=Xh,_trial=Xh,_matrix=A );
+        auto linearFormDisp = form1( _test=Xh, _vector=F);
+
+        double E = 1.5e8;
+        double nu = 0.49;
+        double gamma = 0.001;
+
+        double lambda = E*nu/( (1+nu)*(1-2*nu) );
+        double mu =  E/(2*(1+nu));
+     
+        auto const Id = eye<nDim,nDim>();
+        auto epst = sym(gradt(u));
+        auto eps = sym(grad(u));
+        auto epsv = sym(gradv(u));
+
+        auto sigmat = (lambda*trace(epst)*Id + 2*mu*epst)*N();
+        auto sigma = (lambda*trace(eps)*Id + 2*mu*eps)*N();
+        auto sigmav = (lambda*trace(epsv)*Id + 2*mu*epsv)*N();
+
+        std::cout << "add contact terms using Nitsche theta = 0" << std::endl;
+
+        bilinearFormDD += integrate (_range=markedfaces(t.mesh(), "contact"),_expr= inner(cst(gamma)*trans(nw)*idt(u) - trans(nw)*sigmat, trans(nw)*id(u)) ,_geomap=t.geomap() );
+        //linearFormDisp += integrate (_range=markedfaces(t.mesh(), "contact"),_expr= inner(cst(gamma)*cst(g) + trans(nw)*idv(sigmafn), trans(nw)*id(u)) ,_geomap=t.geomap() ); 
+        
+        linearFormDisp += integrate (_range=markedfaces(t.mesh(), "contact"),_expr= inner(trans(nw)*idv(sigmafn), trans(nw)*id(u)) ,_geomap=t.geomap() );
+    
+        auto exp =  exporter(_mesh = t.mesh(), _name = "Collision" );
+        exp->addRegions();
+    
+        auto Vh = Pch<1>(t.mesh());
+        auto a = project(_space= Vh, _range=markedfaces(t.mesh(), "contact"), _expr = cst(gamma)*trans(nw)*idv(u) - trans(nw)*sigmav);
+
+        //std::cout << "a : " << a << std::endl;
+
+        auto f = project(_space= Vh, _range=markedfaces(t.mesh(), "contact"), _expr = cst(gamma)*cst(g) + trans(nw)*idv(sigmafn));
+
+        //std::cout << "f : " << f << std::endl;
+
+        auto pressure = project(_space= Vh, _range=markedfaces(t.mesh(), "contact"), _expr = trans(nw)*sigmav);
+
+        //std::cout << "pressure : " << pressure << std::endl;
+
+
+        exp->add( "a", a);
+        exp->add( "f", f);
+        exp->add( "pressure", pressure);
+        exp->add( "sigmafn", idv(sigmafn));
+    
+        exp->save();
+    
+        A->close();
+        F->close();
+    }
+    
+}
