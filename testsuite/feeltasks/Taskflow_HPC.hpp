@@ -72,11 +72,27 @@
 //#define COMPILE_WITH_CXX_20
 //#define USE_GPU_HIP  // <**** temporary
 
+//Links mpi
+//#define USE_MPI
+#ifdef USE_MPI
+    #include <mpi.h>
+#endif
 
-#define MODE_NO_THREAD 0
-#define MODE_THREAD 1
-#define MODE_ASYNC 2
-#define MODE_SPECX 3
+//Links omp
+//#define USE_OpenMP
+#ifdef USE_OpenMP
+	#include <omp.h>
+#endif
+
+
+
+//#define COMPILE_WITH_CUDA
+//#define COMPILE_WITH_HIP
+//#define USE_GPU_HIP  // <**** temporary
+
+//#define UseCUDA
+//#define UseHIP
+
 
 //Links HIP
 #ifdef COMPILE_WITH_HIP
@@ -84,6 +100,283 @@
     #include "hip/hip_runtime_api.h"
 #endif
 
+//Links CUDA
+//#include "cuda_runtime.h"
+//#include "cuda.h"
+
+
+//#define COMPILE_WITH_CXX_20
+
+#define MODE_NO_THREAD 0
+#define MODE_THREAD 1
+#define MODE_ASYNC 2
+#define MODE_SPECX 3
+
+#define MODE_HIP  30
+#define MODE_CUDA 31
+
+
+// Some macro functions for the AMD HIP GPU
+#define HIP_KERNEL_NAME(...) __VA_ARGS__
+
+#define HIP_CHECK(command) {               \
+  hipError_t status = command;             \
+  if (status!=hipSuccess) {                \
+    std::cerr <<"Error: HIP reports "<< hipGetErrorString(status)<< std::endl; \
+    std::abort(); } }
+
+
+#ifdef NDEBUG
+    #define HIP_ASSERT(x) x
+#else
+    #define HIP_ASSERT(x) (assert((x)==hipSuccess))
+#endif
+
+
+#define CUDA_CHECK(command) {               \
+  cudaError_t status = command;             \
+  if (status!=hipSuccess) {                \
+    std::cerr <<"Error: CUDA reports "<< cudaGetErrorString(status)<< std::endl; \
+    std::abort(); } }
+
+
+#ifdef NDEBUG
+    #define CUDA_ASSERT(x) x
+#else
+    #define CUDA_ASSERT(x) (assert((x)==cudaSuccess))
+#endif
+
+
+
+
+
+//================================================================================================================================
+// Get Information System CPI and GPU
+//================================================================================================================================
+
+namespace LEM {
+
+void readFileViewInformation(char *filename) 
+{
+	FILE* FICH = NULL;
+    int c = 0;
+	FICH = fopen(filename, "r");
+    if (FICH != NULL) { do { c = fgetc(FICH); printf("%c",c); } while (c != EOF); fclose(FICH); }
+}
+
+
+void scanInformationSystem()
+{
+	int Value;
+	std::cout <<"\n";
+	std::cout << "[INFO]: Scan Information System..."<<"\n";
+	Value=std::system("lscpu>InfoSystemCPU.txt");
+	Value=std::system("lshw -C display>InfoSystemGPU.txt");
+	std::cout <<"\n";
+    std::cout <<"\n";
+}
+
+void getInformationCPU()
+{
+	std::cout <<"\n";
+	std::cout << "[INFO]: Information CPU"<<"\n";
+    std::cout <<"\n";
+	readFileViewInformation("InfoSystemCPU.txt");
+	std::cout <<"\n";
+    std::cout <<"\n";
+}
+
+void getInformationGPU()
+{
+	std::cout <<"\n";
+	std::cout << "[INFO]: Information GPU"<<"\n";
+    std::cout <<"\n";
+	readFileViewInformation("InfoSystemGPU.txt");
+	std::cout <<"\n";
+    std::cout <<"\n";
+}
+
+#ifdef USE_MPI
+void getMpiInformation(int argc, char *argv[])
+{
+	//BEGIN::INFO MPI
+	bool qFullInfoSystem=false;
+    MPI_Init(NULL, NULL);
+    int world_rank,world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
+    MPI_Get_processor_name(processor_name,&name_len);
+
+    if (world_rank == 0) { 
+	  	std::cout <<"\n";
+      	int numCPU = sysconf(_SC_NPROCESSORS_ONLN);
+      	std::cout << "[INFO]: MPI Name worlds processor: "<<processor_name<<"\n";
+      	std::cout << "[INFO]: MPI Nb CPU available: "<<numCPU<< "\n";
+      	std::cout <<"\n";
+      	std::cout << "[INFO]: MPI Scan..."<<"\n";
+    }
+    std::cout << "[INFO]: MPI Rank: "<<world_rank<<" out of "<<world_size<<"\n";
+    MPI_Finalize();
+	//END::INFO MPI
+}
+#endif
+
+#ifdef USE_OpenMP
+void getOpenMPInformation()
+{
+    std::cout << "[INFO]: OpenMP Nb num procs: "<<omp_get_num_procs( )<< "\n";
+    std::cout << "[INFO]: OpenMP Nb max threads: "<<omp_get_max_threads()<< "\n";
+}
+#endif
+
+void getShortInformationGPU()
+{
+	int deviceCount=0;
+	std::cout <<"\n";
+	std::cout << "[INFO]: Information GPU"<<"\n";
+
+	//#ifdef COMPILE_WITH_HIP && UseHIP
+    #ifdef UseHIP
+		hipGetDeviceCount(&deviceCount);
+		if (deviceCount>0) {
+			std::cout << "[INFO]: Number of available GPUs AMD: " << deviceCount << "\n";
+			for (int deviceId = 0; deviceId < deviceCount; ++deviceId) {
+				hipSetDevice(deviceId);
+				std::cout << "[INFO]: GPU " << deviceId << " initialized and resources allocated." << "\n";
+			}
+		}
+	#endif
+
+	#ifdef COMPILE_WITH_CUDA && useCUDA
+		cudaGetDeviceCount(&deviceCount);
+		if (deviceCount>0) {
+			std::cout << "[INFO]: Number of available GPUs NVIDIA: " << deviceCount << "\n";
+			for (int deviceId = 0; deviceId < deviceCount; ++deviceId) {
+				cudaSetDevice(deviceId);
+				std::cout << "[INFO]: GPU " << deviceId << " initialized and resources allocated." << "\n";
+			}
+		}
+	#endif
+	std::cout <<"\n";
+	if (deviceCount == 0) { std::cerr << "[INFO]: No GPUs found. Exiting." << "\n"; }
+}
+
+
+void getHipInformation()
+{
+  //BEGIN::INFO HIP AMD
+    //#ifdef COMPILE_WITH_HIP && UseHIP
+    #ifdef UseHIP
+    std::cout<<std::endl;
+    int numDevices=0;
+    HIP_CHECK(hipGetDeviceCount(&numDevices));
+    std::cout<<"[INFO]: Get numDevice                = "<<numDevices<<"\n";
+    int deviceID=0;
+    HIP_CHECK(hipGetDevice(&deviceID));
+    std::cout<<"[INFO]: Get deviceID activated       = "<<deviceID<<"\n";
+    deviceID=0;
+    hipSetDevice(deviceID);
+
+    hipDeviceProp_t devProp;
+    for (int i = 0; i < numDevices; i++)
+    {
+                HIP_CHECK(hipSetDevice(i));
+                HIP_CHECK(hipGetDeviceProperties(&devProp,i));
+                std::cout<<"[INFO]:"<<std::endl;
+                std::cout<<"[INFO]: DeviceID                     = "<<i<<std::endl;
+                std::cout<<"[INFO]: Agent prop name              = "<< devProp.name<<std::endl;
+                std::cout<<"[INFO]: System minor                 = "<< devProp.minor<<std::endl;
+                std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
+                std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
+                std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
+                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
+                std::cout<<"[INFO]: max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
+                std::cout<<"[INFO]: max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
+                std::cout<<"[INFO]: warpSize:                    = "<< devProp.warpSize << "\n";
+                std::cout<<"[INFO]: regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
+                std::cout<<"[INFO]: concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
+                std::cout<<"[INFO]: total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
+                std::cout<<"[INFO]: shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
+    }
+    //(...)
+    HIP_CHECK(hipSetDevice(0));
+    std::cout<<std::endl;
+    //END::INFO HIP AMD
+    #endif
+}
+
+void getCudaInformation()
+{
+    //Nota: no code fusion because if hybrid CUDA and HIP system used
+    //BEGIN::INFO CUDA NVIDIA
+    #ifdef COMPILE_WITH_CUDA && UseCUDA
+    std::cout<<std::endl;
+    int numDevices=0;
+    CUDA_CHECK(cudaGetDeviceCount(&numDevices));
+    std::cout<<"[INFO]: Get numDevice                = "<<numDevices<<"\n";
+    int deviceID=0;
+    CUDA_CHECK(cudaGetDevice(&deviceID));
+    std::cout<<"[INFO]: Get deviceID activated       = "<<deviceID<<"\n";
+    deviceID=0;
+    cudaSetDevice(deviceID);
+
+    hipDeviceProp_t devProp;
+    for (int i = 0; i < numDevices; i++)
+    {
+                CUDA_CHECK(cudaSetDevice(i));
+                CUDA_CHECK(cudaGetDeviceProperties(&devProp,i));
+                std::cout<<"[INFO]:"<<std::endl;
+                std::cout<<"[INFO]: DeviceID                     = "<<i<<std::endl;
+                std::cout<<"[INFO]: Agent prop name              = "<< devProp.name<<std::endl;
+                std::cout<<"[INFO]: System minor                 = "<< devProp.minor<<std::endl;
+                std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
+                std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
+                std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
+                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
+                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
+                std::cout<<"[INFO]: max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
+                std::cout<<"[INFO]: max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
+                std::cout<<"[INFO]: warpSize:                    = "<< devProp.warpSize << "\n";
+                std::cout<<"[INFO]: regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
+                std::cout<<"[INFO]: concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
+                std::cout<<"[INFO]: total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
+                std::cout<<"[INFO]: shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
+    }
+     //(...)
+    CUDA_CHECK(cudaSetDevice(0));
+    std::cout<<std::endl;
+    //END::INFO CUDA NVIDIA
+    #endif
+}
+
+
+void getInformationSystem()
+{
+    std::cout<<"[INFO]: ======================================================================================== "<<"\n";
+    std::cout<<"[INFO]: Get Information System "<<"\n";
+    getInformationCPU();
+    scanInformationSystem();
+    getInformationGPU();
+
+    //#ifdef COMPILE_WITH_HIP && UseHIP
+    #ifdef UseHIP
+    getHipInformation();
+    #endif
+
+    #ifdef COMPILE_WITH_CUDA && UseCUDA
+    getCudaInformation();
+    #endif
+    std::cout<<"[INFO]: ======================================================================================== "<<"\n";
+    std::cout<<"[INFO]: "<<"\n";
+}
+
+}//END::namespace LEM
 
 //=======================================================================================================================
 // Meta function tools allowing you to process an expression defined in Task
@@ -178,60 +471,23 @@ namespace Backend{
 }
 
 
-
 namespace Frontend
 {
     template <typename ... Ts>
     auto parameters(Ts && ... ts)
     {
-        //Construit un tuple de références aux arguments dans args pouvant être transmis en tant qu'argument à une fonction
         return std::forward_as_tuple( std::forward<Ts>(ts)... );
     }
 }
 
 //================================================================================================================================
-// CLASS VectorGPUCommunication 
+// 
 //================================================================================================================================
 
-template <class NumType>
-struct VectorGPUCommunication{
-    std::vector<NumType> data;
-
-    class DataDescr {
-        std::size_t size;
-    public:
-        explicit DataDescr(const std::size_t inSize = 0) : size(inSize){}
-
-        auto getSize() const{
-            return size;
-        }
-    };
-
-    using DataDescriptor = DataDescr;
-
-    std::size_t memmovNeededSize() const{
-        return sizeof(NumType)*data.size();
-    }
-
-    template <class DeviceMemmov>
-    auto memmovHostToDevice(DeviceMemmov& mover, void* devicePtr,[[maybe_unused]] std::size_t size){
-        assert(size == sizeof(NumType)*data.size());
-        NumType* doubleDevicePtr = reinterpret_cast<NumType*>(devicePtr);
-        mover.copyHostToDevice(doubleDevicePtr, data.data(), sizeof(NumType)*data.size());
-        return DataDescr(data.size());
-    }
-
-    template <class DeviceMemmov>
-    void memmovDeviceToHost(DeviceMemmov& mover, void* devicePtr,[[maybe_unused]] std::size_t size, const DataDescr& /*inDataDescr*/){
-        assert(size == sizeof(NumType)*data.size());
-        NumType* doubleDevicePtr = reinterpret_cast<NumType*>(devicePtr);
-        mover.copyDeviceToHost(data.data(), doubleDevicePtr, sizeof(NumType)*data.size());
-    }
-};
 
 
 //================================================================================================================================
-// CLASS Taskflow_HPC: Provide a family of multithreaded functions...
+// CLASS Task: Provide a family of multithreaded functions...
 //================================================================================================================================
 
 // Nota: The objective is to provide a range of tools in the case of using a single variable in multithreading.
@@ -240,36 +496,18 @@ struct VectorGPUCommunication{
 //#define USE_jthread
 
 
-// Some macro functions for the AMD HIP GPU
-#define HIP_KERNEL_NAME(...) __VA_ARGS__
-
-#define HIP_CHECK(command) {               \
-  hipError_t status = command;             \
-  if (status!=hipSuccess) {                \
-    std::cerr <<"Error: HIP reports "<< hipGetErrorString(status)<< std::endl; \
-    std::abort(); } }
-
-
-#ifdef NDEBUG
-    #define HIP_ASSERT(x) x
-#else
-    #define HIP_ASSERT(x) (assert((x)==hipSuccess))
-#endif
 
 
 #ifdef USE_GPU_HIP
-
 // GPU HIP function that executes a kernel task
 template<typename Kernel, typename Input, typename Output>
 __global__ void run_on_gpu_kernel_1D(const Kernel kernel_function, int n, const Input* in, Output* out)
 {
-    int i = hipBlockDim_x*hipBlockIdx_x+hipThreadIdx_x;
-    //int i = threadIdx.x + blockIdx.x*blockDim.x;
+    int i = threadIdx.x + blockIdx.x*blockDim.x;
     if(i<n) {
         kernel_function(i, in, out);
     }
 }
-
 #endif
 
 
@@ -316,6 +554,26 @@ class Task
         //std::promise<int> promise0;
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
+        //BEGIN::GPU part
+        //#ifdef COMPILE_WITH_HIP && UseHIP
+        #ifdef UseHIP
+            hipGraph_t          hip_graph;
+            hipGraphExec_t      hip_graphExec;
+            hipStream_t         hip_graphStream;
+            hipKernelNodeParams hip_nodeParams;
+        #endif
+            bool                M_qhip_graph;
+
+        #ifdef COMPILE_WITH_CUDA && UseCUDA
+            cudaGraph_t         cuda_graph;
+            cudaGraphExec_t     cuda_graphExec;
+            cudaStream_t        cuda_graphStream;
+            hipKernelNodeParams cuda_nodeParams;
+        #endif
+            bool                M_qcuda_graph;
+        //END::GPU part
+
+
         // variables indicatrices utilisées par les fonctions set et get. Voir les descriptions ci-dessous.
         long int M_t_laps;
         bool M_qFirstTask;
@@ -338,6 +596,9 @@ class Task
         bool M_qViewChrono;
         bool M_qInfo;
         bool M_qSave;
+
+        int  M_numBlocksGPU;
+        int  M_nThPerBckGPU;
 
         template <typename ... Ts> 
             auto common(Ts && ... ts);
@@ -411,7 +672,21 @@ class Task
 
             if (M_numTypeTh==10) { pthread_attr_init(&M_mypthread_attr_t); } //pthread
 
-            //getInformation();            
+
+            if (M_numTypeTh==30) {
+                //#ifdef COMPILE_WITH_HIP && UseHIP
+                #ifdef UseHIP
+                    M_nThPerBckGPU=M_nbTh/M_numBlocksGPU;
+                    hipGraphCreate(&hip_graph, 0);
+                    hip_nodeParams = {0};
+                #endif
+            }
+
+            if (M_numTypeTh==31) {
+                #ifdef UseCUDA
+                //...
+                #endif
+            } 
         }
         
         #ifdef COMPILE_WITH_CUDA
@@ -493,6 +768,11 @@ class Task
         template<typename Kernel, typename Input, typename Output>
             void run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
 
+
+
+        template<typename Kernel, typename Input, typename Output>
+            void add_hip_graph_1D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
+
         // set of functions allowing you to use eigen under Hip cpu. Juste to control the results
         template<typename Kernel, typename Input, typename Output>
             void run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Output& out);
@@ -536,6 +816,9 @@ void Task::init()
     M_nbThreadDetach   = 0;
     M_qReady           = false;
     M_qYield           = false;
+    M_numBlocksGPU     = 128; //<- see after
+    M_qhip_graph       = false;
+    M_qcuda_graph      = false;
     M_mythreads.clear();
     M_myfutures.clear();
     
@@ -581,85 +864,7 @@ void Task::getInformation()
         if (M_numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
         M_nbThTotal=getNbMaxThread(); 
         std::cout<<"[INFO]: Nb max Thread="<<M_nbThTotal<<"\n";
-
-        #ifdef COMPILE_WITH_HIP
-            std::cout<<std::endl;
-            int numDevices=0;
-            HIP_CHECK(hipGetDeviceCount(&numDevices));
-            std::cout<<"[INFO]: Get numDevice                = "<<numDevices<<"\n";
-            int deviceID=0;
-            HIP_CHECK(hipGetDevice(&deviceID));
-            std::cout<<"[INFO]: Get deviceID activated       = "<<deviceID<<"\n";
-            deviceID=0;
-            hipSetDevice(deviceID);
-
-            hipDeviceProp_t devProp;
-            for (int i = 0; i < numDevices; i++)
-            {
-                HIP_CHECK(hipSetDevice(i));
-                HIP_CHECK(hipGetDeviceProperties(&devProp,i));
-                std::cout<<"[INFO]:"<<std::endl;
-                std::cout<<"[INFO]: DeviceID                     = "<<i<<std::endl;
-                std::cout<<"[INFO]: Agent prop name              = "<< devProp.name<<std::endl;
-                std::cout<<"[INFO]: System minor                 = "<< devProp.minor<<std::endl;
-                std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
-                std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
-                std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
-                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
-                std::cout<<"[INFO]: max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
-                std::cout<<"[INFO]: max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
-                std::cout<<"[INFO]: warpSize:                    = "<< devProp.warpSize << "\n";
-                std::cout<<"[INFO]: regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
-                std::cout<<"[INFO]: concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
-                std::cout<<"[INFO]: total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
-                std::cout<<"[INFO]: shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
-            }
-
-            HIP_CHECK(hipSetDevice(0));
-            std::cout<<std::endl;
-        #endif
-
-
-        #ifdef COMPILE_WITH_CUDA
-            std::cout<<std::endl;
-            int numDevices=0;
-            cudaGetDeviceCount(&numDevices);
-            std::cout<<"[INFO]: Get numDevice                = "<<numDevices<<"\n";
-            int deviceID=0;
-            cudaGetDevice(&deviceID);
-            std::cout<<"[INFO]: Get deviceID activated       = "<<deviceID<<"\n";
-            deviceID=0;
-            cudaSetDevice(deviceID);
-
-            hipDeviceProp_t devProp;
-            for (int i = 0; i < numDevices; i++)
-            {
-                cudaSetDevice(i);
-                cudaGetDeviceProperties(&devProp,i);
-                std::cout<<"[INFO]:"<<std::endl;
-                std::cout<<"[INFO]: DeviceID                     = "<<i<<std::endl;
-                std::cout<<"[INFO]: Agent prop name              = "<< devProp.name<<std::endl;
-                std::cout<<"[INFO]: System minor                 = "<< devProp.minor<<std::endl;
-                std::cout<<"[INFO]: System major                 = "<< devProp.major<<std::endl;
-                std::cout<<"[INFO]: Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
-                std::cout<<"[INFO]: Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
-                std::cout<<"[INFO]: Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
-                std::cout<<"[INFO]: max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
-                std::cout<<"[INFO]: max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
-                std::cout<<"[INFO]: max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
-                std::cout<<"[INFO]: warpSize:                    = "<< devProp.warpSize << "\n";
-                std::cout<<"[INFO]: regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
-                std::cout<<"[INFO]: concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
-                std::cout<<"[INFO]: total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
-                std::cout<<"[INFO]: shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
-            }
-
-            cudaSetDevice(0);
-            std::cout<<std::endl;
-        #endif
+        getInformationSystem();
     }
 }
 
@@ -757,6 +962,13 @@ void Task::run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Out
   if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
   for(int i=0; i<n; i++)
     kernel_function(i, in.data(), out.data());
+}
+
+
+template<typename Kernel, typename Input, typename Output>
+void Task::add_hip_graph_1D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
+{
+
 }
 
 
@@ -1051,6 +1263,26 @@ void Task::run()
         //pthread_attr_destroy(&M_mypthread_attr_t);
     } //In CPU
 
+
+    if ((M_numTypeTh==30) && (M_qhip_graph)) {   //Run HIP Graph
+        //#ifdef COMPILE_WITH_HIP && UseHIP
+        #ifdef UseHIP
+            hipGraphInstantiate      (&hip_graphExec, hip_graph, nullptr, nullptr, 0);
+            hipStreamCreateWithFlags (&hip_graphStream, hipStreamNonBlocking);
+            hipGraphLaunch           (hip_graphExec, hip_graphStream);
+            hipStreamSynchronize     (hip_graphStream);
+        #endif
+    }
+
+    if ((M_numTypeTh==31) && (M_qcuda_graph)) {   //Run Cuda Graph
+        #ifdef COMPILE_WITH_CUDA && UseCUDA
+            cudaGraphInstantiate      (&cuda_graphExec, cuda_graph, nullptr, nullptr, 0);
+            cudaStreamCreateWithFlags (&cuda_graphStream, cudaStreamNonBlocking);
+            cudaGraphLaunch           (cuda_graphExec, hip_graphStream);
+            cudaStreamSynchronize     (cuda_graphStream);
+        #endif
+    }
+
     M_mythreads.clear();
     M_myfutures.clear();
     #ifdef COMPILE_WITH_CXX_20
@@ -1087,6 +1319,24 @@ void Task::close()
     if (M_numTypeTh==1) {  } //multithread
     if (M_numTypeTh==2) {  } //std::async
     if (M_numTypeTh==3) { M_myce.stopIfNotAlreadyStopped(); } //Specx
+    if ((M_numTypeTh==30) && (M_qhip_graph)) {   //HIP Graph
+        //#ifdef COMPILE_WITH_HIP && UseHIP
+        #ifdef UseHIP
+            hipGraphExecDestroy     (hip_graphExec);
+            hipGraphDestroy         (hip_graph);
+            hipStreamDestroy        (hip_graphStream);
+            hipDeviceReset          ();
+        #endif
+    }
+    if ((M_numTypeTh==31) && (M_qcuda_graph)) {   //CUDA Graph
+        #ifdef COMPILE_WITH_CUDA && UseCUDA
+            cudaGraphExecDestroy     (cuda_graphExec);
+            cudaGraphDestroy         (cuda_Graph);
+            cudaStreamDestroy        (cuda_graphStream);
+            cudaDeviceReset          ();
+        #endif
+    }
+
     if (!M_qFirstTask) { M_t_end = std::chrono::steady_clock::now(); M_qFirstTask=true;}
 
     if (M_myfuturesdetach.size()>0) { M_myfuturesdetach.clear(); }
