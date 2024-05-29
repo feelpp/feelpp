@@ -150,7 +150,7 @@
 
 
 
-
+ #define _param(...) _parameters=Frontend::parameters(__VA_ARGS__)
 
 //================================================================================================================================
 // Get Information System CPI and GPU
@@ -470,6 +470,29 @@ namespace Backend{
     auto makeSpDataSpecx( std::tuple<T...>& t ){
         return makeSpDataHelperSpecx<T...>(t, std::make_index_sequence<sizeof...(T)>{});
     }
+
+
+    template<typename T>
+    auto toSpDataSpecxGPU( T && t )
+    {
+        if constexpr ( std::is_const_v<std::remove_reference_t<T>> )
+            return SpRead(std::forward<T>( t ));
+        else
+            return SpCommutativeWrite(std::forward<T>( t ));
+    }
+
+    template<typename ...T, size_t... I>
+    auto makeSpDataHelperSpecxGPU( std::tuple<T...>& t, std::index_sequence<I...>)
+    {
+        return std::make_tuple( toSpDataSpecxGPU(std::get<I>(t))...);
+    }
+    template<typename ...T>
+    auto makeSpDataSpecxGPU( std::tuple<T...>& t ){
+        return makeSpDataHelperSpecxGPU<T...>(t, std::make_index_sequence<sizeof...(T)>{});
+    }
+
+
+
 }
 
 
@@ -669,10 +692,7 @@ class Task
         //END::Small functions and variables to manage initialization parameters
 
 
-        Task(void);  // Constructor, initializes the default variables that are defined in the init() function.
-        ~Task(void); // Destructor is invoked automatically whenever an object is going to be destroyed. Closes the elements properly
-
-        explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread)) // Class constructor in classic mode
+        void subTask(const int nbThread,int M_numTypeThread)
         {
             M_nbTh=nbThread;
             M_numTypeTh = M_numTypeThread;
@@ -681,7 +701,7 @@ class Task
             M_t_begin   = std::chrono::steady_clock::now();
             M_qDeferred = false;
             M_qReady    = false;
-            
+                
             if (M_numTypeTh==0) { } // No Thread
             if (M_numTypeTh==1) { } // multithread
             if (M_numTypeTh==2) { } // std::async
@@ -701,33 +721,45 @@ class Task
 
             if (M_numTypeTh==31) {
                 #ifdef UseCUDA
-                //...
+                    //...
                 #endif
             } 
+
+            if (M_numTypeTh==33) { 
+                #ifdef COMPILE_WITH_HIP
+                    M_mytg.computeOn(M_myce);
+                #endif
+             } // Specx GPU
         }
-        
-        #ifdef COMPILE_WITH_CUDA
-            Task() :
-                M_mytg(), M_myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) // Class constructor in mode using CUDA
-                {
-                    SpCudaUtils::PrintInfo();
-                    M_qCUDA=true;
-                    std::cout<<"[INFO]: Cuda Mode\n";
-                    M_mytg.computeOn(M_myce);
-                }
-        #endif
 
-        #ifdef COMPILE_WITH_HIP
-            Task() :
-                M_mytg(), M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in mode using HIP 
-                {
-                    M_qHIP=true;
-                    std::cout<<"[INFO]: Hip Mode\n";
-                    M_mytg.computeOn(M_myce);
-                }
-        #endif
 
-        
+        Task(void);  // Constructor, initializes the default variables that are defined in the init() function.
+        ~Task(void); // Destructor is invoked automatically whenever an object is going to be destroyed. Closes the elements properly
+
+
+        #if defined(COMPILE_WITH_HIP) || defined(COMPILE_WITH_CUDA)
+            #ifdef COMPILE_WITH_HIP
+                explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in classic mode
+                {
+                    std::cout<<"[INFO]: WELCOME TO GPU:HIP"<<"\n";
+                    subTask(nbThread,M_numTypeThread);
+                }
+            #endif
+
+            #ifdef COMPILE_WITH_CUDA
+                explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) // Class constructor in classic mode
+                {
+                    std::cout<<"[INFO]: WELCOME TO GPU:CUDA"<<"\n";
+                    subTask(nbThread,M_numTypeThread);
+                }
+            #endif
+        #else
+            explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread)) // Class constructor in classic mode
+            {
+                std::cout<<"[INFO]: WELCOME TO CPU"<<"\n";
+                subTask(nbThread,M_numTypeThread);
+            }
+        #endif
 
         template <class ClassFunc> void execOnWorkers(ClassFunc&& func) { M_myce.execOnWorkers(std::forward<ClassFunc>(func)); } //Execute a ClassFunc on workers
   
@@ -752,14 +784,17 @@ class Task
                 void addTaskjthread( Ts && ... ts ); // This subfunction allows you to add a jthread task. Only works under C++20
             #endif
 
+        #ifdef COMPILE_WITH_HIP
+            template <typename ... Ts>
+                void add_GPU( Ts && ... ts,int numOp); // This main function allows you to add a task O:CPU Normal  1:SpHip  2:SpCuda  3:GPU to CPU
+        #endif
 
         template <class InputIterator,typename ... Ts>
             void for_each(InputIterator first, InputIterator last,Ts && ... ts); // This function allows you to apply the same treatment to a set of elements of a task.
 
-
+        
         template <typename ... Ts>
             void add(int numCPU,Ts && ... ts);  // Add a task on specific CPU number
-
 
         template<typename FctDetach>
             auto add_detach(FctDetach&& func) -> std::future<decltype(func())>; // Add a detach thread task
@@ -799,8 +834,12 @@ class Task
                                   bool qFlag);        
 
 
-            template <typename ... Ts>
-                void addTaskSpecxGPU( Ts && ... ts,int numOp); // This subfunction allows you to add a specx task
+
+        #endif
+
+        #ifdef COMPILE_WITH_HIP
+                template <typename ... Ts>
+            void addTaskSpecxGPU( Ts && ... ts,int numOp); // This subfunction allows you to add a specx task
         #endif
 
 };
@@ -816,6 +855,7 @@ Task::~Task()
 {
     //Add somes   
     if ((M_numTypeTh==3) && (M_numLevelAction==3)) {  M_myce.stopIfNotAlreadyStopped(); } 
+    if ((M_numTypeTh==33) && (M_numLevelAction==3)) {  M_myce.stopIfNotAlreadyStopped(); } // <== [ ] see if we really need it
     //Specx
 }
 
@@ -866,7 +906,8 @@ int Task::getNbThreadPerBlock(int i)
 {
     int numDevices=0;
     #ifdef COMPILE_WITH_HIP
-        HIP_CHECK(hipGetDeviceCount(&numDevices));
+        hipGetDeviceCount(&numDevices);
+        hipDeviceProp_t devProp;
         if ((i>=0) && (i<numDevices))
         {
             HIP_CHECK(hipGetDeviceProperties(&devProp,i));
@@ -876,6 +917,7 @@ int Task::getNbThreadPerBlock(int i)
 
     #ifdef COMPILE_WITH_CUDA
         cudaGetDeviceCount(&numDevices);
+        cudaDeviceProp_t devProp;
         if ((i>=0) && (i<numDevices))
         {
             cudaGetDeviceProperties(&devProp,i);
@@ -922,9 +964,9 @@ void Task::getGPUInformationError()
         if (num_err != hipSuccess) {
             std::cout<<"[INFO]: hip Error Name ="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
         }
-        err = hipDeviceSynchronize();
+        num_err = hipDeviceSynchronize();
         if (num_err != hipSuccess) {
-            std::cout<<"[INFO]: hip Error Name="<<hipGetErrorName(num_err))<<" "<<hipGetErrorString(num_err)<<"\n";
+            std::cout<<"[INFO]: hip Error Name="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
         }
     #endif
 }
@@ -1062,10 +1104,10 @@ void Task::add_hip_graph_1D(const Kernel& kernel_function,
     }  
     
 }
+#endif
 
 
-
-
+#ifdef COMPILE_WITH_HIP
 template <typename ... Ts>
 void Task::addTaskSpecxGPU( Ts && ... ts ,int numOp)
 {
@@ -1079,15 +1121,14 @@ void Task::addTaskSpecxGPU( Ts && ... ts ,int numOp)
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);            
         } //CPU Normal
 
-
         if (numOp==1)
         { 
-            auto tp=std::tuple_cat( Backend::makeSpDataSpecx( parameters ), SpHip(std::make_tuple( task ))); 
+            auto tp=std::tuple_cat( Backend::makeSpDataSpecxGPU( parameters ), SpHip(std::make_tuple( task ))); 
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
         } //op in Hip
 
         if (numOp==2) { 
-            auto tp=std::tuple_cat( Backend::makeSpDataSpecx( parameters ), SpCuda(std::make_tuple( task )));   
+            auto tp=std::tuple_cat( Backend::makeSpDataSpecxGPU( parameters ), SpCuda(std::make_tuple( task )));   
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);  
         } //op in Cuda
 
@@ -1103,9 +1144,9 @@ void Task::addTaskSpecxGPU( Ts && ... ts ,int numOp)
         addTaskAsync(std::forward<Ts>(ts)...);
     }
 }
-
-
 #endif
+
+
 
 
 
@@ -1249,14 +1290,33 @@ void Task::add( Ts && ... ts )
         case 3: addTaskSpecx(std::forward<Ts>(ts)...); //Specx
         break;
         #ifdef COMPILE_WITH_CXX_20
-        case 4: addTaskjthread(std::forward<Ts>(ts)...); //std::jthread
-        break;
+            case 4: addTaskjthread(std::forward<Ts>(ts)...); //std::jthread
+            break;
         #endif
         default: addTaskSimple(std::forward<Ts>(ts)...); //No Thread
     }
     M_qDetach=false;
     //std::cout<<"[INFO] :ADD OK"<<std::endl;
 }
+
+#ifdef COMPILE_WITH_HIP
+template <typename ... Ts>
+void Task::add_GPU( Ts && ... ts,int numOp)
+{
+    M_numLevelAction=1;
+    M_qEmptyTask=false;
+    M_idk++; M_idType.push_back(M_numTypeTh); M_numTaskStatus.push_back(M_qDetach);
+    if (M_qDetach) { M_qFlagDetachAlert=true; M_nbThreadDetach++; }
+    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
+    switch(M_numTypeTh) {
+        case 33: addTaskSpecxGPU(std::forward<Ts>(ts)...,numOp); //Specx GPU
+        break;
+
+        default: addTaskSimple(std::forward<Ts>(ts)...); //No Thread
+    }
+    M_qDetach=false;
+}
+#endif
 
 
 auto Task::getIdThread(int i)
@@ -1288,7 +1348,6 @@ auto Task::getIdThread(int i)
     }
     return(M_mythreads[0].get_id());
 }
-
 
 
 template <class InputIterator,typename ... Ts>
@@ -1418,6 +1477,14 @@ void Task::run()
         #endif
     }
 
+
+     if (M_numTypeTh==33) { 
+        #ifdef COMPILE_WITH_HIP
+            M_mytg.waitAllTasks();
+        #endif
+    } //Specx GPU
+
+
     M_mythreads.clear();
     M_myfutures.clear();
     #ifdef COMPILE_WITH_CXX_20
@@ -1450,10 +1517,12 @@ void Task::close()
     }
 
     M_numLevelAction=3;
-    if (M_numTypeTh==0) {  } //No Thread
-    if (M_numTypeTh==1) {  } //multithread
-    if (M_numTypeTh==2) {  } //std::async
-    if (M_numTypeTh==3) { M_myce.stopIfNotAlreadyStopped(); } //Specx
+    if (M_numTypeTh== 0) {  } //No Thread
+    if (M_numTypeTh== 1) {  } //multithread
+    if (M_numTypeTh== 2) {  } //std::async
+    if (M_numTypeTh== 3) { M_myce.stopIfNotAlreadyStopped(); } //Specx
+    if (M_numTypeTh==33) { M_myce.stopIfNotAlreadyStopped(); } //Specx GPU <== see if we really need it
+
     if ((M_numTypeTh==30) && (M_qhip_graph)) {   //HIP Graph
         //#ifdef COMPILE_WITH_HIP && UseHIP
         #ifdef UseHIP
@@ -1490,7 +1559,7 @@ void Task::debriefingTasks()
 
     if (M_qSave)
     {
-        if (M_numTypeTh==3) { 
+        if ((M_numTypeTh==3) || (M_numTypeTh==33)) { 
             std::cout << "[INFO]: Save "<<M_FileName<< "\n";
             M_mytg.generateDot(M_FileName+".dot",true); 
             M_mytg.generateTrace(M_FileName+".svg",true); 
@@ -1607,5 +1676,8 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
+
+
 
 
