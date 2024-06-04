@@ -1671,7 +1671,7 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 
 
 //================================================================================================================================
-// CLASS Task: Provide to manipulate graph Hip/Cuda
+// CLASS Task: Provide to manipulate graph Hip/Cuda hybrid system
 //================================================================================================================================
 
 #ifdef UseHIP
@@ -1691,11 +1691,17 @@ namespace LEMGPU {
 class Task
 {
     private:
-        int   M_nbTh;
-        int   M_numBlocksGPU;
-        int   M_nThPerBckGPU;
-        bool  M_q_graph;
-        bool  M_qViewInfo;
+        std::string M_FileName;
+        int         M_nbTh;
+        int         M_numBlocksGPU;
+        int         M_nThPerBckGPU;
+        bool        M_q_graph;
+        bool        M_qViewInfo;
+        bool        M_qSave;
+        long int    M_time_laps;
+
+        
+        std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
         //#ifdef COMPILE_WITH_HIP && UseHIP
         #ifdef UseHIP
@@ -1716,8 +1722,16 @@ class Task
             
 
     public:
+        
+
         Task();
         ~Task();
+
+        void setSave     (bool b)        {  M_qSave = b; }
+        void setViewInfo (bool b)        {  M_qViewInfo = b; }
+        bool isSave      () const        {  return(M_qSave); }
+        void setFileName (std::string s) {  M_FileName=s; }
+
 
         void open(int nbBlock,int NbTh);
 
@@ -1731,25 +1745,54 @@ class Task
                     bool qFlag);
 
         template<typename Kernel, typename Input>
-            void single(const Kernel& kernel_function,
+            void single_hip(const Kernel& kernel_function,
+                                int numElems,
+                                int iBegin,int iEnd,
+                                Input* buffer);
+
+        template<typename Kernel, typename Input>
+            void single_cuda(const Kernel& kernel_function,
                                 int numElems,
                                 int iBegin,int iEnd,
                                 Input* buffer);
 
         void run();
         void close();
+        void debriefing(); 
 };
 
 Task::Task()
 {
-    M_nbTh=1;
-    M_numBlocksGPU=1;
-    M_q_graph=false;
-    M_qViewInfo=true;
+    M_nbTh         = 1;
+    M_numBlocksGPU = 1;
+    M_q_graph      = false;
+    M_qViewInfo    = true;
+    M_time_laps    = 0;
+    M_FileName     = "NoName";
+    M_qSave        = true;
 }
 
 Task::~Task()
 {
+}
+
+void Task::debriefing()
+{
+    if (M_qViewInfo) { std::cout<<"<=====================================================================>"<<"\n"; }
+    if (M_qViewInfo) { std::cout<<"[INFO]: Debriefing"<<"\n"; }   
+    if (M_qViewInfo) { std::cout<<"[INFO]: Elapsed microseconds : "<<M_time_laps<< " us\n"; }
+    if (M_qSave)
+    {
+        if (M_qViewInfo) { std::cout<<"[INFO]: Save Informations"<<"\n"; }   
+        std::ofstream myfile;
+        myfile.open (M_FileName+".csv");
+        myfile << "Elapsed microseconds,"<<M_time_laps<<"\n";
+        myfile << "Nb Thread,"<< M_nbTh<<"\n";
+        myfile << "Nb Block used,"<<M_numBlocksGPU<<"\n";
+        myfile << "Nb Th/Block,"<<M_nThPerBckGPU<<"\n";
+        myfile.close();
+   }
+   if (M_qViewInfo) { std::cout<<"<=====================================================================>"<<"\n"; }
 }
 
 
@@ -1761,10 +1804,12 @@ void Task::open(int nbBlock,int NbTh)
     M_nThPerBckGPU=M_nbTh/M_numBlocksGPU;
     if (M_qViewInfo)
     {
-        std::cout<<"[INFO]: Init Graph"<<"\n";
+        std::cout<<"<=====================================================================>"<<"\n";
+        std::cout<<"[INFO]: Open Graph"<<"\n";
         std::cout<<"[INFO]: nb Thread        : "<<M_nbTh<<"\n";
         std::cout<<"[INFO]: nb Block         : "<<M_numBlocksGPU<<"\n";
         std::cout<<"[INFO]: Thread Per Block : "<<M_nThPerBckGPU<<"\n";
+        std::cout<<"<=====================================================================>"<<"\n";
     }
     
     //#ifdef COMPILE_WITH_HIP && UseHIP
@@ -1786,26 +1831,49 @@ void Task::open(int nbBlock,int NbTh)
 
 
 template<typename Kernel, typename Input>
-    void Task::single(const Kernel& kernel_function,
+    void Task::single_hip(const Kernel& kernel_function,
                                 int numElems,
                                 int iBegin,int iEnd,
                                 Input* buffer)
 {   
-     #ifdef UseHIP   
-    int block_size = 512; block_size =M_numBlocksGPU;   
-    typename std::decay<decltype(buffer)> *deviceBuffer;
-    int sz=sizeof(typename std::decay<decltype(buffer)>) * numElems;
-    hipMalloc((void **) &deviceBuffer,sz);
-    hipMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
-    if (iEnd>numElems) { iEnd=numElems; }
-    if (iBegin<0)      { iBegin=0; }
-    int num_blocks = (numElems + block_size - 1) / block_size;
-	dim3 thread_block(block_size, 1, 1);
-	dim3 grid(num_blocks, 1);
-    hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,thread_block,0,0,kernel_function,grid,buffer,iBegin,iEnd);
-    hipMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
-    hipFree(deviceBuffer);
-     #endif
+    #ifdef UseHIP  
+        int block_size = 512; block_size =M_numBlocksGPU;   
+        typename std::decay<decltype(buffer)> *deviceBuffer;
+        int sz=sizeof(typename std::decay<decltype(buffer)>) * numElems;
+        hipMalloc((void **) &deviceBuffer,sz);
+        hipMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
+        if (iEnd>numElems) { iEnd=numElems; }
+        if (iBegin<0)      { iBegin=0; }
+        int num_blocks = (numElems + block_size - 1) / block_size;
+        dim3 thread_block(block_size, 1, 1);
+        dim3 grid(num_blocks, 1);
+        hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,buffer,iBegin,iEnd);
+        hipMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
+        hipFree(deviceBuffer);
+    #endif
+}
+
+template<typename Kernel, typename Input>
+    void Task::single_cuda(const Kernel& kernel_function,
+                                int numElems,
+                                int iBegin,int iEnd,
+                                Input* buffer)
+{   
+    #ifdef UseCUDA
+        int block_size = 512; block_size =M_numBlocksGPU;   
+        typename std::decay<decltype(buffer)> *deviceBuffer;
+        int sz=sizeof(typename std::decay<decltype(buffer)>) * numElems;
+        cudaMalloc((void **) &deviceBuffer,sz);
+        cudaMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
+        if (iEnd>numElems) { iEnd=numElems; }
+        if (iBegin<0)      { iBegin=0; }
+        int num_blocks = (numElems + block_size - 1) / block_size;
+        dim3 thread_block(block_size, 1, 1);
+        dim3 grid(num_blocks, 1);
+        OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,,buffer,iBegin,iEnd);
+        cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
+        cudaFree(deviceBuffer);
+    #endif
 }
 
 
@@ -1818,14 +1886,15 @@ template<typename Kernel, typename Input, typename Output>
                                 Output* hostbuffer,
                                 std::vector<int> links,
                                 bool qFlag)
-    {            
-         #ifdef UseHIP
+{            
+    #ifdef UseHIP  
         //BEGIN::Init new node
         hipGraphNode_t newKernelNode; M_hipGraphNode_t.push_back(newKernelNode);
         memset(&hip_nodeParams, 0, sizeof(hip_nodeParams));
 
         if (M_qViewInfo) { std::cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"<<"\n"; }
-        if (M_qViewInfo) { std::cout<<"[INFO]: M_hipGraphNode_t="<<M_hipGraphNode_t.size()<<" : "<<M_hipGraphNode_t[M_hipGraphNode_t.size()-1]<<"\n"; }
+        //if (M_qViewInfo) { std::cout<<"[INFO]: M_hipGraphNode_t="<<M_hipGraphNode_t.size()<<" : "<<M_hipGraphNode_t[M_hipGraphNode_t.size()-1]<<"\n"; }
+        if (M_qViewInfo) { std::cout<<"[INFO]: Num Graph Node = "<<M_hipGraphNode_t.size()<<"\n"; }
 
         //CRTL range
         if (iEnd>numElems) { iEnd=numElems; }
@@ -1854,9 +1923,9 @@ template<typename Kernel, typename Input, typename Output>
         std::vector<hipGraphNode_t> dependencies;
         for (int i = 0; i < nbElemLinks; i++) { dependencies.push_back(M_hipGraphNode_t[links[i]]); }
         if (M_qViewInfo) {
-            std::cout<<"[INFO]: nb Elem Links="<<nbElemLinks<<"\n";
-            std::cout<<"[INFO]: link dependencies: ";
-                for (auto v: dependencies) { std::cout << v << " "; } std::cout<<"]\n";
+            std::cout<<"[INFO]: Nb Elem Links  = "<<nbElemLinks<<"\n";
+            std::cout<<"[INFO]: Link dependencies with >>> [";
+                for (auto v: dependencies) { std::cout << v << " "; } std::cout<<"] <<<\n";
         }
         //END::Dependencies part
 
@@ -1871,8 +1940,9 @@ template<typename Kernel, typename Input, typename Output>
         if (qFlag)
         {
             if (M_qViewInfo) {
-                std::cout<<"[INFO]: list hipGraphNode_t: ";
-                for (auto v: M_hipGraphNode_t) { std::cout << v << " "; } std::cout<<"]\n";
+                std::cout<<"[INFO]:"<<"\n";
+                std::cout<<"[INFO]: List >>> [";
+                for (auto v: M_hipGraphNode_t) { std::cout << v << " "; } std::cout<<"] <<<\n";
             }
             hipGraphNode_t copyBuffer;
             if (M_qViewInfo) { std::cout<<"[INFO]: Last M_hipGraphNode_t="<<M_hipGraphNode_t.size()<<" : "<<M_hipGraphNode_t[M_hipGraphNode_t.size()-1]<<"\n"; }
@@ -1887,17 +1957,19 @@ template<typename Kernel, typename Input, typename Output>
                                     hipMemcpyDeviceToHost);
         }
         //END::Final node kernel GPU
-         #endif
+     #endif
 }
 
 
 
 void Task::run()
 {
+    if (M_qViewInfo) { std::cout<<"<=====================================================================>"<<"\n"; }
+    if (M_qViewInfo) { std::cout<<"[INFO]: Run Graph"<<"\n"; }    
+    M_t_begin = std::chrono::steady_clock::now();
     //Run HIP Graph
     if (M_q_graph) {   
         //#ifdef COMPILE_WITH_HIP && UseHIP
-        if (M_qViewInfo) { std::cout<<"[INFO]: Run Graph"<<"\n"; }       
         #ifdef UseHIP
             hipGraphInstantiate      (&hip_graphExec, hip_graph, nullptr, nullptr, 0);
             hipStreamCreateWithFlags (&hip_graphStream, hipStreamNonBlocking);
@@ -1911,6 +1983,9 @@ void Task::run()
             cudaStreamSynchronize     (cuda_graphStream);
         #endif
     }
+    M_t_end = std::chrono::steady_clock::now();
+    M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
+    if (M_qViewInfo) { std::cout<<"<=====================================================================>"<<"\n"; }
 }
 
 void Task::close()
@@ -1929,7 +2004,6 @@ void Task::close()
             cudaStreamDestroy        (cuda_graphStream);
             //cudaDeviceReset          ();   // Not be used if Spex Hip AMD activated
         #endif
-
         if (M_qViewInfo) { std::cout<<"[INFO]: Close Graph Hip"<<"\n"; }
     }
 }
