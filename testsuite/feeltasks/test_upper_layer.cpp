@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE( test_specx_21 )
         TsK.setFileName("./PI");
         for(int k=0;k<nbThreads;k++) { 
             auto const& idk = k;
-            TsK.add(_parameters=Frontend::parameters(idk,valuesVec.at(idk)),_task=FC1);
+            TsK.add(_param(idk,valuesVec.at(idk)),_task=FC1);
         }
 
     TsK.run();
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
         TsK.getInformation();
         for(int k=0;k<nbThreads;k++) { 
             auto const& idk = k;
-            TsK.add(_parameters=Frontend::parameters(idk),_task=FC1);
+            TsK.add(_param(idk),_task=FC1);
         }
 
         TsK.run();        
@@ -149,21 +149,21 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
     const int initVal1 = 100;
     const int initVal2 = 1000;
     int writeVal = 0;
-    TsK.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    TsK.add(_param(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             writeValParam += initValParam;
         }
     );
     TsK.run();   
 
-    TsK.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    TsK.add(_param(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             writeValParam += 123;
         }
     );
     TsK.run();   
 
-    TsK.add(_parameters=Frontend::parameters(initVal2,writeVal),
+    TsK.add(_param(initVal2,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             writeValParam += initValParam;
         }
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
     const int initVal1 = 100;
     const int initVal2 = 1000;
     int writeVal = 0;
-    TsK.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    TsK.add(_param(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             std::cout <<"I live 1!"<<std::endl; sleep(1);  std::cout <<"YES 1!"<<std::endl;
         }
@@ -204,14 +204,14 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
 
     TsK.setDetach(true); // <<=== detach mode
 
-    TsK.add(_parameters=Frontend::parameters(initVal1,writeVal),
+    TsK.add(_param(initVal1,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             std::cout <<"I live 2! (Detach)"<<std::endl; sleep(5);  std::cout <<"YES 2! (Detach)"<<std::endl;
         }
     );
     TsK.run();   
 
-    TsK.add(_parameters=Frontend::parameters(initVal2,writeVal),
+    TsK.add(_param(initVal2,writeVal),
         _task=[](const int& initValParam, int& writeValParam){
             std::cout <<"I live 3!"<<std::endl; sleep(1);  std::cout <<"YES 3!"<<std::endl;
         }
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
     TsK.getInformation();
 
     std::vector<int> Vec(nb,0); for (int k=0; k<nb; ++k) { Vec[k]=k; }
-    TsK.for_each(Vec.begin(),Vec.end(),_parameters=Frontend::parameters(idk),_task=FC1);
+    TsK.for_each(Vec.begin(),Vec.end(),_param(idk),_task=FC1);
 
     TsK.run();
     TsK.close();

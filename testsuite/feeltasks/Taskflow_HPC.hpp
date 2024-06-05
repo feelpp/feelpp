@@ -1686,6 +1686,8 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 #endif
 
 
+
+//--------------------------------------------------------------------------------------------------------------------------------
 namespace LEMGPU {
 
 class Task
@@ -1700,6 +1702,8 @@ class Task
         bool        M_qSave;
         long int    M_time_laps;
 
+        std::vector<int>  M_ListGraphDependencies;
+
         
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
@@ -1712,7 +1716,7 @@ class Task
             std::vector<hipGraphNode_t>         M_hipGraphNode_t;     
         #endif
 
-         #ifdef UseCUDA
+        #ifdef UseCUDA
             cudaGraph_t                          cuda_graph;
             cudaGraphExec_t                      cuda_graphExec;
             cudaStream_t                         cuda_graphStream;
@@ -1727,10 +1731,14 @@ class Task
         Task();
         ~Task();
 
-        void setSave     (bool b)        {  M_qSave = b; }
-        void setViewInfo (bool b)        {  M_qViewInfo = b; }
-        bool isSave      () const        {  return(M_qSave); }
-        void setFileName (std::string s) {  M_FileName=s; }
+        void setSave        (bool b)        {  M_qSave = b; }
+        void setViewInfo    (bool b)        {  M_qViewInfo = b; }
+        bool isSave         () const        {  return(M_qSave); }
+        void setFileName    (std::string s) {  M_FileName=s; }
+
+        void setDeviceHIP   (int v);
+        void setDeviceCUDA  (int v);
+           
 
 
         void open(int nbBlock,int NbTh);
@@ -1741,8 +1749,7 @@ class Task
                      int iBegin,int iEnd,
                      Input* buffer,
                      Output* hostbuffer,
-                     std::vector<int> links,
-                    bool qFlag);
+                     std::vector<int> links);
 
         template<typename Kernel, typename Input>
             void single_hip(const Kernel& kernel_function,
@@ -1770,17 +1777,25 @@ Task::Task()
     M_time_laps    = 0;
     M_FileName     = "NoName";
     M_qSave        = true;
+    M_ListGraphDependencies.clear();
 }
 
 Task::~Task()
 {
+    M_ListGraphDependencies.clear();
 }
 
 void Task::debriefing()
 {
-    if (M_qViewInfo) { std::cout<<"<=====================================================================>"<<"\n"; }
-    if (M_qViewInfo) { std::cout<<"[INFO]: Debriefing"<<"\n"; }   
-    if (M_qViewInfo) { std::cout<<"[INFO]: Elapsed microseconds : "<<M_time_laps<< " us\n"; }
+    if (M_qViewInfo) { 
+        std::cout<<"<=====================================================================>"<<"\n"; 
+        std::cout<<"[INFO]: Debriefing"<<"\n";  
+        std::cout<<"[INFO]: Elapsed microseconds : "<<M_time_laps<< " us\n";
+        std::cout<<"[INFO]: List Graph Dependencie  >>> [";
+        for (int i = 0; i < M_ListGraphDependencies.size(); i++) { std::cout<<M_ListGraphDependencies[i];}
+        std::cout<<"] <<<\n";
+    }
+
     if (M_qSave)
     {
         if (M_qViewInfo) { std::cout<<"[INFO]: Save Informations"<<"\n"; }   
@@ -1790,11 +1805,29 @@ void Task::debriefing()
         myfile << "Nb Thread,"<< M_nbTh<<"\n";
         myfile << "Nb Block used,"<<M_numBlocksGPU<<"\n";
         myfile << "Nb Th/Block,"<<M_nThPerBckGPU<<"\n";
+        myfile << "List Graph Dependencie,";
+        for (int i = 0; i < M_ListGraphDependencies.size(); i++) { myfile <<M_ListGraphDependencies[i];}
+        myfile <<"\n";
         myfile.close();
    }
    if (M_qViewInfo) { std::cout<<"<=====================================================================>"<<"\n"; }
 }
 
+void Task::setDeviceHIP(int v) 
+{
+    #ifdef UseHIP
+    int numDevices=0; hipGetDeviceCount(&numDevices);
+    if ((v>=0) && (v<=numDevices)) { hipSetDevice(v); }
+    #endif
+}
+
+void Task::setDeviceCUDA(int v) 
+{
+    #ifdef UseCUDA
+    int numDevices=0; cudaGetDeviceCount(&numDevices);
+    if ((v>=0) && (v<=numDevices)) { cudaSetDevice(v); }
+    #endif
+}
 
 void Task::open(int nbBlock,int NbTh)
 {
@@ -1870,7 +1903,7 @@ template<typename Kernel, typename Input>
         int num_blocks = (numElems + block_size - 1) / block_size;
         dim3 thread_block(block_size, 1, 1);
         dim3 grid(num_blocks, 1);
-        OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,,buffer,iBegin,iEnd);
+        OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,buffer,iBegin,iEnd);
         cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
         cudaFree(deviceBuffer);
     #endif
@@ -1884,10 +1917,10 @@ template<typename Kernel, typename Input, typename Output>
                                 int iBegin,int iEnd,
                                 Input* buffer,
                                 Output* hostbuffer,
-                                std::vector<int> links,
-                                bool qFlag)
+                                std::vector<int> links)
 {            
     #ifdef UseHIP  
+        bool qFlag=false;
         //BEGIN::Init new node
         hipGraphNode_t newKernelNode; M_hipGraphNode_t.push_back(newKernelNode);
         memset(&hip_nodeParams, 0, sizeof(hip_nodeParams));
@@ -1921,7 +1954,15 @@ template<typename Kernel, typename Input, typename Output>
         unsigned int nbElemLinks               = links.size();
         unsigned int nbElemKernelNode          = M_hipGraphNode_t.size();
         std::vector<hipGraphNode_t> dependencies;
-        for (int i = 0; i < nbElemLinks; i++) { dependencies.push_back(M_hipGraphNode_t[links[i]]); }
+        M_ListGraphDependencies.push_back(M_hipGraphNode_t.size()-1);
+        for (int i = 0; i < nbElemLinks; i++) { 
+            if (links[i]==-1) { qFlag=true; }
+            if (links[i]!=-1) {
+                dependencies.push_back(M_hipGraphNode_t[links[i]]); 
+                M_ListGraphDependencies.push_back(links[i]);
+            }
+        }
+
         if (M_qViewInfo) {
             std::cout<<"[INFO]: Nb Elem Links  = "<<nbElemLinks<<"\n";
             std::cout<<"[INFO]: Link dependencies with >>> [";
@@ -1957,6 +1998,8 @@ template<typename Kernel, typename Input, typename Output>
                                     hipMemcpyDeviceToHost);
         }
         //END::Final node kernel GPU
+
+        dependencies.clear();
      #endif
 }
 
@@ -2009,7 +2052,73 @@ void Task::close()
 }
 
 
+
+template<typename T>
+class PtrTask:public Task
+{
+    private:
+        #ifdef UseHIP
+        bufferGraphGPU<T> BUFFER;  
+        #endif  
+        unsigned int bufferSizeBytes;  
+    public:
+        PtrTask();
+        ~PtrTask();
+
+        void set(int nb,T *v);
+        void get(T *v);
+
+        template<typename Kernel>
+            void add(const Kernel& kernel_function,int iBegin,int iEnd,std::vector<int> links);
+};
+
+
+template<typename T>
+PtrTask<T>::PtrTask()
+{
+
 }
+
+template<typename T>
+PtrTask<T>::~PtrTask()
+{
+
+}
+
+template<typename T>
+void PtrTask<T>::set(int nb,T *v)
+{
+    #ifdef UseHIP
+    BUFFER.memoryInit(nb);  bufferSizeBytes=nb*sizeof(T);
+    std::memcpy(&BUFFER.data, &v,bufferSizeBytes); 
+    BUFFER.memmovHostToDevice();
+    #endif
+}
+
+template<typename T>
+void PtrTask<T>::get(T *v)
+{
+    #ifdef UseHIP
+    BUFFER.memmovDeviceToHost();
+    std::memcpy(&v,&BUFFER.data,bufferSizeBytes); 
+    #endif
+}
+
+template<typename T>
+template<typename Kernel>
+void PtrTask<T>::add(const Kernel& kernel_function,int iBegin,int iEnd,std::vector<int> links)
+{
+    #ifdef UseHIP
+    Task::add(kernel_function,BUFFER.size,iBegin,iEnd,BUFFER.deviceBuffer,BUFFER.data,links);
+    #endif
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+} //End namespace
+
+
+
 
 //================================================================================================================================
 // THE END.
