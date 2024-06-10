@@ -29,7 +29,9 @@
 #include <specx/Utils/SpUtils.hpp>
 #include <specx/Utils/SpConsumerThread.hpp>
 
+
 #include <specx/Legacy/SpRuntime.hpp>
+
 
 
 //#include "UTester.hpp"
@@ -37,8 +39,8 @@
 //#define USE_GPU_HIP
 
 
-
-#include "Taskflow_HPC.hpp"
+#include <feel/feeltask/taskHPC.hpp>
+//#include "Taskflow_HPC.hpp"
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

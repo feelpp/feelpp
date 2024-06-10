@@ -34,7 +34,8 @@
 #include <specx/Utils/SpConsumerThread.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
 
-#include "Taskflow_HPC.hpp"
+//#include "Taskflow_HPC.hpp"
+#include <feel/feeltask/taskHPC.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
