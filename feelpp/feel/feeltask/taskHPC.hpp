@@ -1703,10 +1703,20 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
     }
 #endif
 
+#ifdef UseHIP
+    template<typename Kernel,typename Input>
+    __global__ void OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D(Kernel op,Input *A,int offset) 
+    {
+        int idx =  offset + blockIdx.x * blockDim.x + threadIdx.x; 
+        op(idx,A);
+        //__syncthreads();
+    }
+#endif
+
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-namespace LEMGPU {
+namespace LEM_GPU_E {
 
 //Graph Explicit
 
@@ -1723,6 +1733,7 @@ class Task
         long int    M_time_laps;
         bool        M_qDeviceReset;
         int         M_numType;
+        int         M_nbStreams;
 
         std::vector<int>  M_ListGraphDependencies;
 
@@ -1763,11 +1774,13 @@ class Task
         void setViewInfo     (bool b)        {  M_qViewInfo    = b; }
         void setDeviceReset  (bool b)        {  M_qDeviceReset = b; }
         void setNumType      (int v)         {  M_numType      = v; }
+        void setNbStreams    (int v)         {  M_nbStreams    = v; }
     
         void setDeviceHIP    (int v);
         void setDeviceCUDA   (int v);
-        void setFileName     (std::string s) {  M_FileName=s; }
+        void setFileName     (std::string s) {  M_FileName=s;           }
         int  getNumType      () const        {  return(M_numType);      }
+        int  getNbStreams    () const        {  return(M_nbStreams);    }
         bool isSave          () const        {  return(M_qSave);        }
         bool isDeviceReset   () const        {  return(M_qDeviceReset); }
 
@@ -1809,6 +1822,23 @@ class Task
                                         int iBegin,int iEnd,
                                         Input* buffer);
 
+
+
+        template<typename Kernel, typename Input>
+            void single_stream(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer);
+
+                template<typename Kernel, typename Input>
+                    void single_stream_hip(const Kernel& kernel_function,
+                                        int numElems,
+                                        Input* buffer);
+
+                template<typename Kernel, typename Input>
+                    void single_stream_cuda(const Kernel& kernel_function,
+                                        int numElems,
+                                        Input* buffer);
+
         void run();
         void close();
         void debriefing(); 
@@ -1827,6 +1857,7 @@ Task::Task()
     M_qDeviceReset    = false;
     hip_milliseconds  = 0.0f;
     cuda_milliseconds = 0.0f;
+    M_nbStreams       = 3;
     M_ListGraphDependencies.clear();
 }
 
@@ -1983,6 +2014,116 @@ template<typename Kernel, typename Input>
         cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
         cudaFree(deviceBuffer);
     #endif
+}
+
+
+
+template<typename Kernel, typename Input>
+    void Task::single_stream_hip(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+    #ifdef UseHIP  
+        //...
+        // it will be necessary to complete, add options and do multistreaming.
+        //...
+        const int blockSize = 256;
+        hipStream_t stream[M_nbStreams];
+        const int streamSize = numElems / M_nbStreams;
+        const int streamBytes = streamSize * sizeof(typename std::decay<decltype(buffer)>);
+        const int sz = numElems * sizeof(typename std::decay<decltype(buffer)>);
+        typename std::decay<decltype(buffer)> *deviceBuffer;
+        int i;
+        hipMalloc((void **) &deviceBuffer,sz);
+        hipEventRecord(hip_start);
+        for (i = 0; i < M_nbStreams; ++i)
+        {
+            int offset = i * streamSize;
+            hipMemcpyAsync(&deviceBuffer[offset], &buffer[offset], streamBytes, hipMemcpyHostToDevice,stream[i]) ;
+        }
+
+
+        for (i = 0; i < M_nbStreams; ++i)
+        {
+            int offset = i * streamSize;
+            hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,
+                streamSize/blockSize,blockSize,0,stream[i],kernel_function,deviceBuffer,offset);
+        }
+
+        for (i = 0; i < M_nbStreams; ++i)
+        {
+            int offset = i * streamSize;
+            hipMemcpyAsync(&buffer[offset], &deviceBuffer[offset],streamBytes, hipMemcpyDeviceToHost,stream[i]) ;
+        }
+        
+        hipEventRecord(hip_stop);
+        hipEventSynchronize(hip_stop);
+        hipFree(deviceBuffer);
+    #endif
+}
+
+
+template<typename Kernel, typename Input>
+    void Task::single_stream_cuda(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+    #ifdef UseCUDA  
+        //...
+        // it will be necessary to complete, add options and do multistreaming.
+        //...
+        const int blockSize = 256;
+        cudaStream_t stream[M_nbStreams];
+        const int streamSize = numElems / M_nbStreams;
+        const int streamBytes = streamSize * sizeof(typename std::decay<decltype(buffer)>);
+        const int sz = numElems * sizeof(typename std::decay<decltype(buffer)>);
+        typename std::decay<decltype(buffer)> *deviceBuffer;
+        int i;         
+        cudaMalloc((void **) &deviceBuffer,sz);
+        cudaEventRecord(cuda_start);
+        for (i = 0; i < M_nbStreams; ++i)
+        {
+            int offset = i * streamSize;
+            cudaMemcpyAsync(&deviceBuffer[offset], &buffer[offset], streamBytes, cudaMemcpyHostToDevice,stream[i]) ;
+        }
+
+        for (i = 0; i < M_nbStreams; ++i)
+        {
+            int offset = i * streamSize;
+            OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D<<<streamSize/blockSize,blockSize,0,stream[i]>>>(kernel_function,deviceBuffer,offset);
+        }
+
+        for (i = 0; i < M_nbStreams; ++i)
+        {
+            int offset = i * streamSize;
+            cudaMemcpyAsync(&buffer[offset], &deviceBuffer[offset],streamBytes, cudaMemcpyDeviceToHost,stream[i]) ;
+        }
+        
+        cudaEventRecord(cuda_stop);
+        cudaEventSynchronize(cuda_stop);
+        cudaFree(deviceBuffer);
+    #endif
+}
+
+
+template<typename Kernel, typename Input>
+    void Task::single_stream(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+
+    if (M_numType==1) { 
+        #ifdef UseHIP  
+            single_stream_hip(kernel_function,numElems,buffer);
+        #endif
+    }
+
+     if (M_numType==2) { 
+        #ifdef UseCUDA  
+            single_stream_cuda(kernel_function,numElems,buffer);
+        #endif
+    }
+   
 }
 
 
@@ -2327,11 +2468,11 @@ void PtrTask<T>::addTest( Ts && ... ts)
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
-} //End namespace
+} //End namespace LEM_GPU_E
 
 
 
-namespace LEMGPUI {
+namespace LEM_GPU_I {
 
 //Graph Implicit
 
@@ -2438,7 +2579,7 @@ void Task::update_kernel_node(size_t key, hipKernelNodeParams params)
 
 #endif
 
-} //End namespace LEMGPUI
+} //End namespace LEM_GPU_I
 
 
 
