@@ -153,6 +153,7 @@
  #define _param(...) _parameters=Frontend::parameters(__VA_ARGS__)
 
 
+
 //================================================================================================================================
 // Get Information System CPU and GPU
 //================================================================================================================================
@@ -1688,7 +1689,7 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 
 
 //================================================================================================================================
-// CLASS Task: Provide to manipulate graph Hip/Cuda hybrid system
+// CLASS Task: Provide to manipulate graph Hip/Cuda hybrid system Explicit and Implicit
 //================================================================================================================================
 
 #ifdef UseHIP
@@ -1706,6 +1707,8 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 
 //--------------------------------------------------------------------------------------------------------------------------------
 namespace LEMGPU {
+
+//Graph Explicit
 
 class Task
 {
@@ -1732,17 +1735,23 @@ class Task
             hipGraphExec_t                      hip_graphExec;
             hipStream_t                         hip_graphStream;
             hipKernelNodeParams                 hip_nodeParams;
-            std::vector<hipGraphNode_t>         M_hipGraphNode_t;     
+            std::vector<hipGraphNode_t>         M_hipGraphNode_t;  
+            hipEvent_t                          hip_start, hip_stop;  
+            
         #endif
 
         #ifdef UseCUDA
-            cudaGraph_t                          cuda_graph;
-            cudaGraphExec_t                      cuda_graphExec;
-            cudaStream_t                         cuda_graphStream;
-            cudaKernelNodeParams                 cuda_nodeParams;
-            std::vector<cudaGraphNode_t>         M_cudaGraphNode_t;     
+            cudaGraph_t                         cuda_graph;
+            cudaGraphExec_t                     cuda_graphExec;
+            cudaStream_t                        cuda_graphStream;
+            cudaKernelNodeParams                cuda_nodeParams;
+            std::vector<cudaGraphNode_t>        M_cudaGraphNode_t;   
+            cudaEvent_t                         cuda_start, cuda_stop;   
+
         #endif
-            
+
+            float                               hip_milliseconds; 
+            float                               cuda_milliseconds;              
 
     public:
         
@@ -1807,15 +1816,17 @@ class Task
 
 Task::Task()
 {
-    M_numType      = 1;  // 1: HIP  2: CUDA
-    M_nbTh         = 1;
-    M_numBlocksGPU = 1;
-    M_q_graph      = false;
-    M_qViewInfo    = true;
-    M_time_laps    = 0;
-    M_FileName     = "NoName";
-    M_qSave        = true;
-    M_qDeviceReset = false;
+    M_numType         = 1;  // 1: HIP  2: CUDA
+    M_nbTh            = 1;
+    M_numBlocksGPU    = 1;
+    M_q_graph         = false;
+    M_qViewInfo       = true;
+    M_time_laps       = 0;
+    M_FileName        = "NoName";
+    M_qSave           = true;
+    M_qDeviceReset    = false;
+    hip_milliseconds  = 0.0f;
+    cuda_milliseconds = 0.0f;
     M_ListGraphDependencies.clear();
 }
 
@@ -1841,6 +1852,8 @@ void Task::debriefing()
         std::ofstream myfile;
         myfile.open (M_FileName+".csv");
         myfile << "Elapsed microseconds,"<<M_time_laps<<"\n";
+        myfile << "Elapsed microseconds HIP,"<<hip_milliseconds<<"\n";
+        myfile << "Elapsed microseconds CUDA,"<<cuda_milliseconds<<"\n";
         myfile << "Nb Thread,"<< M_nbTh<<"\n";
         myfile << "Nb Block used,"<<M_numBlocksGPU<<"\n";
         myfile << "Nb Th/Block,"<<M_nThPerBckGPU<<"\n";
@@ -1939,7 +1952,9 @@ template<typename Kernel, typename Input>
         int num_blocks = (numElems + block_size - 1) / block_size;
         dim3 thread_block(block_size, 1, 1);
         dim3 grid(num_blocks, 1);
+        hipEventRecord(hip_start);
         hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,buffer,iBegin,iEnd);
+        hipEventRecord(hip_stop);
         hipMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
         hipFree(deviceBuffer);
     #endif
@@ -1962,7 +1977,9 @@ template<typename Kernel, typename Input>
         int num_blocks = (numElems + block_size - 1) / block_size;
         dim3 thread_block(block_size, 1, 1);
         dim3 grid(num_blocks, 1);
+        cudaEventRecord(cuda_start);
         OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,buffer,iBegin,iEnd);
+        cudaEventRecord(cuda_stop);
         cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
         cudaFree(deviceBuffer);
     #endif
@@ -2166,16 +2183,22 @@ void Task::run()
     if (M_q_graph) {   
         //#ifdef COMPILE_WITH_HIP && UseHIP
         #ifdef UseHIP
-            hipGraphInstantiate      (&hip_graphExec, hip_graph, nullptr, nullptr, 0);
-            hipStreamCreateWithFlags (&hip_graphStream, hipStreamNonBlocking);
-            hipGraphLaunch           (hip_graphExec, hip_graphStream);
-            hipStreamSynchronize     (hip_graphStream);
+            hipEventRecord            (hip_start);
+            hipGraphInstantiate       (&hip_graphExec, hip_graph, nullptr, nullptr, 0);
+            hipStreamCreateWithFlags  (&hip_graphStream, hipStreamNonBlocking);
+            hipGraphLaunch            (hip_graphExec, hip_graphStream);
+            hipStreamSynchronize      (hip_graphStream);
+            hipEventRecord            (hip_stop);
+            hipEventElapsedTime       (&hip_milliseconds, hip_start, hip_stop);
         #endif
         #ifdef UseCUDA
+            cudaEventRecord           (cuda_start);
             cudaGraphInstantiate      (&cuda_graphExec, cuda_graph, nullptr, nullptr, 0);
             cudaStreamCreateWithFlags (&cuda_graphStream, cudaStreamNonBlocking);
             cudaGraphLaunch           (cuda_graphExec, cuda_graphStream);
             cudaStreamSynchronize     (cuda_graphStream);
+            cudaEventRecord           (cuda_stop);
+            cudaEventElapsedTime      (&cuda_milliseconds, cuda_start, cuda_stop);
         #endif
     }
     M_t_end = std::chrono::steady_clock::now();
@@ -2264,7 +2287,10 @@ template<typename Kernel>
 void PtrTask<T>::add(const Kernel& kernel_function,int iBegin,int iEnd,std::vector<int> links)
 {
     #ifdef UseHIP
-    Task::add_hip(kernel_function,BUFFER.size,iBegin,iEnd,BUFFER.deviceBuffer,BUFFER.data,links);
+    if (getNumType()==1) { Task::add_hip(kernel_function,BUFFER.size,iBegin,iEnd,BUFFER.deviceBuffer,BUFFER.data,links); }
+    #endif
+    #ifdef UseCUDA
+    if (getNumType()==2) { Task::add_cuda(kernel_function,BUFFER.size,iBegin,iEnd,BUFFER.deviceBuffer,BUFFER.data,links); }
     #endif
 }
 
@@ -2279,8 +2305,8 @@ void PtrTask<T>::addTest( Ts && ... ts)
     auto && kernel = args.get(_kernel);
     auto && range  = args.get(_range);
     auto && links  = args.get(_links);
-    auto tp1=std::make_tuple( kernel );
-    auto tp2=std::make_tuple( range );
+    auto tp1=std::make_tuple(kernel );
+    auto tp2=std::make_tuple(range );
     auto tp3=std::make_tuple(links);
     auto tp=std::tuple_cat(tp1,tp2,tp3);
 
@@ -2289,7 +2315,7 @@ void PtrTask<T>::addTest( Ts && ... ts)
     int Nbtp2=std::tuple_size<decltype(tp2)>::value;
     int Nbtp3=std::tuple_size<decltype(tp3)>::value;
     int Nbtp=std::tuple_size<decltype(tp)>::value;
-    std::cout <<"==> Size Parameters tp1..3"<<Nbtp1<<" "<<Nbtp2<<" "<<Nbtp3<< "tp="<<Nbtp<<std::endl;
+    std::cout <<"==> Size Parameters tp1.. : "<<Nbtp1<<" "<<Nbtp2<<" "<<Nbtp3<<" tp="<<Nbtp<<std::endl;
     //... 
   
 
@@ -2306,9 +2332,10 @@ void PtrTask<T>::addTest( Ts && ... ts)
 
 
 namespace LEMGPUI {
- 
-#ifdef UseHIP
 
+//Graph Implicit
+
+#ifdef UseHIP
 
 struct Task {
     enum class state_t      { capture, update };
@@ -2376,7 +2403,9 @@ void Task::wrap(Obj &o, hipStream_t stream)
     if (!_always_recapture && M_qInstantiated) {
         M_state = state_t::update;
         o(*this, stream);
-    } else {
+    } 
+    else
+    {
         M_state = state_t::capture;
         begin_capture(stream);
         o(*this, stream);
