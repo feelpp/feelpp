@@ -889,4 +889,22 @@ WorldComm::split( int n ) const
     worldcomm_ptr_t w = worldColored->subWorldComm( color );
     return std::tuple( color, w, worldColored );
 }
+void WorldComm::print( std::string const& text, bool sync, bool print_to_cout, bool flush )
+{
+    std::string str = fmt::format( "[rank {}] {}",this->localRank(), text );
+    LOG(INFO) << str; 
+    if ( flush )
+        google::FlushLogFiles(google::INFO);
+    if ( print_to_cout )
+    {
+        if ( sync )
+            this->globalComm().barrier();
+        std::cout << str << std::endl;
+        if ( flush )
+            std::cout << std::flush;
+        if ( sync )
+            this->globalComm().barrier();
+    }
+}
+
 } //namespace Feel

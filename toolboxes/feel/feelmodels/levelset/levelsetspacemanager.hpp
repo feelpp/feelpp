@@ -56,7 +56,7 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
 
     //--------------------------------------------------------------------//
     // Periodicity

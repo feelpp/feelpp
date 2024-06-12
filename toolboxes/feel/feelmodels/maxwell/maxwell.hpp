@@ -158,7 +158,7 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_magneticpotential_ptrtype const& spaceMagneticPotential() const { return M_XhMagneticPotential; }
     element_magneticpotential_ptrtype const& fieldMagneticPotentialPtr() const { return M_fieldMagneticPotential; }
@@ -198,7 +198,7 @@ public :
 private :
     //bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     space_magneticpotential_ptrtype M_XhMagneticPotential;
     element_magneticpotential_ptrtype M_fieldMagneticPotential;

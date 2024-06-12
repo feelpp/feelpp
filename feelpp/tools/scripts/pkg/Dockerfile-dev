@@ -6,7 +6,7 @@ FROM ghcr.io/feelpp/feelpp:$TAG
 USER root
 RUN apt-get update;\
         apt-get install -y --no-install-recommends git git-lfs jq curl pybind11-dev python3-pybind11; \
-        apt-get install -y 'libfeelpp*dev';\
+        apt-get install -y 'libfeelpp*dev' 'feelpp-*-dbgsym';\
         rm -rf /var/lib/apt/lists/* ;
 
 # RUN json=$(curl -s "https://api.github.com/repos/Kitware/CMake/releases"); \

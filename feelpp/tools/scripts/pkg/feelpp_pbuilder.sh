@@ -9,7 +9,7 @@ source $(dirname $0)/feelpp_pkg_common.sh
 builddeps=$(cat $DIST | tr "\n" " ")
 
 
-pbuilder-dist $DIST login --save-after-login << EOF
+feelpp-pbuilder-dist $DIST login --save-after-login << EOF
 echo "--- apt update"
 apt-get update
 apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget

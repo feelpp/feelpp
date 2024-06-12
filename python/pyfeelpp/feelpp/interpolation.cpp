@@ -58,23 +58,38 @@ void defInterpolate( py::module& m )
         suffix = std::string("Pdh");
     if ( !space_t::is_continuous && space_t::is_vectorial )
         suffix = std::string("Pdhv");
-    std::string pyclass_name = fmt::format( "OperatorInterpolation_{}_{}D_P{}", suffix, Dim, Order );
-    VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
-    using iterator_range_t = elements_reference_wrapper_t<mesh_t>;
+    std::string pyclass_name_range_ptr = fmt::format( "OperatorInterpolation_range_ptr_{}_{}D_P{}", suffix, Dim, Order );
+    std::string pyclass_name_range = fmt::format( "OperatorInterpolation_range_{}_{}D_P{}", suffix, Dim, Order );
+    VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name_range_ptr ) << std::endl;
+    using iterator_range_t = Range<mesh_t,MESH_ELEMENTS>;
+    using iterator_range_ptr_t = Range<mesh_ptr_t,MESH_ELEMENTS>;
     using interp_t = decltype(InterpolationNonConforming());
-    using Iop_t = OperatorInterpolation<space_t,space_t,iterator_range_t,interp_t>;
+    using Iop_range_ptr_t = OperatorInterpolation<space_t,space_t,iterator_range_ptr_t,interp_t>;
+    using Iop_range_t = OperatorInterpolation<space_t,space_t,iterator_range_t,interp_t>;
     using matrix_setup_t = OperatorInterpolationMatrixSetup<double>;
 
 
-    py::class_<Iop_t, std::shared_ptr<Iop_t>>( m, pyclass_name.c_str() )
-            .def( py::init<space_ptr_t const&, space_ptr_t const&, iterator_range_t, backend_ptrtype const&,interp_t,bool,matrix_setup_t const&>(),
+    py::class_<Iop_range_ptr_t, std::shared_ptr<Iop_range_ptr_t>>( m, pyclass_name_range_ptr.c_str() )
+            .def( py::init<space_ptr_t const&, space_ptr_t const&, iterator_range_ptr_t, backend_ptrtype const&,interp_t,bool,matrix_setup_t const&>(),
                   py::arg( "domain_space" ), py::arg( "image_space" ), py::arg("range"), py::arg("backend"), py::arg("interp"), py::arg("dd") = false, py::arg("setup")=matrix_setup_t{}, "Initialize a remesher" )
-            .def( "interpolate", []( std::shared_ptr<Iop_t> const& self, typename Iop_t::domain_element_type const& v ) {
+            .def( "interpolate", []( std::shared_ptr<Iop_range_ptr_t> const& self, typename Iop_range_ptr_t::domain_element_type const& v ) {
                 auto u = self->dualImageSpace()->elementPtr();
                 *u = self->operator()( v );
                 return u;
             },  py::arg("domain"),  "apply interpolation operator");
 
+    py::class_<Iop_range_t, std::shared_ptr<Iop_range_t>>( m, pyclass_name_range.c_str() )
+        .def( py::init<space_ptr_t const&, space_ptr_t const&, iterator_range_ptr_t, backend_ptrtype const&,interp_t,bool,matrix_setup_t const&>(),
+                py::arg( "domain_space" ), py::arg( "image_space" ), py::arg("range"), py::arg("backend"), py::arg("interp"), py::arg("dd") = false, py::arg("setup")=matrix_setup_t{}, "Initialize a remesher" )
+        .def( "interpolate", []( std::shared_ptr<Iop_range_t> const& self, typename Iop_range_t::domain_element_type const& v ) {
+            auto u = self->dualImageSpace()->elementPtr();
+            *u = self->operator()( v );
+            return u;
+        },  py::arg("domain"),  "apply interpolation operator");
+
+    m.def("interpolator", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_ptr_t const& r )
+        { return opInterpPtr( domain, image, r, backend(), InterpolationNonConforming(), false, matrix_setup_t{} ); },
+        py::arg( "domain" ), py::arg( "image" ), py::arg( "range" ), "create an Interpolation Operator" );
     m.def("interpolator", []( space_ptr_t const& domain, space_ptr_t const& image, iterator_range_t const& r )
         { return opInterpPtr( domain, image, r, backend(), InterpolationNonConforming(), false, matrix_setup_t{} ); },
         py::arg( "domain" ), py::arg( "image" ), py::arg( "range" ), "create an Interpolation Operator" );
