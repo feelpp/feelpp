@@ -39,8 +39,7 @@
 //#define USE_GPU_HIP
 
 
-#include <feel/feeltask/taskHPC.hpp>
-//#include "Taskflow_HPC.hpp"
+#include <feel/feeltask/taskpu.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

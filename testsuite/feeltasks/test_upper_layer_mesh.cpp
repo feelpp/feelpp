@@ -34,8 +34,7 @@
 #include <specx/Utils/SpConsumerThread.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
 
-//#include "Taskflow_HPC.hpp"
-#include <feel/feeltask/taskHPC.hpp>
+#include <feel/feeltask/taskpu.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -54,7 +53,7 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_mesh_2 )
 
     for(int NumThreads : {1,2,4,8,16})
     {
-        LEM::Task TsK(NumThreads,3);
+        TASK::Task TsK(NumThreads,3);
         TsK.setSave(false);
         TsK.setInfo(false);
         TsK.setFileName("./Test_Mesh2");
@@ -109,7 +108,7 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_2 )
 
     for ( int NumThreads : { 1, 2, 4, 8, 16 } )
     {
-        LEM::Task TsK(NumThreads,3);
+        TASK::Task TsK(NumThreads,3);
         TsK.setSave(false);
         TsK.setInfo(false);
         TsK.setFileName("./Test_Integrate2");

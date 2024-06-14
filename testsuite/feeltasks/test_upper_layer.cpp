@@ -39,8 +39,8 @@
 //#define USE_GPU_HIP
 
 
-#include <feel/feeltask/taskHPC.hpp>
-//#include "Taskflow_HPC.hpp"
+#include <feel/feeltask/taskpu.hpp>
+
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( test_specx_21 )
         return true;
     };
 
-        LEM::Task TsK(nbThreads,3); 
+        TASK::Task TsK(nbThreads,3); 
         TsK.setSave(false); 
         TsK.setInfo(false); 
         TsK.setFileName("./PI");
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
         return true;
     };
 
-        LEM::Task TsK(nbThreads,3); 
+        TASK::Task TsK(nbThreads,3); 
         TsK.setSave(false); 
         TsK.setInfo(false); 
         TsK.setFileName("./AddVectors");
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
-    LEM::Task TsK(nbThreads,3);
+    TASK::Task TsK(nbThreads,3);
     TsK.setSave(false); 
     TsK.setInfo(false); 
     TsK.setFileName("./Test");
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
-    LEM::Task TsK(nbThreads,2);
+    TASK::Task TsK(nbThreads,2);
     TsK.setSave(false); 
     TsK.setInfo(false); 
     TsK.setFileName("./Test");
@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
     int           idk=0;
     const int      nb=10;
 
-    LEM::Task TsK(nbThreads,1);
+    TASK::Task TsK(nbThreads,1);
     TsK.setSave(false); 
     TsK.setInfo(false); 
     TsK.setFileName("./ForEach");
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE( test_specx_26 )
         out.setConstant(data_size, -1);
         cfin.setRandom(data_size);
         cfout.setConstant(data_size, -1);
-        LEM::Task TsK(1,0);
+        TASK::Task TsK(1,0);
         TsK.setSave(false); 
         TsK.setInfo(false); 
         TsK.qViewChrono=true;
