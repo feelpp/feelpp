@@ -1,9 +1,6 @@
 
 
 
-constexpr auto& _kernel = NA::identifier<struct kernel_tag>;
-constexpr auto& _range  = NA::identifier<struct range_tag>;
-constexpr auto& _links  = NA::identifier<struct links_tag>;
 
 
 
@@ -63,7 +60,7 @@ struct VectorBuffer {
 
 #ifdef UseHIP
 template<typename ptrtype>
-    struct bufferGraphGPU {
+    struct bufferGraphHIP {
         unsigned int size; 
         ptrtype* data;
         ptrtype* deviceBuffer;
@@ -88,8 +85,55 @@ template<typename ptrtype>
 };
  #endif
 
+ #ifdef UseCUDA
+template<typename ptrtype>
+    struct bufferGraphCUDA {
+        unsigned int size; 
+        ptrtype* data;
+        ptrtype* deviceBuffer;
+
+    void memoryInit(int dim)
+    {
+        size=dim; data=(ptrtype *)malloc(sizeof(ptrtype) * size);
+    }
+
+    void memmovHostToDevice()
+    {
+        cudaMalloc((void **) &deviceBuffer, sizeof(ptrtype) * size);
+        cudaMemcpy(deviceBuffer,data,sizeof(ptrtype) * size, cudaMemcpyHostToDevice);
+    };
+
+    void memmovDeviceToHost()
+    {
+        cudaMemcpy(data,deviceBuffer,sizeof(ptrtype) * size, cudaMemcpyDeviceToHost);
+        cudaFree(deviceBuffer);
+    }
+};
+ #endif
 
 
+#ifdef UseHIP
+template<typename ptrtype>
+    struct bufferGraphUnifiedHIP {
+        unsigned int size; 
+        ptrtype* data;
+
+    void memoryInit(int dim) { size=dim; hipMallocManaged(&data,size); }
+    //(sizeof(ptrtype) * size);
+};
+#endif
+
+#ifdef UseCUDA
+template<typename ptrtype>
+    struct bufferGraphUnifiedCUDA {
+        unsigned int size; 
+        ptrtype* data;
+
+    void memoryInit(int dim) { size=dim; cudaMallocManaged(&data,size); }
+};
+#endif
+
+ 
 //================================================================================================================================
 // GPU KERNEL FUNCTIONS
 //================================================================================================================================
@@ -156,6 +200,7 @@ template<typename ptrtype>
 // GRAPH EXPLICIT
 
 namespace TASK_GPU_E {
+
 
 class Task
 {
@@ -452,6 +497,8 @@ template<typename Kernel, typename Input>
         cudaFree(deviceBuffer);
     #endif
 }
+
+
 
 
 
@@ -811,7 +858,10 @@ class PtrTask:public Task
 {
     private:
         #ifdef UseHIP
-        bufferGraphGPU<T> BUFFER;   
+        bufferGraphHIP<T> BUFFER_HIP;   
+        #endif 
+        #ifdef UseCUDA
+        bufferGraphCUDA<T> BUFFER_CUDA;   
         #endif 
         unsigned int bufferSizeBytes;  
     public:
@@ -845,9 +895,15 @@ template<typename T>
 void PtrTask<T>::set(int nb,T *v)
 {
     #ifdef UseHIP
-    BUFFER.memoryInit(nb);  bufferSizeBytes=nb*sizeof(T);
-    std::memcpy(&BUFFER.data, &v,bufferSizeBytes); 
-    BUFFER.memmovHostToDevice();
+    if (getNumType()==1) { 
+        BUFFER_HIP.memoryInit(nb);  bufferSizeBytes=nb*sizeof(T); std::memcpy(&BUFFER_HIP.data, &v,bufferSizeBytes);  BUFFER_HIP.memmovHostToDevice();
+    }
+    #endif
+
+    #ifdef UseCUDA
+    if (getNumType()==1) { 
+        BUFFER_CUDA.memoryInit(nb);  bufferSizeBytes=nb*sizeof(T); std::memcpy(&BUFFER_CUDA.data, &v,bufferSizeBytes); BUFFER_CUDA.memmovHostToDevice();
+    }
     #endif
 }
 
@@ -855,8 +911,10 @@ template<typename T>
 void PtrTask<T>::get(T *v)
 {
     #ifdef UseHIP
-    BUFFER.memmovDeviceToHost();
-    std::memcpy(&v,&BUFFER.data,bufferSizeBytes); 
+    if (getNumType()==1) {  BUFFER_HIP.memmovDeviceToHost(); std::memcpy(&v,&BUFFER_HIP.data,bufferSizeBytes); }
+    #endif
+    #ifdef UseCUDA
+    if (getNumType()==2) {  BUFFER_CUDA.memmovDeviceToHost(); std::memcpy(&v,&BUFFER_CUDA.data,bufferSizeBytes); }
     #endif
 }
 
@@ -865,10 +923,10 @@ template<typename Kernel>
 void PtrTask<T>::add(const Kernel& kernel_function,int iBegin,int iEnd,std::vector<int> links)
 {
     #ifdef UseHIP
-    if (getNumType()==1) { Task::add_hip(kernel_function,BUFFER.size,iBegin,iEnd,BUFFER.deviceBuffer,BUFFER.data,links); }
+    if (getNumType()==1) { Task::add_hip(kernel_function,BUFFER_HIP.size,iBegin,iEnd,BUFFER_HIP.deviceBuffer,BUFFER_HIP.data,links); }
     #endif
     #ifdef UseCUDA
-    if (getNumType()==2) { Task::add_cuda(kernel_function,BUFFER.size,iBegin,iEnd,BUFFER.deviceBuffer,BUFFER.data,links); }
+    if (getNumType()==2) { Task::add_cuda(kernel_function,BUFFER_CUDA.size,iBegin,iEnd,BUFFER_CUDA.deviceBuffer,BUFFER_CUDA.data,links); }
     #endif
 }
 
@@ -877,6 +935,11 @@ template<typename T>
 template <typename ... Ts>
 void PtrTask<T>::addTest( Ts && ... ts)
 {
+
+    constexpr auto& _kernel = NA::identifier<struct kernel_tag>;
+    constexpr auto& _range  = NA::identifier<struct range_tag>;
+    constexpr auto& _links  = NA::identifier<struct links_tag>;
+
     //(_kernel=(op1),_range=(0,nbElements),_links=(0)); 
 /*
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
@@ -1020,6 +1083,104 @@ void Task::update_kernel_node(size_t key, hipKernelNodeParams params)
 } //End namespace TASK_GPU_I
 //--------------------------------------------------------------------------------------------------------------------------------
 
+
+
+//================================================================================================================================
+// CLASS Task: Unified Memory
+//================================================================================================================================
+
+
+namespace TASK_GPU_UNIFIED_MEMORY {
+
+
+//#if defined(useHIP) || defined(useCUDA)
+#ifdef UseHIP
+
+template<typename T>
+class Task
+{
+    private:
+        int M_numBlocksGPU;
+        int M_nbThGPU;
+        bool M_isFree;
+    public:
+        #ifdef UseHIP
+        bufferGraphUnifiedHIP<T> BUFFER_HIP;   
+        #endif 
+        #ifdef UseCUDA
+        bufferGraphUnifiedHIP<T> BUFFER_CUDA;   
+        #endif 
+
+        Task();
+        ~Task();
+
+        void open(int nbBlock,int NbTh);
+        void close();
+
+        template<typename Kernel>
+            void run(const Kernel& kernel_function);
+};
+
+template<typename T>
+Task<T>::~Task()
+{   
+    if (!M_isFree) { close(); }
+}
+
+template<typename T>
+Task<T>::Task()
+{
+    M_numBlocksGPU=512;
+    M_isFree=false;
+}
+
+template<typename T>
+void Task<T>::open(int nbBlock,int NbTh)
+{
+    M_nbThGPU= NbTh;
+    M_numBlocksGPU=nbBlock;
+    #ifdef UseHIP
+    BUFFER_HIP.memoryInit(NbTh);
+    #endif 
+    #ifdef UseCUDA
+    BUFFER_CUDA.memoryInit(NbTh);
+    #endif 
+}
+
+template<typename T>
+void Task<T>::close()
+{
+    #ifdef UseHIP
+    hipFree(BUFFER_HIP.data); 
+    #endif   
+    #ifdef UseCUDA
+    cudaFree(BUFFER_CUDA.data); 
+    #endif 
+    M_isFree=true;
+}
+
+
+template<typename T>
+template<typename Kernel>
+void Task<T>::run(const Kernel& kernel_function)
+{
+    int num_blocks = (BUFFER_HIP.size + M_numBlocksGPU - 1) / M_numBlocksGPU;
+    dim3 thread_block(M_numBlocksGPU, 1, 1);
+    dim3 grid(num_blocks, 1);
+    #ifdef UseHIP
+    hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,BUFFER_HIP.data,0,BUFFER_HIP.size);
+    hipDeviceSynchronize();
+    #endif 
+    #ifdef UseCUDA
+    OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,BUFFER_CUDA.data,0,BUFFER_CUDA.size);
+    cudaDeviceSynchronize();
+    #endif 
+}
+
+#endif
+
+}//End namespace TASK_GPU_UNIFIED_MEMORY
+//--------------------------------------------------------------------------------------------------------------------------------
 
 
 

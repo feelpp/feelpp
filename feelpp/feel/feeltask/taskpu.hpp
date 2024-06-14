@@ -138,7 +138,8 @@
     #define CUDA_ASSERT(x) (assert((x)==cudaSuccess))
 #endif
 
-#define _param(...) _parameters=parameters(__VA_ARGS__)
+
+#define _param(...) _parameters=SUBTASK::parameters(__VA_ARGS__)
 
 
 

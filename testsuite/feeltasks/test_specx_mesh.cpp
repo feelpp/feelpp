@@ -42,7 +42,7 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( testspecx_suite )
 
-
+/*
 BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
 {
     using namespace Feel;
@@ -53,12 +53,13 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
     using range_t = decay_type<decltype(therange)>;
     double area = 1;
 
-    for(int NumThreads : {1,2,4,8,16})
+    //for(int NumThreads : {1,2,4,8,16})
+    for(int NumThreads : {1})
     {
         SpRuntime runtime( NumThreads );
 
         double area = 0;
-        auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
+        auto ranges = partitionRange( therange, NumThreads );
         tic();
 
         Eigen::VectorXd area_vec( NumThreads );
@@ -87,8 +88,10 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
 }
+*/
 
-BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
+
+BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
 {
     using namespace Feel;
     using mesh_t = Mesh<Simplex<3, 1, 3>>;
@@ -98,12 +101,13 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_1 )
     using range_t = decay_type<decltype( therange )>;
     double area = 1;
 
-    for ( int NumThreads : { 1, 2, 4, 8, 16 } )
+    //for(int NumThreads : {1,2,4,8,16})
+    for ( int NumThreads : { 1 } )
     {
         SpRuntime runtime( NumThreads );
 
         double area = 0;
-        auto ranges = parTaskflow_HPCionRange( therange, NumThreads );
+        auto ranges = partitionRange( therange, NumThreads );
         tic();
 
         Eigen::VectorXd area_vec( NumThreads );

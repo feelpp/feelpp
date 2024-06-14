@@ -5,8 +5,12 @@
 //=======================================================================================================================
 
 
-    constexpr auto& _parameters = NA::identifier<struct parameters_tag>;
-    constexpr auto& _task = NA::identifier<struct task_tag>;
+constexpr auto& _parameters = NA::identifier<struct parameters_tag>;
+constexpr auto& _tasks = NA::identifier<struct task_tag>;
+
+
+
+namespace SUBTASK{
 
     template<typename ...T, size_t... I>
     auto extractParametersAsTuple( std::tuple<T...> && t, std::index_sequence<I...>)
@@ -90,6 +94,8 @@
         return makeSpDataHelperSpecx<T...>(t, std::make_index_sequence<sizeof...(T)>{});
     }
 
+
+
     template<typename T>
     auto toSpDataSpecxGPU( T && t )
     {
@@ -110,12 +116,25 @@
         return makeSpDataHelperSpecxGPU<T...>(t, std::make_index_sequence<sizeof...(T)>{});
     }
 
+
     template <typename ... Ts>
     auto parameters(Ts && ... ts)
     {
         return std::forward_as_tuple( std::forward<Ts>(ts)... );
     }
+}
 
+
+/*
+namespace Frontend
+{
+    template <typename ... Ts>
+    auto parameters(Ts && ... ts)
+    {
+        return std::forward_as_tuple( std::forward<Ts>(ts)... );
+    }
+}
+*/
 
 
 //================================================================================================================================
@@ -138,6 +157,7 @@ void *workerNumCPU(void *arg) {
     (*func)();
     pthread_exit(NULL);
 }
+
 
 class Task
 {
@@ -631,7 +651,7 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
 {
     //=33
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-    auto && task = args.get(_task);
+    auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
     
     //std::cout<<"GET Task="<<std::get<0>(args)<<"\n";
@@ -639,17 +659,17 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
 
 
 
-    auto tpBackend=makeSpDataSpecxGPU( parameters );
-    int NbtpBackend=std::tuple_size<decltype(tpBackend)>::value;
-    std::cout <<"Size Parameters="<<NbtpBackend<< std::endl;
+    auto tpSUBTASK=SUBTASK::makeSpDataSpecxGPU( parameters );
+    int NbtpSUBTASK=std::tuple_size<decltype(tpSUBTASK)>::value;
+    std::cout <<"Size Parameters="<<NbtpSUBTASK<< std::endl;
 
     auto LambdaExpression=std::make_tuple(task);
     int NbLambdaExpression=std::tuple_size<decltype(LambdaExpression)>::value;
     std::cout <<"Size Tuple Task="<<NbLambdaExpression<< std::endl;
 
-    //auto tpHip=std::tuple_cat(tpBackend,LambdaExpression);  
+    //auto tpHip=std::tuple_cat(tpSUBTASK,LambdaExpression);  
 
-    //M_mytg.task(std::get<0>(tpBackend),std::get<1>(tpBackend),SpHip(task));
+    //M_mytg.task(std::get<0>(tpSUBTASK),std::get<1>(tpSUBTASK),SpHip(task));
 
 
     //std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tpHip);    
@@ -661,14 +681,14 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
     {
         if (M_numOpGPU==0) { 
             
-            auto tp=std::tuple_cat( makeSpDataSpecxGPU( parameters ), std::make_tuple( task ));  
+            auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecxGPU( parameters ), std::make_tuple( task ));  
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);       
         } //CPU Normal
 
 
         if (M_numOpGPU==1)
         { 
-            //auto tp=std::tuple_cat( makeSpDataSpecxGPU( parameters ), SpHip(std::make_tuple(task))); 
+            //auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecxGPU( parameters ), SpHip(std::make_tuple(task))); 
             //std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
         } //op in Hip
 
@@ -676,12 +696,12 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
 /*
 
         if (M_numOpGPU==2) { 
-            auto tp=std::tuple_cat( makeSpDataSpecxGPU( parameters ), SpCuda(std::make_tuple( task )));   
+            auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecxGPU( parameters ), SpCuda(std::make_tuple( task )));   
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);  
         } //op in Cuda
 
         if (M_numOpGPU==3) { 
-            auto tp=std::tuple_cat( makeSpDataSpecx( parameters ), SpCPU(std::make_tuple( task )));
+            auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecx( parameters ), SpCPU(std::make_tuple( task )));
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
         } //op in GPU to CPU
 */
@@ -708,9 +728,9 @@ template <typename ... Ts>
     auto Task::common(Ts && ... ts)
 {
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-    auto && task = args.get(_task);
+    auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    auto tp=std::tuple_cat(  makeSpData( parameters ), std::make_tuple( task ) );
+    auto tp=std::tuple_cat(  SUBTASK::makeSpData( parameters ), std::make_tuple( task ) );
     return(tp);
 }
 
@@ -719,7 +739,7 @@ template <typename ... Ts>
 void Task::addTaskSimple( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    Runtime runtime;
+    SUBTASK::Runtime runtime;
     std::apply( [&runtime](auto... args){ runtime.task(args...); }, tp );
 }
 
@@ -728,7 +748,7 @@ template <typename ... Ts>
 void Task::addTaskMultithread( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    Runtime runtime;
+    SUBTASK::Runtime runtime;
 	auto LamdaTransfert = [&]() {
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -752,7 +772,7 @@ template <typename ... Ts>
 void Task::addTaskAsync( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    Runtime runtime;
+    SUBTASK::Runtime runtime;
     auto LamdaTransfert = [&]() {
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -778,10 +798,10 @@ template <typename ... Ts>
 void Task::addTaskSpecx( Ts && ... ts )
 {
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-    auto && task = args.get(_task);
+    auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
     auto tp=std::tuple_cat( 
-					makeSpDataSpecx( parameters ), 
+					SUBTASK::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 				);
     if (!M_qDetach)
@@ -800,7 +820,7 @@ template <typename ... Ts>
 void Task::addTaskjthread( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    Runtime runtime;
+    SUBTASK::Runtime runtime;
 	auto LamdaTransfert = [&]() {
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -910,15 +930,15 @@ template <class InputIterator,typename ... Ts>
         //std::cout <<ivdk;
 
         auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-        auto && task = args.get(_task);
+        auto && task = args.get(_tasks);
         auto && parameters = args.get_else(_parameters,std::make_tuple());
         if (M_qUseIndex) { std::get<0>(parameters)=std::cref(ivdk); } 
         auto tp=std::tuple_cat( 
-					makeSpData( parameters ), 
+					SUBTASK::makeSpData( parameters ), 
 					std::make_tuple( task ) 
 				);
 
-        Runtime runtime;
+        SUBTASK::Runtime runtime;
 
         if (M_numTypeTh==0) {
             std::apply( [&runtime](auto... args){ runtime.task(args...); }, tp );
@@ -947,7 +967,7 @@ template <class InputIterator,typename ... Ts>
 
         if (M_numTypeTh==3) {
             auto tp=std::tuple_cat( 
-					makeSpDataSpecx( parameters ), 
+					SUBTASK::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 			);
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
@@ -1102,11 +1122,11 @@ void Task::add(int numCPU,Ts && ... ts)
     
 
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-    auto && task = args.get(_task);
+    auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    Runtime runtime;
+    SUBTASK::Runtime runtime;
     auto tp=std::tuple_cat( 
-            makeSpData( parameters ), 
+            SUBTASK::makeSpData( parameters ), 
                       std::make_tuple( task ) 
     );
     auto LamdaTransfert = [&]() {
@@ -1141,16 +1161,16 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
     pthread_attr_t pta_array[M_nbTh];
 
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-    auto && task = args.get(_task);
+    auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    Runtime runtime;
+    SUBTASK::Runtime runtime;
     M_qUseIndex=true;
     
     for (int i = 0; i < M_nbTh; i++) {
         int const& M_idk = i;
         if (M_qUseIndex) { std::get<0>(parameters)=M_idk; }
         auto tp=std::tuple_cat( 
-                makeSpData( parameters ), 
+                SUBTASK::makeSpData( parameters ), 
                         std::make_tuple( task ) 
         );
 
