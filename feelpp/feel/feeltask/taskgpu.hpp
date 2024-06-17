@@ -139,7 +139,7 @@ template<typename ptrtype>
 //================================================================================================================================
 
 
-#ifdef UseHIP
+ #if defined(UseHIP) || defined(UseCUDA)
     template<typename Kernel, typename Input, typename Output>
     __global__ void OP_IN_KERNEL_GPU_1D(const Kernel kernel_function, int n,Input* in, Output* out)
     {
@@ -159,17 +159,14 @@ template<typename ptrtype>
     }
 
     template<typename Kernel,typename Input>
-    __global__ void OP_IN_KERNEL_LAMBDA_GPU_1D2I(Kernel op,Input *A,Input *B, int nb) 
+    __global__ void OP_IN_KERNEL_LAMBDA_GPU_1D_2I(Kernel op,Input *A,Input *B, int nb) 
     {
         int idx = blockIdx.x * blockDim.x + threadIdx.x; 
         if (idx < nb)
             op(idx,A,B);
         //__syncthreads();
     }
- #endif
-
-
-  #if defined(UseHIP) || defined(UseCUDA)
+ 
     template<typename Kernel,typename Input>
     __global__ void OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D(Kernel op,Input *A,int iBegin,int iEnd) 
     {
@@ -178,9 +175,8 @@ template<typename ptrtype>
             op(idx,A);
         //__syncthreads();
     }
-#endif
 
- #if defined(UseHIP) || defined(UseCUDA)
+
     template<typename Kernel,typename Input>
     __global__ void OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D(Kernel op,Input *A,int offset) 
     {
@@ -840,12 +836,14 @@ void Task::close()
             hipGraphDestroy         (hip_graph);
             hipStreamDestroy        (hip_graphStream);
             if (M_qDeviceReset)     { hipDeviceReset(); }   // Not be used if Spex Hip AMD activated
+            // Explicitly destroys and cleans up all resources associated with the current device in the current process. Any subsequent API call to this device will reinitialize the device.
         #endif
         #ifdef UseCUDA
             cudaGraphExecDestroy     (cuda_graphExec);
             cudaGraphDestroy         (cuda_graph);
             cudaStreamDestroy        (cuda_graphStream);
             if (M_qDeviceReset)      { cudaDeviceReset(); }  // Not be used if Spex Cuda NVidia activated
+            // Explicitly destroys and cleans up all resources associated with the current device in the current process. Any subsequent API call to this device will reinitialize the device.
         #endif
         if (M_qViewInfo) { std::cout<<"[INFO]: Close Graph Hip"<<"\n"; }
     }
@@ -1089,6 +1087,11 @@ void Task::update_kernel_node(size_t key, hipKernelNodeParams params)
 // CLASS Task: Unified Memory
 //================================================================================================================================
 
+// NOTA: With Unified Memory: GPU accesses data directly from the "host" may be used without a separate "host" allocation and no copy routine is required,
+// greatly simplifying and reducing the size of the program. With:
+// - System Allocated: no other changes required.
+// - Managed Memory: data allocation changed to use (cuda or hip)-MallocManaged(),which returns a pointer valid from both host and device code.
+
 
 namespace TASK_GPU_UNIFIED_MEMORY {
 
@@ -1100,9 +1103,17 @@ template<typename T>
 class Task
 {
     private:
-        int M_numBlocksGPU;
-        int M_nbThGPU;
-        bool M_isFree;
+        int         M_numBlocksGPU;
+        int         M_nbThGPU;
+        bool        M_isFree;
+        bool        M_qViewInfo;
+        bool        M_qDeviceReset;
+        long int    M_time_laps;
+        float       hip_milliseconds;
+        float       cuda_milliseconds;
+        int         M_nbStreams;
+        std::chrono::steady_clock::time_point M_t_begin,M_t_end;
+
     public:
         #ifdef UseHIP
         bufferGraphUnifiedHIP<T> BUFFER_HIP;   
@@ -1116,9 +1127,21 @@ class Task
 
         void open(int nbBlock,int NbTh);
         void close();
+        void setViewInfo     (bool b)        {  M_qViewInfo = b; }
+        void setDeviceReset  (bool b)        {  M_qDeviceReset = b; }
+        void setNbStreams    (int v)         {  M_nbStreams    = v; }
+        void setDeviceHIP    (int v);
+        void setDeviceCUDA   (int v);
+        int  getNbStreams    () const        {  return(M_nbStreams);    }
+        bool isDeviceReset   () const        {  return(M_qDeviceReset); }
 
         template<typename Kernel>
             void run(const Kernel& kernel_function);
+
+        template<typename Kernel>
+            void run_stream(const Kernel& kernel_function);
+
+        void debriefing();
 };
 
 template<typename T>
@@ -1130,8 +1153,12 @@ Task<T>::~Task()
 template<typename T>
 Task<T>::Task()
 {
-    M_numBlocksGPU=512;
-    M_isFree=false;
+    M_numBlocksGPU    = 512;
+    M_isFree          = false;
+    M_qViewInfo       = true;
+    M_qDeviceReset    = false;
+    M_nbStreams       = 3;
+
 }
 
 template<typename T>
@@ -1152,18 +1179,49 @@ void Task<T>::close()
 {
     #ifdef UseHIP
     hipFree(BUFFER_HIP.data); 
+    if (M_qDeviceReset)      { hipDeviceReset(); }
     #endif   
     #ifdef UseCUDA
     cudaFree(BUFFER_CUDA.data); 
+    if (M_qDeviceReset)      { cudaDeviceReset(); }
     #endif 
     M_isFree=true;
 }
 
+template<typename T>
+void Task<T>::setDeviceHIP(int v)
+{
+    #ifdef UseHIP
+    int numDevices=0; hipGetDeviceCount(&numDevices);
+    if ((v>=0) && (v<=numDevices)) { hipSetDevice(v); }
+    #endif
+}
+
+template<typename T>
+void Task<T>::setDeviceCUDA(int v)
+{
+    #ifdef UseCUDA
+    int numDevices=0; cudaGetDeviceCount(&numDevices);
+    if ((v>=0) && (v<=numDevices)) { cudaSetDevice(v); }
+    #endif
+}
+
+
+template<typename T>
+void Task<T>::debriefing()
+{
+    if (M_qViewInfo) { 
+        std::cout<<"<=====================================================================>"<<"\n"; 
+        std::cout<<"[INFO]: Debriefing"<<"\n";  
+        std::cout<<"[INFO]: Elapsed microseconds : "<<M_time_laps<< " us\n";
+    }
+}
 
 template<typename T>
 template<typename Kernel>
 void Task<T>::run(const Kernel& kernel_function)
 {
+    M_t_begin = std::chrono::steady_clock::now();
     int num_blocks = (BUFFER_HIP.size + M_numBlocksGPU - 1) / M_numBlocksGPU;
     dim3 thread_block(M_numBlocksGPU, 1, 1);
     dim3 grid(num_blocks, 1);
@@ -1174,6 +1232,48 @@ void Task<T>::run(const Kernel& kernel_function)
     #ifdef UseCUDA
     OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,BUFFER_CUDA.data,0,BUFFER_CUDA.size);
     cudaDeviceSynchronize();
+    #endif 
+    M_t_end = std::chrono::steady_clock::now();
+    M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
+}
+
+template<typename T>
+template<typename Kernel>
+void Task<T>::run_stream(const Kernel& kernel_function)
+{
+    #ifdef UseHIP
+    const int blockSize = 256;
+    hipStream_t stream[M_nbStreams];
+    const int streamSize = BUFFER_HIP.size / M_nbStreams;
+    const int streamBytes = streamSize * sizeof(typename std::decay<decltype(BUFFER_HIP.data)>);
+    const int sz = BUFFER_HIP.size * sizeof(typename std::decay<decltype(BUFFER_HIP.data)>);
+    typename std::decay<decltype(BUFFER_HIP.data)> *data;
+    int i;
+    for (i = 0; i < M_nbStreams; ++i) {  hipStreamCreate(stream[i]); }
+
+    hipMallocManaged((void **) &data,sz,hipMemAttachHost);
+
+    for (i = 0; i < M_nbStreams; ++i)
+    {
+        hipStreamAttachMemAsync(stream[i],data);
+        hipStreamSynchronize(stream[i]);
+    }
+
+    memcpy(data,BUFFER_HIP.data,sz);
+
+    //hipDeviceSynchronize();
+
+    for (i = 0; i < M_nbStreams; ++i)
+    {
+        int offset = i * streamSize;
+        hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,
+                streamSize/blockSize,blockSize,0,stream[i],kernel_function,data,offset);
+    }
+
+    for (i = 0; i < M_nbStreams; ++i) { hipStreamSynchronize(stream[i]); }
+    for (i = 0; i < M_nbStreams; ++i) { hipStreamDestroy(stream[i]); }
+    memcpy(BUFFER_HIP.data,data,sz); 
+    hipFree(data);
     #endif 
 }
 
