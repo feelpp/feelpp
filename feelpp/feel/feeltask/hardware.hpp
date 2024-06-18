@@ -4,6 +4,9 @@
 // Get Information System CPU/GPU Hardware
 //================================================================================================================================
 
+namespace Feel
+{
+
 namespace HARD {
 
 void readFileViewInformation(char *filename) 
@@ -222,3 +225,5 @@ void getInformationSystem()
 }
 
 }//END::namespace
+
+}

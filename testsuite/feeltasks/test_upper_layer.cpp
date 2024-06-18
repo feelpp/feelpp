@@ -2,45 +2,10 @@
 #include <feel/feelcore/testsuite.hpp>
 
 
-//#include <feel/feelmesh/ranges.hpp>
-
-///nvme0/lemoinep/feelpp/feelpp/feel/feelcore/range.hpp
-
-//#include <feel/feelcore/enumerate.hpp>
-//#include <feel/feelcore/environment.hpp>
-//#include <feel/feeldiscr/mesh.hpp>
-//#include <feel/feelfilters/loadmesh.hpp>
-
-
-
-#include <specx/Data/SpDataAccessMode.hpp>
-
-#include <specx/Legacy/SpRuntime.hpp>
-
-#include <specx/Task/SpPriority.hpp>
-#include <specx/Task/SpProbability.hpp>
-
-#include <specx/Utils/SpArrayView.hpp>
-#include <specx/Utils/SpTimer.hpp>
-#include <specx/Utils/small_vector.hpp>
-#include <specx/Utils/SpBufferDataView.hpp>
-#include <specx/Utils/SpBufferDataView.hpp>
-#include <specx/Utils/SpHeapBuffer.hpp>
-#include <specx/Utils/SpUtils.hpp>
-#include <specx/Utils/SpConsumerThread.hpp>
-
-
-#include <specx/Legacy/SpRuntime.hpp>
-
-
-
-//#include "UTester.hpp"
-//#include "utestUtils.hpp"
-//#define USE_GPU_HIP
-
-
 #include <feel/feeltask/taskpu.hpp>
 
+
+ using namespace Feel;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

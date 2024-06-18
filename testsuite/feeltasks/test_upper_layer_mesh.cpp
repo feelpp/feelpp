@@ -12,27 +12,6 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <fmt/chrono.h>
 
-/*
-#include <specx/Data/SpDataAccessMode.hpp>
-#include <specx/Legacy/SpRuntime.hpp>
-#include <specx/Task/SpPriority.hpp>
-#include <specx/Utils/SpArrayView.hpp>
-*/
-
-
-#include <specx/Data/SpDataAccessMode.hpp>
-#include <specx/Legacy/SpRuntime.hpp>
-#include <specx/Task/SpPriority.hpp>
-#include <specx/Task/SpProbability.hpp>
-#include <specx/Utils/SpArrayView.hpp>
-#include <specx/Utils/SpTimer.hpp>
-#include <specx/Utils/small_vector.hpp>
-#include <specx/Utils/SpBufferDataView.hpp>
-#include <specx/Utils/SpBufferDataView.hpp>
-#include <specx/Utils/SpHeapBuffer.hpp>
-#include <specx/Utils/SpUtils.hpp>
-#include <specx/Utils/SpConsumerThread.hpp>
-#include <specx/Legacy/SpRuntime.hpp>
 
 #include <feel/feeltask/taskpu.hpp>
 

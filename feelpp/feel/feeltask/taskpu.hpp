@@ -1,46 +1,15 @@
-#include <assert.h>
-#include <stdio.h>
-#include <algorithm>
-#include <stdlib.h>
-#include <iostream>
+
+//#define COMPILE_WITH_CUDA
+//#define COMPILE_WITH_HIP
+//#define COMPILE_WITH_CXX_20
+
+//#define USE_MPI
+//#define USE_OpenMP
+//#define USE_GPU_HIP  // <**** temporary
+//#define UseCUDA
+//#define UseHIP
 
 
-//Links for dev
-
-#include <thread>
-#include <vector>
-#include <array>
-#include <typeinfo>
-#include <iostream>
-#include <mutex>
-#include <sched.h>
-#include <pthread.h>
-
-#include <algorithm> 
-#include <string>
-#include <utility>
-#include <functional>
-#include <future>
-#include <cassert>
-#include <chrono>
-#include <type_traits>
-#include <list>
-#include <ranges>
-
-
-//Links Specx
-
-/*
-#include "SpDataAccessMode.hpp"
-#include "Utils/SpUtils.hpp"
-#include "Task/SpTask.hpp"
-#include "Legacy/SpRuntime.hpp"
-#include "Utils/SpTimer.hpp"
-#include "Utils/small_vector.hpp"
-#include "Utils/SpConsumerThread.hpp"
-#include "SpComputeEngine.hpp"
-#include "Speculation/SpSpeculativeModel.hpp"
-*/
 
 #include <specx/Data/SpDataAccessMode.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
@@ -60,51 +29,24 @@
 #include <napp/na.hpp>
 
 
-//Links Eigen
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Dense>
 
-
-
-
-//#define COMPILE_WITH_CUDA
-//#define COMPILE_WITH_HIP
-//#define COMPILE_WITH_CXX_20
-//#define USE_GPU_HIP  // <**** temporary
-
-//Links mpi
-//#define USE_MPI
 #ifdef USE_MPI
     #include <mpi.h>
 #endif
 
-//Links omp
-//#define USE_OpenMP
 #ifdef USE_OpenMP
 	#include <omp.h>
 #endif
 
-
-
-//#define COMPILE_WITH_CUDA
-//#define COMPILE_WITH_HIP
-//#define USE_GPU_HIP  // <**** temporary
-
-//#define UseCUDA
-//#define UseHIP
-
-
-//Links HIP
 #ifdef COMPILE_WITH_HIP
     #include "hip/hip_runtime.h"
     #include "hip/hip_runtime_api.h"
 #endif
 
-//Links CUDA
-//#include "cuda_runtime.h"
-//#include "cuda.h"
-
-
+#ifdef COMPILE_WITH_CUDA
+    #include "cuda_runtime.h"
+    #include "cuda.h"
+#endif
 
 
 

@@ -1,5 +1,8 @@
 
  
+namespace Feel
+{
+
 //=======================================================================================================================
 // Meta function tools allowing you to process an expression defined in Task
 //=======================================================================================================================
@@ -124,17 +127,6 @@ namespace SUBTASK{
     }
 }
 
-
-/*
-namespace Frontend
-{
-    template <typename ... Ts>
-    auto parameters(Ts && ... ts)
-    {
-        return std::forward_as_tuple( std::forward<Ts>(ts)... );
-    }
-}
-*/
 
 
 //================================================================================================================================
@@ -653,58 +645,17 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    
-    //std::cout<<"GET Task="<<std::get<0>(args)<<"\n";
-    //std::cout<<"GET Parameters="<<std::get<0>(parameters)<<"\n";
-
-
-
     auto tpSUBTASK=SUBTASK::makeSpDataSpecxGPU( parameters );
-    int NbtpSUBTASK=std::tuple_size<decltype(tpSUBTASK)>::value;
-    std::cout <<"Size Parameters="<<NbtpSUBTASK<< std::endl;
-
     auto LambdaExpression=std::make_tuple(task);
-    int NbLambdaExpression=std::tuple_size<decltype(LambdaExpression)>::value;
-    std::cout <<"Size Tuple Task="<<NbLambdaExpression<< std::endl;
-
-    //auto tpHip=std::tuple_cat(tpSUBTASK,LambdaExpression);  
-
-    //M_mytg.task(std::get<0>(tpSUBTASK),std::get<1>(tpSUBTASK),SpHip(task));
-
-
-    //std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tpHip);    
-    //addTaskSpecxPureGPU(tpHip);   
-
-
+    std::cout << "**************************"<<"\n";
+    if (isSpecxGPUFunctionBeta(std::get<0>(LambdaExpression))) { std::cout<<"YES Specx Function\n"; }
+    else { std::cout<<"NO Specx Function\n"; }
+    std::cout << "**************************"<<"\n";
 
     if (!M_qDetach)
     {
-        if (M_numOpGPU==0) { 
-            
-            auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecxGPU( parameters ), std::make_tuple( task ));  
-            std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);       
-        } //CPU Normal
+       
 
-
-        if (M_numOpGPU==1)
-        { 
-            //auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecxGPU( parameters ), SpHip(std::make_tuple(task))); 
-            //std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
-        } //op in Hip
-
-
-/*
-
-        if (M_numOpGPU==2) { 
-            auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecxGPU( parameters ), SpCuda(std::make_tuple( task )));   
-            std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);  
-        } //op in Cuda
-
-        if (M_numOpGPU==3) { 
-            auto tp=std::tuple_cat( SUBTASK::makeSpDataSpecx( parameters ), SpCPU(std::make_tuple( task )));
-            std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
-        } //op in GPU to CPU
-*/
         usleep(0); std::atomic_int counter(0);
     }
     else
@@ -857,6 +808,8 @@ void Task::add( Ts && ... ts )
         break;
         case 3: addTaskSpecx(std::forward<Ts>(ts)...); //Specx
         break;
+        //case 33: addTaskSpecxGPU(std::forward<Ts>(ts)...); //Specx GPU
+        //break;
         #ifdef COMPILE_WITH_CXX_20
             case 4: addTaskjthread(std::forward<Ts>(ts)...); //std::jthread
             break;
@@ -1204,3 +1157,5 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
+}

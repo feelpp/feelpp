@@ -1,5 +1,9 @@
 
 
+namespace Feel
+{
+
+
 //================================================================================================================================
 // Tools to manage memories between CPU and GPU
 //================================================================================================================================
@@ -195,11 +199,14 @@ namespace TASK_GPU_E {
 class SingleTask
 {
     private:
+        std::string M_FileName;
         int         M_numType;
         int         M_nbStreams;
         bool        M_qViewInfo;
         long int    M_time_laps;
-
+        bool        M_qSave;
+        int         M_block_size;
+       
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
 
@@ -224,11 +231,14 @@ class SingleTask
         void setNumType      (int v)         {  M_numType      = v; }
         void setNbStreams    (int v)         {  M_nbStreams    = v; }
         void setViewInfo     (bool b)        {  M_qViewInfo    = b; }
-
-        int  getNumType      () const        {  return(M_numType);  }
-        int  getNbStreams    () const        {  return(M_nbStreams);    }
-
-
+        void setFileName     (std::string s) {  M_FileName=s;       }
+        void setSave         (bool b)        {  M_qSave        = b; }
+        void setNbBlock      (int v)         {  M_block_size   = v; }
+        void setDevice       (int v);
+    
+        int  getNumType      () const        {  return(M_numType);   }
+        int  getNbStreams    () const        {  return(M_nbStreams); }
+        bool isSave          () const        {  return(M_qSave);     }
 
         SingleTask();
         ~SingleTask();
@@ -255,6 +265,9 @@ SingleTask::SingleTask()
     M_numType         = 1; // 1:HIP 2:CUDA
     M_qViewInfo       = true;
     M_time_laps       = 0;
+    M_FileName        = "NoName";
+    M_qSave           = false;
+    M_block_size      = 512;
 }
 
 SingleTask::~SingleTask()
@@ -268,7 +281,34 @@ void SingleTask::debriefing()
         std::cout<<"[INFO]: Debriefing"<<"\n";
         std::cout<<"[INFO]: Elapsed microseconds : "<<M_time_laps<< " us\n";
     }
+    if (M_qSave)
+    {
+        if (M_qViewInfo) { std::cout<<"[INFO]: Save Informations"<<"\n"; }
+        std::ofstream myfile;
+        myfile.open (M_FileName+".csv");
+        myfile << "Elapsed microseconds,"<<M_time_laps<<"\n";
+        myfile <<"\n";
+        myfile.close();
+    }
 }
+
+void SingleTask::setDevice(int v)
+{
+    if (M_numType==1) { 
+        #ifdef UseHIP  
+            int numDevices=0; hipGetDeviceCount(&numDevices);
+            if ((v>=0) && (v<=numDevices)) { hipSetDevice(v); }
+        #endif
+    }
+
+    if (M_numType==2) { 
+        #ifdef UseCUDA  
+            int numDevices=0; cudaGetDeviceCount(&numDevices);
+        if ((v>=0) && (v<=numDevices)) { cudaSetDevice(v); }
+        #endif
+    }
+}
+
 
 template<typename Kernel, typename Input>
     void SingleTask::serial(const Kernel& kernel_function,
@@ -325,15 +365,14 @@ template<typename Kernel, typename Input>
                                 Input* buffer)
 {   
     #ifdef UseHIP  
-        int block_size = 512; //block_size =M_numBlocksGPU;   
         Input *deviceBuffer;
         int sz=sizeof(decltype(buffer)) * numElems;
         hipMalloc((void **) &deviceBuffer,sz);
         hipMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
         if (iEnd>numElems) { iEnd=numElems; }
         if (iBegin<0)      { iBegin=0; }
-        int num_blocks = (numElems + block_size - 1) / block_size;
-        dim3 thread_block(block_size, 1, 1);
+        int num_blocks = (numElems + M_block_size - 1) / M_block_size;
+        dim3 thread_block(M_block_size, 1, 1);
         dim3 grid(num_blocks, 1);
         hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,deviceBuffer,iBegin,iEnd);
         hipMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
@@ -347,16 +386,15 @@ template<typename Kernel, typename Input>
                                 int iBegin,int iEnd,
                                 Input* buffer)
 {   
-    #ifdef UseCUDA
-        int block_size = 512; block_size =M_numBlocksGPU;   
+    #ifdef UseCUDA 
         Input *deviceBuffer;
         int sz=sizeof(decltype(buffer)) * numElems;
         cudaMalloc((void **) &deviceBuffer,sz);
         cudaMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
         if (iEnd>numElems) { iEnd=numElems; }
         if (iBegin<0)      { iBegin=0; }
-        int num_blocks = (numElems + block_size - 1) / block_size;
-        dim3 thread_block(block_size, 1, 1);
+        int num_blocks = (numElems + M_block_size - 1) / M_block_size;
+        dim3 thread_block(M_block_size, 1, 1);
         dim3 grid(num_blocks, 1);
         OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,buffer,iBegin,iEnd);
         cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
@@ -374,7 +412,7 @@ template<typename Kernel, typename Input>
         //...
         // it will be necessary to complete, add options and do multistreaming.
         //...
-        const int blockSize = 256;
+        const int blockSize = 256;  //const int blockSize M_block_size;
         hipStream_t stream[M_nbStreams];
         const int streamSize = numElems / M_nbStreams;
         const int streamBytes = streamSize * sizeof(decltype(buffer));
@@ -417,7 +455,7 @@ template<typename Kernel, typename Input>
         //...
         // it will be necessary to complete, add options and do multistreaming.
         //...
-        const int blockSize = 256;
+        const int blockSize = 256; //const int blockSize M_block_size
         cudaStream_t stream[M_nbStreams];
         const int streamSize = numElems / M_nbStreams;
         const int streamBytes = streamSize * sizeof(decltype(buffer));
@@ -1301,9 +1339,22 @@ void Task<T>::run_stream(const Kernel& kernel_function)
 //--------------------------------------------------------------------------------------------------------------------------------
 
 
+template <typename T>
+bool isSpecxGPUFunctionBeta(T& fcv)
+{
+    std::string s1=typeid(fcv).name(); int l=s1.length();
+    if (l>1) {
+        if (s1.find("SpCallableType0EE") != std::string::npos) { return (true);  } //"SpCpu"
+        else if (s1.find("SpCallableType1EE") != std::string::npos) { return (true);  } //"SpCuda
+        else if (s1.find("SpCallableType2EE") != std::string::npos) { return (true);  } //"SpHip"
+    }
+    return (false);
+}
+
 
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
 
 
+}
