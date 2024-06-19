@@ -1,6 +1,4 @@
-
-
-#define BOOST_TEST_MODULE test_specx
+#define BOOST_TEST_MODULE test_task
 
 #include <feel/feelmesh/ranges.hpp>
 
@@ -33,7 +31,7 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
     //for ( int NumThreads : { 1, 2, 4, 8, 16 } )
     for ( int NumThreads : { 1 } )
     {
-        TASK::Task TsK(NumThreads,3);
+        Task::Task TsK(NumThreads,3);
         TsK.setSave(false);
         TsK.setInfo(false);
         TsK.setFileName("./Test_Integrate2");

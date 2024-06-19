@@ -13,7 +13,7 @@ constexpr auto& _tasks = NA::identifier<struct task_tag>;
 
 
 
-namespace SUBTASK{
+namespace Sbtask{
 
     template<typename ...T, size_t... I>
     auto extractParametersAsTuple( std::tuple<T...> && t, std::index_sequence<I...>)
@@ -140,7 +140,7 @@ namespace SUBTASK{
 
 
 
-namespace TASK {
+namespace Task {
 
 
 void *workerNumCPU(void *arg) {
@@ -281,7 +281,7 @@ class Task
         //END::Small functions and variables to manage initialization parameters
 
 
-        void subTask(const int nbThread,const int nbBlocks,int M_numTypeThread);
+        void Subtask(const int nbThread,const int nbBlocks,int M_numTypeThread);
            
 
         Task(void);  // Constructor, initializes the default variables that are defined in the init() function.
@@ -293,14 +293,14 @@ class Task
                 explicit Task(const int nbThread,const int nbBlocks,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in classic mode
                 {
                     std::cout<<"[INFO]: WELCOME TO GPU:HIP"<<"\n";
-                    subTask(nbThread,nbBlocks,M_numTypeThread);
+                    Subtask(nbThread,nbBlocks,M_numTypeThread);
                 }
 
 
                 explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in classic mode
                 {
                     std::cout<<"[INFO]: WELCOME TO GPU:HIP"<<"\n";
-                    subTask(nbThread,1,M_numTypeThread);
+                    Subtask(nbThread,1,M_numTypeThread);
                 }
 
 
@@ -310,14 +310,14 @@ class Task
                 explicit Task(const int nbThread,const int nbBlocks,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) // Class constructor in classic mode
                 {
                     std::cout<<"[INFO]: WELCOME TO GPU:CUDA"<<"\n";
-                    subTask(nbThread,nbBlocks,M_numTypeThread);
+                    Subtask(nbThread,nbBlocks,M_numTypeThread);
                 }
             #endif
         #else
             explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread)) // Class constructor in classic mode
             {
                 std::cout<<"[INFO]: WELCOME TO CPU"<<"\n";
-                subTask(nbThread,1,M_numTypeThread);
+                Subtask(nbThread,1,M_numTypeThread);
             }
         #endif
 
@@ -453,7 +453,7 @@ void Task::init()
 }
 
 
-void Task::subTask(const int nbThread,const int nbBlocks,int M_numTypeThread)
+void Task::Subtask(const int nbThread,const int nbBlocks,int M_numTypeThread)
 {
     M_numBlocksGPU=nbBlocks;
     M_nbTh=nbThread;
@@ -518,7 +518,7 @@ void Task::getInformation()
         if (M_numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
         M_nbThTotal=getNbMaxThread(); 
         std::cout<<"[INFO]: Nb max Thread="<<M_nbThTotal<<"\n";
-        HARD::getInformationSystem();
+        Hard::Hardware MyHardware; MyHardware.getInformationSystem();
     }
 }
 
@@ -645,7 +645,7 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    auto tpSUBTASK=SUBTASK::makeSpDataSpecxGPU( parameters );
+    auto tpSubtask=Sbtask::makeSpDataSpecxGPU( parameters );
     auto LambdaExpression=std::make_tuple(task);
     std::cout << "**************************"<<"\n";
     if (isSpecxGPUFunctionBeta(std::get<0>(LambdaExpression))) { std::cout<<"YES Specx Function\n"; }
@@ -681,7 +681,7 @@ template <typename ... Ts>
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    auto tp=std::tuple_cat(  SUBTASK::makeSpData( parameters ), std::make_tuple( task ) );
+    auto tp=std::tuple_cat(  Sbtask::makeSpData( parameters ), std::make_tuple( task ) );
     return(tp);
 }
 
@@ -690,7 +690,7 @@ template <typename ... Ts>
 void Task::addTaskSimple( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    SUBTASK::Runtime runtime;
+    Sbtask::Runtime runtime;
     std::apply( [&runtime](auto... args){ runtime.task(args...); }, tp );
 }
 
@@ -699,7 +699,7 @@ template <typename ... Ts>
 void Task::addTaskMultithread( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    SUBTASK::Runtime runtime;
+    Sbtask::Runtime runtime;
 	auto LamdaTransfert = [&]() {
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -723,7 +723,7 @@ template <typename ... Ts>
 void Task::addTaskAsync( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    SUBTASK::Runtime runtime;
+    Sbtask::Runtime runtime;
     auto LamdaTransfert = [&]() {
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -752,7 +752,7 @@ void Task::addTaskSpecx( Ts && ... ts )
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
     auto tp=std::tuple_cat( 
-					SUBTASK::makeSpDataSpecx( parameters ), 
+					Sbtask::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 				);
     if (!M_qDetach)
@@ -771,7 +771,7 @@ template <typename ... Ts>
 void Task::addTaskjthread( Ts && ... ts )
 {
     auto tp=common(std::forward<Ts>(ts)...);
-    SUBTASK::Runtime runtime;
+    Sbtask::Runtime runtime;
 	auto LamdaTransfert = [&]() {
 			std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -887,11 +887,11 @@ template <class InputIterator,typename ... Ts>
         auto && parameters = args.get_else(_parameters,std::make_tuple());
         if (M_qUseIndex) { std::get<0>(parameters)=std::cref(ivdk); } 
         auto tp=std::tuple_cat( 
-					SUBTASK::makeSpData( parameters ), 
+					Sbtask::makeSpData( parameters ), 
 					std::make_tuple( task ) 
 				);
 
-        SUBTASK::Runtime runtime;
+        Sbtask::Runtime runtime;
 
         if (M_numTypeTh==0) {
             std::apply( [&runtime](auto... args){ runtime.task(args...); }, tp );
@@ -920,7 +920,7 @@ template <class InputIterator,typename ... Ts>
 
         if (M_numTypeTh==3) {
             auto tp=std::tuple_cat( 
-					SUBTASK::makeSpDataSpecx( parameters ), 
+					Sbtask::makeSpDataSpecx( parameters ), 
 					std::make_tuple( task ) 
 			);
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
@@ -1077,9 +1077,9 @@ void Task::add(int numCPU,Ts && ... ts)
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    SUBTASK::Runtime runtime;
+    Sbtask::Runtime runtime;
     auto tp=std::tuple_cat( 
-            SUBTASK::makeSpData( parameters ), 
+            Sbtask::makeSpData( parameters ), 
                       std::make_tuple( task ) 
     );
     auto LamdaTransfert = [&]() {
@@ -1116,14 +1116,14 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    SUBTASK::Runtime runtime;
+    Sbtask::Runtime runtime;
     M_qUseIndex=true;
     
     for (int i = 0; i < M_nbTh; i++) {
         int const& M_idk = i;
         if (M_qUseIndex) { std::get<0>(parameters)=M_idk; }
         auto tp=std::tuple_cat( 
-                SUBTASK::makeSpData( parameters ), 
+                Sbtask::makeSpData( parameters ), 
                         std::make_tuple( task ) 
         );
 
@@ -1157,5 +1157,6 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
 
 }

@@ -1,15 +1,38 @@
-
+namespace Feel
+{
 
 //================================================================================================================================
 // Get Information System CPU/GPU Hardware
 //================================================================================================================================
 
-namespace Feel
+namespace Hard {
+
+
+class Hardware
 {
+    private:
+        void readFileViewInformation(char *filename);
+        void scanInformationSystem();
+        void getInformationCPU();
+        void getInformationGPU();
+        void getShortInformationGPU();
+        void getHipInformation();
+        void getCudaInformation();
+        void getOpenMPInformation();
+    public:
+        Hardware();
+        ~Hardware();
+        void getInformationSystem();
+        
+        //void getMpiInformation(int argc, char *argv[]);
+};
 
-namespace HARD {
 
-void readFileViewInformation(char *filename) 
+
+Hardware::Hardware() {}
+Hardware::~Hardware() {}
+
+void Hardware::readFileViewInformation(char *filename) 
 {
 	FILE* FICH = NULL;
     int c = 0;
@@ -17,8 +40,7 @@ void readFileViewInformation(char *filename)
     if (FICH != NULL) { do { c = fgetc(FICH); printf("%c",c); } while (c != EOF); fclose(FICH); }
 }
 
-
-void scanInformationSystem()
+void Hardware::scanInformationSystem()
 {
 	int Value;
 	std::cout <<"\n";
@@ -29,7 +51,7 @@ void scanInformationSystem()
     std::cout <<"\n";
 }
 
-void getInformationCPU()
+void Hardware::getInformationCPU()
 {
 	std::cout <<"\n";
 	std::cout << "[INFO]: Information CPU"<<"\n";
@@ -39,7 +61,7 @@ void getInformationCPU()
     std::cout <<"\n";
 }
 
-void getInformationGPU()
+void Hardware::getInformationGPU()
 {
 	std::cout <<"\n";
 	std::cout << "[INFO]: Information GPU"<<"\n";
@@ -49,9 +71,11 @@ void getInformationGPU()
     std::cout <<"\n";
 }
 
-#ifdef USE_MPI
-void getMpiInformation(int argc, char *argv[])
+
+/*
+void Hardware::getMpiInformation(int argc, char *argv[])
 {
+    #ifdef USE_MPI
 	//BEGIN::INFO MPI
 	bool qFullInfoSystem=false;
     MPI_Init(NULL, NULL);
@@ -74,18 +98,21 @@ void getMpiInformation(int argc, char *argv[])
     std::cout << "[INFO]: MPI Rank: "<<world_rank<<" out of "<<world_size<<"\n";
     MPI_Finalize();
 	//END::INFO MPI
+    #endif
 }
-#endif
+*/
 
-#ifdef USE_OpenMP
-void getOpenMPInformation()
+
+void Hardware::getOpenMPInformation()
 {
+    #ifdef USE_OpenMP
     std::cout << "[INFO]: OpenMP Nb num procs: "<<omp_get_num_procs( )<< "\n";
     std::cout << "[INFO]: OpenMP Nb max threads: "<<omp_get_max_threads()<< "\n";
+    #endif
 }
-#endif
 
-void getShortInformationGPU()
+
+void Hardware::getShortInformationGPU()
 {
 	int deviceCount=0;
 	std::cout <<"\n";
@@ -117,7 +144,7 @@ void getShortInformationGPU()
 }
 
 
-void getHipInformation()
+void Hardware::getHipInformation()
 {
   //BEGIN::INFO HIP AMD
      #if defined(COMPILE_WITH_HIP) && defined(UseHIP)
@@ -161,7 +188,7 @@ void getHipInformation()
     #endif
 }
 
-void getCudaInformation()
+void Hardware::getCudaInformation()
 {
     //Nota: no code fusion because if hybrid CUDA and HIP system used
     //BEGIN::INFO CUDA NVIDIA
@@ -207,19 +234,21 @@ void getCudaInformation()
 }
 
 
-void getInformationSystem()
+void Hardware::getInformationSystem()
 {
     std::cout<<"[INFO]: ======================================================================================== "<<"\n";
     std::cout<<"[INFO]: Get Information System "<<"\n";
     getInformationCPU();
     scanInformationSystem();
     getInformationGPU();
+    getShortInformationGPU();
     #if defined(COMPILE_WITH_HIP) && defined(UseHIP)
         getHipInformation();
     #endif
     #if defined(COMPILE_WITH_CUDA) && defined(UseCUDA)
         getCudaInformation();
     #endif
+    getOpenMPInformation();
     std::cout<<"[INFO]: ======================================================================================== "<<"\n";
     std::cout<<"[INFO]: "<<"\n";
 }

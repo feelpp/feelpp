@@ -4,6 +4,7 @@ namespace Feel
 {
 
 
+
 //================================================================================================================================
 // Tools to manage memories between CPU and GPU
 //================================================================================================================================
@@ -194,7 +195,7 @@ template<typename ptrtype>
 
 // GRAPH EXPLICIT
 
-namespace TASK_GPU_E {
+namespace Taskgpu {
 
 class SingleTask
 {
@@ -206,17 +207,18 @@ class SingleTask
         long int    M_time_laps;
         bool        M_qSave;
         int         M_block_size;
+        int         M_numModel;        
        
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
 
         template<typename Kernel, typename Input>
             void serial_hip(const Kernel& kernel_function,
-                                        int numElems,int iBegin,int iEnd,Input* buffer);
+                                        int numElems,Input* buffer);
 
         template<typename Kernel, typename Input>
             void serial_cuda(const Kernel& kernel_function,
-                                        int numElems,int iBegin,int iEnd,Input* buffer);
+                                        int numElems,Input* buffer);
 
         template<typename Kernel, typename Input>
             void stream_hip(const Kernel& kernel_function,
@@ -229,6 +231,7 @@ class SingleTask
 
     public:
         void setNumType      (int v)         {  M_numType      = v; }
+        void setNumModel     (int v)         {  M_numModel     = v; }
         void setNbStreams    (int v)         {  M_nbStreams    = v; }
         void setViewInfo     (bool b)        {  M_qViewInfo    = b; }
         void setFileName     (std::string s) {  M_FileName=s;       }
@@ -237,6 +240,7 @@ class SingleTask
         void setDevice       (int v);
     
         int  getNumType      () const        {  return(M_numType);   }
+        int  getNumModel      () const       {  return(M_numModel);   }
         int  getNbStreams    () const        {  return(M_nbStreams); }
         bool isSave          () const        {  return(M_qSave);     }
 
@@ -244,17 +248,9 @@ class SingleTask
         ~SingleTask();
 
         template<typename Kernel, typename Input>
-            void serial(const Kernel& kernel_function,
+            void run(const Kernel& kernel_function,
                                 int numElems,
-                                int iBegin,int iEnd,
                                 Input* buffer);                  
-
-
-        template<typename Kernel, typename Input>
-            void stream(const Kernel& kernel_function,
-                                int numElems,
-                                Input* buffer);
-
         void debriefing();
 };
 
@@ -268,6 +264,7 @@ SingleTask::SingleTask()
     M_FileName        = "NoName";
     M_qSave           = false;
     M_block_size      = 512;
+    M_numModel        = 1; // 1:Serial 2:Stream
 }
 
 SingleTask::~SingleTask()
@@ -311,57 +308,46 @@ void SingleTask::setDevice(int v)
 
 
 template<typename Kernel, typename Input>
-    void SingleTask::serial(const Kernel& kernel_function,
-                                int numElems,
-                                int iBegin,int iEnd,
-                                Input* buffer)
-{   
-    M_t_begin = std::chrono::steady_clock::now();
-    if (M_numType==1) { 
-        #ifdef UseHIP  
-            serial_hip(kernel_function,numElems,iBegin,iEnd,buffer);
-        #endif
-    }
-
-    if (M_numType==2) { 
-        #ifdef UseCUDA  
-            serial_cuda(kernel_function,numElems,iBegin,iEnd,buffer);
-        #endif
-    }
-    M_t_end = std::chrono::steady_clock::now();
-   M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
-}
-
-
-template<typename Kernel, typename Input>
-    void SingleTask::stream(const Kernel& kernel_function,
+    void SingleTask::run(const Kernel& kernel_function,
                                 int numElems,
                                 Input* buffer)
 {   
-
     M_t_begin = std::chrono::steady_clock::now();
-    if (M_numType==1) { 
-        #ifdef UseHIP  
-            stream_hip(kernel_function,numElems,buffer);
-        #endif
+    if (M_numModel==1) { //SERIAL MODEL
+        if (M_numType==1) { 
+            #ifdef UseHIP  
+                serial_hip(kernel_function,numElems,buffer);
+            #endif
+        }
+
+        if (M_numType==2) { 
+            #ifdef UseCUDA  
+                serial_cuda(kernel_function,numElems,buffer);
+            #endif
+        }
     }
 
-     if (M_numType==2) { 
-        #ifdef UseCUDA  
-            stream_cuda(kernel_function,numElems,buffer);
-        #endif
+    if (M_numModel==2) {  //STREAM MODEL
+        if (M_numType==1) { 
+            #ifdef UseHIP  
+                stream_hip(kernel_function,numElems,buffer);
+            #endif
+        }
+
+        if (M_numType==2) { 
+            #ifdef UseCUDA  
+                stream_cuda(kernel_function,numElems,buffer);
+            #endif
+        }
     }
     M_t_end = std::chrono::steady_clock::now();
     M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
 }
 
 
-
-
 template<typename Kernel, typename Input>
     void SingleTask::serial_hip(const Kernel& kernel_function,
                                 int numElems,
-                                int iBegin,int iEnd,
                                 Input* buffer)
 {   
     #ifdef UseHIP  
@@ -369,8 +355,8 @@ template<typename Kernel, typename Input>
         int sz=sizeof(decltype(buffer)) * numElems;
         hipMalloc((void **) &deviceBuffer,sz);
         hipMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
-        if (iEnd>numElems) { iEnd=numElems; }
-        if (iBegin<0)      { iBegin=0; }
+        int iEnd=numElems; 
+        int iBegin=0; 
         int num_blocks = (numElems + M_block_size - 1) / M_block_size;
         dim3 thread_block(M_block_size, 1, 1);
         dim3 grid(num_blocks, 1);
@@ -383,7 +369,6 @@ template<typename Kernel, typename Input>
 template<typename Kernel, typename Input>
     void SingleTask::serial_cuda(const Kernel& kernel_function,
                                 int numElems,
-                                int iBegin,int iEnd,
                                 Input* buffer)
 {   
     #ifdef UseCUDA 
@@ -391,8 +376,8 @@ template<typename Kernel, typename Input>
         int sz=sizeof(decltype(buffer)) * numElems;
         cudaMalloc((void **) &deviceBuffer,sz);
         cudaMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
-        if (iEnd>numElems) { iEnd=numElems; }
-        if (iBegin<0)      { iBegin=0; }
+        int iEnd=numElems; 
+        int iBegin=0; 
         int num_blocks = (numElems + M_block_size - 1) / M_block_size;
         dim3 thread_block(M_block_size, 1, 1);
         dim3 grid(num_blocks, 1);
@@ -409,39 +394,76 @@ template<typename Kernel, typename Input>
                                 Input* buffer)
 {   
     #ifdef UseHIP  
-        //...
-        // it will be necessary to complete, add options and do multistreaming.
-        //...
-        const int blockSize = 256;  //const int blockSize M_block_size;
-        hipStream_t stream[M_nbStreams];
+        int   numVersion=1;
+        float ms;
+        int   i;
+
+        //const int blockSize = 20;  //const int blockSize M_block_size;
+        const int blockSize = M_block_size;
+        
         const int streamSize = numElems / M_nbStreams;
         const int streamBytes = streamSize * sizeof(decltype(buffer));
         const int sz = numElems * sizeof(decltype(buffer));
-        Input *deviceBuffer;
-        int i;
-        hipMalloc((void **) &deviceBuffer,sz);
-        for (i = 0; i < M_nbStreams; ++i)
-        {
-            int offset = i * streamSize;
-            hipMemcpyAsync(&deviceBuffer[offset], &buffer[offset], streamBytes, hipMemcpyHostToDevice,stream[i]) ;
+        int grid=streamSize/blockSize;
+        if (M_qViewInfo) {  
+            std::cout<<"[INFO]: Block size :"<<M_block_size<<"\n"; 
+            std::cout<<"[INFO]: nb Streams :"<<M_nbStreams<<"\n"; 
+        }
+        if ((grid==0) && (M_qViewInfo)) {  std::cout<<"[INFO]: Grid size error : ==> auto correction"<<"\n"; }
+        grid=max(streamSize/blockSize,1);
+        Input *d_buffer; hipMalloc((void **) &d_buffer,sz);
+        hipEvent_t startEvent, stopEvent, dummyEvent;
+        hipStream_t stream[M_nbStreams];
+        hipEventCreate(&startEvent) ;
+        hipEventCreate(&stopEvent) ;
+        hipEventCreate(&dummyEvent) ;
+        for (i = 0; i < M_nbStreams; ++i) { hipStreamCreate(&stream[i]) ; }
+        hipEventRecord(startEvent,0) ;
+
+        if (numVersion==1) {
+            for (i = 0; i < M_nbStreams; ++i) {
+                int offset = i * streamSize;
+                hipMemcpyAsync(&d_buffer[offset], &buffer[offset],streamBytes, hipMemcpyHostToDevice,stream[i]) ;
+                hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,grid,blockSize,0,stream[i],kernel_function,d_buffer,offset);
+                hipMemcpyAsync(&buffer[offset], &d_buffer[offset],streamBytes, hipMemcpyDeviceToHost,stream[i]);
+            }
+            hipEventRecord(stopEvent, 0);
+            hipEventSynchronize(stopEvent);
+            //hipEventElapsedTime(&ms, startEvent, stopEvent);
+            //printf("Time (ms): %f\n", ms);
         }
 
+        if (numVersion==2) {    
+            hipEventRecord(startEvent,0);
+            for (i = 0; i < M_nbStreams; ++i)
+            {
+                int offset = i * streamSize;
+                hipMemcpyAsync(&d_buffer[offset], &buffer[offset], streamBytes, hipMemcpyHostToDevice,stream[i]) ;
+            }
 
-        for (i = 0; i < M_nbStreams; ++i)
-        {
-            int offset = i * streamSize;
-            hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,
-                streamSize/blockSize,blockSize,0,stream[i],kernel_function,deviceBuffer,offset);
+            for (i = 0; i < M_nbStreams; ++i)
+            {
+                int offset = i * streamSize;
+                hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,grid,blockSize,0,stream[i],kernel_function,d_buffer,offset);
+            }
+
+            for (i = 0; i < M_nbStreams; ++i)
+            {
+                int offset = i * streamSize;
+                hipMemcpyAsync(&buffer[offset], &d_buffer[offset],streamBytes, hipMemcpyDeviceToHost,stream[i]) ;
+            }
+            hipEventRecord(stopEvent,0);
+            hipEventSynchronize(stopEvent);
+            //hipEventElapsedTime(&ms, startEvent, stopEvent);
+            //printf("Time (ms): %f\n", ms);
         }
 
-        for (i = 0; i < M_nbStreams; ++i)
-        {
-            int offset = i * streamSize;
-            hipMemcpyAsync(&buffer[offset], &deviceBuffer[offset],streamBytes, hipMemcpyDeviceToHost,stream[i]) ;
-        }
-        
-        //hipEventSynchronize(hip_stop);
-        hipFree(deviceBuffer);
+       // cleanup
+        hipEventDestroy(startEvent) ;
+        hipEventDestroy(stopEvent) ;
+        hipEventDestroy(dummyEvent);
+        for (int i = 0; i < M_nbStreams; ++i) { hipStreamDestroy(stream[i]); }
+        hipFree(d_buffer);
     #endif
 }
 
@@ -452,37 +474,77 @@ template<typename Kernel, typename Input>
                                 Input* buffer)
 {   
     #ifdef UseCUDA  
-        //...
-        // it will be necessary to complete, add options and do multistreaming.
-        //...
-        const int blockSize = 256; //const int blockSize M_block_size
-        cudaStream_t stream[M_nbStreams];
+        int   numVersion=1;
+        float ms;
+        int   i;
+
+        //const int blockSize = 20;  //const int blockSize M_block_size;
+        const int blockSize = M_block_size;
+        
         const int streamSize = numElems / M_nbStreams;
         const int streamBytes = streamSize * sizeof(decltype(buffer));
         const int sz = numElems * sizeof(decltype(buffer));
-        Input *deviceBuffer;
-        int i;         
-        cudaMalloc((void **) &deviceBuffer,sz);
-        for (i = 0; i < M_nbStreams; ++i)
-        {
-            int offset = i * streamSize;
-            cudaMemcpyAsync(&deviceBuffer[offset], &buffer[offset], streamBytes, cudaMemcpyHostToDevice,stream[i]) ;
+        int grid=streamSize/blockSize;
+        if (M_qViewInfo) {  
+            std::cout<<"[INFO]: Block size :"<<M_block_size<<"\n"; 
+            std::cout<<"[INFO]: nb Streams :"<<M_nbStreams<<"\n"; 
+        }
+        if ((grid==0) && (M_qViewInfo)) {  std::cout<<"[INFO]: Grid size error : ==> auto correction"<<"\n"; }
+        grid=max(streamSize/blockSize,1);
+        Input *d_buffer; cudaMalloc((void **) &d_buffer,sz);
+        cudaEvent_t startEvent, stopEvent, dummyEvent;
+        cudaStream_t stream[M_nbStreams];
+        cudaEventCreate(&startEvent) ;
+        cudaEventCreate(&stopEvent) ;
+        cudaEventCreate(&dummyEvent) ;
+        for (i = 0; i < M_nbStreams; ++i) { cudaStreamCreate(&stream[i]) ; }
+        cudaEventRecord(startEvent,0) ;
+
+        if (numVersion==1) {
+            for (i = 0; i < M_nbStreams; ++i) {
+                int offset = i * streamSize;
+                cudaMemcpyAsync(&d_buffer[offset], &buffer[offset],streamBytes, cudaMemcpyHostToDevice,stream[i]) ;
+                OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D<<<grid,blockSize,0,stream[i]>>>(kernel_function,d_buffer,offset);
+                cudaMemcpyAsync(&buffer[offset], &d_buffer[offset],streamBytes, cudaMemcpyDeviceToHost,stream[i]);
+            }
+            cudaEventRecord(stopEvent, 0);
+            cudaEventSynchronize(stopEvent);
+            //cudaEventElapsedTime(&ms, startEvent, stopEvent);
+            //printf("Time (ms): %f\n", ms);
         }
 
-        for (i = 0; i < M_nbStreams; ++i)
-        {
-            int offset = i * streamSize;
-            OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D<<<streamSize/blockSize,blockSize,0,stream[i]>>>(kernel_function,deviceBuffer,offset);
+        if (numVersion==2) {    
+            cudaEventRecord(startEvent,0);
+            for (i = 0; i < M_nbStreams; ++i)
+            {
+                int offset = i * streamSize;
+                cudaMemcpyAsync(&d_buffer[offset], &buffer[offset], streamBytes, cudaMemcpyHostToDevice,stream[i]) ;
+            }
+
+            for (i = 0; i < M_nbStreams; ++i)
+            {
+                int offset = i * streamSize;
+                OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D<<<grid,blockSize,0,stream[i]>>>(kernel_function,d_buffer,offset);
+            }
+
+            for (i = 0; i < M_nbStreams; ++i)
+            {
+                int offset = i * streamSize;
+                cudaMemcpyAsync(&buffer[offset], &d_buffer[offset],streamBytes, cudaMemcpyDeviceToHost,stream[i]) ;
+            }
+            cudaEventRecord(stopEvent,0);
+            cudaEventSynchronize(stopEvent);
+            //cudaEventElapsedTime(&ms, startEvent, stopEvent);
+            //printf("Time (ms): %f\n", ms);
         }
 
-        for (i = 0; i < M_nbStreams; ++i)
-        {
-            int offset = i * streamSize;
-            cudaMemcpyAsync(&buffer[offset], &deviceBuffer[offset],streamBytes, cudaMemcpyDeviceToHost,stream[i]) ;
-        }
-        
-        cudaEventSynchronize(cuda_stop);
-        cudaFree(deviceBuffer);
+       // cleanup
+        cudaEventDestroy(startEvent) ;
+        cudaEventDestroy(stopEvent) ;
+        cudaEventDestroy(dummyEvent);
+        for (int i = 0; i < M_nbStreams; ++i) { cudaStreamDestroy(stream[i]); }
+        cudaFree(d_buffer);
+       
     #endif
 }
 
@@ -928,8 +990,6 @@ class PtrTask:public Task
         template<typename Kernel>
             void add(const Kernel& kernel_function,int iBegin,int iEnd,std::vector<int> links);
 
-        template <typename ... Ts>
-            void addTest( Ts && ... ts); 
 };
 
 
@@ -985,42 +1045,8 @@ void PtrTask<T>::add(const Kernel& kernel_function,int iBegin,int iEnd,std::vect
 }
 
 
-template<typename T>
-template <typename ... Ts>
-void PtrTask<T>::addTest( Ts && ... ts)
-{
 
-    constexpr auto& _kernel = NA::identifier<struct kernel_tag>;
-    constexpr auto& _range  = NA::identifier<struct range_tag>;
-    constexpr auto& _links  = NA::identifier<struct links_tag>;
-
-    //(_kernel=(op1),_range=(0,nbElements),_links=(0)); 
-/*
-    auto args = NA::make_arguments( std::forward<Ts>(ts)... );
-    auto && kernel = args.get(_kernel);
-    auto && range  = args.get(_range);
-    auto && links  = args.get(_links);
-    auto tp1=std::make_tuple(kernel );
-    auto tp2=std::make_tuple(range );
-    auto tp3=std::make_tuple(links);
-    auto tp=std::tuple_cat(tp1,tp2,tp3);
-
-    //CTRL
-    int Nbtp1=std::tuple_size<decltype(tp1)>::value;
-    int Nbtp2=std::tuple_size<decltype(tp2)>::value;
-    int Nbtp3=std::tuple_size<decltype(tp3)>::value;
-    int Nbtp=std::tuple_size<decltype(tp)>::value;
-    std::cout <<"==> Size Parameters tp1.. : "<<Nbtp1<<" "<<Nbtp2<<" "<<Nbtp3<<" tp="<<Nbtp<<std::endl;
-    //... 
-  */
-
-    #ifdef UseHIP
-        
-    #endif
-    
-}
-
-} //End namespace TASK_GPU_E
+} //End namespace Taskgpu
 //--------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -1029,7 +1055,7 @@ void PtrTask<T>::addTest( Ts && ... ts)
 //================================================================================================================================
 // GRAPH IMPLICIT
 
-namespace TASK_GPU_I {
+namespace Taskgpui {
 
 #ifdef UseHIP
 
@@ -1134,7 +1160,7 @@ void Task::update_kernel_node(size_t key, hipKernelNodeParams params)
 
 #endif
 
-} //End namespace TASK_GPU_I
+} //End namespace Taskgpui
 //--------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -1149,7 +1175,7 @@ void Task::update_kernel_node(size_t key, hipKernelNodeParams params)
 // - Managed Memory: data allocation changed to use (cuda or hip)-MallocManaged(),which returns a pointer valid from both host and device code.
 
 
-namespace TASK_GPU_UNIFIED_MEMORY {
+namespace Taskgpuu {
 
 
 //#if defined(useHIP) || defined(useCUDA)
@@ -1168,7 +1194,15 @@ class Task
         float       hip_milliseconds;
         float       cuda_milliseconds;
         int         M_nbStreams;
+        int         M_numModel;
+        int         M_numType;
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
+
+        template<typename Kernel>
+            void serial(const Kernel& kernel_function);
+
+        template<typename Kernel>
+            void stream(const Kernel& kernel_function);
 
     public:
         #ifdef UseHIP
@@ -1188,14 +1222,13 @@ class Task
         void setNbStreams    (int v)         {  M_nbStreams    = v; }
         void setDeviceHIP    (int v);
         void setDeviceCUDA   (int v);
+        void setNumType      (int v)         {  M_numType      = v; }
         int  getNbStreams    () const        {  return(M_nbStreams);    }
         bool isDeviceReset   () const        {  return(M_qDeviceReset); }
+        int  getNumType      () const        {  return(M_numType);   }
 
         template<typename Kernel>
             void run(const Kernel& kernel_function);
-
-        template<typename Kernel>
-            void run_stream(const Kernel& kernel_function);
 
         void debriefing();
 };
@@ -1214,7 +1247,8 @@ Task<T>::Task()
     M_qViewInfo       = true;
     M_qDeviceReset    = false;
     M_nbStreams       = 3;
-
+    M_numType         = 1; // 1:HIP 2:CUDA
+    M_numModel        = 1; // 1:Serial 2:Stream
 }
 
 template<typename T>
@@ -1275,7 +1309,7 @@ void Task<T>::debriefing()
 
 template<typename T>
 template<typename Kernel>
-void Task<T>::run(const Kernel& kernel_function)
+void Task<T>::serial(const Kernel& kernel_function)
 {
     M_t_begin = std::chrono::steady_clock::now();
     int num_blocks = (BUFFER_HIP.size + M_numBlocksGPU - 1) / M_numBlocksGPU;
@@ -1295,47 +1329,83 @@ void Task<T>::run(const Kernel& kernel_function)
 
 template<typename T>
 template<typename Kernel>
-void Task<T>::run_stream(const Kernel& kernel_function)
+void Task<T>::stream(const Kernel& kernel_function)
 {
     #ifdef UseHIP
-    const int blockSize = 256;
-    hipStream_t stream[M_nbStreams];
-    const int streamSize = BUFFER_HIP.size / M_nbStreams;
-    const int streamBytes = streamSize * sizeof(typename std::decay<decltype(BUFFER_HIP.data)>);
-    const int sz = BUFFER_HIP.size * sizeof(typename std::decay<decltype(BUFFER_HIP.data)>);
-    typename std::decay<decltype(BUFFER_HIP.data)> *data;
-    int i;
-    for (i = 0; i < M_nbStreams; ++i) {  hipStreamCreate(stream[i]); }
+        int   numVersion=1;
+        float ms;
+        int   i;
 
-    hipMallocManaged((void **) &data,sz,hipMemAttachHost);
+        //const int blockSize = 20;  //const int blockSize M_block_size;
+        const int blockSize = M_numBlocksGPU;
+        const int numElems=BUFFER_HIP.size;
+        const int streamSize = numElems / M_nbStreams;
+        const int streamBytes = streamSize * sizeof(decltype(BUFFER_HIP.data));
+        const int sz = numElems * sizeof(decltype(BUFFER_HIP.data));
+        int grid=streamSize/blockSize;
+        if (M_qViewInfo) {
+            std::cout<<"[INFO]: Block size :"<<M_numBlocksGPU<<"\n";
+            std::cout<<"[INFO]: nb Streams :"<<M_nbStreams<<"\n";
+        }
+        if ((grid==0) && (M_qViewInfo)) {  std::cout<<"[INFO]: Grid size error : ==> auto correction"<<"\n"; }
+        grid=max(streamSize/blockSize,1);
+        hipEvent_t startEvent, stopEvent, dummyEvent;
+        hipStream_t stream[M_nbStreams];
+        hipEventCreate(&startEvent) ;
+        hipEventCreate(&stopEvent) ;
+        hipEventCreate(&dummyEvent) ;
+        for (i = 0; i < M_nbStreams; ++i) { hipStreamCreate(&stream[i]) ; }
 
-    for (i = 0; i < M_nbStreams; ++i)
-    {
-        hipStreamAttachMemAsync(stream[i],data);
-        hipStreamSynchronize(stream[i]);
-    }
+       //hipMallocManaged((void **) &data,sz,hipMemAttachHost);
+        hipEventRecord(startEvent,0) ;
 
-    memcpy(data,BUFFER_HIP.data,sz);
+        if (numVersion==1) {
+            for (i = 0; i < M_nbStreams; ++i) {
+                int offset = i * streamSize;
+                hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,grid,blockSize,0,stream[i],kernel_function,BUFFER_HIP.data,offset);
+            }
+            hipEventRecord(stopEvent, 0);
+            hipEventSynchronize(stopEvent);
+            //hipEventElapsedTime(&ms, startEvent, stopEvent);
+            //printf("Time (ms): %f\n", ms);
+        }
 
-    //hipDeviceSynchronize();
-
-    for (i = 0; i < M_nbStreams; ++i)
-    {
-        int offset = i * streamSize;
-        hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D,
-                streamSize/blockSize,blockSize,0,stream[i],kernel_function,data,offset);
-    }
-
-    for (i = 0; i < M_nbStreams; ++i) { hipStreamSynchronize(stream[i]); }
-    for (i = 0; i < M_nbStreams; ++i) { hipStreamDestroy(stream[i]); }
-    memcpy(BUFFER_HIP.data,data,sz); 
-    hipFree(data);
+       
+       // cleanup
+        hipEventDestroy(startEvent) ;
+        hipEventDestroy(stopEvent) ;
+        hipEventDestroy(dummyEvent);
+        for (int i = 0; i < M_nbStreams; ++i) { hipStreamDestroy(stream[i]); }
     #endif 
 }
 
+
+template<typename T>
+template<typename Kernel>
+void Task<T>::run(const Kernel& kernel_function)
+{
+    M_t_begin = std::chrono::steady_clock::now();
+    if (M_numModel==1) { //SERIAL MODEL
+        if (M_numType==1) {
+            serial(kernel_function);
+        }
+    }
+
+    if (M_numModel==2) { //STREAM MODEL
+        if (M_numType==1) {
+            stream(kernel_function);
+        }
+    }
+
+
+    M_t_end = std::chrono::steady_clock::now();
+    M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
+}
+
+
 #endif
 
-}//End namespace TASK_GPU_UNIFIED_MEMORY
+}//End namespace Taskgpuu
 //--------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -1355,6 +1425,8 @@ bool isSpecxGPUFunctionBeta(T& fcv)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
+
 
 
 }

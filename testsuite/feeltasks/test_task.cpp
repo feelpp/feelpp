@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE test_specx
+#define BOOST_TEST_MODULE test_task
 #include <feel/feelcore/testsuite.hpp>
 
 
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE( test_specx_21 )
         return true;
     };
 
-        TASK::Task TsK(nbThreads,3); 
+        Task::Task TsK(nbThreads,3); 
         TsK.setSave(false); 
         TsK.setInfo(false); 
         TsK.setFileName("./PI");
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
         return true;
     };
 
-        TASK::Task TsK(nbThreads,3); 
+        Task::Task TsK(nbThreads,3); 
         TsK.setSave(false); 
         TsK.setInfo(false); 
         TsK.setFileName("./AddVectors");
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
-    TASK::Task TsK(nbThreads,3);
+    Task::Task TsK(nbThreads,3);
     TsK.setSave(false); 
     TsK.setInfo(false); 
     TsK.setFileName("./Test");
@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE( test_specx_24 )
     auto start_time= std::chrono::steady_clock::now();
 
     const int nbThreads = 6;
-    TASK::Task TsK(nbThreads,2);
+    Task::Task TsK(nbThreads,2);
     TsK.setSave(false); 
     TsK.setInfo(false); 
     TsK.setFileName("./Test");
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE( test_specx_25 )
     int           idk=0;
     const int      nb=10;
 
-    TASK::Task TsK(nbThreads,1);
+    Task::Task TsK(nbThreads,1);
     TsK.setSave(false); 
     TsK.setInfo(false); 
     TsK.setFileName("./ForEach");
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE( test_specx_26 )
         out.setConstant(data_size, -1);
         cfin.setRandom(data_size);
         cfout.setConstant(data_size, -1);
-        TASK::Task TsK(1,0);
+        Task::Task TsK(1,0);
         TsK.setSave(false); 
         TsK.setInfo(false); 
         TsK.qViewChrono=true;

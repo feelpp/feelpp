@@ -81,8 +81,7 @@
 #endif
 
 
-#define _param(...) _parameters=SUBTASK::parameters(__VA_ARGS__)
-
+#define _param(...) _parameters=Sbtask::parameters(__VA_ARGS__)
 
 
 //Links internal
