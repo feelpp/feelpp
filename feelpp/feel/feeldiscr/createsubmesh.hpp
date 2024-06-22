@@ -49,7 +49,7 @@ class CreateSubmeshTool : public CommObject
 {
 public :
     using super = CommObject;
-    
+
     using range_type = IteratorRange;
     using idim_type = typename range_type::idim_t;
     using iterator_type = typename range_type::iterator_t;
@@ -59,7 +59,7 @@ public :
     typedef typename mesh_type::value_type value_type;
     using index_type = typename mesh_type::index_type;
     using size_type = typename mesh_type::size_type;
-    
+
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     using mesh_elements_type = elements_mesh_t<mesh_type>;
@@ -308,7 +308,7 @@ void addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename Me
 template <typename MeshType,typename IteratorRange,int TheTag>
 typename CreateSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_build_ptrtype
 CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS> /**/ )
-{   
+{
     if constexpr ( IteratorRange::entities() == MESH_ELEMENTS )
     {
         typedef typename mesh_type::element_type element_type;
@@ -971,10 +971,12 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     int cptRequest=0;
 
     // get size of data to transfer
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -984,14 +986,14 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     cptRequest=0;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
 
-        int nRecvData = sizeRecv[neighborRank];
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -1025,14 +1027,14 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     cptRequest=0;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        int nSendData = dataToReSend[neighborRank].size();
+        std::size_t nSendData = dataToReSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 1, &(dataToReSend[neighborRank][0]), nSendData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 1, dataToReSend[neighborRank].data(), nSendData );
 
-        int nRecvData = dataToSend[neighborRank].size();
+        std::size_t nRecvData = dataToSend[neighborRank].size();
         dataToReRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, &(dataToReRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, dataToReRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -1115,10 +1117,12 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     int cptRequest=0;
 
     // get size of data to transfer
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -1128,14 +1132,14 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     cptRequest=0;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
 
-        int nRecvData = sizeRecv[neighborRank];
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -1144,7 +1148,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     cptRequest=0;
     for ( auto const& [rankRecv,dataToRecvOnProc] : dataToRecv )
     {
-        int nData = dataToRecvOnProc.size();
+        std::size_t nData = dataToRecvOnProc.size();
         dataToReSend[rankRecv].resize( nData );
         if ( nData == 0 )
             continue;
@@ -1165,16 +1169,16 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
             }
         }
         // second send
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv, 1, &(dataToReSend[rankRecv][0]), nData );
+        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv, 1, dataToReSend[rankRecv].data(), nData );
     }
 
     // second recv
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        int nRecvData = dataToSend[neighborRank].size();
+        std::size_t nRecvData = dataToSend[neighborRank].size();
         dataToRecv2[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, &(dataToRecv2[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, dataToRecv2[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest/*nbRequest*/);
