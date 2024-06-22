@@ -127,12 +127,14 @@ struct MeshContiguousNumberingMapping
                 int nbRequest = 2 * neighborSubdomains;
                 mpi::request* reqs = new mpi::request[nbRequest];
                 int cptRequest = 0;
-                std::map<rank_type,size_type> sizeRecv;
+                std::map<rank_type,std::size_t> sizeRecv;
+                std::map<rank_type,std::size_t> sizeSend;
 
                 // get size of data to transfer
                 for ( rank_type neighborRank : mesh->neighborSubdomains() )
                 {
-                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+                    sizeSend[neighborRank] = dataToSend[neighborRank].size();
+                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
                     reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
                 }
                 // wait all requests
@@ -141,13 +143,13 @@ struct MeshContiguousNumberingMapping
                 cptRequest = 0;
                 for ( rank_type neighborRank : mesh->neighborSubdomains() )
                 {
-                    int nSendData = dataToSend[neighborRank].size();
+                    std::size_t nSendData = dataToSend[neighborRank].size();
                     if ( nSendData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
-                    int nRecvData = sizeRecv[neighborRank];
+                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+                    std::size_t nRecvData = sizeRecv[neighborRank];
                     dataToRecv[neighborRank].resize( nRecvData );
                     if ( nRecvData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
                 }
                 // wait all requests
                 mpi::wait_all( reqs, reqs + cptRequest );
@@ -211,7 +213,8 @@ struct MeshContiguousNumberingMapping
                 cptRequest = 0;
                 for ( rank_type neighborRank : mesh->neighborSubdomains() )
                 {
-                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+                    sizeSend[neighborRank] = dataToReSend[neighborRank].size();
+                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
                     reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
                 }
                 // wait all requests
@@ -222,11 +225,11 @@ struct MeshContiguousNumberingMapping
                 {
                     int nSendData = dataToReSend[neighborRank].size();
                     if ( nSendData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, &(dataToReSend[neighborRank][0]), nSendData );
+                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToReSend[neighborRank].data(), nSendData );
                     int nRecvData = sizeRecv[neighborRank];
                     dataToReRecv[neighborRank].resize( nRecvData );
                     if ( nRecvData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToReRecv[neighborRank].data(), nRecvData );
                 }
                 // wait all requests
                 mpi::wait_all( reqs, reqs + cptRequest );

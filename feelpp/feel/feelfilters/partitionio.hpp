@@ -147,8 +147,8 @@ public:
     PartitionIO() = default;
     PartitionIO (const PartitionIO&) = delete;
     PartitionIO& operator= (const PartitionIO&) = delete;
-    
-    
+
+
     //! Constructor
     /*!
      * Non-empty constructor
@@ -208,7 +208,7 @@ public:
 protected:
 
 private:
-    
+
 
     //! Private Methods
     //@{
@@ -1693,54 +1693,66 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         return;
 
     // prepare container to send  : ( pid -> (ptId1,PtId2,..),(ptId1,PtId2,..) )
-    std::map< rank_type, std::vector< std::vector<size_type> > > dataToSend;
+    //std::map< rank_type, std::vector< std::vector<size_type> > > dataToSend;
+    // prepare container to send  : ( pid -> (pt0Id1,Pt0Id2,..,pt01d1,Pt1Id2,..) )
+    std::map< rank_type, std::vector<size_type> > dataToSend;
     std::map< rank_type, std::vector<size_type> > memoryMsgToSend;
     auto rangeGhostElement = M_meshPartIn->ghostElements();
     auto ghostelt_it = std::get<0>( rangeGhostElement );
     auto const ghostelt_en = std::get<1>( rangeGhostElement );
-    for ( ; ghostelt_it!=ghostelt_en ; ++ghostelt_it )
+    for ( int k=0 ; ghostelt_it!=ghostelt_en ; ++ghostelt_it )
     {
         auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
         const rank_type pid = ghostelt.processId();
-        std::vector<size_type> ptIdsInElt( mesh_type::element_type::numPoints );
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
-            ptIdsInElt[vLocId] = ghostelt.point( vLocId ).id();
-        dataToSend[pid].push_back( ptIdsInElt );
+            dataToSend[pid].push_back( ghostelt.point( vLocId ).id() );
+        //dataToSend[pid].resize( 3 );
+        // std::vector<size_type> ptIdsInElt( mesh_type::element_type::numPoints );
+        // for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        //     ptIdsInElt[vLocId] = ghostelt.point( vLocId ).id();
+        // dataToSend[pid].push_back( ptIdsInElt );
         memoryMsgToSend[pid].push_back( ghostelt.id() );
     }
-
-    // init mpi request
-    int nbRequest=0;
-    for ( rank_type proc=0; proc<nProc; ++proc )
+    for ( auto & [neighborRank,currentData] : dataToSend )
     {
-        if ( dataToSend.find(proc) != dataToSend.end() )
-            nbRequest+=2;
+        currentData.shrink_to_fit();
+        memoryMsgToSend[neighborRank].shrink_to_fit();
     }
-    if ( nbRequest ==0 ) return;
-    std::vector<mpi::request> reqs(nbRequest);
+
+    int nbRequest = 2*dataToSend.size();
+    if ( nbRequest == 0 )
+        return;
+
+    std::vector<mpi::request> reqs( nbRequest );
     int cptRequest=0;
 
-    // first send
-    auto itDataToSend = dataToSend.begin();
-    auto const enDataToSend = dataToSend.end();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    // get size of data to transfer
+    std::map<rank_type,std::size_t> sizeSended;
+    std::map<rank_type,std::size_t> sizeRecv;
+    for ( auto const& [neighborRank,currentData] : dataToSend )
     {
-        reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToSend->first , 0, itDataToSend->second );
+        sizeSended[neighborRank] = currentData.size();
+        reqs[cptRequest++] = theWorldComm.localComm().isend( neighborRank, 0, sizeSended[neighborRank] );
+        reqs[cptRequest++] = theWorldComm.localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
-    // first recv
-    std::map< rank_type, std::vector< std::vector<size_type> > > dataToRecv;
-    for ( rank_type proc=0; proc<nProc; ++proc )
-    {
-        // if we send a msg at proc else we recv a msg from proc
-        if ( dataToSend.find(proc) != dataToSend.end() )
-        {
-            reqs[cptRequest++] = theWorldComm.localComm().irecv( proc , 0, dataToRecv[proc] );
-        }
-    }
-
-    CHECK( cptRequest == nbRequest ) << "invalid number of mpi requests : " <<  cptRequest << " vs " << nbRequest;
     // wait all requests
     mpi::wait_all(std::begin(reqs), std::end(reqs));
+    // first send/recv
+    //std::map< rank_type, std::vector< std::vector<size_type> > > dataToRecv;
+    std::map< rank_type, std::vector<size_type> > dataToRecv;
+
+    cptRequest = 0;
+    for ( auto const& [neighborRank,currentData] : dataToSend )
+    {
+        std::size_t nSendData = currentData.size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = theWorldComm.localComm().isend( neighborRank, 0, currentData.data(), nSendData );
+
+        std::size_t nRecvData = sizeRecv.at( neighborRank );
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0)
+            reqs[cptRequest++] = theWorldComm.localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
+    }
 
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
     std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
@@ -1757,52 +1769,45 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             ptIds.insert( elt.point( vLocId ).id() );
         mapPointIdsToEltId[ptIds] = elt.id();
     }
+
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + cptRequest );
+
     // treatment of recv request and prepare containers to re-send
     std::map<rank_type, std::vector<size_type> > dataToReSend;
-    auto itDataRecv = dataToRecv.begin();
-    auto const enDataRecv = dataToRecv.end();
-    for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
+    for ( auto const& [neighborRank,currentData] : dataToRecv )
     {
-        const rank_type pid = itDataRecv->first;
-        const int nDataRecv = itDataRecv->second.size();
-        dataToReSend[pid].resize( nDataRecv );
-        for ( int k=0; k<nDataRecv; ++k )
+        // WARNING : only done for element of same type (i.e. numPoints)
+        const int nDataRecv = currentData.size()/mesh_type::element_type::numPoints;
+        dataToReSend[neighborRank].reserve( nDataRecv );
+        for  ( auto it = currentData.begin(); it != currentData.end() ;it+=mesh_type::element_type::numPoints )
         {
-            std::vector<size_type> const& ptIdsInEltVec = itDataRecv->second[k];
-            std::set<size_type> ptIdsInEltSet(ptIdsInEltVec.begin(),ptIdsInEltVec.end());
+            std::set<size_type> ptIdsInEltSet( it, it+mesh_type::element_type::numPoints );
             auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
             CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";
 
             auto & eltModified = M_meshPartIn->elementIterator( itFindElt->second )->second;
-            eltModified.addNeighborPartitionId( pid );
+            eltModified.addNeighborPartitionId( neighborRank );
 
-            dataToReSend[pid][k] = itFindElt->second;
+            dataToReSend[neighborRank].push_back( itFindElt->second );
         }
     }
-    // send respond to the request
-    cptRequest=0;
-    auto itDataToReSend = dataToReSend.begin();
-    auto const enDataToReSend = dataToReSend.end();
-    for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
-    {
-        //reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToReSend->first , 221/*0*/, itDataToReSend->second );
-        reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToReSend->first, 1, &(itDataToReSend->second[0]), itDataToReSend->second.size() );
-    }
-    // recv the initial request
-    std::map<rank_type, std::vector<size_type> > finalDataToRecv;
-    itDataToSend = dataToSend.begin();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
-    {
-        const rank_type pid = itDataToSend->first;
-        //reqs[cptRequest++] = theWorldComm.localComm().irecv( pid, 221/*0*/, finalDataToRecv[pid] );
-        int nRecvData = itDataToSend->second.size();
-        finalDataToRecv[pid].resize( nRecvData );
-        reqs[cptRequest++] = theWorldComm.localComm().irecv( pid, 1, &(finalDataToRecv[pid][0]), nRecvData );
-    }
 
-    CHECK( cptRequest == nbRequest ) << "invalid number of mpi requests : " <<  cptRequest << " vs " << nbRequest;
+    // send and recv info
+    cptRequest=0;
+    std::map<rank_type, std::vector<size_type> > finalDataToRecv;
+    for ( auto const& [neighborRank,currentData] : dataToReSend )
+    {
+        std::size_t nRecvData = memoryMsgToSend.at(neighborRank).size();
+        finalDataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = theWorldComm.localComm().irecv( neighborRank, 1, finalDataToRecv[neighborRank].data(), nRecvData );
+
+        if ( currentData.size() > 0 )
+            reqs[cptRequest++] = theWorldComm.localComm().isend( neighborRank, 1, currentData.data(), currentData.size() );
+    }
     // wait all requests
-    mpi::wait_all(std::begin(reqs), std::end(reqs));
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + cptRequest );
 
     // update ghost element with element id in active partition
     auto itFinalDataToRecv = finalDataToRecv.begin();
@@ -1810,18 +1815,13 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
     {
         const rank_type pid = itFinalDataToRecv->first;
-        const int nDataRecv = itFinalDataToRecv->second.size();
-        for ( int k=0; k<nDataRecv; ++k )
+        const std::size_t nDataRecv = itFinalDataToRecv->second.size();
+        for ( std::size_t k = 0; k<nDataRecv; ++k )
         {
             auto & eltModified = M_meshPartIn->elementIterator( memoryMsgToSend[pid][k] )->second;
             eltModified.setIdInOtherPartitions( pid, itFinalDataToRecv->second[k] );
         }
     }
-
-    // theWorldComm.barrier();
-    // if ( theWorldComm.isMasterRank() )
-    //     std::cout << "HOLA" << std::endl;
-    // theWorldComm.barrier();
 }
 
 

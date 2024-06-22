@@ -1168,7 +1168,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
         }
         else
             gmshpts.emplace_hint( gmshpts.end(),std::make_pair(id,Feel::detail::GMSHPoint( id, x ) ) );
-        
+
         // stores mapping to be able to reorder the indices
         // so that they are contiguous
         //itoii[idpts[__i]] = __i;
@@ -1279,7 +1279,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
                                             this->worldComm().localSize() ) == false ||
                Feel::detail::isFound( M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end(), physical ) )
               continue;
-          
+
           __et.emplace_back( num, type, std::vector<int>({physical}), elementary,
                              numPartitions, partition, ghosts,
                              parent, dom1, dom2,
@@ -1287,7 +1287,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
                              this->worldComm().localRank(),
                              this->worldComm().localSize(),
                              M_respect_partition );
-          
+
           if ( __gt.find( type ) != __gt.end() )
               ++__gt[ type ];
           else
@@ -2953,13 +2953,14 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
 
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     for ( auto const& [proc,thedata] : dataToSend )
     {
-        int nSendData = thedata.size();
-        reqs[cptRequest++] = this->worldComm().localComm().isend( proc , 0, nSendData );
+        sizeSend[proc] = thedata.size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( proc , 0, sizeSend[proc] );
     }
 
-    std::map<rank_type,size_type> sizeRecv;
     for ( rank_type proc=0; proc<nProc; ++proc )
     {
         if ( nbMsgToRecv[proc] > 0 )
@@ -2977,9 +2978,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        int nSendData = itDataToSend->second.size();
+        std::size_t nSendData = itDataToSend->second.size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToSend->first , 0, &(itDataToSend->second[0]), nSendData );
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second.data(), nSendData );
     }
     //-----------------------------------------------------------//
     // first recv
@@ -2988,10 +2989,10 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     {
         if ( nbMsgToRecv[proc] > 0 )
         {
-            int nRecvData = sizeRecv[proc];
+            std::size_t nRecvData = sizeRecv[proc];
             dataToRecv[proc].resize( nRecvData );
             if ( nRecvData > 0 )
-                reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, &(dataToRecv[proc][0]), nRecvData );
+                reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, dataToRecv[proc].data(), nRecvData );
         }
     }
     //-----------------------------------------------------------//
@@ -3018,9 +3019,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        int nSendData = itDataToReSend->second.size();
+        std::size_t nSendData = itDataToReSend->second.size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToReSend->first , 0, &(itDataToReSend->second[0]), nSendData );
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second.data(), nSendData );
     }
     //-----------------------------------------------------------//
     // recv the initial request
@@ -3029,10 +3030,10 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type idProc = itDataToSend->first;
-        int nRecvData = itDataToSend->second.size();
+        std::size_t nRecvData = itDataToSend->second.size();
         finalDataToRecv[idProc].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, &(finalDataToRecv[idProc][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc].data(), nRecvData );
     }
     //-----------------------------------------------------------//
     // wait all requests
