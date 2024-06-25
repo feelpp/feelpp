@@ -1,14 +1,14 @@
 import sys
 import os
 import feelpp.core as fppc
-import feelpp.toolboxes as fppt as fppt
+import feelpp.toolboxes as fppt
 import feelpp.toolboxes.cfpdes as cfpdes
 import pandas as pd
 
 cwd = os.getcwd()
 
-e=fppc.Environment(sys.argv,opts=tb.toolboxes_options("coefficient-form-pdes","cfpdes"))         
-e.setConfigFile('thermo2dCase2.cfg')   
+e=fppc.Environment(sys.argv,opts=tb.toolboxes_options("coefficient-form-pdes","cfpdes"))
+e.setConfigFile('thermo2dCase2.cfg')
 
 # f=cfpdes.simulate(dim=2)
 print("Create cfpdes")
