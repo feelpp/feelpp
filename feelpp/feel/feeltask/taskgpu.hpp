@@ -118,8 +118,11 @@ template<typename ptrtype>
         unsigned int size; 
         ptrtype* data;
 
-    void memoryInit(int dim) { size=dim; hipMallocManaged(&data,size); }
-    //(sizeof(ptrtype) * size);
+    void memoryInit(int dim) {  size=dim; hipMallocManaged(&data,sizeof(ptrtype) * size); }
+    void memoryInit(int dim,ptrtype v) { 
+      size=dim; hipMallocManaged(&data,sizeof(ptrtype) * size); 
+      for (long int i = 0; i < dim; i++) { data[i]=v; }
+    }
 };
 #endif
 
@@ -129,7 +132,11 @@ template<typename ptrtype>
         unsigned int size; 
         ptrtype* data;
 
-    void memoryInit(int dim) { size=dim; cudaMallocManaged(&data,size); }
+    void memoryInit(int dim) { size=dim; cudaMallocManaged(&data,sizeof(ptrtype) * size); }
+    void memoryInit(int dim,ptrtype v) { 
+      size=dim; cudaMallocManaged(&data,sizeof(ptrtype) * size); 
+      for (long int i = 0; i < dim; i++) { data[i]=v; }
+    }
 };
 #endif
 
@@ -207,7 +214,8 @@ class SingleTask
         long int    M_time_laps;
         bool        M_qSave;
         int         M_block_size;
-        int         M_numModel;        
+        int         M_numModel;      
+        bool        M_qUsedUnifiedMemory;  
        
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
@@ -230,19 +238,23 @@ class SingleTask
 
 
     public:
-        void setNumType      (int v)         {  M_numType      = v; }
-        void setNumModel     (int v)         {  M_numModel     = v; }
-        void setNbStreams    (int v)         {  M_nbStreams    = v; }
-        void setViewInfo     (bool b)        {  M_qViewInfo    = b; }
-        void setFileName     (std::string s) {  M_FileName=s;       }
-        void setSave         (bool b)        {  M_qSave        = b; }
-        void setNbBlock      (int v)         {  M_block_size   = v; }
-        void setDevice       (int v);
+        void setNumType       (int v)         {  M_numType      = v; }
+        void setNumModel      (int v)         {  M_numModel     = v; }
+        void setNbStreams     (int v)         {  M_nbStreams    = v; }
+        void setViewInfo      (bool b)        {  M_qViewInfo    = b; }
+        void setFileName      (std::string s) {  M_FileName=s;       }
+        void setSave          (bool b)        {  M_qSave        = b; }
+        void setNbBlock       (int v)         {  M_block_size   = v; }
+        void setDevice        (int v);
+        void setUnifiedMemory (bool b)        {  M_qUsedUnifiedMemory = b; }
     
-        int  getNumType      () const        {  return(M_numType);   }
-        int  getNumModel      () const       {  return(M_numModel);   }
-        int  getNbStreams    () const        {  return(M_nbStreams); }
-        bool isSave          () const        {  return(M_qSave);     }
+        int  getNumType       () const        {  return(M_numType);   }
+        int  getNumModel      () const        {  return(M_numModel);  }
+        int  getNbStreams     () const        {  return(M_nbStreams); }
+        bool isSave           () const        {  return(M_qSave);     }
+        bool isUnifiedMemory  () const        {  return(M_qUsedUnifiedMemory); }
+
+        long int  getTimeLaps     () const        {  return(M_time_laps);   }
 
         SingleTask();
         ~SingleTask();
@@ -252,19 +264,21 @@ class SingleTask
                                 int numElems,
                                 Input* buffer);                  
         void debriefing();
+        void close();
 };
 
 
 SingleTask::SingleTask()
 {
-    M_nbStreams       = 3;
-    M_numType         = 1; // 1:HIP 2:CUDA
-    M_qViewInfo       = true;
-    M_time_laps       = 0;
-    M_FileName        = "NoName";
-    M_qSave           = false;
-    M_block_size      = 512;
-    M_numModel        = 1; // 1:Serial 2:Stream
+    M_nbStreams          = 3;
+    M_numType            = 1; // 1:HIP 2:CUDA
+    M_qViewInfo          = true;
+    M_time_laps          = 0;
+    M_FileName           = "NoName";
+    M_qSave              = false;
+    M_block_size         = 512;
+    M_numModel           = 1; // 1:Serial 2:Stream
+    M_qUsedUnifiedMemory = false;
 }
 
 SingleTask::~SingleTask()
@@ -287,6 +301,11 @@ void SingleTask::debriefing()
         myfile <<"\n";
         myfile.close();
     }
+}
+
+void SingleTask::close()
+{
+
 }
 
 void SingleTask::setDevice(int v)
@@ -353,16 +372,24 @@ template<typename Kernel, typename Input>
     #ifdef UseHIP  
         Input *deviceBuffer;
         int sz=sizeof(decltype(buffer)) * numElems;
-        hipMalloc((void **) &deviceBuffer,sz);
-        hipMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
         int iEnd=numElems; 
         int iBegin=0; 
         int num_blocks = (numElems + M_block_size - 1) / M_block_size;
         dim3 thread_block(M_block_size, 1, 1);
         dim3 grid(num_blocks, 1);
-        hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,deviceBuffer,iBegin,iEnd);
-        hipMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
-        hipFree(deviceBuffer);
+        if (M_qUsedUnifiedMemory)
+        {
+            hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,buffer,iBegin,iEnd);
+            hipDeviceSynchronize();
+        }
+        else 
+        {
+            hipMalloc((void **) &deviceBuffer,sz);
+            hipMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
+            hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,deviceBuffer,iBegin,iEnd);
+            hipMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
+            hipFree(deviceBuffer);
+        }
     #endif
 }
 
@@ -374,16 +401,24 @@ template<typename Kernel, typename Input>
     #ifdef UseCUDA 
         Input *deviceBuffer;
         int sz=sizeof(decltype(buffer)) * numElems;
-        cudaMalloc((void **) &deviceBuffer,sz);
-        cudaMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
         int iEnd=numElems; 
         int iBegin=0; 
         int num_blocks = (numElems + M_block_size - 1) / M_block_size;
         dim3 thread_block(M_block_size, 1, 1);
-        dim3 grid(num_blocks, 1);
-        OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,buffer,iBegin,iEnd);
-        cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
-        cudaFree(deviceBuffer);
+        dim3 grid(num_blocks, 1);   
+        if (M_qUsedUnifiedMemory)
+        {
+            OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,buffer,iBegin,iEnd);
+            cudaDeviceSynchronize();
+        }     
+        else
+        {
+            cudaMalloc((void **) &deviceBuffer,sz);
+            cudaMemcpy(deviceBuffer,buffer,sz, hipMemcpyHostToDevice);
+            OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<gridthread_block>>>(kernel_function,deviceBuffer,iBegin,iEnd);
+            cudaMemcpy(buffer,deviceBuffer,sz, hipMemcpyDeviceToHost);
+            cudaFree(deviceBuffer);
+        }
     #endif
 }
 
@@ -1227,6 +1262,8 @@ class Task
         bool isDeviceReset   () const        {  return(M_qDeviceReset); }
         int  getNumType      () const        {  return(M_numType);   }
 
+        long int  getTimeLaps     () const        {  return(M_time_laps);   }
+
         template<typename Kernel>
             void run(const Kernel& kernel_function);
 
@@ -1249,6 +1286,7 @@ Task<T>::Task()
     M_nbStreams       = 3;
     M_numType         = 1; // 1:HIP 2:CUDA
     M_numModel        = 1; // 1:Serial 2:Stream
+    M_time_laps       = 0;
 }
 
 template<typename T>
@@ -1263,6 +1301,7 @@ void Task<T>::open(int nbBlock,int NbTh)
     BUFFER_CUDA.memoryInit(NbTh);
     #endif 
 }
+
 
 template<typename T>
 void Task<T>::close()
@@ -1415,8 +1454,9 @@ bool isSpecxGPUFunctionBeta(T& fcv)
     std::string s1=typeid(fcv).name(); int l=s1.length();
     if (l>1) {
         if (s1.find("SpCallableType0EE") != std::string::npos) { return (true);  } //"SpCpu"
-        else if (s1.find("SpCallableType1EE") != std::string::npos) { return (true);  } //"SpCuda
         else if (s1.find("SpCallableType2EE") != std::string::npos) { return (true);  } //"SpHip"
+        else if (s1.find("SpCallableType1EE") != std::string::npos) { return (true);  } //"SpCuda
+        
     }
     return (false);
 }
@@ -1425,6 +1465,8 @@ bool isSpecxGPUFunctionBeta(T& fcv)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
+
 
 
 
