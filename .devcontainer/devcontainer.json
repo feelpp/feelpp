@@ -4,7 +4,7 @@
 	// feelpp-dev images are available for the following distributions:
 	//"image": "ghcr.io/feelpp/feelpp-dev:focal",
 	//"image": "ghcr.io/feelpp/feelpp-dev:jammy",
-	//"image": "ghcr.io/feelpp/feelpp-dev:mantic",
+	//"image": "ghcr.io/feelpp/feelpp:noble",
 	//"image": "ghcr.io/feelpp/feelpp-dev:lunar",
 	//"image": "ghcr.io/feelpp/feelpp-dev:bookworm",
 	//"image": "ghcr.io/feelpp/feelpp-dev:sid",
@@ -21,12 +21,13 @@
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-sid",
 	//"image": "ghcr.io/feelpp/feelpp-env:fedora-36",
 	//"image": "ghcr.io/feelpp/feelpp-env:fedora-37",
-	"mounts": [
-		"source=${localWorkspaceFolder},target=/workspaces/feelpp,type=bind,consistency=cached"
-	],
+	//"mounts": [
+	//	"source=${localWorkspaceFolder},target=/workspaces/feelpp,type=bind,consistency=cached"
+	//],
 	"remoteUser": "feelpp",
 	"updateRemoteUserUID": true,
 	"postCreateCommand": "/workspaces/feelpp/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
+	//"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/detect_platform.sh",
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
 		"ms-vscode.cpptools",

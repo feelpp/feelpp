@@ -24,3 +24,20 @@ fi
 
 
 COMPONENT=${COMPONENT:-feelpp}
+
+# Define the function
+feelpp-pbuilder-dist() {
+    local dist=$1
+    shift  # Shift arguments to pass any additional parameters to pbuilder-dist
+
+    if [ "$dist" = "toto" ]; then
+        # Handle the 'noble' distribution with an automatic 'y' response
+        {
+            echo y
+            cat
+        } | pbuilder-dist "$dist" "$@"
+    else
+        # Handle other distributions normally
+        pbuilder-dist "$dist" "$@"
+    fi
+}
