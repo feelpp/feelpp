@@ -1,0 +1,24 @@
+{
+    "input":{
+        "filename":"$cfgdir/domain2d.geo"
+    },
+    "output":{
+        "directory":"examples/case2d"
+    },
+    "visualization-exporter":{
+        "enabled":true
+    },
+    "partitioner":
+    {
+        "number-of-partition":[5,8,13,21,58,265],
+        //"by-markers":[ "toto","titi", ["hola","holi"] ],
+        "size": 10,
+        "AAaggregates":
+        {
+            "spheres":{
+                "type": "faces",
+                "markers": ["CenterSphere","LeftSphere","RightSphere"]
+            }
+        }
+    }
+}
