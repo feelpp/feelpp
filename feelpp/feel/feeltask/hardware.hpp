@@ -56,7 +56,7 @@ void Hardware::getInformationCPU()
 	std::cout <<"\n";
 	std::cout << "[INFO]: Information CPU"<<"\n";
     std::cout <<"\n";
-	readFileViewInformation("InfoSystemCPU.txt");
+	readFileViewInformation((char*)"InfoSystemCPU.txt");
 	std::cout <<"\n";
     std::cout <<"\n";
 }
@@ -66,7 +66,7 @@ void Hardware::getInformationGPU()
 	std::cout <<"\n";
 	std::cout << "[INFO]: Information GPU"<<"\n";
     std::cout <<"\n";
-	readFileViewInformation("InfoSystemGPU.txt");
+	readFileViewInformation((char*)"InfoSystemGPU.txt");
 	std::cout <<"\n";
     std::cout <<"\n";
 }
@@ -118,7 +118,8 @@ void Hardware::getShortInformationGPU()
 	std::cout <<"\n";
 	std::cout << "[INFO]: Information GPU"<<"\n";
 
-	#ifdef COMPILE_WITH_HIP && UseHIP
+	//#ifdef COMPILE_WITH_HIP && UseHIP
+    #if defined(COMPILE_WITH_HIP) && defined(UseHIP)
 		hipGetDeviceCount(&deviceCount);
 		if (deviceCount>0) {
 			std::cout << "[INFO]: Number of available GPUs AMD: " << deviceCount << "\n";
@@ -129,6 +130,7 @@ void Hardware::getShortInformationGPU()
 		}
 	#endif
 
+    //#if defined(COMPILE_WITH_CUDA) && defined(UseCUDA)
     #if defined(COMPILE_WITH_CUDA) && defined(UseCUDA)
 		cudaGetDeviceCount(&deviceCount);
 		if (deviceCount>0) {

@@ -1,3 +1,10 @@
+#pragma GCC diagnostic warning "-Wunused-result"
+#pragma clang diagnostic ignored "-Wunused-result"
+
+#pragma GCC diagnostic warning "-Wunknown-attributes"
+#pragma clang diagnostic ignored "-Wunknown-attributes"
+
+
 
 //#define COMPILE_WITH_CUDA
 //#define COMPILE_WITH_HIP
@@ -88,6 +95,9 @@
 #include "hardware.hpp"
 #include "taskgpu.hpp"
 #include "taskcpu.hpp"
+
+//links internal scheduling management
+//...
 
 //================================================================================================================================
 // THE END.

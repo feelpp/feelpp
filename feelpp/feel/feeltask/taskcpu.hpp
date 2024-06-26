@@ -1,5 +1,4 @@
 
- 
 namespace Feel
 {
 
@@ -191,8 +190,7 @@ class Task
 
         //END::GPU part
 
-
-        // variables indicatrices utilisées par les fonctions set et get. Voir les descriptions ci-dessous.
+        // indicator variables used by the set and get functions. See descriptions below.
         long int M_t_laps;
         bool M_qFirstTask;
         int  M_idk;
@@ -511,6 +509,8 @@ int Task::getNbThreadPerBlock(int i)
             return(devProp.maxThreadsPerBlock);
         }
     #endif
+
+    return(-1);
 }
 
 
@@ -1162,5 +1162,6 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 // THE END.
 //================================================================================================================================
 
+ 
 
 }
