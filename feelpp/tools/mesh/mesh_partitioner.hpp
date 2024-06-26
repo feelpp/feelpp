@@ -36,9 +36,8 @@
 #include <feel/feelmesh/remesh.hpp>
 #endif
 #include <feel/feelcore/json.hpp>
-#include "mesh_exporter.hpp"
+#include <feel/feelfilters/exporter.hpp>
 
-//#include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelmesh/dump.hpp>
 
 namespace Feel {
@@ -46,7 +45,7 @@ namespace Feel {
 namespace nl = nlohmann;
 
 template <typename ShapeType>
-void partition( std::vector<int> const& nParts, nl::json const& partconfig )
+void partition( nl::json const& partconfig )
 {
     typedef Mesh<ShapeType> mesh_type;
 
@@ -55,7 +54,21 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
     {
         fmt::print( fmt::emphasis::bold,
                     "** Run partioner with shape {}...\n", ShapeType::name() );
-        fs::path inputPathMesh = fs::canonical( soption("ifile") );
+        auto jInput = partconfig.at( "input" );
+        fs::path inputPathMesh = jInput.at("filename").template get<std::string>();
+
+        auto jPartitioner = partconfig.at( "partitioner" );
+        std::vector<int> nParts;
+        if ( jPartitioner.contains("number-of-partition") )
+        {
+            auto jNumberOfPart = jPartitioner.at("number-of-partition");
+            if ( jNumberOfPart.is_number_integer() )
+                nParts.push_back( jNumberOfPart.template get<int>() );
+            else if ( jNumberOfPart.is_array() )
+                for ( auto const& [key,val] : jNumberOfPart.items() )
+                    nParts.push_back( val.template get<int>() );
+        }
+
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
@@ -69,6 +82,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
         //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
         toc("loading mesh done",FLAGS_v>0);
 
+#if 0
         if constexpr ( is_simplex_v<ShapeType> && ShapeType::nDim > 1 )
         {
 
@@ -109,8 +123,7 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             }
         }
         dump(mesh);
-
-        //saveGMSHMesh(_mesh=mesh,_filename="tototi.msh");
+#endif
 
         fs::path inputDir = inputPathMesh.parent_path();
         std::string inputFilenameWithoutExt = inputPathMesh.stem().string();
@@ -148,41 +161,50 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             }
         }
         std::string outputPathMesh;
+
+        auto jOutput = partconfig.at( "output" );
+        fs::path outputDir = jOutput.at("directory").template get<std::string>();
+        //std::string outputFilename = jOutput.at("filename").template get<std::string>();
+        if ( !fs::exists( outputDir ) )
+            fs::create_directories( outputDir );
+
+        auto rangeMeshElt = elements( mesh );
+        std::shared_ptr<exporter_t<mesh_type,mesh_type::nOrder>> exporter;
+
+        using pid_functionspace_type = Pdh_type<mesh_type,0>;
+        using pid_element_type = Pdh_element_t<mesh_type,0>;
+        std::shared_ptr<pid_functionspace_type> Vh;
+        std::shared_ptr<pid_element_type> pidField;
+        if ( partconfig.contains( "visualization-exporter" ) )
+        {
+            auto jVisuExporter = partconfig.at( "visualization-exporter" );
+            bool doExportVisu = jVisuExporter.value( "enabled", false );
+            if ( doExportVisu )
+            {
+                Vh = Pdh<0>( mesh );
+                pidField = Vh->elementPtr();
+                exporter = Feel::exporter( _mesh = mesh,_geo="static" );
+            }
+        }
+
         for ( int nPartition : nParts )
         {
-            std::string outputFilenameWithoutExt = "";
-            if( Environment::vm().count("ofile") )
-            {
-                std::string ofile = fs::path( soption("ofile")).stem().string();
-                if( nParts.size() == 1 )
-                    outputFilenameWithoutExt = ofile;
-                else
-                    outputFilenameWithoutExt = (boost::format("%1%_p%2%")%ofile %nPartition ).str();
-            }
-            else
-                outputFilenameWithoutExt = (boost::format("%1%_p%2%")%inputFilenameWithoutExt %nPartition ).str();
+            std::string outputFilenameWithoutExt = fmt::format("{}_p{}",inputFilenameWithoutExt,nPartition);
+            // std::string outputFilenameWithoutExt = "";
+            // if( Environment::vm().count("ofile") )
+            // {
+            //     std::string ofile = fs::path( soption("ofile")).stem().string();
+            //     if( nParts.size() == 1 )
+            //         outputFilenameWithoutExt = ofile;
+            //     else
+            //         outputFilenameWithoutExt = (boost::format("%1%_p%2%")%ofile %nPartition ).str();
+            // }
+            // else
+            //     outputFilenameWithoutExt = (boost::format("%1%_p%2%")%inputFilenameWithoutExt %nPartition ).str();
             std::string outputFilenameWithExt = outputFilenameWithoutExt + ".json";
-            fs::path outputDirPath;
-            if ( Environment::vm().count("odir") )
-            {
-                if ( !fs::exists( soption("odir") ) )
-                {
-                    // create the directory
-                    outputDirPath = fs::path( soption("odir") );
-                    fs::create_directories( outputDirPath );
-                }
-                outputDirPath = fs::canonical( soption("odir") );
-            }
-            else
-                outputDirPath = fs::current_path();
-            outputPathMesh = ( outputDirPath / fs::path(outputFilenameWithExt) ).string();
+            outputPathMesh = ( outputDir / fs::path(outputFilenameWithExt) ).string();
 
-            fs::path outputDir = fs::path(outputPathMesh).parent_path();
-            if ( !fs::exists( outputDir ) )
-                fs::create_directories( outputDir );
-
-
-            std::cout << "start mesh partitioning and save on disk : " << outputPathMesh << "\n";
+            std::cout << "start mesh partitioning and save on disk : " << outputPathMesh << std::endl;
 
             // build a MeshPartitionSet based on a mesh partition that will feed a
             // partition io data structure to generate a parallel hdf5 file from which
@@ -192,9 +214,30 @@ void partition( std::vector<int> const& nParts, nl::json const& partconfig )
             io_t io( outputPathMesh );
             io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
+
+            if ( exporter )
+            {
+                for ( rank_type partId=0; partId<nPartition; ++partId)
+                {
+                    for ( auto const& eltWrap : elements(mesh,partId) )
+                    {
+                        auto const& elt = unwrap_ref( eltWrap );
+                        for( auto const& ldof : Vh->dof()->localDof( elt.id() ) )
+                            pidField->set( ldof.second.index(), partId );
+                    }
+                }
+            }
+            // WARNING! partitionMesh should not modify mesh -> TODO!
+            for ( rank_type partId=0; partId<nPartition; ++partId)
+                for ( auto const& eltWrap : elements(mesh,partId) )
+                    const_cast<typename mesh_type::element_type&>(unwrap_ref( eltWrap )).setProcessId( 0 );
+
+            if ( exporter )
+            {
+                exporter->step( nPartition )->add( "pid", *pidField );
+                exporter->save();
+            }
         }
-        auto parallel_mesh = loadMesh(_mesh=new mesh_type, _filename=outputPathMesh);
-        doExport(parallel_mesh);
     }
 
 }

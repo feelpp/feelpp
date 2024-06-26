@@ -25,12 +25,11 @@
 
 namespace Feel {
 
-template void partition<Simplex<1>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<2>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<2,2>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<3>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<3,2>>( std::vector<int> const& nParts, nl::json const& );
+template void partition<Simplex<1>>( nl::json const& );
+template void partition<Simplex<2>>( nl::json const& );
+template void partition<Simplex<2,2>>( nl::json const& );
+template void partition<Simplex<3>>( nl::json const& );
+template void partition<Simplex<3,2>>( nl::json const& );
 
 
 }
-
