@@ -286,14 +286,12 @@ template<typename MeshType>
 inline void PartitionIO<MeshType>::setup (const std::string& fileName,
                                           const bool transposeInFile)
 {
-    M_filename = fileName;
-    M_transposeInFile = transposeInFile;
-    fs::path filenamefs = fs::path( fileName );
+    fs::path filenamefs = fs::absolute( fs::path( fileName ) );
+    M_filename = filenamefs.string();
     std::string h5filename = filenamefs.stem().string() + ".h5";
-    if ( filenamefs.is_relative() )
-        M_h5_filename = (fs::current_path()/fs::path(h5filename)).string();
-    else
-        M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
+    M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
+
+    M_transposeInFile = transposeInFile;
 }
 
 template<typename MeshType>
