@@ -21,23 +21,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <mesh_partitioner.hpp>
-
-
-
-namespace Feel {
-
-extern template void partition<Simplex<1>>( nl::json const& j );
-extern template void partition<Simplex<2>>( nl::json const& j );
-extern template void partition<Simplex<2,2>>( nl::json const& j );
-extern template void partition<Simplex<3>>( nl::json const& j );
-extern template void partition<Simplex<3,2>>( nl::json const& j );
-extern template void partition<Hypercube<2>>( nl::json const& j );
-extern template void partition<Hypercube<2,2>>( nl::json const& j );
-extern template void partition<Hypercube<3>>( nl::json const& j );
-extern template void partition<Hypercube<3,3>>( nl::json const& j );
-
-}
 
 int main( int argc, char** argv )
 {
@@ -50,18 +38,17 @@ int main( int argc, char** argv )
         ( "realdim", po::value<int>(), "real dimension of mesh nodes" )
         ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh basic unit" )
         ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
-        ( "by-markers", "partitioning by markers" )
-        ( "by-markers-desc", po::value<std::vector<std::string> >()->multitoken(), "partitioning by markers. Example : --by-markers-desc=marker1:marker2,marker3" )
         ( "part", po::value<std::vector<int> >()->multitoken(), "number of partition" )
         ( "json", po::value<std::string>(), "json configuration file" )
+        ( "splitting", po::value<std::string>(), "define splitting of partitioner, i.e. create partitioning on each split" )
         ( "ifile", po::value<std::string>(), "input mesh filename" )
         ( "odir", po::value<std::string>(), "output directory [optional]" )
-        //( "ofile", po::value<std::string>(), "output mesh filename [optional]" )
-        ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
-        ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
-        ( "remesh.h", po::value<std::string>()->default_value( "hmax" ), "remesh h size" )
-        ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"g|sin(x):x|nodal|element"} ), "list of scalar expressions with name and representations" )
-        ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
+        ( "ofile", po::value<std::string>(), "output base filename (name without extension and part number suffix) [optional]" )
+        // ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
+        // ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
+        // ( "remesh.h", po::value<std::string>()->default_value( "hmax" ), "remesh h size" )
+        // ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"g|sin(x):x|nodal|element"} ), "list of scalar expressions with name and representations" )
+        // ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
         ( "export-visualization", po::value<bool>(), "export mesh with partitioning(s)" )
         ;
 
@@ -102,12 +89,18 @@ int main( int argc, char** argv )
     std::string shape = soption(_name="shape");
     int order = ioption(_name="order");
 
+    auto & jPartitioner = partconfig["partitioner"];
 
     if ( Environment::vm().count("part") )
     {
         std::vector<int> nParts = Environment::vm()["part"].as<std::vector<int> >();
-        auto & jPartitioner = partconfig["partitioner"];
         jPartitioner[ "number-of-partition" ] = nParts;
+    }
+    if ( Environment::vm().count("splitting") )
+    {
+        std::istringstream iss( soption(_name="splitting") );
+        nl::json jSplittingVal = nl::json::parse(iss);
+        jPartitioner["splitting"] = jSplittingVal;
     }
 
     if ( Environment::vm().count("ifile") )
@@ -126,6 +119,11 @@ int main( int argc, char** argv )
             odirOption = initialCurrentPath/odirOption;
         auto & jOutput = partconfig["output"];
         jOutput[ "directory" ] = odirOption.string();
+    }
+    if ( Environment::vm().count("ofile") )
+    {
+        auto & jOutput = partconfig["output"];
+        jOutput[ "filename" ] = soption(_name="ofile");
     }
 
     if ( Environment::vm().count("export-visualization") )

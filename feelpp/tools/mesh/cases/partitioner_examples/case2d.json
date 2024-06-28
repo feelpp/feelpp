@@ -11,13 +11,13 @@
     "partitioner":
     {
         "number-of-partition":[5,8,13,21,58,265],
-        //"by-markers":[ "toto","titi", ["hola","holi"] ],
-        "size": 10,
+        "splitting":[ "OmegaTE","OmegaHT", ["OmegaHT2","OmegaHT3","OmegaTE2"] ],
+        //"size": 10,
         "AAaggregates":
         {
             "spheres":{
                 "type": "faces",
-                "markers": ["CenterSphere","LeftSphere","RightSphere"]
+                "markers": ["interface"] // ["CenterSphere","LeftSphere","RightSphere"]
             }
         }
     }
