@@ -222,7 +222,8 @@ class SingleTask
         int         M_numModel; // 1:Serial 2:Stream     
         bool        M_qUsedUnifiedMemory;  
         int         M_solveLevel; //will be used in the future
-        long int    M_time_laps;        
+        long int    M_time_laps; 
+		int         M_nbGPUused;
        
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
@@ -263,6 +264,27 @@ class SingleTask
             void stream_cuda_3I(const Kernel& kernel_function,
                                 int numElems,
                                 Input* bufferR,Input* bufferA,Input* bufferB);
+		
+
+		template<typename Kernel, typename Input>
+			void serial_hip_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer);		
+								
+		template<typename Kernel, typename Input>
+			void serial_cuda_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer);
+																
+		template<typename Kernel, typename Input>
+			void serial_hip_3I_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* bufferR,Input* bufferA,Input* bufferB);
+								
+		template<typename Kernel, typename Input>
+			void serial_cuda_3I_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* bufferR,Input* bufferA,Input* bufferB);
 
 
     public:
@@ -276,11 +298,13 @@ class SingleTask
         void setDevice        (int v);
         void setUnifiedMemory (bool b)        {  M_qUsedUnifiedMemory = b; }
         void setSolveLevel    (int v)         {  M_solveLevel   = v; }
+		void setNbGPUused     (int v)         {  M_nbGPUused    = v; }
     
         int  getNumType       () const        {  return (M_numType);   }
         int  getNumModel      () const        {  return (M_numModel);  }
         int  getNbStreams     () const        {  return (M_nbStreams); }
         int  getSolveLevel    () const        {  return (M_solveLevel); }
+		int  getNbGPUused     () const        {  return (M_nbGPUused); }
         bool isSave           () const        {  return (M_qSave);     }
         bool isUnifiedMemory  () const        {  return (M_qUsedUnifiedMemory); }
 
@@ -315,6 +339,7 @@ SingleTask::SingleTask()
     M_numModel           = 1; // 1:Serial 2:Stream
     M_qUsedUnifiedMemory = false;
     M_solveLevel         = 1; 
+	M_nbGPUused          = 1;
 }
 
 SingleTask::~SingleTask()
@@ -368,33 +393,54 @@ template<typename Kernel, typename Input>
                                 Input* buffer)
 {   
     M_t_begin = std::chrono::steady_clock::now();
-    if (M_numModel==1) { //SERIAL MODEL
-        if (M_numType==1) { 
-            #ifdef UseHIP  
-                serial_hip(kernel_function,numElems,buffer);
-            #endif
-        }
+	if (M_nbGPUused==1)
+	{
+		if (M_numModel==1) { //SERIAL MODEL
+			if (M_numType==1) { 
+				#ifdef UseHIP  
+					serial_hip(kernel_function,numElems,buffer);
+				#endif
+			}
 
-        if (M_numType==2) { 
-            #ifdef UseCUDA  
-                serial_cuda(kernel_function,numElems,buffer);
-            #endif
-        }
-    }
+			if (M_numType==2) { 
+				#ifdef UseCUDA  
+					serial_cuda(kernel_function,numElems,buffer);
+				#endif
+			}
+		}
 
-    if (M_numModel==2) {  //STREAM MODEL
-        if (M_numType==1) { 
-            #ifdef UseHIP  
-                stream_hip(kernel_function,numElems,buffer);
-            #endif
-        }
+		if (M_numModel==2) {  //STREAM MODEL
+			if (M_numType==1) { 
+				#ifdef UseHIP  
+					stream_hip(kernel_function,numElems,buffer);
+				#endif
+			}
 
-        if (M_numType==2) { 
-            #ifdef UseCUDA  
-                stream_cuda(kernel_function,numElems,buffer);
-            #endif
-        }
-    }
+			if (M_numType==2) { 
+				#ifdef UseCUDA  
+					stream_cuda(kernel_function,numElems,buffer);
+				#endif
+			}
+		}
+	}
+	else
+	{ //SERIAL MODEL MULTI GPU
+		if (M_numModel==1) { //SERIAL MODEL
+			if (M_numType==1) { 
+				#ifdef UseHIP  
+					serial_hip_multi_GPU(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
+
+			if (M_numType==2) { 
+				#ifdef UseCUDA  
+					serial_cuda_multi_GPU(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
+		}
+	}
+		
+	
     M_t_end = std::chrono::steady_clock::now();
     M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
 }
@@ -428,6 +474,7 @@ template<typename Kernel, typename Input>
         }
     #endif
 }
+
 
 template<typename Kernel, typename Input>
     void SingleTask::serial_cuda(const Kernel& kernel_function,
@@ -467,36 +514,199 @@ template<typename Kernel, typename Input>
                                 Input* bufferR,Input* bufferA,Input* bufferB)
 {   
     M_t_begin = std::chrono::steady_clock::now();
-    if (M_numModel==1) { //SERIAL MODEL
-        if (M_numType==1) { 
-            #ifdef UseHIP  
-                serial_hip_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
-            #endif
-        }
+	if (M_nbGPUused==1)
+	{
+		if (M_numModel==1) { //SERIAL MODEL
+			if (M_numType==1) { 
+				#ifdef UseHIP  
+					serial_hip_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
 
-        if (M_numType==2) { 
-            #ifdef UseCUDA  
-                serial_cuda_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
-            #endif
-        }
-    }
+			if (M_numType==2) { 
+				#ifdef UseCUDA  
+					serial_cuda_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
+		}
 
-    if (M_numModel==2) {  //STREAM MODEL
-        if (M_numType==1) { 
-            #ifdef UseHIP  
-                stream_hip_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
-            #endif
-        }
+		if (M_numModel==2) {  //STREAM MODEL
+			if (M_numType==1) { 
+				#ifdef UseHIP  
+					stream_hip_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
 
-        if (M_numType==2) { 
-            #ifdef UseCUDA  
-                stream_cuda_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
-            #endif
-        }
-    }
+			if (M_numType==2) { 
+				#ifdef UseCUDA  
+					stream_cuda_3I(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
+		}
+	}
+	else
+	{
+		if (M_numModel==1) { //SERIAL MODEL MULTI GPU
+			if (M_numType==1) { 
+				#ifdef UseHIP  
+					serial_hip_3I_multi_GPU(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
+
+			if (M_numType==2) { 
+				#ifdef UseCUDA  
+					serial_cuda_3I_multi_GPU(kernel_function,numElems,bufferR,bufferA,bufferB);
+				#endif
+			}
+		}
+	
+	}
+	
     M_t_end = std::chrono::steady_clock::now();
     M_time_laps= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
 }
+
+
+template<typename Kernel, typename Input>
+    void SingleTask::serial_hip_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+    #ifdef UseHIP  
+		int numDevices=0; hipGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
+		int numElemsPerBlock=int(numElems/M_nbGPUused);
+		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
+		
+        for (int i = 0; i < M_nbGPUused; i++) {
+			hipSetDevice(i);
+            Input *d_B;
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+            hipMalloc((void **) &d_B,nbElemsPartiel);
+            hipMemcpy(d_B,&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyHostToDevice);
+				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
+				dim3 thread_block(M_block_size, 1, 1);
+				dim3 grid(num_blocks, 1);
+				hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,d_B,0,nbElemsPartiel);
+			hipMemcpy(&buffer[i*numElemsPerBlock],d_B,nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyDeviceToHost);
+			hipDeviceSynchronize();
+			hipFree(d_B);
+		} 
+		
+    #endif
+}
+
+
+template<typename Kernel, typename Input>
+    void SingleTask::serial_cuda_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+    #ifdef UseCUDA
+		int numDevices=0; cudaGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
+		int numElemsPerBlock=int(numElems/(M_nbGPUused);
+		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
+		
+        for (int i = 0; i < M_nbGPUused; i++) {
+			cudaSetDevice(i);
+            Input *d_B;
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest;  }
+            cudaMalloc((void **) &d_B,nbElemsPartiel);
+            cudaMemcpy(d_B,&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyHostToDevice);
+				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
+				dim3 thread_block(M_block_size, 1, 1);
+				dim3 grid(num_blocks, 1);
+				OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,d_B,0,nbElemsPartiel);
+			cudaMemcpy(&buffer[i*numElemsPerBlock],d_B,nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyDeviceToHost);
+			cudaDeviceSynchronize();
+			cudaFree(d_B);
+		} 
+    #endif
+}
+
+/*
+template<typename Kernel, typename Input>
+    void SingleTask::serial_hip_multi_GPU_Vers2(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+    #ifdef UseHIP  
+		int numDevices=0; hipGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
+		int numElemsPerBlock=int(numElems/(M_nbGPUused);
+		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
+		
+		std::vector<Input> vdb;
+		for (int i = 0; i < M_nbGPUused; i++) {
+			hipSetDevice(i);
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+			Input *d_B; vdb.push_back(std::move(d_B));
+			hipMalloc((void **) vdb[i],nbElemsPartiel);
+            hipMemcpy(vdb[i],&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyHostToDevice);
+		}
+		
+        for (int i = 0; i < M_nbGPUused; i++) {
+			hipSetDevice(i);
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
+				dim3 thread_block(M_block_size, 1, 1);
+				dim3 grid(num_blocks, 1);
+				hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,vdb[i],0,nbElemsPartiel);
+
+		} 
+		
+		hipDeviceSynchronize();
+		
+		for (int i = 0; i < M_nbGPUused; i++) {
+			hipSetDevice(i);
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+			hipMemcpy(&buffer[i*numElemsPerBlock],vdb[i],nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyDeviceToHost);
+			hipFree(vdb[i]);
+		}
+		vdb.clear();	
+    #endif
+}
+
+template<typename Kernel, typename Input>
+    void SingleTask::serial_cuda_multi_GPU_Vers2(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer)
+{   
+    #ifdef UseCUDA
+		int numDevices=0; cudaGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
+		int numElemsPerBlock=int(numElems/(M_nbGPUused);
+		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
+		
+		std::vector<Input> vdb;
+		for (int i = 0; i < M_nbGPUused; i++) {
+			cudaSetDevice(i);
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+			Input *d_B; vdb.push_back(std::move(d_B));
+			cudaMalloc((void **) vdb[i],nbElemsPartiel);
+            cudaMemcpy(vdb[i],&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyHostToDevice);
+		}
+		
+        for (int i = 0; i < M_nbGPUused; i++) {
+			cudaSetDevice(i);
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
+				dim3 thread_block(M_block_size, 1, 1);
+				dim3 grid(num_blocks, 1);
+				OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,vdb[i],0,nbElemsPartiel);
+
+		} 
+		
+		cudaDeviceSynchronize();
+		
+		for (int i = 0; i < M_nbGPUused; i++) {
+			cudaSetDevice(i);
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+			cudaMemcpy(&buffer[i*numElemsPerBlock],vdb[i],nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyDeviceToHost);
+			cudaFree(vdb[i]);
+		}
+		vdb.clear();	
+    #endif
+}
+*/
+
 
 
 template<typename Kernel, typename Input>
@@ -505,7 +715,6 @@ template<typename Kernel, typename Input>
                                 Input* bufferR,Input* bufferA,Input* bufferB)
 {   
     #ifdef UseHIP  
-        
         int sz=sizeof(decltype(bufferR)) * numElems;
         int iEnd=numElems; 
         int iBegin=0; 
@@ -536,6 +745,45 @@ template<typename Kernel, typename Input>
         }
     #endif
 }
+
+
+template<typename Kernel, typename Input>
+    void SingleTask::serial_hip_3I_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* bufferR,Input* bufferA,Input* bufferB)
+{   
+    #ifdef UseHIP  
+		int numDevices=0; hipGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
+		int numElemsPerBlock=int(numElems/M_nbGPUused);
+		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
+		
+        for (int i = 0; i < M_nbGPUused; i++) {
+			hipSetDevice(i);
+            Input *d_B_R;
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+            hipMalloc((void **) &d_B_R,nbElemsPartiel);
+			hipMalloc((void **) &d_B_A,nbElemsPartiel);
+			hipMalloc((void **) &d_B_B,nbElemsPartiel);
+            hipMemcpy(d_B_R,&[bufferR+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyHostToDevice);
+			hipMemcpy(d_B_A,&[bufferA+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyHostToDevice);
+			hipMemcpy(d_B_B,&[bufferB+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyHostToDevice);
+			
+				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
+				dim3 thread_block(M_block_size, 1, 1);
+				dim3 grid(num_blocks, 1);
+				hipLaunchKernelGGL(OP_IN_KERNEL_LAMBDA_GPU_1D_3I,grid,thread_block,0,0,kernel_function,
+					d_B_R,d_B_A,d_B_B,0,nbElemsPartiel);
+				
+			hipMemcpy(&bufferR[i*numElemsPerBlock],d_B_R,nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyDeviceToHost);
+			hipDeviceSynchronize();
+			hipFree(d_B_R);
+			hipFree(d_B_A);
+			hipFree(d_B_B);
+		} 
+		
+    #endif
+}
+
 
 
 template<typename Kernel, typename Input>
@@ -573,6 +821,44 @@ template<typename Kernel, typename Input>
             cudaFree(deviceBufferA);
             cudaFree(deviceBufferB);
         }
+    #endif
+}
+
+
+template<typename Kernel, typename Input>
+    void SingleTask::serial_cuda_3I_multi_GPU(const Kernel& kernel_function,
+                                int numElems,
+                                Input* bufferR,Input* bufferA,Input* bufferB)
+{   
+    #ifdef UseCUDA  
+		int numDevices=0; cudaGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
+		int numElemsPerBlock=int(numElems/M_nbGPUused);
+		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
+		
+        for (int i = 0; i < M_nbGPUused; i++) {
+			cudaSetDevice(i);
+            Input *d_B_R;
+			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
+            cudaMalloc((void **) &d_B_R,nbElemsPartiel);
+			cudaMalloc((void **) &d_B_A,nbElemsPartiel);
+			cudaMalloc((void **) &d_B_B,nbElemsPartiel);
+            cudaMemcpy(d_B_R,&[bufferR+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyHostToDevice);
+			cudaMemcpy(d_B_A,&[bufferA+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyHostToDevice);
+			cudaMemcpy(d_B_B,&[bufferB+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyHostToDevice);
+			
+				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
+				dim3 thread_block(M_block_size, 1, 1);
+				dim3 grid(num_blocks, 1);
+				OP_IN_KERNEL_LAMBDA_GPU_1D_3I<<<grid,thread_block,0,0>>>(kernel_function,
+					d_B_R,d_B_A,d_B_B,0,nbElemsPartiel);
+				
+			cudaMemcpy(&bufferR[i*numElemsPerBlock],d_B_R,nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyDeviceToHost);
+			cudaDeviceSynchronize();
+			cudaFree(d_B_R);
+			cudaFree(d_B_A);
+			cudaFree(d_B_B);
+		} 
+		
     #endif
 }
 
