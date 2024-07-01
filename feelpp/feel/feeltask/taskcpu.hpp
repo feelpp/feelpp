@@ -3,6 +3,23 @@ namespace Feel
 {
 
 
+ template <typename T>
+int numSpecxFunctionAlpha(T& fcv)
+{
+    std::string s1=typeid(fcv).name(); int l=s1.length();
+    std::cout<<"s1="<<s1<<"\n";
+    if (l>1) {
+        if (s1.find("SpCallableType0EE") != std::string::npos) { return (1);  }           //"SpCpu"
+        else if (s1.find("SpCallableType2EE") != std::string::npos) { return (2);  }      //"SpHip"
+        else if (s1.find("SpCallableType1EE") != std::string::npos) { return (3);  }      //"SpCuda
+        else if (s1.find("SpArrayView") != std::string::npos) { return (20);  }           //SpArrayView
+        else if (s1.find("SpArrayAccessorIS1_EE") != std::string::npos) { return (21);  } //SpReadArray      
+        else if (s1.find("SpDataAccessMode0") != std::string::npos) { return (10);  }     //"SpRead
+        else if (s1.find("SpDataAccessMode1") != std::string::npos) { return (11);  }     //"SpWrite
+        else if (s1.find("SpDataAccessMode3") != std::string::npos) { return (12);  }     //SpCommutativeWrite
+    }
+    return (0);
+}
  
 //=======================================================================================================================
 // Meta function tools allowing you to process an expression defined in Task
@@ -82,6 +99,7 @@ namespace Sbtask{
     template<typename T>
     auto toSpDataSpecx( T && t )
     {
+        //numSpecxFunctionAlpha(std::forward<T>( t ));
         if constexpr ( std::is_const_v<std::remove_reference_t<T>> )
             return SpRead(std::forward<T>( t ));
         else
@@ -654,19 +672,9 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-
-
-
-    if (!M_qDetach)
-    {
-       
-
-        usleep(0); std::atomic_int counter(0);
-    }
-    else
-    {
-        addTaskAsync(std::forward<Ts>(ts)...);
-    }
+    //auto && parameters = args.get(_parameters);
+    M_mytg.task(parameters,task);
+    usleep(0); std::atomic_int counter(0);
 }
 #endif
 

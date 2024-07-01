@@ -2,7 +2,6 @@ namespace Feel
 {
 
 
-
 //================================================================================================================================
 // Tools to manage memories between CPU and GPU
 //================================================================================================================================
@@ -287,6 +286,17 @@ class SingleTask
                                 Input* bufferR,Input* bufferA,Input* bufferB);
 
 
+        template<typename Kernel, typename Input>
+            void serial_hip_multi_GPU_Vers2(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer);
+
+        template<typename Kernel, typename Input>
+            void serial_cuda_multi_GPU_Vers2(const Kernel& kernel_function,
+                                int numElems,
+                                Input* buffer);
+
+
     public:
         void setNumType       (int v)         {  M_numType      = v; }
         void setNumModel      (int v)         {  M_numModel     = v; }
@@ -428,13 +438,13 @@ template<typename Kernel, typename Input>
 		if (M_numModel==1) { //SERIAL MODEL
 			if (M_numType==1) { 
 				#ifdef UseHIP  
-					serial_hip_multi_GPU(kernel_function,numElems,bufferR,bufferA,bufferB);
+					serial_hip_multi_GPU(kernel_function,numElems,buffer);
 				#endif
 			}
 
 			if (M_numType==2) { 
 				#ifdef UseCUDA  
-					serial_cuda_multi_GPU(kernel_function,numElems,bufferR,bufferA,bufferB);
+					serial_cuda_multi_GPU(kernel_function,numElems,buffer);
 				#endif
 			}
 		}
@@ -582,12 +592,12 @@ template<typename Kernel, typename Input>
             Input *d_B;
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
             hipMalloc((void **) &d_B,nbElemsPartiel);
-            hipMemcpy(d_B,&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyHostToDevice);
+            hipMemcpy(d_B,&buffer[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer)), hipMemcpyHostToDevice);
 				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
 				dim3 thread_block(M_block_size, 1, 1);
 				dim3 grid(num_blocks, 1);
 				hipLaunchKernelGGL(OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D,grid,thread_block,0,0,kernel_function,d_B,0,nbElemsPartiel);
-			hipMemcpy(&buffer[i*numElemsPerBlock],d_B,nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyDeviceToHost);
+			hipMemcpy(&buffer[i*numElemsPerBlock],d_B,nbElemsPartiel*sizeof(decltype(buffer)), hipMemcpyDeviceToHost);
 			hipDeviceSynchronize();
 			hipFree(d_B);
 		} 
@@ -611,19 +621,19 @@ template<typename Kernel, typename Input>
             Input *d_B;
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest;  }
             cudaMalloc((void **) &d_B,nbElemsPartiel);
-            cudaMemcpy(d_B,&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyHostToDevice);
+            cudaMemcpy(d_B,&buffer[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer)), cudaMemcpyHostToDevice);
 				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
 				dim3 thread_block(M_block_size, 1, 1);
 				dim3 grid(num_blocks, 1);
 				OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,d_B,0,nbElemsPartiel);
-			cudaMemcpy(&buffer[i*numElemsPerBlock],d_B,nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyDeviceToHost);
+			cudaMemcpy(&buffer[i*numElemsPerBlock],d_B,nbElemsPartiel*sizeof(decltype(buffer)), cudaMemcpyDeviceToHost);
 			cudaDeviceSynchronize();
 			cudaFree(d_B);
 		} 
     #endif
 }
 
-/*
+
 template<typename Kernel, typename Input>
     void SingleTask::serial_hip_multi_GPU_Vers2(const Kernel& kernel_function,
                                 int numElems,
@@ -631,7 +641,7 @@ template<typename Kernel, typename Input>
 {   
     #ifdef UseHIP  
 		int numDevices=0; hipGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
-		int numElemsPerBlock=int(numElems/(M_nbGPUused);
+		int numElemsPerBlock=int(numElems/(M_nbGPUused));
 		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
 		
 		std::vector<Input> vdb;
@@ -640,7 +650,7 @@ template<typename Kernel, typename Input>
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
 			Input *d_B; vdb.push_back(std::move(d_B));
 			hipMalloc((void **) vdb[i],nbElemsPartiel);
-            hipMemcpy(vdb[i],&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyHostToDevice);
+            hipMemcpy(vdb[i],&buffer[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer)), hipMemcpyHostToDevice);
 		}
 		
         for (int i = 0; i < M_nbGPUused; i++) {
@@ -658,7 +668,7 @@ template<typename Kernel, typename Input>
 		for (int i = 0; i < M_nbGPUused; i++) {
 			hipSetDevice(i);
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
-			hipMemcpy(&buffer[i*numElemsPerBlock],vdb[i],nbElemsPartiel*sizeof(decltype(buffer, hipMemcpyDeviceToHost);
+			hipMemcpy(&buffer[i*numElemsPerBlock],vdb[i],nbElemsPartiel*sizeof(decltype(buffer)), hipMemcpyDeviceToHost);
 			hipFree(vdb[i]);
 		}
 		vdb.clear();	
@@ -670,9 +680,9 @@ template<typename Kernel, typename Input>
                                 int numElems,
                                 Input* buffer)
 {   
-    #ifdef UseCUDA
+    #ifdef UseCUDA  
 		int numDevices=0; cudaGetDeviceCount(&numDevices); if (M_nbGPUused>numDevices) { M_nbGPUused=numDevices; }
-		int numElemsPerBlock=int(numElems/(M_nbGPUused);
+		int numElemsPerBlock=int(numElems/(M_nbGPUused));
 		int numElemsPerBlockRest=numElems-M_nbGPUused*numElemsPerBlock;
 		
 		std::vector<Input> vdb;
@@ -681,7 +691,7 @@ template<typename Kernel, typename Input>
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
 			Input *d_B; vdb.push_back(std::move(d_B));
 			cudaMalloc((void **) vdb[i],nbElemsPartiel);
-            cudaMemcpy(vdb[i],&[buffer+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyHostToDevice);
+            cudaMemcpy(vdb[i],&buffer[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(buffer)), cudaMemcpyHostToDevice);
 		}
 		
         for (int i = 0; i < M_nbGPUused; i++) {
@@ -690,7 +700,7 @@ template<typename Kernel, typename Input>
 				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
 				dim3 thread_block(M_block_size, 1, 1);
 				dim3 grid(num_blocks, 1);
-				OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,vdb[i],0,nbElemsPartiel);
+			    OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D<<<grid,thread_block,0,0>>>(kernel_function,vdb[i],0,nbElemsPartiel);
 
 		} 
 		
@@ -699,13 +709,12 @@ template<typename Kernel, typename Input>
 		for (int i = 0; i < M_nbGPUused; i++) {
 			cudaSetDevice(i);
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
-			cudaMemcpy(&buffer[i*numElemsPerBlock],vdb[i],nbElemsPartiel*sizeof(decltype(buffer, cudaMemcpyDeviceToHost);
+			cudaMemcpy(&buffer[i*numElemsPerBlock],vdb[i],nbElemsPartiel*sizeof(decltype(buffer)), cudaMemcpyDeviceToHost);
 			cudaFree(vdb[i]);
 		}
 		vdb.clear();	
     #endif
 }
-*/
 
 
 
@@ -759,14 +768,14 @@ template<typename Kernel, typename Input>
 		
         for (int i = 0; i < M_nbGPUused; i++) {
 			hipSetDevice(i);
-            Input *d_B_R;
+            Input *d_B_R,*d_B_A,*d_B_B;
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
             hipMalloc((void **) &d_B_R,nbElemsPartiel);
 			hipMalloc((void **) &d_B_A,nbElemsPartiel);
 			hipMalloc((void **) &d_B_B,nbElemsPartiel);
-            hipMemcpy(d_B_R,&[bufferR+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyHostToDevice);
-			hipMemcpy(d_B_A,&[bufferA+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyHostToDevice);
-			hipMemcpy(d_B_B,&[bufferB+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyHostToDevice);
+            hipMemcpy(d_B_R,&bufferR[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR)), hipMemcpyHostToDevice);
+			hipMemcpy(d_B_A,&bufferA[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR)), hipMemcpyHostToDevice);
+			hipMemcpy(d_B_B,&bufferB[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR)), hipMemcpyHostToDevice);
 			
 				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
 				dim3 thread_block(M_block_size, 1, 1);
@@ -774,7 +783,7 @@ template<typename Kernel, typename Input>
 				hipLaunchKernelGGL(OP_IN_KERNEL_LAMBDA_GPU_1D_3I,grid,thread_block,0,0,kernel_function,
 					d_B_R,d_B_A,d_B_B,0,nbElemsPartiel);
 				
-			hipMemcpy(&bufferR[i*numElemsPerBlock],d_B_R,nbElemsPartiel*sizeof(decltype(bufferR, hipMemcpyDeviceToHost);
+			hipMemcpy(&bufferR[i*numElemsPerBlock],d_B_R,nbElemsPartiel*sizeof(decltype(bufferR)), hipMemcpyDeviceToHost);
 			hipDeviceSynchronize();
 			hipFree(d_B_R);
 			hipFree(d_B_A);
@@ -837,14 +846,14 @@ template<typename Kernel, typename Input>
 		
         for (int i = 0; i < M_nbGPUused; i++) {
 			cudaSetDevice(i);
-            Input *d_B_R;
+            Input *d_B_R,*d_B_A,*d_B_B;
 			int nbElemsPartiel=numElemsPerBlock; if (i==M_nbGPUused-1) { nbElemsPartiel=numElemsPerBlock+numElemsPerBlockRest; }
             cudaMalloc((void **) &d_B_R,nbElemsPartiel);
 			cudaMalloc((void **) &d_B_A,nbElemsPartiel);
 			cudaMalloc((void **) &d_B_B,nbElemsPartiel);
-            cudaMemcpy(d_B_R,&[bufferR+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyHostToDevice);
-			cudaMemcpy(d_B_A,&[bufferA+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyHostToDevice);
-			cudaMemcpy(d_B_B,&[bufferB+i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyHostToDevice);
+            cudaMemcpy(d_B_R,&bufferR[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR)), cudaMemcpyHostToDevice);
+			cudaMemcpy(d_B_A,&bufferA[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR)), cudaMemcpyHostToDevice);
+			cudaMemcpy(d_B_B,&bufferB[i*numElemsPerBlock],nbElemsPartiel*sizeof(decltype(bufferR)), cudaMemcpyHostToDevice);
 			
 				int num_blocks = (nbElemsPartiel + M_block_size - 1) / M_block_size;
 				dim3 thread_block(M_block_size, 1, 1);
@@ -852,7 +861,7 @@ template<typename Kernel, typename Input>
 				OP_IN_KERNEL_LAMBDA_GPU_1D_3I<<<grid,thread_block,0,0>>>(kernel_function,
 					d_B_R,d_B_A,d_B_B,0,nbElemsPartiel);
 				
-			cudaMemcpy(&bufferR[i*numElemsPerBlock],d_B_R,nbElemsPartiel*sizeof(decltype(bufferR, cudaMemcpyDeviceToHost);
+			cudaMemcpy(&bufferR[i*numElemsPerBlock],d_B_R,nbElemsPartiel*sizeof(decltype(bufferR)), cudaMemcpyDeviceToHost);
 			cudaDeviceSynchronize();
 			cudaFree(d_B_R);
 			cudaFree(d_B_A);
@@ -2117,5 +2126,8 @@ int numSpecxFunctionBeta(T& fcv)
 //================================================================================================================================
 // THE END.
 //================================================================================================================================
+
+
+
 
 }
