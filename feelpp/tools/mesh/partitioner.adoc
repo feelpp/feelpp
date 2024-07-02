@@ -12,7 +12,7 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == SYNOPSIS
 
-{manmanual} --part num [num2...] --ifile file [--dim d] [--json file.json] [--shape s] [--order num] [--by-markers] [--by-markers-desc markers] [--ofile file] [--odir dir]
+{manmanual} [--json file.json] --part num [num2...] --ifile file [--dim d] [--shape s] [--order num] [--splitting array] [--ofile file] [--odir dir]
 
 == DESCRIPTION
 
