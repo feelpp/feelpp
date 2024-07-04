@@ -547,7 +547,7 @@ void Task::getInformation()
         M_nbThTotal=getNbMaxThread(); 
         std::cout<<"[INFO]: Nb max Thread="<<M_nbThTotal<<"\n";
 
-        Hard::Hardware MyHardware; MyHardware.getInformationSystem();
+        SystemInformation::Hardware MyHardware; MyHardware.getInformationSystem();
     }
 }
 
