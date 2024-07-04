@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T22>\n");
     auto start_time= std::chrono::steady_clock::now();
 
-    int nbThreads = 6;
+    int nbThreads = 3;
     long int nbN=nbThreads*6;
     int sizeBlock=nbN/nbThreads;
     int diffBlock=nbN-sizeBlock*nbThreads;
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( test_specx_23 )
     BOOST_MESSAGE("[INFO SPECX] : Execution of <T23>\n");
     auto start_time= std::chrono::steady_clock::now();
 
-    const int nbThreads = 6;
+    const int nbThreads = 3;
     Task::Task TsK(nbThreads,3);
     TsK.setSave(false); 
     TsK.setInfo(false); 
@@ -271,20 +271,13 @@ BOOST_AUTO_TEST_CASE( test_specx_26 )
         TsK.run_gpu_1D(matrix_inverse<Eigen::Matrix3f>(),dim3(128,1,1), nthreads, in, out);
         TsK.run();
         TsK.close();
-        TsK.debriefingTasks();
+        TsK.debriefing();
     #endif
 
     auto stop_time= std::chrono::steady_clock::now();
     auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
 	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T26> in ms since start :"<<run_time.count()<<"\n");
 }
-
-
-
-
-
-
-
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -57,7 +57,8 @@ void Hardware::readFileViewInformation(std::string filename)
 {
     std::ifstream inputFile(filename); 
     std::string line;
-    while (getline(inputFile, line)) { 
+    while (getline(inputFile, line)) 
+    { 
         VLOG(1) << line << std::endl;
     } 
     inputFile.close(); 
@@ -106,7 +107,7 @@ void Hardware::getMpiInformation(int argc, char *argv[])
         VLOG(1) << "MPI Nb CPU available="<<numCPU<< "\n";
         VLOG(1) << "MPI Scan..."<<"\n";
     }
-    VLOG(1) << "MPI Rank: "<<world_rank<<" out of "<<world_size<<"\n";
+    VLOG(1) << "MPI Rank= "<<world_rank<<"out of "<<world_size<<"\n";
     MPI_Finalize();
 #endif
 }
@@ -129,10 +130,10 @@ void Hardware::getShortInformationGPU()
 #if defined(COMPILE_WITH_HIP) && defined(UseHIP)
     hipGetDeviceCount(&deviceCount);
     if (deviceCount>0) {
-        VLOG(1) << "Number of available GPUs AMD=" << deviceCount << "\n";
+        VLOG(1) << "Number of available GPUs AMD="<< deviceCount << "\n";
         for (int deviceId = 0; deviceId < deviceCount; ++deviceId) {
             hipSetDevice(deviceId);
-            VLOG(1) << "GPU " << deviceId << " initialized and resources allocated." << "\n";
+            VLOG(1) << "GPU "<< deviceId << "initialized and resources allocated."<< "\n";
         }
     }
 #endif
@@ -140,14 +141,14 @@ void Hardware::getShortInformationGPU()
 #if defined(COMPILE_WITH_CUDA) && defined(UseCUDA)
     cudaGetDeviceCount(&deviceCount);
 	if (deviceCount>0) {
-		VLOG(1) <<  "Number of available GPUs NVIDIA=" << deviceCount << "\n";
+		VLOG(1) <<  "Number of available GPUs NVIDIA="<< deviceCount << "\n";
 		for (int deviceId = 0; deviceId < deviceCount; ++deviceId) {
 			cudaSetDevice(deviceId);
-			VLOG(1) <<  "GPU " << deviceId << " initialized and resources allocated." << "\n";
+			VLOG(1) <<  "GPU "<< deviceId << "initialized and resources allocated."<< "\n";
 		}
 	}
 #endif
-    if (deviceCount == 0) { VLOG(1) <<  "No GPUs found. Exiting." << "\n"; }
+    if (deviceCount == 0) { VLOG(1) <<  "No GPUs found. Exiting."<< "\n"; }
 }
 
 
@@ -168,22 +169,22 @@ void Hardware::getHipInformation()
     {
         HIP_CHECK(hipSetDevice(i));
         HIP_CHECK(hipGetDeviceProperties(&devProp,i));
-        VLOG(1) << " DeviceID                     = "<<i<<std::endl;
-        VLOG(1) << " Agent prop name              = "<< devProp.name<<std::endl;
-        VLOG(1) << " System minor                 = "<< devProp.minor<<std::endl;
-        VLOG(1) << " System major                 = "<< devProp.major<<std::endl;
-        VLOG(1) << " Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
-        VLOG(1) << " Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
-        VLOG(1) << " Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
-        VLOG(1) << " max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
-        VLOG(1) << " max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
-        VLOG(1) << " max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
-        VLOG(1) << " max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
-        VLOG(1) << " warpSize:                    = "<< devProp.warpSize << "\n";
-        VLOG(1) << " regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
-        VLOG(1) << " concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
-        VLOG(1) << " total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
-        VLOG(1) << " shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
+        VLOG(1) << "DeviceID                     = "<<i<<std::endl;
+        VLOG(1) << "Agent prop name              = "<< devProp.name<<std::endl;
+        VLOG(1) << "System minor                 = "<< devProp.minor<<std::endl;
+        VLOG(1) << "System major                 = "<< devProp.major<<std::endl;
+        VLOG(1) << "Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
+        VLOG(1) << "Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
+        VLOG(1) << "Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+        VLOG(1) << "max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
+        VLOG(1) << "max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
+        VLOG(1) << "max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<""<<devProp.maxThreadsDim[1]<<""<<devProp.maxThreadsDim[2]<<std::endl;
+        VLOG(1) << "max Grid Size 3D             = "<< devProp.maxGridSize[0]<<""<<devProp.maxGridSize[1]<<""<<devProp.maxGridSize[2]<<std::endl;
+        VLOG(1) << "warpSize:                    = "<< devProp.warpSize << "\n";
+        VLOG(1) << "regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
+        VLOG(1) << "concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
+        VLOG(1) << "total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
+        VLOG(1) << "shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
     }
     HIP_CHECK(hipSetDevice(0));
 #endif
@@ -206,22 +207,22 @@ void Hardware::getCudaInformation()
     {
         CUDA_CHECK(cudaSetDevice(i));
         CUDA_CHECK(cudaGetDeviceProperties(&devProp,i));
-        VLOG(1) << " DeviceID                     = "<<i<<std::endl;
-        VLOG(1) << " Agent prop name              = "<< devProp.name<<std::endl;
-        VLOG(1) << " System minor                 = "<< devProp.minor<<std::endl;
-        VLOG(1) << " System major                 = "<< devProp.major<<std::endl;
-        VLOG(1) << " Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
-        VLOG(1) << " Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
-        VLOG(1) << " Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
-        VLOG(1) << " max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
-        VLOG(1) << " max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
-        VLOG(1) << " max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<" "<<devProp.maxThreadsDim[1]<<" "<<devProp.maxThreadsDim[2]<<std::endl;
-        VLOG(1) << " max Grid Size 3D             = "<< devProp.maxGridSize[0]<<" "<<devProp.maxGridSize[1]<<" "<<devProp.maxGridSize[2]<<std::endl;
-        VLOG(1) << " warpSize:                    = "<< devProp.warpSize << "\n";
-        VLOG(1) << " regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
-        VLOG(1) << " concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
-        VLOG(1) << " total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
-        VLOG(1) << " shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
+        VLOG(1) << "DeviceID                     = "<<i<<std::endl;
+        VLOG(1) << "Agent prop name              = "<< devProp.name<<std::endl;
+        VLOG(1) << "System minor                 = "<< devProp.minor<<std::endl;
+        VLOG(1) << "System major                 = "<< devProp.major<<std::endl;
+        VLOG(1) << "Memory Clock Rate (KHz)      = "<< devProp.memoryClockRate<<std::endl;
+        VLOG(1) << "Memory Bus Width (bits)      = "<< devProp.memoryBusWidth<<std::endl;
+        VLOG(1) << "Peak Memory Bandwidth (GB/s) = "<< 2.0*devProp.memoryClockRate*(devProp.memoryBusWidth/8)/1.0e6<<std::endl;
+        VLOG(1) << "max ThreadsPerBlock          = "<< devProp.maxThreadsPerBlock<<std::endl;
+        VLOG(1) << "max ThreadsPerMultiProcessor = "<< devProp.maxThreadsPerMultiProcessor<<std::endl;
+        VLOG(1) << "max ThreadsDim 3D            = "<< devProp.maxThreadsDim[0]<<""<<devProp.maxThreadsDim[1]<<""<<devProp.maxThreadsDim[2]<<std::endl;
+        VLOG(1) << "max Grid Size 3D             = "<< devProp.maxGridSize[0]<<""<<devProp.maxGridSize[1]<<""<<devProp.maxGridSize[2]<<std::endl;
+        VLOG(1) << "warpSize:                    = "<< devProp.warpSize << "\n";
+        VLOG(1) << "regsPerBlock:                = "<< devProp.regsPerBlock << "\n";
+        VLOG(1) << "concurrentKernels:           = "<< devProp.concurrentKernels << "\n";
+        VLOG(1) << "total Global Mem             = "<< devProp.totalGlobalMem<<std::endl;
+        VLOG(1) << "shared Mem Per Block         = "<< devProp.sharedMemPerBlock<<std::endl;
     }
     CUDA_CHECK(cudaSetDevice(0));
 #endif

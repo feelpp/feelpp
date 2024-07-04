@@ -1,35 +1,39 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+  This file is part of the Feel library
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 3.0 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+  @file
+  @author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  @Date: 2024-06-04
+  @copyright 2019 Feel++ Consortium
+*/
+
+
+
+
 
 namespace Feel
 {
 
 
- template <typename T>
-int numSpecxFunctionAlpha(T& fcv)
-{
-    std::string s1=typeid(fcv).name(); int l=s1.length();
-    std::cout<<"s1="<<s1<<"\n";
-    if (l>1) {
-        if (s1.find("SpCallableType0EE") != std::string::npos) { return (1);  }           //"SpCpu"
-        else if (s1.find("SpCallableType2EE") != std::string::npos) { return (2);  }      //"SpHip"
-        else if (s1.find("SpCallableType1EE") != std::string::npos) { return (3);  }      //"SpCuda
-        else if (s1.find("SpArrayView") != std::string::npos) { return (20);  }           //SpArrayView
-        else if (s1.find("SpArrayAccessorIS1_EE") != std::string::npos) { return (21);  } //SpReadArray      
-        else if (s1.find("SpDataAccessMode0") != std::string::npos) { return (10);  }     //"SpRead
-        else if (s1.find("SpDataAccessMode1") != std::string::npos) { return (11);  }     //"SpWrite
-        else if (s1.find("SpDataAccessMode3") != std::string::npos) { return (12);  }     //SpCommutativeWrite
-    }
-    return (0);
-}
- 
-//=======================================================================================================================
-// Meta function tools allowing you to process an expression defined in Task
-//=======================================================================================================================
-
+// Meta function tools allowing you to process an expression defined in Task``
 
 constexpr auto& _parameters = NA::identifier<struct parameters_tag>;
 constexpr auto& _tasks = NA::identifier<struct task_tag>;
-
-
 
 namespace Sbtask{
 
@@ -52,8 +56,7 @@ namespace Sbtask{
     template <typename T,bool b>
     class SpData
     {
-        static_assert(std::is_reference<T>::value,
-                    "The given type must be a reference");
+        static_assert(std::is_reference<T>::value,"The given type must be a reference");
     public:
         using value_type = T;
         static constexpr bool isWrite = b;
@@ -71,6 +74,7 @@ namespace Sbtask{
     {
         return SpData<T,false>{ std::forward<T>( t ) };
     }
+
     template <typename T>
     auto spWrite( T && t )
     {
@@ -91,6 +95,7 @@ namespace Sbtask{
     {
         return std::make_tuple( toSpData(std::get<I>(t))...);
     }
+
     template<typename ...T>
     auto makeSpData( std::tuple<T...>& t ){
         return makeSpDataHelper<T...>(t, std::make_index_sequence<sizeof...(T)>{});
@@ -99,7 +104,6 @@ namespace Sbtask{
     template<typename T>
     auto toSpDataSpecx( T && t )
     {
-        //numSpecxFunctionAlpha(std::forward<T>( t ));
         if constexpr ( std::is_const_v<std::remove_reference_t<T>> )
             return SpRead(std::forward<T>( t ));
         else
@@ -111,8 +115,10 @@ namespace Sbtask{
     {
         return std::make_tuple( toSpDataSpecx(std::get<I>(t))...);
     }
+
     template<typename ...T>
-    auto makeSpDataSpecx( std::tuple<T...>& t ){
+    auto makeSpDataSpecx( std::tuple<T...>& t )
+    {
         return makeSpDataHelperSpecx<T...>(t, std::make_index_sequence<sizeof...(T)>{});
     }
 
@@ -123,11 +129,8 @@ namespace Sbtask{
     {
         if constexpr ( std::is_const_v<std::remove_reference_t<T>> )
             return SpRead(std::forward<T>( t ));
-            //return (std::forward<T>( t ));
         else
-            //return SpWrite(std::forward<T>( t ));
             return SpCommutativeWrite(std::forward<T>( t ));
-            //return (std::forward<T>( t ));
     }
 
     template<typename ...T, size_t... I>
@@ -136,7 +139,8 @@ namespace Sbtask{
         return std::make_tuple( toSpDataSpecxGPU(std::get<I>(t))...);
     }
     template<typename ...T>
-    auto makeSpDataSpecxGPU( std::tuple<T...>& t ){
+    auto makeSpDataSpecxGPU( std::tuple<T...>& t )
+    {
         return makeSpDataHelperSpecxGPU<T...>(t, std::make_index_sequence<sizeof...(T)>{});
     }
 
@@ -150,19 +154,11 @@ namespace Sbtask{
 
 
 
-//================================================================================================================================
-// CLASS Task: Provide a family of multithreaded functions...
-//================================================================================================================================
 
-// Nota: The objective is to provide a range of tools in the case of using a single variable in multithreading.
-// In the case of work with several variables use the class TasksDispatchComplex.
-
-//#define USE_jthread
 
 
 
 namespace Task {
-
 
 void *workerNumCPU(void *arg) {
     // Function used to run a task on a given CPU number.
@@ -171,6 +167,9 @@ void *workerNumCPU(void *arg) {
     pthread_exit(NULL);
 }
 
+// CLASS Task: Provide a family of multithreaded functions...
+// Nota: The objective is to provide a range of tools in the case of using a single variable in multithreading.
+// In the case of work with several variables use the class TasksDispatchComplex.
 
 class Task
 {
@@ -182,7 +181,6 @@ class Task
         bool M_qEmptyTask;                                     // variable indicator if there is no task
         bool M_qFlagDetachAlert;                               // flag internal variable indicator for activation of the detach module
         
-        //SpTaskGraph<SpSpeculativeModel::SP_NO_SPEC> M_mytg;    // Specx TaskGraph function 
         SpTaskGraph<SpSpeculativeModel::SP_MODEL_1> M_mytg;    // Specx TaskGraph function 
         SpComputeEngine M_myce;                                // Specx engine function 
 
@@ -193,22 +191,16 @@ class Task
         std::vector<std::thread>       M_mythreads;             // Vector table of std::thread
         std::vector<pthread_t>         M_mypthread_t;           // Vector table of pthread_t
 
-        #ifdef COMPILE_WITH_CXX_20
-            std::vector<std::jthread>      myjthreads;              // Vector table of <std::jthread
-        #endif
+#ifdef COMPILE_WITH_CXX_20
+        std::vector<std::jthread>      myjthreads;              // Vector table of <std::jthread
+#endif
 
-        //pthread_t M_mypthread_t[100]; 
         pthread_attr_t                 M_mypthread_attr_t;      // An attribute set to supply to pthread_create()
         std::vector<int>               M_mypthread_cpu;         // Vector table of thread with
         std::mutex                     M_mymtx;                 // Mutex
-        //std::promise<int> promise0;
         std::chrono::steady_clock::time_point M_t_begin,M_t_end;
 
-        //BEGIN::GPU part
-
-        //END::GPU part
-
-        // indicator variables used by the set and get functions. See descriptions below.
+        // Indicator variables used by the set and get functions. See descriptions below.
         long int M_t_laps;
         bool M_qFirstTask;
         int  M_idk;
@@ -253,7 +245,6 @@ class Task
         //END::No copy and no move
 
         //BEGIN::Small functions and variables to manage initialization parameters
-        
         void setDetach           (bool b)  {  M_qDetach     = b; } // This function allows you to indicate to the next task whether it should be detached.
         void setYield            (bool b)  {  M_qYield      = b; } // This function allows you to indicate to the next task whether it should be yield.
         void setDeferred         (bool b)  {  M_qDeferred   = b; } // This function allows you to indicate to the next task whether it should be deferred. Used only for std::async part
@@ -286,16 +277,17 @@ class Task
         long int  getTimeLaps ()        { return M_t_laps; } // Gives the time laps simulation
 
 
-        #ifdef COMPILE_WITH_CUDA
+#ifdef COMPILE_WITH_CUDA
             int getNbCudaWorkers() const {
                 return static_cast<int>(M_myce.getNbCudaWorkers());
                 } // Returns the total number of Cuda cards
-        #endif
-        #ifdef COMPILE_WITH_HIP
+#endif
+
+#ifdef COMPILE_WITH_HIP
             int getNbHipWorkers() const {
                 return static_cast<int>(M_myce.getNbHipWorkers());
             } // Returns the total number of Hip cards
-        #endif
+#endif
             
         void setFileName(std::string s) { M_FileName=s; } 
         //END::Small functions and variables to manage initialization parameters
@@ -308,44 +300,46 @@ class Task
         ~Task(void); // Destructor is invoked automatically whenever an object is going to be destroyed. Closes the elements properly
 
 
-        #if defined(COMPILE_WITH_HIP) || defined(COMPILE_WITH_CUDA)
-            #ifdef COMPILE_WITH_HIP
+#if defined(COMPILE_WITH_HIP) || defined(COMPILE_WITH_CUDA)
+
+#ifdef COMPILE_WITH_HIP
                 explicit Task(const int nbThread,const int nbBlocks,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in classic mode
                 {
-                    std::cout<<"[INFO]: WELCOME TO GPU:HIP"<<"\n";
+                    VLOG(1) << "WELCOME TO GPU:HIP"<<"\n";
                     Subtask(nbThread,nbBlocks,M_numTypeThread);
                 }
 
 
                 explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuHipWorkers()) // Class constructor in classic mode
                 {
-                    std::cout<<"[INFO]: WELCOME TO GPU:HIP"<<"\n";
+                    VLOG(1) << "WELCOME TO GPU:HIP"<<"\n";
                     Subtask(nbThread,1,M_numTypeThread);
                 }
 
 
-            #endif
+#endif
 
-            #ifdef COMPILE_WITH_CUDA
+#ifdef COMPILE_WITH_CUDA
                 explicit Task(const int nbThread,const int nbBlocks,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) // Class constructor in classic mode
                 {
-                    std::cout<<"[INFO]: WELCOME TO GPU:CUDA"<<"\n";
+                    VLOG(1) << "WELCOME TO GPU:CUDA"<<"\n";
                     Subtask(nbThread,nbBlocks,M_numTypeThread);
                 }
 
                 explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuCudaWorkers()) // Class constructor in classic mode
                 {
-                    std::cout<<"[INFO]: WELCOME TO GPU:CUDA"<<"\n";
+                    VLOG(1) << "WELCOME TO GPU:CUDA"<<"\n";
                     Subtask(nbThread,1,M_numTypeThread);
                 }
-            #endif
-        #else
+#endif
+
+#else
             explicit Task(const int nbThread,int M_numTypeThread):M_mytg(),M_myce(SpWorkerTeamBuilder::TeamOfCpuWorkers(nbThread)) // Class constructor in classic mode
             {
-                std::cout<<"[INFO]: WELCOME TO CPU"<<"\n";
+                VLOG(1) << "WELCOME TO CPU"<<"\n";
                 Subtask(nbThread,1,M_numTypeThread);
             }
-        #endif
+#endif
 
         template <class ClassFunc> void execOnWorkers(ClassFunc&& func) { M_myce.execOnWorkers(std::forward<ClassFunc>(func)); } //Execute a ClassFunc on workers
   
@@ -369,15 +363,15 @@ class Task
                 void addTaskMultithread( Ts && ... ts ); // This subfunction allows you to add a multithread task
 
             
-            #ifdef COMPILE_WITH_CXX_20
+#ifdef COMPILE_WITH_CXX_20
             template <typename ... Ts>
                 void addTaskjthread( Ts && ... ts ); // This subfunction allows you to add a jthread task. Only works under C++20
-            #endif
+#endif
 
-        #ifdef COMPILE_WITH_HIP
+#ifdef COMPILE_WITH_HIP
             template <typename ... Ts>
                 void add_GPU( Ts && ... ts); // This main function allows you to add a task O:CPU Normal  1:SpHip  2:SpCuda  3:GPU to CPU
-        #endif
+#endif
 
         template <class InputIterator,typename ... Ts>
             void for_each(InputIterator first, InputIterator last,Ts && ... ts); // This function allows you to apply the same treatment to a set of elements of a task.
@@ -401,7 +395,8 @@ class Task
         
         //GPU-AMD-CUDA
 
-        #ifdef USE_GPU_HIP
+#ifdef USE_GPU_HIP
+        // Nota : must be moved in taskgpu
         // set of functions allowing you to use eigen under Hip gpu.
         template<typename Kernel, typename Input, typename Output>
             void run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n,const Input& in,Output& out);
@@ -412,21 +407,18 @@ class Task
         // set of functions allowing you to use eigen under Hip cpu. Juste to control the results
         template<typename Kernel, typename Input, typename Output>
             void run_cpu_1D(const Kernel& kernel_function, int n, const Input& in, Output& out);
-        #endif
+#endif
 
-        #ifdef UseHIP
-
-        #endif
 
         template <class... ParamsTy>
             void addTaskSpecxPure(ParamsTy&&...params);         
 
-        #if defined(COMPILE_WITH_HIP) || defined(COMPILE_WITH_CUDA)
+#if defined(COMPILE_WITH_HIP) || defined(COMPILE_WITH_CUDA)
 
         template <typename ... Ts>
             void addTaskSpecxGPU( Ts && ... ts); // This subfunction allows you to add a specx task
 
-        #endif
+#endif
 
 };
 
@@ -439,10 +431,9 @@ Task::Task()
 
 Task::~Task()
 {
-    //Add somes   
     if ((M_numTypeTh== 3) && (M_numLevelAction==3)) {  M_myce.stopIfNotAlreadyStopped(); } 
     if ((M_numTypeTh==33) && (M_numLevelAction==3)) {  M_myce.stopIfNotAlreadyStopped(); } // <== [ ] see if we really need it
-    //Specx
+    //...
 }
 
 
@@ -473,9 +464,9 @@ void Task::init()
     M_mythreads.clear();
     M_myfutures.clear();
     
-    #ifdef COMPILE_WITH_CXX_20
+#ifdef COMPILE_WITH_CXX_20
     myjthreads.clear();
-    #endif
+#endif
 }
 
 
@@ -498,35 +489,35 @@ void Task::Subtask(const int nbThread,const int nbBlocks,int M_numTypeThread)
     if (M_numTypeTh==10) { pthread_attr_init(&M_mypthread_attr_t); } //pthread
 
     if (M_numTypeTh==33) { 
-        #ifdef COMPILE_WITH_HIP
+#ifdef COMPILE_WITH_HIP
             //static_assert(SpDeviceDataView<std::vector<int>>::MoveType == SpDeviceDataUtils::DeviceMovableType::STDVEC,"should be stdvec"); //will see after
             M_mytg.computeOn(M_myce);
-        #endif
+#endif
     } // Specx GPU
 }
 
 int Task::getNbThreadPerBlock(int i)
 {
     int numDevices=0;
-    #ifdef COMPILE_WITH_HIP
-        hipGetDeviceCount(&numDevices);
-        hipDeviceProp_t devProp;
-        if ((i>=0) && (i<numDevices))
-        {
-            HIP_CHECK(hipGetDeviceProperties(&devProp,i));
-            return(devProp.maxThreadsPerBlock);
-        }
-    #endif
+#ifdef COMPILE_WITH_HIP
+    hipGetDeviceCount(&numDevices);
+    hipDeviceProp_t devProp;
+    if ((i>=0) && (i<numDevices))
+    {
+        HIP_CHECK(hipGetDeviceProperties(&devProp,i));
+        return(devProp.maxThreadsPerBlock);
+    }
+#endif
 
-    #ifdef COMPILE_WITH_CUDA
-        cudaGetDeviceCount(&numDevices);
-        cudaDeviceProp_t devProp;
-        if ((i>=0) && (i<numDevices))
-        {
-            cudaGetDeviceProperties(&devProp,i);
-            return(devProp.maxThreadsPerBlock);
-        }
-    #endif
+#ifdef COMPILE_WITH_CUDA
+    cudaGetDeviceCount(&numDevices);
+    cudaDeviceProp_t devProp;
+    if ((i>=0) && (i<numDevices))
+    {
+        cudaGetDeviceProperties(&devProp,i);
+        return(devProp.maxThreadsPerBlock);
+    }
+#endif
 
     return(-1);
 }
@@ -538,14 +529,14 @@ void Task::getInformation()
     // Provides all information regarding graphics cards CUDA and AMD
     if (M_qInfo)
     {
-        if (M_numTypeTh== 0) { std::cout<<"[INFO]: Mode No Thread\n"; }
-        if (M_numTypeTh== 1) { std::cout<<"[INFO]: Mode Multithread\n"; }
-        if (M_numTypeTh== 2) { std::cout<<"[INFO]: Mode Std::async\n"; }
-        if (M_numTypeTh== 3) { std::cout<<"[INFO]: Mode Specx\n"; }
+        if (M_numTypeTh== 0) { VLOG(1) << "Mode No Thread\n"; }
+        if (M_numTypeTh== 1) { VLOG(1) << "Mode Multithread\n"; }
+        if (M_numTypeTh== 2) { VLOG(1) << "Mode Std::async\n"; }
+        if (M_numTypeTh== 3) { VLOG(1) << "Mode Specx\n"; }
 
-        if (M_numTypeTh==10) { std::cout<<"[INFO]: Mode Thread in CPU\n"; }
+        if (M_numTypeTh==10) { VLOG(1) << "Mode Thread in CPU\n"; }
         M_nbThTotal=getNbMaxThread(); 
-        std::cout<<"[INFO]: Nb max Thread="<<M_nbThTotal<<"\n";
+        VLOG(1) << "Nb max Thread="<<M_nbThTotal<<"\n";
 
         SystemInformation::Hardware MyHardware; MyHardware.getInformationSystem();
     }
@@ -554,27 +545,29 @@ void Task::getInformation()
 
 void Task::getGPUInformationError()
 {
-    #ifdef COMPILE_WITH_CUDA
-        cudaError_t num_err = cudaGetLastError();
-        if (num_err != cudaSuccess) {
-            std::cout<<"[INFO]: hip Error Name ="<<cudaGetErrorName(num_err)<<" "<<cudaGetErrorString(num_err)<<"\n";
-        }
-        num_err = cudaDeviceSynchronize();
-        if (num_err != cudaSuccess) {
-            std::cout<<"[INFO]: hip Error Name="<<cudaGetErrorName(err)<<" "<<cudaGetErrorString(num_err)<<"\n";
-        }
-    #endif
+#ifdef COMPILE_WITH_CUDA
+    cudaError_t num_err = cudaGetLastError();
+    if (num_err != cudaSuccess) 
+    {
+        VLOG(1) << "hip Error Name ="<<cudaGetErrorName(num_err)<<" "<<cudaGetErrorString(num_err)<<"\n";
+    }
+    num_err = cudaDeviceSynchronize();
+    if (num_err != cudaSuccess) {
+        VLOG(1) << "hip Error Name="<<cudaGetErrorName(err)<<" "<<cudaGetErrorString(num_err)<<"\n";
+    }
+#endif
 
-    #ifdef COMPILE_WITH_HIP
-        hipError_t num_err = hipGetLastError();
-        if (num_err != hipSuccess) {
-            std::cout<<"[INFO]: hip Error Name ="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
-        }
-        num_err = hipDeviceSynchronize();
-        if (num_err != hipSuccess) {
-            std::cout<<"[INFO]: hip Error Name="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
-        }
-    #endif
+#ifdef COMPILE_WITH_HIP
+    hipError_t num_err = hipGetLastError();
+    if (num_err != hipSuccess) 
+    {
+        VLOG(1) << "hip Error Name ="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
+    }
+    num_err = hipDeviceSynchronize();
+    if (num_err != hipSuccess) {
+        VLOG(1) << "hip Error Name="<<hipGetErrorName(num_err)<<" "<<hipGetErrorString(num_err)<<"\n";
+    }
+#endif
 }
 
 
@@ -599,8 +592,6 @@ void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Inp
         HIP_ASSERT(hipMemcpy(d_in,  in.data(),  in_bytes,  hipMemcpyHostToDevice));
         HIP_ASSERT(hipMemcpy(d_out, out.data(), out_bytes, hipMemcpyHostToDevice));
         
-        //dim3 blocks(128);
-        //dim3 grids( (n+int(blocks.x)-1)/int(blocks.x) );
         int num_blocks = (n + blocks.x - 1) / blocks.x;
 	    dim3 thread_block(blocks.x, 1, 1);
 	    dim3 grid(num_blocks,1,1);
@@ -622,24 +613,33 @@ void Task::run_gpu_1D(const Kernel& kernel_function,dim3 blocks,int n, const Inp
 
     long int M_t_laps3= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end_inside - M_t_begin_inside).count();
     long int M_t_laps2= std::chrono::duration_cast<std::chrono::microseconds>(M_t_end_all_GPU_process - M_t_begin_all_GPU_process).count();
-    if (qInfo_GPU_process) {
-        std::cout << "[INFO]: Elapsed microseconds inside: "<<M_t_laps3<< " us\n";    
-        std::cout << "[INFO]: Elapsed microseconds inside + memory copy: "<<M_t_laps2<< " us\n";
-        std::cout << "[INFO]: nb grids: "<<grid.x<<" "<<grid.y<<" "<<grid.z<< "\n";
-        std::cout << "[INFO]: nb block: "<<thread_block.x<<" "<<thread_block.y<<" "<<thread_block.z<< "\n";
+    if (qInfo_GPU_process)
+    {
+        VLOG(1) << "Elapsed microseconds inside= "<<M_t_laps3<< " us\n";    
+        VLOG(1) << "Elapsed microseconds inside + memory copy= "<<M_t_laps2<< " us\n";
+        VLOG(1) << "nb grids= "<<grid.x<<" "<<grid.y<<" "<<grid.z<< "\n";
+        VLOG(1) << "nb block= "<<thread_block.x<<" "<<thread_block.y<<" "<<thread_block.z<< "\n";
     }
 }
 
 template<typename Kernel, typename Input, typename Output>
 void Task::run_gpu_2D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
+    if (M_qFirstTask) 
+    { 
+        M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;
+    }
+    //...
 }
 
 template<typename Kernel, typename Input, typename Output>
 void Task::run_gpu_3D(const Kernel& kernel_function,dim3 blocks,int n, const Input& in, Output& out)
 {
-    if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
+    if (M_qFirstTask)
+    { 
+        M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;
+    }
+    //...
 }
 
 
@@ -672,7 +672,6 @@ void Task::addTaskSpecxGPU( Ts && ... ts)
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
-    //auto && parameters = args.get(_parameters);
     M_mytg.task(parameters,task);
     usleep(0); std::atomic_int counter(0);
 }
@@ -725,7 +724,7 @@ void Task::addTaskMultithread( Ts && ... ts )
     }
     else
     {
-        if (M_qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        if (M_qInfo) { VLOG(1) << "detach in process...\n"; }
         M_myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
@@ -749,10 +748,9 @@ void Task::addTaskAsync( Ts && ... ts )
     }
     else
     {
-        if (M_qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        if (M_qInfo) { VLOG(1) << "detach in process...\n"; }
         M_myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
-
     usleep(1);
 }
 
@@ -797,7 +795,7 @@ void Task::addTaskjthread( Ts && ... ts )
     }
     else
     {
-        if (M_qInfo) { std::cout<<"[INFO]: detach in process...\n"; }
+        if (M_qInfo) { VLOG(1) << "detach in process...\n"; }
         M_myfuturesdetach.emplace_back(add_detach(LamdaTransfert)); 
     }
     usleep(1);
@@ -813,23 +811,21 @@ void Task::add( Ts && ... ts )
     M_idk++; M_idType.push_back(M_numTypeTh); M_numTaskStatus.push_back(M_qDetach);
     if (M_qDetach) { M_qFlagDetachAlert=true; M_nbThreadDetach++; }
     if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
-    //std::cout<<"M_numTypeTh="<<M_numTypeTh<<"\n";
     switch(M_numTypeTh) {
-        case 1: addTaskMultithread(std::forward<Ts>(ts)...); //multithread
+        case 1: addTaskMultithread(std::forward<Ts>(ts)...); //for multithread
         break;
-        case 2: addTaskAsync(std::forward<Ts>(ts)...); //std::async
+        case 2: addTaskAsync(std::forward<Ts>(ts)...); //for std::async
         break;
-        case 3: addTaskSpecx(std::forward<Ts>(ts)...); //Specx
+        case 3: addTaskSpecx(std::forward<Ts>(ts)...); //for Specx
         break;
 
         #ifdef COMPILE_WITH_CXX_20
-            case 4: addTaskjthread(std::forward<Ts>(ts)...); //std::jthread
+            case 4: addTaskjthread(std::forward<Ts>(ts)...); //for std::jthread
             break;
         #endif
-        default: addTaskSimple(std::forward<Ts>(ts)...); //No Thread
+        default: addTaskSimple(std::forward<Ts>(ts)...); //for No Thread : serial
     }
     M_qDetach=false;
-    //std::cout<<"[INFO] :ADD OK"<<std::endl;
 }
 
 #ifdef COMPILE_WITH_HIP
@@ -842,7 +838,7 @@ void Task::add_GPU( Ts && ... ts)
     if (M_qDetach) { M_qFlagDetachAlert=true; M_nbThreadDetach++; }
     if (M_qFirstTask) { M_t_begin = std::chrono::steady_clock::now(); M_qFirstTask=false;}
     switch(M_numTypeTh) {
-        case 33: addTaskSpecxPure(std::forward<Ts>(ts)...); //Specx GPU
+        case 33: addTaskSpecxPure(std::forward<Ts>(ts)...); //for Specx GPU
         break;
     }
     M_qDetach=false;
@@ -864,16 +860,16 @@ auto Task::getIdThread(int i)
         }
 
         switch(numM_idType) {
-            case 1: return(M_mythreads[ki].get_id());//multithread
+            case 1: return(M_mythreads[ki].get_id());//for multithread
             break;
-            case 2:  //std::async
+            case 2:  //for std::async
             break;
-            case 3: //Specx
+            case 3:  //for Specx
             break;
-            #ifdef COMPILE_WITH_CXX_20
-            case 4: return(myjthreads[ki].get_id()); //std::jtread
+#ifdef COMPILE_WITH_CXX_20
+            case 4: return(myjthreads[ki].get_id()); //for std::jtread
             break;
-            #endif
+#endif
 
         }
     }
@@ -892,12 +888,14 @@ template <class InputIterator,typename ... Ts>
     {
         M_idk++; M_idType.push_back(M_numTypeTh);
         auto const& ivdk = *first;
-        //std::cout <<ivdk;
-
         auto args = NA::make_arguments( std::forward<Ts>(ts)... );
         auto && task = args.get(_tasks);
         auto && parameters = args.get_else(_parameters,std::make_tuple());
-        if (M_qUseIndex) { std::get<0>(parameters)=std::cref(ivdk); } 
+        if (M_qUseIndex) 
+        {
+             std::get<0>(parameters)=std::cref(ivdk);
+         } 
+
         auto tp=std::tuple_cat( 
 					Sbtask::makeSpData( parameters ), 
 					std::make_tuple( task ) 
@@ -905,11 +903,13 @@ template <class InputIterator,typename ... Ts>
 
         Sbtask::Runtime runtime;
 
-        if (M_numTypeTh==0) {
+        if (M_numTypeTh==0) 
+        {
             std::apply( [&runtime](auto... args){ runtime.task(args...); }, tp );
         }
 
-        if (M_numTypeTh==1) {
+        if (M_numTypeTh==1) 
+        {
             auto LamdaTransfert = [&]() {
 			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -919,7 +919,8 @@ template <class InputIterator,typename ... Ts>
             usleep(1);
         }
 
-        if (M_numTypeTh==2) {
+        if (M_numTypeTh==2)
+        {
             auto LamdaTransfert = [&]() {
 			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
             return true; 
@@ -930,16 +931,17 @@ template <class InputIterator,typename ... Ts>
             usleep(1);
         }
 
-        if (M_numTypeTh==3) {
+        if (M_numTypeTh==3)
+        {
             auto tp=std::tuple_cat( 
-					Sbtask::makeSpDataSpecx( parameters ), 
-					std::make_tuple( task ) 
+				Sbtask::makeSpDataSpecx( parameters ), 
+				std::make_tuple( task ) 
 			);
             std::apply([&](auto &&... args) { M_mytg.task(args...).setTaskName("Op("+std::to_string(M_idk)+")"); },tp);
             usleep(0); std::atomic_int counter(0);
         }
 
-        #ifdef COMPILE_WITH_CXX_20
+#ifdef COMPILE_WITH_CXX_20
         if (M_numTypeTh==4) {
             auto LamdaTransfert = [&]() {
 			    std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
@@ -949,7 +951,7 @@ template <class InputIterator,typename ... Ts>
             myjthreads.push_back(std::move(th));
             usleep(1);
         }
-        #endif
+#endif
 
     }
 }
@@ -957,69 +959,79 @@ template <class InputIterator,typename ... Ts>
 
 void Task::run()
 {
-    if (M_qEmptyTask) { std::cout<<"[INFO]: Run failed empty task\n"; exit(0); }
+    if (M_qEmptyTask) 
+    { 
+        VLOG(1) << "Run failed empty task\n"; exit(0); 
+    }
+
     M_numLevelAction=2;
-    if (M_qInfo) { std::cout<<"[INFO]: Run\n"; }
+    if (M_qInfo)
+    { 
+        VLOG(1) << "Run\n"; 
+    }
+
     if (M_numTypeTh==0) { } //No Thread
-    if (M_numTypeTh==1) { 
+    if (M_numTypeTh==1) 
+    { 
         for (std::thread &t : M_mythreads) { t.join();} 
     } //multithread
 
-    if (M_numTypeTh==2) { 
+    if (M_numTypeTh==2) 
+    { 
         for( auto& r : M_myfutures){ auto a =  r.get(); }; 
     } //std::async
 
-    if (M_numTypeTh==3) { 
-        /*promise0.set_value(0);*/ 
+    if (M_numTypeTh==3) 
+    { 
         M_mytg.waitAllTasks();
     } //Specx
 
-    #ifdef COMPILE_WITH_CXX_20
+#ifdef COMPILE_WITH_CXX_20
     if (M_numTypeTh==4) { 
         for (std::jthread &t : myjthreads) { t.join();} 
     } //std::jthread
-    #endif
+#endif
 
     if (M_numTypeTh==10) { 
-        for (int i = 0; i < M_mypthread_cpu.size(); i++) { 
-            std::cout<<"[INFO]: Joint "<<i<<"\n";
+        for (int i = 0; i < M_mypthread_cpu.size(); i++) 
+        { 
+            VLOG(1) << "Joint "<<i<<"\n";
             pthread_join(M_mypthread_t[i], NULL); 
         }
         //pthread_attr_destroy(&M_mypthread_attr_t);
     } //In CPU
 
      if (M_numTypeTh==33) { 
-        #ifdef COMPILE_WITH_HIP
+#ifdef COMPILE_WITH_HIP
             M_mytg.waitAllTasks();
-        #endif
+#endif
     } //Specx GPU
 
 
     M_mythreads.clear();
     M_myfutures.clear();
-    #ifdef COMPILE_WITH_CXX_20
+#ifdef COMPILE_WITH_CXX_20
     myjthreads.clear();
-    #endif
+#endif
 
     M_numTaskStatus.clear();
     M_idType.clear();
 
-    if (M_qInfo) { std::cout<<"[INFO]: All Tasks Accomplished\n"; }
+    if (M_qInfo) { VLOG(1) << "All Tasks Accomplished\n"; }
     M_qEmptyTask=true;
 }
 
 void Task::close()
 {
     if (M_qFlagDetachAlert) {
-        if (M_qInfo) { std::cout<<"[INFO]: Detach processes are still running...\n"; }
-        if (M_qInfo) { std::cout<<"[INFO]: Please wait before closing.\n"; }
+        if (M_qInfo) { VLOG(1) << "Detach processes are still running...\n"; }
+        if (M_qInfo) { VLOG(1) << "Please wait before closing.\n"; }
 
         if ((M_numTypeTh>0) && (M_numTypeTh<10))
         {
             if (M_myfuturesdetach.size()>0)
             {
                 for( auto& r : M_myfuturesdetach) {
-                    //std::cout <<"Detach Status=" <<r.valid() << '\n';
                     r.wait(); 
                 }
             }
@@ -1037,7 +1049,7 @@ void Task::close()
 
     if (M_myfuturesdetach.size()>0) { M_myfuturesdetach.clear(); }
 
-    if (M_qInfo) { std::cout<<"[INFO]: Close All Tasks and process\n"; }
+    if (M_qInfo) { VLOG(1) << "Close All Tasks and process\n"; }
     M_idk=0;
 }
 
@@ -1045,14 +1057,16 @@ void Task::debriefing()
 {
     M_t_laps=std::chrono::duration_cast<std::chrono::microseconds>(M_t_end - M_t_begin).count();
 
-    if (M_qViewChrono) {  
-        if (M_qInfo) { std::cout << "[INFO]: Elapsed microseconds: "<<M_t_laps<< " us\n"; }
+    if (M_qViewChrono)
+    {  
+        if (M_qInfo) { VLOG(1) << "Elapsed microseconds= "<<M_t_laps<< " us\n"; }
     }
 
     if (M_qSave)
     {
-        if ((M_numTypeTh==3) || (M_numTypeTh==33)) { 
-            std::cout << "[INFO]: Save "<<M_FileName<< "\n";
+        if ((M_numTypeTh==3) || (M_numTypeTh==33))
+        { 
+            VLOG(1) << "Save "<<M_FileName<< "\n";
             M_mytg.generateDot(M_FileName+".dot",true); 
             M_mytg.generateTrace(M_FileName+".svg",true); 
         }
@@ -1081,24 +1095,17 @@ auto Task::add_detach(FctDetach&& func) -> std::future<decltype(func())>
 template <typename ... Ts>
 void Task::add(int numCPU,Ts && ... ts)
 {
-    //Run in num CPU
     M_mypthread_cpu.push_back(numCPU);
     pthread_t new_thread;
-    
-
     auto args = NA::make_arguments( std::forward<Ts>(ts)... );
     auto && task = args.get(_tasks);
     auto && parameters = args.get_else(_parameters,std::make_tuple());
     Sbtask::Runtime runtime;
-    auto tp=std::tuple_cat( 
-            Sbtask::makeSpData( parameters ), 
-                      std::make_tuple( task ) 
-    );
+    auto tp=std::tuple_cat( Sbtask::makeSpData( parameters ), std::make_tuple( task ) );
     auto LamdaTransfert = [&]() {
-                std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
-                return true; 
+        std::apply([&runtime](auto... args){ runtime.task(args...); }, tp);
+        return true; 
     };
-
 
     std::function<void()> func =LamdaTransfert;
     cpu_set_t cpuset;
@@ -1109,13 +1116,7 @@ void Task::add(int numCPU,Ts && ... ts)
     if (ret) { std::cerr << "Error in creating thread" << std::endl; }
 
     M_mypthread_t.push_back(new_thread);
-
-    //pthread_attr_destroy(&M_mypthread_attr_t);
-
-    //vectorOfThreads.resize(NUM_THREADS);
 }
-
-
 
 
 template <typename ... Ts>
@@ -1163,13 +1164,6 @@ void Task::runInCPUs(const std::vector<int> & numCPU,Ts && ... ts)
 }
 
 } //End namespace TASK
-//--------------------------------------------------------------------------------------------------------------------------------
 
-
-//================================================================================================================================
-// THE END.
-//================================================================================================================================
-
- 
 
 }

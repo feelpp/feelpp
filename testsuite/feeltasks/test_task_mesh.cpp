@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
     {
         Task::Task TsK(NumThreads,3);
         TsK.setSave(false);
-        TsK.setInfo(false);
+        TsK.setInfo(true);
         TsK.setFileName("./Test_Integrate2");
         TsK.getInformation();
 
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
         area = area_vec.sum();
         double t = toc( fmt::format( "int-area-{}", NumThreads ) );
         TsK.close();
-        TsK.debriefingTasks();
+        TsK.debriefing();
         BOOST_MESSAGE( fmt::format( "time for {} threads: {}, area: {}", NumThreads, t, area ) );
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
