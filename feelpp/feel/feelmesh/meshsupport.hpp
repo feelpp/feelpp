@@ -251,12 +251,14 @@ private :
             wc(this)->print( fmt::format( "[updateParallelDataPartialSupport - {}] nbRequest={}, neighborSubdomains={}", rank(M_mesh), nbRequest, neighborSubdomains ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v >1  );
             mpi::request * reqs = new mpi::request[nbRequest];
             int cptRequest=0;
-            std::map<rank_type,size_type> sizeRecv;
+            std::map<rank_type,std::size_t> sizeRecv;
+            std::map<rank_type,std::size_t> sizeSend;
 
             // get size of data to transfer
             for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
             {
-                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+                sizeSend[neighborRank] = dataToSend[neighborRank].size();
+                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
                 reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
             }
             // wait all requests
@@ -266,13 +268,13 @@ private :
             cptRequest=0;
             for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
             {
-                int nSendData = dataToSend[neighborRank].size();
+                std::size_t nSendData = dataToSend[neighborRank].size();
                 if ( nSendData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
-                int nRecvData = sizeRecv[neighborRank];
+                    reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+                std::size_t nRecvData = sizeRecv[neighborRank];
                 dataToRecv[neighborRank].resize( nRecvData );
                 if ( nRecvData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+                    reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
             }
             mpi::wait_all(reqs, reqs + cptRequest);
             delete [] reqs;
@@ -380,12 +382,14 @@ private :
             int nbRequest = 2*neighborSubdomains;
             mpi::request * reqs = new mpi::request[nbRequest];
             int cptRequest=0;
-            std::map<rank_type,size_type> sizeRecv;
+            std::map<rank_type,std::size_t> sizeRecv;
+            std::map<rank_type,std::size_t> sizeSend;
 
             // get size of data to transfer
             for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
             {
-                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+                sizeSend[neighborRank] = dataToSend[neighborRank].size();
+                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
                 reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
             }
             // wait all requests
@@ -395,13 +399,13 @@ private :
             cptRequest=0;
             for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
             {
-                int nSendData = dataToSend[neighborRank].size();
+                std::size_t nSendData = dataToSend[neighborRank].size();
                 if ( nSendData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
-                int nRecvData = sizeRecv[neighborRank];
+                    reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+                std::size_t nRecvData = sizeRecv[neighborRank];
                 dataToRecv[neighborRank].resize( nRecvData );
                 if ( nRecvData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+                    reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
             }
             mpi::wait_all(reqs, reqs + cptRequest);
             delete [] reqs;
