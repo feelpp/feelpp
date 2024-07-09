@@ -35,10 +35,12 @@ public:
     using space_ptr_t = Pch_ptrtype<mesh_t, Order>;
     using spacerv_ptr_t = Pchv_ptrtype<mesh_t, 0>;
     using elementv_t = typename spacev_t::element_type;
+    using elementrv_t = typename spacerv_t::element_type;
     using element_t = typename space_t::element_type;
     using form2_type = form2_t<spacev_t,spacev_t>; 
     using form1_type = form1_t<spacev_t>; 
     using ts_ptrtype = std::shared_ptr<NewmarkContact<spacev_t>>;
+    using tsr_ptrtype = std::shared_ptr<NewmarkContact<spacerv_t>>;
     using exporter_ptrtype = std::shared_ptr<Exporter<mesh_t>>; 
 
     // Constructors
@@ -84,7 +86,7 @@ private:
 
     elementv_t u_;
     elementv_t u_e_;
-    elementv_t u_r_;
+    elementrv_t u_r_;
 
     element_t contactRegion_;
     element_t contactPressure_;
@@ -94,7 +96,7 @@ private:
     typename MeshTraits<Mesh<Simplex<Dim>>>::faces_reference_wrapper_ptrtype myelts_;
 
     ts_ptrtype ts_e_;
-    ts_ptrtype ts_r_;
+    tsr_ptrtype ts_r_;
     exporter_ptrtype e_;
     nl::json meas_;
 
@@ -173,9 +175,11 @@ void ElasticRigid<Dim, Order>::initialize()
     // Set initial conditions
     u_ = Xhv_->element();
     u_e_ = Xhv_->element();
-    u_r_ = Xhv_->element();
+    u_r_ = VhvC_->element();
 
     auto u0_ = Xhv_->element();
+    auto ur0_ =  VhvC_->element();
+
     std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
     auto init_displ = expr<Dim,1>(get_value(specs_, "/InitialConditions/LinearElasticity/displacement/expr", default_displ ));
     u0_.on(_range=elements(mesh_), _expr=init_displ);
@@ -184,12 +188,12 @@ void ElasticRigid<Dim, Order>::initialize()
     ts_e_->start();
     ts_e_->initialize( u0_ );
 
-    ts_r_ = newmarkContact(Xhv_, steady, initial_time, final_time, time_step, gamma, beta );
+    ts_r_ = newmarkContact(VhvC_, steady, initial_time, final_time, time_step, gamma, beta );
     ts_r_->start();
-    ts_r_->initialize( u0_ );
+    ts_r_->initialize( ur0_ );
 
     u_e_ = u0_;
-    u_r_ = u0_;
+    u_r_ = ur0_;
     
     ts_e_->updateFromDisp(u_e_);
     ts_r_->updateFromDisp(u_r_);
@@ -400,7 +404,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
     l_.zero();
     lt_.zero();
 
-    l_ += integrate( _range = elements(mesh_), _expr = cst(0.));
+    //l_ += integrate( _range = elements(mesh_), _expr = cst(0.));
 
     auto deft = sym(gradt(u_e_));
     auto def = sym(grad(u_e_));
@@ -457,7 +461,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
         
         if (nbrFaces_ > 0)
         {
-            auto epsv = sym(gradv(u_e_));
+            auto epsv = sym(gradv(u_));
             auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
             
             at_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_),trans(expr<Dim,1>(direction_))*id(u_)) * idv(contactFaces));
@@ -467,7 +471,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
 
         }
         
-        at_.solve( _rhs = lt_, _solution = u_e_ );
+        at_.solve( _rhs = lt_, _solution = u_e_ , _rebuild = true);
 
         ts_e_->updateFromDisp(u_e_);
 
@@ -486,14 +490,14 @@ void ElasticRigid<Dim, Order>::timeLoop()
         // Detect contact
         if (nbrFaces_ > 0)
         {
-            auto epsv = sym(gradv(u_e_));
+            auto epsv = sym(gradv(u_));
             auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
             std::cout << "Add contact force to rigid equation" << std::endl;
             
             lt_r_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), -trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
         }
 
-        at_r_.solve( _rhs = lt_r_, _solution = u_r_ );
+        at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
         ts_r_->updateFromDisp(u_r_);
         
         // Reset
@@ -501,7 +505,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
         lt_r_.zero();
 
         std::cout << "***** Solve displacement *****" << std::endl;
-        u_ = u_e_ + u_r_;
+        u_.on(_range=elements(mesh_),_expr=idv(u_e_) + idv(u_r_));
 
         // Export
         this->exportResults(ts_e_->time());
