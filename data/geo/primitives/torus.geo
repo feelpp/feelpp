@@ -36,8 +36,7 @@ EndIf
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
 
-Extrude Surface {6, {0,0,1}, {0,0,0}, alpha2-alpha1}{Layers{C*(alpha2-alpha1)*R/h};};
-//Extrude Surface {6, {0,0,1}, {0,-C,0}, alpha2-alpha1}{Layers{10};};
+Extrude {  {0,0,1}, {0,0,0}, alpha2-alpha1 }  {Surface{6}; Layers{C*(alpha2-alpha1)*R/h}; }  
 
 Physical Surface("inlet") = {28};
 Physical Surface("outlet") = {6};

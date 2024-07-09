@@ -57,7 +57,7 @@ using tuple_element_t = typename tuple_element<I,Tuple>::type;
 }
 namespace Feel
 {
-#if 0   
+#if 0
 template <int I, typename Tuple>
 struct tuple_element;
 template <int I, typename Head, typename... Tail>
@@ -77,13 +77,13 @@ template <typename> struct is_tuple: std::false_type {};
 
 template <typename ...T> struct is_tuple<boost::tuple<T...>>: std::true_type {};
 
-template <typename T> 
+template <typename T>
 inline constexpr bool is_tuple_v = is_tuple<T>::value;
 #else // 0
 template <typename> struct is_tuple: std::false_type {};
 template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
 template <typename T>
-inline constexpr bool is_tuple_v = is_tuple<T>::value;  
+inline constexpr bool is_tuple_v = is_tuple<T>::value;
 #endif // 0
 
 template<typename MeshType>
@@ -118,11 +118,11 @@ WorldComm const& worldComm( RangeT const& range )
 
 /**
  * @brief get the rank of a range of entities
- * 
- * @tparam S 
- * @tparam ITERATOR 
- * @tparam CONTAINER 
- * @param range 
+ *
+ * @tparam S
+ * @tparam ITERATOR
+ * @tparam CONTAINER
+ * @param range
  * @return int the rank of the entity range
  */
 template <typename RangeT,std::enable_if_t<is_range_v<RangeT>,int> = 0>
@@ -207,7 +207,7 @@ elements( MeshType const& mesh )
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,decay_type<std::remove_pointer_t<MeshType>>>,int> = 0>
 auto
-elements( MeshType const& mesh, int pid )
+elements( MeshType const& mesh, rank_type pid )
 {
     return range( _range=Feel::detail::elements( mesh, pid ), _mesh=mesh );
 }
@@ -275,14 +275,14 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
                     elt_count_negative++;
                     break;
                 }
-                else if ( selector == select_elements_from_expression::with_changing_sign ) 
+                else if ( selector == select_elements_from_expression::with_changing_sign )
                 {
                     if ( val < 0 )
                         elt_count_negative++;
                     else if ( val >= 0 )
                         elt_count_positive++;
                 }
-                else if ( selector == select_elements_from_expression::with_value ) 
+                else if ( selector == select_elements_from_expression::with_value )
                 {
                     if ( std::abs(val - value) < threshold )
                     {
@@ -290,7 +290,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr, Ts&&... v )
                         break;
                     }
                 }
-                else if ( selector == select_elements_from_expression::with_value_range ) 
+                else if ( selector == select_elements_from_expression::with_value_range )
                 {
                     if ( ( val > min-threshold ) && ( val < max+threshold ) )
                         elt_count_positive++;
@@ -1245,7 +1245,7 @@ faces( MeshType const& imesh, EntityProcessType entity )
     //typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::face_type const> > cont_range_type;
     //std::shared_ptr<cont_range_type> myelts( new cont_range_type );
     auto const& mesh = Feel::unwrap_ptr( imesh );
-    
+
     if ( ( entity == EntityProcessType::LOCAL_ONLY ) || ( entity == EntityProcessType::ALL ) )
         for ( auto const& theface : faces(mesh) )
         {
@@ -1365,7 +1365,7 @@ marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
     return range( _range = boost::make_tuple( mpl::size_t<MESH_FACES>(),
                                               myelts->begin(),
                                               myelts->end(),
-                                              myelts ), 
+                                              myelts ),
                   _mesh=mesh.shared_from_this(), _marker1=theflag );
 
 }
@@ -1429,7 +1429,7 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
     return range( _range=boost::make_tuple( mpl::size_t<MESH_EDGES>(),
                                             myedges->begin(),
                                             myedges->end(),
-                                            myedges ), 
+                                            myedges ),
                   _mesh=mesh.shared_from_this() );
 
 }
@@ -1576,7 +1576,7 @@ elements( MeshType const& mesh, RangeType const& rangeElt, EntityRangeType const
 
 //! \return a pair of iterators to iterate over all elements (not ghost) which
 //!  touch the range of faces or edges rangeEntity by a point/edge/faces (with respect to type arg)
-template<typename MeshType,typename EntityRangeType>
+template<typename MeshType,typename EntityRangeType, std::enable_if_t< is_range_v<EntityRangeType>,int> = 0 >
 auto
 elements( MeshType const& mesh, EntityRangeType const& rangeEntity, ElementsType type = ElementsType::MESH_POINTS )
 {

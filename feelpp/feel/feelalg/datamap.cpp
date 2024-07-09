@@ -499,13 +499,15 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     // prepare mpi com
     int nbRequest=2*this->neighborSubdomains().size();
     mpi::request * reqs = new mpi::request[nbRequest];
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     int cptRequest=0;
 
     // get size of data to transfer
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -515,13 +517,13 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     cptRequest=0;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -553,7 +555,8 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     cptRequest=0;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -565,13 +568,13 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
         dataToRecv[p].clear();
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -625,13 +628,15 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
     // prepare mpi com
     int nbRequest = 2*this->neighborSubdomains().size();
     mpi::request * reqs = new mpi::request[nbRequest];
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     int cptRequest=0;
 
     // get size of data to transfer
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -641,13 +646,13 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
     cptRequest=0;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
