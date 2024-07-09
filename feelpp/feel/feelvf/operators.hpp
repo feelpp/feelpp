@@ -370,7 +370,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
                                                                         \
             template <typename TheFeType = fe_type>                     \
-            evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm, \
+            evaluate_type evaluate(bool p,                              \
                                    typename std::enable_if_t< isP0Continuous<TheFeType>::result && \
                                    std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > && \
                                    VF_OP_TYPE_IS_VALUE( T ) >* = nullptr ) const \
@@ -384,7 +384,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 /* TODO : not apply broadcast if all proc have the dof */ \
                 /* TODO : check compatibility with arg worldcomm and the one used by the functionspace */ \
                 if ( p )                                                \
-                    mpi::broadcast( *worldcomm, res, this->e().map().procOnGlobalCluster( 0 ) ); \
+                    mpi::broadcast( this->e().worldComm(), res, this->e().map().procOnGlobalCluster( 0 ) ); \
                 return res;                                             \
             }                                                           \
                                                                         \

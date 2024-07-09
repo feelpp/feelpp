@@ -1,0 +1,13 @@
+= CRB application : Heat1d 
+
+== run offline
+```
+./feelpp_mor_heat1dapp --config-file heat1d.cfg  
+```
+
+== run online
+
+Minimal example of command line for online simulation. It runs the online model for 10 different sets of parameters.
+```
+./feelpp_mor_onlinerun --crbmodel.name heat1d  --plugin.dir <PATH_TO_PLUGIN> 
+```

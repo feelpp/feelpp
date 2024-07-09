@@ -131,9 +131,9 @@ class Det : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            auto eval = M_expr.evaluate(p,worldcomm);
+            auto eval = M_expr.evaluate(p);
             CHECK( eval.rows() == eval.cols() ) << "only square matrix";
             return evaluate_type::Constant( eval.determinant() );
        }

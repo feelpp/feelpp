@@ -115,6 +115,28 @@ private:
     
 };
 
+/**
+ * @fn get worldComm
+ * 
+ * @param commObj 
+ * @return worldcomm_t const& 
+ */
+inline worldcomm_t const&
+worldComm( CommObject const& commObj )
+{
+    return commObj.worldComm();
+}
+
+
+//!
+//! @fn get worldComm 
+//! @return the worldcomm associated to the communication object
+//!
+inline worldcomm_ptr_t const&
+worldCommPtr( CommObject const& commObj )
+{
+    return commObj.worldCommPtr();
+}
 
 
 } // Feel

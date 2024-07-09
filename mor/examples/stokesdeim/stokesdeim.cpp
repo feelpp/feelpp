@@ -55,8 +55,11 @@ void StokesDeim::initModel()
         Pset->readFromFile(samplingname);
     }
 
-    auto d = ::Feel::mdeim( _model=boost::dynamic_pointer_cast<self_type>(this->shared_from_this()),
+    auto d = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()),
                             _sampling=Pset, _tag=0 );
+    d->onlineModel()->setAssembleMDEIM([this,d]( parameter_type const& mu ) {
+                                                    return this->assembleForMDEIM( mu, false );
+                                                });
     this->addMdeim( d );
     this->mdeim()->run();
 
@@ -94,13 +97,13 @@ void StokesDeim::initModel()
     energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f0, _element=u,
                   _expr=4*Py()*(1-Py())*oneX() );
 
-    energy = integrate( elements(mesh), inner(gradt(u),grad(v))
-                        + inner(idt(p),id(q)) );
+    energy = integrate( _range = elements(mesh), _expr = inner(gradt(u),grad(v)));
+    energy += integrate( _range = elements(mesh), _expr = inner(idt(p),id(q)) );
     energy += on( _range=markedfaces(mesh,"inlet"), _rhs=f1, _element=u,
                   _expr=4*Py()*(1-Py())*oneX(), _type="elimination_symmetric" );
     this->addEnergyMatrix( energy );
 
-    f1 = integrate( markedfaces(mesh,"midflux"), inner(oneX(),id(u)) );
+    f1 = integrate( _range = markedfaces(mesh,"midflux"), _expr = inner(oneX(),id(u)) );
     this->M_Fqm[1][0][0]->close();
 }
 
@@ -110,8 +113,9 @@ StokesDeim::computeBetaQm( parameter_type const& mu )
     auto Acoeff = this->mdeim()->beta(mu);
     int mMax = this->mdeim()->size();
     for ( int m=0; m<mMax; m++ )
+    {
         M_betaAqm[0][m] = Acoeff(m);
-
+    }
     M_betaFqm[0][0][0]=1;
     M_betaFqm[1][0][0]=1./(1.-mu[1]);
 
@@ -148,26 +152,26 @@ StokesDeim::assembleForMDEIM( parameter_type const& mu, int const& tag )
     auto detJinv5 = 1./det(J5);
 
     auto f2 = form2( _test=Xh, _trial=Xh );
-    f2 = integrate( markedelements(mesh, "omega0"),
-                    nu*inner( gradt(u),grad(v) )
+    f2 = integrate( _range = markedelements(mesh, "omega0"),
+                    _expr = nu*inner( gradt(u),grad(v) )
                     -idt(p)*div(v) -id(q)*divt(u) );
-    f2 += integrate( markedelements( mesh, "omega26"),
-                     detJinv26*( nu*trace(trans(gradt(u)*J26)*(grad(v)*J26))
+    f2 += integrate( _range = markedelements( mesh, "omega26"),
+                     _expr = detJinv26*( nu*trace(trans(gradt(u)*J26)*(grad(v)*J26))
                                  -idt(p)*trace(grad(v)*J26) -id(q)*trace(gradt(u)*J26) ) );
-    f2 += integrate( markedelements( mesh, "omega48"),
-                     detJinv48*( nu*trace(trans(gradt(u)*J48)*(grad(v)*J48))
+    f2 += integrate( _range = markedelements( mesh, "omega48"),
+                     _expr = detJinv48*( nu*trace(trans(gradt(u)*J48)*(grad(v)*J48))
                                 - idt(p)*trace(grad(v)*J48) -id(q)*trace(gradt(u)*J48) ) );
-    f2 += integrate( markedelements( mesh, "omega3"),
-                     detJinv3*( nu*trace(trans(gradt(u)*J3)*(grad(v)*J3))
+    f2 += integrate( _range = markedelements( mesh, "omega3"),
+                     _expr = detJinv3*( nu*trace(trans(gradt(u)*J3)*(grad(v)*J3))
                                  - idt(p)*trace(grad(v)*J3) -id(q)*trace(gradt(u)*J3) ) );
-    f2 += integrate( markedelements( mesh, "omega7"),
-                     detJinv7*( nu*trace(trans(gradt(u)*J7)*(grad(v)*J7))
+    f2 += integrate( _range = markedelements( mesh, "omega7"),
+                     _expr = detJinv7*( nu*trace(trans(gradt(u)*J7)*(grad(v)*J7))
                                 - idt(p)*trace(grad(v)*J7) -id(q)*trace(gradt(u)*J7) ) );
-    f2 += integrate( markedelements( mesh, "omega5"),
-                     detJinv5*( nu*trace(trans(gradt(u)*J5)*(grad(v)*J5))
+    f2 += integrate( _range = markedelements( mesh, "omega5"),
+                     _expr = detJinv5*( nu*trace(trans(gradt(u)*J5)*(grad(v)*J5))
                                 - idt(p)*trace(grad(v)*J5) -id(q)*trace(gradt(u)*J5) ) );
 
-    auto l = form1( Xh );
+    auto l = form1( _test = Xh );
     f2 += on( _range=markedfaces(mesh,"inlet"), _rhs=l, _element=u, _expr=zero<2,1>() );
     f2 += on( _range=markedfaces(mesh,"gamma0"), _rhs=l, _element=u, _expr=zero<2,1>() );
     f2 += on( _range=markedfaces(mesh,"gamma26"), _rhs=l, _element=u, _expr=zero<2,1>() );
@@ -193,7 +197,7 @@ StokesDeim::output( int output_index, parameter_type const& mu ,
     }
     else if ( output_index==1 )
     {
-        output = 2./(1.-mu[1])*integrate( markedfaces(mesh,"midflux"), inner(oneX(),idv(u0)) ).evaluate()(0,0);
+        output = 2./(1.-mu[1])*integrate( _range = markedfaces(mesh,"midflux"), _expr = inner(oneX(),idv(u0)) ).evaluate()(0,0);
     }
 
     return output;
@@ -216,20 +220,20 @@ StokesDeim::meshDisplacementField( parameter_type const& mu )
     double mu1 = mu[0];
     double mu2 = mu[1];
 
-    mapping->on( markedelements( mesh, "omega3"),
-                vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)),
+    mapping->on( _range = markedelements( mesh, "omega3"),
+                _expr = vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)),
                      -2*(mur-mu2)/(2-mur)*Px() + cst( 2*(mur-mu2)/(2-mur) ) ) );
-    mapping->on( markedelements( mesh, "omega5"),
-                vec( (mu1-mur)/mur*Px() + cst(2*(mur-mu1)/mur),
+    mapping->on( _range = markedelements( mesh, "omega5"),
+                _expr = vec( (mu1-mur)/mur*Px() + cst(2*(mur-mu1)/mur),
                      (mur-mu2)/(1-mur)*Py() - cst((mur-mu2)/(1-mur)) ));
-    mapping->on( markedelements( mesh, "omega7"),
-                vec( (mur-mu1)/(2-mur)*Px() - cst(3*(mur-mu1)/(2-mur)),
+    mapping->on( _range = markedelements( mesh, "omega7"),
+                _expr = vec( (mur-mu1)/(2-mur)*Px() - cst(3*(mur-mu1)/(2-mur)),
                      2*(mur-mu2)/(2-mur)*Px() - cst( 6*(mur-mu2)/(2-mur) ) ) );
-    mapping->on( markedelements( mesh, "omega26"),
-                vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)), (mu2-mur)/mur*Py() )
+    mapping->on( _range = markedelements( mesh, "omega26"),
+                _expr = vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)), (mu2-mur)/mur*Py() )
                 + chi(Px()>2)*vec(  - cst(2*(mur-mu1)/(2-mur)), cst(0.) ) );
-    mapping->on( markedelements( mesh, "omega48"),
-                 vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)),
+    mapping->on( _range = markedelements( mesh, "omega48"),
+                 _expr = vec( (mur-mu1)/(2-mur)*Px() - cst((mur-mu1)/(2-mur)),
                       (mur-mu2)/(1-mur)*Py() - cst((mur-mu2)/(1-mur)) )
                  + chi(Px()>2)*vec(  - cst(2*(mur-mu1)/(2-mur)), cst(0.) ));
 

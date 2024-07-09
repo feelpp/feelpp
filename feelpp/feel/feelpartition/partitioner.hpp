@@ -49,10 +49,10 @@ public:
     using partitioner_type = Partitioner<mesh_type>;
     using clone_ptrtype = std::unique_ptr<partitioner_type>;
 
-    using element_type = typename mesh_type::element_type;
+    using element_type = element_t<mesh_type>;
     using face_type = typename mesh_type::face_type;
     using point_type = typename mesh_type::point_type;
-    using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using range_element_type = Range<mesh_type,MESH_ELEMENTS>;
     /**
      * Constructor.
      */
@@ -68,16 +68,18 @@ public:
           M_agg( (j.contains("partitioner") && j["partitioner"].contains("aggregates"))?j["partitioner"]["aggregates"]:json() )
     {}
     
-    struct Aggregate : public std::tuple<std::string, std::vector<std::string>>
+    struct Aggregate : public std::tuple<std::string, std::string, std::vector<std::string>>
     {
-        using super = std::tuple<std::string, std::vector<std::string>>;
+        using super = std::tuple<std::string, std::string, std::vector<std::string>>;
 
-        Aggregate( std::string const& name, json const& j ) : super( name, j["markers"].get<std::vector<std::string>>() )
+        Aggregate( std::string const& name, json const& j )
+            : super( name, j["type"].get<std::string>(), j["markers"].get<std::vector<std::string>>() )
         {
 
         }
         std::string const& name() const { return std::get<0>(*this); }
-        std::vector<std::string> const& markers() const { return std::get<1>(*this); }
+        std::string const& type() const { return std::get<1>(*this); }
+        std::vector<std::string> const& markers() const { return std::get<2>(*this); }
     };
 
     /**

@@ -99,12 +99,12 @@ public:
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     evaluate_type
-    evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool parallel ) const
         {
             if constexpr ( InterpOperator == 0 )
-                return evaluate_type::Constant( this->interpolator()( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
+                return evaluate_type::Constant( this->interpolator()( M_expr.evaluate( parallel )(0,0) ) );
             else
-                return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
+                return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel)(0,0) ) );
         }
 
     template <typename SymbolsExprType>

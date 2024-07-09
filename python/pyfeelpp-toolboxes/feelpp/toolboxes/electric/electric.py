@@ -1,9 +1,9 @@
 import sys
 
-import feelpp
-import feelpp.toolboxes as tb
+import feelpp.core as fppc
+import feelpp.toolboxes as fppt
 
-e=feelpp.Environment(sys.argv,opts=tb.toolboxes_options("electric"))
+e=fppc.Environment(sys.argv,opts=tb.toolboxes_options("electric"))
 
 #from pyfeelpp import discr,ts,filters
 from feelpp.toolboxes.electric import *

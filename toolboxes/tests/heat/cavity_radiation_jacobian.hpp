@@ -1,3 +1,4 @@
+#include <fmt/ostream.h>
 
 #include "rht_readers.hpp"
 
@@ -22,7 +23,7 @@ namespace Feel
         // For each material, integrate rho*C*idt(u)*id(v)/dt + \int_MAT k_MAT * grad(u) * grad(v)
         for ( auto [key, material] : specs["/Models/heat/materials"_json_pointer].items() )
         {
-            LOG( INFO ) << fmt::format( "material {}", material );
+            LOG( INFO ) << fmt::format( "material {}", material.dump() );
             std::string mat = fmt::format( "/Materials/{}/k", material.get<std::string>() );
             auto k = specs[nl::json::json_pointer( mat )].get<std::string>();
             std::string matRho = fmt::format( "/Materials/{}/rho", material.get<std::string>() );
@@ -164,7 +165,7 @@ namespace Feel
         auto Jac = backend()->newMatrix( _test=M_Xh, _trial=M_Xh );
 
 
-        auto update_jacobian  = [=]( const vector_ptrtype& T_vec, sparse_matrix_ptrtype& at_mat ) {
+        auto update_jacobian  = [=,this]( const vector_ptrtype& T_vec, sparse_matrix_ptrtype& at_mat ) {
 
                             auto at = form2(_trial=M_Xh, _test= M_Xh, _matrix=at_mat,_backend=backend(_name="heatEq"));
                             auto a = form2(_trial=M_Xh, _test= M_Xh, _matrix=M_a,_backend=backend(_name="heatEq"));
@@ -248,7 +249,7 @@ namespace Feel
         
         };
 
-        auto update_residual = [=]( const vector_ptrtype& T_vec, vector_ptrtype& lt_vec ) {
+        auto update_residual = [=,this]( const vector_ptrtype& T_vec, vector_ptrtype& lt_vec ) {
 
                             auto lt = form1(_test=M_Xh, _vector=lt_vec);
                             auto l = form1(_test=M_Xh, _vector=M_l);
@@ -265,7 +266,7 @@ namespace Feel
                             // For each material, integrate rho*C*d/dt idt(u)*id(v + \int_MAT k_MAT * grad(u) * grad(v)
                                 for ( auto [key, material] : specs["/Models/heat/materials"_json_pointer].items() )
                                 {
-                                    LOG( INFO ) << fmt::format( "material {}", material );
+                                    LOG( INFO ) << fmt::format( "material {}", material.dump() );
                                     std::string mat = fmt::format( "/Materials/{}/k", material.get<std::string>() );
                                     auto k = specs[nl::json::json_pointer( mat )].get<std::string>();
                                     std::string matRho = fmt::format( "/Materials/{}/rho", material.get<std::string>() );
