@@ -2331,15 +2331,15 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:ac20d23cc8e912e4b7919da0c978d7b17"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
 <tr class="memitem:ac20d23cc8e912e4b7919da0c978d7b17"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a> (MeshType const &amp;mesh)</td></tr>
 <tr class="separator:ac20d23cc8e912e4b7919da0c978d7b17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a314566baf65c7a8ddb464fbd55bdb606"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename EntityRangeType &gt; </td></tr>
-<tr class="memitem:a314566baf65c7a8ddb464fbd55bdb606"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a314566baf65c7a8ddb464fbd55bdb606">elements</a> (MeshType const &amp;mesh, EntityRangeType const &amp;rangeEntity, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590">ElementsType</a> type=ElementsType::MESH_POINTS)</td></tr>
-<tr class="separator:a314566baf65c7a8ddb464fbd55bdb606"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab38201474430266ca1f23408a16b58d4"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
-<tr class="memitem:ab38201474430266ca1f23408a16b58d4"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ab38201474430266ca1f23408a16b58d4">elements</a> (MeshType const &amp;mesh, <a class="el" href="classint.html">int</a> pid)</td></tr>
-<tr class="separator:ab38201474430266ca1f23408a16b58d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7edce41fe6c324185763ef3814e6c9af"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename EntityRangeType , std::enable_if_t&lt; is_range_v&lt; EntityRangeType &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:a7edce41fe6c324185763ef3814e6c9af"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a7edce41fe6c324185763ef3814e6c9af">elements</a> (MeshType const &amp;mesh, EntityRangeType const &amp;rangeEntity, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590">ElementsType</a> type=ElementsType::MESH_POINTS)</td></tr>
+<tr class="separator:a7edce41fe6c324185763ef3814e6c9af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a303f572ff33d85ffe99806b387d9243b"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename RangeType , typename EntityRangeType &gt; </td></tr>
 <tr class="memitem:a303f572ff33d85ffe99806b387d9243b"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Range.html">Range</a>&lt; MeshType, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a303f572ff33d85ffe99806b387d9243b">elements</a> (MeshType const &amp;mesh, RangeType const &amp;rangeElt, EntityRangeType const &amp;rangeEntity, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590">ElementsType</a> type=ElementsType::MESH_POINTS)</td></tr>
 <tr class="separator:a303f572ff33d85ffe99806b387d9243b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7767dd6c2262a3f4eee1d65845b472a9"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
+<tr class="memitem:a7767dd6c2262a3f4eee1d65845b472a9"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a7767dd6c2262a3f4eee1d65845b472a9">elements</a> (MeshType const &amp;mesh, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> pid)</td></tr>
+<tr class="separator:a7767dd6c2262a3f4eee1d65845b472a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65008ceff406ffe268a6de806b20a619"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprType , typename... Ts, std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </td></tr>
 <tr class="memitem:a65008ceff406ffe268a6de806b20a619"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Range.html">Range</a>&lt; MeshType, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a65008ceff406ffe268a6de806b20a619">elements</a> (MeshType const &amp;mesh, vf::Expr&lt; ExprType &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:a65008ceff406ffe268a6de806b20a619"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5966,13 +5966,13 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a cl
 
 </div>
 </div>
-<a id="a314566baf65c7a8ddb464fbd55bdb606" name="a314566baf65c7a8ddb464fbd55bdb606"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a314566baf65c7a8ddb464fbd55bdb606">&#9670;&nbsp;</a></span>elements() <span class="overload">[2/5]</span></h2>
+<a id="a7edce41fe6c324185763ef3814e6c9af" name="a7edce41fe6c324185763ef3814e6c9af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7edce41fe6c324185763ef3814e6c9af">&#9670;&nbsp;</a></span>elements() <span class="overload">[2/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename MeshType , typename EntityRangeType &gt; </div>
+template&lt;typename MeshType , typename EntityRangeType , std::enable_if_t&lt; is_range_v&lt; EntityRangeType &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">auto Feel::elements </td>
@@ -6003,39 +6003,8 @@ template&lt;typename MeshType , typename EntityRangeType &gt; </div>
 
 </div>
 </div>
-<a id="ab38201474430266ca1f23408a16b58d4" name="ab38201474430266ca1f23408a16b58d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab38201474430266ca1f23408a16b58d4">&#9670;&nbsp;</a></span>elements() <span class="overload">[3/5]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">auto Feel::elements </td>
-          <td>(</td>
-          <td class="paramtype">MeshType const &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
-          <td class="paramname"><em>pid</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with pid <code>flag</code> </dd></dl>
-
-</div>
-</div>
 <a id="a303f572ff33d85ffe99806b387d9243b" name="a303f572ff33d85ffe99806b387d9243b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a303f572ff33d85ffe99806b387d9243b">&#9670;&nbsp;</a></span>elements() <span class="overload">[4/5]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a303f572ff33d85ffe99806b387d9243b">&#9670;&nbsp;</a></span>elements() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -6074,6 +6043,37 @@ template&lt;typename MeshType , typename RangeType , typename EntityRangeType &g
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over a range of elements 'rangeElt' which touch the range of faces or edges \rangeEntity by a point/edge/faces (with respect to type arg) </dd></dl>
+
+</div>
+</div>
+<a id="a7767dd6c2262a3f4eee1d65845b472a9" name="a7767dd6c2262a3f4eee1d65845b472a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7767dd6c2262a3f4eee1d65845b472a9">&#9670;&nbsp;</a></span>elements() <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; <a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a>&lt;&gt;, decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;, <a class="el" href="classint.html">int</a> &gt;  = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto Feel::elements </td>
+          <td>(</td>
+          <td class="paramtype">MeshType const &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td>
+          <td class="paramname"><em>pid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with pid <code>flag</code> </dd></dl>
 
 </div>
 </div>
