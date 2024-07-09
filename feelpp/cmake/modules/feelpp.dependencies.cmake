@@ -420,15 +420,58 @@ endif(FEELPP_ENABLE_MKL)
 # On debian,
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
+set(CHECK_H5_PARALLEL_CODE "
+#include <hdf5.h>
+int main() {
+#ifdef H5_HAVE_PARALLEL
+return 0; // Parallel support enabled
+#else
+return 1; // Parallel support not enabled
+#endif
+}")
+function(CheckHDF5Parallel _result_var)
+  # Write the check code to a file
+  file(WRITE "${CMAKE_BINARY_DIR}/check_h5_parallel.c" "${CHECK_H5_PARALLEL_CODE}")
+  message(STATUS "-DINCLUDE_DIRECTORIES=${HDF5_INCLUDE_DIRS};${MPI_INCLUDE_PATH}")
+  message(STATUS "LINK_LIBRARIES ${HDF5_LINK_LIBRARIES}")
+  # Attempt to compile the test code
+  try_compile(HDF5_PARALLEL
+    "${CMAKE_BINARY_DIR}"
+    "${CMAKE_BINARY_DIR}/check_h5_parallel.c"
+    CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${HDF5_INCLUDE_DIRS};${MPI_INCLUDE_PATH}"
+    LINK_LIBRARIES ${HDF5_LINK_LIBRARIES} 
+    OUTPUT_VARIABLE COMPILE_OUTPUT
+    )
+  # message(STATUS "COMPILE_OUTPUT=${COMPILE_OUTPUT}")
+  # Set the result variable to TRUE if the code compiled successfully (indicating parallel support)
+  if(HDF5_PARALLEL)
+    set(${_result_var} TRUE PARENT_SCOPE)
+  else()
+    set(${_result_var} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
 
 option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_HDF5 )
+
+
   set(HDF5_PREFER_PARALLEL TRUE)
+  pkg_check_modules(HDF5 hdf5)
+  if ( HDF5_FOUND )
+    message(STATUS "[feelpp] (pkgconfig) HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
+    message(STATUS "[feelpp] (pkgconfig) HDF5 - Libraries ${HDF5_LIBRARIES}" )
+    message(STATUS "[feelpp] (pkgconfig) HDF5 - Link Libraries ${HDF5_LINK_LIBRARIES}")
+    set(FEELPP_HAS_HDF5 1)
+    set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
+    set(HDF5_PKGCONFIG TRUE)
+  else(  )
+
   find_package(HDF5 COMPONENTS C)
   if( HDF5_FOUND )
     if( HDF5_IS_PARALLEL )
         message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
         message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
+        message(STATUS "[feelpp] HDF5 - Link Libraries ${HDF5_LINK_LIBRARIES}")
         #INCLUDE_DIRECTORIES( ${HDF5_INCLUDE_DIRS} )
         set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
         set(FEELPP_HAS_HDF5 1)
@@ -477,6 +520,15 @@ if ( FEELPP_ENABLE_HDF5 )
   else(HDF5_FOUND)
     MESSAGE(FATAL_ERROR "[feelpp] no HDF5 found")
   endif( HDF5_FOUND)
+  endif()
+
+  CheckHDF5Parallel(HDF5_IS_PARALLEL)
+
+  if(HDF5_IS_PARALLEL)
+    message(STATUS "HDF5 compiled with parallel support.")
+  else()
+    message(STATUS "HDF5 compiled without parallel support.")
+  endif()
 
 endif(FEELPP_ENABLE_HDF5)
 

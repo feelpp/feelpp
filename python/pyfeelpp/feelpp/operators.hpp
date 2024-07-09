@@ -64,8 +64,8 @@ void defOperator( py::module& m )
         suffix = std::string("Pdhv");
     std::string pyclass_name = fmt::format( "Mass_{}_{}D_P{}", suffix, Dim, Order );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
-    using elements_iterator_range_t = elements_reference_wrapper_t<mesh_t>;
-    using faces_iterator_range_t = faces_reference_wrapper_t<mesh_t>;
+    using elements_iterator_range_t = Range<mesh_ptr_t,MESH_ELEMENTS>;
+    using faces_iterator_range_t = Range<mesh_ptr_t,MESH_FACES>;
 
     m.def("on", []( space_ptr_t const& domain, space_ptr_t const& image, 
                   elements_iterator_range_t const& r, 

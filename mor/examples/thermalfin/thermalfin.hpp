@@ -3,7 +3,6 @@
 #ifndef FEELPP_THERMAL_FIN_HPP
 #define FEELPP_THERMAL_FIN_HPP 1
 
-#include <boost/timer.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feeldiscr/pch.hpp>

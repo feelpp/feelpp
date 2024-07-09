@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 
 has_te = False
@@ -29,7 +29,7 @@ def thermoelectric(dim=2, orderPotential=1, worldComm=None, keyword="thermoelect
     subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if worldComm is None:
-        worldComm = feelpp.Environment.worldCommPtr()
+        worldComm = fppc.Environment.worldCommPtr()
     key='thermoelectric('+str(dim)+','+str(orderPotential)+')'
     if worldComm.isMasterRank():
         print(key)

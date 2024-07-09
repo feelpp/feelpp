@@ -29,7 +29,6 @@
 #ifndef __AnisotropicWavespeed_H
 #define __AnisotropicWavespeed_H 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>

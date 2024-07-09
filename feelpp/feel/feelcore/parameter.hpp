@@ -120,6 +120,7 @@ using local = NA::named_argument_t<struct local_tag>;
 // parameter for exporter
 using geo = NA::named_argument_t<struct geo_tag>;
 using fileset = NA::named_argument_t<struct fileset_tag>;
+using byparts = NA::named_argument_t<struct byparts_tag>;
 // parameter for description of geometries
 using h = NA::named_argument_t<struct h_tag>;
 using scale = NA::named_argument_t<struct scale_tag>;
@@ -229,6 +230,9 @@ using rank_proc_in_files_name = NA::named_argument_t<struct rank_proc_in_files_n
 using freq = NA::named_argument_t<struct freq_tag>;
 using n_consecutive_save = NA::named_argument_t<struct n_consecutive_save_tag>;
 
+using pid = NA::named_argument_t<struct pid_tag>;
+
+using marker_type = NA::named_argument_t<struct marker_type_tag>;
 using markerName = NA::named_argument_t<struct markerName_tag>;
 using markerAll = NA::named_argument_t<struct markerAll_tag>;
 using marker1 = NA::named_argument_t<struct marker1_tag>;
@@ -338,7 +342,8 @@ using repository = NA::named_argument_t<struct repository_tag>;
 using physic = NA::named_argument_t<struct physic_tag>;
 
 using quality = NA::named_argument_t<struct quality_tag>;
-
+using robust = NA::named_argument_t<struct robust_tag>;
+using ray = NA::named_argument_t<struct ray_tag>;
 
 } // namespace na
 
@@ -427,6 +432,7 @@ inline constexpr auto& _local = NA::identifier<na::local>;
 // parameter for exporter
 inline constexpr auto& _geo = NA::identifier<na::geo>;
 inline constexpr auto& _fileset = NA::identifier<na::fileset>;
+inline constexpr auto& _byparts = NA::identifier<na::byparts>;
 // parameter for description of geometries
 inline constexpr auto& _h = NA::identifier<na::h>;
 inline constexpr auto& _scale = NA::identifier<na::scale>;
@@ -528,6 +534,9 @@ inline constexpr auto& _rank_proc_in_files_name = NA::identifier<na::rank_proc_i
 inline constexpr auto& _freq = NA::identifier<na::freq>;
 inline constexpr auto& _n_consecutive_save = NA::identifier<na::n_consecutive_save>;
 
+inline constexpr auto& _pid = NA::identifier<na::pid>;
+
+inline constexpr auto& _marker_type = NA::identifier<na::marker_type>;
 inline constexpr auto& _markerName = NA::identifier<na::markerName>;
 inline constexpr auto& _markerAll = NA::identifier<na::markerAll>;
 inline constexpr auto& _marker1 = NA::identifier<na::marker1>;
@@ -641,6 +650,8 @@ inline constexpr auto& _value = NA::identifier<na::value>;
 inline constexpr auto& _selector = NA::identifier<na::selector>;
 
 inline constexpr auto& _quality = NA::identifier<na::quality>;
+inline constexpr auto& _robust = NA::identifier<na::robust>;
+inline constexpr auto& _ray = NA::identifier<na::ray>;
 
 } // Feel
 

@@ -1,5 +1,39 @@
-name: Feelpp PKG Reusable Workflow
+name: Feelpp PKG Docker
+run-name: "PKG Docker Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
 on:
+    workflow_dispatch:
+      inputs:
+        flavor:
+          description: 'Flavor to build'
+          required: true
+          default: 'ubuntu'
+          type: choice
+          options:
+          - 'ubuntu'
+          - 'debian'
+        dist:
+          description: 'Distribution to build'
+          required: true
+          default: 'jammy'
+          type: choice
+          options:
+          - 'jammy'
+          - 'focal'
+          - 'noble'
+          - 'bullseye'
+          - 'bookworm'
+          - 'testing'
+          - 'sid'
+        parallel:
+          description: 'Number of parallel jobs'
+          required: false
+          default: "20"
+          type: string
+        skip:
+          description: 'Skip build'
+          required: false
+          default: ""
+          type: string
     workflow_call:
         inputs:
             flavor:
@@ -87,20 +121,20 @@ jobs:
         submodules: recursive
     -
       name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
     -
       name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     -
       name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.CR_PAT }}
     -
       name: Build ${{ matrix.service }}:${{ matrix.tag }}
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         context: ${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.dist }}
@@ -115,7 +149,7 @@ jobs:
             GIT_AUTH_TOKEN=${{ secrets.CR_PAT }}
     -
       name: Build ${{ matrix.service }}-dev:${{ matrix.tag }}
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         context: ./${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}-dev:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}-dev:${{ matrix.dist }}

@@ -135,7 +135,7 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
                 fnamePartitioned = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
 
             io_t io( fnamePartitioned );
-            std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
+            std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
             io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
 #endif
         }

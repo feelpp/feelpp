@@ -38,10 +38,10 @@ void run()
     typedef FunctionSpace<mesh_type, bases<Lagrange<OrderPoly,Scalar> > > space_type;
     typedef Exporter<mesh_type> export_type;
     // trace
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
     typedef Exporter<trace_mesh_type> trace_export_type;
     // trace_trace
-    typedef typename trace_mesh_type::trace_mesh_type trace_trace_mesh_type;
+    using trace_trace_mesh_type = trace_trace_mesh_t<mesh_type>;
     typedef Exporter<trace_trace_mesh_type> trace_trace_export_type;
 
     //--------------------------------------------------------------------------------------------------//

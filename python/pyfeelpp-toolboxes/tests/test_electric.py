@@ -1,6 +1,6 @@
 import sys
 import pytest
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.electric import *
 
@@ -12,7 +12,7 @@ electric_cases = [('electric/quarter-turn/2d.cfg', 2,1), ('electric/quarter-turn
 
 @pytest.mark.parametrize("casefile,dim,order", electric_cases)
 def test_electric(casefile,dim,order):
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
     f = electric(dim=dim, orderPotential=order)
     simulate(f)
 

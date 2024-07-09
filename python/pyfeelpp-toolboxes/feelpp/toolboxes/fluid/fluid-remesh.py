@@ -1,50 +1,50 @@
 import sys
-import feelpp as feelpp
-import feelpp.quality as q
+import feelpp.core as fppc as 
+import fppc.quality as q
 import feelpp.toolboxes.core as tb
-import feelpp.interpolation as I
+import fppc.interpolation as I
 from feelpp.toolboxes.fluid import *
 import json
 
 sys.argv = ['fluid-remesh']
-e = feelpp.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=feelpp.globalRepository("fluid-remesh"))
+e = fppc.Environment(sys.argv, opts=tb.toolboxes_options("fluid"),config=fppc.globalRepository("fluid-remesh"))
 
-#    feelpp.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/swimmers/3-sphere/2d/three_sphere_2D.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/three_sphere_2D/three_sphere_2D.cfg')
-#feelpp.Environment.setConfigFile('cases/swimmers/PMPY/file.cfg')
-#feelpp.Environment.setConfigFile('cases/swimmers/3-sphere/2d-shear/three_sphere_2D_shearflow.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/gravity/cfd.cfg')
-#feelpp.Environment.setConfigFile('cases/swimmers/spermatozoon/2d/spermatozoon_2d.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/gravity/cylinder_under_gravity/cylinder_under_gravity.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/2d/shape_under_gravity.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/3d/shape_under_gravity.cfg')
-#feelpp.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/3d/pc.cfg')
+#    fppc.Environment.setConfigFile('fluid/TurekHron/cfd3.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/swimmers/3-sphere/2d/three_sphere_2D.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/three_sphere_2D/three_sphere_2D.cfg')
+#fppc.Environment.setConfigFile('cases/swimmers/PMPY/file.cfg')
+#fppc.Environment.setConfigFile('cases/swimmers/3-sphere/2d-shear/three_sphere_2D_shearflow.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/gravity/cfd.cfg')
+#fppc.Environment.setConfigFile('cases/swimmers/spermatozoon/2d/spermatozoon_2d.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/gravity/cylinder_under_gravity/cylinder_under_gravity.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/2d/shape_under_gravity.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/3d/shape_under_gravity.cfg')
+#fppc.Environment.setConfigFile('cases/moving_body/gravity/shape_under_gravity/3d/pc.cfg')
 
 
 ######### PAPER RIGID-BODY-SIMULATIONS
 # HORIZONTAL FALLING ELLIPSE - not ok results at 18/11/2021 -> falls too slow
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_ellipse/falling_ellipse_horizontal.cfg')
+# fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_ellipse/falling_ellipse_horizontal.cfg')
 # TILTED FALLING ELLIPSE - ok results at 18/11/2021
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_ellipse/falling_ellipse.cfg')
+#fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_ellipse/falling_ellipse.cfg')
 # CONFINED FALLING CYLINDER - ok results at 18/11/2021
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_cylinder_confined/falling_cylinder_confined.cfg')
+# fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_cylinder_confined/falling_cylinder_confined.cfg')
 # OSCILLATING NACA 0012 PROFILE
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/naca0012_profile/naca0012_profile.cfg')
+# fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/naca0012_profile/naca0012_profile.cfg')
 # VERTICAL FALLING ELLIPSE - not ok results at 18/11/2021 -> does not turn as in Glowinski book
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/rotating_Jeffrey_ellipsoid/rotating_Jeffrey_ellipsoid.cfg')
+# fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/rotating_Jeffrey_ellipsoid/rotating_Jeffrey_ellipsoid.cfg')
 
 # Three sphere swimmer planar 2D
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3-sphere-planar/2d/3ss_planar.cfg')
+#fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/3-sphere-planar/2d/3ss_planar.cfg')
 
 
 # Three sphere swimmer planar 3D
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/3SS_planar_3D.cfg')
-# feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/preconditioner.cfg')
+# fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/3SS_planar_3D.cfg')
+# fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/3SS_planar_3D/preconditioner.cfg')
 
 
 # Falling one disk
-#feelpp.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_one_disk/one_disk.cfg')
+#fppc.Environment.setConfigFile('cases/rigid_body_paper_tests/falling_one_disk/one_disk.cfg')
 
 
 f = fluid(dim=2, orderVelocity=2, orderPressure=1)
@@ -152,18 +152,18 @@ def remesh_toolbox(f, hclose, hfar, parent_mesh):
     required_facets=["DiskFirst"]
     required_elts=["DFirst"]
 
-    Xh = feelpp.functionSpace(mesh=f.mesh())
-    n_required_elts_before=feelpp.nelements(feelpp.markedelements(f.mesh(),required_elts))
-    n_required_facets_before=feelpp.nelements(feelpp.markedfaces(f.mesh(),required_facets))
+    Xh = fppc.functionSpace(mesh=f.mesh())
+    n_required_elts_before=fppc.nelements(fppc.markedelements(f.mesh(),required_elts))
+    n_required_facets_before=fppc.nelements(fppc.markedfaces(f.mesh(),required_facets))
     print(" . [before remesh]   n required elts: {}".format(n_required_elts_before))
     print(" . [before remesh] n required facets: {}".format(n_required_facets_before))
-#    metric=feelpp.
-    #new_mesh,cpt = feelpp.remesh(f.mesh(), "gradedls({},{})".format(hclose, hfar), required_elts, required_facets, None )
-    new_mesh, cpt = feelpp.remesh(
+#    metric=fppc.
+    #new_mesh,cpt = fppc.remesh(f.mesh(), "gradedls({},{})".format(hclose, hfar), required_elts, required_facets, None )
+    new_mesh, cpt = fppc.remesh(
         mesh=f.mesh(), metric="gradedls({},{})".format(hclose, hfar), required_elts=required_elts, required_facets=required_facets, params='{"remesh":{ "verbose":-1}}')
     print(" . [after remesh]  n remeshes: {}".format(cpt))
-    n_required_elts_after=feelpp.nelements(feelpp.markedelements(new_mesh,required_elts))
-    n_required_facets_after=feelpp.nelements(feelpp.markedfaces(new_mesh,required_facets))
+    n_required_elts_after=fppc.nelements(fppc.markedelements(new_mesh,required_elts))
+    n_required_facets_after=fppc.nelements(fppc.markedfaces(new_mesh,required_facets))
     print(" . [after remesh]  n required elts: {}".format(n_required_elts_after))
     print(" . [after remesh] n required facets: {}".format(n_required_facets_after))
     f.applyRemesh(f.mesh(),new_mesh)
@@ -201,7 +201,7 @@ while not f.timeStepBase().isFinished():
         time_remesh.append(f.time())
     
   
-    if feelpp.Environment.isMasterRank():
+    if fppc.Environment.isMasterRank():
         print("============================================================\n")
         print("time simulation: {}s iteration : {}\n".format(f.time(), f.timeStepBase().iteration()))
         #print("  -- mesh quality: {}s\n".format(min_etaq))

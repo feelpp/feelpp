@@ -43,14 +43,17 @@ namespace Feel
  * @param cst real between 0 and 1 providing  where the gradation is constant
  * @return Pch_element_type<MeshT, 1> continuous piecewise P1 function representing the metric
  */
-template <typename SpaceT, std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceT>,SpaceT>* = nullptr>
+template <typename SpaceT, typename RangeType, 
+          std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceT> && 
+                           is_range_v<decay_type<RangeType>> &&
+                           decay_type<RangeType>::entities() == MESH_FACES,SpaceT>* = nullptr>
 typename SpaceT::element_type
-gradedfromls( std::shared_ptr<SpaceT> const& Xh, faces_reference_wrapper_t<typename SpaceT::mesh_ptrtype> const& facets, double hclose, double hfar, double cst = 0. )
+gradedfromls( std::shared_ptr<SpaceT> const& Xh, RangeType&& facets, double hclose, double hfar, double cst = 0. )
 {
     using namespace vf;
     tic();
     tic();
-    auto d = distanceToRange( _space=Xh, _range=facets );
+    auto d = distanceToRange( _space=Xh, _range=std::forward<RangeType>(facets) );
     toc("distanceToRange",no_display);
     d *= 1./d.max(); // max of d is 1
     auto g = Xh->element();
@@ -128,10 +131,10 @@ createGradedLevelsetMetric( SpacePtrType const& P1h, std::string const& metric_e
  */
 template <typename SpaceT, typename ExprT,std::enable_if_t<std::is_base_of_v<FunctionSpaceBase, SpaceT>&& std::is_base_of_v<ExprBase,ExprT>,SpaceT>* = nullptr>
 typename SpaceT::element_type
-expr( std::shared_ptr<SpaceT> const& Xh, ExprT const& e )
+expr( std::shared_ptr<SpaceT> const& Xh, ExprT && e )
 {
     auto g = Xh->element();
-    g.on( _range = elements( Xh->mesh() ), _expr = e );
+    g.on( _range = elements( Xh->mesh() ), _expr = std::forward<ExprT>(e) );
     return g;
 }
 
@@ -146,11 +149,12 @@ expr( std::shared_ptr<SpaceT> const& Xh, ExprT const& e )
  */
 template <typename MeshT, typename ExprT, std::enable_if_t<std::is_base_of_v<MeshBase<typename MeshT::index_type>, MeshT> && std::is_base_of_v<ExprBase,ExprT>,MeshT>* = nullptr>
 Pch_element_type<MeshT, 1>
-expr( std::shared_ptr<MeshT> const& mesh, ExprT const& e )
+expr( std::shared_ptr<MeshT> const& mesh, ExprT && e )
 {
     auto Xh = Pch<1>( mesh );
     auto g = Xh->element();
-    g.on( _range = elements( Xh->mesh() ), _expr = e );
+    g.on( _range = elements( Xh->mesh() ), _expr = std::forward<ExprT>(e) );
     return g;
 }
-}
+
+} // namespace Feel

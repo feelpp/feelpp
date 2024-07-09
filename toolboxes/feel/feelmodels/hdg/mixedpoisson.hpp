@@ -33,11 +33,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels/modelcore/modelphysics.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feeldiscr/traits.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -46,6 +42,12 @@
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelts/newmark.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+
 
 #include <feel/feelmodels/hdg/enums.hpp>
 #include <feel/feelmodels/hdg/mixedpoissonboundaryconditions.hpp>
@@ -78,8 +80,8 @@ public:
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     // face mesh
-    using face_mesh_type = typename mesh_type::trace_mesh_type;
-    using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
+    using face_mesh_type = trace_mesh_t<mesh_type>;
+    using face_mesh_ptrtype = trace_mesh_ptr_t<mesh_type>;
 
     static inline const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 
@@ -165,8 +167,8 @@ public:
     };
 
 protected:
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
-    faces_reference_wrapper_t<mesh_type> M_gammaMinusIntegral;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
+    Range<mesh_type,MESH_FACES> M_gammaMinusIntegral;
 
     space_flux_ptrtype M_Vh; // flux
     space_potential_ptrtype M_Wh; // potential
@@ -248,7 +250,7 @@ public:
     std::string fluxKey() const { return M_fluxKey; }
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_flux_ptrtype const& spaceFlux() const { return M_Vh; }
     element_flux_ptrtype const& fieldFluxPtr() const { return M_up; }
@@ -447,7 +449,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::exportResults( double tim
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
-    this->executePostProcessSave( invalid_uint32_type_value, mfields );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfPotential->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
