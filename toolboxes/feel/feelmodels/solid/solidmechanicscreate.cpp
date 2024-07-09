@@ -528,8 +528,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         
         
         // update initial conditions
-        std::cout << "Update initial conditions" << std::endl;
-        this->updateInitialConditions( this->symbolsExpr() );
+        // std::cout << "Update initial conditions" << std::endl;
+        // this->updateInitialConditions( this->symbolsExpr() );
         
         
         // init post-processinig (exporter, measure at point, ...)

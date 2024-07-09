@@ -64,10 +64,12 @@ public:
     // Methods
     void initialize();
     void initializeContact();
+    void processLoading(form1_type& l, elementv_t const& u);
+    void processMaterials(form2_type &a, elementv_t const& u);
     void run();
     typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype getContactRegion(elementv_t const& u);
     void timeLoop();
-    void timeLoopFixedPoint();
+    void timeLoopSimple();
     typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype getRandomFace();
     void writeResultsToFile(const std::string& filename) const;
     void initG();
@@ -91,7 +93,7 @@ private:
     exporter_ptrtype e_;
     nl::json meas_;
 
-    int quad_,quad1_;
+
 
     double H_,E_, nu_, lambda_, mu_, rho_;
     std::string externalforce_;
@@ -122,13 +124,6 @@ void ContactDynamicLagrange<Dim, Order, OrderGeo>::initialize()
     mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
     // Define Xhv
     Xhv_ = Pchv<Order>(mesh_); 
-
-    // Quadratures
-    std::string matQuad = fmt::format( "/Models/LinearElasticity/quad");
-    quad_ = specs_[nl::json::json_pointer( matQuad )].get<int>();
-
-    std::string matQuad1 = fmt::format( "/Models/LinearElasticity/quad1");
-    quad1_ = specs_[nl::json::json_pointer( matQuad1 )].get<int>();
 
     // Get elastic structure parameters
     std::string matRho = fmt::format( "/Materials/Caoutchouc/parameters/rho/value");
@@ -256,6 +251,25 @@ void ContactDynamicLagrange<Dim, Order, OrderGeo>::initializeContact()
 
 }
 
+// Process loading
+template <int Dim, int Order, int OrderGeo>
+void ContactDynamicLagrange<Dim, Order, OrderGeo>::processLoading(form1_type& l, elementv_t const& u)
+{
+    l += integrate( _range = elements(mesh_), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u) );
+}
+
+// Process materials
+template <int Dim, int Order, int OrderGeo>
+void ContactDynamicLagrange<Dim, Order, OrderGeo>::processMaterials( form2_type &a, elementv_t const& u )
+{
+    auto deft = sym(gradt(u));
+    auto def = sym(grad(u));
+    auto Id = eye<Dim,Dim>();
+    auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
+
+    a += integrate( _range = elements(mesh_), _expr = cst(rho_)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) + inner(sigmat,def));
+}
+
 // Time loop
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamicLagrange<Dim, Order, OrderGeo>::timeLoop()
@@ -266,13 +280,37 @@ void ContactDynamicLagrange<Dim, Order, OrderGeo>::timeLoop()
     std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
                                 fmt::localtime(std::time(nullptr)), ts_->timeInitial(),ts_->timeFinal(), ts_->timeStep()) << std::endl;
     
-
+    // Init solution u
     auto uRes = Xhv_->element();
-
     uRes = u_; // u intial
 
+    auto a_ = form2( _test = Xhv_, _trial = Xhv_ );
+    auto l_ = form1( _test = Xhv_ );
+
+    a_.zero();
+    l_.zero();
+
+    processLoading(l_,uRes);
+    processMaterials(a_,uRes);
+
+    // export init time
     e_->step(0)->addRegions();
-    e_->step(0)->add( "displacement", uRes );
+
+    auto Xhv_P1 = Pchv<Order>(meshP1); 
+    auto uinter =  Xhv_P1->element(); 
+
+    auto op_inter = opInterpolation(_domainSpace =  Xhv_, _imageSpace = Xhv_P1 );
+    op_inter->apply(uRes, uinter);
+
+    auto expression = Pch<Order>(meshP1)->element();
+
+    e_->step(0)->add( "displacement", uinter );
+    //e_->step(0)->add( "expression", expression );
+    //e_->step(0)->add( "realcontactRegion", uinter) ;
+    //e_->step(0)->add( "contactPressure", contactPressure_);
+    //e_->step(0)->add( "contactDisplacement", contactDisplacement_ );
+
+
     e_->save();
 
     for ( ts_->start(); ts_->isFinished()==false; ts_->next(uRes) )
@@ -300,31 +338,48 @@ void ContactDynamicLagrange<Dim, Order, OrderGeo>::timeLoop()
             auto ps = product( Xhv_, XhLambda );
 
             // Process loading and materials
-            auto a = blockform2( ps ,backend() );
-            auto rhs = blockform1( ps, backend() );
 
-            rhs(0_c) += integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(uRes));
+            std::cout << "create a and rhs" << std::endl;
+            auto a = blockform2( ps ,solve::strategy::monolithic,backend() );
+            auto rhs = blockform1( ps,solve::strategy::monolithic,backend() );
+
+            //a.zero();
+            //rhs.zero();
+
+            std::cout << "add rhs" << std::endl;
+            //rhs(0_c) += l_;
+            rhs(0_c) = integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(uRes));
             rhs(0_c) += integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( uRes ) ) );
-            rhs(1_c) += integrate(_range=elements(submesh), _expr=idv(g_)*(trans(expr<Dim,1>(direction_))*id(uRes)));
+            rhs(1_c) = integrate(_range=elements(submesh), _expr=idv(g_)*id(lambda));
 
+            std::cout << "define a" << std::endl;
             auto deft = sym(gradt(uRes));
             auto def = sym(grad(uRes));
             auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
- 
-            a(0_c,0_c) += integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
+
+            std::cout << "add a" << std::endl;
+            //a(0_c,0_c) = a_;
+            a(0_c,0_c) = integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
+            std::cout << "add a 1" << std::endl;
             a(0_c,1_c) += integrate( _range=elements(submesh),_expr=idt(lambda)*(trans(expr<Dim,1>(direction_))*id(uRes)));
+            std::cout << "add a 2" << std::endl;
             a(1_c,0_c) += integrate( _range=elements(submesh),_expr=(trans(expr<Dim,1>(direction_))*idt(uRes))*id(lambda) );
+            //a(1_c,1_c) += integrate( _range=elements(submesh),_expr=cst(1.)/cst(gamma_)*idt(lambda)*id(lambda) );
 
             std::cout << "***** Solve *****" << std::endl;
             auto U=ps.element();
             a.solve( _solution=U, _rhs=rhs, _rebuild=true);
 
             uRes = U(0_c);
+
+            ts_->updateFromDisp(uRes);
         }
         else 
         {
             std::cout << "No Contact" << std::endl;
             // No contact
+            
+            /*
             auto elts = getRandomFace();
             auto myface =  boost::make_tuple( mpl::size_t<MESH_FACES>(), elts->begin(), elts->end(), elts );
             auto submesh = createSubmesh(_mesh=mesh_,_range=myface);
@@ -334,52 +389,268 @@ void ContactDynamicLagrange<Dim, Order, OrderGeo>::timeLoop()
             auto ps = product( Xhv_, XhLambda );
 
             // Process loading and materials
-            auto a = blockform2( ps, backend() );
-            auto rhs = blockform1( ps, backend() );
+            auto a = blockform2( ps,solve::strategy::monolithic,backend() );
+            auto rhs = blockform1( ps,solve::strategy::monolithic,backend() );
+            */
 
-            rhs(0_c) += integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(uRes));
-            rhs(0_c) += integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( uRes ) ) );
-            
+
+            auto a = form2( _test = Xhv_, _trial = Xhv_ );
+            auto rhs = form1( _test = Xhv_ ); 
+
+            a.zero();
+            rhs.zero();
+
             auto deft = sym(gradt(uRes));
             auto def = sym(grad(uRes));
-            auto Id = eye<Dim,Dim>();
             auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
- 
-            a(0_c,0_c) += integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
+
+            //a = integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
+            a = a_;
+            rhs = l_;
+            //rhs = integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(uRes));
+            rhs += integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( uRes ) ) );
             
+            std::cout << "***** Solve *****" << std::endl;
+            //auto U=ps.element();
+            a.solve( _rhs=rhs, _solution=uRes, _rebuild=true);
+
+            //uRes = U(0_c);
+            ts_->updateFromDisp(uRes);
+        }
+
+        e_->step(ts_->time())->addRegions();
+
+        op_inter->apply(uRes, uinter);
+
+        e_->step(ts_->time())->add( "displacement", uinter );
+
+        //expression = project(_space=Pch<Order>(meshP1), _range=boundaryfaces(mesh_), _expr = cst(gamma_)*(trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)) - ); 
+
+        //auto realcontactRegion = project(_space=Pch<Order>(meshP1), _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_));  
+        //e_->step(ts_->time())->add( "realcontactRegion", realcontactRegion) ;
+   
+        //auto defv = sym(gradv(uinter));
+        //auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
+   
+        //auto contactPressure =  project(_space=Pch<Order>(meshP1), _range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav);
+        //auto contactDisplacement = project(_space=Pch<Order>(meshP1), _range=elements(mesh_), _expr = (trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)));
+
+        //e_->step(ts_->time())->add( "contactPressure", contactPressure);
+        //e_->step(ts_->time())->add( "contactDisplacement", contactDisplacement );
+        e_->save();
+
+        meas_["time"].push_back(ts_->time());
+
+        auto ctx = Xh_->context();
+        node_type t1(Dim);
+       
+        if (Dim == 2)
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
+        }
+        else 
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
+        }    
+                
+        ctx.add( t1 );
+
+        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure_) ); 
+        auto evaluateDispExpr = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(uRes));
+        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
+            
+        meas_["evaluateStress"].push_back(evaluateStress(0,0));
+        meas_["evaluateDisp"].push_back(evaluateDisp(0,0));
+    
+
+        this->writeResultsToFile("measures.json");
+    }
+}
+
+template <int Dim, int Order, int OrderGeo>
+void ContactDynamicLagrange<Dim, Order, OrderGeo>::timeLoopSimple()
+{
+    if (Order != 2)
+        std::cout << "u has to be P2" << std::endl;
+    
+    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
+                                fmt::localtime(std::time(nullptr)), ts_->timeInitial(),ts_->timeFinal(), ts_->timeStep()) << std::endl;
+    
+    // Init solution u
+    auto uRes = Xhv_->element();
+    uRes = u_; // u intial
+
+    auto a_ = form2( _test = Xhv_, _trial = Xhv_ );
+    auto l_ = form1( _test = Xhv_ );
+
+    a_.zero();
+    l_.zero();
+
+    processLoading(l_,uRes);
+    processMaterials(a_,uRes);
+
+    // Define Lagrange multiplier
+    auto submesh = createSubmesh(_mesh=mesh_,_range=markedfaces(mesh_, "contact"));
+    auto XhLambda = Pch<1>(submesh);
+    auto lambda = XhLambda->element();
+
+    auto ps = product( Xhv_, XhLambda );
+
+    // export init time
+    e_->step(0)->addRegions();
+
+    auto Xhv_P1 = Pchv<Order>(meshP1); 
+    auto uinter =  Xhv_P1->element(); 
+
+    auto op_inter = opInterpolation(_domainSpace =  Xhv_, _imageSpace = Xhv_P1 );
+    op_inter->apply(uRes, uinter);
+
+    auto expression = Pch<Order>(meshP1)->element();
+
+    e_->step(0)->add( "displacement", uinter );
+    //e_->step(0)->add( "expression", expression );
+    //e_->step(0)->add( "realcontactRegion", uinter) ;
+    //e_->step(0)->add( "contactPressure", contactPressure_);
+    //e_->step(0)->add( "contactDisplacement", contactDisplacement_ );
+
+
+    e_->save();
+
+    for ( ts_->start(); ts_->isFinished()==false; ts_->next(uRes) )
+    {
+        if (Environment::isMasterRank())
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_->time(),ts_->timeFinal()) << std::endl;
+
+        // Compute faces in contact
+        myelts_ = getContactRegion(uRes);
+        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+
+        auto Id = eye<Dim,Dim>();
+        
+        if (nbrFaces_ > 0)
+        {
+            std::cout << "Contact" << std::endl;
+            // Contact
+            
+            std::cout << "create a and rhs" << std::endl;
+            auto a = blockform2( ps ,solve::strategy::monolithic,backend() );
+            auto rhs = blockform1( ps,solve::strategy::monolithic,backend() );
+
+            lambda = XhLambda->element();
+
+            std::cout << "add rhs" << std::endl;
+
+            rhs(0_c) = integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(uRes));
+            rhs(0_c) += integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( uRes ) ) );
+            rhs(1_c) = integrate(_range=elements(submesh), _expr=idv(g_)*id(lambda));
+
+            std::cout << "define a" << std::endl;
+            auto deft = sym(gradt(uRes));
+            auto def = sym(grad(uRes));
+            auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
+
+            std::cout << "add a" << std::endl;
+ 
+            a(0_c,0_c) = integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
+            std::cout << "add a 1" << std::endl;
+            a(0_c,1_c) += integrate( _range=elements(submesh),_expr=idt(lambda)*(trans(expr<Dim,1>(direction_))*id(uRes)));
+            std::cout << "add a 2" << std::endl;
+            a(1_c,0_c) += integrate( _range=elements(submesh),_expr=(trans(expr<Dim,1>(direction_))*idt(uRes))*id(lambda) );
+            //a(1_c,1_c) += integrate( _range=elements(submesh),_expr=cst(1.)/cst(gamma_)*idt(lambda)*id(lambda) );
+
             std::cout << "***** Solve *****" << std::endl;
             auto U=ps.element();
             a.solve( _solution=U, _rhs=rhs, _rebuild=true);
 
             uRes = U(0_c);
+            
+            ts_->updateFromDisp(uRes);
         }
+        else 
+        {
+            std::cout << "No Contact" << std::endl;
+            
+            std::cout << "create a and rhs" << std::endl;
+            auto a = blockform2( ps ,solve::strategy::monolithic,backend() );
+            auto rhs = blockform1( ps,solve::strategy::monolithic,backend() );
 
+            lambda = XhLambda->element();
+
+            std::cout << "add rhs" << std::endl;
+
+            rhs(0_c) = integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(uRes));
+            rhs(0_c) += integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( uRes ) ) );
+            
+            std::cout << "define a" << std::endl;
+            auto deft = sym(gradt(uRes));
+            auto def = sym(grad(uRes));
+            auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
+
+            std::cout << "add a" << std::endl;
+ 
+            a(0_c,0_c) = integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
+            std::cout << "add a 1" << std::endl;
+            //a(0_c,1_c) += integrate( _range=elements(submesh),_expr=idt(lambda)*(trans(expr<Dim,1>(direction_))*id(uRes)));
+            std::cout << "add a 2" << std::endl;
+            //a(1_c,0_c) += integrate( _range=elements(submesh),_expr=(trans(expr<Dim,1>(direction_))*idt(uRes))*id(lambda) );
+            a(1_c,1_c) += integrate( _range=elements(submesh),_expr=cst(1.)/cst(gamma_)*idt(lambda)*id(lambda) );
+
+            std::cout << "***** Solve *****" << std::endl;
+            auto U=ps.element();
+            a.solve( _solution=U, _rhs=rhs, _rebuild=true);
+
+            uRes = U(0_c);
+
+            ts_->updateFromDisp(uRes);
+        }
 
         e_->step(ts_->time())->addRegions();
 
-        auto displacement = project(_space=Xhv_, _range=elements(mesh_), _expr=idv(uRes));
-        e_->step(ts_->time())->add( "displacement", displacement );
+        op_inter->apply(uRes, uinter);
 
-        auto realcontactRegion = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(uRes) - idv(g_));  
-        e_->step(ts_->time())->add( "realcontactRegion", realcontactRegion) ;
-   
-        auto defv = sym(gradv(uRes));
-        auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
-   
-        contactPressure_ =  project(_space=Xh_, _range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav);
-        contactDisplacement_ = project(_space=Xh_, _range=elements(mesh_), _expr = (trans(expr<Dim,1>(direction_))*idv(uRes) - idv(g_)));
+        e_->step(ts_->time())->add( "displacement", uinter );
 
-        e_->step(ts_->time())->add( "contactPressure", contactPressure_);
-        e_->step(ts_->time())->add( "contactDisplacement", contactDisplacement_ );
-        e_->step(ts_->time())->add("g", g_);
+        //expression = project(_space=Pch<Order>(meshP1), _range=boundaryfaces(mesh_), _expr = cst(gamma_)*(trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)) - ); 
+
+        //auto realcontactRegion = project(_space=Pch<Order>(meshP1), _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_));  
+        //e_->step(ts_->time())->add( "realcontactRegion", realcontactRegion) ;
+   
+        //auto defv = sym(gradv(uinter));
+        //auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
+   
+        //auto contactPressure =  project(_space=Pch<Order>(meshP1), _range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav);
+        //auto contactDisplacement = project(_space=Pch<Order>(meshP1), _range=elements(mesh_), _expr = (trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)));
+
+        //e_->step(ts_->time())->add( "contactPressure", contactPressure);
+        //e_->step(ts_->time())->add( "contactDisplacement", contactDisplacement );
         e_->save();
-    }
-}
 
-template <int Dim, int Order, int OrderGeo>
-void ContactDynamicLagrange<Dim, Order, OrderGeo>::timeLoopFixedPoint()
-{
+        meas_["time"].push_back(ts_->time());
+
+        auto ctx = Xh_->context();
+        node_type t1(Dim);
+       
+        if (Dim == 2)
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
+        }
+        else 
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
+        }    
+                
+        ctx.add( t1 );
+
+        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure_) ); 
+        auto evaluateDispExpr = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(uRes));
+        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
+            
+        meas_["evaluateStress"].push_back(evaluateStress(0,0));
+        meas_["evaluateDisp"].push_back(evaluateDisp(0,0));
     
+
+        this->writeResultsToFile("measures.json");
+    }
 }
 
 // Run method 
@@ -400,7 +671,7 @@ void ContactDynamicLagrange<Dim, Order, OrderGeo>::run()
     std::cout <<  "***** Start time loop *****" << std::endl;
     
     if (fixedPoint_ == 1)
-        timeLoopFixedPoint();
+        timeLoopSimple();
     else 
         timeLoop();
 }
@@ -420,7 +691,7 @@ ContactDynamicLagrange<Dim, Order, OrderGeo>::getRandomFace()
         myelts->push_back( boost::cref( face ) );
         break;
     }
-    
+
     myelts->shrink_to_fit();   
   
     return myelts;

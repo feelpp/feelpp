@@ -174,7 +174,7 @@ getContactRegion(SolidMechanics t, std::vector<double> const& direction, double 
             {
                 if (SolidMechanics::nDim == 2)
                 {
-                    if (contactDof == 4)
+                    if (contactDof == 3)
                     {
                         nbrFaces++;
                         myelts->push_back( boost::cref( face ) );

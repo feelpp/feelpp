@@ -1,7 +1,7 @@
 #include "qs_elasticity_contact_static.hpp"
 #include "qs_elasticity_contact_dynamic.hpp"
 #include "qs_contact_lagrange.hpp"
-
+#include "qs_elasticity_rigid.hpp"
 
 
 int main(int argc, char** argv)
@@ -41,8 +41,10 @@ int main(int argc, char** argv)
             {
                 if (orderGeo == 1)
                 {
-                    ContactDynamic<2,1,1> ContactDynamic(specs);
-                    ContactDynamic.run();
+                    ElasticRigid<2,1> ElasticRigid(specs);
+                    ElasticRigid.run();
+                    //ContactDynamic<2,1,1> ContactDynamic(specs);
+                    //ContactDynamic.run();
                 }
                 else if (orderGeo == 2)
                 {

@@ -80,6 +80,7 @@ feelpp_add_application( elasticity_pure_traction_2d SRCS qs_elasticity_pure_trac
 feelpp_add_application( elasticity_pure_traction_3d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_PURE_TRACTION_3D INSTALL  )
 feelpp_add_application( elasticity_contact SRCS qs_elasticity_contact.cpp INCLUDE_IN_ALL DEFS EXEC elasticity_contact INSTALL )
 
+
 feelpp_add_testcase( elasticity PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
 add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
