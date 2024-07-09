@@ -29,7 +29,8 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True, data=None, v
         print(df.head())
     """
     toolbox.init(buildModelAlgebraicFactory)
-    #toolbox.printAndSaveInfo()
+    if verbose > 0:
+        toolbox.printAndSaveInfo()
     meas=[]
     if toolbox.isStationary():
         toolbox.solve()

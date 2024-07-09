@@ -4,7 +4,7 @@
 	// feelpp-dev images are available for the following distributions:
 	//"image": "ghcr.io/feelpp/feelpp-dev:focal",
 	//"image": "ghcr.io/feelpp/feelpp-dev:jammy",
-	"image": "ghcr.io/feelpp/feelpp:noble",
+	//"image": "ghcr.io/feelpp/feelpp:noble",
 	//"image": "ghcr.io/feelpp/feelpp-dev:lunar",
 	//"image": "ghcr.io/feelpp/feelpp-dev:bookworm",
 	//"image": "ghcr.io/feelpp/feelpp-dev:sid",
@@ -14,6 +14,7 @@
 	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-20.04",
 	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-22.04",
 	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-24.04",
+	"image":   "ghcr.io/feelpp/feelpp-python:2233-improve-hdg-toolbox-v0.111.0-preview.10-ubuntu-24.04",
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-11",
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-12",
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-testing",
@@ -25,7 +26,8 @@
 	//],
 	"remoteUser": "feelpp",
 	"updateRemoteUserUID": true,
-	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/detect_platform.sh",
+	"postCreateCommand": "/workspaces/feelpp/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
+	//"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/detect_platform.sh",
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
 		"ms-vscode.cpptools",
