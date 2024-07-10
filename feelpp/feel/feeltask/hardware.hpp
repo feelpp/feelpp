@@ -55,6 +55,7 @@ void Hardware::readFileViewInformation( std::string filename )
 {
     std::ifstream inputFile( filename );
     std::string line;
+<<<<<<< HEAD
     if ( inputFile )
     {
         while ( getline( inputFile, line ) )
@@ -63,11 +64,19 @@ void Hardware::readFileViewInformation( std::string filename )
         }
         inputFile.close();
     }
+=======
+    while ( getline( inputFile, line ) )
+    {
+        VLOG( 1 ) << line << std::endl;
+    }
+    inputFile.close();
+>>>>>>> refs/remotes/origin/feature/tests_specx
 }
 
 void Hardware::scanInformationSystem()
 {
     // Scan Information System..."
+<<<<<<< HEAD
     int cmd1 = std::system( "lscpu>InfoSystemCPU.txt" );
     if ( cmd1 != 0 )
     {
@@ -78,6 +87,10 @@ void Hardware::scanInformationSystem()
     {
         VLOG( 1 ) << "Error command system  get information GPU" << std::endl;
     }
+=======
+    std::system( "lscpu>InfoSystemCPU.txt" );
+    std::system( "lshw -C display>InfoSystemGPU.txt" );
+>>>>>>> refs/remotes/origin/feature/tests_specx
 }
 
 void Hardware::getInformationCPU()

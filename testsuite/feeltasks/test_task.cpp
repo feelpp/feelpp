@@ -64,9 +64,15 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
     auto start_time = std::chrono::steady_clock::now();
 
     int nbThreads = 3;
+<<<<<<< HEAD
     long int nbN = nbThreads * 6;
     int sizeBlock = nbN / nbThreads;
     int diffBlock = nbN - sizeBlock * nbThreads;
+=======
+    long int nbN=nbThreads*6;
+    int sizeBlock=nbN/nbThreads;
+    int diffBlock=nbN-sizeBlock*nbThreads;
+>>>>>>> refs/remotes/origin/feature/tests_specx
 
     std::vector<double> VecA;
     std::vector<double> VecB;
@@ -89,10 +95,42 @@ BOOST_AUTO_TEST_CASE( test_specx_22 )
         return true;
     };
 
+<<<<<<< HEAD
     Task::Task TsK( nbThreads, 3 );
     TsK.setSave( false );
     TsK.setInfo( false );
     TsK.setFileName( "./AddVectors" );
+=======
+        Task::Task TsK(nbThreads,3); 
+        TsK.setSave(false); 
+        TsK.setInfo(false); 
+        TsK.setFileName("./AddVectors");
+        TsK.getInformation();
+        for(int k=0;k<nbThreads;k++) { 
+            auto const& idk = k;
+            TsK.add(_param(idk),_tasks=FC1);
+        }
+
+        TsK.run();        
+        TsK.close();
+
+    auto stop_time= std::chrono::steady_clock::now();
+    auto run_time=std::chrono::duration_cast<std::chrono::microseconds> (stop_time-start_time);
+	BOOST_MESSAGE("[INFO SPECX] : Execution Time <T22> in ms since start :"<<run_time.count()<<"\n");
+}
+
+
+BOOST_AUTO_TEST_CASE( test_specx_23 )
+{
+    BOOST_MESSAGE("[INFO SPECX] : Execution of <T23>\n");
+    auto start_time= std::chrono::steady_clock::now();
+
+    const int nbThreads = 3;
+    Task::Task TsK(nbThreads,3);
+    TsK.setSave(false); 
+    TsK.setInfo(false); 
+    TsK.setFileName("./Test");
+>>>>>>> refs/remotes/origin/feature/tests_specx
     TsK.getInformation();
     for ( int k = 0; k < nbThreads; k++ )
     {
@@ -260,8 +298,26 @@ BOOST_AUTO_TEST_CASE( test_specx_26 )
     Eigen::VectorXf in, out;
     int data_size = nthreads * 9;
 
+<<<<<<< HEAD
     in.setRandom( data_size );
     in.setConstant( data_size, 0 );
+=======
+        in(0)=1;
+        in(4)=2;
+        in(8)=1;
+        out.setConstant(data_size, -1);
+        cfin.setRandom(data_size);
+        cfout.setConstant(data_size, -1);
+        Task::Task TsK(1,0);
+        TsK.setSave(false); 
+        TsK.setInfo(false); 
+        TsK.qViewChrono=true;
+        TsK.run_gpu_1D(matrix_inverse<Eigen::Matrix3f>(),dim3(128,1,1), nthreads, in, out);
+        TsK.run();
+        TsK.close();
+        TsK.debriefing();
+    #endif
+>>>>>>> refs/remotes/origin/feature/tests_specx
 
     in( 0 ) = 1;
     in( 4 ) = 2;
