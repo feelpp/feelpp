@@ -134,7 +134,7 @@ jobs:
         password: ${{ secrets.CR_PAT }}
     -
       name: Build ${{ matrix.service }}:${{ matrix.tag }}
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}:${{ matrix.dist }}
@@ -149,7 +149,7 @@ jobs:
             GIT_AUTH_TOKEN=${{ secrets.CR_PAT }}
     -
       name: Build ${{ matrix.service }}-dev:${{ matrix.tag }}
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: ./${{ matrix.dir }}
         tags: ghcr.io/feelpp/${{ matrix.service }}-dev:${{ matrix.tag }},ghcr.io/feelpp/${{ matrix.service }}-dev:${{ matrix.dist }}
