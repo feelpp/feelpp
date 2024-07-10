@@ -10,13 +10,11 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <fmt/chrono.h>
 
-
 #include <feel/feeltask/taskpu.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( testspecx_suite )
-
 
 BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
 {
@@ -28,13 +26,13 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
     using range_t = decay_type<decltype( therange )>;
     double area = 1;
 
-    //for ( int NumThreads : { 1, 2, 4, 8, 16 } )
+    // for ( int NumThreads : { 1, 2, 4, 8, 16 } )
     for ( int NumThreads : { 1 } )
     {
-        Task::Task TsK(NumThreads,3);
-        TsK.setSave(false);
-        TsK.setInfo(false);
-        TsK.setFileName("./Test_Integrate2");
+        Task::Task TsK( NumThreads, 3 );
+        TsK.setSave( false );
+        TsK.setInfo( true );
+        TsK.setFileName( "./Test_Integrate2" );
         TsK.getInformation();
 
         double area = 0;
@@ -47,25 +45,22 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
         {
             int threadid = i;
             auto const& ra = r;
-            TsK.add(_param(area_vec(threadid )),_tasks=
-                    [ra, NumThreads, threadid]( double& a )
-                    {
-                        a = integrate( _range=ra, _expr=expr("1") ).evaluate()(0,0);
-                    }
-            );
+            TsK.add(
+                _param( area_vec( threadid ) ), _tasks =
+                                                    [ra, NumThreads, threadid]( double& a )
+                                                {
+                                                    a = integrate( _range = ra, _expr = expr( "1" ) ).evaluate()( 0, 0 );
+                                                } );
         }
         TsK.run();
         BOOST_MESSAGE( fmt::format( "[waitall] areas: {}", area_vec ) );
         area = area_vec.sum();
         double t = toc( fmt::format( "int-area-{}", NumThreads ) );
         TsK.close();
-        TsK.debriefingTasks();
+        TsK.debriefing();
         BOOST_MESSAGE( fmt::format( "time for {} threads: {}, area: {}", NumThreads, t, area ) );
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
 }
-
-
-
 
 BOOST_AUTO_TEST_SUITE_END()

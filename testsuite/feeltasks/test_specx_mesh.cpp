@@ -12,9 +12,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <fmt/chrono.h>
 
-
 #include <feel/feeltask/taskpu.hpp>
-
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -45,10 +43,10 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
         for ( auto [i,r] : enumerate(ranges) )
         {
             int threadid = i;
-            auto const& ra = r;  
-            runtime.task( 
+            auto const& ra = r;
+            runtime.task(
                        SpWrite( area_vec( threadid ) ),
-                       [ra,NumThreads,threadid]( double& a ) 
+                       [ra,NumThreads,threadid]( double& a )
                        {
                            for( element_t<range_t> const& e : ra )
                            {
@@ -68,7 +66,6 @@ BOOST_AUTO_TEST_CASE( test_specx_mesh_1 )
 }
 */
 
-
 BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
 {
     using namespace Feel;
@@ -79,7 +76,7 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
     using range_t = decay_type<decltype( therange )>;
     double area = 1;
 
-    //for(int NumThreads : {1,2,4,8,16})
+    // for(int NumThreads : {1,2,4,8,16})
     for ( int NumThreads : { 1 } )
     {
         SpRuntime runtime( NumThreads );
@@ -98,7 +95,7 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
                        SpWrite( area_vec( threadid ) ),
                        [ra, NumThreads, threadid]( double& a )
                        {
-                           a = integrate( _range=ra, _expr=expr("1") ).evaluate()(0,0);
+                           a = integrate( _range = ra, _expr = expr( "1" ) ).evaluate()( 0, 0 );
                        } )
                 .setTaskName( fmt::format( "area-{}-{}", NumThreads, threadid ) );
         }
@@ -111,7 +108,5 @@ BOOST_AUTO_TEST_CASE( test_specx_integrate_2 )
         BOOST_CHECK_CLOSE( area, 1, 1e-10 );
     }
 }
-
-
 
 BOOST_AUTO_TEST_SUITE_END()
