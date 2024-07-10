@@ -29,17 +29,10 @@ BOOST_AUTO_TEST_CASE( test_upper_layer_integrate_3 )
     // for ( int NumThreads : { 1, 2, 4, 8, 16 } )
     for ( int NumThreads : { 1 } )
     {
-<<<<<<< HEAD
         Task::Task TsK( NumThreads, 3 );
         TsK.setSave( false );
         TsK.setInfo( true );
         TsK.setFileName( "./Test_Integrate2" );
-=======
-        Task::Task TsK(NumThreads,3);
-        TsK.setSave(false);
-        TsK.setInfo(true);
-        TsK.setFileName("./Test_Integrate2");
->>>>>>> refs/remotes/origin/feature/tests_specx
         TsK.getInformation();
 
         double area = 0;
