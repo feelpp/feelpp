@@ -20,7 +20,7 @@ on:
       enable-debian:
         description: 'Enable debian distros'
         required: false
-        default: "all"
+        default: 'all'
         type: choice
         options:
         - 'all'
@@ -33,7 +33,7 @@ jobs:
     name: Packaging Factory
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.pkg-factory.outputs.result }}
+      debian: ${{ steps.pkg-factory.outputs.debian }}
     steps:
     - uses: actions/github-script@v7
       id: pkg-factory
@@ -48,7 +48,7 @@ jobs:
           }
 
           console.log("debian:",JSON.stringify(enable_debian()));
-          core.setOutput('result', JSON.stringify(enable_debian()));
+          core.setOutput('debian', JSON.stringify(enable_debian()));
 
   pkg-factory-2:
     name: Packaging Factory 2
@@ -59,7 +59,7 @@ jobs:
       with:
         script: |
           console.log(${{ toJson(needs.pkg-factory.outputs) }});
-          console.log(${{ toJson(needs.pkg-factory.outputs.matrix) }});
+          console.log(${{ toJson(needs.pkg-factory.outputs.debian) }});
 
 
 # # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
