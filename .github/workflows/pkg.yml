@@ -30,8 +30,6 @@ on:
 
 jobs:
   pkg-factory:
-    outputs:
-      matrix: ${{ steps.pkg-factory.outputs.matrix }}
     uses: ./.github/workflows/pkg-factory.yml
     with:
         parallel: "${{ inputs.parallel || '20' }}"
