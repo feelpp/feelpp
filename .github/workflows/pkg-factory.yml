@@ -141,7 +141,7 @@ jobs:
                 'docker': ['all', 'docker'],
                 'apptainer': ['all', 'apptainer']
               };
-              console.log("checkEnable:", distro, dist, enabledMap[distro]);
+              console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist));
               return enabledMap[distro].includes(distros[distro]) && enabledMap[distro].includes(dist);
             }
 
