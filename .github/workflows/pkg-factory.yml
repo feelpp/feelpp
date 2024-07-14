@@ -124,6 +124,13 @@ jobs:
             console.log( "enable-docker:", docker );
             console.log( "enable-apptainer:", apptainer );
 
+            const distros = {
+              'debian': ${{ toJson(inputs.enable-debian) || 'all' }},
+              'ubuntu': ${{ toJson(inputs.enable-ubuntu) || 'all' }},
+              'spack': ${{ toJson(inputs.enable-spack) || 'all' }},
+              'docker': ${{ toJson(inputs.enable-docker) || 'all' }},
+              'apptainer': ${{ toJson(inputs.enable-apptainer) || 'all' }}
+            };
             function checkEnable(distro, dist) {
               const enabledMap = {
                 'debian': ['all', 'debian', 'bookworm', 'testing', 'sid'],
