@@ -151,7 +151,7 @@ jobs:
 
             const enables = ['debian-bookworm', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
-                          checkEnable(item.split('-')[0], item);
+                          checkEnable(item.split('-')[0], item.split('-')[1]);
               return acc;
             }, {});
 
