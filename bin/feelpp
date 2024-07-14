@@ -1,0 +1,67 @@
+#! /bin/bash
+
+# Default action is to show help
+action="help"
+
+# Parse command line options
+for arg in "$@"; do
+    case $arg in
+        --version|-v)
+            action="version"
+            shift # Remove --version or -v from processing
+            ;;
+        --license)
+            action="license"
+            shift # Remove --license from processing
+            ;;
+        --help|-h)
+            action="help"
+            shift # Remove --help or -h from processing
+            ;;
+        *)
+            # Ignore unknown option
+            ;;
+    esac
+done
+if test $action == "version"; then
+    cat > toto.cmake << EOF
+# Save the original message function as _original_message
+macro(_original_message)
+    _message(\${ARGN})
+endmacro()
+
+# Override the message function
+function(message)
+    list(GET ARGV 0 MessageType)
+    if("\${MessageType}" STREQUAL "STATUS")
+        # Do nothing when the message is of type STATUS
+    else()
+        # Call the original message function for all other types
+        _original_message(\${ARGN})
+    endif()
+endfunction()
+
+
+
+# message(STATUS "CMake version: \${CMAKE_VERSION}")
+include(feelpp.version.cmake)
+#message(STATUS "Feel++ version: \${FEELPP_VERSION}")
+message("\${FEELPP_VERSION_STRING}")
+EOF
+
+    version=$(cmake -P toto.cmake 2>&1)
+    rm -f toto.cmake
+    echo "$version"
+fi
+
+if test $action == "license"; then
+    cat LICENSE
+fi
+
+if test $action == "help"; then
+    printf "Usage: %s [options]\n" "$0"
+    printf "Options:\n"
+    printf "  --version, -v  Show version information\n"
+    printf "  --license      Show license information\n"
+    printf "  --help, -h     Show this help message\n"
+fi
