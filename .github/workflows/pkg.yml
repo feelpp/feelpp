@@ -41,13 +41,14 @@ jobs:
         script: |
           console.log(${{ toJson(github.event.inputs) }});
           console.log(context);
-          console.log( ${{ github.event.inputs.enable-debian }} );
+          console.log( "${{ github.event.inputs.enable-debian }}" );
           function enable_debian() {
             const enabled = ['all', 'bookworm', 'testing', 'sid'];
-            return enabled.includes(${{ github.event.inputs.enable-debian }});
+            return enabled.includes('${{ github.event.inputs.enable-debian }}');
           }
 
-          console.log("debian:",enable_debian());
+          console.log("debian:",JSON.stringify(enable_debian()));
+          core.setOutput('result', JSON.stringify(enable_debian()));
 
 # # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
 # function enable_debian() {
