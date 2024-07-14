@@ -29,7 +29,7 @@ jobs:
       id: pkg-factory
       with:
         script: |
-          console.log("context", context);
+          console.log(context);
 
           # # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
           # function enable_debian() {
