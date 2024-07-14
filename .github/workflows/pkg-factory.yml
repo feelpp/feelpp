@@ -83,21 +83,21 @@ jobs:
                   return dist;
               else
                   return 'disabled';
-            }   
-            var includes = []
+            }
+            var includes = [];
 
-            var skip_all = ${{ contains(github.event.head_commit.message, 'skip all') || contains(github.event.inputs.skip, 'all') }}
+            var skip_all = ${{ contains(github.event.head_commit.message, 'skip all') || contains(github.event.inputs.skip, 'all') }};
 
-            var skip_debian = ${{ contains(github.event.head_commit.message, 'skip debian') || contains(github.event.inputs.skip, 'debian') }}
-            var skip_bookworm = ${{ contains(github.event.head_commit.message, 'skip bookworm') || contains(github.event.inputs.skip, 'bookworm') }}
-            var skip_testing = ${{ contains(github.event.head_commit.message, 'skip testing') || contains(github.event.inputs.skip, 'testing') }}
-            var skip_sid = ${{ contains(github.event.head_commit.message, 'skip sid') || contains(github.event.inputs.skip, 'sid') }}   
+            var skip_debian = ${{ contains(github.event.head_commit.message, 'skip debian') || contains(github.event.inputs.skip, 'debian') }};
+            var skip_bookworm = ${{ contains(github.event.head_commit.message, 'skip bookworm') || contains(github.event.inputs.skip, 'bookworm') }};
+            var skip_testing = ${{ contains(github.event.head_commit.message, 'skip testing') || contains(github.event.inputs.skip, 'testing') }};
+            var skip_sid = ${{ contains(github.event.head_commit.message, 'skip sid') || contains(github.event.inputs.skip, 'sid') }};
             var enable_debian = ${{ contains(github.event.head_commit.message, 'enable debian') }} || enable_debian('all');
             var enable_bookworm = ${{ contains(github.event.head_commit.message, 'enable bookworm') }} || enable_debian('bookworm');
             var enable_testing = ${{ contains(github.event.head_commit.message, 'enable testing') }} || enable_debian('testing');
-            var enable_sid = ${{ contains(github.event.head_commit.message, 'enable sid') }} || enable_debian('sid');   
+            var enable_sid = ${{ contains(github.event.head_commit.message, 'enable sid') }} || enable_debian('sid');
             if ( (!skip_all && !skip_debian && !skip_bookworm) || ( enable_bookworm || enable_debian ) ) {
-                includes.push( { distro: 'debian/bookworm', flavor: debian, dist: bookworm, version: '12', docker: 'true', continue-on-error: 'false' } )
+                includes.push( { distro: 'debian/bookworm', flavor: debian, dist: bookworm, version: '12', docker: 'true', continue-on-error: 'false' } );
             }
             console.log( "includes:", includes );
             core.setOutput('matrix', { include: includes } );
