@@ -46,8 +46,8 @@ on:
         type: choice
         options:
         - 'all'
-        - 'spack-mpich'
-        - 'spack-openmpi'
+        - 'mpich'
+        - 'openmpi'
         - 'none'
       enable-apptainer:
         description: 'Enable apptainer distros'
