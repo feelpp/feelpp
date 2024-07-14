@@ -96,12 +96,7 @@ on:
                 description: 'Enable debian distros'
                 required: false
                 default: 'all'
-                type: choice
-                options:
-                - 'all'
-                - 'bookworm'
-                - 'testing'
-                - 'sid'
+                type: string
 
 jobs:
 
