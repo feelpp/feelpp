@@ -96,28 +96,13 @@ on:
 
 jobs:
 
-  version:
-    uses: ./.github/workflows/version.yml
-    with:
-        continue-on-error: "false"
-    secrets: inherit
-
-  version-print:
-    runs-on: ubuntu-latest
-    needs: version
-    steps:
-      - name: Print outputs from version workflow
-        run: |
-          echo "Feel++ Main Version: ${{ needs.version.outputs.main_version }}"
-          echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
-          echo "Feel++ Version: ${{ needs.version.outputs.version }}"
   apptainer:
     runs-on: self-apptainer
     needs: version
     name: Build and Push apptainer image
     env:
-        docker: "${{ inputs.docker }}:v${{ needs.version.outputs.version }}-${{ inputs.dist }}"
-        sif: "${{ inputs.docker }}:${{ needs.version.outputs.version }}-${{ inputs.dist }}-sif"
+        docker: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}"
+        sif: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}-sif"
     steps:
       -
         name: Login to GitHub Container Registry
