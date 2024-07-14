@@ -141,8 +141,11 @@ jobs:
                 'docker': ['all', 'docker'],
                 'apptainer': ['all', 'apptainer']
               };
-              console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist));
-              return ( distros[distro] === 'all' || distros[distro] === distro ) || enabledMap[distro].includes(distros[distro]) && enabledMap[distro].includes(dist);
+              console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist),distros[distro] );
+              console.log("checkEnable:",( distros[distro] === 'all' || distros[distro] === distro ));
+              console.log("checkEnable:",enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist
+
+              return ( distros[distro] === 'all' || distros[distro] === distro  || enabledMap[distro].includes(distros[distro]) ) && enabledMap[distro].includes(dist);
             }
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
