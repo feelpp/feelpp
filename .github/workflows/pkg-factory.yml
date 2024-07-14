@@ -221,55 +221,49 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
+            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
+              includes.push({
+                'distro': 'ubuntu/jammy',
+                'flavor': 'ubuntu',
+                'dist': 'jammy',
+                'version': '22.04',
+                ''docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
+            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables.focal || enables.ubuntu )) {
+              includes.push({
+                'distro': 'ubuntu/focal',
+                'flavor': 'ubuntu',
+                'dist': 'focal',
+                'version': '20.04',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
+            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'] || enables.spack )) {
+              includes.push({
+                'distro': 'spack/mpich',
+                'flavor': 'spack',
+                'dist': 'mpich',
+                'version': 'latest',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'true'
+              });
+            }
+            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi']|| enables.spack )) {
+              includes.push({
+                'distro': 'spack/openmpi',
+                'flavor': 'spack',
+                'dist': 'openmpi',
+                'version': 'latest',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'true'
+              });
+            }
             console.log("includes:", includes);
             core.setOutput('matrix', { include: includes });
-#            # ubuntu/jammy
-#            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
-#              includes.push({
-#                'distro': 'ubuntu/jammy',
-#                'flavor': 'ubuntu',
-#                'dist': 'jammy',
-#                'version': '22.04',
-#                ''docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-#                'continue-on-error': 'false'
-#              });
-#            }
-#            # ubuntu/focal
-#            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables.focal || enables.ubuntu )) {
-#              includes.push({
-#                'distro': 'ubuntu/focal',
-#                'flavor': 'ubuntu',
-#                'dist': 'focal',
-#                'version': '20.04',
-#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-#                'continue-on-error': 'false'
-#              });
-#            }
-
-
-#            # spack/mpich
-#            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'] || enables.spack )) {
-#              includes.push({
-#                'distro': 'spack/mpich',
-#                'flavor': 'spack',
-#                'dist': 'mpich',
-#                'version': 'latest',
-#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-#                'continue-on-error': 'true'
-#              });
-#            }
-#            # spack/openmpi
-#            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi']|| enables.spack )) {
-#              includes.push({
-#                'distro': 'spack/openmpi',
-#                'flavor': 'spack',
-#                'dist': 'openmpi',
-#                'version': 'latest',
-#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-#                'continue-on-error': 'true'
-#              });
-#            }            
