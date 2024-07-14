@@ -132,23 +132,25 @@ jobs:
               console.log("debian.includes('all'):", debian.includes('all'));
               console.log("debian.includes('debian'):", debian.includes('debian'));
                 
-              return ( enabled.includes(debian) ) && (debian.includes(dist) || debian.includes('all') || debian.includes('debian'));
+              return  enabled.includes(debian) &&  enabled.includes(dist)  && (debian.includes(dist) || debian.includes('all') || debian.includes('debian'));
+            
+            
             }
             function checkUbuntu(dist) {
               const enabled = ['all', 'ubuntu', 'noble', 'jammy', 'focal'];
-              return ( enabled.includes(ubuntu) ) && (ubuntu.includes(dist) || ubuntu.includes('all') || ubuntu.includes('ubuntu'));
+              return enabled.includes(ubuntu)  &&  enabled.includes(dist) && (ubuntu.includes(dist) || ubuntu.includes('all') || ubuntu.includes('ubuntu'));
             }
             function checkSpack(dist) {
               const enabled = ['all', 'spack', 'spack-mpich', 'spack-openmpi'];
-              return ( enabled.includes(spack) ) && (spack.includes(dist) || spack.includes('all') || spack.includes('spack'));
+              return enabled.includes(spack)  &&  enabled.includes(dist) && (spack.includes(dist) || spack.includes('all') || spack.includes('spack'));
             }
             function checkDocker(dist) {
               const enabled = ['all', 'docker'];
-              return ( enabled.includes(docker) ) && (docker.includes(dist) || docker.includes('all') || docker.includes('docker'));
+              retur  enabled.includes(docker) && enabled.includes(dist) && (docker.includes(dist) || docker.includes('all') || docker.includes('docker'));
             }
             function checkApptainer(dist) {
               const enabled = ['all', 'apptainer'];
-              return ( enabled.includes(apptainer) ) && (apptainer.includes(dist) || apptainer.includes('all') || apptainer.includes('apptainer'));
+              return enabled.includes(apptainer)  && enabled.includes(dist) && (apptainer.includes(dist) || apptainer.includes('all') || apptainer.includes('apptainer'));
             }
 
 
@@ -158,7 +160,7 @@ jobs:
               return acc;
             }, {});
 
-            const enables = ['debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const enables = ['bookworm', 'testing', 'sid', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               console.log("enable:", item, ${{ toJson(github.event.head_commit.message || '') }});
               console.log("enable debian:", checkDebian(item));
               console.log("enable ubuntu:", checkUbuntu(item));
