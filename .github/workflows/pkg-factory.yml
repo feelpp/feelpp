@@ -164,7 +164,9 @@ jobs:
               console.log("enable apptainer:", checkApptainer(item));
               
               
-              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item);
+              acc[item] = !item.includes('none') && 
+                    ( ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || 
+                      checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item) );
 
               return acc;
             }, {});
