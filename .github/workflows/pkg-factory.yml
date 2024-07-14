@@ -152,6 +152,18 @@ jobs:
               const enabled = ['all', 'apptainer'];
               return enabled.includes(apptainer)  && enabled.includes(dist) && (apptainer.includes(dist) || apptainer.includes('all') || apptainer.includes('apptainer'));
             }
+            function checkEnable(distro, dist) {
+              const enabledMap = {
+                'debian': ['all', 'debian', 'bookworm', 'testing', 'sid'],
+                'ubuntu': ['all', 'ubuntu', 'noble', 'jammy', 'focal'],
+                'spack': ['all', 'spack', 'spack-mpich', 'spack-openmpi'],
+                'docker': ['all', 'docker'],
+                'apptainer': ['all', 'apptainer']
+              };
+              console.log("checkEnable:", distro, dist, enabledMap[distro]);
+              return enabledMap[distro].includes(distros[distro]) || enabledMap[distro].includes(dist);
+            }
+
 
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
@@ -161,6 +173,12 @@ jobs:
             }, {});
 
             const enables = ['bookworm', 'testing', 'sid', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+              acc[item] = (github.context.payload.head_commit.message || '').includes(`enable ${item}`) ||
+                          checkEnable(item.split('-')[0], item);
+              return acc;
+            }, {});
+
+            const enables2 = ['bookworm', 'testing', 'sid', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               console.log("enable:", item, ${{ toJson(github.event.head_commit.message || '') }});
               console.log("enable debian:", checkDebian(item));
               console.log("enable ubuntu:", checkUbuntu(item));
