@@ -129,7 +129,7 @@ jobs:
               console.log("checkDebian:", enabled, debian, dist);
               console.log("enabled.includes(debian):", enabled.includes(debian));
               console.log("debian.includes('none'):", debian.includes('none'));
-              return ( enabled.includes(debian) ) && enabled.includes(dist);
+              return ( enabled.includes(debian) ) && (debian.includes(dist) || debian.includes('all') || debian.includes('debian'));
             }
             function checkUbuntu(dist) {
               const enabled = ['all', 'ubuntu', 'noble', 'jammy', 'focal'];
