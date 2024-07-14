@@ -98,8 +98,8 @@ jobs:
 
   apptainer:
     runs-on: self-apptainer
-    needs: version
     name: Build and Push apptainer image
+    continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     env:
         docker: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}"
         sif: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}-sif"
