@@ -20,32 +20,35 @@ on:
       enable-debian:
         description: 'Enable debian distros'
         required: false
-        default: 'all'
+        default: 'none'
         type: choice
         options:
         - 'all'
         - 'bookworm'
         - 'testing'
         - 'sid'
+        - 'none'
       enable-ubuntu:
         description: 'Enable ubuntu distros'
         required: false
-        default: 'all'
+        default: 'noble'
         type: choice
         options:
         - 'all'
         - 'noble'
         - 'jammy'
         - 'focal'
+        - 'none'
       enable-spack:
         description: 'Enable spack distros'
         required: false
-        default: 'all'
+        default: 'none'
         type: choice
         options:
         - 'all'
         - 'spack-mpich'
         - 'spack-openmpi'
+        - 'none'
       enable-apptainer:
         description: 'Enable apptainer distros'
         required: false
@@ -53,6 +56,7 @@ on:
         type: choice
         options:
         - 'apptainer'
+        - 'none'
       enable-docker:
         description: 'Enable docker distros'
         required: false
@@ -60,6 +64,7 @@ on:
         type: choice
         options:
         - 'docker'
+        - 'none'
 
 jobs:
   version:
@@ -83,7 +88,7 @@ jobs:
         parallel: "${{ inputs.parallel || '20' }}"
         enable-debian: "${{ inputs.enable-debian || 'all' }}"
         enable-ubuntu: "${{ inputs.enable-ubuntu || 'all' }}"
-        enable-spack: "${{ inputs.enable-spack || 'all' }}"
+        enable-spack: "${{ inputs.enable-spack || 'none' }}"
         enable-apptainer: "${{ inputs.enable-apptainer || 'apptainer' }}"
         enable-docker: "${{ inputs.enable-docker || 'docker' }}"
         skip: "${{ inputs.skip || '' }}"
