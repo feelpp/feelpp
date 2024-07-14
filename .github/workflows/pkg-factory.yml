@@ -133,19 +133,19 @@ jobs:
             }
             function checkUbuntu(dist) {
               const enabled = ['all', 'ubuntu', 'noble', 'jammy', 'focal'];
-              return ( enabled.includes(ubuntu) ) && enabled.includes(dist);
+              return ( enabled.includes(ubuntu) ) && (ubuntu.includes(dist) || ubuntu.includes('all') || ubuntu.includes('ubuntu'));
             }
             function checkSpack(dist) {
               const enabled = ['all', 'spack', 'spack-mpich', 'spack-openmpi'];
-              return ( enabled.includes(spack) ) && enables.includes(dist);
+              return ( enabled.includes(spack) ) && (spack.includes(dist) || spack.includes('all') || spack.includes('spack'));
             }
             function checkDocker(dist) {
               const enabled = ['all', 'docker'];
-              return ( enabled.includes(docker) ) && enabled.includes(dist);
+              return ( enabled.includes(docker) ) && (docker.includes(dist) || docker.includes('all') || docker.includes('docker'));
             }
             function checkApptainer(dist) {
               const enabled = ['all', 'apptainer'];
-              return ( enabled.includes(apptainer) ) && enabled.includes(dist);
+              return ( enabled.includes(apptainer) ) && (apptainer.includes(dist) || apptainer.includes('all') || apptainer.includes('apptainer'));
             }
 
 
