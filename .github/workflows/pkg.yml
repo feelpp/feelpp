@@ -27,6 +27,39 @@ on:
         - 'bookworm'
         - 'testing'
         - 'sid'
+      enable-ubuntu:
+        description: 'Enable ubuntu distros'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - 'all'
+        - 'noble'
+        - 'jammy'
+        - 'focal'
+      enable-spack:
+        description: 'Enable spack distros'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - 'all'
+        - 'spack-mpich'
+        - 'spack-openmpi'
+      enable-apptainer:
+        description: 'Enable apptainer distros'
+        required: false
+        default: 'apptainer'
+        type: choice
+        options:
+        - 'apptainer'
+      enable-docker:
+        description: 'Enable docker distros'
+        required: false
+        default: 'docker'
+        type: choice
+        options:
+        - 'docker'
 
 jobs:
   pkg-factory:
