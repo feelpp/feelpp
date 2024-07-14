@@ -53,6 +53,10 @@ on:
           default: ""
           type: string
     workflow_call:
+        outputs:
+            matrix:
+                description: 'Matrix of packages to build'
+                value: ${{ jobs.pkg-factory.outputs.matrix }}
         inputs:
             flavor:
                 description: 'Flavor of the distribution'
