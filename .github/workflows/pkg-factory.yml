@@ -3,45 +3,16 @@ run-name: "PKG Factory Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
 on:
     workflow_dispatch:
       inputs:
-        flavor:
-          description: 'Flavor to build'
-          required: true
-          default: 'ubuntu'
-          type: choice
-          options:
-          - 'ubuntu'
-          - 'debian'
-        dist:
-          description: 'Distribution to build'
-          required: true
-          default: 'jammy'
-          type: choice
-          options:
-          - 'jammy'
-          - 'focal'
-          - 'noble'
-          - 'bullseye'
-          - 'bookworm'
-          - 'testing'
-          - 'sid'
-        apptainer:
-          description: 'Build apptainer image'
-          required: false
-          default: "true"
-          type: choice
-          options:
-          - 'true'
-          - 'false'
-        docker:
-          description: 'docker image'
-          required: true
-          type: string
-          default: 'ghcr.io/feelpp/feelpp'
-        docker-dev:
-          description: 'docker dev image'
-          required: true
-          type: string
-          default: 'ghcr.io/feelpp/feelpp-dev'
+        enable-debian:
+            description: 'Enable debian distros'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'bookworm'
+            - 'testing'
+            - 'sid'
         parallel:
           description: 'Number of parallel jobs'
           required: false
@@ -58,40 +29,16 @@ on:
                 description: 'Matrix of packages to build'
                 value: ${{ jobs.pkg-factory.outputs.matrix }}
         inputs:
-            flavor:
-                description: 'Flavor of the distribution'
-                required: true
-                type: string
-                default: "ubuntu"
-            dist:
-                description: 'Name of the distribution'
-                required: true
-                type: string
-                default: "jammy"
-            version:
-                description: 'Version of Feel++ packages'
-                required: true
-                type: string
-            docker:
-                description: 'docker image'
+            parallel:
+                description: 'Number of parallel jobs'
                 required: false
                 type: string
-                default: 'ghcr.io/feelpp/feelpp'
-            docker-dev:
-                description: 'docker dev image'
-                required: false
-                type: string
-                default: 'ghcr.io/feelpp/feelpp-dev'
+                default: "20"
             skip:
                 description: 'Skip apptainer build'
                 required: false
                 type: string
                 default: ""
-            continue-on-error:
-                description: 'Continue on error'
-                required: false
-                type: string
-                default: "false"
             enable-debian:
                 description: 'Enable debian distros'
                 required: false
