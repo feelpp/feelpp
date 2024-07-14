@@ -41,7 +41,7 @@ jobs:
         script: |
           console.log(${{ toJson(github.event.inputs) }});
           const debian = JSON.stringify(${{ toJson(github.event.inputs.enable-debian) || 'all' }});
-          console.log( "enable-debian:", enable_debian );
+          console.log( "enable-debian:", debian );
           function enable_debian() {
             const enabled = ['all', 'bookworm', 'testing', 'sid'];
             return enabled.includes(debian);
