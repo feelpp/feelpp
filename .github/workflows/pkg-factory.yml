@@ -160,6 +160,7 @@ jobs:
 
             const includes = [];
             if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
+              console.log(enables.bookworm, enables.debian, skips.all, skips.debian, skips.bookworm);
               includes.push({
                 'distro': 'debian/bookworm',
                 'flavor': 'debian',
