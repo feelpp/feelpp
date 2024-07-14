@@ -77,12 +77,7 @@ jobs:
             console.log( "enable-debian:", debian );
             function checkDebian(dist) {
               const enabled = ['all', 'bookworm', 'testing', 'sid'];
-              if ( enabled.includes(debian) )
-                  return debian;
-              else if ( enable.includes(dist) )
-                  return dist;
-              else
-                  return 'disabled';
+              return ( enabled.includes(debian) || enabled.includes(dist) )
             }
             var includes = [];
 
