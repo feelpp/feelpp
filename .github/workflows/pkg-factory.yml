@@ -3,6 +3,11 @@ run-name: "PKG Factory Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
 on:
     workflow_dispatch:
       inputs:
+        skip:
+          description: 'Skip components'
+          required: false
+          default: ""
+          type: string
         enable-debian:
             description: 'Enable debian distros'
             required: false
@@ -13,6 +18,42 @@ on:
             - 'bookworm'
             - 'testing'
             - 'sid'
+        enable-ubuntu:
+            description: 'Enable ubuntu distros'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'noble'
+            - 'jammy'
+            - 'focal'
+        enable-spack:
+            description: 'Enable spack distros'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'spack-mpich'
+            - 'spack-openmpi'
+        enable-docker:
+            description: 'Enable docker container'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'docker'
+        enable-apptainer:
+            description: 'Enable apptainer container'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'apptainer'
+        
         parallel:
           description: 'Number of parallel jobs'
           required: false
@@ -41,6 +82,26 @@ on:
                 default: ""
             enable-debian:
                 description: 'Enable debian distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-ubuntu:
+                description: 'Enable ubuntu distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-spack:
+                description: 'Enable spack distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-docker:
+                description: 'Enable docker distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-apptainer:
+                description: 'Enable apptainer distros'
                 required: false
                 default: 'all'
                 type: string
@@ -74,7 +135,16 @@ jobs:
         script: |
             console.log(${{ toJson(github.event.inputs) }});
             const debian = ${{ toJson(github.event.inputs.enable-debian) || 'all' }};
+            const ubuntu = ${{ toJson(github.event.inputs.enable-ubuntu) || 'all' }};
+            const spack = ${{ toJson(github.event.inputs.enable-spack) || 'all' }};
+            const docker = ${{ toJson(github.event.inputs.enable-docker) || 'all' }};
+            const apptainer = ${{ toJson(github.event.inputs.enable-apptainer) || 'all' }};
             console.log( "enable-debian:", debian );
+            console.log( "enable-ubuntu:", ubuntu );
+            console.log( "enable-spack:", spack );
+            console.log( "enable-docker:", docker );
+            console.log( "enable-apptainer:", apptainer );
+            
             function checkDebian(dist) {
               const enabled = ['all', 'bookworm', 'testing', 'sid'];
               return ( enabled.includes(debian) || enabled.includes(dist) );
@@ -87,6 +157,15 @@ jobs:
               const enabled = ['all', 'spack-mpich', 'spack-openmpi'];
               return ( enabled.includes(spack) || enabled.includes(dist) );
             }
+            function checkDocker(dist) {
+              const enabled = ['all', 'docker'];
+              return ( enabled.includes(docker) || enabled.includes(dist) );
+            }
+            function checkApptainer(dist) {
+              const enabled = ['all', 'apptainer'];
+              return ( enabled.includes(apptainer) || enabled.includes(dist) );
+            }
+            
             
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( github.inputs.skip || '' ) }}.includes(item);
@@ -94,7 +173,8 @@ jobs:
             }, {});
 
             const enables = ['debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item);
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item);
+              
               return acc;
             }, {});
 
