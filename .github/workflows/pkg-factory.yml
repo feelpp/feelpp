@@ -147,6 +147,7 @@ jobs:
 
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+              console.log("skip:", item, ${{ toJson(github.event.head_commit.message || '') }}, ${{ toJson( inputs.skip || '' ) }});
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( inputs.skip || '' ) }}.includes(item);
               return acc;
             }, {});
