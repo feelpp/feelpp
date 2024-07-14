@@ -34,6 +34,10 @@ jobs:
     with:
         parallel: "${{ inputs.parallel || '20' }}"
         enable-debian: "${{ inputs.enable-debian || 'all' }}"
+        enable-ubuntu: "${{ inputs.enable-ubuntu || 'all' }}"
+        enable-spack: "${{ inputs.enable-spack || 'all' }}"
+        enable-apptainer: "${{ inputs.enable-apptainer || 'apptainer' }}"
+        enable-docker: "${{ inputs.enable-docker || 'docker' }}"
         skip: "${{ inputs.skip || '' }}"
     secrets: inherit
 
