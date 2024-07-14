@@ -47,6 +47,8 @@ jobs:
             return enabled.includes(${{ github.event.inputs.enable-debian }});
           }
 
+          console.log("debian:",enable_debian());
+
 # # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
 # function enable_debian() {
 #   const enabled = ['all', 'bookworm', 'testing', 'sid'];
