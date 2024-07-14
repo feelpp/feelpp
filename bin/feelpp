@@ -1,4 +1,8 @@
-#! /bin/bash
+#!/bin/bash
+
+# Determine the script's directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Default action is to show help
 action="help"
@@ -23,6 +27,7 @@ for arg in "$@"; do
             ;;
     esac
 done
+
 if test $action == "version"; then
     cat > toto.cmake << EOF
 # Save the original message function as _original_message
@@ -41,10 +46,8 @@ function(message)
     endif()
 endfunction()
 
-
-
 # message(STATUS "CMake version: \${CMAKE_VERSION}")
-include(feelpp.version.cmake)
+include(${PARENT_DIR}/feelpp.version.cmake)
 #message(STATUS "Feel++ version: \${FEELPP_VERSION}")
 message("\${FEELPP_VERSION_STRING}")
 EOF
@@ -55,7 +58,7 @@ EOF
 fi
 
 if test $action == "license"; then
-    cat LICENSE
+    cat "${PARENT_DIR}/LICENSE"
 fi
 
 if test $action == "help"; then
