@@ -97,7 +97,14 @@ jobs:
             var enable_testing = ${{ contains(github.event.head_commit.message, 'enable testing') }} || enable_debian('testing');
             var enable_sid = ${{ contains(github.event.head_commit.message, 'enable sid') }} || enable_debian('sid');
             if ( (!skip_all && !skip_debian && !skip_bookworm) || ( enable_bookworm || enable_debian ) ) {
-                includes.push( { distro: 'debian/bookworm', flavor: debian, dist: bookworm, version: '12', docker: 'true', continue-on-error: 'false' } );
+                includes.push( {
+                    distro: 'debian/bookworm',
+                    flavor: debian,
+                    dist: bookworm,
+                    version: '12',
+                    docker: 'true',
+                    'continue-on-error': 'false'
+                });
             }
             console.log( "includes:", includes );
             core.setOutput('matrix', { include: includes } );
