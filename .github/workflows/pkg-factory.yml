@@ -143,7 +143,7 @@ jobs:
             }, {});
 
             const enables = ['bookworm', 'testing', 'sid', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-              acc[item] = (github.context.payload.head_commit.message || '').includes(`enable ${item}`) ||
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
                           checkEnable(item.split('-')[0], item);
               return acc;
             }, {});
