@@ -1,0 +1,157 @@
+name: Feelpp PKG Factory
+run-name: "PKG Factory Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
+on:
+    workflow_dispatch:
+      inputs:
+        flavor:
+          description: 'Flavor to build'
+          required: true
+          default: 'ubuntu'
+          type: choice
+          options:
+          - 'ubuntu'
+          - 'debian'
+        dist:
+          description: 'Distribution to build'
+          required: true
+          default: 'jammy'
+          type: choice
+          options:
+          - 'jammy'
+          - 'focal'
+          - 'noble'
+          - 'bullseye'
+          - 'bookworm'
+          - 'testing'
+          - 'sid'
+        apptainer:
+          description: 'Build apptainer image'
+          required: false
+          default: "true"
+          type: choice
+          options:
+          - 'true'
+          - 'false'
+        docker:
+          description: 'docker image'
+          required: true
+          type: string
+          default: 'ghcr.io/feelpp/feelpp'
+        docker-dev:
+          description: 'docker dev image'
+          required: true
+          type: string
+          default: 'ghcr.io/feelpp/feelpp-dev'
+        parallel:
+          description: 'Number of parallel jobs'
+          required: false
+          default: "20"
+          type: string
+        skip:
+          description: 'Skip build'
+          required: false
+          default: ""
+          type: string
+    workflow_call:
+        inputs:
+            flavor:
+                description: 'Flavor of the distribution'
+                required: true
+                type: string
+                default: "ubuntu"
+            dist:
+                description: 'Name of the distribution'
+                required: true
+                type: string
+                default: "jammy"
+            version:
+                description: 'Version of Feel++ packages'
+                required: true
+                type: string
+            docker:
+                description: 'docker image'
+                required: false
+                type: string
+                default: 'ghcr.io/feelpp/feelpp'
+            docker-dev:
+                description: 'docker dev image'
+                required: false
+                type: string
+                default: 'ghcr.io/feelpp/feelpp-dev'
+            skip:
+                description: 'Skip apptainer build'
+                required: false
+                type: string
+                default: ""
+            continue-on-error:
+                description: 'Continue on error'
+                required: false
+                type: string
+                default: "false"
+            enable-debian:
+                description: 'Enable debian distros'
+                required: false
+                default: 'all'
+                type: choice
+                options:
+                - 'all'
+                - 'bookworm'
+                - 'testing'
+                - 'sid'
+
+jobs:
+
+  version:
+    uses: ./.github/workflows/version.yml
+    with:
+        continue-on-error: "false"
+    secrets: inherit
+
+  version-print:
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+      - name: Print outputs from version workflow
+        run: |
+          echo "Feel++ Main Version: ${{ needs.version.outputs.main_version }}"
+          echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
+          echo "Feel++ Version: ${{ needs.version.outputs.version }}"
+  pkg-factory:
+    name: Packaging Factory
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.pkg-factory.outputs.matrix }}
+    steps:
+    - uses: actions/github-script@v7
+      id: pkg-factory
+      with:
+        script: |
+            console.log(${{ toJson(github.event.inputs) }});
+            const debian = ${{ toJson(github.event.inputs.enable-debian) || 'all' }};
+            console.log( "enable-debian:", debian );
+            function enable_debian(dist) {
+              const enabled = ['all', 'bookworm', 'testing', 'sid'];
+              if ( enabled.includes(debian) )
+                  return debian;
+              else if ( enable.includes(dist) )
+                  return dist;
+              else
+                  return 'disabled';
+            }   
+            var includes = []
+
+            var skip_all = ${{ contains(github.event.head_commit.message, 'skip all') || contains(github.event.inputs.skip, 'all') }}
+
+            var skip_debian = ${{ contains(github.event.head_commit.message, 'skip debian') || contains(github.event.inputs.skip, 'debian') }}
+            var skip_bookworm = ${{ contains(github.event.head_commit.message, 'skip bookworm') || contains(github.event.inputs.skip, 'bookworm') }}
+            var skip_testing = ${{ contains(github.event.head_commit.message, 'skip testing') || contains(github.event.inputs.skip, 'testing') }}
+            var skip_sid = ${{ contains(github.event.head_commit.message, 'skip sid') || contains(github.event.inputs.skip, 'sid') }}   
+            var enable_debian = ${{ contains(github.event.head_commit.message, 'enable debian') }} || enable_debian('all');
+            var enable_bookworm = ${{ contains(github.event.head_commit.message, 'enable bookworm') }} || enable_debian('bookworm');
+            var enable_testing = ${{ contains(github.event.head_commit.message, 'enable testing') }} || enable_debian('testing');
+            var enable_sid = ${{ contains(github.event.head_commit.message, 'enable sid') }} || enable_debian('sid');   
+            if ( (!skip_all && !skip_debian && !skip_bookworm) || ( enable_bookworm || enable_debian ) ) {
+                includes.push( { distro: 'debian/bookworm', flavor: debian, dist: bookworm, version: '12', docker: 'true', continue-on-error: 'false' } )
+            }
+            console.log( "includes:", includes );
+            core.setOutput('matrix', { include: includes } );

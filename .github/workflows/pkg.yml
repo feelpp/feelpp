@@ -33,22 +33,13 @@ jobs:
     name: Packaging Factory
     runs-on: ubuntu-latest
     outputs:
-      debian: ${{ steps.pkg-factory.outputs.debian }}
-    steps:
-    - uses: actions/github-script@v7
-      id: pkg-factory
-      with:
-        script: |
-          console.log(${{ toJson(github.event.inputs) }});
-          const debian = ${{ toJson(github.event.inputs.enable-debian) || 'all' }};
-          console.log( "enable-debian:", debian );
-          function enable_debian() {
-            const enabled = ['all', 'bookworm', 'testing', 'sid'];
-            return enabled.includes(debian);
-          }
-
-          console.log("debian:",JSON.stringify(enable_debian()));
-          core.setOutput('debian', JSON.stringify(enable_debian()));
+      matrix: ${{ steps.pkg-factory.outputs.matrix }}
+    uses: ./.github/workflows/pkg-factory.yml
+    with:
+        parallel: "${{ inputs.parallel || '20' }}"
+        enable-debian: "${{ inputs.enable-debian || 'all' }}"
+        skip: "${{ inputs.skip || '' }}"
+    secrets: inherit
 
   pkg-factory-2:
     name: Packaging Factory 2
@@ -58,8 +49,8 @@ jobs:
     - uses: actions/github-script@v7
       with:
         script: |
-          console.log(${{ toJson(needs.pkg-factory.outputs) }});
-          console.log(${{ toJson(needs.pkg-factory.outputs.debian) }});
+          console.log(${{ toJson(needs.pkg-factory.outputs.matrix) }});
+
 
 
 # # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
