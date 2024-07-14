@@ -84,43 +84,18 @@ jobs:
         script: |
           console.log(${{ toJson(needs.pkg-factory.outputs.matrix) }});
 
-
-
-# # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
-# function enable_debian() {
-#   const enabled = ['all', 'bookworm', 'testing', 'sid'];
-#   return enabled.includes(github.event.inputs['enable-debian']);
-# }
-# # idem for ubuntu
-# function enable_ubuntu() {
-#   const enabled = ['all', 'noble', 'jammy', 'focal'];
-#   return enabled.includes(github.event.inputs['enable-ubuntu']);
-# }
-# # idem for spack
-# function enable_spack() {
-#   const enabled = ['all', 'spack-mpich', 'spack-openmpi'];
-#   return enabled.includes(github.event.inputs['enable-spack']);
-# }  
   build:
-    if: false
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { distro: 'ubuntu/noble', flavor: ubuntu, dist: noble, version: '24.04', docker: 'true', continue-on-error: 'true' }
-          - { distro: 'ubuntu/jammy', flavor: ubuntu, dist: jammy, version: '22.04', docker: 'true', continue-on-error: 'false' }
-          - { distro: 'ubuntu/focal', flavor: ubuntu, dist: focal, version: '20.04', docker: 'false', continue-on-error: 'false' }
-#          - { distro: 'ubuntu/mantic', flavor: ubuntu, dist: mantic, version: '23.10', continue-on-error: 'true' }
-          - { distro: 'debian/bookwork', flavor: debian, dist: bookworm, version: '12', docker: 'true', continue-on-error: 'false' }
-#          - { distro: 'debian/bullseye', flavor: debian, dist: bullseye, version: '11', continue-on-error: 'false' }
-          - { distro: 'debian/testing', flavor: debian, dist: testing, version: '13', docker: 'true', continue-on-error: 'true' }
-          - { distro: 'debian/sid', flavor: debian, dist: sid, version: 'unstable', docker: 'true', continue-on-error: 'true' }
+      matrix: ${{fromJSON(needs.pkg-factory.outputs.matrix) }}
     uses: ./.github/workflows/pkg-dist.yml
     with:
         dist: "${{ matrix.dist }}"
         flavor: "${{ matrix.flavor }}"
         parallel: "${{ inputs.parallel || '20' }}"
         skip: "${{ inputs.skip || '' }}"
+        docker: "${{ matrix.docker }}"
+        apptainer: "${{ matrix.apptainer }}"
         continue-on-error: "${{ matrix.continue-on-error }}"
     secrets: inherit
 
