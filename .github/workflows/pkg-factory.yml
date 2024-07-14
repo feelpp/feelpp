@@ -142,7 +142,7 @@ jobs:
               return acc;
             }, {});
 
-            const enables = ['bookworm', 'testing', 'sid', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const enables = ['debian-bookworm', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
                           checkEnable(item.split('-')[0], item);
               return acc;
