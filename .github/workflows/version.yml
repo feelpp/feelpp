@@ -1,5 +1,5 @@
 name: Feelpp Version
-on: 
+on:
     workflow_call:
         inputs:
             continue-on-error:
@@ -14,7 +14,6 @@ on:
                 required: false
                 default: "false"
                 type: string
-
 
 jobs:
     version:
