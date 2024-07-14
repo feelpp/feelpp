@@ -211,6 +211,7 @@ jobs:
               });
             }
             if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables.noble || enables.ubuntu )) {
+              console.log("ubuntu noble:",enables.noble, enables.ubuntu, skips.all, skips.ubuntu, skips.noble);
               includes.push({
                 'distro': 'ubuntu/noble',
                 'flavor': 'ubuntu',
@@ -222,6 +223,7 @@ jobs:
               });
             }
             if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
+              console.log("ubuntu jammy:",enables.jammy, enables.ubuntu, skips.all, skips.ubuntu, skips.jammy);
               includes.push({
                 'distro': 'ubuntu/jammy',
                 'flavor': 'ubuntu',
@@ -233,6 +235,7 @@ jobs:
               });
             }
             if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables.focal || enables.ubuntu )) {
+              console.log("ubuntu focal:",enables.focal, enables.ubuntu, skips.all, skips.ubuntu, skips.focal);
               includes.push({
                 'distro': 'ubuntu/focal',
                 'flavor': 'ubuntu',
