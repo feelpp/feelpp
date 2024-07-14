@@ -174,7 +174,7 @@ jobs:
 
             const includes = [];
             if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
-              console.log(enables.bookworm, enables.debian, skips.all, skips.debian, skips.bookworm);
+              console.log("debian bookworm:",enables.bookworm, enables.debian, skips.all, skips.debian, skips.bookworm);
               includes.push({
                 'distro': 'debian/bookworm',
                 'flavor': 'debian',
@@ -189,6 +189,7 @@ jobs:
 
 
             if ((!skips.all && !skips.debian && !skips.testing) || (enables.testing || enables.debian )) {
+              console.log("debian testing:",enables.testing, enables.debian, skips.all, skips.debian, skips.testing);
               includes.push({
                 'distro': 'debian/testing',
                 'flavor': 'debian',
@@ -200,6 +201,7 @@ jobs:
               });
             }
             if ((!skips.all && !skips.debian && !skips.sid) || (enables.sid || enables.debian )) {
+              console.log("debian sid:",enables.sid, enables.debian, skips.all, skips.debian, skips.sid);
               includes.push({
                 'distro': 'debian/sid',
                 'flavor': 'debian',
