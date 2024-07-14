@@ -81,7 +81,7 @@ jobs:
             }
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid'].reduce((acc, item) => {
-              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( github.inputs.skip ) }}.includes(item);
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( github.inputs.skip || '' ) }}.includes(item);
               return acc;
             }, {});
 
