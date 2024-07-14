@@ -3,7 +3,8 @@ name: Feelpp PKG CI
 on:
   push:
     branches:
-      - develop
+ #      - develop
+     - 2259-add-script-to-get-feelpp-version
   workflow_dispatch:
     inputs:
       parallel:
@@ -18,7 +19,35 @@ on:
         type: string
 
 jobs:
+  pkg-factory:
+    name: Packaging Factory
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.pkg-factory.outputs.result }}
+    steps:
+    - uses: actions/github-script@v7
+      id: pkg-factory
+      with:
+        script: |
+          console.log("context", context);
+          
+          # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
+          function enable_debian() {
+            const enabled = ['all', 'bookworm', 'testing', 'sid'];
+            return enabled.includes(github.event.inputs['enable-debian']);
+          }
+          # idem for ubuntu
+          function enable_ubuntu() {
+            const enabled = ['all', 'noble', 'jammy', 'focal'];
+            return enabled.includes(github.event.inputs['enable-ubuntu']);
+          }
+          # idem for spack
+          function enable_spack() {
+            const enabled = ['all', 'spack-mpich', 'spack-openmpi'];
+            return enabled.includes(github.event.inputs['enable-spack']);
+          }  
   build:
+    if: false
     strategy:
       fail-fast: false
       matrix:
