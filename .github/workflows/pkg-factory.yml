@@ -127,6 +127,8 @@ jobs:
             function checkDebian(dist) {
               const enabled = ['all', 'bookworm', 'testing', 'sid'];
               console.log("checkDebian:", enabled, debian, dist);
+              console.log("enabled.includes(debian):", enabled.includes(debian));
+              console.log("debian.includes('none'):", debian.includes('none'));
               return ( enabled.includes(debian) ) && !debian.includes('none');
             }
             function checkUbuntu(dist) {
