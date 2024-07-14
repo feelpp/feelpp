@@ -157,9 +157,9 @@ jobs:
               return acc;
             }, {});
 
-            console.log("debian bookworm:",enables['debian-bookworm'], skips.all, skips.debian, skips.bookworm);
+            console.log("debian bookworm:",enables['debian-bookworm'], enables['debian-all'], skips.all, skips.debian, skips.bookworm);
             const includes = [];
-            if ((!skips.all && !skips.debian && !skips.bookworm) || enables['debian-bookworm']) {
+            if ((!skips.all && !skips.debian && !skips.bookworm) || ( enables['debian-bookworm'] || enables['debian-all']  ) ) {
               
               includes.push({
                 'distro': 'debian/bookworm',
@@ -173,9 +173,8 @@ jobs:
             }
 
 
-
-            if ((!skips.all && !skips.debian && !skips.testing) || (enables.testing || enables.debian )) {
-              console.log("debian testing:",enables.testing, enables.debian, skips.all, skips.debian, skips.testing);
+            console.log("debian testing:",enables['debian-testing'], enables['debian-all'], skips.all, skips.debian, skips.testing);
+            if ((!skips.all && !skips.debian && !skips.testing) || (enables['debian-testing'] || enables['debian-all'] )) {
               includes.push({
                 'distro': 'debian/testing',
                 'flavor': 'debian',
@@ -186,8 +185,8 @@ jobs:
                 'continue-on-error': 'true'
               });
             }
-            if ((!skips.all && !skips.debian && !skips.sid) || (enables.sid || enables.debian )) {
-              console.log("debian sid:",enables.sid, enables.debian, skips.all, skips.debian, skips.sid);
+            console.log("debian sid:",enables['debian-sid'], enables['debian-all'], skips.all, skips.debian, skips.sid);
+            if ((!skips.all && !skips.debian && !skips.sid) || (enables['debian-sid'] || enables['debian-all'] )) {
               includes.push({
                 'distro': 'debian/sid',
                 'flavor': 'debian',
