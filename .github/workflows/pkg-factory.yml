@@ -63,7 +63,7 @@ jobs:
           echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
           echo "Feel++ Version: ${{ needs.version.outputs.version }}"
   pkg-factory:
-    name: Packaging Factory
+    name: packages
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.pkg-factory.outputs.matrix }}
@@ -79,27 +79,48 @@ jobs:
               const enabled = ['all', 'bookworm', 'testing', 'sid'];
               return ( enabled.includes(debian) || enabled.includes(dist) );
             }
-            var includes = [];
 
-            var skip_all = ${{ contains(github.event.head_commit.message, 'skip all') || contains(github.event.inputs.skip, 'all') }};
+            const skips = ['all', 'debian', 'bookworm', 'testing', 'sid'].reduce((acc, item) => {
+              acc[item] = ${github.event.head_commit.message.includes(`skip ${item}`)} || ${githubInputs.skip.includes(item)};
+              return acc;
+            }, {});
 
-            var skip_debian = ${{ contains(github.event.head_commit.message, 'skip debian') || contains(github.event.inputs.skip, 'debian') }};
-            var skip_bookworm = ${{ contains(github.event.head_commit.message, 'skip bookworm') || contains(github.event.inputs.skip, 'bookworm') }};
-            var skip_testing = ${{ contains(github.event.head_commit.message, 'skip testing') || contains(github.event.inputs.skip, 'testing') }};
-            var skip_sid = ${{ contains(github.event.head_commit.message, 'skip sid') || contains(github.event.inputs.skip, 'sid') }};
-            var enable_debian = ${{ contains(github.event.head_commit.message, 'enable debian') }} || checkDebian('all');
-            var enable_bookworm = ${{ contains(github.event.head_commit.message, 'enable bookworm') }} || checkDebian('bookworm');
-            var enable_testing = ${{ contains(github.event.head_commit.message, 'enable testing') }} || checkDebian('testing');
-            var enable_sid = ${{ contains(github.event.head_commit.message, 'enable sid') }} || checkDebian('sid');
-            if ( (!skip_all && !skip_debian && !skip_bookworm) || ( enable_bookworm || enable_debian ) ) {
-                includes.push( {
-                    'distro': 'debian/bookworm',
-                    'flavor': 'debian',
-                    'dist': 'bookworm',
-                    'version': '12',
-                    'docker': 'true',
-                    'continue-on-error': 'false'
-                });
+            const enables = ['debian', 'bookworm', 'testing', 'sid'].reduce((acc, item) => {
+              acc[item] = ${github.event.head_commit.message.includes(`enable ${item}`)} || checkDebian(item);
+              return acc;
+            }, {});
+
+            const includes = [];
+            if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
+              includes.push({
+                'distro': 'debian/bookworm',
+                'flavor': 'debian',
+                'dist': 'bookworm',
+                'version': '12',
+                'docker': 'true',
+                'continue-on-error': 'false'
+              });
             }
-            console.log( "includes:", includes );
-            core.setOutput('matrix', { include: includes } );
+            if ((!skips.all && !skips.debian && !skips.testing) || enables.testing) {
+              includes.push({
+                'distro': 'debian/testing',
+                'flavor': 'debian',
+                'dist': 'testing',
+                'version': 'testing',
+                'docker': 'true',
+                'continue-on-error': 'true'
+              });
+            }
+            if ((!skips.all && !skips.debian && !skips.sid) || enables.sid) {
+              includes.push({
+                'distro': 'debian/sid',
+                'flavor': 'debian',
+                'dist': 'sid',
+                'version': 'unstable',
+                'docker': 'true',
+                'continue-on-error': 'true'
+              });
+            }
+
+            console.log("includes:", includes);
+            core.setOutput('matrix', JSON.stringify({ include: includes }));
