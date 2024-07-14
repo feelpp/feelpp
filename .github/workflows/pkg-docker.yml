@@ -2,6 +2,8 @@ name: Feelpp PKG Docker
 run-name: "PKG Docker Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
 on:
     workflow_dispatch:
+      outputs:
+        tag: ${{ }}
       inputs:
         flavor:
           description: 'Flavor to build'
@@ -92,6 +94,9 @@ jobs:
     needs: [version]
     runs-on: self-docker
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+    outputs:
+      image: ghcr.io/feelpp/feelpp
+      image-dev: ghcr.io/feelpp/feelpp-dev
     strategy:
       fail-fast: false
       matrix:
