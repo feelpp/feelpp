@@ -81,12 +81,12 @@ jobs:
             }
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid'].reduce((acc, item) => {
-              acc[item] = ${github.event.head_commit.message.includes(`skip ${item}`)} || ${githubInputs.skip.includes(item)};
+              acc[item] = github.event.head_commit.message.includes(`skip ${item}`) || githubInputs.skip.includes(item);
               return acc;
             }, {});
 
             const enables = ['debian', 'bookworm', 'testing', 'sid'].reduce((acc, item) => {
-              acc[item] = ${github.event.head_commit.message.includes(`enable ${item}`)} || checkDebian(item);
+              acc[item] = github.event.head_commit.message.includes(`enable ${item}`) || checkDebian(item);
               return acc;
             }, {});
 
@@ -101,7 +101,7 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
-            if ((!skips.all && !skips.debian && !skips.testing) || enables.testing) {
+            if ((!skips.all && !skips.debian && !skips.testing) || (enables.testing || enables.debian )) {
               includes.push({
                 'distro': 'debian/testing',
                 'flavor': 'debian',
@@ -111,7 +111,7 @@ jobs:
                 'continue-on-error': 'true'
               });
             }
-            if ((!skips.all && !skips.debian && !skips.sid) || enables.sid) {
+            if ((!skips.all && !skips.debian && !skips.sid) || (enables.sid || enables.debian )) {
               includes.push({
                 'distro': 'debian/sid',
                 'flavor': 'debian',
@@ -123,4 +123,4 @@ jobs:
             }
 
             console.log("includes:", includes);
-            core.setOutput('matrix', JSON.stringify({ include: includes }));
+            core.setOutput('matrix', { include: includes });
