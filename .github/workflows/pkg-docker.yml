@@ -80,12 +80,11 @@ jobs:
 
   docker:
     if: ${{ !contains( inputs.skip, 'skip docker' ) && inputs.docker == 'true'}}
-    needs: [version]
     runs-on: self-docker
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
-#    outputs:
-#      image: ghcr.io/feelpp/feelpp
-#      image-dev: ghcr.io/feelpp/feelpp-dev
+    outputs:
+      image: ghcr.io/feelpp/feelpp
+      image-dev: ghcr.io/feelpp/feelpp-dev
     strategy:
       fail-fast: false
       matrix:
