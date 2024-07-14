@@ -142,7 +142,7 @@ jobs:
                 'apptainer': ['all', 'apptainer']
               };
               console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist));
-              return enabledMap[distro].includes(distros[distro]) && enabledMap[distro].includes(dist);
+              return ( distros[distro] === 'all' || distros[distro] === distro ) || enabledMap[distro].includes(distros[distro]) && enabledMap[distro].includes(dist);
             }
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
@@ -151,7 +151,7 @@ jobs:
               return acc;
             }, {});
 
-            const enables = ['debian-all', 'debian-bookworm', 'debian-testing', 'debian-sid', 'ubuntu-all', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const enables = ['debian-bookworm', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
                           checkEnable(item.split('-')[0], item.split('-')[1]);
               return acc;
@@ -159,7 +159,7 @@ jobs:
 
             console.log("debian bookworm:",enables['debian-bookworm'], enables['debian-all'], skips.all, skips.debian, skips.bookworm);
             const includes = [];
-            if ((!skips.all && !skips.debian && !skips.bookworm) || ( enables['debian-bookworm'] || enables['debian-all']  ) ) {
+            if ((!skips.all && !skips.debian && !skips.bookworm) || ( enables['debian-bookworm']  ) ) {
               
               includes.push({
                 'distro': 'debian/bookworm',
@@ -174,7 +174,7 @@ jobs:
 
 
             console.log("debian testing:",enables['debian-testing'], enables['debian-all'], skips.all, skips.debian, skips.testing);
-            if ((!skips.all && !skips.debian && !skips.testing) || (enables['debian-testing'] || enables['debian-all'] )) {
+            if ((!skips.all && !skips.debian && !skips.testing) || (enables['debian-testing']  )) {
               includes.push({
                 'distro': 'debian/testing',
                 'flavor': 'debian',
@@ -186,7 +186,7 @@ jobs:
               });
             }
             console.log("debian sid:",enables['debian-sid'], enables['debian-all'], skips.all, skips.debian, skips.sid);
-            if ((!skips.all && !skips.debian && !skips.sid) || (enables['debian-sid'] || enables['debian-all'] )) {
+            if ((!skips.all && !skips.debian && !skips.sid) || (enables['debian-sid']  )) {
               includes.push({
                 'distro': 'debian/sid',
                 'flavor': 'debian',
