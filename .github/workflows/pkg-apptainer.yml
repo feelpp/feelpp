@@ -68,6 +68,11 @@ on:
                 description: 'Version of Feel++ packages'
                 required: true
                 type: string
+            parallel:
+                description: 'Number of parallel jobs'
+                required: false
+                type: string
+                value: "20"
             docker:
                 description: 'docker image'
                 required: false
