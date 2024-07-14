@@ -197,8 +197,8 @@ jobs:
                 'continue-on-error': 'true'
               });
             }
-            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables.noble || enables.ubuntu )) {
-              console.log("ubuntu noble:",enables.noble, enables.ubuntu, skips.all, skips.ubuntu, skips.noble);
+            console.log("ubuntu noble:",enables['ubuntu-noble'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.noble);
+            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables['ubuntu-noble'] || enables['ubuntu-all'] )) {
               includes.push({
                 'distro': 'ubuntu/noble',
                 'flavor': 'ubuntu',
@@ -209,8 +209,8 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
-            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
-              console.log("ubuntu jammy:",enables.jammy, enables.ubuntu, skips.all, skips.ubuntu, skips.jammy);
+            console.log("ubuntu jammy:",enables['ubuntu-jammy'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.jammy);
+            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables['ubuntu-jammy'] || enables['ubuntu-all'] )) {
               includes.push({
                 'distro': 'ubuntu/jammy',
                 'flavor': 'ubuntu',
@@ -221,8 +221,8 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
-            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables.focal || enables.ubuntu )) {
-              console.log("ubuntu focal:",enables.focal, enables.ubuntu, skips.all, skips.ubuntu, skips.focal);
+            console.log("ubuntu focal:",enables['ubuntu-focal'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.focal);
+            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables['ubuntu-focal'] || enables['ubuntu-all'] )) {
               includes.push({
                 'distro': 'ubuntu/focal',
                 'flavor': 'ubuntu',
@@ -233,7 +233,8 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
-            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'] || enables.spack )) {
+            console.log("spack mpich:",enables['spack-mpich'], enables['spack-all'], skips.all, skips.spack, skips['spack-mpich']);
+            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'] || enables['spack-all'] )) {
               includes.push({
                 'distro': 'spack/mpich',
                 'flavor': 'spack',
@@ -244,7 +245,8 @@ jobs:
                 'continue-on-error': 'true'
               });
             }
-            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi']|| enables.spack )) {
+            console.log("spack openmpi:",enables['spack-openmpi'], enables['spack-all'], skips.all, skips.spack, skips['spack-openmpi']);
+            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi']|| enables['spack-all'] )) {
               includes.push({
                 'distro': 'spack/openmpi',
                 'flavor': 'spack',
