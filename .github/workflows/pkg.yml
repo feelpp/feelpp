@@ -17,6 +17,16 @@ on:
         required: false
         default: ""
         type: string
+      enable-debian:
+        description: 'Enable debian distros'
+        required: false
+        default: "all"
+        type: choice
+        options:
+        - 'all'
+        - 'bookworm'
+        - 'testing'
+        - 'sid'
 
 jobs:
   pkg-factory:
@@ -31,6 +41,11 @@ jobs:
         script: |
           console.log(${{ toJson(github.event.inputs) }});
           console.log(context);
+
+          function enable_debian() {
+            const enabled = ['all', 'bookworm', 'testing', 'sid'];
+            return enabled.includes(${{ github.event.inputs.enable-debian }});
+          }
 
 # # write a function that takes an input that returns true if github.event.inputs.enable-debian is 'all' or if it is one of the debian distros bookworm testing or sid 
 # function enable_debian() {
