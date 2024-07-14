@@ -161,110 +161,111 @@ jobs:
             }
             
             
-            const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( github.inputs.skip || '' ) }}.includes(item);
-              return acc;
-            }, {});
-
-            const enables = ['debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item);
-              
-              return acc;
-            }, {});
+#            const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+#              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( github.inputs.skip || '' ) }}.includes(item);
+#              return acc;
+#            }, {});
+#
+#            const enables = ['debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+#              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item);
+#              
+#              return acc;
+#            }, {});
 
             const includes = [];
-            if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
-              includes.push({
-                'distro': 'debian/bookworm',
-                'flavor': 'debian',
-                'dist': 'bookworm',
-                'version': '12',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
-            if ((!skips.all && !skips.debian && !skips.testing) || (enables.testing || enables.debian )) {
-              includes.push({
-                'distro': 'debian/testing',
-                'flavor': 'debian',
-                'dist': 'testing',
-                'version': 'testing',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'true'
-              });
-            }
-            if ((!skips.all && !skips.debian && !skips.sid) || (enables.sid || enables.debian )) {
-              includes.push({
-                'distro': 'debian/sid',
-                'flavor': 'debian',
-                'dist': 'sid',
-                'version': 'unstable',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'true'
-              });
-            }
-            # ubuntu/noble
-            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables.noble || enables.ubuntu )) {
-              includes.push({
-                'distro': 'ubuntu/noble',
-                'flavor': 'ubuntu',
-                'dist': 'noble',
-                'version': '24.04',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
-            # ubuntu/jammy
-            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
-              includes.push({
-                'distro': 'ubuntu/jammy',
-                'flavor': 'ubuntu',
-                'dist': 'jammy',
-                'version': '22.04',
-                ''docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
-            # ubuntu/focal
-            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables.focal || enables.ubuntu )) {
-              includes.push({
-                'distro': 'ubuntu/focal',
-                'flavor': 'ubuntu',
-                'dist': 'focal',
-                'version': '20.04',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
-            # spack/mpich
-            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'] || enables.spack )) {
-              includes.push({
-                'distro': 'spack/mpich',
-                'flavor': 'spack',
-                'dist': 'mpich',
-                'version': 'latest',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'true'
-              });
-            }
-            # spack/openmpi
-            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi']|| enables.spack )) {
-              includes.push({
-                'distro': 'spack/openmpi',
-                'flavor': 'spack',
-                'dist': 'openmpi',
-                'version': 'latest',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'true'
-              });
-            }
+            
+#            if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
+#              includes.push({
+#                'distro': 'debian/bookworm',
+#                'flavor': 'debian',
+#                'dist': 'bookworm',
+#                'version': '12',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'false'
+#              });
+#            }
+#            if ((!skips.all && !skips.debian && !skips.testing) || (enables.testing || enables.debian )) {
+#              includes.push({
+#                'distro': 'debian/testing',
+#                'flavor': 'debian',
+#                'dist': 'testing',
+#                'version': 'testing',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'true'
+#              });
+#            }
+#            if ((!skips.all && !skips.debian && !skips.sid) || (enables.sid || enables.debian )) {
+#              includes.push({
+#                'distro': 'debian/sid',
+#                'flavor': 'debian',
+#                'dist': 'sid',
+#                'version': 'unstable',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'true'
+#              });
+#            }
+#            # ubuntu/noble
+#            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables.noble || enables.ubuntu )) {
+#              includes.push({
+#                'distro': 'ubuntu/noble',
+#                'flavor': 'ubuntu',
+#                'dist': 'noble',
+#                'version': '24.04',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'false'
+#              });
+#            }
+#            # ubuntu/jammy
+#            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
+#              includes.push({
+#                'distro': 'ubuntu/jammy',
+#                'flavor': 'ubuntu',
+#                'dist': 'jammy',
+#                'version': '22.04',
+#                ''docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'false'
+#              });
+#            }
+#            # ubuntu/focal
+#            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables.focal || enables.ubuntu )) {
+#              includes.push({
+#                'distro': 'ubuntu/focal',
+#                'flavor': 'ubuntu',
+#                'dist': 'focal',
+#                'version': '20.04',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'false'
+#              });
+#            }
+#            # spack/mpich
+#            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'] || enables.spack )) {
+#              includes.push({
+#                'distro': 'spack/mpich',
+#                'flavor': 'spack',
+#                'dist': 'mpich',
+#                'version': 'latest',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'true'
+#              });
+#            }
+#            # spack/openmpi
+#            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi']|| enables.spack )) {
+#              includes.push({
+#                'distro': 'spack/openmpi',
+#                'flavor': 'spack',
+#                'dist': 'openmpi',
+#                'version': 'latest',
+#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+#                'continue-on-error': 'true'
+#              });
+#            }
             console.log("includes:", includes);
             core.setOutput('matrix', { include: includes });
