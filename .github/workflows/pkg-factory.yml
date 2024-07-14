@@ -131,6 +131,8 @@ jobs:
               'docker': ${{ toJson(inputs.enable-docker) || 'all' }},
               'apptainer': ${{ toJson(inputs.enable-apptainer) || 'all' }}
             };
+            console.log("distros:", distros);
+
             function checkEnable(distro, dist) {
               const enabledMap = {
                 'debian': ['all', 'debian', 'bookworm', 'testing', 'sid'],
@@ -140,7 +142,7 @@ jobs:
                 'apptainer': ['all', 'apptainer']
               };
               console.log("checkEnable:", distro, dist, enabledMap[distro]);
-              return enabledMap[distro].includes(distros[distro]) || enabledMap[distro].includes(dist);
+              return enabledMap[distro].includes(distros[distro]) && enabledMap[distro].includes(dist);
             }
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
