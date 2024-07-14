@@ -142,8 +142,7 @@ jobs:
                 'apptainer': ['all', 'apptainer']
               };
               console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist),distros[distro] );
-              console.log("checkEnable:",( distros[distro] === 'all' || distros[distro] === distro ));
-              console.log("checkEnable:",enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist
+              console.log("checkEnable:",( distros[distro] === 'all' || distros[distro] === distro || enabledMap[distro].includes(distros[distro])  ));
 
               return ( distros[distro] === 'all' || distros[distro] === distro  || enabledMap[distro].includes(distros[distro]) ) && enabledMap[distro].includes(dist);
             }
