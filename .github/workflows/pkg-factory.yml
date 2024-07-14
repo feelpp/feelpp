@@ -157,9 +157,9 @@ jobs:
               return acc;
             }, {});
 
-            console.log("debian bookworm:",enables.bookworm, enables.debian, skips.all, skips.debian, skips.bookworm);
+            console.log("debian bookworm:",enables['debian-bookworm'], skips.all, skips.debian, skips.bookworm);
             const includes = [];
-            if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
+            if ((!skips.all && !skips.debian && !skips.bookworm) || enables['debian-bookworm']) {
               
               includes.push({
                 'distro': 'debian/bookworm',
