@@ -155,22 +155,6 @@ jobs:
               return acc;
             }, {});
 
-            const enables2 = ['bookworm', 'testing', 'sid', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-              console.log("enable:", item, ${{ toJson(github.event.head_commit.message || '') }});
-              console.log("enable debian:", checkDebian(item));
-              console.log("enable ubuntu:", checkUbuntu(item));
-              console.log("enable spack:", checkSpack(item));
-              console.log("enable docker:", checkDocker(item));
-              console.log("enable apptainer:", checkApptainer(item));
-              console.log("item", item, !item.includes('none') );
-
-              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) ||
-                      checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item) ;
-
-              console.log("enables acc[item]:", item, acc[item]);
-              return acc;
-            }, {});
-
 
             const includes = [];
             if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
