@@ -102,21 +102,6 @@ on:
 
 jobs:
 
-  version:
-    uses: ./.github/workflows/version.yml
-    with:
-        continue-on-error: "false"
-    secrets: inherit
-
-  version-print:
-    runs-on: ubuntu-latest
-    needs: version
-    steps:
-      - name: Print outputs from version workflow
-        run: |
-          echo "Feel++ Main Version: ${{ needs.version.outputs.main_version }}"
-          echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
-          echo "Feel++ Version: ${{ needs.version.outputs.version }}"
   pkg-factory:
     name: packages
     runs-on: ubuntu-latest

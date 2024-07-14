@@ -78,22 +78,6 @@ on:
 
 jobs:
 
-  version:
-    uses: ./.github/workflows/version.yml
-    with:
-        continue-on-error: "false"
-    secrets: inherit
-
-  version-print:
-    runs-on: ubuntu-latest
-    needs: version
-    steps:
-      - name: Print outputs from version workflow
-        run: |
-          echo "Feel++ Main Version: ${{ needs.version.outputs.main_version }}"
-          echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
-          echo "Feel++ Version: ${{ needs.version.outputs.version }}"
-
   docker:
     if: ${{ !contains( inputs.skip, 'skip docker' ) && inputs.docker == 'true'}}
     needs: [version]
@@ -110,8 +94,8 @@ jobs:
               service: "feelpp",
               flavor: "${{ inputs.flavor }}",
               dist: "${{ inputs.dist }}",
-              version: "${{ needs.version.outputs.version }}",
-              tag: "v${{ needs.version.outputs.version }}-${{ inputs.dist }}",
+              version: "${{ inputs.version }}",
+              tag: "v${{ inputs.version }}-${{ inputs.dist }}",
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }
