@@ -127,7 +127,7 @@ jobs:
       id: pkg-factory
       with:
         script: |
-            console.log(${{ toJson(github.event.inputs) }});
+            console.log(${{ toJson(inputs) }});
             const debian = ${{ toJson(inputs.enable-debian) || 'all' }};
             const ubuntu = ${{ toJson(inputs.enable-ubuntu) || 'all' }};
             const spack = ${{ toJson(inputs.enable-spack) || 'all' }};
@@ -138,7 +138,7 @@ jobs:
             console.log( "enable-spack:", spack );
             console.log( "enable-docker:", docker );
             console.log( "enable-apptainer:", apptainer );
-            
+
             function checkDebian(dist) {
               const enabled = ['all', 'bookworm', 'testing', 'sid'];
               return ( enabled.includes(debian) || enabled.includes(dist) );
@@ -159,22 +159,22 @@ jobs:
               const enabled = ['all', 'apptainer'];
               return ( enabled.includes(apptainer) || enabled.includes(dist) );
             }
+
+
+            const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( inputs.skip || '' ) }}.includes(item);
+              return acc;
+            }, {});
+
+            const enables = ['debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item);
+
+              return acc;
+            }, {});
+
+
             const includes = [];
-            core.setOutput('matrix', { include: includes });            
-            
-#            const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-#              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( github.inputs.skip || '' ) }}.includes(item);
-#              return acc;
-#            }, {});
-#
-#            const enables = ['debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
-#              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item);
-#              
-#              return acc;
-#            }, {});
-
-
-            
+            core.setOutput('matrix', { include: includes });
 #            if ((!skips.all && !skips.debian && !skips.bookworm) || (enables.bookworm || enables.debian)) {
 #              includes.push({
 #                'distro': 'debian/bookworm',
