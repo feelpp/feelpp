@@ -109,7 +109,7 @@ jobs:
         run: |
           /usr/local/apptainer/bin/apptainer remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
       -
-        name: Get docker image ${{  }}
+        name: Get docker image ${{ env.docker }}
         run: |
           echo "Using docker image: ${{ env.docker }}"
           /usr/local/apptainer/bin/apptainer pull -F feelpp.sif docker://${{ env.docker }}
