@@ -24,6 +24,14 @@ on:
           - 'bookworm'
           - 'testing'
           - 'sid'
+        docker:
+          description: 'Build docker image'
+          required: false
+          default: "true"
+          type: choice
+          options:
+          - 'true'
+          - 'false'
         parallel:
           description: 'Number of parallel jobs'
           required: false
@@ -64,37 +72,23 @@ on:
 jobs:
 
   version:
-    if: ${{ !contains( inputs.skip, 'skip docker' ) }}
-    runs-on: self-docker
-    continue-on-error: ${{ inputs.continue-on-error ==  'true' }}
-    outputs:
-        version: ${{ steps.get_version.outputs.version }}
+    uses: ./.github/workflows/version.yml
+    with:
+        continue-on-error: "false"
+    secrets: inherit
+
+  version-print:
+    runs-on: ubuntu-latest
+    needs: version
     steps:
-    - uses: actions/checkout@v4
-      with:
-#        lfs: true
-        token: ${{ secrets.CR_PAT }}
-        submodules: recursive
-    - name: Get version
-      id: get_version
-      run: |
-            cmake --preset feelpp
-            cmake --build --preset feelpp -t dist
-            COMPONENT=feelpp
-            main_version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g")
-            extra_version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g")
-            if [ -z $extra_version ]; then
-                version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g" )
-            else
-                version=$(echo build/$COMPONENT/feelpp-*.tar.gz | sed  "s/build\/feelpp\/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1-\2/g" )
-            fi
-            echo "main_version=$main_version"
-            echo "extra_version=$extra_version"
-            echo "version=$version"
-            echo "version=$version" >> $GITHUB_OUTPUT
+      - name: Print outputs from version workflow
+        run: |
+          echo "Feel++ Main Version: ${{ needs.version.outputs.main_version }}"
+          echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
+          echo "Feel++ Version: ${{ needs.version.outputs.version }}"
 
   docker:
-    if: ${{ !contains( inputs.skip, 'skip docker' ) }}
+    if: ${{ !contains( inputs.skip, 'skip docker' ) || inputs.docker == 'true'}}
     needs: [version]
     runs-on: self-docker
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
