@@ -162,12 +162,17 @@ jobs:
               console.log("enable spack:", checkSpack(item));
               console.log("enable docker:", checkDocker(item));
               console.log("enable apptainer:", checkApptainer(item));
+              console.log("item", item, !item.includes('none') );
+
+              
               
               
               acc[item] = !item.includes('none') && 
                     ( ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || 
                       checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item) );
 
+              console.log("enables acc[item]:", item, acc[item]);
+              
               return acc;
             }, {});
 
