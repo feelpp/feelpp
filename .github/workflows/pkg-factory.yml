@@ -125,27 +125,27 @@ jobs:
             console.log( "enable-apptainer:", apptainer );
 
             function checkDebian(dist) {
-              const enabled = ['all', 'bookworm', 'testing', 'sid'];
+              const enabled = ['all', 'debian', 'bookworm', 'testing', 'sid'];
               console.log("checkDebian:", enabled, debian, dist);
               console.log("enabled.includes(debian):", enabled.includes(debian));
               console.log("debian.includes('none'):", debian.includes('none'));
-              return ( enabled.includes(debian) ) && !debian.includes('none');
+              return ( enabled.includes(debian) ) && enabled.includes(dist);
             }
             function checkUbuntu(dist) {
-              const enabled = ['all', 'noble', 'jammy', 'focal'];
-              return ( enabled.includes(ubuntu) ) && !ubuntu.includes('none');
+              const enabled = ['all', 'ubuntu', 'noble', 'jammy', 'focal'];
+              return ( enabled.includes(ubuntu) ) && enabled.includes(dist);
             }
             function checkSpack(dist) {
-              const enabled = ['all', 'spack-mpich', 'spack-openmpi'];
-              return ( enabled.includes(spack) ) && !spack.includes('none');
+              const enabled = ['all', 'spack', 'spack-mpich', 'spack-openmpi'];
+              return ( enabled.includes(spack) ) && enables.includes(dist);
             }
             function checkDocker(dist) {
               const enabled = ['all', 'docker'];
-              return ( enabled.includes(docker) ) && !docker.includes('none');
+              return ( enabled.includes(docker) ) && enabled.includes(dist);
             }
             function checkApptainer(dist) {
               const enabled = ['all', 'apptainer'];
-              return ( enabled.includes(apptainer) ) && !apptainer.includes('none');
+              return ( enabled.includes(apptainer) ) && enabled.includes(dist);
             }
 
 
@@ -164,15 +164,10 @@ jobs:
               console.log("enable apptainer:", checkApptainer(item));
               console.log("item", item, !item.includes('none') );
 
-              
-              
-              
-              acc[item] = !item.includes('none') && 
-                    ( ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) || 
-                      checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item) );
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`) ||
+                      checkDebian(item) || checkUbuntu(item) || checkSpack(item) || checkDocker(item) || checkApptainer(item) ;
 
               console.log("enables acc[item]:", item, acc[item]);
-              
               return acc;
             }, {});
 
