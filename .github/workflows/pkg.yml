@@ -30,8 +30,6 @@ on:
 
 jobs:
   pkg-factory:
-    name: Packaging Factory
-    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.pkg-factory.outputs.matrix }}
     uses: ./.github/workflows/pkg-factory.yml
