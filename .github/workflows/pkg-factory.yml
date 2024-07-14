@@ -127,7 +127,7 @@ jobs:
             const distros = {
               'debian': ${{ toJson(inputs.enable-debian) || 'all' }},
               'ubuntu': ${{ toJson(inputs.enable-ubuntu) || 'all' }},
-              'spack': ${{ toJson(inputs.enable-spack) || 'all' }},
+              'spack': ${{ toJson(inputs.enable-spack) || 'none' }},
               'docker': ${{ toJson(inputs.enable-docker) || 'all' }},
               'apptainer': ${{ toJson(inputs.enable-apptainer) || 'all' }}
             };
@@ -137,7 +137,7 @@ jobs:
               const enabledMap = {
                 'debian': ['all', 'debian', 'bookworm', 'testing', 'sid'],
                 'ubuntu': ['all', 'ubuntu', 'noble', 'jammy', 'focal'],
-                'spack': ['all', 'spack', 'spack-mpich', 'spack-openmpi'],
+                'spack': ['all', 'spack', 'mpich', 'openmpi'],
                 'docker': ['all', 'docker'],
                 'apptainer': ['all', 'apptainer']
               };
