@@ -124,34 +124,6 @@ jobs:
             console.log( "enable-docker:", docker );
             console.log( "enable-apptainer:", apptainer );
 
-            function checkDebian(dist) {
-              const enabled = ['all', 'debian', 'bookworm', 'testing', 'sid'];
-              console.log("checkDebian:", enabled, debian, dist);
-              console.log("enabled.includes(debian):", enabled.includes(debian));
-              console.log("debian.includes(dist):", debian.includes(dist));
-              console.log("debian.includes('all'):", debian.includes('all'));
-              console.log("debian.includes('debian'):", debian.includes('debian'));
-                
-              return  enabled.includes(debian) &&  enabled.includes(dist)  && (debian.includes(dist) || debian.includes('all') || debian.includes('debian'));
-            
-            
-            }
-            function checkUbuntu(dist) {
-              const enabled = ['all', 'ubuntu', 'noble', 'jammy', 'focal'];
-              return enabled.includes(ubuntu)  &&  enabled.includes(dist) && (ubuntu.includes(dist) || ubuntu.includes('all') || ubuntu.includes('ubuntu'));
-            }
-            function checkSpack(dist) {
-              const enabled = ['all', 'spack', 'spack-mpich', 'spack-openmpi'];
-              return enabled.includes(spack)  &&  enabled.includes(dist) && (spack.includes(dist) || spack.includes('all') || spack.includes('spack'));
-            }
-            function checkDocker(dist) {
-              const enabled = ['all', 'docker'];
-              retur  enabled.includes(docker) && enabled.includes(dist) && (docker.includes(dist) || docker.includes('all') || docker.includes('docker'));
-            }
-            function checkApptainer(dist) {
-              const enabled = ['all', 'apptainer'];
-              return enabled.includes(apptainer)  && enabled.includes(dist) && (apptainer.includes(dist) || apptainer.includes('all') || apptainer.includes('apptainer'));
-            }
             function checkEnable(distro, dist) {
               const enabledMap = {
                 'debian': ['all', 'debian', 'bookworm', 'testing', 'sid'],
@@ -163,8 +135,6 @@ jobs:
               console.log("checkEnable:", distro, dist, enabledMap[distro]);
               return enabledMap[distro].includes(distros[distro]) || enabledMap[distro].includes(dist);
             }
-
-
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               console.log("skip:", item, ${{ toJson(github.event.head_commit.message || '') }}, ${{ toJson( inputs.skip || '' ) }});
