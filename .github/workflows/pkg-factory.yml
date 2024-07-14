@@ -53,16 +53,10 @@ on:
             options:
             - 'all'
             - 'apptainer'
-        
         parallel:
           description: 'Number of parallel jobs'
           required: false
           default: "20"
-          type: string
-        skip:
-          description: 'Skip build'
-          required: false
-          default: ""
           type: string
     workflow_call:
         outputs:
