@@ -34,6 +34,14 @@ for arg in "$@"; do
             action="version"
             shift # Remove --version or -v from processing
             ;;
+        --version:main|-vm)
+            action="version:main"
+            shift # Remove --version:main or -vm from processing
+            ;;
+        --version:extra|-ve)
+            action="version:extra"
+            shift # Remove --version:extra or -ve from processing
+            ;;
         --license)
             action="license"
             shift # Remove --license from processing
@@ -48,7 +56,8 @@ for arg in "$@"; do
     esac
 done
 
-if test $action == "version"; then
+# add function to get version
+get_version() {
     cat > toto.cmake << EOF
 # Save the original message function as _original_message
 macro(_original_message)
@@ -71,11 +80,30 @@ include(${PARENT_DIR}/feelpp.version.cmake)
 #message(STATUS "Feel++ version: \${FEELPP_VERSION}")
 message("\${FEELPP_VERSION_STRING}")
 EOF
+local version=$(cmake -P toto.cmake 2>&1)
+echo $version
+rm -f toto.cmake
+}
 
-    version=$(cmake -P toto.cmake 2>&1)
-    rm -f toto.cmake
+
+if test $action == "version"; then
+    version=$(get_version)
     echo "$version"
 fi
+
+if test $action == "version:main"; then
+    version=$(get_version)
+    main_version=$(echo $version | sed  "s/\([0-9.]*\)-*\([a-z.0-9]*\)/\1/g")
+    echo "$main_version"
+fi
+
+if test $action == "version:extra"; then
+    version=$(get_version)
+    extra_version=$(echo $version | sed "s/\([0-9.]*\)-*\([a-z.0-9]*\)/\2/g")
+    echo "$extra_version"
+fi
+
+
 
 if test $action == "license"; then
     cat "${PARENT_DIR}/LICENSE"
@@ -84,7 +112,9 @@ fi
 if test $action == "help"; then
     printf "Usage: %s [options]\n" "$0"
     printf "Options:\n"
-    printf "  --version, -v  Show version information\n"
-    printf "  --license      Show license information\n"
-    printf "  --help, -h     Show this help message\n"
+    printf "  --version, -v        Show version information\n"
+    printf "  --version:main, -vm  Show main version information\n"
+    printf "  --version:extra,-ve  Show extra version information\n"
+    printf "  --license            Show license information\n"
+    printf "  --help, -h           Show this help message\n"
 fi
