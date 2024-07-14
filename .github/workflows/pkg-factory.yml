@@ -210,20 +210,19 @@ jobs:
                 'continue-on-error': 'true'
               });
             }
+            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables.noble || enables.ubuntu )) {
+              includes.push({
+                'distro': 'ubuntu/noble',
+                'flavor': 'ubuntu',
+                'dist': 'noble',
+                'version': '24.04',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
             console.log("includes:", includes);
             core.setOutput('matrix', { include: includes });
-#            # ubuntu/noble
-#            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables.noble || enables.ubuntu )) {
-#              includes.push({
-#                'distro': 'ubuntu/noble',
-#                'flavor': 'ubuntu',
-#                'dist': 'noble',
-#                'version': '24.04',
-#                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-#                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-#                'continue-on-error': 'false'
-#              });
-#            }
 #            # ubuntu/jammy
 #            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables.jammy || enables.ubuntu )) {
 #              includes.push({
