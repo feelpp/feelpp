@@ -128,11 +128,11 @@ jobs:
       with:
         script: |
             console.log(${{ toJson(github.event.inputs) }});
-            const debian = ${{ toJson(github.event.inputs.enable-debian) || 'all' }};
-            const ubuntu = ${{ toJson(github.event.inputs.enable-ubuntu) || 'all' }};
-            const spack = ${{ toJson(github.event.inputs.enable-spack) || 'all' }};
-            const docker = ${{ toJson(github.event.inputs.enable-docker) || 'all' }};
-            const apptainer = ${{ toJson(github.event.inputs.enable-apptainer) || 'all' }};
+            const debian = ${{ github.event.inputs.enable-debian || 'all' }};
+            const ubuntu = ${{ github.event.inputs.enable-ubuntu || 'all' }};
+            const spack = ${{ github.event.inputs.enable-spack || 'all' }};
+            const docker = ${{ github.event.inputs.enable-docker || 'all' }};
+            const apptainer = ${{ github.event.inputs.enable-apptainer || 'all' }};
             console.log( "enable-debian:", debian );
             console.log( "enable-ubuntu:", ubuntu );
             console.log( "enable-spack:", spack );
