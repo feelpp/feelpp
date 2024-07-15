@@ -27,10 +27,11 @@ on:
         apptainer:
           description: 'Build apptainer image'
           required: false
-          default: "true"
+          default: '1.3.3'
           type: choice
           options:
-          - 'true'
+          - '1.2.2'
+          - '1.3.3'
           - 'false'
         docker:
           description: 'docker image'
@@ -102,6 +103,7 @@ jobs:
     secrets: inherit
 
   apptainer:
+    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false'}}
     runs-on: self-apptainer
     needs: version
     name: Build and Push apptainer image
@@ -110,7 +112,7 @@ jobs:
         version: ${{ inputs.version || needs.version.outputs.version }}
         docker: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}"
         sif: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}-sif"
-        apptainer: /opt/apptainer/v1.3.3/apptainer/bin/apptainer
+        apptainer: /opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer
     steps:
       -
         name: Login to GitHub Container Registry
