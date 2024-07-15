@@ -1,0 +1,129 @@
+name: Feelpp PKG Apptainer
+run-name: "PKG Apptainer Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
+on:
+    workflow_dispatch:
+      inputs:
+        flavor:
+          description: 'Flavor to build'
+          required: true
+          default: 'ubuntu'
+          type: choice
+          options:
+          - 'ubuntu'
+          - 'debian'
+        dist:
+          description: 'Distribution to build'
+          required: true
+          default: 'jammy'
+          type: choice
+          options:
+          - 'jammy'
+          - 'focal'
+          - 'noble'
+          - 'bullseye'
+          - 'bookworm'
+          - 'testing'
+          - 'sid'
+        apptainer:
+          description: 'Build apptainer image'
+          required: false
+          default: "true"
+          type: choice
+          options:
+          - 'true'
+          - 'false'
+        docker:
+          description: 'docker image'
+          required: true
+          type: string
+          default: 'ghcr.io/feelpp/feelpp'
+        docker-dev:
+          description: 'docker dev image'
+          required: true
+          type: string
+          default: 'ghcr.io/feelpp/feelpp-dev'
+        parallel:
+          description: 'Number of parallel jobs'
+          required: false
+          default: "20"
+          type: string
+        skip:
+          description: 'Skip build'
+          required: false
+          default: ""
+          type: string
+    workflow_call:
+        inputs:
+            flavor:
+                description: 'Flavor of the distribution'
+                required: true
+                type: string
+                default: "ubuntu"
+            dist:
+                description: 'Name of the distribution'
+                required: true
+                type: string
+                default: "jammy"
+            version:
+                description: 'Version of Feel++ packages'
+                required: true
+                type: string
+            parallel:
+                description: 'Number of parallel jobs'
+                required: false
+                type: string
+                default: "20"
+            docker:
+                description: 'docker image'
+                required: false
+                type: string
+                default: 'ghcr.io/feelpp/feelpp'
+            docker-dev:
+                description: 'docker dev image'
+                required: false
+                type: string
+                default: 'ghcr.io/feelpp/feelpp-dev'
+            skip:
+                description: 'Skip apptainer build'
+                required: false
+                type: string
+                default: ""
+            continue-on-error:
+                description: 'Continue on error'
+                required: false
+                type: string
+                default: "false"
+
+jobs:
+
+  apptainer:
+    runs-on: self-apptainer
+    name: Build and Push apptainer image
+    continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+    env:
+        docker: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}"
+        sif: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}-sif"
+    steps:
+      -
+        name: Login to GitHub Container Registry
+        run: |
+          /usr/local/apptainer/bin/apptainer remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
+      -
+        name: Get docker image ${{ env.docker }}
+        run: |
+          echo "Using docker image: ${{ env.docker }}"
+          /usr/local/apptainer/bin/apptainer pull -F feelpp.sif docker://${{ env.docker }}
+          ls -lrt
+      -
+        name: Push apptainer image ${{ env.sif }} to ghcr.io
+        run: |
+          echo "Using sif: ${{ env.sif }}"
+          /usr/local/apptainer/bin/apptainer push ktirio-urban-building.sif oras://${{ env.sif }}
+#      -
+#        name: Trigger feelpp:${{ needs.docker.outputs.tag }}
+#        uses: peter-evans/repository-dispatch@v3
+#        with:
+#          token: ${{ secrets.CR_PAT }}
+#          repository: feelpp/feelpp
+#          event-type: feelpp-apptainer-updated
+#          client-payload: '{"sif":"${{ env.sif }}"}'

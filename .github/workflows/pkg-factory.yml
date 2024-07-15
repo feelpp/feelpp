@@ -1,0 +1,263 @@
+name: Feelpp PKG Factory
+run-name: "PKG Factory Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
+on:
+    workflow_dispatch:
+      inputs:
+        skip:
+          description: 'Skip components'
+          required: false
+          default: ""
+          type: string
+        enable-debian:
+            description: 'Enable debian distros'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'bookworm'
+            - 'testing'
+            - 'sid'
+        enable-ubuntu:
+            description: 'Enable ubuntu distros'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'noble'
+            - 'jammy'
+            - 'focal'
+        enable-spack:
+            description: 'Enable spack distros'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'spack-mpich'
+            - 'spack-openmpi'
+        enable-docker:
+            description: 'Enable docker container'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'docker'
+        enable-apptainer:
+            description: 'Enable apptainer container'
+            required: false
+            default: 'all'
+            type: choice
+            options:
+            - 'all'
+            - 'apptainer'
+        parallel:
+          description: 'Number of parallel jobs'
+          required: false
+          default: "20"
+          type: string
+    workflow_call:
+        outputs:
+            matrix:
+                description: 'Matrix of packages to build'
+                value: ${{ jobs.pkg-factory.outputs.matrix }}
+        inputs:
+            parallel:
+                description: 'Number of parallel jobs'
+                required: false
+                type: string
+                default: "20"
+            skip:
+                description: 'Skip apptainer build'
+                required: false
+                type: string
+                default: ""
+            enable-debian:
+                description: 'Enable debian distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-ubuntu:
+                description: 'Enable ubuntu distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-spack:
+                description: 'Enable spack distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-docker:
+                description: 'Enable docker distros'
+                required: false
+                default: 'all'
+                type: string
+            enable-apptainer:
+                description: 'Enable apptainer distros'
+                required: false
+                default: 'all'
+                type: string
+
+jobs:
+
+  pkg-factory:
+    name: packages
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.pkg-factory.outputs.matrix }}
+    steps:
+    - uses: actions/github-script@v7
+      id: pkg-factory
+      with:
+        script: |
+            console.log(${{ toJson(inputs) }});
+            const debian = ${{ toJson(inputs.enable-debian) || 'all' }};
+            const ubuntu = ${{ toJson(inputs.enable-ubuntu) || 'all' }};
+            const spack = ${{ toJson(inputs.enable-spack) || 'all' }};
+            const docker = ${{ toJson(inputs.enable-docker) || 'all' }};
+            const apptainer = ${{ toJson(inputs.enable-apptainer) || 'all' }};
+            console.log( "enable-debian:", debian );
+            console.log( "enable-ubuntu:", ubuntu );
+            console.log( "enable-spack:", spack );
+            console.log( "enable-docker:", docker );
+            console.log( "enable-apptainer:", apptainer );
+
+            const distros = {
+              'debian': ${{ toJson(inputs.enable-debian) || 'all' }},
+              'ubuntu': ${{ toJson(inputs.enable-ubuntu) || 'all' }},
+              'spack': ${{ toJson(inputs.enable-spack) || 'none' }},
+              'docker': ${{ toJson(inputs.enable-docker) || 'all' }},
+              'apptainer': ${{ toJson(inputs.enable-apptainer) || 'all' }}
+            };
+            console.log("distros:", distros);
+
+            function checkEnable(distro, dist) {
+              const enabledMap = {
+                'debian': ['all', 'debian', 'bookworm', 'testing', 'sid'],
+                'ubuntu': ['all', 'ubuntu', 'noble', 'jammy', 'focal'],
+                'spack': ['all', 'spack', 'mpich', 'openmpi'],
+                'docker': ['all', 'docker'],
+                'apptainer': ['all', 'apptainer']
+              };
+              console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist),distros[distro] );
+              console.log("checkEnable:",( distros[distro] === 'all' || distros[distro] === distro || enabledMap[distro].includes(distros[distro])  ));
+
+              return ( distros[distro] === 'all' || distros[distro] === distro ) || ( enabledMap[distro].includes(distros[distro])  && distros[distro] === dist );
+            }
+
+            const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+              console.log("skip:", item, ${{ toJson(github.event.head_commit.message || '') }}, ${{ toJson( inputs.skip || '' ) }});
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( inputs.skip || '' ) }}.includes(item);
+              return acc;
+            }, {});
+
+            const enables = ['debian-bookworm', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+              acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
+                          checkEnable(item.split('-')[0], item.split('-')[1]);
+              return acc;
+            }, {});
+
+            console.log("debian bookworm:",enables['debian-bookworm'], enables['debian-all'], skips.all, skips.debian, skips.bookworm);
+            const includes = [];
+            if ((!skips.all && !skips.debian && !skips.bookworm) || ( enables['debian-bookworm']  ) ) {
+              
+              includes.push({
+                'distro': 'debian/bookworm',
+                'flavor': 'debian',
+                'dist': 'bookworm',
+                'version': '12',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
+
+
+            console.log("debian testing:",enables['debian-testing'], enables['debian-all'], skips.all, skips.debian, skips.testing);
+            if ((!skips.all && !skips.debian && !skips.testing) || (enables['debian-testing']  )) {
+              includes.push({
+                'distro': 'debian/testing',
+                'flavor': 'debian',
+                'dist': 'testing',
+                'version': 'testing',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'true'
+              });
+            }
+            console.log("debian sid:",enables['debian-sid'], enables['debian-all'], skips.all, skips.debian, skips.sid);
+            if ((!skips.all && !skips.debian && !skips.sid) || (enables['debian-sid']  )) {
+              includes.push({
+                'distro': 'debian/sid',
+                'flavor': 'debian',
+                'dist': 'sid',
+                'version': 'unstable',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'true'
+              });
+            }
+            console.log("ubuntu noble:",enables['ubuntu-noble'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.noble);
+            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables['ubuntu-noble'] )) {
+              includes.push({
+                'distro': 'ubuntu/noble',
+                'flavor': 'ubuntu',
+                'dist': 'noble',
+                'version': '24.04',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
+            console.log("ubuntu jammy:",enables['ubuntu-jammy'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.jammy);
+            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables['ubuntu-jammy'])) {
+              includes.push({
+                'distro': 'ubuntu/jammy',
+                'flavor': 'ubuntu',
+                'dist': 'jammy',
+                'version': '22.04',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
+            console.log("ubuntu focal:",enables['ubuntu-focal'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.focal);
+            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables['ubuntu-focal'] )) {
+              includes.push({
+                'distro': 'ubuntu/focal',
+                'flavor': 'ubuntu',
+                'dist': 'focal',
+                'version': '20.04',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'false'
+              });
+            }
+            console.log("spack mpich:",enables['spack-mpich'], enables['spack-all'], skips.all, skips.spack, skips['spack-mpich']);
+            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'])) {
+              includes.push({
+                'distro': 'spack/mpich',
+                'flavor': 'spack',
+                'dist': 'mpich',
+                'version': 'latest',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'true'
+              });
+            }
+            console.log("spack openmpi:",enables['spack-openmpi'], enables['spack-all'], skips.all, skips.spack, skips['spack-openmpi']);
+            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi'] )) {
+              includes.push({
+                'distro': 'spack/openmpi',
+                'flavor': 'spack',
+                'dist': 'openmpi',
+                'version': 'latest',
+                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
+                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'continue-on-error': 'true'
+              });
+            }
+            console.log("includes:", includes);
+            core.setOutput('matrix', { include: includes });
