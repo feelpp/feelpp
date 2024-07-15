@@ -29,7 +29,7 @@ on:
         - 'mpich'
       version:
         description: 'Version of Feel++ packages'
-        required: true
+        required: false
         type: string
         default: ''
       docker:
