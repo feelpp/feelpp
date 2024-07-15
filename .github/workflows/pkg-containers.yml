@@ -83,6 +83,7 @@ jobs:
         uses: ./.github/workflows/pkg-docker.yml
         with:
           dist: ${{ inputs.dist }}
+          flavor: ${{ inputs.flavor }}
           parallel: ${{ inputs.parallel }}
           skip: ${{ inputs.skip }}
           version: ${{ inputs.version || needs.version.outputs.version }}
