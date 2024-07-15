@@ -95,14 +95,21 @@ on:
                 default: "false"
 
 jobs:
+  version:
+    uses: ./.github/workflows/version.yml
+    with:
+        continue-on-error: "false"
+    secrets: inherit
 
   apptainer:
     runs-on: self-apptainer
+    needs: version
     name: Build and Push apptainer image
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     env:
-        docker: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}"
-        sif: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}-sif"
+        version: ${{ inputs.version || needs.version.outputs.version }}
+        docker: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}"
+        sif: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}-sif"
         apptainer: /opt/apptainer/v1.3.3/apptainer/bin/apptainer
     steps:
       -
