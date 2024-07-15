@@ -34,12 +34,12 @@ on:
           - 'false'
         docker:
           description: 'docker image'
-          required: true
+          required: false
           type: string
           default: 'ghcr.io/feelpp/feelpp'
         docker-dev:
           description: 'docker dev image'
-          required: true
+          required: false
           type: string
           default: 'ghcr.io/feelpp/feelpp-dev'
         parallel:
@@ -103,22 +103,26 @@ jobs:
     env:
         docker: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}"
         sif: "${{ inputs.docker }}:v${{ inputs.version }}-${{ inputs.dist }}-sif"
+        apptainer: /opt/apptainer/v1.3.3/apptainer/bin/apptainer
     steps:
       -
         name: Login to GitHub Container Registry
         run: |
-          /usr/local/apptainer/bin/apptainer remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
+          ${{ env.apptainer }} remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
+
       -
         name: Get docker image ${{ env.docker }}
         run: |
           echo "Using docker image: ${{ env.docker }}"
-          /usr/local/apptainer/bin/apptainer pull -F feelpp.sif docker://${{ env.docker }}
+          ${{ env.apptainer }} pull -F feelpp.sif docker://${{ env.docker }}
+          ${{ env.apptainer }} inspect feelpp.sif
           ls -lrt
       -
         name: Push apptainer image ${{ env.sif }} to ghcr.io
         run: |
           echo "Using sif: ${{ env.sif }}"
-          /usr/local/apptainer/bin/apptainer push ktirio-urban-building.sif oras://${{ env.sif }}
+          ${{ env.apptainer }} push feelpp.sif oras://${{ env.sif }}
+
 #      -
 #        name: Trigger feelpp:${{ needs.docker.outputs.tag }}
 #        uses: peter-evans/repository-dispatch@v3
