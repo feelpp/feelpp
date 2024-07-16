@@ -1811,10 +1811,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     int cptRequest=0;
 
     // get size of data to transfer (first phase)
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -1824,14 +1826,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     cptRequest=0;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
 
-        int nRecvData = sizeRecv[neighborRank];
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -1866,7 +1868,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     cptRequest=0;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToReSend[neighborRank].size();
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -1876,13 +1879,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     cptRequest=0;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        int nSendData = dataToReSend[neighborRank].size();
+        std::size_t nSendData = dataToReSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToReSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, dataToReSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToReRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, dataToReRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);

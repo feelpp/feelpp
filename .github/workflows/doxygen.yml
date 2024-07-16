@@ -38,8 +38,8 @@ jobs:
     - name: Build Doxygen
       run: cmake --build --preset doxygen
     - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@v4.4.1
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages # The branch the action should deploy to.
-          FOLDER: build/doxygen/doc/api/html # The folder the action should deploy.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages # The branch the action should deploy to.
+          folder: build/doxygen/doc/api/html # The folder the action should deploy.
