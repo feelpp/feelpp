@@ -1,6 +1,5 @@
 #include "qs_elasticity_contact_static.hpp"
 #include "qs_elasticity_contact_dynamic.hpp"
-#include "qs_contact_lagrange.hpp"
 #include "qs_elasticity_rigid.hpp"
 
 
@@ -37,6 +36,7 @@ int main(int argc, char** argv)
                 ContactStatic<2, 1> ContactStatic(specs);
                 ContactStatic.run();
             }
+            
             else 
             {
                 if (orderGeo == 1)
@@ -53,6 +53,7 @@ int main(int argc, char** argv)
                 }
             }
         }
+        /*
         else if ( dimension == 2 && order == 2)
         {
             if (sta)
@@ -108,6 +109,7 @@ int main(int argc, char** argv)
                 ContactDynamic.run();
             }
         }
+        */
         else
             throw std::runtime_error(fmt::format("Invalid dimension {} specified in the input file", dimension));
     }

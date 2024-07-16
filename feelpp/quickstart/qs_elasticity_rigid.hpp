@@ -71,7 +71,7 @@ public:
     // Methods
     void initialize();
     void initializeContact();
-    typename MeshTraits<Mesh<Simplex<Dim>>>::faces_reference_wrapper_ptrtype getContactRegion(elementv_t const& u);
+    Range<mesh_t, MESH_FACES> getContactRegion(elementv_t const& u);
     void run();
     void timeLoop();
     void exportResults(double t);
@@ -93,7 +93,7 @@ private:
     element_t contactDisplacement_;
     element_t g_;
     int nbrFaces_;
-    typename MeshTraits<Mesh<Simplex<Dim>>>::faces_reference_wrapper_ptrtype myelts_;
+    Range<mesh_t, MESH_FACES> myelts_;
 
     ts_ptrtype ts_e_;
     tsr_ptrtype ts_r_;
@@ -260,16 +260,16 @@ ElasticRigid<Dim, Order>::initializeContact()
 
 
 template <int Dim, int Order>
-typename MeshTraits<Mesh<Simplex<Dim>>>::faces_reference_wrapper_ptrtype 
+Range<typename ElasticRigid<Dim, Order>::mesh_t, MESH_FACES>
 ElasticRigid<Dim, Order>::getContactRegion(elementv_t const& u)
 {   
-    typename MeshTraits<Mesh<Simplex<Dim>>>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<Mesh<Simplex<Dim>>>::faces_reference_wrapper_type );
+    Range<mesh_t,MESH_FACES> myelts(mesh_ );
 
     auto defv = sym(gradv(u));
     auto Id = eye<Dim,Dim>();
     auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
     
-    contactRegion_ = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));    
+    contactRegion_.on( _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));    
 
     nbrFaces_ = 0;
     auto const& trialDofIdToContainerId =  form2(_test=Xh_, _trial=Xh_).dofIdToContainerIdTest();
@@ -292,7 +292,7 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t const& u)
                     if (contactDof == 2)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
                 else if (Dim == 3)
@@ -300,7 +300,7 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t const& u)
                     if (contactDof == 3)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }         
             }
@@ -311,7 +311,7 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t const& u)
                     if (contactDof == 3)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
                 else if (Dim == 3)
@@ -319,13 +319,13 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t const& u)
                     if (contactDof == 4)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 } 
             }
         }
     }
-    myelts->shrink_to_fit();   
+    myelts.shrink_to_fit();   
   
     return myelts;
 }
@@ -441,6 +441,45 @@ void ElasticRigid<Dim, Order>::timeLoop()
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_e_->time(),ts_e_->timeFinal()) << std::endl;
 
         
+
+        std::cout << "***** Compute new contact region *****" << std::endl;
+
+        myelts_ = getContactRegion(u_);
+        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+        
+        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
+        auto XhCFaces = Pdh<0>(face_mesh);
+        auto contactFaces = XhCFaces->element();
+        contactFaces.on( _range=myelts_, _expr = cst(1.));
+
+        std::cout << "***** Solve rigid *****" << std::endl;
+
+        lt_r_ = l_r_;
+        at_r_ = a_r_;
+
+        for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
+            lt_r_ +=  integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_r_->polyDeriv()),id( u_r_ ) ));
+
+        
+        if (nbrFaces_ > 0)
+        {
+            auto epsv = sym(gradv(u_));
+            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+            //std::cout << " Contact pressure : " << sigmav*vec(cst(0.),cst(-1.)) << std::endl;
+    
+            lt_r_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), -trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
+        }
+
+        at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
+        ts_r_->updateFromDisp(u_r_);
+        
+        // Reset
+        at_r_.zero();
+        lt_r_.zero();
+
+        ts_r_->next(u_r_);
+
+
         std::cout << "***** Solve elasticity *****" << std::endl;
         
         lt_ = l_;
@@ -449,25 +488,15 @@ void ElasticRigid<Dim, Order>::timeLoop()
         for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
             lt_ +=  integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
         
-        // Detect contact
-
-        myelts_ = getContactRegion(u_);
-        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
-        auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myelts_->begin(), myelts_->end(), myelts_ );
-        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
-        auto XhCFaces = Pdh<0>(face_mesh);
-        auto contactFaces = XhCFaces->element();
-        contactFaces = project(_space=XhCFaces, _range=myfaces, _expr = cst(1.));
-        
         if (nbrFaces_ > 0)
         {
             auto epsv = sym(gradv(u_));
             auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
             
-            at_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_),trans(expr<Dim,1>(direction_))*id(u_)) * idv(contactFaces));
-            lt_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u_)) * idv(contactFaces));     
+            at_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
+            lt_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));     
             
-            lt_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
+            //lt_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
 
         }
         
@@ -479,70 +508,14 @@ void ElasticRigid<Dim, Order>::timeLoop()
         at_.zero();
         lt_.zero();
 
-        std::cout << "***** Solve rigid *****" << std::endl;
-
-        lt_r_ = l_r_;
-        at_r_ = a_r_;
-
-        for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
-            lt_r_ +=  integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_r_->polyDeriv()),id( u_r_ ) ));
-
-        // Detect contact
-        if (nbrFaces_ > 0)
-        {
-            auto epsv = sym(gradv(u_));
-            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-            std::cout << "Add contact force to rigid equation" << std::endl;
-            
-            lt_r_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), -trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
-        }
-
-        at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
-        ts_r_->updateFromDisp(u_r_);
-        
-        // Reset
-        at_r_.zero();
-        lt_r_.zero();
-
         std::cout << "***** Solve displacement *****" << std::endl;
         u_.on(_range=elements(mesh_),_expr=idv(u_e_) + idv(u_r_));
 
         // Export
         this->exportResults(ts_e_->time());
 
-        // next pointer
-        ts_r_->next(u_r_);
-
     }    
 
-    /*
-    for ( ts_r_->start(); ts_r_->isFinished()==false; ts_r_->next(u_r_) )
-    {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_r_->time(),ts_r_->timeFinal()) << std::endl;
-
-        lt_r_ = l_r_;
-        at_r_ = a_r_;
-
-        for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
-            lt_r_ +=  integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_r_->polyDeriv()),id( u_r_ ) ));
-
-
-        std::cout << "***** Solve rigid *****" << std::endl;
-        at_r_.solve( _rhs = lt_r_, _solution = u_r_ );
-
-        
-        // Update displacements
-        ts_r_->updateFromDisp(u_r_);
-        
-        // Reset
-        at_r_.zero();
-        lt_r_.zero();
-
-        L_ur.push_back(u_r_);
-
-    }  
-    */
 }
 
 // Run method 

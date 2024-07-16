@@ -24,22 +24,6 @@
 namespace Feel
 {
 
-inline Feel::po::options_description
-makeOptions()
-{
-    Feel::po::options_description options( "elasticity contact options" );
-    options.add_options()
-
-        // mesh parameters
-        ( "specs", Feel::po::value<std::string>(),
-          "json spec file for rht" )
-
-        ( "steady", Feel::po::value<bool>()->default_value( 1 ),
-          "if 1: steady else unsteady" );
-
-    return options.add( Feel::feel_options() );
-}
-
 template<typename T>
 T get_value(const nl::json& specs, const std::string& path, const T& default_value)
 {
@@ -89,11 +73,11 @@ public:
     void processLoading(form1_type& l);
     void processMaterials(form2_type &a);
     void processBoundaryConditions(form1_type& l, form2_type& a);
-    void processContactPenalty(form1_type& l, form2_type& a, typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype elts, elementv_t const& u);
-    void processContactNitsche(form1_type& l, form2_type& a, typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype elts, elementv_t const& u);
-    void processContactPersistency(form1_type& l, form2_type& a, typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype elts, elementv_t const& u);
+    void processContactPenalty(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
+    void processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
+    void processContactPersistency(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
     void run();
-    typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype getContactRegion(elementv_t const& u);
+    Range<mesh_t, MESH_FACES> getContactRegion( elementv_t const& u );
     void timeLoop();
     void timeLoopFixedPoint();
     void exportResults(double t);
@@ -115,7 +99,7 @@ private:
     element_t contactDisplacement_;
     element_t g_;
     int nbrFaces_;
-    typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype myelts_;
+    Range<mesh_t, MESH_FACES> myelts_;
 
     ts_ptrtype ts_;
     exporter_ptrtype e_;
@@ -309,15 +293,14 @@ void ContactDynamic<Dim, Order, OrderGeo>::processMaterials( form2_type &a )
 
 // Process contact conditions Penalty method
 template <int Dim, int Order, int OrderGeo>
-void ContactDynamic<Dim, Order, OrderGeo>::processContactPenalty(form1_type& l, form2_type& a, typename MeshTraits<Mesh<Simplex<Dim,OrderGeo>>>::faces_reference_wrapper_ptrtype elts , elementv_t const& u )
+void ContactDynamic<Dim, Order, OrderGeo>::processContactPenalty(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts , elementv_t const& u )
 {    
     if (withMarker_ == 0)
     {
-        auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), elts->begin(), elts->end(), elts );
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
-        contactFaces = project(_space=XhCFaces, _range=myfaces, _expr = cst(1.));
+        contactFaces.on( _range=elts, _expr = cst(1.));
 
         //a += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces),_quad=quad_,_quad1=quad1_);
         //l += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces),_quad=quad_,_quad1=quad1_);     
@@ -338,15 +321,14 @@ void ContactDynamic<Dim, Order, OrderGeo>::processContactPenalty(form1_type& l, 
 
 // Process persistency conditions
 template <int Dim, int Order, int OrderGeo>
-void ContactDynamic<Dim, Order, OrderGeo>::processContactPersistency(form1_type& l, form2_type& a, typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype elts, elementv_t const& u)
+void ContactDynamic<Dim, Order, OrderGeo>::processContactPersistency(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts, elementv_t const& u)
 {
     if (withMarker_ == 0)
     {
-        auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), elts->begin(), elts->end(), elts );
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
-        contactFaces = project(_space=XhCFaces, _range=myfaces, _expr = cst(1.));
+        contactFaces.on( _range=elts, _expr = cst(1.));
 
         a += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*(ts_->polyFirstDerivCoefficient()*idt(u_)-idv(ts_->polyFirstDeriv())),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
     
@@ -360,15 +342,14 @@ void ContactDynamic<Dim, Order, OrderGeo>::processContactPersistency(form1_type&
 
 // Process contact conditions Nitsche method
 template <int Dim, int Order, int OrderGeo>
-void ContactDynamic<Dim, Order, OrderGeo>::processContactNitsche(form1_type& l, form2_type& a, typename MeshTraits<Mesh<Simplex<Dim,OrderGeo>>>::faces_reference_wrapper_ptrtype elts , elementv_t const& u )
+void ContactDynamic<Dim, Order, OrderGeo>::processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts , elementv_t const& u )
 {    
     if (withMarker_ == 0)
     {
-        auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), elts->begin(), elts->end(), elts );
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
-        contactFaces = project(_space=XhCFaces, _range=myfaces, _expr = cst(1.));
+        contactFaces.on( _range=elts, _expr = cst(1.));
 
         auto const Id = eye<Dim,Dim>();
         auto deft = sym(gradt(u));
@@ -475,7 +456,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoop()
             std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         }
         else 
-            contactRegion_ = project(_space=Xh_, _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
+            contactRegion_.on( _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
         
         if (method_.compare("penalty") == 0)
             processContactPenalty(lt_, at_, myelts_, u_);
@@ -545,8 +526,11 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
         for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
             lt_ +=  integrate( _range=markedelements( mesh_, material.get<std::string>() ), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( u_ ) ));
         
-        auto u_tmp =  project(_space=Xhv_, _range=elements(mesh_), _expr = idv(u_));
-        auto u_tmpNew = project(_space=Xhv_, _range=elements(mesh_), _expr = idv(u_));
+        auto u_tmp =  Xhv_->element();
+        u_tmp.on( _range=elements(mesh_), _expr = idv(u_));
+
+        auto u_tmpNew = Xhv_->element();
+        u_tmpNew.on( _range=elements(mesh_), _expr = idv(u_)); 
 
         int fixedPointIteration = 0;
         double fixedPointerror = 0.;
@@ -557,7 +541,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
             lt_tmp = lt_;
             at_tmp = at_;
 
-            u_tmp = project(_space=Xhv_, _range=elements(mesh_), _expr = idv(u_tmpNew)); ;
+            u_tmp.on( _range=elements(mesh_), _expr = idv(u_tmpNew)); ;
 
             std::cout << "***** Process contact *****" << std::endl;
             if (withMarker_ == 0)
@@ -566,7 +550,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
                 std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
             }
             else 
-                contactRegion_ = project(_space=Xh_, _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
+                contactRegion_.on(_range=markedfaces(mesh_,"contact"), _expr = cst(1.));
             
             if ((nbrFaces_ > 0) || (withMarker_ == 1) )
             {
@@ -609,7 +593,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
             std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         }
         else 
-            contactRegion_ = project(_space=Xh_, _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
+            contactRegion_.on( _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
 
         if (method_.compare("penalty") == 0)
             processContactPenalty(lt_, at_, myelts_, u_tmpNew);
@@ -661,17 +645,18 @@ void ContactDynamic<Dim, Order, OrderGeo>::run()
 
 }
 
+
 template<int Dim, int Order, int OrderGeo>
-typename MeshTraits<Mesh<Simplex<Dim,OrderGeo>>>::faces_reference_wrapper_ptrtype
-ContactDynamic<Dim, Order, OrderGeo>::getContactRegion(elementv_t const& u)
+Range<typename ContactDynamic<Dim, Order, OrderGeo>::mesh_t, MESH_FACES>
+ContactDynamic<Dim, Order, OrderGeo>::getContactRegion( elementv_t const& u )
 {   
-    typename MeshTraits<Mesh<Simplex<Dim, OrderGeo>>>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<Mesh<Simplex<Dim,OrderGeo>>>::faces_reference_wrapper_type );
+    Range<mesh_t,MESH_FACES> myelts( mesh_ );
 
     auto defv = sym(gradv(u));
     auto Id = eye<Dim,Dim>();
     auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
     
-    contactRegion_ = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));    
+    contactRegion_.on( _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));    
 
     nbrFaces_ = 0;
     auto const& trialDofIdToContainerId =  form2(_test=Xh_, _trial=Xh_).dofIdToContainerIdTest();
@@ -694,7 +679,7 @@ ContactDynamic<Dim, Order, OrderGeo>::getContactRegion(elementv_t const& u)
                     if (contactDof == 2)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
                 else if (Dim == 3)
@@ -702,7 +687,7 @@ ContactDynamic<Dim, Order, OrderGeo>::getContactRegion(elementv_t const& u)
                     if (contactDof == 3)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }         
             }
@@ -713,7 +698,7 @@ ContactDynamic<Dim, Order, OrderGeo>::getContactRegion(elementv_t const& u)
                     if (contactDof == 3)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
                 else if (Dim == 3)
@@ -721,13 +706,13 @@ ContactDynamic<Dim, Order, OrderGeo>::getContactRegion(elementv_t const& u)
                     if (contactDof == 4)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 } 
             }
         }
     }
-    myelts->shrink_to_fit();   
+    myelts.shrink_to_fit();   
   
     return myelts;
 }
@@ -938,8 +923,11 @@ ContactDynamic<Dim, Order, OrderGeo>::exportResults(double t)
     auto defvinter = sym(gradv(uinter));
     auto sigmavinter = (lambda_*trace(defvinter)*Id + 2*mu_*defvinter)*N();
    
-    auto contactPressureinter =  project(_space=Pch<Order>(meshP1), _range=boundaryfaces(meshP1), _expr = trans(expr<Dim,1>(direction_))*sigmavinter);
-    auto contactDisplacementinter = project(_space=Pch<Order>(meshP1), _range=elements(meshP1), _expr = (trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)));
+    auto contactPressureinter =  Pch<Order>(meshP1)->element();
+    contactPressureinter.on( _range=boundaryfaces(meshP1), _expr = trans(expr<Dim,1>(direction_))*sigmavinter);
+
+    auto contactDisplacementinter = Pch<Order>(meshP1)->element();
+    contactDisplacementinter.on( _range=elements(meshP1), _expr = (trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)));
 
     e_->step(t)->add( "contactPressure", contactPressureinter);
     e_->step(t)->add( "contactDisplacement", contactDisplacementinter );
@@ -948,15 +936,15 @@ ContactDynamic<Dim, Order, OrderGeo>::exportResults(double t)
     myelts_ = getContactRegion(u_);
     std::cout << "Nbr faces for export : " << nbrFaces_ << std::endl;
     
-    auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myelts_->begin(), myelts_->end(), myelts_ );
     auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
     auto XhCFaces = Pdh<0>(face_mesh);
-    auto contactFaces = project(_space=XhCFaces, _range=myfaces, _expr = cst(1.));
+    auto contactFaces =XhCFaces->element();
+    contactFaces.on(_range=myelts_, _expr = cst(1.));
 
     auto defv = sym(gradv(u_));
     auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
 
-    contactPressure_ =  project(_space=Xh_, _range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
+    contactPressure_.on(_range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
 
 
     // Save values in json file
@@ -1004,7 +992,8 @@ ContactDynamic<Dim, Order, OrderGeo>::exportResults(double t)
     ctx.add( t1 );
 
     auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure_) ); 
-    auto evaluateDispExpr = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
+    auto evaluateDispExpr = Xh_->element();
+    evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
     auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
             
     meas_["evaluateStress"].push_back(evaluateStress(0,0));

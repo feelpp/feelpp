@@ -23,6 +23,22 @@
 namespace Feel
 {
 
+
+inline Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description options( "elasticity contact options" );
+    options.add_options()
+
+        // mesh parameters
+        ( "specs", Feel::po::value<std::string>(),
+          "json spec file for rht" )
+
+        ( "steady", Feel::po::value<bool>()->default_value( 1 ),
+          "if 1: steady else unsteady" );
+
+    return options.add( Feel::feel_options() );
+}
 template <int Dim, int Order>
 class ContactStatic
 {
@@ -157,9 +173,9 @@ void ContactStatic<Dim, Order>::initializeContact()
     Xh_ = Pch<Order>(mesh_);
 
     // Initialize contact field
-    contactRegion_.zero();
-    contactPressure_.zero();
-    contactDisplacement_.zero();
+    contactRegion_ =  project(_space=Xh_, _range=elements(mesh_), _expr = cst(0.));
+    contactPressure_ =  project(_space=Xh_, _range=elements(mesh_), _expr = cst(0.));
+    contactDisplacement_ = project(_space=Xh_, _range=elements(mesh_), _expr = cst(0.)); 
     nbrFaces_ = 0;
 
     // Get contact parameters
@@ -365,178 +381,7 @@ void ContactStatic<Dim, Order>::run()
         }
 
     }
-    else if (method_.compare("al") == 0)
-    {
-        if (Order != 2)
-            std::cout << "u has to be P2" << std::endl;
-
-
-        // Define lagrange multiplier
-        auto submesh = createSubmesh(_mesh=mesh_,_range=markedfaces(mesh_,"contact"));
-        auto XhLambda = Pch<1>(submesh);
-
-        // Initialize elements
-        auto u = Xhv_->elementPtr();
-        auto lambda = XhLambda->elementPtr();
-
-        // Initialize linear and bilinear forms
-        BlocksBaseGraphCSR myblockGraph(2,2);
-        myblockGraph(0,0) = stencil( _test=Xhv_,_trial=Xhv_, _diag_is_nonzero=false, _close=false)->graph();
-        myblockGraph(1,0) = stencil( _test=XhLambda,_trial=Xhv_, _diag_is_nonzero=false, _close=false)->graph();
-        myblockGraph(0,1) = stencil( _test=Xhv_,_trial=XhLambda, _diag_is_nonzero=false, _close=false)->graph();
-        auto A = backend()->newBlockMatrix(_block=myblockGraph);
-
-        BlocksBaseVector<double> myblockVec(2);
-        myblockVec(0,0) = backend()->newVector( Xhv_ );
-        myblockVec(1,0) = backend()->newVector( XhLambda );
-        auto F = backend()->newBlockVector(_block=myblockVec, _copy_values=false);
-
-        BlocksBaseVector<double> myblockVecSol(2);
-        myblockVecSol(0,0) = u;
-        myblockVecSol(1,0) = lambda;
-        auto U = backend()->newBlockVector(_block=myblockVecSol, _copy_values=false);
-
-
-        std::cout << "***** Process loading *****" << std::endl;
-        form1( _test=Xhv_, _vector=F ) = integrate(_range=elements(mesh_), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u));
-
-        std::cout << "***** Process materials *****" << std::endl;
-
-        auto deft = sym(gradt(u));
-        auto def = sym(grad(u));
-        auto Id = eye<Dim,Dim>();
-        auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-        auto a = form2(_trial=Xhv_,_test=Xhv_,_matrix=A);
-        a += integrate(_range=elements(mesh_),_expr=inner(sigmat,def) );
-
-        form2( _trial=XhLambda, _test=Xhv_ ,_matrix=A, _rowstart=0, _colstart=1 ) += integrate( _range=elements(submesh),_expr=idt(lambda)*(trans(expr<Dim,1>(direction_))*id(u)));
-        form2( _trial=Xhv_, _test=XhLambda ,_matrix=A,_rowstart=1, _colstart=0 ) += integrate( _range=elements(submesh),_expr=(trans(expr<Dim,1>(direction_))*idt(u))*id(lambda) );
-
-        if ( specs_["/BoundaryConditions/LinearElasticity"_json_pointer].contains("Dirichlet") )
-        {
-            for ( auto [key, bc] : specs_["/BoundaryConditions/LinearElasticity/Dirichlet"_json_pointer].items() )
-            {
-                std::string e = fmt::format("/BoundaryConditions/LinearElasticity/Dirichlet/{}/g/expr",key);
-                auto bc_dir = specs_[nl::json::json_pointer( e )].get<std::string>();
-                a+=on(_range=markedfaces(mesh_,key), _rhs=F, _element=*u, _expr=expr<Dim,1>( bc_dir ) );
-            }
-        }
-
-        std::cout << "***** Solve *****" << std::endl;
-        backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=U );
-        myblockVecSol.localize(U);
-
-        e_->addRegions();
-        auto displacement = Xhv_->element();
-        displacement.on( _range=elements(mesh_), _expr=idv(*u) );
-        e_->add( "displacement", displacement );
-
-        auto realcontactRegion = Xh_->element();
-        realcontactRegion.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(*u) - idv(g_));
-        e_->add( "realcontactRegion", realcontactRegion) ;
-
-
-        int nbrFacesC = 0;
-        Range<mesh_t,MESH_FACES> myelts( mesh_ );
-
-        auto const& trialDofIdToContainerId =  form2(_test=Xh_, _trial=Xh_).dofIdToContainerIdTest();
-        for (auto const& theface : boundaryfaces(mesh_) )
-        {
-            auto & face = boost::unwrap_ref( theface );
-            int contactDof = 0;
-            for( auto const& ldof : Xh_->dof()->faceLocalDof( face.id() ) )
-            {
-                index_type thedof = ldof.index();
-                thedof = trialDofIdToContainerId[ thedof ];
-
-                if (realcontactRegion[thedof] >= tolContactRegion_)
-                    contactDof++;
-
-                if (Dim == 2)
-                {
-                    if (contactDof == 2)
-                        nbrFacesC++;
-
-                }
-                else if (Dim == 3)
-                {
-                    if (contactDof == 4)
-                        nbrFacesC++;
-                }
-            }
-        }
-        std::cout << "Faces in contact export : " << nbrFacesC << std::endl;
-        myelts.shrink_to_fit();
-
-        /// TODO check that code @celine
-        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
-        auto XhCFaces = Pdh<0>(face_mesh);
-        auto contactFaces = XhCFaces->element();
-        contactFaces.on(_range=myelts, _expr = cst(1.));
-
-        auto defv = sym(gradv(u));
-        auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
-
-        contactRegion_.on(_range=boundaryfaces(mesh_), _expr = idv(contactFaces));
-        contactPressure_.on(_range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
-        contactDisplacement_.on(_range=elements(mesh_), _expr = (trans(expr<Dim,1>(direction_))*idv(*u) - idv(g_))*idv(contactFaces));
-
-        auto expression = Xh_->element();
-        expression.on(_range=boundaryfaces(mesh_), _expr = (cst(gamma_)*(trans(expr<Dim,1>(direction_))*idv(*u) - idv(g_)) - trans(expr<Dim,1>(direction_))*sigmav)*idv(contactFaces)  );
-
-        e_->add( "contactRegion", contactRegion_) ;
-        e_->add( "contactPressure", contactPressure_);
-        e_->add( "contactDisplacement", contactDisplacement_ );
-        e_->add( "expression", expression);
-        e_->add("g", g_);
-        e_->save();
-
-        int nbr = 1;
-
-        for (auto &bfaceC : markedfaces(mesh_,"contact"))
-        {
-            auto & faceC = boost::unwrap_ref( bfaceC );
-
-            auto ctx = Xh_->context();
-            node_type t1(Dim);
-            t1(0)=faceC.point(0).node()[0]; t1(1)=faceC.point(0).node()[1];
-            ctx.add( t1 );
-
-            auto evaluateStress = evaluateFromContext( _context=ctx, _expr = idv(contactPressure_) );
-            auto evaluateDisp = evaluateFromContext( _context=ctx, _expr = idv(contactDisplacement_) );
-
-            std::cout << "Evaluate Stress : " << evaluateStress(0,0) << " for node : " <<  nbr << " with coordinates : (" << faceC.point(0).node()[0] << "," << faceC.point(0).node()[1]  << ")" << std::endl;
-            std::cout << "Evaluate Disp : " << evaluateDisp(0,0) << " for node : " <<  nbr << " with coordinates : (" << faceC.point(0).node()[0] << "," << faceC.point(0).node()[1]  << ")" << std::endl;
-
-            nbr++;
-        }
-
-
-        if (save_ == 1)
-        {
-            std::cout << "***** Save results *****" << std::endl;
-            (*u).saveHDF5("solution_ref.h5");
-            saveGMSHMesh(_mesh=mesh_,_filename= "mesh_ref.msh" );
-        }
-
-        if (computeerror_ == 1)
-        {
-            std::cout << "***** Compute error *****" << std::endl;
-            auto meshref = loadMesh(_mesh=new mesh_t, _filename = "/data/scratch/vanlandeghem/feel/qs_elasticity_contact/benchmark/np_1/mesh_ref.msh");
-            auto uref = spacev_t::New(meshref)->elementPtr() ;
-            uref->loadHDF5("/data/scratch/vanlandeghem/feel/qs_elasticity_contact/benchmark/np_1/solution_ref.h5");
-
-            auto op_inter = opInterpolation(_domainSpace =  spacev_t::New(mesh_), _imageSpace = spacev_t::New(meshref) );
-            auto uinter =  spacev_t::New(meshref)->element();
-            op_inter->apply(*u, uinter);
-
-            auto h1err = normH1( _range=elements(meshref), _expr = idv(uinter) - idv(*uref), _grad_expr = gradv(uinter) - gradv(*uref));
-            std::cout << "H1 relative error : " << h1err << std::endl;
-
-        }
-    }
-
+    
 }
 
 template <int Dim, int Order>
@@ -572,7 +417,7 @@ ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
                     if (contactDof == 2)
                     {
                         nbrFaces_++;
-                        myelts.push_back( boost::cref( face ) );
+                        myelts.push_back( face  );
                     }
                 }
                 else if (Dim == 3)
@@ -580,7 +425,7 @@ ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
                     if (contactDof == 3)
                     {
                         nbrFaces_++;
-                        myelts.push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
             }
@@ -591,7 +436,7 @@ ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
                     if (contactDof == 3)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
                 else if (Dim == 3)
@@ -599,7 +444,7 @@ ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
                     if (contactDof == 4)
                     {
                         nbrFaces_++;
-                        myelts->push_back( boost::cref( face ) );
+                        myelts.push_back( face );
                     }
                 }
             }
