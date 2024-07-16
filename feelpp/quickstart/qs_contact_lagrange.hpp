@@ -807,7 +807,7 @@ ContactDynamicLagrange<Dim, Order, OrderGeo>::initG()
 
             bvh_ray_type ray(origin,dir);
             auto bvh = boundingVolumeHierarchy(_range=boundaryfaces(wall));
-            auto rayIntersection = bvh->intersect(ray) ;
+            auto rayIntersection = bvh->intersect(_ray=ray) ;
 
             if (!rayIntersection.empty()) 
             {
