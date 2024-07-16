@@ -24,6 +24,11 @@ on:
           - 'bookworm'
           - 'testing'
           - 'sid'
+        version:
+          description: 'Version of Feel++ packages'
+          required: false
+          type: string
+          default: ''
         apptainer:
           description: 'Build apptainer image'
           required: false
