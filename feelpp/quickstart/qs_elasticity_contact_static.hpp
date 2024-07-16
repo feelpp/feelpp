@@ -62,8 +62,8 @@ public:
     void processLoading(form1_type& l);
     void processMaterials(form2_type &a);
     void processBoundaryConditions(form1_type& l, form2_type& a);
-    void processContactPenalty(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> elts, elementv_t const& u);
-    void processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> elts, elementv_t const& u);
+    void processContactPenalty(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
+    void processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
     void run();
     Range<mesh_t, MESH_FACES> getContactRegion( elementv_t const& u );
     void exportResults();
@@ -219,16 +219,14 @@ void ContactStatic<Dim, Order>::processMaterials( form2_type &a )
 
 // Process contact conditions Penalty method
 template <int Dim, int Order>
-void ContactStatic<Dim, Order>::processContactPenalty( form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> elts, elementv_t const& u )
+void ContactStatic<Dim, Order>::processContactPenalty( form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts, elementv_t const& u )
 {
     if (withMarker_ == 0)
     {
-        auto myfaces_tuple = boost::make_tuple( mpl::size_t<MESH_FACES>(), elts->begin(), elts->end(), elts );
-
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
-        contactFaces.on(_range=myfaces, _expr = cst(1.));
+        contactFaces.on(_range=elts, _expr = cst(1.));
 
         a += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
         l += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
@@ -242,15 +240,14 @@ void ContactStatic<Dim, Order>::processContactPenalty( form1_type& l, form2_type
 
 // Process contact conditions Nitsche method
 template <int Dim, int Order>
-void ContactStatic<Dim, Order>::processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> elts , elementv_t const& u )
+void ContactStatic<Dim, Order>::processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts , elementv_t const& u )
 {
     if (withMarker_ == 0)
     {
-        auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), elts->begin(), elts->end(), elts );
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
-        contactFaces.on(_range=myfaces, _expr = cst(1.));
+        contactFaces.on(_range=elts, _expr = cst(1.));
 
         auto const Id = eye<Dim,Dim>();
         auto deft = sym(gradt(u));
@@ -473,13 +470,10 @@ void ContactStatic<Dim, Order>::run()
         myelts.shrink_to_fit();
 
         /// TODO check that code @celine
-        auto myfaces_tuple = boost::make_tuple( mpl::size_t<MESH_FACES>(), myelts->begin(), myelts->end(), myelts );
-        auto myfaces =  range( _mesh=mesh_, _range=myfaces_tuple );
-
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
-        contactFaces.on(_range=myfaces, _expr = cst(1.));
+        contactFaces.on(_range=myelts, _expr = cst(1.));
 
         auto defv = sym(gradv(u));
         auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
@@ -545,9 +539,9 @@ void ContactStatic<Dim, Order>::run()
 
 }
 
-template<int Dim, int Order>
-Range<mesh_t,MESH_FACES>
-ContactStatic<Dim, Order>::getContactRegion(elementv_t const& u)
+template <int Dim, int Order>
+Range<typename ContactStatic<Dim, Order>::mesh_t, MESH_FACES>
+ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
 {
     Range<mesh_t,MESH_FACES> myelts( mesh_ );
 
@@ -713,14 +707,10 @@ ContactStatic<Dim, Order>::exportResults()
     realcontactRegion.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_));
     e_->add( "realcontactRegion", realcontactRegion) ;
 
-    auto myfaces_tuple = boost::make_tuple( mpl::size_t<MESH_FACES>(), myelts_->begin(), myelts_->end(), myelts_ );
-    auto myfaces =  range( _mesh=mesh_, _range=myfaces_tuple );
-
-
     auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
     auto XhCFaces = Pdh<0>(face_mesh);
     auto contactFaces = XhCFaces->element();
-    contactFaces.on( _range = myfaces, _expr = cst( 1. ) );
+    contactFaces.on( _range = myelts_, _expr = cst( 1. ) );
 
     auto const Id = eye<Dim,Dim>();
     auto defv = sym(gradv(u_));
