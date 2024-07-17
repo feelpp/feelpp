@@ -46,6 +46,7 @@ set(SRC
   table.cpp
   tabulateinformations.cpp
   terminalproperties.cpp
+  zip.cpp
   )
 
 if(FEELPP_HAS_MONGOCXX)

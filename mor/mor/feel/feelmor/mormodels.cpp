@@ -1,6 +1,6 @@
 
 #include <feel/feelmor/mormodels.hpp>
-#include <feel/feelmor/zip.hpp>
+#include <feel/feelcore/zip.hpp>
 
 namespace Feel
 {
