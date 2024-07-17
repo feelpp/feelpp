@@ -284,6 +284,16 @@ if ( OPENTURNS_FOUND )
   target_link_libraries( feelpp PUBLIC ${OpenTURNS_LIBRARIES} )
 endif()
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LibZip REQUIRED libzip)
+message(STATUS "[feelpp] LibZip found: ${LibZip_FOUND}")
+message(STATUS "[feelpp] LibZip include dirs: ${LibZip_INCLUDE_DIRS}")
+message(STATUS "[feelpp] LibZip libraries: ${LibZip_LIBRARIES}")
+target_include_directories(feelpp PUBLIC ${LibZip_INCLUDE_DIRS})
+target_link_libraries(feelpp PUBLIC ${LibZip_LINK_LIBRARIES})
+
+
+
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 message(STATUS "[feelpp]: include_dir ${INC_DIR_LIST}")
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_INCLUDE_DIRECTORIES)
@@ -311,9 +321,7 @@ install(EXPORT FeelppTargets
   FILE FeelppTargets.cmake
   NAMESPACE Feelpp::
   DESTINATION share/feelpp/feel/cmake/modules
-  )
-
-# INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
+  )# INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Libs EXPORT feelpp-export-targets)
 # install(EXPORT feelpp-export-targets DESTINATION share/feelpp/feel/cmake/modules)
 
 # Handle static library if needed
