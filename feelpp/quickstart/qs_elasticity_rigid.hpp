@@ -424,12 +424,14 @@ void ElasticRigid<Dim, Order>::timeLoop()
     auto at_r_ = form2( _test = VhvC_, _trial = VhvC_ );
     auto l_r_ = form1( _test = VhvC_ );
     auto lt_r_ = form1( _test = VhvC_ );
+    auto lt_r_f_ = form1( _test = VhvC_ );
 
-    
     a_r_.zero();
     at_r_.zero();
     l_r_.zero();
     lt_r_.zero();
+    lt_r_f_.zero();
+
 
 
  
@@ -457,7 +459,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
 
         std::cout << "***** Solve rigid *****" << std::endl;
 
-        lt_r_ = l_r_;
+        lt_r_f_ = l_r_;
         at_r_ = a_r_;
 
 
@@ -466,27 +468,20 @@ void ElasticRigid<Dim, Order>::timeLoop()
 
         //auto fc_density_expr = vec(cst(0.),  cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_)));
        
-        auto epsv = sym(gradv(u_e_));
-        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-
-        auto fc_density_expr = vec(cst(0.),  -trans(expr<Dim,1>(direction_))*sigmav);
+        
 
         if (nbrFaces_ > 0)
         {
-            //lt_r_ +=  integrate( _range=boundaryfaces(mesh_), _expr= inner( fc_density_expr,id( u_r_ )) * idv(contactFaces));
-            lt_r_ +=  integrate( _range=boundaryfaces(mesh_), _expr= inner( sigmav,id( u_r_ )) * idv(contactFaces));
-        }
+            auto epsv = sym(gradv(u_e_));
+            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
 
+            auto fc_density_expr = vec(cst(0.),  -trans(expr<Dim,1>(direction_))*sigmav);
+            //lt_r_ +=  integrate( _range=boundaryfaces(mesh_), _expr= inner( fc_density_expr,id( u_r_ )) * idv(contactFaces));
+            lt_r_f_ +=  integrate( _range=boundaryfaces(mesh_), _expr= inner( sigmav,id( u_r_ )) * idv(contactFaces));
+        }
+        lt_r_ += lt_r_f_;
         at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
         ts_r_->updateFromDisp(u_r_);
-        
-        // Reset
-        at_r_.zero();
-        lt_r_.zero();
-
-
-        ts_r_->next(u_r_);
-
 
         std::cout << "***** Solve elasticity *****" << std::endl;
         
@@ -513,20 +508,39 @@ void ElasticRigid<Dim, Order>::timeLoop()
 
         ts_e_->updateFromDisp(u_e_);
 
-        // Reset
-        at_.zero();
-        lt_.zero();
 
         std::cout << "***** Solve displacement *****" << std::endl;
         u_.on(_range=elements(mesh_),_expr=idv(u_e_) + idv(u_r_));
 
 
+        auto vr = VhvC_->element();
+        vr.on(_range=elements(mesh_),_expr=vec(cst(0.),cst(1.)));
+        auto f_s = l_r_(vr);
+        auto f_t = lt_r_f_(vr);
+        auto epsv = sym(gradv(u_e_));
+        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+        auto fc_density_expr = -trans(expr<Dim,1>(direction_))*sigmav; //vec(cst(0.),  -trans(expr<Dim,1>(direction_))*sigmav);
         auto f_C = integrate(_range=boundaryfaces(mesh_), _expr = fc_density_expr * idv(contactFaces)).evaluate(); 
-        std::cout << "Contact force : " << f_C << std::endl;
-
+        std::cout << fmt::format("forces : gravity: [{}] contact [{}] sum: [{}]", f_s, f_C, f_t) << std::endl;
+        double meas = integrate(_range=elements(mesh_),_expr=cst(1.)).evaluate()(0,0);
+        auto dist2wall_r = integrate(_range=elements(mesh_),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_r_))).evaluate()(0,0)/meas;
+        auto dist2wall_ = integrate(_range=elements(mesh_),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_))).evaluate()(0,0)/meas;
+        std::cout << fmt::format("distance to wall, rigid: [{}] total: [{}]", dist2wall_r, dist2wall_) << std::endl;
+        auto mean_displ_e = integrate(_range=elements(mesh_),_expr=idv(u_e_)).evaluate()(0,0)/meas;
+        auto mean_displ_r = integrate(_range=elements(mesh_),_expr=idv(u_r_)).evaluate()(0,0)/meas;
+        std::cout << fmt::format("mean displacement, elastic: [{}] rigid: [{}]", mean_displ_e, mean_displ_r) << std::endl;
 
         // Export
         this->exportResults(ts_e_->time());
+
+        // Reset
+        at_r_.zero();
+        lt_r_.zero();
+        lt_r_f_.zero();
+        at_.zero();
+        lt_.zero();
+
+        ts_r_->next(u_r_);
 
     }    
 
