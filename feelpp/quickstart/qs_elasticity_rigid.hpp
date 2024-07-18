@@ -424,15 +424,18 @@ void ElasticRigid<Dim, Order>::timeLoop()
     auto at_r_ = form2( _test = VhvC_, _trial = VhvC_ );
     auto l_r_ = form1( _test = VhvC_ );
     auto lt_r_ = form1( _test = VhvC_ );
+
     
     a_r_.zero();
     at_r_.zero();
     l_r_.zero();
     lt_r_.zero();
 
+
  
     l_r_ += integrate( _range = elements(mesh_), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_r_));
     a_r_ += integrate( _range = elements(mesh_), _expr = cst(rho_)*inner( ts_r_->polyDerivCoefficient()*idt(u_r_),id( u_r_ ) ) );
+
 
 
     for ( ts_e_->start(); ts_e_->isFinished()==false; ts_e_->next(u_e_) )
@@ -457,17 +460,21 @@ void ElasticRigid<Dim, Order>::timeLoop()
         lt_r_ = l_r_;
         at_r_ = a_r_;
 
+
         for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
             lt_r_ +=  integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_r_->polyDeriv()),id( u_r_ ) ));
 
-        
+        //auto fc_density_expr = vec(cst(0.),  cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_)));
+       
+        auto epsv = sym(gradv(u_e_));
+        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+
+        auto fc_density_expr = vec(cst(0.),  -trans(expr<Dim,1>(direction_))*sigmav);
+
         if (nbrFaces_ > 0)
         {
-            auto epsv = sym(gradv(u_));
-            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-            //std::cout << " Contact pressure : " << sigmav*vec(cst(0.),cst(-1.)) << std::endl;
-    
-            lt_r_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), -trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
+            //lt_r_ +=  integrate( _range=boundaryfaces(mesh_), _expr= inner( fc_density_expr,id( u_r_ )) * idv(contactFaces));
+            lt_r_ +=  integrate( _range=boundaryfaces(mesh_), _expr= inner( sigmav,id( u_r_ )) * idv(contactFaces));
         }
 
         at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
@@ -476,6 +483,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
         // Reset
         at_r_.zero();
         lt_r_.zero();
+
 
         ts_r_->next(u_r_);
 
@@ -496,9 +504,10 @@ void ElasticRigid<Dim, Order>::timeLoop()
             at_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
             lt_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));     
             
-            //lt_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), trans(vec(cst(0.),cst(-1.)))*sigmav*vec(cst(0.),cst(-1.)) ),id( u_r_ )) * idv(contactFaces));
-
+            //lt_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), cst(f_C)),id( u_e_ )) * idv(contactFaces));
         }
+       
+        at_+=on(_range=markedpoints( mesh_,"CM"), _rhs=lt_, _element=u_e_, _expr=vec(cst(0.),cst(0.)) );
         
         at_.solve( _rhs = lt_, _solution = u_e_ , _rebuild = true);
 
@@ -510,6 +519,11 @@ void ElasticRigid<Dim, Order>::timeLoop()
 
         std::cout << "***** Solve displacement *****" << std::endl;
         u_.on(_range=elements(mesh_),_expr=idv(u_e_) + idv(u_r_));
+
+
+        auto f_C = integrate(_range=boundaryfaces(mesh_), _expr = fc_density_expr * idv(contactFaces)).evaluate(); 
+        std::cout << "Contact force : " << f_C << std::endl;
+
 
         // Export
         this->exportResults(ts_e_->time());
