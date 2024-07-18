@@ -8,5 +8,8 @@ Circle(2) = {2, 1, 3};
 Curve Loop(1) = {1, 2};
 Plane Surface(1) = {1};
 
+Point{1} In Surface{1};
+
+Physical Point("CM")={1};
 Physical Curve("Wall", 4) = {1,2};
 Physical Surface("Caoutchouc", 6) = {1};
