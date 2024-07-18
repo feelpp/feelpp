@@ -411,7 +411,7 @@ void ElasticRigid<Dim, Order>::timeLoop()
     auto Id = eye<Dim,Dim>();
     auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
     a_ += integrate( _range = elements(mesh_), _expr = cst(rho_)*inner( ts_e_->polyDerivCoefficient()*idt(u_e_),id( u_e_ ) ) + inner(sigmat,def));
-
+    l_ = integrate( _range = elements( mesh_ ), _expr = cst( rho_ ) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_e_ ) );
 
     /*
     
@@ -438,12 +438,13 @@ void ElasticRigid<Dim, Order>::timeLoop()
     l_r_ += integrate( _range = elements(mesh_), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_r_));
     a_r_ += integrate( _range = elements(mesh_), _expr = cst(rho_)*inner( ts_r_->polyDerivCoefficient()*idt(u_r_),id( u_r_ ) ) );
 
-
-
-    for ( ts_e_->start(); ts_e_->isFinished()==false; ts_e_->next(u_e_) )
+    std::ofstream ofs("outputs.csv");
+    ofs << fmt::format( "time, f_s, f_C, f_t, mean_displ_ex, mean_displ_ey, mean_displ_rx, mean_displ_ry, mean_disp_x, mean_displ_y") << std::endl;
+    
+    for ( ts_e_->start(); ts_e_->isFinished() == false; ts_e_->next( u_e_ ), ts_r_->next( u_r_ ) )
     {
         if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_e_->time(),ts_e_->timeFinal()) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_e_->time(),ts_e_->timeFinal()) << std::endl;
 
         
 
@@ -489,7 +490,11 @@ void ElasticRigid<Dim, Order>::timeLoop()
         at_ = a_;
 
         for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
+        {
             lt_ +=  integrate( _range=elements( mesh_), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
+            lt_ += integrate( _range=elements( mesh_), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
+        
+        }
         
         if (nbrFaces_ > 0)
         {
@@ -498,8 +503,9 @@ void ElasticRigid<Dim, Order>::timeLoop()
             
             at_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
             lt_ += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));     
-            
-            //lt_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( vec(cst(0.), cst(f_C)),id( u_e_ )) * idv(contactFaces));
+
+            // auto fc_density_expr = vec(cst(0.),  cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_r_) - idv(g_)));
+            // lt_ += integrate( _range=boundaryfaces(mesh_), _expr= inner( fc_density_expr,id( u_e_ )) * idv(contactFaces));
         }
        
         at_+=on(_range=markedpoints( mesh_,"CM"), _rhs=lt_, _element=u_e_, _expr=vec(cst(0.),cst(0.)) );
@@ -526,12 +532,18 @@ void ElasticRigid<Dim, Order>::timeLoop()
         auto dist2wall_r = integrate(_range=elements(mesh_),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_r_))).evaluate()(0,0)/meas;
         auto dist2wall_ = integrate(_range=elements(mesh_),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_))).evaluate()(0,0)/meas;
         std::cout << fmt::format("distance to wall, rigid: [{}] total: [{}]", dist2wall_r, dist2wall_) << std::endl;
-        auto mean_displ_e = integrate(_range=elements(mesh_),_expr=idv(u_e_)).evaluate()(0,0)/meas;
-        auto mean_displ_r = integrate(_range=elements(mesh_),_expr=idv(u_r_)).evaluate()(0,0)/meas;
-        std::cout << fmt::format("mean displacement, elastic: [{}] rigid: [{}]", mean_displ_e, mean_displ_r) << std::endl;
+        auto mean_displ_e = integrate(_range=elements(mesh_),_expr=idv(u_e_)).evaluate()/meas;
+        auto mean_displ_r = integrate(_range=elements(mesh_),_expr=idv(u_r_)).evaluate()/meas;
+        auto mean_displ = integrate(_range=elements(mesh_),_expr=idv(u_)).evaluate()/meas;
+        std::cout << fmt::format("mean displacement, elastic: [{}] rigid: [{}] total: [{}]", mean_displ_e, mean_displ_r, mean_displ) << std::endl;
+
+        ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",
+                            ts_e_->time(), f_s, f_C( 0, 0 ), f_t,
+                            mean_displ_e( 0, 0 ), mean_displ_e( 1, 0 ), mean_displ_r( 0, 0 ), mean_displ_r( 1, 0 ), mean_displ( 0, 0 ), mean_displ( 1, 0 ) )
+            << std::endl;
 
         // Export
-        this->exportResults(ts_e_->time());
+        this->exportResults( ts_e_->time() );
 
         // Reset
         at_r_.zero();
@@ -540,10 +552,10 @@ void ElasticRigid<Dim, Order>::timeLoop()
         at_.zero();
         lt_.zero();
 
-        ts_r_->next(u_r_);
+        
 
     }    
-
+    ofs.close();
 }
 
 // Run method 
