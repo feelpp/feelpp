@@ -1,23 +1,7 @@
 #pragma once
-#include <iostream>
 
-#include <chrono>
-#include <fmt/chrono.h>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/json.hpp>
-#include <feel/feelcore/ptreetools.hpp>
-#include <feel/feelcore/utility.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/minmax.hpp>
-#include <feel/feeldiscr/sensors.hpp>
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/vf.hpp>
-#include <feel/feelvf/measure.hpp>
-#include <feel/feelmesh/bvh.hpp>
-#include <feel/feelfilters/savegmshmesh.hpp>
-#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include "qs_elasticity_contact.hpp"
+
 
 
 namespace Feel
