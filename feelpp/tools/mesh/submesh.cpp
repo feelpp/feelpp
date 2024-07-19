@@ -47,7 +47,7 @@ getSubMeshOutputPath( fs::path const& inputPathMesh, std::string const& submesht
     std::string outputPathMesh = ( fs::current_path() / fs::path(outputFilenameWithExt) ).string();
     if ( Environment::vm().count("ofile") )
     {
-        outputPathMesh = fs::system_complete( soption("ofile") ).string();
+        outputPathMesh = fs::canonical( soption("ofile") ).string();
         if ( true )
         {
             fs::path givenPath = fs::path(outputPathMesh);
@@ -58,7 +58,7 @@ getSubMeshOutputPath( fs::path const& inputPathMesh, std::string const& submesht
     }
     else if ( Environment::vm().count("odir") )
     {
-        fs::path odir = fs::system_complete( soption("odir") ).string();
+        fs::path odir = fs::canonical( soption("odir") ).string();
         outputPathMesh = (odir / fs::path(outputFilenameWithExt) ).string();
     }
     return outputPathMesh;
@@ -120,7 +120,7 @@ runCreateSubmeshAndSaveFace( std::shared_ptr<MeshType> const& mesh, std::list<st
     }
 
     tic();
-    std::shared_ptr<typename MeshType::trace_mesh_type> submesh;
+    trace_mesh_ptr_t<MeshType> submesh;
     if ( extractBoundaryFaces )
     {
         submesh = createSubmesh( _mesh=mesh, _range=boundaryfaces(mesh), _only_on_boundary_faces=true );
@@ -187,7 +187,7 @@ run( std::vector<std::string> const& markers, bool extractBoundaryFaces )
 {
     typedef Mesh<ShapeType> mesh_type;
 
-    fs::path inputPathMesh = fs::system_complete( soption("ifile") );
+    fs::path inputPathMesh = fs::canonical( soption("ifile") );
     tic();
     auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommPtr()), _savehdf5=0,
                          _filename=inputPathMesh.string(),
@@ -303,7 +303,7 @@ int main( int argc, char** argv )
         return 0;
     }
 
-    fs::path pathInputMesh = fs::system_complete( soption("ifile") );
+    fs::path pathInputMesh = fs::canonical( soption("ifile") );
     if ( !fs::exists( pathInputMesh ) )
     {
         if ( Environment::isMasterRank() )
@@ -343,4 +343,3 @@ int main( int argc, char** argv )
 
     return 0;
 }
-

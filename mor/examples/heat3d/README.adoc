@@ -1,0 +1,37 @@
+:toc:
+:math:
+:latex:
+
+= CRB application : Heat3d 
+
+== run offline
+```
+./feelpp_mor_heat3dapp --config-file heat3d/heat3d.cfg --crb.rebuild-database=1
+```
+
+== run online
+
+Minimal example of command line for online simulation. It runs the online model for 10 different sets of parameters.
+```
+./feelpp_mor_onlinerun --crbmodel.name myheat3d_p1g1  --plugin.dir <PATH_TO_PLUGIN> 
+```
+
+Other examples of command line options
+
+evaluate output from one parameter
+```
+./bin/feelpp_crb_onlinerun --db.filename $HOME/feel/db/crb/Heat3d/np_1/heat3d-0-1-1.crb.json \
+                           --parameter 110 140 124 193.3 34000 29300 62000 0.23
+```
+evaluate outputs from a sampling
+```
+./bin/feelpp_crb_onlinerun --db.filename $HOME/feel/db/crb/Heat3d/np_1/heat3d-0-1-1.crb.json  \
+                           --sampling.size=64
+```
+
+evaluate outputs and export finite element solution for each parameter
+```
+./bin/feelpp_crb_onlinerun --db.filename $HOME/feel/db/crb/Heat3d/np_1/heat3d-0-1-1.crb.json \
+                           --sampling.size=64 --crb.load-elements-database=1
+```
+

@@ -34,10 +34,10 @@ namespace Feel
 template<typename RangeType>
 class ExpressionEvaluatorBase
 {
-protected:
+public:
     using range_type = RangeType;
-    using element_type = typename boost::tuples::element<1_c,range_type>::type::value_type;
-    using gm_type = typename element_type::type::gm_type;
+    using element_type = typename range_type::element_t;
+    using gm_type = typename element_type::gm_type;
     using parameterspace_type = ParameterSpace<>;
     using parameterspace_ptrtype = std::shared_ptr<parameterspace_type>;
     using parameterelement_type = typename parameterspace_type::element_type;
@@ -68,9 +68,9 @@ protected:
     using gm_type = typename super::gm_type;
 
     using expr_type = ExprT;
-    using context_type = typename gm_type::template Context<typename std::remove_const<typename element_type::type>::type >;
+    using context_type = typename gm_type::template Context<std::remove_const_t<element_type>>;
     using context_ptrtype = std::shared_ptr<context_type>;
-    using map_gmc_type = map_gmc_type<context_type>;
+    using map_gmc_type = Feel::vf::map_gmc_type<context_type>;
     using evaluator_type = typename expr_type::template tensor<map_gmc_type>;
     using evaluator_ptrtype = std::shared_ptr<evaluator_type>;
     using weights_type = ublas::vector<double>;
@@ -108,7 +108,7 @@ template<typename RangeType, typename ExprT>
 void
 ExpressionEvaluator<RangeType, ExprT>::init(int o)
 {
-    auto const eltForInit = boost::unwrap_ref(*boost::get<1>(this->M_range));
+    auto const& eltForInit = this->M_range.front();
     auto q = _Q(o);
 
     using iim_type = vf::detail::integrate_im_type<decltype(this->M_range),decltype(M_expr),decltype(q),decltype(q)>;

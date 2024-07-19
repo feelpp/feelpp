@@ -40,15 +40,16 @@ public:
 
     using mesh_type = MeshType;
     typedef std::weak_ptr<mesh_type> mesh_ptrtype;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
 
     using index_type = typename MeshType::index_type;
     using size_type = typename MeshType::size_type;
     using node_type = typename MeshType::node_type;
     typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
     
-    static const uint16_type nDim = mesh_type::nDim;
-    static const uint16_type nRealDim = mesh_type::nRealDim;
-    static const uint16_type nOrder = mesh_type::nOrder;
+    static inline const uint16_type nDim = mesh_type::nDim;
+    static inline const uint16_type nRealDim = mesh_type::nRealDim;
+    static inline const uint16_type nOrder = mesh_type::nOrder;
     using value_type = typename mesh_type::value_type;
     typedef KDTree kdtree_type;
     typedef typename std::shared_ptr<KDTree> kdtree_ptrtype;
@@ -82,7 +83,8 @@ public:
     //! --------------------------------------------------------------
     //!  Constructors
     //!
-    Localization() :
+    Localization()
+        :
         M_mesh (),
         M_kd_tree( new kdtree_type() ),
         M_isInit( false ),
@@ -95,30 +97,12 @@ public:
             int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
             int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*mesh_type::element_type::numPoints : optNbNeighbor;
             M_kd_tree->nbNearNeighbor( usedNbNeighbor );
-            
+
             M_resultAnalysis.clear();
             DVLOG(2) << "[Mesh::Localization] create Localization tool done\n";
         }
-    
-    Localization( std::shared_ptr<mesh_type> m, bool init_b = true ) :
-            M_mesh ( m ),
-            M_isInit( init_b ),
-            M_isInitBoundaryFaces( false ),
-            M_doExtrapolation( boption( _name=(boost::format("mesh%1%d.localisation.use-extrapolation") % nDim).str() ) ),
-            M_barycenter(),
-            M_barycentersWorld()
-        {
-            if ( this->isInit() )
-                this->init();
 
-            int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
-            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*mesh_type::element_type::numPoints : optNbNeighbor;
-            M_kd_tree->nbNearNeighbor( usedNbNeighbor );
-
-            M_resultAnalysis.clear();
-        }
-
-        Localization( Localization const & L ) :
+    Localization( Localization const & L ) :
             M_mesh( L.M_mesh ),
             M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
             M_geoGlob_Elts( L.M_geoGlob_Elts ),
@@ -137,12 +121,23 @@ public:
         void
         setMesh( std::shared_ptr<mesh_type> m,bool b=true )
         {
-            M_mesh=m;
-
+            M_mesh = m;
             if ( b )
-                this->init();
-
+                this->init( elements(m) );
             else M_isInit=b;
+
+            M_resultAnalysis.clear();
+        }
+
+        void
+        setMesh( std::shared_ptr<mesh_type> m, range_elements_type const& range, bool b=true )
+        {
+            M_mesh = m;
+            M_rangeElements = range;
+            if ( b )
+                this->init( elements(m) );
+            else
+                M_isInit=b;
 
             M_resultAnalysis.clear();
         }
@@ -161,8 +156,13 @@ public:
          //!
         void updateForUse()
         {
-            if ( !this->isInit() )
-                this->init();
+            if ( this->isInit() )
+                return;
+            auto mesh = M_mesh.lock();
+            if ( !mesh )
+                return;
+            auto rangeElt = M_rangeElements? *M_rangeElements : elements(mesh);
+            this->init( rangeElt );
         }
 
         //! --------------------------------------------------------------
@@ -255,11 +255,11 @@ public:
         boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
 
         //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p
+         //!  Research only one element which contains the node p
          //!
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
         //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p
+         //!  Research only one element which contains the node p
          //!
         boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
                                                               const matrix_node_type & setPoints,
@@ -269,26 +269,26 @@ public:
         }
 
         //! ---------------------------------------------------------------
-         //!  Research only one element wich contains the node p and which this elt have as geometric point contain setPoints
+         //!  Research only one element which contains the node p and which this elt have as geometric point contain setPoints
          //!
         boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
                                                                const matrix_node_type & setPoints,
                                                                mpl::int_<1> /**/ );
 
         //! ---------------------------------------------------------------
-         //!  Research all elements wich contains the node p
+         //!  Research all elements which contains the node p
          //!
         boost::tuple<bool, std::list<boost::tuple<size_type,node_type> > > searchElements( const node_type & p );
 
         //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
+         //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
                                                                 const size_type & eltHypothetical);
 
         //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
+         //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
         boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
@@ -300,7 +300,7 @@ public:
         }
 
         //! ---------------------------------------------------------------
-         //!  Research the element wich contains the node p, forall p in the
+         //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
         boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
@@ -315,7 +315,12 @@ public:
         {
             M_isInit=false;
             M_isInitBoundaryFaces=false;
-            this->init();
+
+            //clear data
+            M_geoGlob_Elts.clear();
+            if ( M_kd_tree )
+                M_kd_tree->clear();
+            //this->updateForUse();
         }
 
         void resetBoundaryFaces()
@@ -330,7 +335,7 @@ public:
         //! ---------------------------------------------------------------
         //! initializes the kd tree and the map between node and list elements(all elements)
         //!
-        FEELPP_NO_EXPORT void init();
+        FEELPP_NO_EXPORT void init( range_elements_type const& range );
 
         //! ---------------------------------------------------------------
         //! initializes the kd tree and the map between node and list elements(only on boundary)
@@ -353,6 +358,7 @@ public:
     private:
 
         mesh_ptrtype M_mesh;
+        std::optional<range_elements_type> M_rangeElements;
         kdtree_ptrtype M_kd_tree;
         //! map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
@@ -370,58 +376,49 @@ public:
         
     };
 
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nDim;
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nRealDim;
-template<typename MeshType>
-const uint16_type Localization<MeshType>::nOrder;
-
 
 template<typename MeshType>
 void
-Localization<MeshType>::init()
+Localization<MeshType>::init( range_elements_type const& range )
 {
+    this->reset();
+
     auto mesh = M_mesh.lock();
     if ( !mesh ) return;
 
-    DLOG_IF( WARNING, this->isInit() == false ) << "You have already initialized the tool of localization\n";
+    VLOG(1) << "Localization apply init";
 
-
-    //clear data
-    M_geoGlob_Elts.clear();
-    M_kd_tree->clear();
-
-    auto rangeElements = mesh->elementsWithProcessId();
-    auto el_it = std::get<0>( rangeElements );
-    auto el_en = std::get<1>( rangeElements );
-    if ( el_it != el_en )
+    for ( auto const& eltWrap : range )
     {
-        auto const& elt = boost::unwrap_ref( *el_it );
+        auto const& elt = unwrap_ref( eltWrap );
         M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeqPtr() ) );
         M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() ) );
+        break;
     }
-
-    for ( ; el_it != el_en; ++el_it )
+    for ( auto const& eltWrap : range )
     {
-        auto const& elt = boost::unwrap_ref( *el_it );
+        auto const& elt = unwrap_ref( eltWrap );
+        index_type eltId = elt.id();
         for ( int i=0; i<elt.nPoints(); ++i )
         {
-            if ( boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).size()==0 )
-            {
-                boost::get<0>( M_geoGlob_Elts[elt.point( i ).id()] ) = elt.point( i ).node();
-                M_kd_tree->addPoint( elt.point( i ).node(),elt.point( i ).id() );
-            }
+            auto const& thePoint = elt.point( i );
+            index_type thePointId = thePoint.id();
 
-            boost::get<1>( M_geoGlob_Elts[elt.point( i ).id()] ).push_back( elt.id() );
+            auto itFindPoint = M_geoGlob_Elts.find( thePointId );
+            if ( itFindPoint == M_geoGlob_Elts.end() )
+            {
+                node_elem_type theData = boost::make_tuple( thePoint.node(), std::list<size_type>( {eltId} ) );
+                M_geoGlob_Elts.emplace( std::make_pair( thePointId, std::move( theData ) ) );
+                M_kd_tree->addPoint( thePoint.node(), thePointId );
+            }
+            else
+                boost::get<1>( itFindPoint->second ).push_back( eltId );
         }
     }
 
     this->computeBarycenter();
 
     M_isInit=true;
-    M_isInitBoundaryFaces=false;
-
 }
 
 template<typename MeshType>
@@ -441,8 +438,8 @@ Localization<MeshType>::initBoundaryFaces()
     // typename mesh_type::location_face_iterator face_en;
     // boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
     auto rangeBoundaryFaces = Feel::boundaryfaces( mesh );
-    auto face_it = boost::get<1>( rangeBoundaryFaces );
-    auto face_en = boost::get<2>( rangeBoundaryFaces );
+    auto face_it = rangeBoundaryFaces.begin();
+    auto face_en = rangeBoundaryFaces.end();
     bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {
@@ -663,7 +660,7 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
 {
     // if no init then init with all geo point
     if ( !( this->isInit() || this->isInitBoundaryFaces() ) )
-        this->init();
+        this->updateForUse();
 
     bool find_x;
     size_type cv_id=eltHypothetical;
@@ -898,7 +895,7 @@ Localization<MeshType>::searchInKdTree( const node_type & p,
     typename std::list<size_type>::iterator itL_end;
 
     //ListTri will contain the indices of elements (size_type)
-    //and the number of occurence(uint)
+    //and the number of occurrence(uint)
     //std::list< std::pair<size_type, uint> > ListTri;
     typename std::list< std::pair<size_type, uint> >::iterator itLT;
     typename std::list< std::pair<size_type, uint> >:: iterator itLT_end;

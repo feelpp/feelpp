@@ -78,9 +78,9 @@ public :
                 M_rangeMeshElementsByMaterial[matName] = range;
 
                 M_magneticPermeabilityByMaterial[matName];
-                if ( mat.hasPropertyExprScalar("mu") )
+                if ( mat.hasProperty("mu") )
                 {
-                    auto const& expr = mat.propertyExprScalar("mu");
+                    auto const& expr = mat.property("mu").template expr<1,1>();
                     M_magneticPermeabilityByMaterial[matName].setExpr( expr );
                     M_fieldMagneticPermeability->on(_range=range,_expr=expr);
                 }
@@ -90,7 +90,7 @@ public :
     std::set<std::string> const& markers() const { return M_markers; }
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    std::map<std::string, Range<mesh_type,MESH_ELEMENTS> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
 
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
@@ -169,7 +169,7 @@ private :
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
     space_ptrtype M_space;
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+    std::map<std::string, Range<mesh_type,MESH_ELEMENTS> > M_rangeMeshElementsByMaterial;
     std::map<std::string, ModelExpressionScalar> M_magneticPermeabilityByMaterial;
     element_ptrtype M_fieldMagneticPermeability;
     double M_magneticPermeabilityDefaultValue;

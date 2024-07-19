@@ -4,10 +4,20 @@
 
 	// List of extensions which should be recommended for users of this workspace.
 	"recommendations": [
-		"formulahendry.github-actions", "ms-vscode.cmake-tools", "twxs.cmake", "ms-vscode.cpptools", "bbenoist.doxygen", "ms-python.python", "github.vscode-pull-request-github"
+		"formulahendry.github-actions",
+		"ms-vscode.cmake-tools",
+		"ms-vscode.cpptools",
+		"ms-vscode-remote.remote-containers",
+		"ms-vscode-remote.vscode-remote-extensionpack",
+		"bbenoist.doxygen",
+		"ms-python.python",
+		"github.vscode-pull-request-github",
+		"shardulm94.trailing-spaces",
+		"maouw.vscode-apptainer",
+		"redhat.vscode-yaml"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": [
-		
+
 	]
 }

@@ -53,9 +53,9 @@ and then, we are able to compile our first application:
   make -j4
 \end{unixcom}
 
-This procedure will build the entire librarie (with DebWithRelInfo option) and a dummy program to presents the \feel's abilities.
+This procedure will build the entire library (with DebWithRelInfo option) and a dummy program to presents the \feel's abilities.
 
-There is a procedure to install as a system librarie \feel.
+There is a procedure to install as a system library \feel.
 \begin{unixcom}
   make install
 \end{unixcom}
@@ -115,8 +115,8 @@ We now look for $u_h \in V_h$ such that:
 \label{sec:about-code}
 
 This section is here to declare that we want to use the namespace \feel, to
-passe the command line options to the created environnement and add some
-informations (basics \feel options, application name).
+passe the command line options to the created environment and add some
+information (basics \feel options, application name).
 \lstinputlisting[linerange=marker1-endmarker1]{../../quickstart/laplacian.cpp}
 We have to define the mesh, the approximation space and our test and trial
 functions.
@@ -128,7 +128,7 @@ conditions and solve the discretized (linear) system.
 \lstinputlisting[linerange=marker4-endmarker4]{../../quickstart/laplacian.cpp}
 
 
-\section{First execution \& vizualisation}
+\section{First execution \& visualization}
 \label{sec:first-execution}
 
 To test that part of code, please go to:
@@ -150,12 +150,12 @@ This will produce several files:
   square.geo
   square.msh
 \end{unixcom}
-You can vizualise the results using any Ensight file reader, such as Paraview,
+You can visualize the results using any Ensight file reader, such as Paraview,
 opening \verb=qs_laplacian-1.sos=.
 \begin{unixcom}
   paraview qs_laplacian-1.sos
 \end{unixcom}
-You may have a look to the differents option provided by
+You may have a look at different options provided by
 \begin{unixcom}
   ./feelpp_qs_laplacian --help
 \end{unixcom}

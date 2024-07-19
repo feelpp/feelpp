@@ -43,8 +43,10 @@ namespace FeelModels
 {
 
 template< class FluidType, class SolidType >
-class FSI : public ModelNumerical
+class FSI : public ModelNumerical,
+            public ModelPhysics<FluidType::convex_type::nRealDim>
 {
+    using super_physics_type = ModelPhysics<FluidType::convex_type::nRealDim>;
 public :
     typedef ModelNumerical super_type;
     typedef FSI<FluidType,SolidType> self_type;
@@ -60,6 +62,10 @@ public :
     typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
     typedef typename solid_type::solid_1dreduced_type::mesh_type mesh_solid_1dreduced_type;
 
+    // materials properties
+    typedef MaterialsProperties<fluid_type::mesh_type::nRealDim> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
 
     // mesh velocity on FSI boundary
     typedef FunctionSpace<trace_mesh_fluid_type, bases<typename fluid_type::basis_fluid_u_type> > space_fluid_meshvelocityonboundary_type;
@@ -68,7 +74,7 @@ public :
     typedef std::shared_ptr<element_fluid_meshvelocityonboundary_type> element_fluid_meshvelocityonboundary_ptrtype;
     //___________________________________________________________________________________//
     // normal stress from fluid into solid model
-    static const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
+    static inline const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
     typedef bases<Lagrange< nOrder_solid_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid_normalstressfromfluid_type;
     //typedef FunctionSpace<mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
     typedef FunctionSpace<trace_mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
@@ -78,7 +84,7 @@ public :
     typedef std::shared_ptr<element_solid_normalstressfromfluid_type> element_solid_normalstressfromfluid_ptrtype;
     //___________________________________________________________________________________//
     // normal stress from fluid into solid 1dreduced model
-    static const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
+    static inline const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
     typedef bases<Lagrange< nOrder_solid1dReduced_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid1dreduced_normalstressfromfluid_vect_type;
     typedef FunctionSpace<mesh_solid_1dreduced_type, basis_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_type;
     typedef std::shared_ptr<space_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_ptrtype;
@@ -91,11 +97,11 @@ public :
     typedef std::shared_ptr<element_solid1dreduced_normalstressfromfluid_scal_type> element_solid1dreduced_normalstressfromfluid_scal_ptrtype;
     //___________________________________________________________________________________//
 
-    typedef faces_reference_wrapper_t<mesh_fluid_type> range_fluid_face_type;
-    typedef elements_reference_wrapper_t<trace_mesh_fluid_type> range_fluid_trace_elt_type;
-    typedef faces_reference_wrapper_t<mesh_solid_type> range_solid_face_type;
-    typedef elements_reference_wrapper_t<trace_mesh_solid_type> range_solid_trace_elt_type;
-    typedef elements_reference_wrapper_t<mesh_solid_1dreduced_type> range_solid_elt_1dreduced_type;
+    typedef Range<mesh_fluid_type,MESH_FACES> range_fluid_face_type;
+    typedef Range<trace_mesh_fluid_type,MESH_ELEMENTS> range_fluid_trace_elt_type;
+    typedef Range<mesh_solid_type,MESH_FACES> range_solid_face_type;
+    typedef Range<trace_mesh_solid_type,MESH_ELEMENTS> range_solid_trace_elt_type;
+    typedef Range<mesh_solid_1dreduced_type,MESH_ELEMENTS> range_solid_elt_1dreduced_type;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -104,6 +110,7 @@ public :
         // space and element displacement with interaction 2d/2d or 3d/3d
     typedef typename fluid_type::mesh_ale_type::ale_map_functionspace_type space_fluid_disp_type;
     typedef typename fluid_type::mesh_ale_type::ale_map_element_type element_fluid_disp_type;
+    typedef typename fluid_type::mesh_ale_type::ale_map_element_ptrtype element_fluid_disp_ptrtype;
 
     typedef typename solid_type::space_displacement_type space_struct_disp_type;
     typedef typename solid_type::element_displacement_type element_struct_disp_type;
@@ -213,11 +220,13 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    FSI( std::string const& prefix, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-         std::string const& rootRepository = "" );
+    FSI( std::string const& prefix,
+         std::string const& keyword = "fsi",
+         worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FSI( self_type const & M ) = default;
 
-    static std::string expandStringFromSpec( std::string const& expr );
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -245,7 +254,6 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -255,6 +263,8 @@ public :
     void init();
     void solve();
 private :
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
+
     void initCouplingRobinNeumannGeneralized();
 
     void initInterpolation();
@@ -315,6 +325,15 @@ public :
         this->solidModel()->exportResults(time);
     }
 
+
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
     //---------------------------------------------------------------------------------------------------------//
     void updateLinearPDE_Fluid( DataUpdateLinear & data ) const;
     void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
@@ -343,6 +362,8 @@ private :
 
     fluid_ptrtype M_fluidModel;
     solid_ptrtype M_solidModel;
+
+    materialsproperties_ptrtype M_materialsProperties;
 
     double M_meshSize;
     fs::path M_mshfilepathFluidPart1,M_mshfilepathSolidPart1;
@@ -454,6 +475,7 @@ private :
 
     std::set<size_type> M_dofsMultiProcessVelocitySpaceOnFSI_fluid;
 
+    element_fluid_disp_ptrtype M_meshDisplacementOnInterface_fluid;
 };
 
 } // namespace FeelModels

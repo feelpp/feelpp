@@ -58,7 +58,7 @@ class DistanceToMesh
         typedef typename functionspace_distance_type::element_type element_distance_type;
         typedef typename functionspace_distance_type::element_ptrtype element_distance_ptrtype;
 
-        static const uint16_type nDofPerEltDistance = functionspace_distance_type::fe_type::nDof;
+        static inline const uint16_type nDofPerEltDistance = functionspace_distance_type::fe_type::nDof;
 
         typedef typename functionspace_distance_type::mesh_type mesh_distance_type;
         typedef typename functionspace_distance_type::mesh_ptrtype mesh_distance_ptrtype;
@@ -256,11 +256,11 @@ DistanceToMesh< MeshType, FunctionSpaceType >::rangeIntersectingElements() const
             std::back_inserter( *intersectingElementsRefWrapper ),
             [this]( size_type id ) { return boost::cref( this->meshDistance()->element( id ) ); }
             );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+    return range(_range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
             intersectingElementsRefWrapper->begin(),
             intersectingElementsRefWrapper->end(),
             intersectingElementsRefWrapper
-            );
+            ), _mesh=this->meshDistance() );
 }
 
 template< typename MeshType, typename FunctionSpaceType >

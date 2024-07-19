@@ -92,7 +92,7 @@ public:
     static const size_type context = ExprT1::context;
     static const bool is_terminal = ExprT1::is_terminal;
 
-    static const uint16_type imorder = ExprT1::imorder;
+    static inline const uint16_type imorder = ExprT1::imorder;
     static const bool imIsPoly = ExprT1::imIsPoly;
 
     template<typename Func>
@@ -188,11 +188,6 @@ public:
         {
             update( geom );
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -205,10 +200,6 @@ public:
         {
             M_expr.update( geom );
 
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_expr.update( geom, face );
         }
 
         value_type

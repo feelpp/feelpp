@@ -34,7 +34,7 @@ class FEELPP_EXPORT ModelExpression
 {
 public :
 
-    static const uint16_type expr_order = 2;
+    static inline const uint16_type expr_order = 2;
     typedef scalar_field_expression<expr_order> expr_scalar_type;
     typedef vector_field_expression<2,1,expr_order> expr_vectorial2_type;
     typedef vector_field_expression<3,1,expr_order> expr_vectorial3_type;
@@ -112,15 +112,21 @@ public :
     }
     bool isConstant() const { return this->isEvaluable(); }
 
-    evaluate_type evaluate() const
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    evaluate_type evaluate( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
         evaluate_type res;
-        hana::for_each( expr_shapes, [this,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&res,&se]( auto const& e_ij )
                         {
                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                             if ( this->hasExpr<ni,nj>() )
-                                res = this->expr<ni,nj>().evaluate();
+                            {
+                                if constexpr ( is_symbols_expression_empty_v<TheSymbolExprType> )
+                                    res = this->expr<ni,nj>().evaluate();
+                                else
+                                    res = Feel::vf::expr( this->expr<ni,nj>(), se ).evaluate();
+                            }
                         });
         return res;
     }
@@ -168,15 +174,17 @@ public :
     template <int M,int N>
         expr_matrix33_type const& exprMatrix( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const { return this->exprMatrix33(); }
 
-    void setExprScalar( expr_scalar_type const& expr ) { M_exprScalar = boost::optional<expr_scalar_type>( expr ); }
-    void setExprVectorial2( expr_vectorial2_type const& expr ) { M_exprVectorial2 = boost::optional<expr_vectorial2_type>( expr ); }
-    void setExprVectorial3( expr_vectorial3_type const& expr ) { M_exprVectorial3 = boost::optional<expr_vectorial3_type>( expr ); }
-    void setExprMatrix22( expr_matrix22_type const& expr ) { M_exprMatrix22 = boost::optional<expr_matrix22_type>( expr ); }
-    void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = boost::optional<expr_matrix33_type>( expr ); }
+    void setExprScalar( expr_scalar_type const& expr ) { M_exprScalar = std::make_optional<expr_scalar_type>( expr ); }
+    void setExprVectorial2( expr_vectorial2_type const& expr ) { M_exprVectorial2 = std::make_optional<expr_vectorial2_type>( expr ); }
+    void setExprVectorial3( expr_vectorial3_type const& expr ) { M_exprVectorial3 = std::make_optional<expr_vectorial3_type>( expr ); }
+    void setExprMatrix22( expr_matrix22_type const& expr ) { M_exprMatrix22 = std::make_optional<expr_matrix22_type>( expr ); }
+    void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = std::make_optional<expr_matrix33_type>( expr ); }
 
     //! set an expression from a key of a ptree p
     void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
+    void setExpr( nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
     void setExpr( std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" );
+    void setExpr( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
 
     void setParameterValues( std::map<std::string,double> const& mp )
     {
@@ -359,19 +367,46 @@ public :
         return this->hasSymbolDependency( coords, se );
     }
 
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    size_type dynamicContext( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        size_type ctx = 0;
+        hana::for_each( expr_shapes, [this,&se,&ctx]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                auto theExpr = Feel::vf::expr( this->expr<ni,nj>(), se );
+                                ctx = ctx | Feel::vf::dynamicContext( theExpr );
+                            }
+                        });
+        return ctx;
+    }
+
+
+    void reset()
+    {
+        M_exprScalar.reset();
+        M_exprVectorial2.reset();
+        M_exprVectorial3.reset();
+        M_exprMatrix22.reset();
+        M_exprMatrix33.reset();
+    }
+
 private :
-    boost::optional<expr_scalar_type> M_exprScalar;
-    boost::optional<expr_vectorial2_type> M_exprVectorial2;
-    boost::optional<expr_vectorial3_type> M_exprVectorial3;
-    boost::optional<expr_matrix22_type> M_exprMatrix22;
-    boost::optional<expr_matrix33_type> M_exprMatrix33;
+    std::optional<expr_scalar_type> M_exprScalar;
+    std::optional<expr_vectorial2_type> M_exprVectorial2;
+    std::optional<expr_vectorial3_type> M_exprVectorial3;
+    std::optional<expr_matrix22_type> M_exprMatrix22;
+    std::optional<expr_matrix33_type> M_exprMatrix33;
 };
 
 class FEELPP_EXPORT ModelExpressionScalar : private ModelExpression
 {
     typedef ModelExpression super_type;
 public :
-    static const uint16_type expr_order = super_type::expr_order;
+    static inline const uint16_type expr_order = super_type::expr_order;
     typedef typename super_type::expr_scalar_type expr_scalar_type;
 
     ModelExpressionScalar() = default;
@@ -404,7 +439,7 @@ class ModelExpressionMatrix : private ModelExpression
 {
     typedef ModelExpression super_type;
 public :
-    static const uint16_type expr_order = super_type::expr_order;
+    static inline const uint16_type expr_order = super_type::expr_order;
     typedef typename mpl::if_<mpl::bool_< M==2 && N==2 >,
                               typename super_type::expr_matrix22_type,
                               typename super_type::expr_matrix33_type>::type expr_matrix_type;

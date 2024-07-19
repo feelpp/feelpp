@@ -84,8 +84,8 @@ class Mesh3D
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
 
   public:
-    static const uint16_type nDim = 3;
-    static const uint16_type nRealDim = 3;
+    static inline const uint16_type nDim = 3;
+    static inline const uint16_type nRealDim = 3;
 
     /** @name Typedefs
      */
@@ -620,7 +620,6 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
     }
     toc( "[Mesh3D::updateEdges] adding edges already registered", FLAGS_v > 1 );
     tic();
-    edge_type edg; //(this->worldComm());
 
     if ( true ) //this->edges().empty() )
     {
@@ -654,6 +653,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
 
                 if ( edgeinserted )
                 {
+                    edge_type edg;
                     edg.setProcessIdInPartition( currentPid );
                     edg.setId( next_edge++ );
                     edg.setOnBoundary( true, 0 );
@@ -661,7 +661,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
                         edg.setPoint( k, const_cast<point_type&>( bface.point( face_type::eToP( j, k ) ) ) );
 
-                    auto res = this->addEdge( edg );
+                    auto res = this->addEdge( std::move(edg) );
                     auto& edgeInserted = res.first->second;
                     std::get<0>( _edgeit->second ) = &edgeInserted;
                 }
@@ -723,7 +723,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
 
             if ( edgeinserted )
             {
-
+                edge_type edg;
                 edg.setProcessIdInPartition( currentPid );
                 edg.setProcessId( ( elt.isGhostCell() ) ? invalid_rank_type_value : eltPid );
                 edg.setId( next_edge++ );
@@ -746,7 +746,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
                     edg.setPoint( k, elt.point( element_type::eToP( j, k ) ) );
 
                 // add edge in mesh container
-                auto res = this->addEdge( edg );
+                auto res = this->addEdge( std::move(edg) );
                 auto& edgeInserted = res.first->second;
                 // update edge pointer in element
                 elt.setEdge( j, boost::cref( edgeInserted ) );

@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_GEO_HPP)
-#define FEELPP_GEO_HPP 1
+#ifndef FEELPP_FILTERS_GEO_H
+#define FEELPP_FILTERS_GEO_H
 
 #include <feel/feelfilters/gmsh.hpp>
 
@@ -41,35 +41,27 @@ namespace Feel {
  * \arg order (optional, default = 1)
  * \arg h (optional, default = 0.1 )
  */
-BOOST_PARAMETER_FUNCTION(
-    ( gmsh_ptrtype ), // return type
-    geo,    // 2. function name
-    tag,           // 3. namespace of tag types
-    ( required
-      ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
-    ( optional
-      ( prefix,(std::string), "" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ( desc, *( boost::is_convertible<mpl::_,std::string> ), std::string() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) )
-      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( soption(_prefix=prefix,_name="gmsh.geo-variables-list",_vm=vm) ) )
-      ( dim,              *( boost::is_integral<mpl::_> ), 3 )
-      ( order,              *( boost::is_integral<mpl::_> ), 1 )
-      ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) )
-      ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() ) )
-    )
-
+template <typename ... Ts>
+gmsh_ptrtype geo( Ts && ... v )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    std::string const& filename = args.get(_filename );
+    std::string const& prefix = args.get_else(_prefix,"" );
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    std::string const& desc = args.get_else( _desc, "" );
+    double h = args.get_else_invocable( _h, [&prefix,&vm](){ return doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm); } );
+    auto && geo_parameters = args.get_else_invocable( _geo_parameters, [&prefix,&vm](){ return Gmsh::gpstr2map( soption(_prefix=prefix,_name="gmsh.geo-variables-list",_vm=vm) ); } );
+    int dim = args.template get_else<std::is_integral>( _dim, 3 );
+    int order = args.template get_else<std::is_integral>( _order, 1 );
+    auto && files_path = args.get_else_invocable( _files_path, [](){ return Environment::localGeoRepository(); } );
+    std::string const& depends = args.get_else_invocable(_depends, [&prefix,&vm](){ return soption(_prefix=prefix,_name="gmsh.depends",_vm=vm); } );
+    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm, Environment::worldCommPtr() );
+
     gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
 
     gmsh_ptr->setCharacteristicLength( h );
 
-#if BOOST_FILESYSTEM_VERSION == 3
-        gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
-#elif BOOST_FILESYSTEM_VERSION == 2
-        gmsh_ptr->setPrefix( fs::path( filename ).stem() );
-#endif
+    gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
 
     if ( !desc.empty() )
     {
@@ -103,14 +95,11 @@ BOOST_PARAMETER_FUNCTION(
 
                                  try
                                  {
-                                     boost::system::error_code ec;
-
                                      if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
                                          std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
                                      else if ( !fs::exists( cp / _filename )  )
-                                         fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
-
+                                         fs::copy_file( file_path, fs::path( _filename ), fs::copy_options::none );
                                  }
 
                                  catch ( const fs::filesystem_error& e )

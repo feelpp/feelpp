@@ -72,10 +72,6 @@ public:
 
     typedef typename functionspace_type::element_type element_type;
 
-    typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
-            typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
-
-
     /**
      * Constructor
      *
@@ -119,7 +115,7 @@ public:
     ~Aitken() {}
 
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      * \param residual  previous residual
      * \param elem previous element
      */
@@ -127,16 +123,6 @@ public:
     {
         previousResidual = residual;
         previousElement = elem;
-    }
-
-    void initialize( element_type const& residual, element_range_type const& elem )
-    {
-        previousResidual = residual;
-        previousElement.zero();
-        previousElement.add( 1.,elem );
-        /*previousElement = vf::project(previousElement.functionSpace(),
-                                      elements(previousElement.mesh()),
-                                      vf::idv(elem) );*/
     }
 
     /**
@@ -149,17 +135,6 @@ public:
         currentResidual = residual;
         currentElement = elem;
     }
-
-    void setElement( element_type const& residual, element_range_type const& elem )
-    {
-        currentResidual = residual;
-        currentElement.zero();
-        currentElement.add( 1.,elem );
-        /*currentElement = vf::project(currentElement.functionSpace(),
-                                     elements(currentElement.mesh()),
-                                     vf::idv(elem) );*/
-    }
-
 
     /**
      * \return the Aitken parameter

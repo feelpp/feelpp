@@ -63,7 +63,8 @@ void run( int benchId, bool useVariantIntegrate = false )
     GeoTool::Node xl1( (benchId==2)? 0.0 : 1.0, (benchId==2)? 0.0 : 0.2 );
     GeoTool::Node xl2( (benchId==2)? 4.0 : 3.0, (benchId==2)? 0.0 : 0.7 );
     GeoTool::Line L( meshSize,"OMEGAL",xl1,xl2 );
-    typedef mesh_type::trace_mesh_type trace_mesh_type;
+
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
 
     auto submesh = (benchId==1)?
         createSubmesh( _mesh=mesh, _range=markedfaces(mesh,"Boundary1") ) :

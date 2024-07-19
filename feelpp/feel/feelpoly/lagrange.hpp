@@ -39,7 +39,7 @@
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelmesh/pointset.hpp>
 #include <feel/feelpoly/equispaced.hpp>
-
+#include <feel/feelpoly/fekete.hpp>
 
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -69,7 +69,6 @@ public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
 public:
-    
     inline static const uint16_type nDim = super::nDim;
     inline static const uint16_type nOrder= super::nOrder;
 
@@ -85,13 +84,12 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     template< template<class, uint16_type, class> class TestPointSetType >
-    static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
-
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    inline static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
+    inline static const uint16_type numPoints = reference_convex_type::numPoints;
+    inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    inline static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    inline static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
 #if 0
     /**
@@ -150,15 +148,9 @@ public:
         M_points_face( nFacesInConvex ),
         M_fset( primal ),
         M_pset( pts )
+    {
+        if constexpr ( nOrder > 0 )
         {
-            DVLOG(2) << "Lagrange finite element: \n";
-            DVLOG(2) << " o- dim   = " << nDim << "\n";
-            DVLOG(2) << " o- order = " << nOrder << "\n";
-            DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-            DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-            DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-            DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-            DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
             // for each component
             // walk through the geometry entity from vertices up to entity of
@@ -191,6 +183,7 @@ public:
 
             setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
         }
+    }
 
     ~LagrangeDual() = default;
     LagrangeDual& operator=( LagrangeDual const& ) = default;
@@ -308,7 +301,7 @@ template<uint16_type N,
          typename ContinuityType = Continuous,
          typename T = double,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
@@ -327,30 +320,30 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder =  O;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = ContinuityType::is_continuous;
+    inline static const uint16_type nDim = N;
+    inline static const uint16_type nRealDim = RealDim;
+    inline static const uint16_type nOrder =  O;
+    inline static const bool isTransformationEquivalent = true;
+    inline static const bool isContinuous = ContinuityType::is_continuous;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef ContinuityType continuity_type;
-    static const uint16_type TAG = TheTAG;
+    inline static const uint16_type TAG = TheTAG;
 
     /**
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
+    inline static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
     using is_symm  = Feel::is_symm<polyset_type>;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_tensor2symm = is_tensor2 && is_symm_v;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const uint16_type nComponents1 = polyset_type::nComponents1;
-    static const uint16_type nComponents2 = polyset_type::nComponents2;
+    inline static const bool is_tensor2 = polyset_type::is_tensor2;
+    inline static const bool is_tensor2symm = is_tensor2 && is_symm_v;
+    inline static const bool is_vectorial = polyset_type::is_vectorial;
+    inline static const bool is_scalar = polyset_type::is_scalar;
+    inline static const uint16_type nComponents = polyset_type::nComponents;
+    inline static const uint16_type nComponents1 = polyset_type::nComponents1;
+    inline static const uint16_type nComponents2 = polyset_type::nComponents2;
 
     static const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
@@ -379,22 +372,22 @@ public:
     typedef typename convex_type::topological_face_type face_type;
     typedef typename convex_type::edge_type edge_type;
 
-    static const uint16_type numPoints = reference_convex_type::numPoints;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    inline static const uint16_type numPoints = reference_convex_type::numPoints;
+    inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    inline static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    inline static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+    inline static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    inline static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    inline static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    inline static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    inline static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    inline static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
-    static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
-                                               edge_type::numEdges * nDofPerEdge);
-    static const uint16_type nLocalVertexDof = nDofPerVertex;
+    inline static const uint16_type nLocalEdgeDof = ( edge_type::numVertices * nDofPerVertex +
+                                                      edge_type::numEdges * nDofPerEdge);
+    inline static const uint16_type nLocalVertexDof = nDofPerVertex;
     template<int subN>
     struct SubSpace
     {
@@ -416,7 +409,7 @@ public:
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
-    static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
+    inline static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
 
     //@}
 
@@ -685,7 +678,7 @@ public:
         }
     template<typename ExprType>
     void
-    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
+    evaluateBasisFunction/*interpolateBasisFunction*/( ExprType&& expr, local_interpolants_type & Ihloc ) const
     {
         using shape = typename std::decay_t<ExprType>::shape;
         /*
@@ -699,7 +692,8 @@ public:
         //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
         using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
 
-        for( int q = 0; q < nLocalDof; ++q )
+        int nPoints = expr.nPoints();
+        for( int q = 0; q < nPoints; ++q )
         {
             for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
             {
@@ -714,19 +708,19 @@ public:
                         {
                             for( int c2 = 0; c2 < c1; ++c2 )
                             {
-                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                int ldof = (c2+nComponents2*c1)*nPoints + q;
                                 Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
-                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q;
+                                int ldof2 = (c1+nComponents2*c2)*nPoints + q;
                                 Ihloc( I, ldof2) = Ihloc( I, ldof);
                             }
-                            int ldof = (c1+nComponents2*c1)*nLocalDof + q;
+                            int ldof = (c1+nComponents2*c1)*nPoints + q;
                             Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
                         }
                         else
                         {
                             for( int c2 = 0; c2 < shape::N; ++c2 )
                             {
-                                int ldof = (c2+nComponents2*c1)*nLocalDof + q;
+                                int ldof = (c2+nComponents2*c1)*nPoints + q;
                                 Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
                             }
                         }
@@ -735,6 +729,98 @@ public:
             }
         }
     }
+
+    template<typename ExprType>
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc, std::vector<uint16_type> const& mapExprPointToDofPoint ) const
+    {
+        using shape = typename std::decay_t<ExprType>::shape;
+        /*
+        BOOST_MPL_ASSERT_MSG( nComponents1==shape::M,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents1>,mpl::int_<shape::M>));
+        BOOST_MPL_ASSERT_MSG( nComponents2==shape::N,
+                              INCOMPATIBLE_NUMBER_OF_COMPONENTS,
+                              (mpl::int_<nComponents2>,mpl::int_<shape::N>));
+         */
+        //for ( int cc1 = 0; cc1 < nComponents1; ++cc1 )
+        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
+
+        int nPoints = expr.nPoints();
+        for( int q = 0; q < nPoints; ++q )
+        {
+            uint16_type q2 = mapExprPointToDofPoint[q];
+            for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
+            {
+                int ncomp1= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
+
+                for ( uint16_type c = 0; c < ncomp1; ++c )
+                {
+                    uint16_type I = expr_basis_t::nLocalDof*c + i;
+                    for( int c1 = 0; c1 < shape::M; ++c1 )
+                    {
+                        if ( is_symm_v )
+                        {
+                            for( int c2 = 0; c2 < c1; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q2;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                                int ldof2 = (c1+nComponents2*c2)*nLocalDof + q2;
+                                Ihloc( I, ldof2) = Ihloc( I, ldof);
+                            }
+                            int ldof = (c1+nComponents2*c1)*nLocalDof + q2;
+                            Ihloc( I, ldof) = expr.evaliq( I, c1, c1, q );
+                        }
+                        else
+                        {
+                            for( int c2 = 0; c2 < shape::N; ++c2 )
+                            {
+                                int ldof = (c2+nComponents2*c1)*nLocalDof + q2;
+                                Ihloc( I, ldof) = expr.evaliq( I, c1, c2, q );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    template<typename ExprType,
+             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 0 ,bool> = true >
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
+        {
+            std::vector<uint16_type> mapExprPointToDofPoint(nLocalDof);
+            std::iota( mapExprPointToDofPoint.begin(), mapExprPointToDofPoint.end(), 0 );
+            this->interpolateBasisFunction( expr, Ihloc, mapExprPointToDofPoint );
+        }
+
+    template<typename ExprType,
+             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 1 ,bool> = true >
+    void
+    interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
+        {
+            int nPoints = expr.nPoints();
+            CHECK( nLocalFaceDof == nPoints ) << nLocalFaceDof << " vs "<< nPoints;
+            auto gmc = expr.geom();
+            uint16_type faceIdInElt = gmc->faceId();
+            std::vector<uint16_type> mapExprPointToDofPoint( nLocalFaceDof );
+            for ( int lfd = 0;lfd < nLocalFaceDof;++lfd )
+            {
+                if ( reference_convex_type::nDim == 2 )
+                {
+                    if ( lfd < (face_type::numVertices * nDofPerVertex) )
+                        mapExprPointToDofPoint[lfd] = reference_convex_type::e2p(faceIdInElt,lfd);
+                    else
+                        CHECK( false ) << "TODO";
+                }
+                else
+                    CHECK( false ) << "TODO";
+            }
+
+            this->interpolateBasisFunction( expr, Ihloc, mapExprPointToDofPoint );
+        }
+
     //@}
 
 private:
@@ -743,12 +829,15 @@ private:
     face_basis_ptrtype M_bdylag;
     std::vector<uint16_type> M_unsymm2symm;
 };
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/develop
 } // namespace fem
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          typename ContinuityType = Continuous,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          uint16_type TheTAG=0 >
 class Lagrange
 {
@@ -773,16 +862,11 @@ public:
 
     typedef Lagrange<Order,Scalar,ContinuityType,Pts,TheTAG> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
-    static const uint16_type TAG = TheTAG;
+    inline static const uint16_type nOrder =  Order;
+    inline static const uint16_type TAG = TheTAG;
 
 };
-template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG>
-const uint16_type Lagrange<Order,PolySetType,ContinuityType,Pts,TheTAG>::nOrder;
+
 
 
 template<typename P>

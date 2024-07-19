@@ -99,12 +99,12 @@ public:
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     evaluate_type
-    evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool parallel ) const
         {
             if constexpr ( InterpOperator == 0 )
-                return evaluate_type::Constant( this->interpolator()( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
+                return evaluate_type::Constant( this->interpolator()( M_expr.evaluate( parallel )(0,0) ) );
             else
-                return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
+                return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel)(0,0) ) );
         }
 
     template <typename SymbolsExprType>
@@ -200,13 +200,6 @@ public:
             {}
 
 
-        // IM =
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
-
         // precompute the part in the bilinear form
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
@@ -221,11 +214,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        // precompute the part in the evaluate part for a face
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,

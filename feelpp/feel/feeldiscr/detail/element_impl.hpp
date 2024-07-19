@@ -48,8 +48,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
     size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
     size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
     size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    if ( !Cont::is_shallow_array_adaptor_vector )
-        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
+    //if ( !Cont::is_shallow_array_adaptor_vector )
+        //startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
 
 
     typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
@@ -74,8 +74,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string con
             fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
         }
 
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+        DVLOG(2) << "Element <" << i << ">::range.size :  "<< ct.size() << "\n";
+        DVLOG(2) << "Element <" << i << ">::range.start :  "<< ct.start() << "\n";
         return typename sub_element<i>::type( space, ct, name );
     }
 
@@ -113,79 +113,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::strin
                                                              bool updateOffViews,
                                                              typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type*  )
 {
-#if 0
-    auto u = this->element<i>(name,updateOffViews);
-    u.on( _range=elements(this->mesh()), _expr=e );
-    return u;
-#else
     this->element<i>(name,updateOffViews).on( _range=elements(this->mesh()), _expr=e );
     return this->element<i>(name,updateOffViews);
-#endif
 }
-#if 0
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename Y,  typename Cont>
-template<int i>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name, bool updateOffViews ) const
-{
-    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
-    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
-    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    if ( !Cont::is_shallow_array_adaptor_vector )
-        startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
-    typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
-
-    DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
-    DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
-    DVLOG(2) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
-    DVLOG(2) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
-
-    if ( this->functionSpace()->worldsComm()[i].isActive() )
-    {
-        ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
-                    ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
-                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
-                    M_functionspace->template functionSpace<i>()->dof() );
-
-        // update M_containersOffProcess<i> : send
-        if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
-        {
-            std::vector<double> dataToSend( ct.begin(), ct.end() );
-
-            if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
-
-            fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
-        }
-
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-        return typename sub_element<i>::type( space, ct, name );
-
-    }
-
-    else
-    {
-        // update M_containersOffProcess<i> : recv
-        if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
-        {
-            fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
-        }
-
-        // build a subrange view identical
-        ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
-                    ublas::range( 0, space->nLocalDof() ),
-                    ublas::range( 0, 0 ),
-                    M_functionspace->template functionSpace<i>()->dof() );
-
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-        return typename sub_element<i>::type( space, ct, name );
-    }
-
-
-}
-#endif
 
 //
 // Element implementation
@@ -220,6 +150,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
+#if 0
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element && __e )
@@ -246,7 +177,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element && __e )
     __e.M_ct2 = ComponentType::NO_COMPONENT;
     __e.M_containersOffProcess = boost::none;
 }
-
+#endif
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -330,7 +261,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
                                                              size_type nActiveDof, value_type* arrayActiveDof,
                                                              size_type nGhostDof, value_type* arrayGhostDof )
     :
-    super( nActiveDof,arrayActiveDof,nGhostDof,arrayGhostDof, __functionspace->dof() ),
+    super( nActiveDof, arrayActiveDof, nGhostDof, arrayGhostDof, __functionspace->dof() ),
     M_functionspace( __functionspace ),
     //M_name( __name ),
     //M_desc( __desc ),
@@ -2666,9 +2597,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
     }
 
-    const size_type context = mpl::if_< mpl::or_<mpl::bool_<is_hdiv_conforming>, mpl::bool_<is_hcurl_conforming> >,
-                                        mpl::int_<ExprType::context|vm::POINT|vm::JACOBIAN>,
-                                        mpl::int_<ExprType::context|vm::POINT> >::type::value;
+    constexpr size_type context = (is_hdiv_conforming || is_hcurl_conforming)?ExprType::context|vm::POINT|vm::JACOBIAN:ExprType::context|vm::POINT;
+
     auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
     auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
 

@@ -32,7 +32,7 @@
 #include <functional>
 
 //#include <boost/function.hpp>
-//#include <boost/bind.hpp>
+//#include <boost/bind/bind.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -684,7 +684,7 @@ protected:
     MatSolverPackageType M_matSolverPackage_type;
 
     /**
-     * Two differents tolerances on the residual for the resolution of non linear system
+     * Two different tolerances on the residual for the resolution of non linear system
      */
     double M_relativeResidualTol;
     double M_absoluteResidualTol;

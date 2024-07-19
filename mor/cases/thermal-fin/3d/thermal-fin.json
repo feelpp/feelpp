@@ -1,0 +1,148 @@
+// -*- mode: javascript -*-
+// Source for the values of rho, Cp, h : https://docs.lib.purdue.edu/iracc/1338/
+{
+    "Name": "Themal Fin 3d",
+    "ShortName":"ThermalFin3d",
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/fin.geo",
+                "hsize": 0.1
+            }
+        }
+    },
+
+    "CRBParameters":
+    {
+        "k_1":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
+        "k_2":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
+        "k_3":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
+        "k_4":
+        {
+            "min":"0.1",
+            "max":"10"
+        },
+        "Bi":
+        {
+            "min":"0.01",
+            "max":"1"
+        }
+    },
+    "Parameters":
+    {
+        "k_1":"0.1",
+        "k_2":"0.1",
+        "k_3":"0.1",
+        "k_4":"0.1",
+        "k_0":"1",
+        "Bi":"0.01"
+    },
+    "Materials":
+    {
+        "Fin_1":
+        {
+            "k":"k_1:k_1",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Fin_2":
+        {
+            "k":"k_2:k_2",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Fin_3":
+        {
+            "k":"k_3:k_3",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Fin_4":
+        {
+            "k":"k_4:k_4",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Post":
+        {
+            "k":"k_0:k_0",
+            "Cp":"1.4e6",
+            "rho":"1"
+        }
+    },
+    "InitialConditions":
+    {
+        "temperature": 
+        {
+            "Expression": 
+            {
+                "init": 
+                {
+                    "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"], 
+                    "expr":"0" 
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "flux":
+            {
+                "Gamma_root": { "expr": "1" }
+            },
+            "convective_heat_flux":
+            {
+                "Gamma_ext":
+                {
+                    "h": "Bi:Bi",
+                    "Text": "0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "heat":
+        {
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            }
+        }
+    },
+
+    "nirb":
+    {
+        "H": 0.25,
+        "h": "H**2:H",
+        "dim": 3,
+        "order": 1,
+        "toolboxType": "heat",
+        "finemesh_path": "$cfgdir/fin.geo",
+        "coarsemesh_path": "$cfgdir/fin.geo",
+        "model_path": "$cfgdir/thermal-fin.json",
+        "doRectification": true,
+        "doBiorthogonalization": false,
+        "nbSnapshots": 10,
+        "greedy-generation": false,
+        "outdir": "results3d/rect/noGreedy"
+    }
+}

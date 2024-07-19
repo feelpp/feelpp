@@ -118,7 +118,8 @@ public:
     /**
      * local interpolant is undefined
      */
-    typedef boost::none_t local_interpolant_type;
+    using  local_interpolant_type = std::monostate;
+    using  local_interpolants_type = std::monostate;
 
     struct SSpace
     {
@@ -403,6 +404,8 @@ public:
 
     static const uint16_type nOrder =  Order;
     static const uint16_type TAG = TheTAG;
+    using  local_interpolant_type = std::monostate;
+    using  local_interpolants_type = std::monostate;
 };
 
 } // Feel

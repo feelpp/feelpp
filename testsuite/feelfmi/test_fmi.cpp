@@ -1,9 +1,11 @@
 #define BOOST_TEST_MODULE test_fmi
 
 #include <feel/feelcore/testsuite.hpp>
-
+#if FEELPP_HAS_FMILIB
 #include <feel/feelfmi/fmu.hpp>
-
+#elif FEELPP_HAS_FMI4CPP
+#include <feel/feelfmi/fmi4cpp.hpp>
+#endif
 using namespace Feel;
 
 inline AboutData makeAbout()
@@ -20,9 +22,56 @@ inline AboutData makeAbout()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( test_fmi )
 
-BOOST_AUTO_TEST_CASE( test_fmi2cs )
+#if FEELPP_HAS_FMI4CPP
+BOOST_AUTO_TEST_CASE( test_fmi2cs_fmi4cpp )
+{
+    Environment::setOptionValue<std::string>( "fmu.filename", Environment::expand("${cfgdir}/fmi2cs/fmi2cs.fmu") );
+    BOOST_TEST_MESSAGE( "fmu.filename=" << soption("fmu.filename") );
+    BOOST_CHECK( fs::exists( soption("fmu.filename") ) );
+    auto fmu = fmi2::fmu( soption("fmu.filename") ).as_cs_fmu();
+    auto md = fmu->get_model_description();
+    size_t numOutputs = 0;
+    for ( const auto& v : *fmu->get_model_description()->model_variables )
+    {
+        if ( v.causality == fmi2::causality::output )
+        {
+            numOutputs++;
+        }
+    }
+    BOOST_CHECK_EQUAL( 0, numOutputs );
+
+    auto slave = fmu->new_instance();
+    std::cout << "model_identifier=" << slave->get_model_description()->model_identifier << std::endl;
+    BOOST_CHECK( slave->setup_experiment() );
+    BOOST_CHECK( slave->enter_initialization_mode() );
+    BOOST_CHECK( slave->exit_initialization_mode() );
+    std::vector<fmi2Real> ref( 2 );
+    std::vector<fmi2ValueReference> vr = { md->get_variable_by_name( "y" ).value_reference, md->get_variable_by_name( "lambda" ).value_reference  };
+    auto y = md->model_variables->getByValueReference( vr[0] ).as_real();
+    auto lambda = md->model_variables->getByValueReference( vr[1] ).as_real();
+    double step_size = 1e-4;
+    const double stop = 5;
+
+    double t;
+    while ( ( t = slave->get_simulation_time() ) <= stop )
+    {
+        BOOST_CHECK( slave->step( step_size ) );
+        BOOST_CHECK( slave->read_real( vr, ref ) );
+//        BOOST_CHECK_CLOSE( ref[0], 0.1602522260970522, 1e-2 );
+//        BOOST_CHECK_CLOSE( ref[1], 3.068004452918325, 1e-2 );
+//        std::cout << "t=" << t << ", y=" << ref[0] << std::endl;
+        BOOST_CHECK_CLOSE( ref[0], exp(-ref[1]*t), 1 );
+    }
+
+    BOOST_CHECK( slave->terminate() );
+} 
+#endif
+#if FEELPP_HAS_FMILIB
+BOOST_AUTO_TEST_CASE( test_fmi2cs_fmilib )
 {
     Environment::setOptionValue<std::string>("fmu.filename", "${cfgdir}/fmi2cs/fmi2cs.fmu");
+
+  
     FMU my_fmu;
     my_fmu.load();
     my_fmu.initialize(0,1); // initialize the fmu with t_init=0 and t_final=1
@@ -47,6 +96,7 @@ BOOST_AUTO_TEST_CASE( test_fmi2cs )
     v = my_fmu.getValue<double>( "v" );
     BOOST_CHECK_SMALL( math::abs(h-0.4680044525539696), 1e-2 );
     BOOST_CHECK_SMALL( math::abs(v+1.836995547081675), 1e-2 );
+   
 }
-
+#endif 
 BOOST_AUTO_TEST_SUITE_END()

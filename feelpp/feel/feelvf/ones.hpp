@@ -148,7 +148,7 @@ public:
     {
         return M_values;
     }
-    constexpr evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+    constexpr evaluate_type evaluate( bool ) const
     {
         return M_values;
     }
@@ -232,11 +232,6 @@ public:
             tensor( expr, geom, theInitArgs... )
             {}
 
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
-
         void update( Geo_t const&, Basis_i_t const&, Basis_j_t const& )
         {
         }
@@ -244,9 +239,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
         {
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>

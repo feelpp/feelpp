@@ -31,6 +31,7 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelmesh/ranges.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -101,31 +102,30 @@ public:
         M_mesh->updateMarker2( mark );
         M_mesh->addMarkerName( "select_elements", fid, DIM );
 
-        auto range = marked2elements(M_mesh,"select_elements");
+        auto therange = marked2elements(M_mesh,"select_elements");
 
-        BOOST_CHECK( nelements(range,true) == mark.sum() );
+        BOOST_CHECK( nelements(therange,true) == mark.sum() );
 
         // Create faces range: Iterate on selected elements, select only
         // boundary faces, add them in a vector.
-        boost::shared_ptr<cont_range_type> myfaces( new cont_range_type );
-        for( auto const& eltWrap : range )
+        Range<mesh_type,MESH_FACES> r(M_mesh);
+        for( auto& eltWrap : therange )
         {
-            auto const& elt = boost::unwrap_ref( eltWrap );
+            auto& elt = boost::unwrap_ref( eltWrap );
             for( uint16_type f=0;f<elt.numTopologicalFaces; ++f )
             {
-                auto face = elt.face(f);
+                auto& face = elt.face(f);
                 if ( face.isOnBoundary() )
-                    myfaces->push_back(boost::cref(face));
+                    r.push_back(face);
             }
         }
 
-        // Create a range of faces.
-        auto myrangefaces = boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                                               myfaces->begin(),
-                                               myfaces->end() );
-
-        M_mesh->updateMarker2WithRangeFaces( myrangefaces, 666 );
+        M_mesh->updateMarker2WithRangeFaces( r, 666 );
         M_mesh->addMarkerName( "select_faces", 666, DIM-1 );
+
+        int n1 = nelements( marked2faces(M_mesh,"select_faces") );
+        int n2 = nelements( r );
+        BOOST_MESSAGE( fmt::format( "nelts faces, n1={}, m2={} ", n1, n2 ) ); 
 
         test_boundary.on( _range=boundaryelements(M_mesh), _expr=cst(42) );
         test_elements0.on( _range=marked2elements(M_mesh,"select_elements"), _expr=cst(42) );
@@ -135,7 +135,7 @@ public:
         // ----------------------------------
         // CHECK
         int size = 0;
-        for( auto const& eltWrap : range )
+        for( auto const& eltWrap : therange )
         {
             auto const& elt = unwrap_ref( eltWrap );
             for(uint16_type f=0;f<elt.numTopologicalFaces; ++f)

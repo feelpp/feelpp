@@ -54,7 +54,7 @@ makeAbout()
                      "Copyright (c) 2010 Universite Joseph Fourier" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    about.addAuthor( "StÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ©phane Veys", "developer", "stephane.veys@gmail.com", "" );
+    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@gmail.com", "" );
     return about;
 
 }
@@ -175,28 +175,23 @@ public:
     void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
     // this function will move to the mesh library in the mesh class
-    BOOST_PARAMETER_CONST_MEMBER_FUNCTION(
-        ( mesh_ptrtype ), // return type
-        adapt,    // 2. function name
+    template <typename ... Ts>
+    mesh_ptrtype adapt( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && h = args.get(_h);
+            int maxit = args.get_else(_maxit,10);
+            double hmin = args.get_else(_hmin,1e-2);
+            double hmax = args.get_else(_hmin,2);
+            auto && model = args.get_else(_model,"");
+            int statistics = args.get_else(_statistics,0);
+            size_type update = args.get_else(_update,MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES);
+            bool collapseOnBoundary = args.get_else(_collapseOnBoundary,true);
+            double collapseOnBoundaryTolerance = args.get_else(_collapseOnBoundaryTolerance,1e-6 );
 
-        tag,           // 3. namespace of tag types
-
-        ( required
-          ( h, * ) ) // 4. one required parameter, and
-
-        ( optional
-          ( maxit,           *( boost::is_integral<mpl::_> ), 10 )
-          ( hmin,            *( boost::is_arithmetic<mpl::_> ), 1e-2 )
-          ( hmax,            *( boost::is_arithmetic<mpl::_> ), 2 )
-          ( model,           *, "" )
-          ( statistics,      *( boost::is_integral<mpl::_> ), 0 )
-          ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER )
-          ( collapseOnBoundary, *( boost::is_integral<mpl::_> ), true )
-          ( collapseOnBoundaryTolerance, *( boost::is_arithmetic<mpl::_> ), 1e-6 ) ) // 5. optional
-    )
-    {
-
-    }
+            // TODO
+            return {};
+        }
 
 private:
 
@@ -310,7 +305,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     if ( first_time )
     {
         if ( !this->vm().count( "nochdir" ) )
-            Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+            Environment::changeRepository( _directory=boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
                                            % this->about().appName()
                                            % shape
                                            % Dim
@@ -391,17 +386,17 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     // [toto3]
     //# marker2 #
     vector_ptrtype F( M_backend->newVector( Xh ) );
-    form1( _test=Xh, _vector=F, _init=true ) =
-        integrate( elements( mesh ), minus_laplacian_g*id( v ) )+
-        integrate( markedfaces( mesh, tag_Neumann ),
-                   grad_g*vf::N()*id( v ) );
+    form1( _test=Xh, _vector=F ) =
+        integrate( _range=elements( mesh ), _expr=minus_laplacian_g*id( v ) )+
+        integrate( _range=markedfaces( mesh, tag_Neumann ),
+                   _expr=grad_g*vf::N()*id( v ) );
 
     //# endmarker2 #
     if ( this->comm().size() != 1 || weakdir )
     {
         //# marker41 #
         form1( _test=Xh, _vector=F ) +=
-            integrate( markedfaces( mesh,tag_Dirichlet ), g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+            integrate( _range=markedfaces( mesh,tag_Dirichlet ), _expr=g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 
@@ -416,7 +411,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      */
     //# marker3 #
     // [toto4]
-    sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
+    sparse_matrix_ptrtype D( M_backend->newMatrix( _test=Xh, _trial=Xh ) );
     // [toto4]
 
     /**
@@ -424,8 +419,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      * \snippet residualestimator.hpp toto5
     */
     // [toto5]
-    form2( _test=Xh, _trial=Xh, _matrix=D, _init=true ) =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=D ) =
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
     // [toto5]
     //# endmarker3 #
 
@@ -440,8 +435,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         // [toto6]
         //# marker10 #
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            integrate( markedfaces( mesh,tag_Dirichlet ),
-                       -( gradt( u )*vf::N() )*id( v )
+            integrate( _range=markedfaces( mesh,tag_Dirichlet ),
+                       _expr=-( gradt( u )*vf::N() )*id( v )
                        -( grad( v )*vf::N() )*idt( u )
                        +penaldir*id( v )*idt( u )/hFace() );
         D->close();
@@ -460,7 +455,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         //# marker5 #
         D->close();
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            on( markedfaces( mesh, tag_Dirichlet ), u, F, g );
+            on( _range=markedfaces( mesh, tag_Dirichlet ), _element=u, _rhs=F, _expr=g );
         //# endmarker5 #
         // [toto7]
 
@@ -482,17 +477,17 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
      */
      // [toto9]
     //# marker7 #
-    double L2exact = math::sqrt( integrate( elements( mesh ),g*g ).evaluate()( 0,0 ) );
-    double L2error2 =integrate( elements( mesh ),( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
+    double L2exact = math::sqrt( integrate( _range=elements( mesh ),_expr=g*g ).evaluate()( 0,0 ) );
+    double L2error2 =integrate( _range=elements( mesh ),_expr=( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0,0 );
     double L2error = math::sqrt( L2error2 );
     // [toto9]
-    double semiH1error2 = integrate( elements( mesh ),( gradv( u )-grad_g )*( gradv( u )-grad_g ) ).evaluate()( 0,0 );
+    double semiH1error2 = integrate( _range=elements( mesh ),_expr=( gradv( u )-grad_g )*( gradv( u )-grad_g ) ).evaluate()( 0,0 );
     double H1error = math::sqrt( L2error2+semiH1error2 );
-    double H1exact = math::sqrt( integrate( elements( mesh ),g*g+grad_g*trans( grad_g ) ).evaluate()( 0,0 ) );
+    double H1exact = math::sqrt( integrate( _range=elements( mesh ),_expr=g*g+grad_g*trans( grad_g ) ).evaluate()( 0,0 ) );
 
 
-    auto RealL2ErrorP0 = integrate( elements( mesh ), ( idv( u )-g )*( idv( u )-g ), _Q<10>() ).broken( P0h );
-    auto RealSemiH1ErrorP0 = integrate( elements( mesh ), ( gradv( u )-grad_g )* trans( gradv( u )-grad_g ), _Q<10>() ).broken( P0h );
+    auto RealL2ErrorP0 = integrate( _range=elements( mesh ), _expr=( idv( u )-g )*( idv( u )-g ),_quad= _Q<10>() ).broken( P0h );
+    auto RealSemiH1ErrorP0 = integrate( _range=elements( mesh ), _expr=( gradv( u )-grad_g )* trans( gradv( u )-grad_g ), _quad= _Q<10>() ).broken( P0h );
     auto H1RealErrorP0 = RealL2ErrorP0;
     H1RealErrorP0 += RealSemiH1ErrorP0;
     H1RealErrorP0 = H1RealErrorP0.sqrt();
@@ -505,17 +500,19 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     auto term3 = gradv( u )*vf::N()-grad_g*N();
 
 
-    auto rho = integrate( elements( mesh ), term1*term1, _Q<10>() ).broken( P0h ).sqrt();
+    auto rho = integrate( _range=elements( mesh ), _expr=term1*term1, _quad=_Q<10>() ).broken( P0h ).sqrt();
 
+#if 0
+    rho += integrate( _range=internalfaces( mesh ),_expr=0.25*vf::h()*term2*term2 ).broken( P0h ).sqrt();
 
-    rho += integrate( internalfaces( mesh ),0.25*vf::h()*term2*term2 ).broken( P0h ).sqrt();
+    rho += integrate( _range=markedfaces( mesh,tag_Neumann ),
+                      _expr=vf::h()*term3*term3 ).broken( P0h ).sqrt();
+#else
+    #warning TODO fix broken compilation on faces
+#endif
 
-    rho += integrate( markedfaces( mesh,tag_Neumann ),
-                      vf::h()*term3*term3 ).broken( P0h ).sqrt();
-
-
-    auto h=vf::project( P0h, elements( mesh ), vf::h() );
-    auto npen=vf::project( P0h, elements( mesh ), vf::nPEN() );
+    auto h=vf::project( _space=P0h, _range=elements( mesh ), _expr=vf::h() );
+    auto npen=vf::project( _space=P0h, _range=elements( mesh ), _expr=vf::nPEN() );
     auto H1estimator = rho;
 
     //if we use real error for adaptation then H1errorP1 will be the projection of H1RealErrorP0 on P1 space
@@ -552,8 +549,8 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     h_new = P1h->element();
 
-    h_new = vf::project( P1h, elements( mesh ),
-                         vf::max( vf::pow(
+    h_new = vf::project( _space=P1h, _range=elements( mesh ),
+                         _expr=vf::max( vf::pow(
                                       vf::pow( vf::h(),Order )*( tol )/idv( H1errorP1 ),
                                       1./Order ),
                                   doption("adapt-hmin") ) );
@@ -563,9 +560,9 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
     //! save the results
     //! project the exact solution
     element_type exact_solution( Xh, "exact_solution" );
-    exact_solution = vf::project( Xh, elements( mesh ), g );
+    exact_solution = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
     element_type u_minus_exact( Xh, "u-g" );
-    u_minus_exact = vf::project( Xh, elements( mesh ), idv( u )-g );
+    u_minus_exact = vf::project( _space=Xh, _range=elements( mesh ), _expr=idv( u )-g );
 
 
     if ( exporter->doExport() )

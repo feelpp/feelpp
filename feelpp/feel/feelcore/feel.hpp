@@ -28,20 +28,40 @@
 # ifndef _FEELPP_HH_
 # define _FEELPP_HH_
 
-//! @defgroup Core 
+//! @defgroup Feelpp
+//! Feel++ classes and methods
+
+//! @defgroup Core
+//! @ingroup Feelpp
 //! Core classes provided by the library
 
 //! @defgroup Mesh
+//! @ingroup Feelpp
 //! Mesh classes and algorithms provided by the library
 
-//! @defgroup Discretization 
+//! @defgroup Discretization
+//! @ingroup Feelpp
 //! Discretization classes and algorithms provided by the library
 
 //! @defgroup Filters
+//! @ingroup Feelpp
 //! Filter classes provided by the library
 
 //! @defgroup DSEL-Variational-Formulation
+//! @ingroup Feelpp
 //! Variational forms provided by the library
+
+//! @defgroup SpaceTime
+//! @ingroup Feelpp
+//! Time stepping including space provided by the library
+
+//! @defgroup Timing
+//! @ingroup Feelpp
+//! Timing methods provided by the library
+
+//! @defgroup Traits
+//! @ingroup Feelpp
+//! Traits provided by the library
 
 #if defined(__APPLE__)
 #undef tolower
@@ -60,6 +80,11 @@
 #include <boost/mpl/begin_end.hpp>
 #include <boost/mpl/comparison.hpp>
 
+#include <boost/mp11/integral.hpp>
+#include <boost/mp11/utility.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/function.hpp>
+
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -69,8 +94,6 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdivision-by-zero"
@@ -85,17 +108,16 @@
 
 #include <boost/cstdint.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 
-#include <boost/hana.hpp>
+#include <feel/feelcore/hana.hpp>
 #include <boost/ref.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <filesystem>
+#include <fstream>
 #include <cmath>
 #include <numeric>
 #include <string>
@@ -127,7 +149,7 @@
 #endif
 
 #include <feel/feelconfig.h>
-#include <feel/feelcore/info.hpp>
+//#include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>
 #include <feel/feelcore/feelassert.hpp>
 #include <feel/feelcore/feeltypes.hpp>
@@ -151,9 +173,9 @@
 namespace Feel
 {
 namespace assign = boost::assign;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 namespace mpl = boost::mpl;
-namespace lambda = boost::lambda;
+namespace mp11 = boost::mp11;
 namespace po = boost::program_options;
 namespace hana=boost::hana;
 using namespace boost::hana::literals;
@@ -166,8 +188,8 @@ namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
 //namespace constants = boost::math::constants;
 //using boost::math::double_constants;
-const double pi = constants::pi<double>();
-const double two_pi = constants::two_pi<double>();
+inline const double pi = constants::pi<double>();
+inline const double two_pi = constants::two_pi<double>();
 
 namespace algorithm=boost::algorithm;
 using google::WARNING;
@@ -217,7 +239,7 @@ namespace Feel
 //!
 //! \namespace
 //! @brief Feel++ alias for program_options namespace
-//! 
+//!
 namespace po = boost::program_options;
 
 //!
@@ -236,24 +258,24 @@ prefixvm( std::string const& prefix,
 //!
 //! @ingroup Core
 //! @brief trim string to remove special characters
-//! 
+//!
 //! trim string removing all leading and trailing spaces and replace
 //! all special characters " ;:," inside the block by a _
 //! @param s a string to be trimmed
-//! 
+//!
 std::string sanitize( std::string const& s );
 
-//! 
+//!
 //! trim a vector of strings removing all leading and trailing spaces and
 //! replace all special characters " ;:," inside the block by a _
 //! @param s a vector of strings
-//! 
+//!
 std::vector<std::string> sanitize( std::vector<std::string> const& s );
 
 //!
 //! \namespace
 //! @ingroup Core
-//! 
+//!
 //! Feel++ namespace alias for boost::posix_time
 namespace posix_time = boost::posix_time;
 //! Feel++ namespace alias for boost::gregorian
@@ -399,7 +421,7 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 //!
 //! This macro is enabled only if `NDEBUG` is not defined which is to say that
 //! the macro will be activited when debugging
-//! 
+//!
 //! @code
 //! DVLOG_IF( INFO, param < 10 ) << "print only if param < 10";
 //! @endcode
@@ -453,8 +475,44 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 # endif // FEELPP_DOXYGEN_INVOKED
 
+/**
+ * @brief enable reduce for mpi communication
+ */
+constexpr inline bool do_reduce = true;
+/**
+ * @brief disable reduce for mpi communication
+ */
+constexpr inline bool no_reduce = false;
+/**
+ * @brief enable communication for mpi communication
+ */
+constexpr inline bool do_communication = true;
+/**
+ * @brief disable communication for mpi communication
+ */
+constexpr inline bool no_communication = false;
+
+/**
+ * @brief enable communication for mpi communication
+ */
+constexpr inline bool parallelEvaluation = true;
+
+/**
+ * @brief disable communication for mpi communication
+ */
+constexpr inline bool sequentialEvaluation = false;
+
 #include <feel/feelcore/ptr.hpp>
 #include <feel/feelcore/range.hpp>
 #include <feel/feelcore/hashtables.hpp>
+
+/**
+ * @brief boolean to enable shared_from_this
+ */
+inline constexpr bool EnableSharedFromThis = true;
+/**
+ * @brief boolean to disable shared_from_this
+ */
+inline constexpr bool DisableSharedFromThis = false;
 
 #endif

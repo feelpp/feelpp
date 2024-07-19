@@ -76,7 +76,7 @@ public:
 
     typedef typename imesh<double_type,Dim,Order>::convex_type convex_type;
     typedef typename imesh<double_type,Dim,Order>::type mesh_type;
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
     typedef Backend<double_type> backend_type;
     typedef Exporter<trace_mesh_type,Order> trace_export_type;
@@ -113,7 +113,7 @@ Test<Dim,Order>::run()
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
 
     if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
+        Environment::changeRepository( _directory=boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
                                        % this->about().appName()
                                        % shape
                                        % Dim

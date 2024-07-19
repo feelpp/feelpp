@@ -1,0 +1,89 @@
+.Eye2brain model
+
+## Offline step
+
+.Generate 2D model
+[source,bash]
+----
+./feelpp_mor_eye2brainapp_2d --config-file eye2brain/eye2brain-2d.cfg
+----
+
+.Generate 3D model
+[source,bash]
+----
+./feelpp_mor_eye2brainapp_3d --config-file eye2brain/eye2brain-3d.cfg
+----
+
+[cols="2,1,1"]
+|===
+|Output name
+|Punctual `measure-index`
+|Gaussian `measure-index`
+
+|Mean over cornea
+2+|`0`
+
+|Point `O`
+|`1`
+|`11`
+
+|Point `A`
+|`2`
+|`12`
+
+|Point `B`
+|`3`
+|`13`
+
+|Point `B1`
+|`4`
+|`14`
+
+|Point `C`
+|`5`
+|`15`
+
+|Point `D`
+|`6`
+|`16`
+
+|Point `D1`
+|`7`
+|`17`
+
+|Point `F`
+|`8`
+|`18`
+
+|Point `G`
+|`9`
+|`19`
+
+|===
+
+
+
+## Online step
+
+.Run online application
+[source,bash]
+----
+feelpp_mor_onlinerun --crbmodel.name eye2brain_<dim>d --plugin.dir ${build_directory}/install/bin/ --output_results.precision 12
+----
+
+WARNING: While the branch 2068 is not merged, you need to build and run the `feelpp_mor_onlinerun` from the `apps` directory.
+
+
+.Compare RB and PFEM with Python
+[source,bash]
+----
+python3 compFE-RB.py -N 3
+----
+
+
+
+.Run sensitivity analysis
+[source,bash]
+----
+./feelpp_mor_sensitivity_analysis --crbmodel.name <model-name> --plugin.dir ${build_directory}/install/bin/
+----

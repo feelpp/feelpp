@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     typedef Mesh<Simplex<FEELPP_DIM> > mesh_type;
     typedef FunctionSpace<mesh_type, bases<RaviartThomas<1>, Lagrange<2, Scalar, Continuous> > > space_type;
 
-    auto mesh = loadMesh(new mesh_type);
+    auto mesh = loadMesh(_mesh=new mesh_type);
 
     auto Vh = space_type::New( _mesh=mesh );
 
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto UU = Vh->element();
     auto uu =UU.template element<0>();
     uu.on(_range=elements(mesh), _expr=trans(h));
-    auto ex = exporter(mesh);
+    auto ex = exporter(_mesh=mesh);
     ex->add("u", u);
     ex->add("p", p);
     ex->add("h", uu);

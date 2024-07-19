@@ -84,7 +84,7 @@ public:
     }
     constexpr explicit Cst( T&& value )
         :
-        M_constant( std::move(value) )
+        M_constant( std::forward<T>(value) )
         {
         }
 
@@ -110,18 +110,7 @@ public:
     {
         return M_constant;
     }
-#if 0
-    constexpr value_type evaluate() const
-    {
-        return M_constant;
-    }
-
-    constexpr value_type evaluate( bool ) const
-    {
-        return M_constant;
-    }
-#endif
-    constexpr evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+    constexpr evaluate_type evaluate( bool ) const
     {
         return evaluate_type::Constant( M_constant );
     }
@@ -205,10 +194,6 @@ public:
             tensor( expr, geom, theInitArgs... )
             {}
 
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -216,9 +201,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const&, uint16_type )
         {
         }
         template<typename ... CTX>

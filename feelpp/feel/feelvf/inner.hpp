@@ -166,12 +166,12 @@ class Product : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
             value_type res = 0;
             if constexpr ( Type == 1 )
             {
-                auto leval = M_left_expr.evaluate(p,worldcomm);
+                auto leval = M_left_expr.evaluate(p);
                 if constexpr( IsSame )
                     {
                         for ( uint16_type c2 = 0; c2 < leval.cols(); ++c2 )
@@ -184,7 +184,7 @@ class Product : public ExprDynamicBase
                     }
                 else
                 {
-                    auto reval = M_right_expr.evaluate(p,worldcomm);
+                    auto reval = M_right_expr.evaluate(p);
                     for ( uint16_type c2 = 0; c2 < leval.cols(); ++c2 )
                         for ( uint16_type c1 = 0; c1 < leval.rows(); ++c1 )
                         {
@@ -336,14 +336,6 @@ class Product : public ExprDynamicBase
             M_l_tensor_expr( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ),
             M_r_tensor_expr( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... )
             {}
-
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_l_tensor_expr.init( im );
-            if constexpr ( !IsSame )
-                M_r_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_l_tensor_expr.update( geom, fev, feu );
@@ -361,12 +353,6 @@ class Product : public ExprDynamicBase
             M_l_tensor_expr.update( geom );
             if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_l_tensor_expr.update( geom, face );
-            if constexpr ( !IsSame )
-                M_r_tensor_expr.update( geom, face );
         }
         template <typename... CTX>
         void updateContext( CTX const&... ctx )

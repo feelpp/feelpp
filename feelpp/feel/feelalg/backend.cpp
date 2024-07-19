@@ -7,7 +7,7 @@
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2011-present Feel++ Consortium
-  
+
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -270,7 +270,7 @@ Backend<T,SizeT>::build( BackendType bt, std::string const& prefix, worldcomm_pt
 }
 
 template<>
-inline void 
+inline void
 Backend<double>::attachPreconditioner()
 {
     auto p = Feel::preconditioner( _prefix=this->prefix(),
@@ -390,7 +390,7 @@ Backend<T,SizeT>::nlSolve( sparse_matrix_ptrtype& A,
 
         // configure reusePC,reuseJac in non linear solver
         int typeReusePrec = 1,typeReuseJac = 1 ;
-#if FEELPP_HAS_PETSC 
+#if FEELPP_HAS_PETSC
 #if PETSC_VERSION_LESS_THAN(3,5,0)
         // if first time or rebuild prec at first newton step, need to get matStructInitial
         if ( reusePC && (!M_reusePrecIsBuild || M_reusePrecRebuildAtFirstNewtonStep) )
@@ -464,8 +464,11 @@ Backend<T,SizeT>::nlSolve( sparse_matrix_ptrtype& A,
     }
     else if ( !ret.isConverged() )
     {
-        LOG(ERROR) << "\n[backend] non-linear solver fail";
-        LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
+        if ( this->worldComm().isMasterRank() )
+        {
+            LOG(ERROR) << "\n[backend] non-linear solver fail";
+            LOG(ERROR) << "Backend " << M_prefix << " : non-linear solver failed to converge" << std::endl;
+        }
     }
 
     this->setPrecMatrixStructure( matStructInitial );
@@ -552,7 +555,7 @@ template <typename T, typename SizeT>
 void
 Backend<T,SizeT>::start()
 {
-    M_timer.restart();
+    M_timer.start();
 }
 
 template <typename T, typename SizeT>
@@ -664,7 +667,7 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
           "display preconditioner information" )
         ( prefixvm( prefix,pcctx+"pc-use-config-default-petsc" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
-          "configure pc with defult petsc options" )
+          "configure pc with default petsc options" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
         ( prefixvm( prefix,pcctx+"pc-factor-mat-solver-package-type" ).c_str(),
           (useDefaultValue)?Feel::po::value<std::string>()->default_value( "mumps" ):Feel::po::value<std::string>(),
@@ -771,7 +774,7 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
         ( prefixvm( prefix,kspctx+"ksp-use-initial-guess-nonzero" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( false ):Feel::po::value<bool>(),
           "tells the iterative solver that the initial guess is nonzero" )
-        
+
         // Default value : "" let the default behavior
 #if FEELPP_HAS_PETSC
         ( prefixvm( prefix,kspctx+"ksp-norm-type" ).c_str(),
@@ -803,7 +806,7 @@ void updateBackendMGPreconditionerOptions( po::options_description & _options, s
     // ml options
     _options.add_options()
         ( prefixvm( prefix,pcctx+"ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
-        ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+        ( prefixvm( prefix,pcctx+"ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxiliary matrices to be generated" )
         ( prefixvm( prefix,pcctx+"ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
         ( prefixvm( prefix,pcctx+"ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
         ;
@@ -958,13 +961,13 @@ po::options_description backend_options( std::string const& prefix )
 #if FEELPP_HAS_PETSC
         ( prefixvm( prefix,"pc-use-config-default-petsc" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
-          "configure pc with defult petsc options" )
+          "configure pc with default petsc options" )
 #endif
         ( prefixvm( prefix,"pc-factor-shift-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "none" ),
           "adds a particular type of quantity to the diagonal of the matrix during numerical factorization, thus the matrix has nonzero pivots (none, nonzero, positive_definite, inblocks)" )
-#if FEELPP_HAS_PETSC
-#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+#if defined(FEELPP_HAS_PETSC)
+#if defined(PETSC_HAVE_MUMPS)
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
           Feel::po::value<std::string>()->default_value( "mumps" ),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
@@ -975,7 +978,7 @@ po::options_description backend_options( std::string const& prefix )
 #endif
 #else
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
-          Feel::po::value<std::string>()->default_value( "mumps" ),
+          Feel::po::value<std::string>()->default_value( "feelpp" /*"mumps"*/ ),
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
         ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ),
@@ -996,6 +999,6 @@ po::options_description backend_options( std::string const& prefix )
  */
 template class Backend<double,uint32_type>;
 template class Backend<std::complex<double>,uint32_type>;
-    
+
 
 } // namespace Feel

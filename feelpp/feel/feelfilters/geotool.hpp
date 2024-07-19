@@ -28,8 +28,8 @@
  */
 
 
-#ifndef FEELPP_GEOTOOL_HPP
-#define FEELPP_GEOTOOL_HPP 1
+#ifndef FEELPP_FILTERS_GEOTOOL_H
+#define FEELPP_FILTERS_GEOTOOL_H
 
 #include <iostream>
 #include <string>
@@ -1134,7 +1134,7 @@ protected :
 public :
 
     /*
-     * Update the output stringstream wich generate the gmsh code
+     * Update the output stringstream which generate the gmsh code
      */
     void updateOstr( std::string __str )
     {
@@ -1159,44 +1159,29 @@ public :
      */
     void showMe() const;
 
-
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        (void),
-        setMarker,
-        tag,
-        (required
-         ( type, (std::string))
-         ( name, (std::string)) )
-        (optional
-         (markerAll, (bool), false)
-         (marker1, (bool), false)
-         (marker2, (bool), false)
-         (marker3, (bool), false)
-         (marker4, (bool), false)
-         (marker5, (bool), false)
-         (marker6, (bool), false)
-         (marker7, (bool), false)
-         (marker8, (bool), false)
-         (marker9, (bool), false)
-         (marker10, (bool), false)
-         (marker11, (bool), false)
-         (marker12, (bool), false)
-         ))
+    template <typename ... Ts>
+    void setMarker( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& type = args.get(_type );
+            std::string const& name = args.get(_name );
+            bool markerAll = args.get_else( _markerAll, false );
+
             std::vector<bool> mymarkers(12,markerAll);
             if (!markerAll) {
-                mymarkers[0]=marker1;
-                mymarkers[1]=marker2;
-                mymarkers[2]=marker3;
-                mymarkers[3]=marker4;
-                mymarkers[4]=marker5;
-                mymarkers[5]=marker6;
-                mymarkers[6]=marker7;
-                mymarkers[7]=marker8;
-                mymarkers[8]=marker9;
-                mymarkers[9]=marker10;
-                mymarkers[10]=marker11;
-                mymarkers[11]=marker12;
+                int i=0;
+                mymarkers[i++] = args.get_else( _marker1, false );
+                mymarkers[i++] = args.get_else( _marker2, false );
+                mymarkers[i++] = args.get_else( _marker3, false );
+                mymarkers[i++] = args.get_else( _marker4, false );
+                mymarkers[i++] = args.get_else( _marker5, false );
+                mymarkers[i++] = args.get_else( _marker6, false );
+                mymarkers[i++] = args.get_else( _marker7, false );
+                mymarkers[i++] = args.get_else( _marker8, false );
+                mymarkers[i++] = args.get_else( _marker9, false );
+                mymarkers[i++] = args.get_else( _marker10, false );
+                mymarkers[i++] = args.get_else( _marker11, false );
+                mymarkers[i++] = args.get_else( _marker12, false );
             }
             this->setMarkerImpl(type,name,mymarkers);
         }
@@ -1205,32 +1190,28 @@ public :
         CHECK( false ) << "not implemented in GeoGMSHTool class, but in shape class";
     }
 
-
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-        createMesh, // function name
-        tag,
-        ( required
-          ( mesh, * )
-          ( name, ( std::string ) )
-          ) //required
-        ( optional
-          ( format,         *, ioption(_name="gmsh.format") )
-          ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
-          ( refine,          *( boost::is_integral<mpl::_> ), 0 )
-          ( worldcomm,       (worldcomm_ptr_t), mesh->worldCommPtr() )
-          ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm->size() )
-          ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-          ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-          ( hmin,     ( double ), 0 )
-          ( hmax,     ( double ), 1e22 )
-          ( optimize3d_netgen, *( boost::is_integral<mpl::_> ), true )
-          ( update,          *( boost::is_integral<mpl::_> ), MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-          ) //optional
-                                    )
+    template <typename ... Ts>
+    auto createMesh( Ts && ... v )
         {
-            typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-            typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && mesh = args.get(_mesh);
+            std::string const& name = args.get(_name);
+            int format = args.get_else_invocable( _format, [](){ return ioption(_name="gmsh.format"); } );
+            bool straighten = args.get_else( _straighten, true );
+            int refine = args.get_else( _refine, 0 );
+            worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );
+            int partitions = args.get_else( _partitions, worldcomm->size() );
+            int partition_file =args.get_else( _partition_file, 0 );
+            int partitioner = args.get_else( _partitioner, GMSH_PARTITIONER_CHACO );
+            double hmin = args.get_else( _hmin, 0 );
+            double hmax = args.get_else( _hmax, 1e22 );
+            bool optimize3d_netgen = args.get_else( _optimize3d_netgen, true );
+            size_type update = args.get_else( _update, MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+            using _mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+            using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
+            //typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+            //typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
             this->cleanOstr();
             this->zeroCpt();
@@ -1638,7 +1619,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
 
 
 
-//creation des classes representants les objets geotool
+//creation of classes representing geotool objects
 BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
               GEOTOOL_FOR_COMP,
               GEOTOOL_FOR_INCR,

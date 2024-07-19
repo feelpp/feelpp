@@ -540,12 +540,6 @@
                 M_right( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... ) \
                 {}                                                      \
                                                                         \
-            template<typename IM>                                       \
-                void init( IM const& im )                               \
-            {                                                           \
-                M_left.init( im );                                     \
-                M_right.init( im );                                    \
-            }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
@@ -566,13 +560,6 @@
                     M_left.update( geom );                             \
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom );                            \
-            }                                                           \
-            void update( Geo_t const& geom, uint16_type face ) noexcept \
-            {                                                           \
-                if ( is_zero::update_and_eval_left )                    \
-                    M_left.update( geom, face );                            \
-                if ( is_zero::update_and_eval_right )                   \
-                    M_right.update( geom, face );                           \
             }                                                           \
             template<typename ... CTX>                                  \
                 void updateContext( CTX const& ... ctx ) noexcept       \
@@ -748,10 +735,10 @@
             r_type M_right;                                            \
         }; /* tensor */                                                 \
         evaluate_type                                                   \
-            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
+            evaluate(bool p ) const  \
         {                                                               \
-            auto leval = M_left.evaluate(p,worldcomm).template cast<value_type>(); \
-            auto reval = M_right.evaluate(p,worldcomm).template cast<value_type>(); \
+            auto leval = M_left.evaluate(p).template cast<value_type>(); \
+            auto reval = M_right.evaluate(p).template cast<value_type>(); \
             if ( leval.rows() == 1 && leval.cols() == 1 )               \
             {                                                           \
                 if ( reval.rows() == 1 && reval.cols() == 1 )           \

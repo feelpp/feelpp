@@ -31,11 +31,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
-    if ( !this->hasStrongDirichletBC() ) return;
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
+        return;
 
     this->updateDofEliminationIds( "velocity", data );
 
-    if ( this->hasMarkerPressureBC() )
+    if ( !M_boundaryConditions->pressureImposed().empty() )
     {
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
@@ -47,14 +48,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
             std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
-            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+            //this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+            this->updateDofEliminationIds( spaceName, data );
         }
         if ( bpbc.hasAngularVelocityExpr() )
         {
             std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
-            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+            //this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+            this->updateDofEliminationIds( spaceName, data );
         }
     }
+
 }
 
 

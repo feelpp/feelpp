@@ -134,9 +134,9 @@ public:
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p) const
         {
-            auto a = M_expr.evaluate(p,worldcomm);
+            auto a = M_expr.evaluate(p);
             auto at = a.transpose();
             if constexpr ( Part == 1 )
                 return 0.5*( a+at );
@@ -178,8 +178,9 @@ public:
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
     {
-        CHECK( false ) << "TODO";
-        return *this;
+        auto diffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        using expr_diff_type = std::decay_t<decltype(diffExpr)>;
+        return Sym<expr_diff_type,Part>{ diffExpr };
     }
 
 

@@ -183,5 +183,18 @@ BOOST_AUTO_TEST_CASE( test_0 )
 
     }
 }
+BOOST_AUTO_TEST_CASE( test_split )
+{
+    using namespace Feel;
+    if ( Environment::numberOfProcessors() > 1 && Environment::numberOfProcessors()%2 == 0 )
+    {
+        BOOST_TEST_MESSAGE(fmt::format("check split"));
+        auto [color,w,wglob]=Environment::worldCommPtr()->split(2);
+        BOOST_CHECK( wglob->globalSize() == Environment::numberOfProcessors());
+        BOOST_CHECK( wglob->localSize() == Environment::numberOfProcessors()/2);
+        BOOST_CHECK( w->localSize() == Environment::numberOfProcessors()/2);
+        BOOST_CHECK( w->globalSize() == Environment::numberOfProcessors()/2);
+    }
+}
 BOOST_AUTO_TEST_SUITE_END()
 #endif

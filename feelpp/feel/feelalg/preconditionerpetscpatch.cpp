@@ -99,8 +99,8 @@ EXTERN_C_BEGIN
 #if !defined(HAVE_CONFIG_H)
 #define HAVE_CONFIG_H
 #endif
-#include <ml_include.h>
-#include <ml_viz_stats.h>
+#include <trilinos/ml_include.h>
+#include <trilinos/ml_viz_stats.h>
 EXTERN_C_END
 
 typedef enum {PCML_NULLSPACE_AUTO,PCML_NULLSPACE_USER,PCML_NULLSPACE_BLOCK,PCML_NULLSPACE_SCALAR} PCMLNullSpaceType;

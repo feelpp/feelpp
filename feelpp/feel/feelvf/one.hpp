@@ -126,7 +126,7 @@ public:
         //typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         //typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         using gmc_type = gmc_t<Geo_t>;
-        static const uint16_type nComponents = Dim<0? gmc_type::nDim : Dim;
+        static inline const uint16_type nComponents = Dim<0? gmc_type::nDim : Dim;
         using shape = ShapeGeneric<gmc_type::nDim,nComponents,1>;
         //typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
         // static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
@@ -182,10 +182,6 @@ public:
             :
             tensor( expr, geom, theInitArgs... )
             {}
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
         }
@@ -193,9 +189,6 @@ public:
         {
         }
         void update( Geo_t const& /*geom*/ )
-        {
-        }
-        void update( Geo_t const& /*geom*/, uint16_type /*face*/ )
         {
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>

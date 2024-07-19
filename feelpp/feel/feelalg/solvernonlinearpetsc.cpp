@@ -28,7 +28,7 @@
  */
 #include <feel/feelcore/feel.hpp>
 
-
+#include <fmt/chrono.h>
 
 #if defined( FEELPP_HAS_PETSC_H )
 #include <feel/feelcore/feelpetsc.hpp>
@@ -118,6 +118,7 @@ extern "C"
             CHKERRABORT( b->worldComm().globalComm(), e );
         }
         LOG(INFO) << "call feel_petsc_post_nlsolve done";
+        KSPMonitorCancel( ksp );
         return 0;
     }
     PetscErrorCode feel_petsc_pre_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
@@ -152,9 +153,7 @@ extern "C"
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
         if ( !solver ) return 1;
 
-        if ( solver->worldComm().isMasterRank() )
-            std::cout << " " << its  << " " << solver->prefix() << " SNES Function norm " << std::scientific << fnorm << "\n";
-
+        
         if ( its>0 && solver->showKSPConvergedReason() )
         {
             KSP            ksp;         /* linear solver context */
@@ -175,12 +174,19 @@ extern "C"
             if ( solver->worldComm().isMasterRank() )
             {
                 if ( reason> 0 )
-                    std::cout<< "  Linear solve converged due to " << Feel::PetscConvertKSPReasonToString(reason)
-                             << " iterations " << lits << std::endl;
+                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] SNES KSP converged with #{} iterations, residual norm {:.4e}, reason: {}",
+                                               fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
+                              << std::endl;
                 else
-                    std::cout<< "  Linear solve did not converge due to " << Feel::PetscConvertKSPReasonToString(reason)
-                             << " iterations " << lits << std::endl;
+                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] SNES KSP did not converge due to {} iterations, residual norm {:.4e}, reason: {}",
+                                               fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
+                              << std::endl;
             }
+        }
+        else
+        {
+            if ( solver->worldComm().isMasterRank() )
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES Residual norm {:.4e}", fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm ) << std::endl;
         }
 
         return 0;
@@ -188,9 +194,10 @@ extern "C"
     PetscErrorCode __feel_petsc_snes_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
     {
         Feel::SolverNonLinearPetsc<double> *solver  = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
-        if ( !solver ) return 1;
+        if ( !solver ) return 0;
         if ( solver->worldComm().isMasterRank() )
-            std::cout << "   " << it  << " " << solver->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES/KSP Residual norm {:.4e}", fmt::localtime( std::time( nullptr ) ), solver->prefix(), it, rnorm ) << std::endl;
+
         return 0;
     }
 
@@ -687,7 +694,7 @@ void SolverNonLinearPetsc<T>::init ()
         //check( SNESSetType( pc, SNESNRICHARDSON ) );
         check( SNESSetType( pc, SNESNEWTONLS ) );
         //check( SNESSetIterationNumber(pc, 5 ) );
-        check( SNESMonitorSet( pc,SNESMonitorDefault,PETSC_NULL,PETSC_NULL ) );
+        check( SNESMonitorSet( pc,SNESMonitorDefault,PETSC_IGNORE,PETSC_IGNORE ) );
 #endif
 #endif
         //KSP ksp;
@@ -800,15 +807,15 @@ void SolverNonLinearPetsc<T>::init ()
 
         if ( this->showSNESMonitor() )
         {
-            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,(void*) this,PETSC_NULL );
-            //ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_NULL,PETSC_NULL );
+            ierr = SNESMonitorSet( M_snes,__feel_petsc_snes_monitor,(void*) this,PETSC_IGNORE );
+            //ierr = SNESMonitorSet( M_snes,SNESMonitorDefault,PETSC_IGNORE,PETSC_IGNORE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( this->showKSPMonitor() )
         {
-            ierr = KSPMonitorSet( M_ksp,__feel_petsc_snes_ksp_monitor,(void*) this,PETSC_NULL );
-            //ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            ierr = KSPMonitorSet( M_ksp,__feel_petsc_snes_ksp_monitor,(void*) this,PETSC_IGNORE );
+            //ierr = KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_IGNORE,PETSC_IGNORE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
@@ -821,7 +828,7 @@ void SolverNonLinearPetsc<T>::init ()
 
     if ( this->getAbsoluteResidualTol()==0 )
     {
-        ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
 
@@ -829,7 +836,7 @@ void SolverNonLinearPetsc<T>::init ()
 
     if ( this->getRelativeResidualTol()==0 )
     {
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        ierr = SNESGetTolerances( M_snes, PETSC_IGNORE, &__relResTol, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
 
@@ -837,7 +844,7 @@ void SolverNonLinearPetsc<T>::init ()
 
     if ( this->getAbsoluteSolutionTol()==0 )
     {
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
+        ierr = SNESGetTolerances( M_snes, PETSC_IGNORE, PETSC_IGNORE, &__absSolTol, PETSC_IGNORE, PETSC_IGNORE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
 
@@ -845,13 +852,13 @@ void SolverNonLinearPetsc<T>::init ()
 
     if ( this->getNbItMax()==0 )
     {
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
+        ierr = SNESGetTolerances( M_snes, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, &__nbItMax, PETSC_IGNORE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
 
     else __nbItMax = this->getNbItMax();
 
-    ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
+    ierr = SNESGetTolerances( M_snes, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, PETSC_IGNORE, &__nbEvalFuncMax );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
@@ -887,7 +894,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         jac = dynamic_cast<MatrixPetscMPI<T>*>( jac_in.get() );
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
-        //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
+        //useful in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
     }
     else
     {
@@ -1007,7 +1014,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     // 2.3.x & newer style
 #else
 
-    ierr = SNESSolve ( M_snes, PETSC_NULL, x->vec() );
+    ierr = SNESSolve ( M_snes, PETSC_IGNORE, x->vec() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 #endif
@@ -1039,8 +1046,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     bool hasConverged = reason>0;
     if ( !hasConverged )
     {
-        LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
-                   << " iterations " << n_iterations << std::endl;
+        if ( this->worldComm().isMasterRank() )
+            LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
+                       << " iterations " << n_iterations << std::endl;
         if (this->showSNESConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
             std::cout << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
                       << " iterations " << n_iterations << std::endl;
@@ -1148,7 +1156,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     // 2.3.x & newer style
 #else
 
-    ierr = SNESSolve ( M_snes, PETSC_NULL, petsc_x );
+    ierr = SNESSolve ( M_snes, PETSC_IGNORE, petsc_x );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 #endif
@@ -1262,7 +1270,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     // 2.3.x & newer style
 #else
 
-    ierr = SNESSolve ( M_snes, PETSC_NULL, petsc_x );
+    ierr = SNESSolve ( M_snes, PETSC_IGNORE, petsc_x );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 #endif
@@ -1512,7 +1520,7 @@ SolverNonLinearPetsc<T>::updateNullSpace( Mat A )
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     MatNullSpace nullsp;
-    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_IGNORE*/, &nullsp );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     //ierr = MatNullSpaceView( nullsp, PETSC_VIEWER_STDOUT_WORLD );
     //CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -1547,7 +1555,7 @@ SolverNonLinearPetsc<T>::updateNearNullSpace( Mat A )
     for ( int k = 0 ; k<dimNullSpace ; ++k )
         petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
     MatNullSpace nullsp;
-    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_IGNORE*/, &nullsp );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     ierr = MatSetNearNullSpace( A, nullsp);
     CHKERRABORT( this->worldComm().globalComm(),ierr );

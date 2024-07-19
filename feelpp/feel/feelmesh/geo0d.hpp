@@ -36,21 +36,9 @@ template <typename IndexT>
 class MeshBase;
 
 /**
- *  \defgroup GeoXD Basis Geometrical Entities Geo0D and GeoND.
- *  \ingroup Obsolet_Groups
- *  They are intermediate classes used to build the actual Geometry classes
- *
- *  \warning Geo1D/2D/3D are template classes because some of the info is not
- *  known a priori and I want all vector dimensions determined at compile time
- *  to enhance memory access time.
- */
-
-/*@{*/
-
-/**
  * \class Geo0D
- *
- *  Zero dimensional entity.
+ * @ingroup Mesh
+ * Zero dimensional entity.
  *
  * \ingroup GeoXD
  */
@@ -65,7 +53,7 @@ class Geo0D
 
   public:
     typedef Geo0D<Dim, T, IndexT> self_type;
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
     static const bool is_simplex = true;
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -74,6 +62,8 @@ class Geo0D
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
     using meshbase_type = MeshBase<index_type>;
+
+    using marker_type = Marker<flag_type/*uint16_type*/>;
     /**
      * default constructor
      *
@@ -200,7 +190,6 @@ class Geo0D
         M_master_vertex( G.M_master_vertex ),
         M_is_vertex( G.M_is_vertex ),
         M_mesh( G.M_mesh ), //??
-        M_markers( G.M_markers ),
         M_uv( G.M_uv )
         {}
 
@@ -213,7 +202,6 @@ class Geo0D
         M_master_vertex( std::move( G.M_master_vertex ) ),
         M_is_vertex( std::move( G.M_is_vertex ) ),
         M_mesh( std::move( G.M_mesh ) ), //??
-        M_markers( std::move( G.M_markers ) ),
         M_uv( std::move( G.M_uv ) )
         {
             G.M_node = nullptr;
@@ -240,7 +228,6 @@ class Geo0D
             M_master_vertex = G.M_master_vertex;
             M_is_vertex = G.M_is_vertex;
             M_mesh = G.M_mesh; //??
-            M_markers = G.M_markers;
             M_uv = G.M_uv;
         }
         return *this;
@@ -258,7 +245,6 @@ class Geo0D
             M_master_vertex = std::move( G.M_master_vertex );
             M_is_vertex = std::move( G.M_is_vertex );
             M_mesh = std::move( G.M_mesh ); //??
-            M_markers = std::move( G.M_markers );
             M_uv = std::move( G.M_uv );
         }
         return *this;
@@ -501,110 +487,13 @@ class Geo0D
         return *this;
     }
 
-    std::map<uint16_type, Marker1> const&
-    markers() const
-    {
-        return M_markers;
-    }
-    void setMarkers( std::map<uint16_type, Marker1> const& markers )
-    {
-        M_markers = markers;
-    }
-    bool hasMarker( uint16_type k ) const
-    {
-        auto itFindMarker = M_markers.find( k );
-        if ( itFindMarker == M_markers.end() )
-            return false;
-        if ( itFindMarker->second.isOff() )
-            return false;
-        return true;
-    }
-    Marker1 const& marker( uint16_type k ) const
-    {
-        return M_markers.find( k )->second;
-    }
-    Marker1& marker( uint16_type k )
-    {
-        return M_markers[k];
-    }
-    void setMarker( uint16_type k, flag_type v )
-    {
-        M_markers[k].assign( v );
-    }
-
-    bool hasMarker() const
-    {
-        return this->hasMarker( 1 );
-    }
-    Marker1 const& marker() const
-    {
-        return M_markers.find( 1 )->second;
-    }
-    Marker1& marker()
-    {
-        return M_markers[1];
-    }
-    Marker1 markerOr( uint16_type v ) const
-    {
-        if ( hasMarker() )
-            return M_markers.find( 1 )->second;
-        else
-            return Marker1{v};
-    }
-    Marker1 markerOr( uint16_type v  = 0 )
-    {
-        if ( hasMarker() )
-            return M_markers[1];
-        else
-            return Marker1{v};
-    }
-    
-    void setMarker( flag_type v )
-    {
-        M_markers[1].assign( v );
-    }
-
-    bool hasMarker2() const
-    {
-        return this->hasMarker( 2 );
-    }
-    Marker1 const& marker2() const
-    {
-        return M_markers.find( 2 )->second;
-    }
-    Marker1& marker2()
-    {
-        return M_markers[2];
-    }
-    void setMarker2( flag_type v )
-    {
-        M_markers[2].assign( v );
-    }
-
-    bool hasMarker3() const
-    {
-        return this->hasMarker( 3 );
-    }
-    Marker1 const& marker3() const
-    {
-        return M_markers.find( 3 )->second;
-    }
-    Marker1& marker3()
-    {
-        return M_markers[3];
-    }
-    void setMarker3( flag_type v )
-    {
-        M_markers[3].assign( v );
-    }
-
     /**
      * set the tags associated to the points
      * - tags[0] physical region
      * - tags[1] elementary region
      * - tags[2] particular region
      */
-    void setTags( std::vector<int> const& tags )
+    void setTags( std::vector<int> const& tags ) override
     {
         this->setMarker( tags[0] );
 
@@ -614,16 +503,17 @@ class Geo0D
         if ( tags.size() > 2 )
             this->setProcessId( tags[2] );
     }
-
+#if 1
+    // TODO REMOVE THIS METHOD
     std::vector<int> tags() const
     {
         std::vector<int> thetags( 3 );
-        thetags[0] = ( this->hasMarker( 1 ) ) ? this->marker( 1 ).value() : 0; //M_marker1.value();
-        thetags[1] = ( this->hasMarker( 2 ) ) ? this->marker( 2 ).value() : 0; //M_marker2.value();
+        thetags[0] = ( this->hasMarkerType( 1 ) ) ? this->marker( 1 ).value() : 0; //M_marker1.value();
+        thetags[1] = ( this->hasMarkerType( 2 ) ) ? this->marker( 2 ).value() : 0; //M_marker2.value();
         thetags[2] = this->processId();
         return thetags;
     }
-
+#endif
     /**
      * set the parametric coordinates of the node (if it is on an point, edge or
      * surface geometric entity)
@@ -653,7 +543,6 @@ class Geo0D
         ar& boost::serialization::base_object<super>( *this );
         //ar & M_is_vertex;
         ar & *(M_node);
-        ar& M_markers;
         /*
             ar & M_gdim;
             ar & M_gtag;
@@ -672,8 +561,6 @@ class Geo0D
 
     // mesh to which the geond element belongs to
     meshbase_type const* M_mesh;
-
-    std::map<uint16_type, Marker1> M_markers;
 
     std::optional<std::tuple<int,int,parametric_node_type>> M_uv;
 };

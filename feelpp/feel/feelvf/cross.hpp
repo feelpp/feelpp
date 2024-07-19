@@ -154,10 +154,10 @@ class CrossProduct : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            auto leval = M_left_expr.evaluate(p,worldcomm);
-            auto reval = M_right_expr.evaluate(p,worldcomm);
+            auto leval = M_left_expr.evaluate(p);
+            auto reval = M_right_expr.evaluate(p);
             CHECK( leval.rows() == reval.rows() && leval.cols() == reval.cols() ) << "vector should be same dim";
             CHECK( leval.rows() == 2 || leval.rows() == 3 ) << "only vector of dim 2 or 3";
             CHECK( leval.cols() == 1 ) << "not a vector";
@@ -245,12 +245,6 @@ class CrossProduct : public ExprDynamicBase
             M_r_tensor_expr( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... )
             {}
 
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_l_tensor_expr.init( im );
-            M_r_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_l_tensor_expr.update( geom, fev, feu );
@@ -265,11 +259,6 @@ class CrossProduct : public ExprDynamicBase
         {
             M_l_tensor_expr.update( geom );
             M_r_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_l_tensor_expr.update( geom, face );
-            M_r_tensor_expr.update( geom, face );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,

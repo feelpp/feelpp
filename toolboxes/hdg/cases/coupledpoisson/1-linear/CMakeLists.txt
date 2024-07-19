@@ -21,5 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-feelpp_add_fmu( test3d0d_linear CLASS test3d0d SRCS test3d0d.mo nonlinearResistor.mo voltageTest3d0d.mo )
+if ( FEELPP_HAS_OMC )
+    feelpp_add_fmu( test3d0d_linear CLASS test3d0d SRCS test3d0d.mo nonlinearResistor.mo voltageTest3d0d.mo CATEGORY toolboxes/hdg/cases/coupledpoisson/1-linear)
+else()
+    message(STATUS "[feelpp/toolboxes/hdg] cannot generate test3d0d_linear.fnu, omc not available")
+endif()

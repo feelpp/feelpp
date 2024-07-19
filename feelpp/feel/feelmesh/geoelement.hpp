@@ -43,7 +43,7 @@ template<int Dim = 1, typename IndexT = uint32_type>
 class SubFaceOfNone
 {
 public:
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
     using index_type = IndexT;
     using size_type = index_type;
     template<typename ET>
@@ -90,12 +90,23 @@ private:
         }
 };
 
+/**
+ * @brief Tag base class
+ * @ingroup Mesh
+ */
 struct SubFaceOfBase {};
+
+/**
+ * @brief description of a subface or facet (topological d-1) of an element of topologicql dimension d
+ * @ingroup Mesh
+ * 
+ * @tparam ElementType type of the element 
+ */
 template<typename ElementType>
 class SubFaceOf : public SubFaceOfBase
 {
 public:
-    static const uint16_type nDim = ElementType::nDim;
+    static inline const uint16_type nDim = ElementType::nDim;
     using index_type = typename ElementType::index_type;
     using size_type = typename ElementType::size_type;
     template<typename ET>
@@ -108,14 +119,14 @@ public:
 
     SubFaceOf()
         :
-        M_element0( 0, invalid_uint16_type_value ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element0( nullptr, invalid_uint16_type_value ),
+        M_element1( nullptr, invalid_uint16_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
         M_element0( connect0 ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element1( nullptr, invalid_uint16_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
@@ -135,14 +146,14 @@ public:
         M_element0( std::move( sf.M_element0 ) ),
         M_element1( std::move( sf.M_element1 ) )
     {
-     }
+    }
 
-        template <typename TheEltType >
-        /*explicit*/ SubFaceOf( SubFaceOf<TheEltType> const& /*sf*/,
-                                std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr )
+    template <typename TheEltType >
+    SubFaceOf( SubFaceOf<TheEltType> const& /*sf*/,
+               std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr )
         :
-        M_element0( 0, invalid_uint16_type_value ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element0( nullptr, invalid_uint16_type_value ),
+        M_element1( nullptr, invalid_uint16_type_value )
     {
     }
 
@@ -150,11 +161,16 @@ public:
     explicit SubFaceOf( SubFaceOfNone<SFoD> const& /*sf*/,
                         std::enable_if_t<SFoD == nDim || SFoD == 0>* = nullptr )
         :
-        M_element0( 0, invalid_uint16_type_value ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element0( nullptr, invalid_uint16_type_value ),
+        M_element1( nullptr, invalid_uint16_type_value )
     {
     }
     virtual ~SubFaceOf() {}
+
+    SubFaceOf const& connectedTo() const
+    {
+        return *this;
+    }
 
     SubFaceOf& operator=( SubFaceOf const& sf ) = default;
 
@@ -182,6 +198,14 @@ public:
     entity_type const& element1() const
     {
         return *boost::get<0>( M_element1 );
+    }
+    entity_type const* element0Ptr() const
+    {
+        return boost::get<0>( M_element0 );
+    }
+    entity_type const* element1Ptr() const
+    {
+        return boost::get<0>( M_element1 );
     }
     size_type idElement0() const { return this->element0().id(); }
     uint16_type idInElement0() const { return boost::get<1>( M_element0 ); }
@@ -257,13 +281,22 @@ public:
 
     bool isConnectedTo0() const
     {
-        return ( boost::get<0>( M_element0 ) != 0 );
+        return ( boost::get<0>( M_element0 ) != nullptr );
     }
     bool isConnectedTo1() const
     {
-        return ( boost::get<0>( M_element1 ) != 0 );
+        return ( boost::get<0>( M_element1 ) != nullptr );
     }
 
+    /**
+     * @brief say if the face is a ghost or not for process id @p p
+     * 
+     * a face is a ghost face on process rank @p p if the process id is greater than @p p
+     * 
+     * @param p the rank of the communicator
+     * @return true if the face is a ghost face 
+     * @return false otherwise
+     */
     bool
     isGhostFace( rank_type p ) const
     {
@@ -324,6 +357,33 @@ public:
         }
     }
 
+    template<typename MeshSupportT>
+    SubFaceOf updateConnectionFromMeshSupport( std::shared_ptr<MeshSupportT> const& ms )
+    {
+        if ( this->isConnectedTo0() && !this->isConnectedTo1() )
+        {
+            SubFaceOf sfo( *this );
+            return sfo;
+        }
+
+        bool hasMS0 =  ms->hasElement( this->idElement0() );
+        bool hasMS1 =  ms->hasElement( this->idElement1() );
+
+        if ( hasMS0 && hasMS1 )
+        {
+            SubFaceOf sfo( *this );
+            return sfo;
+        }
+
+        if ( !hasMS0 && hasMS1 )
+        {
+            SubFaceOf sfo( this->connection1() );
+            return sfo;
+        }
+        // hasMS0 && !hasMS1
+        SubFaceOf sfo( this->connection0() );
+        return sfo;
+    }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -348,8 +408,8 @@ template<typename ElementType>
 class SubFaceOfMany
 {
 public:
-    static const uint16_type nDim = ElementType::nDim;
-    static const uint16_type nRealDim = ElementType::nRealDim;
+    static inline const uint16_type nDim = ElementType::nDim;
+    static inline const uint16_type nRealDim = ElementType::nRealDim;
     template<typename ET>
     struct Element
     {
@@ -496,10 +556,6 @@ private:
 
 #endif
 
-//     *********** Geometrical Elements *****************
-/** \defgroup GeoEle Geometry Element classes
-    \ingroup Obsolet_Groups */
-/*@{*/
 
 /**
  * Class for Points and Vertices
@@ -763,6 +819,7 @@ public:
                   > super;
 
     typedef SubFace super2;
+    using connection_t = SubFace;
 
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
@@ -797,7 +854,7 @@ public:
     typedef typename super::permutation_type permutation_type;
 
     /**
-     * default constructor, make it explicit to avoid implict
+     * default constructor, make it explicit to avoid implicit
      * inversion to \c size_type
      */
     explicit GeoElement1D( size_type id = 0 )
@@ -810,7 +867,7 @@ public:
         M_vertices.fill( nullptr );
     }
     /**
-     * copy consttructor
+     * copy constructor
      */
     GeoElement1D( GeoElement1D const& g ) = default;
     GeoElement1D( GeoElement1D && g )
@@ -1065,7 +1122,7 @@ public:
 
     typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
     typedef SubFace super2;
-
+    using connection_t = SubFace;
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nRealDim = super::nRealDim;
@@ -1105,7 +1162,7 @@ public:
     typedef typename super2::element_connectivity_type element_connectivity_type;
 
     /**
-     * default constructor, make it explicit to avoid implict
+     * default constructor, make it explicit to avoid implicit
      * inversion to \c size_type
      */
     explicit GeoElement2D( size_type id = 0 )
@@ -1118,7 +1175,7 @@ public:
     }
 
     /**
-     * copy consttructor
+     * copy constructor
      */
     GeoElement2D( GeoElement2D const& g ) = default;
     GeoElement2D( GeoElement2D && g ) = default;
@@ -1471,7 +1528,7 @@ public:
     }
 
     /**
-     * copy/move consttructors
+     * copy/move constructors
      */
     GeoElement3D( GeoElement3D const& g ) = default;
     GeoElement3D( GeoElement3D && g ) = default;
@@ -1825,7 +1882,7 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag,
  * 
  * @tparam EltType element type to be checked
  * @param e element to be checked
- * @param flags vector of strings cotnaining the markers
+ * @param flags vector of strings containing the markers
  * @return bool true if has face with at least one of the markers, false otherwise
  */
 template<typename EltType>

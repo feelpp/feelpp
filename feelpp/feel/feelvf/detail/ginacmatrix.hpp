@@ -24,7 +24,8 @@
 #ifndef FEELPP_DETAIL_GINACMATRIX_HPP
 #define FEELPP_DETAIL_GINACMATRIX_HPP 1
 
-
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <any>
 
 namespace Feel
@@ -154,6 +155,9 @@ public:
 
     typedef Eigen::Matrix<double,Eigen::Dynamic,1> vec_type;
 
+    template<int __M, int __N, int __Order, typename __SymbolsExprType>
+        friend class GinacMatrix;
+
     template<typename... TheExpr>
     struct Lambda
     {
@@ -164,9 +168,16 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  )
     {
+#if 0
         typename Lambda<TheExpr...>::type res( this->expression(), this->symbols(), this->fun(), this->exprDesc(), M_expr.applyLambda( e... ) );
         res.setParameterValues( this->symbolNameToValue() );
         return res;
+#else
+        if constexpr( is_symbols_expression_empty_v<symbols_expression_type> )
+            return *this;
+        else
+            return typename Lambda<TheExpr...>::type( *this, M_expr.applyLambda( e... ) );
+#endif
     }
 
     //@}
@@ -333,6 +344,24 @@ public:
             this->updateForUse();
         }
 
+
+  private:
+    template <int ParentOrder,typename ParentSymbolsExprType,typename SymbolsExpressionArgType>
+        GinacMatrix( GinacMatrix<M,N,ParentOrder,ParentSymbolsExprType> const& symbolicExpr, SymbolsExpressionArgType const& expr )
+        :
+        super( symbolicExpr ),
+        M_fun( symbolicExpr.M_fun ),
+        M_cfun( symbolicExpr.M_cfun ),
+        M_exprDesc( symbolicExpr.M_exprDesc ),
+        M_expr( expr ),
+        M_isPolynomial( false ),
+        M_polynomialOrder( Order ),
+        M_numericValue( evaluate_type::Zero() )
+    {
+        this->updateNumericExpression();
+        this->updateForUse();
+    }
+  public:
     GinacMatrix( GinacMatrix && fun ) = default;
     GinacMatrix( GinacMatrix const & fun ) = default;
 
@@ -659,7 +688,7 @@ public:
     //! return true if the expression can be evaluated (TODO : iterate over symbols expression)
     bool isEvaluable() const
     {
-        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
+        return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && M_indexSymbolGeom.empty()&& (M_syms.size() == M_symbolNameToValue.size()) );
     }
     bool isConstant() const { return this->isEvaluable(); }
 
@@ -703,13 +732,13 @@ public:
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
-        return this->evaluateImpl( true, Environment::worldCommPtr() );
+        return this->evaluateImpl( true );
     }
 
     Eigen::MatrixXd
-    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel = true ) const
     {
-        return this->evaluateImpl( parallel, worldcomm );
+        return this->evaluateImpl( parallel );
     }
 
     //@}
@@ -860,9 +889,6 @@ public:
                 this->initSubTensorBIS2( exprExpanded.expandSymbolsExpression(), ttse, geom );
             }
 
-        template<typename IM>
-        void init( IM const& im ) {}
-
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             {
                 this->updateImpl( geom, fev, feu );
@@ -874,10 +900,6 @@ public:
         void update( Geo_t const& geom )
             {
                 this->updateImpl( geom );
-            }
-        void update( Geo_t const& geom, uint16_type face )
-            {
-                this->updateImpl( geom, face );
             }
 #if 0
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
@@ -897,6 +919,27 @@ public:
 
                 int no = M*N;
                 int ni = M_nsyms;//gmc_type::nDim;
+                for ( auto const& comp : exprExpanded.indexSymbolGeom() )
+                {
+                    switch ( comp.first )
+                    {
+                        case 6:
+                            M_x[comp.second] = M_gmc->h();
+                            break;
+                        case 7:
+                            M_x[comp.second] = M_gmc->meas();
+                            break;
+                        case 8:
+                            M_x[comp.second] = M_gmc->measPEN();
+                            break;
+                        case 9:
+                            M_x[comp.second] = M_gmc->nPEN();
+                            break;
+                        case 10:
+                            M_x[comp.second] = M_gmc->emarker();
+                            break;
+                    }
+                }
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
                     for ( auto const& comp : exprExpanded.indexSymbolXYZ() )
@@ -951,6 +994,28 @@ public:
 
                 int no = M*N;
                 int ni = M_nsyms;//gmc_type::nDim;
+                for ( auto const& comp : M_expr.indexSymbolGeom() )
+                {
+                    switch ( comp.first )
+                    {
+                        case 6:
+                            M_x[comp.second] = M_gmc->h();
+
+                            break;
+                        case 7:
+                            M_x[comp.second] = M_gmc->meas();
+                            break;
+                        case 8:
+                            M_x[comp.second] = M_gmc->measurePointElementNeighbors();
+                            break;
+                        case 9:
+                            M_x[comp.second] = M_gmc->element().numberOfPointElementNeighbors();
+                            break;
+                        case 10:
+                            M_x[comp.second] = M_gmc->marker().value();
+                            break;
+                    }
+                }
                 for(int q = 0; q < M_gmc->nPoints();++q )
                 {
                     for ( auto const& comp : M_expr/*exprExpanded*/.indexSymbolXYZ() )
@@ -1088,7 +1153,7 @@ private :
         if ( M_isNumericExpression )
             return;
 
-        std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
+        std::vector<std::pair<GiNaC::symbol,uint16_type>> symbTotalDegree;
         for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
             symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
 
@@ -1199,7 +1264,7 @@ private :
     }
 
     evaluate_type
-    evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluateImpl( bool parallel) const
     {
         if ( M_isNumericExpression )
             return M_numericValue;
@@ -1211,7 +1276,7 @@ private :
             x[k] = M_params[k];
 
         int k2 = 0;
-        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel,&worldcomm,&k2]( auto seId )
+        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&x,&parallel,&k2]( auto seId )
                         {
                             auto const& evec = hana::at( this->symbolsExpression().tuple(), hana::int_c<seId> );
                             //auto const& evecExpand = hana::at(M_expandSymbolsExpr, hana::int_c<seId> );
@@ -1229,7 +1294,7 @@ private :
                                     auto const& theexprBase = e.expr();
                                     auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))> const&>(M_expandSymbolsExpr[k2]);
 
-                                    x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
+                                    x[idx] = theexpr.evaluate( parallel )(0,0);
                                 }
                                 else
                                 {
@@ -1246,7 +1311,7 @@ private :
                                         {
                                             uint16_type c1 = compArray[0];
                                             uint16_type c2 = compArray[1];
-                                            x[idx] = theexpr.evaluate( parallel, worldcomm )(c1,c2);
+                                            x[idx] = theexpr.evaluate( parallel )(c1,c2);
                                         }
                                     }
                                 }

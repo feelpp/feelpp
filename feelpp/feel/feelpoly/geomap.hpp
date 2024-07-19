@@ -83,7 +83,7 @@ template <typename RangeType>
 GeomapStrategyType
 geomapStrategy( RangeType const& /**/, GeomapStrategyType gs )
 {
-    static const uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
+    constexpr uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
     if ( geoOrder == 1 )
         return GeomapStrategyType::GEOMAP_HO;
     else
@@ -132,7 +132,7 @@ class GeoMap
 
     //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
-    static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
+    static inline const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
                                                         mpl::int_<RealDim>,
                                                         mpl::int_<Dim>>::type::value;
 
@@ -772,10 +772,10 @@ class GeoMap
         static const int subEntityCoDim = SubEntityCoDim;
         static const int subEntityCoDimFix = SubEntityCoDim > 0 ? SubEntityCoDim : 1;
         // reference space dimension
-        static const uint16_type PDim = ElementType::nDim;
+        static inline const uint16_type PDim = ElementType::nDim;
         // real space dimension
         static constexpr uint16_type NDim = ElementType::nRealDim;
-        static const uint16_type nDim = NDim;
+        static inline const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
         static const bool is_linear = ( trans == fem::LINEAR );
@@ -814,6 +814,7 @@ class GeoMap
         typedef ElementType element_type;
         //typedef typename element_type::permutation_type permutation_type;
         typedef typename element_type::template PermutationSubEntity<subEntityCoDimFix> permutation_type;
+        using mesh_marker_type = typename element_type::marker_type;
 
         using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
@@ -988,6 +989,24 @@ class GeoMap
         }
 
 
+        template<size_type CTX>
+        void updateContext( size_type dynctx = 0 )
+            {
+                M_dynamic_context = M_dynamic_context | dynctx;
+
+                if ( M_dynamic_context != 0 )
+                {
+                    this->resize<CTX|vm::DYNAMIC,true>();
+                    this->updateImpl<CTX|vm::DYNAMIC>();
+                }
+                else
+                {
+                    this->resize<CTX,true>();
+                    this->updateImpl<CTX>();
+                }
+            }
+
+
         FEELPP_STRONG_INLINE
         void setElement( element_type const& __e )
             {
@@ -1085,14 +1104,14 @@ class GeoMap
             }
 
         //!
-        //! @return true if geomap assocated to a face, false otherwise
+        //! @return true if geomap associated to a face, false otherwise
         //!
         bool isOnFace() const
             {
                 return (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value);
             }
         //!
-        //! @return true if geomap assocated to a face, edge or point, false otherwise
+        //! @return true if geomap associated to a face, edge or point, false otherwise
         //!
         bool isOnSubEntity() const
             {
@@ -1532,26 +1551,26 @@ class GeoMap
          *
          * @return the marker of the element
          */
-        Marker1 marker( uint16_type k ) const
+        mesh_marker_type marker( uint16_type k ) const
             {
                 auto itFindMarker = M_e_markers.find( k );
                 if ( itFindMarker!= M_e_markers.end() )
                     return itFindMarker->second;
                 else
-                    return Marker1();
+                    return mesh_marker_type{};
             }
         /**
          * get the marker of the element
          *
          * @return the marker of the element
          */
-        Marker1 marker() const
+        mesh_marker_type marker() const
         {
             auto itFindMarker = M_e_markers.find( 1 );
             if ( itFindMarker!= M_e_markers.end() )
                 return itFindMarker->second;
             else
-                return Marker1();
+                return mesh_marker_type{};
         }
 
         /**
@@ -1559,13 +1578,13 @@ class GeoMap
          *
          * @return the marker2 of the element
          */
-        Marker1 marker2() const
+        mesh_marker_type marker2() const
         {
             auto itFindMarker = M_e_markers.find( 2 );
             if ( itFindMarker!= M_e_markers.end() )
                 return itFindMarker->second;
             else
-                return Marker1();
+                return mesh_marker_type{};
         }
 
         /**
@@ -1573,13 +1592,13 @@ class GeoMap
          *
          * @return the marker3 of the element
          */
-        Marker1 marker3() const
+        mesh_marker_type marker3() const
         {
             auto itFindMarker = M_e_markers.find( 3 );
             if ( itFindMarker!= M_e_markers.end() )
                 return itFindMarker->second;
             else
-                return Marker1();
+                return mesh_marker_type{};
         }
 
         /**
@@ -1587,15 +1606,15 @@ class GeoMap
          *
          * @return the marker of the face of the  element
          */
-        Marker1 entityMarker( uint16_type k = 1 ) const
+        mesh_marker_type entityMarker( uint16_type k = 1 ) const
             {
                 if ( !isOnSubEntity() || !M_f_markers )
-                    return Marker1();
+                    return mesh_marker_type{};
                 auto itFindMarker = M_f_markers->find( k );
                 if ( itFindMarker!= M_f_markers->end() )
                     return itFindMarker->second;
                 else
-                    return Marker1();
+                    return mesh_marker_type{};
             }
 
         /**
@@ -1812,8 +1831,10 @@ class GeoMap
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
                     auto [found_permutation,perm] = this->updateFromMatchingNodes<CTX>(elt, face_in_elt, gmc );
+#if 0 // NOT WORK IN ALL CASES
                     if ( found_permutation )
                         M_gm->setPermutationWithNeighborFace( elt.id(), face_in_elt, perm.value() );
+#endif
                     return found_permutation;
                 }
                 this->update<CTX>( elt, face_in_elt, permutation_type(M_gm->permutationWithNeighborFace(elt.id(), face_in_elt)) );
@@ -2490,8 +2511,8 @@ class GeoMap
         boost::multi_array<value_type, 4> M_B3;
 
         size_type M_id;
-        std::map<uint16_type,Marker1> M_e_markers;
-        std::optional<std::map<uint16_type,Marker1>> M_f_markers;
+        std::map<uint16_type,mesh_marker_type> M_e_markers;
+        std::optional<std::map<uint16_type,mesh_marker_type>> M_f_markers;
         size_type M_elem_id_1;
         uint16_type M_pos_in_elem_id_1;
         size_type M_elem_id_2;
@@ -3344,10 +3365,10 @@ struct GT_QK
     struct BOOST_PP_CAT( GT_, GEOM )<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), ENTITY, T>     \
         : public GeoMap<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), T, ENTITY, GEOM>            \
     {                                                                                                           \
-        static const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
-        static const uint16_type order = LORDER;                                                                \
-        static const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
-        static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
+        static inline const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
+        static inline const uint16_type order = LORDER;                                                                \
+        static inline const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
+        static inline const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
                                                             mpl::int_<nRealDim>,                                \
                                                             mpl::int_<nDim>>::type::value;                      \
                                                                                                                 \
@@ -3365,8 +3386,8 @@ struct GT_QK
         typedef GeoMap<nDim, LORDER, nRealDim, T, ENTITY, GEOM> super;                                          \
         typedef BOOST_PP_CAT( GT_, GEOM )<nDim - 1, LORDER, nRealDim, ENTITY, T> face_geo_type;                 \
                                                                                                                 \
-        static const uint16_type nDof = super::nDof;                                                            \
-        static const uint16_type nNodes = super::nNodes;                                                        \
+        static inline const uint16_type nDof = super::nDof;                                                            \
+        static inline const uint16_type nNodes = super::nNodes;                                                        \
         typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim>>::type element_gm_type;                     \
         typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim>>::type face_gm_type;                           \
         template <int N>                                                                                        \
@@ -3414,8 +3435,8 @@ template <typename Elem, template <uint16_type, uint16_type, uint16_type> class 
 class RealToReference
 {
   public:
-    static const uint16_type nDim = Elem::nDim;
-    static const uint16_type nRealDim = Elem::nRealDim;
+    static inline const uint16_type nDim = Elem::nDim;
+    static inline const uint16_type nRealDim = Elem::nRealDim;
 
     typedef T value_type;
     typedef typename matrix_node<T>::type points_type;

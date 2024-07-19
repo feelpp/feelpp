@@ -14,15 +14,15 @@ namespace FeelModels
 {
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
-    this->log("SolidMechanics","getInfo", "start" );
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-
+#if 0
+    this->log("SolidMechanics","getInfo", "start" );
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
     if (this->hasSolidEquationStandard()) {/*nElt=M_mesh->numGlobalElements();*/ nDof=M_XhDisplacement->nDof();}
@@ -140,8 +140,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- freq save       : " << myexporterFreq
                << "\n     -- fields exported : " << doExport_str;
     *_ostr << "\n   Processors"
-           << "\n     -- number of proc environnement : " << Environment::worldComm().globalSize()
-           << "\n     -- environement rank : " << Environment::worldComm().rank()
+           << "\n     -- number of proc environment : " << Environment::worldComm().globalSize()
+           << "\n     -- environment rank : " << Environment::worldComm().rank()
            << "\n     -- global rank : " << this->worldComm().globalRank()
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
@@ -152,10 +152,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     this->log("SolidMechanics","getInfo", "finish" );
-
+#endif
     return _ostr;
 }
-
+#endif
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
@@ -167,9 +167,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     nl::json subPt;
     subPt.emplace( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p["Physics"] = subPt;
+    p["Physics2"] = subPt;
 
     // Materials properties
     if ( this->materialsProperties() )
@@ -178,6 +180,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     if (this->hasSolidEquationStandard())
     {
         super_type::super_model_meshes_type::updateInformationObject( p["Meshes"] );
+
+        // Boundary Conditions
+        M_boundaryConditions->updateInformationObject( p["Boundary Conditions"] );
 
         subPt.clear();
         this->functionSpaceDisplacement()->updateInformationObject( subPt["Displacement"] );
@@ -192,7 +197,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
     }
 
     if ( this->hasSolidEquation1dReduced() )
-        M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
+        p["Toolbox Solid 1d Reduced"] = M_solid1dReduced->journalSection().to_string();
+    //M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
 
 }
 
@@ -208,15 +214,22 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     // Physics
     if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics2") )
     {
         Feel::Table tabInfoPhysics;
-        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
-        tabInfo->add( "Physics", TabulateInformations::New( tabInfoPhysics ) );
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics2"), tabInfoProp );
+        tabInfo->add( "Physics2", TabulateInformations::New( tabInfoPhysics ) );
     }
 
     // Materials Properties
     if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
         tabInfo->add( "Materials Properties", this->materialsProperties()->tabulateInformations(jsonInfo.at("Materials Properties"), tabInfoProp ) );
+
+    // Boundary conditions
+    if ( jsonInfo.contains("Boundary Conditions") )
+        tabInfo->add( "Boundary Conditions", boundary_conditions_type::tabulateInformations( jsonInfo.at("Boundary Conditions"), tabInfoProp ) );
 
     // Meshes
     if ( jsonInfo.contains("Meshes") )
@@ -245,7 +258,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
 
     // Subtoolbox
     if ( this->hasSolidEquation1dReduced() && jsonInfo.contains( "Toolbox Solid 1d Reduced" ) )
-        tabInfo->add( "Toolbox Solid 1d Reduced", M_solid1dReduced->tabulateInformations( jsonInfo.at("Toolbox Solid 1d Reduced"), tabInfoProp ) );
+    {
+        nl::json::json_pointer jsonPointerSolid1d( jsonInfo.at( "Toolbox Solid 1d Reduced" ).template get<std::string>() );
+        if ( JournalManager::journalData().contains( jsonPointerSolid1d ) )
+        {
+            auto tabInfos_solid1d = M_solid1dReduced->tabulateInformations( JournalManager::journalData().at( jsonPointerSolid1d ), tabInfoProp );
+            //TabulateInformationsSections::cast( tabInfos_solid1d )->erase( "Materials Properties" );
+            tabInfo->add( "Toolbox Solid 1d Reduced", tabInfos_solid1d );
+        }
+    }
 
     return tabInfo;
 }
@@ -514,24 +535,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( exporter_ptrtype expor
          exporter->step( time )->add( prefixvm(this->prefix(),"velocity-interface-from-fluid"), this->fieldVelocityInterfaceFromFluid() );
          hasFieldToExport = true;
      }*/
-    for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-    {
-        std::string const& userFieldName = fieldUserScalar.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserScalar( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
-    for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-    {
-        std::string const& userFieldName = fieldUserVectorial.first;
-        if ( fields.find( userFieldName ) != fields.end() )
-        {
-            exporter->step( time )->add( prefixvm(this->prefix(),userFieldName), this->fieldUserVectorial( userFieldName ) );
-            hasFieldToExport = true;
-        }
-    }
 
     return hasFieldToExport;
 }
@@ -638,7 +641,7 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
 {
     auto compSpace = uTensor2.compSpace();
     auto uComp = compSpace->elementPtr();
-    static const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
+    static inline const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
     auto dofTensor2 = uTensor2.functionSpace()->dof();
     auto dofComp = compSpace->dof();
     int nLocDofPerComp = dofTensor2->nLocalDof( true );
@@ -678,7 +681,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     {
         std::string const& vvname = ppvv.first;
         auto const& vvmarkers = ppvv.second;
-        elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
+        Range<mesh_type,MESH_ELEMENTS> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
             M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
         double volVar = this->computeVolumeVariation( vvrange );
         this->postProcessMeasuresIO().setMeasure( vvname, volVar );
@@ -933,9 +936,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->updateParameterValues();
 
-    // update user functions which depend of time only
-    this->updateUserFunctions(true);
-
     this->timerTool("TimeStepping").stop("updateTimeStep");
 
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
@@ -1018,6 +1018,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -1032,17 +1034,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : this->M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( paramValues );
-    this->M_bcNeumannScalar.setParameterValues( paramValues );
-    this->M_bcNeumannVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannTensor2.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameScalar.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
-    this->M_bcRobin.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    if ( this->hasSolidEquationStandard() )
+        M_boundaryConditions->setParameterValues( paramValues );
 
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->setParameterValues( paramValues );
@@ -1403,7 +1399,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& fie
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( Range<mesh_type,MESH_ELEMENTS> const& rangeElt ) const
 {
     //using namespace Feel::vf;
     if(!this->hasSolidEquationStandard()) return 0.;

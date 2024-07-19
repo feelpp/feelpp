@@ -49,7 +49,7 @@ makeOptions()
     ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
     ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
       "penalisation parameter for the weak boundary Dirichlet formulation" )
-    ( "initial_u", po::value<std::string>()->default_value( "0.0"), "Value or function to initialize T (instationnary mode)")
+    ( "initial_u", po::value<std::string>()->default_value( "0.0"), "Value or function to initialize T (instationary mode)")
     ;
   return laplacian_parabolic_eqoptions.add( Feel::feel_options() );
 }
@@ -58,7 +58,7 @@ makeOptions()
 /**
  * \class Laplacian_parabolic
  *
- * Laplacian equation with instationnary term solver using continuous approximation spaces
+ * Laplacian equation with instationary term solver using continuous approximation spaces
  * solve \f$ \dfrac{\partial u}{\partial t} - nu*\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  * \tparam Dim the geometric dimension of the problem = 2
@@ -129,7 +129,7 @@ class Laplacian_parabolic
 
 
 /**
- *	\brief Defines the edp to be solved in the instationnary case : \f$ dfrac{\partial u}{\partial t} - nu*\Delta u = f \f$
+ *	\brief Defines the edp to be solved in the instationary case : \f$ dfrac{\partial u}{\partial t} - nu*\Delta u = f \f$
  */
 struct transient_edp {
   ex operator()(ex u, std::vector<symbol> vars, std::vector<symbol> p) const
@@ -139,7 +139,7 @@ struct transient_edp {
 };
 
 /**
- *	\brief Defines the edp to be solved in the stationnary case : \f$ - nu*\Delta u = f \f$
+ *	\brief Defines the edp to be solved in the stationary case : \f$ - nu*\Delta u = f \f$
  */
 struct steady_edp {
   ex operator()(ex u, std::vector<symbol> vars) const
@@ -161,7 +161,7 @@ Laplacian_parabolic<Dim,Order>::run()
   std::cout << "------------------------------------------------------------\n";
   std::cout << "Execute Laplacian_parabolic<" << Dim << ">\n";
 
-  Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/D%2%/P%3%/h_%4%/" )
+  Environment::changeRepository( _directory=boost::format( "doc/manual/laplacian/%1%/D%2%/P%3%/h_%4%/" )
       % this->about().appName()
       % Dim
       % Order
@@ -317,7 +317,7 @@ Laplacian_parabolic<Dim,Order>::run()
     gproj = cvg->exact_project(Xh, t0);
   }
   else
-    gproj = project(Xh, elements(mesh), expr(initial_u_expr,vars) );
+    gproj = project(_space=Xh, _range=elements(mesh), _expr=expr(initial_u_expr,vars) );
 
   if(cvg->computedrhs())
     if ( parameters.size() )
@@ -325,7 +325,7 @@ Laplacian_parabolic<Dim,Order>::run()
     else
       Rhs = cvg->rhs_project(Xh);
   else
-    Rhs = vf::project( Xh, elements(mesh), cst(0.0) );
+    Rhs = vf::project( _space=Xh, _range=elements(mesh), _expr=cst(0.0) );
 
 
 
@@ -369,7 +369,7 @@ Laplacian_parabolic<Dim,Order>::run()
 
   /**
    * create the matrix that will hold the algebraic representation
-   * of the left hand side (only stationnary terms)
+   * of the left hand side (only stationary terms)
    */
   //! [marker3]
   /** \code */
@@ -417,7 +417,7 @@ Laplacian_parabolic<Dim,Order>::run()
       else
         Rhs = cvg->rhs_project(Xh);
     else
-      Rhs = vf::project( Xh, elements(mesh), cst(0.0) );
+      Rhs = vf::project( _space=Xh, _range=elements(mesh), _expr=cst(0.0) );
 
     if ( !steady && parameters.size() && !cvg->getExactSolution().empty() )
       gproj = cvg->exact_project(Xh, M_bdf->time() );
@@ -466,6 +466,13 @@ Laplacian_parabolic<Dim,Order>::run()
     auto Dt = backend()->newMatrix( _test=Xh, _trial=Xh );
     auto at = form2( _test=Xh, _trial=Xh, _matrix=Dt );
     /** \endcode */
+
+    /** \code */
+#if 0 // TODO
+    at += a;
+#endif
+    /** \endcode */
+
     if( !weak_dirichlet )
     {
       /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
@@ -480,10 +487,6 @@ Laplacian_parabolic<Dim,Order>::run()
       /** \endcode */
 
     }
-
-    /** \code */
-    at += a;
-    /** \endcode */
 
     //! solve the system
     /** \code */
@@ -511,7 +514,7 @@ Laplacian_parabolic<Dim,Order>::run()
 
       /// [marker14]
       double L2error = normL2( _range=elements( mesh ),_expr=( idv( u )-idv(gproj) ) );
-      double H1seminorm = math::sqrt( integrate( elements(mesh), (gradv(u) - gradg)*trans(gradv(u) - gradg) ).evaluate()(0,0) );
+      double H1seminorm = math::sqrt( integrate( _range=elements(mesh), _expr=(gradv(u) - gradg)*trans(gradv(u) - gradg) ).evaluate()(0,0) );
       double H1error = math::sqrt( L2error*L2error + H1seminorm*H1seminorm);
       /// [marker14]
 

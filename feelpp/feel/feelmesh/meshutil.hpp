@@ -26,7 +26,6 @@
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feelmesh/entities.hpp>
-#include <feel/feelmesh/bareitems.hpp>
 #include <feel/feelmesh/marker.hpp>
 
 
@@ -263,8 +262,8 @@ typedef std::pair<Point, Point> MeshBoundingBox;
 
 /**
  * @returns two points defining a cartesian box that bounds the
- * mesh.  The first entry in the pair is the mininum, the second
- * is the maximim.
+ * mesh.  The first entry in the pair is the minimum, the second
+ * is the maximum.
  */
 template<typename MeshType>
 inline

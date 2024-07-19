@@ -3,10 +3,22 @@
 
 namespace Feel {
 
-BOOST_PARAMETER_NAME( thickness )
-BOOST_PARAMETER_NAME( use_adaptive_thickness )
-BOOST_PARAMETER_NAME( impl )
-BOOST_PARAMETER_NAME( imorder )
+// BOOST_PARAMETER_NAME( thickness )
+// BOOST_PARAMETER_NAME( use_adaptive_thickness )
+// BOOST_PARAMETER_NAME( impl )
+// BOOST_PARAMETER_NAME( imorder )
+namespace na
+{
+using thickness = NA::named_argument_t<struct thickness_tag>;
+using use_adaptive_thickness = NA::named_argument_t<struct use_adaptive_thickness_tag>;
+using impl = NA::named_argument_t<struct impl_tag>;
+using imorder = NA::named_argument_t<struct imorder_tag>;
+}
+inline constexpr auto& _thickness = NA::identifier<na::thickness>;
+inline constexpr auto& _use_adaptive_thickness = NA::identifier<na::use_adaptive_thickness>;
+inline constexpr auto& _impl = NA::identifier<na::impl>;
+inline constexpr auto& _imorder = NA::identifier<na::imorder>;
+
 
 namespace FeelModels {
 
@@ -668,17 +680,17 @@ public:
     typedef typename functionspace_phi_type::geoelement_type geoelement_type;
     typedef typename functionspace_phi_type::value_type value_type;
     typedef value_type evaluate_type;
-    static const uint16_type nDim = fe_phi_type::nDim;
-    static const uint16_type nRealDim = fe_phi_type::nRealDim;
-    static const uint16_type rank = fe_phi_type::rank;
-    static const uint16_type nComponents1 = fe_phi_type::nComponents1;
-    static const uint16_type nComponents2 = fe_phi_type::nComponents2;
+    static inline const uint16_type nDim = fe_phi_type::nDim;
+    static inline const uint16_type nRealDim = fe_phi_type::nRealDim;
+    static inline const uint16_type rank = fe_phi_type::rank;
+    static inline const uint16_type nComponents1 = fe_phi_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_phi_type::nComponents2;
     static const bool is_terminal = false;
 
-    static const uint16_type orderphi = functionspace_phi_type::basis_type::nOrder;
+    static inline const uint16_type orderphi = functionspace_phi_type::basis_type::nOrder;
 
     // imorder
-    static const uint16_type imorderAuto = 6*orderphi - 4;
+    static inline const uint16_type imorderAuto = 6*orderphi - 4;
 
     static const bool imIsPoly = false;
 
@@ -939,6 +951,7 @@ private:
     int M_imOrder;
 };
 
+#if 0
 namespace detail {
 template<typename Args>
 struct compute_levelsetDelta_return
@@ -952,6 +965,7 @@ struct compute_levelsetDelta_return
     >::type element_type;
 };
 }
+
 
 BOOST_PARAMETER_FUNCTION(
         ( Expr< LevelsetDeltaExpr<typename detail::compute_levelsetDelta_return<Args>::element_type> > ), // return type
@@ -967,8 +981,20 @@ BOOST_PARAMETER_FUNCTION(
           ( imorder, (int), -1 )
         ) // optional parameters
     )
+#endif
+
+template <typename ... Ts>
+auto levelsetDelta( Ts && ... v )
 {
-    typedef typename detail::compute_levelsetDelta_return<Args>::element_type ElementPhiType;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && element = args.get(_element );
+    double thickness = args.get(_thickness);
+    bool use_adaptive_thickness = args.get_else(_use_adaptive_thickness,false);
+    std::string const& impl = args.get_else(_impl,"generic");
+    int imorder = args.get_else(_imorder,-1);
+
+    //typedef typename detail::compute_levelsetDelta_return<Args>::element_type ElementPhiType;
+    using ElementPhiType = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(element)>>>;
     typedef LevelsetDeltaExpr<ElementPhiType> lsdelta_t;
     lsdelta_t levelsetDeltaExpr( element, thickness );
 

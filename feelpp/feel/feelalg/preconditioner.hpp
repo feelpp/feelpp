@@ -26,13 +26,13 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#ifndef FEELPP_PRECONDITIONER_HPP
-#define FEELPP_PRECONDITIONER_HPP 1
+#ifndef FEELPP_ALG_PRECONDITIONER_H
+#define FEELPP_ALG_PRECONDITIONER_H 1
 
-#include <boost/parameter.hpp>
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vector.hpp>
 
@@ -360,7 +360,7 @@ protected:
 
     /**
      * The matrix P... ie the matrix to be preconditioned.
-     * This is often the actual system matrix of a linear sytem.
+     * This is often the actual system matrix of a linear system.
      */
     sparse_matrix_ptrtype  M_matrix;
 
@@ -438,29 +438,18 @@ Preconditioner<T,SizeT>::~Preconditioner ()
 typedef Preconditioner<double,uint32_type> preconditioner_type;
 typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
-
-template<typename Args>
-struct compute_prec_return
+template <typename ... Ts>
+std::shared_ptr<Preconditioner<double>> preconditioner( Ts && ... v )
 {
-    typedef typename parameter::value_type<Args, tag::backend>::type::element_type::value_type value_type;
-    typedef std::shared_ptr<Preconditioner<value_type>> type;
-};
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    PreconditionerType pc = args.get(_pc );
+    auto && backend = args.get(_backend );
+    std::string const& prefix = args.get_else( _prefix, "" );
+    d_sparse_matrix_ptrtype matrix = args.get_else( _matrix, d_sparse_matrix_ptrtype{} );
+    MatSolverPackageType pcfactormatsolverpackage = args.get_else( _pcfactormatsolverpackage, MATSOLVER_DEFAULT );
+    bool rebuild = args.get_else( _rebuild, false );
 
-BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
-                          preconditioner,
-                          tag,
-                          ( required
-                            ( pc,( PreconditionerType ) )
-                            ( backend, *(boost::is_convertible<mpl::_, std::shared_ptr<BackendBase>>) ) )
-                          ( optional
-                            ( prefix, *( boost::is_convertible<mpl::_,std::string> ), "" )
-                            ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
-                            ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
-                            ( rebuild,      (bool), false )
-                            )
-                          )
-{
-    using value_type = typename compute_prec_return<Args>::value_type;
+    using value_type = typename std::decay_t<decltype(unwrap_ptr(backend))>::value_type;
     preconditioner_ptrtype p = Preconditioner<value_type>::build( prefix, backend->type(), backend->worldCommPtr() );
     p->setType( pc );
     p->setMatSolverPackageType( pcfactormatsolverpackage );

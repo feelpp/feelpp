@@ -51,15 +51,15 @@ class LevelSetRedistanciation
         typedef std::shared_ptr<element_type> element_ptrtype;
         // Mesh
         typedef typename functionspace_type::convex_type convex_type;
-        static const uint16_type nDim = convex_type::nDim;
-        static const uint16_type nOrderGeo = convex_type::nOrder;
-        static const uint16_type nRealDim = convex_type::nRealDim;
+        static inline const uint16_type nDim = convex_type::nDim;
+        static inline const uint16_type nOrderGeo = convex_type::nOrder;
+        static inline const uint16_type nRealDim = convex_type::nRealDim;
         typedef typename functionspace_type::mesh_type mesh_type;
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         // Periodicity
         typedef typename functionspace_type::periodicity_0_type periodicity_type;
         // Ranges
-        typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+        typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
 
         //--------------------------------------------------------------------//
         // Constructor/Destructor

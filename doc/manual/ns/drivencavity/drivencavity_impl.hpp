@@ -76,23 +76,23 @@ DrivenCavity<Dim>::Jacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 
     //#endif
 
-    if (!J) J = backend(_name="newtonns")->newMatrix( Vh, Vh );
+    if (!J) J = backend(_name="newtonns")->newMatrix( _test=Vh, _trial=Vh );
     auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-    a = integrate( elements( mesh ), inner(gradt( u ),grad( v ))/Re );
-    a += integrate( elements( mesh ), id(q)*divt(u) -idt(p)*div(v) );
+    a = integrate( _range=elements( mesh ), _expr=inner(gradt( u ),grad( v ))/Re );
+    a += integrate( _range=elements( mesh ), _expr=id(q)*divt(u) -idt(p)*div(v) );
     // Convective terms
-    a += integrate( elements( mesh ), trans(id(v))*gradv(u)*idt(u));
-    a += integrate( elements( mesh ), trans(id(v))*gradt(u)*idv(u));
+    a += integrate( _range=elements( mesh ), _expr=trans(id(v))*gradv(u)*idt(u));
+    a += integrate( _range=elements( mesh ), _expr=trans(id(v))*gradt(u)*idv(u));
 
     //#if defined( FEELPP_USE_LM )
-    a += integrate(elements(mesh), id(q)*idt(lambda)+idt(p)*id(nu));
+    a += integrate(_range=elements(mesh), _expr=id(q)*idt(lambda)+idt(p)*id(nu));
     //#elif
-    //a += integrate(elements(mesh), idt(p)*id(nu));
+    //a += integrate(_range=elements(mesh), _expr=idt(p)*id(nu));
 
     //Weak Dirichlet conditions
-    a += integrate( boundaryfaces( mesh ),-trans( -idt(p)*N()+gradt(u)*N()/Re )*id( v ));//
-    a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+grad(u)*N()/Re )*idt( u ));//
-    a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    a += integrate( _range=boundaryfaces( mesh ),_expr= -trans( -idt(p)*N()+gradt(u)*N()/Re )*id( v ));//
+    a += integrate( _range=boundaryfaces( mesh ),_expr= -trans( -id(p)*N()+grad(u)*N()/Re )*idt( u ));//
+    a += integrate( _range=boundaryfaces( mesh ),_expr= +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 
 }
@@ -114,24 +114,24 @@ DrivenCavity<Dim>::Residual(const vector_ptrtype& X, vector_ptrtype& R)
     //#endif
 
     auto uex=unitX();
-    auto u_exact=vf::project(Vh->template functionSpace<0>(), markedfaces(mesh, "wall2"), uex );
+    auto u_exact=vf::project(_space=Vh->template functionSpace<0>(), _range=markedfaces(mesh, "wall2"), _expr=uex );
 
 
     U=*X;
     auto r = form1( _test=Vh, _vector=R );
     //r += integrate( elements( mesh ),-inner( f,id( v ) ) );
-    r = integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));//convective term
-    r += integrate( elements( mesh ), inner(gradv( u ),grad( v ))/Re );
-    r +=  integrate( elements( mesh ),-idv(p)*div(v) + id(q)*divv(u));
+    r = integrate( _range=elements( mesh ), _expr= trans(gradv( u )*idv(u))*id(v));//convective term
+    r += integrate( _range=elements( mesh ), _expr= inner(gradv( u ),grad( v ))/Re );
+    r +=  integrate( _range=elements( mesh ),_expr= -idv(p)*div(v) + id(q)*divv(u));
     //#if defined( FEELPP_USE_LM )
-    r += integrate ( elements( mesh ), +id( q )*idv( lambda )+idv( p )*id( nu ) );
+    r += integrate ( _range=elements( mesh ), _expr= +id( q )*idv( lambda )+idv( p )*id( nu ) );
     //#endif
 
 
     //Weak Dirichlet
     auto SigmaNv = ( -idv( p )*N() + gradv( u )*N()/Re );
     auto SigmaN = ( -id( q )*N() + grad( v )*N()/Re );
-    r +=integrate ( boundaryfaces(mesh), - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) -idv(u_exact) ) + penalbc*trans( idv( u ) - idv(u_exact) )*id( v )/hFace() );
+    r +=integrate ( _range=boundaryfaces(mesh), _expr= - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) -idv(u_exact) ) + penalbc*trans( idv( u ) - idv(u_exact) )*id( v )/hFace() );
 
 
 }
@@ -140,7 +140,7 @@ template<int Dim>
 void DrivenCavity<Dim>::exportResults( element_type const& U )
 {
     auto uex=unitX();
-    auto u_exact=vf::project(Vh->template functionSpace<0>(), markedfaces(mesh, "wall2"), uex );
+    auto u_exact=vf::project(_space=Vh->template functionSpace<0>(), _range=markedfaces(mesh, "wall2"), _expr=uex );
 
     if ( exporter->doExport() )
     {
@@ -171,8 +171,8 @@ void DrivenCavity<Dim>::run()
 
 
 
-    u=vf::project(Vh->template functionSpace<0>(), elements(mesh), zero<Dim,1>());
-    p=vf::project(Vh->template functionSpace<1>(), elements(mesh), constant(0.0));
+    u.on( _range=elements(mesh), _expr=zero<Dim,1>());
+    p.on( _range=elements(mesh), _expr=constant(0.0));
 
     if ( Environment::worldComm().isMasterRank() )
         std::cout << "Initializing residual " << "\n";

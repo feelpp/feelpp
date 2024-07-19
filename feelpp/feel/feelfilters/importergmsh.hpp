@@ -71,11 +71,11 @@ int getInfoMSH(const int typeMSH, std::string & elementName);
 #else
 int getInfoMSH(const int typeMSH, const char **const name);
 #endif
-void SwapBytes(char *array, int size, int n);
+
 
 namespace Feel
 {
-
+void SwapBytes( char* array, int size, int n );
 namespace detail
 {
 #pragma GCC visibility push(hidden)
@@ -384,15 +384,15 @@ public:
     //@{
     /** @name Constants
      */
-    static const uint16_type npoints_per_edge = ( edge_type::numVertices*edge_type::nbPtsPerVertex+
+    static inline const uint16_type npoints_per_edge = ( edge_type::numVertices*edge_type::nbPtsPerVertex+
             edge_type::numEdges*edge_type::nbPtsPerEdge+
             edge_type::numFaces*edge_type::nbPtsPerFace );
 
-    static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
+    static inline const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
             face_type::numEdges*face_type::nbPtsPerEdge+
             face_type::numFaces*face_type::nbPtsPerFace );
 
-    static const uint16_type npoints_per_element = element_type::numPoints;
+    static inline const uint16_type npoints_per_element = element_type::numPoints;
     //@}
 
     /** @name Constructors, destructor
@@ -530,10 +530,10 @@ protected:
 private:
     FEELPP_NO_EXPORT void readFromMemory( mesh_type* mesh );
     FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
-    FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
+    FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
     template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
-    FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
+    FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
 
 
@@ -754,9 +754,6 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             physicalTags.push_back( entityTag );
         else
             gmsh::model::getPhysicalGroupsForEntity( entityDim, entityTag, physicalTags );
-        // fix for exporter TO REMOVE!!!!
-        if ( physicalTags.empty() && entityDim == mesh_type::nDim )
-            physicalTags.push_back( 1234 );
 
         std::vector<int> elementTypes;
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
@@ -1000,7 +997,8 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
         throw std::invalid_argument( ostr.str() );
     }
 
-    char __buf[256];
+    //char __buf[256];
+    std::string __buf;
     __is >> __buf;
 
     std::string theversion;
@@ -1105,7 +1103,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, char __buf[],
+ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                               double version, bool binary, bool swap )
 {
     //
@@ -1170,7 +1168,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
         }
         else
             gmshpts.emplace_hint( gmshpts.end(),std::make_pair(id,Feel::detail::GMSHPoint( id, x ) ) );
-        
+
         // stores mapping to be able to reorder the indices
         // so that they are contiguous
         //itoii[idpts[__i]] = __i;
@@ -1281,7 +1279,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
                                             this->worldComm().localSize() ) == false ||
                Feel::detail::isFound( M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end(), physical ) )
               continue;
-          
+
           __et.emplace_back( num, type, std::vector<int>({physical}), elementary,
                              numPartitions, partition, ghosts,
                              parent, dom1, dom2,
@@ -1289,7 +1287,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
                              this->worldComm().localRank(),
                              this->worldComm().localSize(),
                              M_respect_partition );
-          
+
           if ( __gt.find( type ) != __gt.end() )
               ++__gt[ type ];
           else
@@ -1611,13 +1609,13 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 template<typename MeshType>
 template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
 void
-ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, char __buf[],
+ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                               double version, bool binary, bool swap )
 {
     rank_type procId = this->worldComm().localRank();
     rank_type worldSize = this->worldComm().localSize();
 
-    //usefull for binary read
+    //useful for binary read
     std::vector<int> _vectmpint;
     std::vector<gmsh_size_type> _vectmpsizet;
     std::vector<gmsh_elttag_type> _vectmpelttag;
@@ -1809,7 +1807,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 entityTagInCurrentPartitionToPartitions[0][entityTag] = partitionTags;
             else if ( parentDim == 0 )
             {
-                // WARNING : partitioning informations with points entities is quite strange for some node
+                // WARNING : partitioning information with points entities is quite strange for some node
                 // Consequence some extra node are inserted in the mesh, TODO remove maybe this node
                 entityTagInCurrentPartitionToPartitions[0][entityTag] = allPartitionTags;
             }
@@ -1917,8 +1915,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         __is >> __buf;
     }
 
-    //std::map<size_type,Feel::detail::GMSHPoint> additionnalNodes;
-    std::map<rank_type,std::set<size_type>> interprocessNodes; // neighboor partId -> ( points id )
+    //std::map<size_type,Feel::detail::GMSHPoint> additionalNodes;
+    std::map<rank_type,std::set<size_type>> interprocessNodes; // neighbour partId -> ( points id )
 
     if ( std::string( __buf ) == "$Nodes" )
     {
@@ -2171,14 +2169,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 {
                     for ( int thePhysicalTag : itFindEntityTagToPhysicalMarkers->second )
                         physicalTag.push_back( thePhysicalTag );
-                    if ( physicalTag.size() > 0 )
-                    {
-                        CHECK( physicalTag.size() == 1 ) << "support only one physical marker by entity";
-                    }
                 }
-                // fix for exporter TO REMOVE!!!!
-                if ( physicalTag.empty() && entityDim == mesh_type::nDim )
-                    physicalTag.push_back( 1234 );//123456;//0;
             }
 
 #if defined( FEELPP_HAS_GMSH_API )
@@ -2218,7 +2209,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 it_gmshElt.num = elementTag;
 
                 // WARNING : need to apply a special treatment on mesh partitioned with elements of dim <  mesh_type::nDim
-                // the partitioning informations with this entity is not very clear (some duplications with global entities)
+                // the partitioning information with this entity is not very clear (some duplications with global entities)
                 if ( numPartitions > 1 && entityDim < mesh_type::nDim )
                 {
                     it_gmshElt.physical = physicalTag; // here because can be modified just after
@@ -2247,13 +2238,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                             {
                                 auto itFindGmhsId = __idGmshToFeel.find( gmshEltToUpdate.num );
                                 CHECK( itFindGmhsId != __idGmshToFeel.end() ) << "Gmsh element id not found";
-                                CHECK( gmshEltToUpdate.physical.size() == 1 ) "support only one marker";
+                                //CHECK( gmshEltToUpdate.physical.size() == 1 ) "support only one marker";
 
                                 if ( entityDim == ( mesh_type::nDim -1 ) )
                                 {
                                     auto faceIt = mesh->faceIterator( itFindGmhsId->second );
                                     CHECK( faceIt != mesh->endFace() ) << "face not found";
-                                    faceIt->second.setMarker( gmshEltToUpdate.physical[0] );
+                                    faceIt->second.addMarker( gmshEltToUpdate.physical );
                                 }
                                 else if ( mesh_type::nDim == 3 && entityDim == ( mesh_type::nDim - 2 ) )
                                 {
@@ -2261,14 +2252,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                                     {
                                         auto edgeIt = mesh->edgeIterator( itFindGmhsId->second );
                                         CHECK( edgeIt != mesh->endEdge() ) << "face not found";
-                                        edgeIt->second.setMarker( gmshEltToUpdate.physical[0] );
+                                        edgeIt->second.addMarker( gmshEltToUpdate.physical );
                                     }
                                 }
                                 else if ( entityDim == 0 )
                                 {
                                     auto pointIt = mesh->pointIterator( itFindGmhsId->second );
                                     CHECK( pointIt != mesh->endPoint() ) << "point not found";
-                                    pointIt->second.setMarker( gmshEltToUpdate.physical[0] );
+                                    pointIt->second.addMarker( gmshEltToUpdate.physical );
                                 }
                             }
                             useThisEntity = false;
@@ -2511,7 +2502,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         {
             mpi::request * reqs = new mpi::request[nbRequest];
             int cptRequest=0;
-            // prepare and send ghost informations
+            // prepare and send ghost information
             for ( auto const& [ gproc, ghostElts ] : ghostElementToSendToProcessId )
             {
                 std::vector<boost::tuple<size_type, std::vector<double> > > dataPointsToSend;
@@ -2549,7 +2540,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 reqs[cptRequest++] = this->worldComm().localComm().isend( gproc , 0, fullDataToSend );
             }
 
-            // recv ghost informations
+            // recv ghost information
             std::map<rank_type, boost::tuple< std::vector<boost::tuple<size_type, std::vector<double> > >,
                                               std::vector<std::vector<size_type>> > > dataToRecv;
             for ( rank_type aproc : ghostElementToRecvFromProcessId )
@@ -2615,7 +2606,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     auto & pt = pit->second;
 
     if ( !__e.physical.empty() )
-        pt.setMarker( __e.physical[0] );
+        pt.addMarker( __e.physical );
     if ( false )
         pt.setMarker2( __e.elementary );
     //pt.setProcessId( __e.partition );
@@ -2641,7 +2632,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     //e.setWorldComm(this->worldComm());
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2678,7 +2669,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2716,7 +2707,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numEdges() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     // warning : process id is define after (when call mesh->updateForUse()
@@ -2771,7 +2762,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2807,7 +2798,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2861,7 +2852,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     e.setProcessIdInPartition( this->worldComm().localRank() );
     GmshOrdering<element_type> ordering;
     if ( !__e.physical.empty() )
-        e.setMarker( __e.physical[0] );
+        e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
@@ -2962,13 +2953,14 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
 
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     for ( auto const& [proc,thedata] : dataToSend )
     {
-        int nSendData = thedata.size();
-        reqs[cptRequest++] = this->worldComm().localComm().isend( proc , 0, nSendData );
+        sizeSend[proc] = thedata.size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( proc , 0, sizeSend[proc] );
     }
 
-    std::map<rank_type,size_type> sizeRecv;
     for ( rank_type proc=0; proc<nProc; ++proc )
     {
         if ( nbMsgToRecv[proc] > 0 )
@@ -2986,9 +2978,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        int nSendData = itDataToSend->second.size();
+        std::size_t nSendData = itDataToSend->second.size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToSend->first , 0, &(itDataToSend->second[0]), nSendData );
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second.data(), nSendData );
     }
     //-----------------------------------------------------------//
     // first recv
@@ -2997,10 +2989,10 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     {
         if ( nbMsgToRecv[proc] > 0 )
         {
-            int nRecvData = sizeRecv[proc];
+            std::size_t nRecvData = sizeRecv[proc];
             dataToRecv[proc].resize( nRecvData );
             if ( nRecvData > 0 )
-                reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, &(dataToRecv[proc][0]), nRecvData );
+                reqs[cptRequest++] = this->worldComm().localComm().irecv( proc , 0, dataToRecv[proc].data(), nRecvData );
         }
     }
     //-----------------------------------------------------------//
@@ -3027,9 +3019,9 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        int nSendData = itDataToReSend->second.size();
+        std::size_t nSendData = itDataToReSend->second.size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToReSend->first , 0, &(itDataToReSend->second[0]), nSendData );
+            reqs[cptRequest++] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second.data(), nSendData );
     }
     //-----------------------------------------------------------//
     // recv the initial request
@@ -3038,10 +3030,10 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type idProc = itDataToSend->first;
-        int nRecvData = itDataToSend->second.size();
+        std::size_t nRecvData = itDataToSend->second.size();
         finalDataToRecv[idProc].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, &(finalDataToRecv[idProc][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc].data(), nRecvData );
     }
     //-----------------------------------------------------------//
     // wait all requests

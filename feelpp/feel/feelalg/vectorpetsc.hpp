@@ -175,21 +175,22 @@ public:
     }
 
     /**
-     * @brief creates a VectorPetsc out of a VectorUblas
+     * @brief creates a VectorPetsc out of an array (of size nLocal+nGhosts)
      *
-     * there is no copy, PETSc will use the storage of the VectorUblas
+     * there is no copy, PETSc will use the array as storage
+     * rk: this can be used to create a view on a VectorUblas
+     * \warning: T should be the same type as PetscScalar
      */
-    template<typename Storage>
-    VectorPetsc( VectorUblas<T,Storage> const& v )
+    VectorPetsc( const T * array, const datamap_ptrtype & dm )
         :
-        super( v.mapPtr() ),
+        super( dm ),
         M_destroy_vec_on_exit( true )
         {
             int ierr=0;
             PetscInt petsc_n_dof=static_cast<PetscInt>( this->map().nDof() );
             PetscInt petsc_n_localWithoutGhost=static_cast<PetscInt>( this->map().nLocalDofWithoutGhost() );
             PetscInt petsc_n_localGhost=static_cast<PetscInt>( this->map().nLocalGhosts() );
-            const PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 )? std::addressof( *v.begin()/*v[0]*/ ) : NULL;
+            const PetscScalar* thearray = ( this->map().nLocalDofWithGhost() > 0 )? array : NULL;
             PetscInt *idx = NULL;
             if ( petsc_n_localGhost > 0 )
             {
@@ -766,7 +767,7 @@ private:
         ierr = VecGetArray(M_vec, &array);
         CHKERRABORT( this->comm(),ierr );
 
-        size_type n;
+        size_type n = invalid_v<size_type>;
         ar >> BOOST_SERIALIZATION_NVP( n );
         CHECK( n == this->map().nLocalDofWithoutGhost() ) << "vector is not compatible with array serialized";
         ar >>  boost::serialization::make_array( array, n );
@@ -854,10 +855,9 @@ public:
 
     VectorPetscMPI( datamap_ptrtype const& dm, bool doInit=true );
 
-    template<typename Storage>
-    VectorPetscMPI( VectorUblas<T,Storage> const& v )
+    VectorPetscMPI( const T * array, const datamap_ptrtype & dm )
         :
-        super( v )
+        super( array, dm )
         {}
 
     ~VectorPetscMPI() override
@@ -994,15 +994,14 @@ public:
 
     VectorPetscMPIRange( Vec v, Vec vGhost, VecScatter vecScatterGhost, datamap_ptrtype const& dm );
 
-    template<typename Storage>
-    VectorPetscMPIRange( VectorUblas<T,Storage> const& v )
+    VectorPetscMPIRange( const T * arrayActive, const T * arrayGhost, const datamap_ptrtype & dm )
         :
-        super_type( v.mapPtr(), false ),
+        super_type( dm, false ),
         M_destroyVecGhostOnExit( true ),
         M_destroyVecScatterGhostOnExit( true )
         {
-            const PetscScalar* arrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? std::addressof( *v.begin() ) : NULL;
-            const PetscScalar* arrayGhost = ( this->map().nLocalGhosts() > 0 )? std::addressof( *v.beginGhost() ) : NULL;
+            const PetscScalar* thearrayActive = ( this->map().nLocalDofWithoutGhost() > 0 )? arrayActive : NULL;
+            const PetscScalar* thearrayGhost = ( this->map().nLocalGhosts() > 0 )? arrayGhost : NULL;
             this->initRangeView( arrayActive,arrayGhost );
         }
     ~VectorPetscMPIRange() override

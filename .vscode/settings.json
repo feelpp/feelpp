@@ -1,4 +1,6 @@
 {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
     "files.associations": {
         "iterator": "cpp",
         "*.ipp": "cpp",
@@ -107,9 +109,27 @@
         "csignal": "cpp",
         "format": "cpp",
         "*.in": "cpp",
-        "texture": "cpp"
+        "*.py.in": "python",
+        "texture": "cpp",
+        "charconv": "cpp",
+        "numbers": "cpp",
+        "scoped_allocator": "cpp",
+        "semaphore": "cpp",
+        "core": "cpp",
+        "superlusupport": "cpp",
+        "*.evaluator": "cpp",
+        "*.traits": "cpp",
+        "adolcforward": "cpp",
+        "bvh": "cpp",
+        "eulerangles": "cpp",
+        "fft": "cpp",
+        "kroneckerproduct": "cpp",
+        "openglsupport": "cpp",
+        "specialfunctions": "cpp",
+        "splines": "cpp"
     },
-    "C_Cpp.configurationWarnings": "Disabled",
+    "jupyter.notebookFileRoot": "${workspaceFolder}/build/python/install/lib/python3/dist-packages",
+    "C_Cpp.configurationWarnings": "disabled",
     "C_Cpp.loggingLevel": "Debug",
     "C_Cpp.default.compilerPath" : "/usr/bin/clang++",
     "C_Cpp.default.systemIncludePath" : ["${workspaceFolder}/feelpp","/usr/include","/usr/local/include"],
@@ -118,6 +138,8 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     
     ],
-    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
-    "cmake.parallelJobs": 5
+    "cmake.parallelJobs": 5,
+    "autoDocstring.docstringFormat": "numpy",
+    "svg.preview.background": "transparent"
+    
 }

@@ -1,41 +1,143 @@
-// -*- mode: javascript -*-
 {
+    /*
+      References :
+      - https://www.comsol.fr/model/download/507571/lid_driven_cavity.pdf
+     */
     "Name": "lid-driven-cavity",
     "ShortName":"lid-driven-cavity",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "setup":
+            {
+                "equation":"Navier-Stokes"
+                ,"formulation":"conservative"//"skew-symmetric"
+                //"formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
+            }
+        }
+    },
+    "Parameters":
+    {
+        "Re":1000, // 400, 800, 1000, 4000, 10000, 20000
+        "hfar":0.01,
+        "hclose_wall":"hfar/5:hfar",
+        //"hclose_wall":"hfar/10:hfar",
+        "d2r_bounded_wall":"min(meshes_fluid_distanceToRange_wall_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall_normalized_min_max",
+        "mymetric_wall":"hclose_wall+(hfar-hclose_wall)*d2r_bounded_wall:hclose_wall:hfar:d2r_bounded_wall"
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cfd2d.geo",//,
+                "hsize":0.01
+            },
+            "DistanceToRange":
+            {
+                "wall":
+                {
+                    "markers":["moving-wall","noslip-wall"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":
+            {
+                "metric":"mymetric_wall:mymetric_wall",
+                "events":{
+                    "after_import":{}
+                },
+                "setup":{
+                    "verbose":1//-1
+                }
+            }
+        }
     },
     "Materials":
     {
         "Fluid":{
             "rho":"1",
-            "mu":"1e-5"
+            "mu":"1/Re:Re"
         }
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "moving-wall":
                 {
                     "expr":"{1,0}"
+                    //,"method":"nitsche"
                 },
                 "noslip-wall":
                 {
                     "expr":"{0,0}"
+                    //,"method":"nitsche"
+                },
+                "noslip-corner":
+                {
+                    "expr":"{0,0}"
+                    //"expr":"{1,0}"
                 }
             }
         }
     },
     "PostProcess":
     {
-        "Exports":
+        "fluid":
         {
-            "fields":["velocity","pressure","pid"]
+            "Exports":
+            {
+                "fields":["velocity","pressure","pid"]
+            },
+            "Measures":
+            {
+                "Points":
+                {
+                    "vertical_centerline":
+                    {
+                        "over_geometry":
+                        {
+                            "segment":
+                            {
+                                "point1":"{0.5,0}",
+                                "point2":"{0.5,1}",
+                                "n_points":100
+                            }
+                        },
+                        "fields":"velocity",
+                        "include_coordinates":1,
+                        "output":
+                        {
+                            "type":"table"
+                            //"name":"vertical_centerline"
+                        }
+                    },
+                    "horizontal_centerline":
+                    {
+                        "over_geometry":
+                        {
+                            "segment":
+                            {
+                                "point1":"{0,0.5}",
+                                "point2":"{1,0.5}",
+                                "n_points":100
+                            }
+                        },
+                        "fields":"velocity",
+                        "include_coordinates":1,
+                        "output":
+                        {
+                            "type":"table"
+                            //"name":"horizontal_centerline"
+                        }
+                    }
+
+                }
+            }
         }
     }
-
 }

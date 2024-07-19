@@ -7,66 +7,49 @@
         "OmegaG":
         {
             "name":"silicium",
-	    	"k":"1e-10" // epsilon= epsR * eps0
+	    	"poisson_c":"1e-10", // epsilon= epsR * eps0
+            "poisson_f":"-6*y+4:x:y:z" 
         },
         "OmegaS":
         {
             "name":"silicium",
-            "k":"1e-10" // epsilon = epsR * eps0
+            "poisson_c":"1e-10", // epsilon = epsR * eps0
+            "poisson_f":"-6*y+4:x:y:z" 
         },
         "OmegaB":
         {
             "name":"silicium",
-            "k":"1e-10" // epsilon = epsR * eps0
+            "poisson_c":"1e-10", // epsilon = epsR * eps0
+            "poisson_f":"-6*y+4:x:y:z" 
         },
         "OmegaD":
         {
             "name":"silicium",
-            "k":"1e-10" // epsilon = epsR * eps0
+            "poisson_c":"1e-10", // epsilon = epsR * eps0
+            "poisson_f":"-6*y+4:x:y:z" 
+        }
+    },
+    "InitialConditions":
+    {
+        "poisson":
+        {
+            "potential":
+            {
+                "Expression":
+                {
+                    "OmegaG":
+                    {
+                        "markers":["omegaG","omegaS","omegaB","omegaD"],
+                        "expr":"0.0"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "InitialSolution":
-            {
-                "OmegaG":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaS":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaB":
-                {
-                    "expr":"0.0"
-                },
-                "OmegaD":
-                {
-                    "expr":"0.0"
-                }
-            },
-            "SourceTerm":
-            {
-                "OmegaG":
-                {
-                    "expr":"-6*y+4:x:y:z" 
-                },
-                "OmegaB":
-                {
-                    "expr":"-6*y+4:x:y:z" 
-                },
-                "OmegaD":
-                {
-                    "expr":"-6*y+4:x:y:z" 
-                },
-                "OmegaS":
-                {
-                    "expr":"-6*y+4:x:y:z" 
-                }
-            },
             "Dirichlet":
 	    	{
 	    		"WallG":
@@ -123,7 +106,7 @@
 					"expr":"3" // "-4*pi*0.03*(x^2+y^2)*cos(x^2+y^2):x:y:z"
                 }
  	    	}
-    	}*/,
+    	},
 		"Exact solution":
 		{
 	    	"p_exact":
@@ -145,13 +128,16 @@
                 	"expr":"5+3*y-2*y^2+y^3 :x:y:z" 
 				}
 	    	}
-		}
+		}*/
      },
     "PostProcess":
     {
-        "Exports":
+        "poisson":
         {
-            "fields":["potential","flux"]
+            "Exports":
+            {
+                "fields":["potential","flux"]
+            }
         }
     }
 }

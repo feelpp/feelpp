@@ -29,6 +29,7 @@
 #ifndef FEELPP_PCHM_H
 #define FEELPP_PCHM_H 1
 
+#include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
@@ -38,29 +39,27 @@ template<typename MeshType,
          int Order,
          template <uint16_type> class Pset = Tensor2,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pchmg
 {
-    typedef FunctionSpace<MeshType,
-                          bases<Lagrange<Order,Pset,Continuous,Pts,Tag>>,
-                          T,
-                          Periodicity <NoPeriodicity>,
-                          mortars<NoMortar>> type;
+    using type = boost::mp11::mp_if_c<Tag == 0 && std::is_same_v<T, double>,
+                                      FunctionSpace<MeshType, bases<Lagrange<Order, Pset, Continuous, Pts>>>,
+                                      FunctionSpace<MeshType, bases<Lagrange<Order, Pset, Continuous, Pts, Tag>>, T>>;
     typedef std::shared_ptr<type> ptrtype;
 };
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm = Pchmg<MeshType,Order,Tensor2,T,Pts,Tag>;
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms = Pchmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 
@@ -69,26 +68,26 @@ using Pchms = Pchmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm_type = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm_ptrtype = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms_type = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms_ptrtype = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::ptrtype;
 
@@ -100,7 +99,7 @@ using Pchms_ptrtype = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::ptrtype;
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
@@ -118,12 +117,12 @@ Pchm( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
 Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchms( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Pchms( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 {
     return Pchms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                       _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),

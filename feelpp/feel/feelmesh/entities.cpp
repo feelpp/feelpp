@@ -34,37 +34,7 @@
 namespace Feel
 {
 /// \cond detail
-const uint16_type no_permutation::NO_PERMUTATION;
-const uint16_type no_permutation::IDENTITY;
-const uint16_type no_permutation::N_PERMUTATIONS;
 
-const uint16_type line_permutations::NO_PERMUTATION;
-const uint16_type line_permutations::IDENTITY;
-const uint16_type line_permutations::REVERSE_PERMUTATION;
-const uint16_type line_permutations::N_PERMUTATIONS;
-
-const uint16_type triangular_faces_type::NO_PERMUTATION;
-const uint16_type triangular_faces_type::IDENTITY;
-const uint16_type triangular_faces_type::REVERSE_HEIGHT;
-const uint16_type triangular_faces_type::REVERSE_BASE;
-const uint16_type triangular_faces_type::REVERSE_HYPOTENUSE;
-const uint16_type triangular_faces_type::ROTATION_ANTICLOCK;
-const uint16_type triangular_faces_type::ROTATION_CLOCKWISE;
-const uint16_type triangular_faces_type::N_PERMUTATIONS;
-const uint16_type triangular_faces_type::PRINCIPAL_DIAGONAL;
-const uint16_type triangular_faces_type::SECOND_DIAGONAL;
-const uint16_type triangular_faces_type::ROTATION_TWICE_CLOCKWISE;
-
-const uint16_type quadrangular_faces::NO_PERMUTATION;
-const uint16_type quadrangular_faces::IDENTITY;
-const uint16_type quadrangular_faces::SECOND_DIAGONAL;
-const uint16_type quadrangular_faces::REVERSE_BASE;
-const uint16_type quadrangular_faces::ROTATION_ANTICLOCK;
-const uint16_type quadrangular_faces::PRINCIPAL_DIAGONAL;
-const uint16_type quadrangular_faces::ROTATION_TWICE_CLOCKWISE;
-const uint16_type quadrangular_faces::ROTATION_CLOCKWISE;
-const uint16_type quadrangular_faces::REVERSE_HEIGHT;
-const uint16_type quadrangular_faces::N_PERMUTATIONS;
 
 /// \endcond
 }

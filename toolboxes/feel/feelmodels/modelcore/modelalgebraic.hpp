@@ -36,6 +36,8 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feeldiscr/enums.hpp>
+#include <feel/feelalg/matrixcondensed.hpp>
+#include <feel/feelalg/vectorcondensed.hpp>
 
 namespace Feel
 {
@@ -252,35 +254,30 @@ public :
     {
     public:
         DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
-                            vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart )
+                            bool buildCstPart, bool usePicardLinearization )
             :
             DataUpdateBase(),
             M_jacobian( jacobian ),
-            M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
             M_currentSolution( currentSolution ),
             M_buildCstPart( buildCstPart ),
-            M_doBCStrongDirichlet( true )
+            M_usePicardLinearization( usePicardLinearization )
             {}
 
         DataUpdateJacobian( DataUpdateJacobian const& d) = default;
         DataUpdateJacobian( DataUpdateJacobian && d) = default;
 
         sparse_matrix_ptrtype& jacobian() { return M_jacobian; }
-        vector_ptrtype& vectorUsedInStrongDirichlet() { return M_vectorUsedInStrongDirichlet; }
         vector_ptrtype const& currentSolution() { return M_currentSolution; }
-
         bool buildCstPart() const { return M_buildCstPart; }
-        FEELPP_DEPRECATED bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+        bool usePicardLinearization() const { return M_usePicardLinearization; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
 
     private :
         sparse_matrix_ptrtype M_jacobian;
-        vector_ptrtype M_vectorUsedInStrongDirichlet;
         const vector_ptrtype& M_currentSolution;
         bool M_buildCstPart;
-        bool M_doBCStrongDirichlet;
+        bool M_usePicardLinearization;
     };
 
     class DataDofEliminationIdsByEntity
@@ -434,7 +431,7 @@ public :
     bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_v<size_type>); }
     void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
-    //! update data usefull for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian
+    //! update data useful for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian
     template <typename DataType>
     void updateDofEliminationIds( std::string const& spaceName, DataType & data ) const
         {
@@ -462,7 +459,7 @@ public :
     template <typename SpaceType, typename RangeType>
     void updateDofEliminationIds( std::string const& spaceName, std::shared_ptr<SpaceType> thespace, RangeType const& therange, ComponentType c1 = ComponentType::NO_COMPONENT )
         {
-            ElementsType et = (ElementsType)boost::get<0>( therange ).value;
+            ElementsType et = (ElementsType)therange.entities();
             auto dofsToAdd = thespace->dofs( therange, c1 );
             thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
             this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );
@@ -527,6 +524,13 @@ public :
             if ( itFind == M_algebraicDataAndTools.end() )
                 return nullptr;
             return std::get<2>( itFind->second );
+        }
+
+    void removeAllAlgebraicDataAndTools()
+        {
+            M_algebraicDataAndTools.clear();
+            M_dofEliminationIds.clear();
+            M_startSubBlockSpaceIndex.clear();
         }
 
 private :

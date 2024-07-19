@@ -27,8 +27,9 @@
 
 #include <feel/feelcore/environment.hpp>
 
+
+#if FEELPP_HAS_FMILIB
 #include <fmilib.h>
-#include <boost/filesystem.hpp>
 
 #include <feel/feelfmi/fmumodel2.hpp>
 #include <feel/feelfmi/cssolver.hpp>
@@ -115,4 +116,5 @@ private :
 
 
 } //namespace Feel
+#endif
 #endif

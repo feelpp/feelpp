@@ -14,68 +14,61 @@
 #include <feel/feelpoly/nedelec.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdeboundaryconditions.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
-
+/**
+ * @brief class for a single CoefficientFormPDE 
+ * @ingroup CoefficientFormPDEs
+ *
+ * @tparam ConvexType convex for the mesh
+ * @tparam BasisUnknownType basis type for unknowns in an equation
+ * 
+ */
 template< typename ConvexType, typename BasisUnknownType>
-class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>,
-                           public std::enable_shared_from_this< CoefficientFormPDE<ConvexType,BasisUnknownType> >
+class CoefficientFormPDE : public CoefficientFormPDEBase<ConvexType>
 {
 public:
     typedef CoefficientFormPDEBase<ConvexType> super_type;
+    using Coefficient = typename super_type::Coefficient;
+
     using size_type = typename super_type::size_type;
     typedef CoefficientFormPDE<ConvexType,BasisUnknownType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // basis
     typedef BasisUnknownType basis_unknown_type;
-    static const uint16_type nOrderUnknown = basis_unknown_type::nOrder;
+    static inline const uint16_type nOrderUnknown = basis_unknown_type::nOrder;
     // function space unknown
     typedef FunctionSpace<mesh_type, bases<basis_unknown_type> > space_unknown_type;
     typedef std::shared_ptr<space_unknown_type> space_unknown_ptrtype;
     typedef typename space_unknown_type::element_type element_unknown_type;
     typedef std::shared_ptr<element_unknown_type> element_unknown_ptrtype;
-    typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
     static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
     static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
-    // measure tools for points evaluation
-    typedef MeasurePointsEvaluation<space_unknown_type> measure_points_evaluation_type;
-    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
-    CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
+    CoefficientFormPDE( typename super_type::super2_type::infos_ptrtype const& infosPDE,
                         std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
-#if 0
-    CoefficientFormPDE( std::string const& prefix,
-                        std::string const& keyword = "cfpde",
-                        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                        std::string const& subPrefix  = "",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
-        :
-        CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
-        {}
-#endif
-    //! return current shared_ptr of type CoefficientFormPDEBase
-    std::shared_ptr<super_type> shared_from_this_cfpdebase() override { return std::dynamic_pointer_cast<super_type>( this->shared_from_this() ); }
 
-    //! return current shared_ptr of type CoefficientFormPDEBase
-    std::shared_ptr<const super_type> shared_from_this_cfpdebase() const override { return std::dynamic_pointer_cast<const super_type>( this->shared_from_this() ); }
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     //! return true is the unknown is scalar
     bool unknownIsScalar() const override { return unknown_is_scalar; }
@@ -85,14 +78,6 @@ public:
     space_unknown_ptrtype const& spaceUnknown() const { return M_Xh; }
     element_unknown_ptrtype const& fieldUnknownPtr() const { return M_fieldUnknown; }
     element_unknown_type const& fieldUnknown() const { return *M_fieldUnknown; }
-    //___________________________________________________________________________________//
-#if 0
-    // boundary condition + body forces
-    map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
-    map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
-    map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
-    map_scalar_field<2> const& bodyForces() const { return M_volumicForcesProperties; }
-#endif
 
     //___________________________________________________________________________________//
     // time step scheme
@@ -108,7 +93,6 @@ public:
 
     //___________________________________________________________________________________//
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -169,7 +153,10 @@ public:
     auto modelFields( TheUnknownFieldType const& field_u, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ),
-                                                  modelField<FieldCtx::FULL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ) );
+                                                  modelField<FieldCtx::FULL>( FieldTag::unknown_previous(this), prefix, this->unknownName()+"_previous", this->fieldUnknownPtr(), this->unknownSymbol() + "_previous", this->keyword() ),
+                                                  modelField<FieldCtx::FULL>( FieldTag::unknown(this), prefix, this->unknownName()+"_remove_trial", field_u, this->unknownSymbol() + "_rt", this->keyword() ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix )
+                                                  );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -186,9 +173,11 @@ public:
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -272,19 +261,25 @@ public:
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
-    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx,
+                                          std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                          std::string const& matName, RangeType const& range ) const;
 
     template <typename ModelContextType>
     void updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
     void updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
-    void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+    void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx,
+                                         std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                         std::string const& matName, RangeType const& range ) const;
     void updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const override;
     template <typename ModelContextType>
     void updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
-    void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+    void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx,
+                                         std::shared_ptr<ModelPhysicCoefficientFormPDE<nDim>> physicCFPDEData,
+                                         std::string const& matName, RangeType const& range ) const;
     void updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const override;
 
 
@@ -304,19 +299,8 @@ private :
     bdf_unknown_ptrtype M_bdfUnknown;
 
     // boundary conditions
-    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar, map_scalar_field<2>, map_vector_field<nDim,1,2> >::type;
-    map_field_dirichlet M_bcDirichlet;
-    std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
-    map_scalar_field<2> M_bcNeumann;
-    map_scalar_fields<2> M_bcRobin;
-    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
-    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
-    MarkerManagementRobinBC M_bcRobinMarkerManagement;
-    // Comp -> ( Dirichlet bc Name -> markers distribute on entities )
-    std::map<ComponentType, std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > > M_meshMarkersDofEliminationUnknown;
-
-    // post-process
-    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
+    using boundary_conditions_type = CoefficientFormPDEBoundaryConditions<nRealDim,unknown_is_scalar?0:1>;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 };
 
 template< typename ConvexType, typename BasisUnknownType>
@@ -325,9 +309,9 @@ bool
 CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
 {
     bool hasDependency = false;
-    for( auto const& d : M_bcNeumann )
+    for ( auto const& [bcname,bcData] : M_boundaryConditions->neumann() )
     {
-        auto neumannExpr = expression( d );
+        auto neumannExpr = bcData->expr();
         if ( neumannExpr.hasSymbolDependency( symbs, se ) )
         {
             hasDependency = true;
@@ -337,15 +321,15 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryCo
     if ( hasDependency )
         return true;
 
-    for( auto const& d : this->M_bcRobin )
+    for ( auto const& [bcname,bcData] : M_boundaryConditions->robin() )
     {
-        auto theExpr1 = expression1( d );
+        auto theExpr1 = bcData->expr1();
         if ( theExpr1.hasSymbolDependency( symbs, se ) )
         {
             hasDependency = true;
             break;
         }
-        auto theExpr2 = expression2( d );
+        auto theExpr2 = bcData->expr2();
         if ( theExpr2.hasSymbolDependency( symbs, se ) )
         {
             hasDependency = true;
@@ -363,15 +347,22 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateInitialConditions( Symbol
     if ( !this->doRestart() )
     {
         std::vector<element_unknown_ptrtype> icFields;
+        std::map<int, double> icPriorTimes;
         if ( this->isStationary() )
+        {
             icFields = { this->fieldUnknownPtr() };
+            icPriorTimes = {{0,0}};
+        }
         else
+        {
             icFields = this->timeStepBdfUnknown()->unknowns();
+            icPriorTimes = this->timeStepBdfUnknown()->priorTimes();
+        }
 
         // auto paramValues = this->modelProperties().parameters().toParameterValues();
         // this->modelProperties().initialConditions().setParameterValues( paramValues );
 
-        super_type::updateInitialConditions( this->unknownName(), this->rangeMeshElements(), se, icFields );
+        super_type::updateInitialConditions( this->unknownName(), this->rangeMeshElements(), se, icFields, icPriorTimes );
 
         if ( !this->isStationary() )
             *this->fieldUnknownPtr() = this->timeStepBdfUnknown()->unknown(0);
@@ -405,21 +396,8 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
-    bool hasMeasure = false;
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
-    bool hasMeasureQuantity = this->updatePostProcessMeasuresQuantities( mquantities, symbolsExpr );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint || hasMeasureQuantity )
-        hasMeasure = true;
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    // execute common post process and save measures
+    super_type::executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields, mquantities );
 }
 
 } // namespace Feel

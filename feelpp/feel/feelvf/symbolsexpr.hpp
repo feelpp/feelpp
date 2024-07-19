@@ -385,7 +385,7 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
    uint16_type M_nComp1, M_nComp2;
 };
 
-//! return informations about a symbol in json format
+//! return information about a symbol in json format
 nl::json symbolExprInformations( std::string const& symbol, std::string const& expr, SymbolExprComponentSuffix const& symbolSuffix, std::string const& name = "" );
 
 
@@ -628,7 +628,7 @@ struct SymbolsExpr : public SymbolsExprBase
     struct TensorContext : public SymbolsExprTensorContextBase
     {
         using map_expr_tensor_type = MapExprTensorType;
-        using symbols_expr_type = symbols_expr_type;
+        using symbols_expr_type = typename SymbolsExpr<TupleExprType>::symbols_expr_type;
 
         TensorContext() = default;
 

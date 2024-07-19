@@ -68,6 +68,9 @@ struct is_ptr_or_shared_ptr : std::bool_constant<is_shared_ptr_v<T>||std::is_poi
 template<typename T>
 using remove_shared_ptr_type = typename remove_shared_ptr<T>::type;
 
+template <typename T>
+using remove_shared_ptr_t = typename remove_shared_ptr<T>::type;
+
 template<typename T>
 using decay_type = std::decay_t<remove_shared_ptr_type<std::decay_t<T>>>;
 
@@ -131,12 +134,32 @@ template<typename T>
 using remove_std_vector_t = typename remove_std_vector<T>::type;
 
 
-template <typename T, typename = void>
-struct is_eigen_matrix : std::false_type {};
 template <typename T>
-struct is_eigen_matrix<T, std::void_t<Eigen::MatrixBase<T>> > : std::true_type {};
-template <typename T>
-inline constexpr bool is_eigen_matrix_v = is_eigen_matrix<T>::value;
+inline constexpr bool is_eigen_matrix_v = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>,std::decay_t<T> >;
+
+/**
+ * @brief Utility class to get the element type contained in ObjectType
+ * 
+ * @tparam ObjectType class
+ */
+template <typename ObjectType, typename = void>
+struct element_type_helper;  // Primary template left undefined on purpose.
+
+template <typename ObjectType>
+using element_t = typename element_type_helper<ObjectType>::type;
+
+template <typename ObjectType>
+using element_ptr_t = typename element_type_helper<ObjectType>::ptrtype;
+
+// Trait to get the value type for a mesh
+template <typename Type, typename Enable = void>
+struct value_type_trait
+{
+}; // The default case is empty.
+
+// Helper type alias to extract the value type
+template <typename Type>
+using value_t = typename value_type_trait<Type>::type;
 
 } // namespace Feel
 #endif

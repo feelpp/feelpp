@@ -48,8 +48,8 @@ public:
     static constexpr uint16_type nOrder = super::nOrder;
     static constexpr uint16_type nRealDim = super::nRealDim;
 
-    static const uint16_type topological_dimension = super::topological_dimension;
-    static const uint16_type real_dimension = super::real_dimension;
+    static inline const uint16_type topological_dimension = super::topological_dimension;
+    static inline const uint16_type real_dimension = super::real_dimension;
 
     typedef super GeoShape;
     static const size_type Shape = super::Shape;
@@ -70,18 +70,18 @@ public:
     typedef typename super::face_to_point_t face_to_point_t;
     typedef typename super::face_to_edge_t face_to_edge_t;
 
-    static const uint16_type numVertices = super::numVertices;
-    static const uint16_type numFaces = super::numFaces;
-    static const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static const uint16_type numEdges = super::numEdges;
-    static const uint16_type numNormals = super::numNormals;
+    static inline const uint16_type numVertices = super::numVertices;
+    static inline const uint16_type numFaces = super::numFaces;
+    static inline const uint16_type numGeometricFaces = super::numGeometricFaces;
+    static inline const uint16_type numTopologicalFaces = super::numTopologicalFaces;
+    static inline const uint16_type numEdges = super::numEdges;
+    static inline const uint16_type numNormals = super::numNormals;
 
-    static const uint16_type numPoints = super::numPoints;
-    static const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+    static inline const uint16_type numPoints = super::numPoints;
+    static inline const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
+    static inline const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerFace = super::nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
 
     typedef typename node<value_type>::type node_type;
     typedef typename matrix_node<value_type>::type points_type;
@@ -98,6 +98,8 @@ public:
 
     using permutation_type = typename super::permutation_type;
     using edge_permutation_type = typename super::edge_permutation_type;
+
+    using marker_type = Marker<flag_type/*uint16_type*/>;
     //@}
 
     /** @name Constructors, destructor
@@ -353,7 +355,7 @@ public:
     {
         matrix_node_type v( nRealDim, nDim  );
 
-        // there is exactely nDim vertices on each face on a d-simplex
+        // there is exactly nDim vertices on each face on a d-simplex
         for ( int p = 0; p < nDim; ++p )
         {
             switch ( nDim )
@@ -524,9 +526,9 @@ public:
     {
         return 0;
     }
-    std::map<uint16_type,Marker1> markers() const
+    std::map<uint16_type,marker_type> markers() const
     {
-        return std::map<uint16_type,Marker1>();
+        return std::map<uint16_type,marker_type>{};
     }
     flag_type marker() const
     {
@@ -806,7 +808,7 @@ public:
         }
 
         double dmin = *std::min_element( D.begin(), D.end() );
-        ublas::vector<double>::const_iterator Dit = std::find_if( D.begin(), D.end(), lambda::_1 < -5e-7 );
+        ublas::vector<double>::const_iterator Dit = std::find_if( D.begin(), D.end(), []( auto const& t ) { return t < -5e-7; }  );
 
         //VLOG(1) << "meas=" << meas_times << "\n";
         //return meas_times;
@@ -1100,17 +1102,6 @@ private:
 
     value_type M_meas;
 };
-
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerVertex;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerEdge;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::nbPtsPerFace;
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
-const uint16_type Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::numGeometricFaces;
-
-
 
 template<typename T> class Entity<SHAPE_POINT, T>: public Reference<Simplex<0, 1, 1>,0,1, 1, T> {};
 template<typename T> class Entity<SHAPE_LINE, T>: public Reference<Simplex<1, 1, 1>,1,1, 1, T> {};

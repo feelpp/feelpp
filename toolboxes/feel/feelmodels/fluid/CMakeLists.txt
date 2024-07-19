@@ -1,4 +1,6 @@
 
+feelpp_toolboxes_add_library( fluidbase SRCS fluidmechanicsboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
+
 # Taylor Hood geo order 1
 foreach( _DIM 2 3)
   feelpp_max( MAX_ORDER 2 ${FEELPP_INSTANTIATION_ORDER_MAX})
@@ -19,18 +21,22 @@ endforeach()
 # Taylor Hood iso-parametric with pressure
 foreach( _DIM 2 3)
   feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${FEELPP_INSTANTIATION_ORDER_MAX})
-  message(STATUS "[feelpp] FLUID ${_DIM}D PN+1PNGN N=2..${MAX_ORDER}")
-  foreach( _P_ORDER RANGE 2 ${MAX_ORDER} )
-    math(EXPR _U_ORDER "${_P_ORDER}+1")
-    genLibFluidMechanics(
-      DIM ${_DIM}
-      GEO_ORDER ${_P_ORDER}
-      U_ORDER ${_U_ORDER}
-      P_ORDER ${_P_ORDER}
-      P_CONTINUITY Continuous
-      )
-    set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
-  endforeach()
+
+  # check that start order is greater than stop order for RANGE below otherwise cmake may have an undefined behavior
+  if( ${MAX_ORDER} GREATER_EQUAL 2)
+    message(STATUS "[feelpp] FLUID ${_DIM}D PN+1PNGN N=2..${MAX_ORDER}")
+    foreach( _P_ORDER RANGE 2 ${MAX_ORDER} )
+      math(EXPR _U_ORDER "${_P_ORDER}+1")
+      genLibFluidMechanics(
+        DIM ${_DIM}
+        GEO_ORDER ${_P_ORDER}
+        U_ORDER ${_U_ORDER}
+        P_ORDER ${_P_ORDER}
+        P_CONTINUITY Continuous
+        )
+      set(FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS} ${FLUIDMECHANICS_LIB_NAME}  )
+    endforeach()
+  endif()
 endforeach()
 
 # PnPn geo 1 : same order velocity/pressure
@@ -63,17 +69,7 @@ foreach( _DIM 2 3)
   endif()
 endforeach()
 
-add_library(feelpp_toolbox_fluid_lib SHARED libfluidmechanics.cpp)
-add_library(Feelpp::feelpp_toolbox_fluid_lib ALIAS feelpp_toolbox_fluid_lib )  # to match exported target
-set_target_properties(feelpp_toolbox_fluid_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_fluid_lib")
-target_link_libraries(feelpp_toolbox_fluid_lib ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
-set_property(TARGET feelpp_toolbox_fluid_lib PROPERTY MACOSX_RPATH ON)
-set_target_properties(feelpp_toolbox_fluid_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_fluid_lib EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+feelpp_toolboxes_add_library(fluid_lib SRCS libfluidmechanics.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_FLUIDMECHANICS})
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fluid COMPONENT Devel)

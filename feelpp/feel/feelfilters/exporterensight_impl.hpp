@@ -29,6 +29,7 @@
 #ifndef __EXPORTERENSIGHT_CPP
 #define __EXPORTERENSIGHT_CPP
 
+#include <fmt/core.h>
 #include <feel/feelcore/feel.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
@@ -114,27 +115,23 @@ template<typename MeshType, int N>
 void
 ExporterEnsight<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    boost::timer ti;
     DVLOG(2) << "[ExporterEnsight::save] export in ensight format\n";
 
-    DVLOG(2) << "[ExporterEnsight::save] export sos\n";
+    tic();
     _F_writeSoSFile();
-    DVLOG(2) << "[ExporterEnsight::save] export sos ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save sos",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export case file\n";
+    tic();
     _F_writeCaseFile();
-    DVLOG(2) << "[ExporterEnsight::save] export case file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save case",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file\n";
+    tic();
     _F_writeGeoFiles();
-    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save geo",FLAGS_v>1);
 
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export variable file\n";
+    tic();
     _F_writeVariableFiles();
-    DVLOG(2) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
+    toc("ExporterEnsight::save variable",FLAGS_v>1);
 }
 
 template<typename MeshType, int N>
@@ -610,26 +607,25 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
             }
         else
         {
-            typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
-            typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
-            for ( ; p_it != p_en; ++p_it )
+            for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __step->mesh() ) )
             {
-                sprintf( buffer, "part %d",p_it->first );
+                auto const& [range,mIds,fragmentName] = fragmentData;
+                fmt::format_to_n( buffer, 80, "part {}", fragmentId );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "part " << buffer << "\n";
                 strcpy( buffer, this->elementType().c_str() );
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "element type " << buffer << "\n";
 
-                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(p_it->first);
+                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(fragmentId);
                 if ( itFindMapElementArrayToDofId == M_mapElementArrayToDofId.end() )
                 {
-                    auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
-                    auto elt_m_it = std::get<0>( rangeMarkedElements );
-                    auto const elt_m_en = std::get<1>( rangeMarkedElements );
+                    auto rangeMarkedElements = range;
+                    auto elt_m_it = rangeMarkedElements.begin();
+                    auto const elt_m_en = rangeMarkedElements.end();
                     index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
                     m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
-                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[p_it->first];
+                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[fragmentId];
                     mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
 
                     for ( index_type e=0; elt_m_it != elt_m_en; ++elt_m_it,++e )
@@ -719,24 +715,24 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
     __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
 
-    typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
-    typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
-
-    for ( ; p_it != p_en; ++p_it )
+    for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( __mesh ) )
     {
-        sprintf( buffer, "part %d",p_it->first );
+        auto const& [range,mIds,fragmentName] = fragmentData;
+
+        fmt::format_to_n( buffer, 80, "part {}",fragmentId );
         //    strcpy( buffer, "part 1" );
 
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
-        sprintf( buffer, "Marker %d (%s)", p_it->first, __mesh->markerName(p_it->first).substr(0, 32).c_str());
+        fmt::format_to_n( buffer, 80, "Marker {} ({})", fragmentId, fragmentName.substr(0, 32).c_str());
+
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
         strcpy( buffer, this->elementType().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-        auto rangeMarkedElements = __mesh->elementsWithMarker( p_it->first,__mesh->worldComm().localRank() );
-        auto elt_it = std::get<0>( rangeMarkedElements );
-        auto const elt_en = std::get<1>( rangeMarkedElements );
+        auto rangeMarkedElements = range;
+        auto elt_it = rangeMarkedElements.begin();
+        auto const elt_en = rangeMarkedElements.end();
 
         //	int __ne = __mesh->numElements();
         //int __ne = p_it->second;
@@ -758,7 +754,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
         std::vector<int> eids( __mesh->numLocalVertices()*__ne );
         size_type e= 0;
-        elt_it = std::get<2>( rangeMarkedElements )->begin();
+        elt_it = rangeMarkedElements.begin();
         for ( ; elt_it != elt_en; ++elt_it, ++e )
         {
             auto const& elt = boost::unwrap_ref( *elt_it );

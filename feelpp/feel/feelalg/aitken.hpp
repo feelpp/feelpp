@@ -23,8 +23,8 @@
 */
 
 
-#ifndef __AitkenExtrapolation
-#define __AitkenExtrapolation 1
+#ifndef FEELPP_ALG_AITKEN_H
+#define FEELPP_ALG_AITKEN_H 1
 
 #include <string>
 #include <vector>
@@ -32,7 +32,7 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assert.hpp>
-#include <boost/timer.hpp>
+#include <feel/feeltiming/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelalg/vector.hpp>
@@ -65,7 +65,7 @@ namespace Feel
  * {
  *
  *     u_old = u_new;
- *     commpute u_new;
+ *     compute u_new;
  *     residual = u_new-u_old;
  *     u_new = aitken.apply(residual, u_new);
  *     aitken.printInfo();
@@ -91,9 +91,6 @@ public:
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
-
-    typedef typename functionspace_type::template Element<typename functionspace_type::value_type,
-            typename VectorUblas<typename functionspace_type::value_type>::range::type > element_range_type;
 
     /**
      * convergence_iteration_type:
@@ -161,39 +158,32 @@ public:
     ~Aitken() {}
 
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ),
-        initialize,
-        tag,
-        ( required
-          ( residual, */*(element_type const&)*/ )
-          ( currentElt,*/*(element_type const& )*/ ) ) )
-    {
-        initializeimpl( residual,currentElt );
-    }
+    template <typename ... Ts>
+    void initialize( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && residual = args.get(_residual);
+            auto && currentElt = args.get(_currentElt);
+            initializeimpl( residual,currentElt );
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( element_type ),
-        apply,
-        tag,
-        ( required
-          ( residual, * )
-          ( currentElt,* )
-        ) //required
-        ( optional
-          ( forceRelaxation, ( bool ), false  )
-        )//optional
-    )
-    {
-        element_type newElt( M_Xh );
-        applyimpl( newElt,residual,currentElt,forceRelaxation );
-        return newElt;
-    }
+    template <typename ... Ts>
+    element_type apply( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && residual = args.get(_residual);
+            auto && currentElt = args.get(_currentElt);
+            bool forceRelaxation = args.get_else(_forceRelaxation,false);
+
+            element_type newElt( M_Xh );
+            applyimpl( newElt,residual,currentElt,forceRelaxation );
+            return newElt;
+        }
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
@@ -209,22 +199,17 @@ public:
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        ( void ),
-        apply2,
-        tag,
-        ( required
-          ( newElt, * )
-          ( residual, * )
-          ( currentElt,* )
-        ) //required
-        ( optional
-          ( forceRelaxation, ( bool ), false  )
-        ) //optional
-    )
-    {
-        applyimpl( newElt,residual,currentElt,forceRelaxation );
-    }
+    template <typename ... Ts>
+    void apply2( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && newElt = args.get(_newElt);
+            auto && residual = args.get(_residual);
+            auto && currentElt = args.get(_currentElt);
+            bool forceRelaxation = args.get_else(_forceRelaxation,false);
+
+            applyimpl( newElt,residual,currentElt,forceRelaxation );
+        }
 
     //! set Aitken method type
     void setType( AitkenType t )
@@ -331,11 +316,6 @@ public:
     void setElement( element_type const& residual, element_type const& elem );
 
     /**
-     * Set the current element
-     */
-    void setElement( element_type const& residual, element_range_type const& elem );
-
-    /**
      * Compute Aitken parameter
      */
     void calculateParameter();
@@ -359,24 +339,14 @@ public:
 
 private:
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      */
     void initializeimpl( element_type const& residual, element_type const& elem );
-
-    /**
-     * initiliaze the aitken algorithm
-     */
-    void initializeimpl( element_type const& residual, element_range_type const& elem );
 
     /**
      * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
      */
     void applyimpl( element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax=false );
-
-    /**
-     * Compute theta and do a relaxation step : u^{n+1} = theta*u^{n+1} + (1-theta)*u^{n}
-     */
-    void applyimpl( element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax=false );
 
     /**
      * Compute Aitken parameter
@@ -410,7 +380,7 @@ private:
     convergence_type M_convergence;
 
 
-    mutable boost::timer M_timer;
+    Feel::Timer M_timer;
 };
 
 
@@ -422,20 +392,6 @@ Aitken<fs_type>::initializeimpl( element_type const& residual, element_type cons
 {
     M_previousResidual = residual;
     M_previousElement = elem;
-}
-
-//-----------------------------------------------------------------------------------------//
-
-template< typename fs_type >
-void
-Aitken<fs_type>::initializeimpl( element_type const& residual, element_range_type const& elem )
-{
-    M_previousResidual = residual;
-    M_previousElement.zero();
-    M_previousElement.add( 1.,elem );
-    /*M_previousElement = vf::project(M_previousElement.functionSpace(),
-      elements(M_previousElement.mesh()),
-      vf::idv(elem) );*/
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -470,20 +426,6 @@ Aitken<fs_type>::setElement( element_type const& residual, element_type const& e
 
 template< typename fs_type >
 void
-Aitken<fs_type>::setElement( element_type const& residual, element_range_type const& elem )
-{
-    M_currentResidual = residual;
-    M_currentElement.zero();
-    M_currentElement.add( 1.,elem );
-    /*M_currentElement = vf::project(M_currentElement.functionSpace(),
-      elements(M_currentElement.mesh()),
-      vf::idv(elem) );*/
-}
-
-//-----------------------------------------------------------------------------------------//
-
-template< typename fs_type >
-void
 Aitken<fs_type>::applyimpl( element_type & new_elem,element_type const& residual, element_type const& elem,bool _forceRelax )
 {
 
@@ -500,30 +442,6 @@ Aitken<fs_type>::applyimpl( element_type & new_elem,element_type const& residual
     }
 
     if ( !M_hasConverged || _forceRelax )
-        relaxationStep( new_elem );
-
-}
-
-//-----------------------------------------------------------------------------------------//
-
-template< typename fs_type >
-void
-Aitken<fs_type>::applyimpl( element_range_type new_elem,element_type const& residual, element_range_type const& elem,bool _forceRelax )
-{
-
-    setElement( residual,elem );
-
-    if ( M_cptIteration>=2 )
-    {
-        computeResidualNorm();
-
-        if ( !M_hasConverged  || _forceRelax )
-        {
-            calculateParameter();
-        }
-    }
-
-    if ( !M_hasConverged  || _forceRelax )
         relaxationStep( new_elem );
 
 }
@@ -579,7 +497,7 @@ Aitken<fs_type>::shiftRight()
         ( "time", M_timer.elapsed() )
         ( "relaxation_parameter",  M_previousParameter );
     M_convergence.insert( std::make_pair( M_cptIteration, cit ) );
-    M_timer.restart();
+    M_timer.start();
 
     M_previousResidual = M_currentResidual;
     M_previousElement = M_currentElement;
@@ -624,7 +542,7 @@ Aitken<fs_type>::restart()
     M_cptIteration=1;
     M_hasConverged=false;
     M_convergence.clear();
-    M_timer.restart();
+    M_timer.start();
 }
 
 //-----------------------------------------------------------------------------------------//
@@ -795,55 +713,25 @@ aitkenImpl( std::shared_ptr<SpaceType> const& _space,
 }
 
 
-
-template<typename Args>
-struct compute_aitken_return
+template <typename ... Ts>
+auto aitkenPtr( Ts && ... v )
 {
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& type = args.get_else_invocable( _type, [&prefix](){ return soption(_prefix=prefix,_name="aitken.type"); } );
+    double initial_theta = args.template get_else_invocable<std::is_arithmetic>( _initial_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.initial_theta"); }  );
+    double min_theta = args.template get_else_invocable<std::is_arithmetic>( _min_theta, [&prefix](){ return doption(_prefix=prefix,_name="aitken.min_theta"); }  );
+    double tolerance = args.template get_else_invocable<std::is_arithmetic>( _tolerance, [&prefix](){ return doption(_prefix=prefix,_name="aitken.tol"); }  );
+    size_type maxit = args.template get_else_invocable<std::is_integral>( _maxit, [&prefix](){ return ioption(_prefix=prefix,_name="aitken.maxit"); } );
 
-    typedef Aitken<space_type> type;
-    typedef std::shared_ptr<type> ptrtype;
-};
-
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_aitken_return<Args>::type ),
-    aitken,
-    tag,
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    )//required
-    ( optional
-      ( prefix,*,"" )
-      ( type, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ )
-      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  )
-      ( min_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  )
-      ( tolerance, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  )
-      ( maxit,      ( size_type ), ioption(_prefix=prefix,_name="aitken.maxit") )
-    )//optional
-)
-{
-    return *aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
+    return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
 }
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_aitken_return<Args>::ptrtype ),
-    aitkenPtr,
-    tag,
-    ( required
-      ( space,    *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-    )//required
-    ( optional
-      ( prefix,*,"" )
-      ( type, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="aitken.type") /* AITKEN_STANDARD*/ )
-      ( initial_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.initial_theta") /*1.0*/  )
-      ( min_theta, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.min_theta") /*1e-4*/  )
-      ( tolerance, *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="aitken.tol") /*1.0e-6*/  )
-      ( maxit,      ( size_type ), ioption(_prefix=prefix,_name="aitken.maxit") )
-    )//optional
-)
+template <typename ... Ts>
+auto aitken( Ts && ... v )
 {
-    return aitkenImpl( space,type,initial_theta,tolerance,min_theta,maxit );
+    return *aitkenPtr( std::forward<Ts>(v)... );
 }
 
 

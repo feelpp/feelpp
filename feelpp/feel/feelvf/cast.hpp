@@ -88,9 +88,9 @@ public:
     expression_type const& expression() const { return M_expr; }
     expression_type & expression()  { return M_expr; }
 
-    constexpr value_type evaluate( bool p, worldcomm_ptr_t const& worldcomm) const
+    constexpr value_type evaluate( bool p ) const
     {
-        auto eval = M_expr.evaluate(p,worldcomm);
+        auto eval = M_expr.evaluate(p);
         evaluate_type res(eval.rows(),eval.cols());
         for ( uint16_type i=0;i< eval.rows();++i )
             for ( uint16_type j=0;j< eval.cols();++j )
@@ -147,10 +147,6 @@ public:
             M_expr( expr.expression(), geom )
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -158,9 +154,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const&, uint16_type )
         {
         }
         template<typename ... CTX>

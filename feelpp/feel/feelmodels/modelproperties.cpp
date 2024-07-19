@@ -32,216 +32,165 @@
 namespace Feel {
 
 
+nl::json
+ModelProperties::read_json( std::string const& _filename, worldcomm_ptr_t const& world )
+{
+    std::string filename = Environment::expand( _filename );
+    if ( !fs::exists( filename ) )
+    {
+        if ( world->isMasterRank() )
+        {
+            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
+        }
+        LOG(INFO) << "Could not find " << filename << std::endl;
+        return {};
+    }
+    else
+    {
+        if ( world->isMasterRank() )
+        {
+            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
+        }
+        LOG(INFO) << "Loading " << filename << std::endl;
+    }
+#if 0
+    auto json_str_wo_comments = removeComments(readFromFile(filename));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
+#endif
+    std::ifstream ifs(filename);
+    return nl::json::parse(ifs,nullptr,true,true);
+}
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+ModelProperties::ModelProperties( std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix, po::variables_map const& vm )
     :
     super( world ),
     M_prefix( prefix ),
     M_directoryLibExpr( directoryLibExpr ),
     M_params( world ),
     M_mat( world ),
-    M_bc( world, false ),
     M_ic( world ),
-    M_icDeprecated( world, false ),
     M_bc2( world ),
     M_postproc( world ),
     M_outputs( world )
 {
-    if ( !fs::exists( filename ) )
+    if ( countoption( _name="json.merge_patch",_prefix=M_prefix,_vm=vm ) > 0 )
     {
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "[modelProperties]  Could not find :\"" << filename << "\"" <<std::endl;
-        }
-        LOG(INFO) << "Could not find " << filename << std::endl;
-        return;
+        for ( std::string const& patch : vsoption( _name="json.merge_patch",_prefix=M_prefix,_vm=vm ) )
+            M_json_merge_patch.merge_patch( json::parse( patch ) );
     }
-    else
+    if ( countoption( _name="json.patch",_prefix=M_prefix,_vm=vm ) > 0 )
     {
-        if ( Environment::isMasterRank() )
-        {
-            std::cout << "[modelProperties] Loading Model Properties : \"" << filename << "\"" << std::endl;
-        }
-        LOG(INFO) << "Loading " << filename << std::endl;
+        for ( std::string const& patch : vsoption( _name="json.patch", _prefix=M_prefix,_vm=vm ) )
+            M_json_patch.push_back( json::parse( patch ) );
     }
-
-
-    auto json_str_wo_comments = removeComments(readFromFile(filename));
-    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-
-
-    std::istringstream istr( json_str_wo_comments );
-    pt::read_json(istr, M_p);
-
-    this->setup();
-}
-ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
-    :
-    super( world ),
-    M_prefix( prefix ),
-    M_directoryLibExpr( directoryLibExpr ),
-    M_p( pt )
-{
-    this->setup();
-}
-ModelProperties::ModelProperties( nl::json const& j, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
-    :
-    super( world ),
-    M_prefix( prefix ),
-    M_directoryLibExpr( directoryLibExpr ),
-    M_p()
-{
-    auto json_str_wo_comments = removeComments(j.dump(1));
-    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
-    std::istringstream istr( json_str_wo_comments );
-    pt::read_json(istr, M_p);
-    this->setup();
 }
 
 void
-ModelProperties::setup()
+ModelProperties::setup( std::vector<std::string> const& filenames )
 {
-    editPtreeFromOptions( M_p, M_prefix );
+    nl::json j;
+    for ( std::string const& filename : filenames )
+        j.merge_patch( ModelProperties::read_json( filename, this->worldCommPtr() ) );
+    this->setup( std::move( j ) );
+}
 
-    try {
-        M_name  = M_p.get<std::string>( "Name"  );
-    }
-    catch ( pt::ptree_bad_path& e )
+void
+ModelProperties::setupFromFilenameOption( po::variables_map const& vm )
+{
+    if ( countoption( _name="json.filename",_prefix=M_prefix,_vm=vm ) > 0 )
+        this->setup( vsoption( _name="json.filename",_prefix=M_prefix,_vm=vm ) );
+}
+
+void
+ModelProperties::setupImpl()
+{
+    if ( !M_json_merge_patch.is_null() )
+        M_jsonData.merge_patch( M_json_merge_patch );
+    if ( !M_json_patch.empty() )
+        M_jsonData = M_jsonData.patch( M_json_patch );
+    nl::json & jarg = M_jsonData;
+    //std::cout << jarg.dump(1) << std::endl;
+    if ( jarg.contains("Name") )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing Name entry in model properties\n";
+        auto const& j_name = jarg.at("Name");
+        if ( j_name.is_string() )
+            M_name = j_name.get<std::string>();
     }
-    try {
-        M_shortname = M_p.get( "ShortName", M_name );
-    }
-    catch ( pt::ptree_bad_path& e )
+    if ( jarg.contains("ShortName") )
     {
-        if ( Environment::isMasterRank() )
-            std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
+        auto const& j_shortname = jarg.at("ShortName");
+        if ( j_shortname.is_string() )
+            M_shortname = j_shortname.get<std::string>();
     }
-    M_unit = M_p.get( "Unit", "m" );
-    if ( auto mod = M_p.get_child_optional("Models") )
+
+    M_unit = "m";
+    if ( jarg.contains("Unit") )
+    {
+        auto const& j_unit = jarg.at("Unit");
+        if ( j_unit.is_string() )
+            M_unit = j_unit.get<std::string>();
+    }
+
+    if ( jarg.contains("Models") )
     {
         LOG(INFO) << "Model with model\n";
-        M_models.setPTree( *mod );
+        M_models.setPTree( jarg.at("Models") );
     }
-    auto par = M_p.get_child_optional("Parameters");
-    if ( par )
+
+    if ( jarg.contains("Parameters") )
     {
         LOG(INFO) << "Model with parameters\n";
         if ( !M_directoryLibExpr.empty() )
             M_params.setDirectoryLibExpr( M_directoryLibExpr );
-        M_params.setPTree( *par );
+        M_params.setPTree( jarg.at("Parameters") );
     }
-    auto func = M_p.get_child_optional("Functions");
-    if ( func )
-    {
-        LOG(INFO) << "Model with functions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_functions.setDirectoryLibExpr( M_directoryLibExpr );
-        M_functions.setPTree( *func );
-    }
-    auto bc = M_p.get_child_optional("BoundaryConditions");
-    if ( bc )
+    if ( jarg.contains("BoundaryConditions") )
     {
         LOG(INFO) << "Model with boundary conditions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_bc.setDirectoryLibExpr( M_directoryLibExpr );
-        M_bc.setPTree( *bc );
+        if ( M_bc2_enabled )
+        {
+            pt::ptree pt;
+            std::istringstream istr( jarg.at("BoundaryConditions").dump() );
+            pt::read_json(istr, pt);
+            M_bc2.setPTree( pt );
+        }
+        else
+            M_bc.setup( jarg.at("BoundaryConditions") );
     }
-    auto ic = M_p.get_child_optional("InitialConditions");
-    if ( ic )
+
+    if ( jarg.contains("InitialConditions") )
     {
         LOG(INFO) << "Model with initial conditions\n";
         if ( !M_directoryLibExpr.empty() )
             M_ic.setDirectoryLibExpr( M_directoryLibExpr );
-        M_ic.setPTree( *ic );
+        M_ic.setPTree( jarg.at("InitialConditions") );
     }
 
-    auto icDeprecated = M_p.get_child_optional("InitialConditionsDeprecated");
-    if ( icDeprecated )
-    {
-        LOG(INFO) << "Model with initial conditions\n";
-        if ( !M_directoryLibExpr.empty() )
-            M_icDeprecated.setDirectoryLibExpr( M_directoryLibExpr );
-        M_icDeprecated.setPTree( *icDeprecated );
-    }
-
-    auto mat = M_p.get_child_optional("Materials");
-    if ( mat )
+    if ( jarg.contains("Materials") )
     {
         LOG(INFO) << "Model with materials\n";
         if ( !M_directoryLibExpr.empty() )
             M_mat.setDirectoryLibExpr( M_directoryLibExpr );
-        M_mat.setPTree( *mat );
+        M_mat.setPTree( jarg.at("Materials") );
     }
-    auto pp = M_p.get_child_optional("PostProcess");
-    if ( pp )
+
+    if ( jarg.contains("PostProcess") )
     {
         LOG(INFO) << "Model with PostProcess\n";
         if ( !M_directoryLibExpr.empty() )
             M_postproc.setDirectoryLibExpr( M_directoryLibExpr );
-        M_postproc.setPTree( *pp );
+        M_postproc.setPTree( jarg.at("PostProcess") );
     }
-    auto out = M_p.get_child_optional("Outputs");
-    if ( out )
+
+    if ( jarg.contains("Outputs") )
     {
         LOG(INFO) << "Model with outputs\n";
         if ( !M_directoryLibExpr.empty() )
             M_outputs.setDirectoryLibExpr( M_directoryLibExpr );
-        M_outputs.setPTree( *out );
+        M_outputs.setPTree( jarg.at("Outputs") );
     }
 }
 
-ModelProperties::~ModelProperties()
-{}
-
-std::string ModelProperties::getEntry(std::string &s)
-{
-  std::string res;
-  try{
-  res = M_p.get<std::string>(s);
-  }
-  catch( pt::ptree_bad_path& e)
-  {
-        if ( Environment::isMasterRank() )
-            std::cout << s << " is not an entry in the tree\n";
-  }
-  return res;
-}
-
-void ModelProperties::saveMD(std::ostream &os)
-{
-  os << "## Model \n";
-  os << " - Name **" << name()<< "**\n";
-  os << " - shortName **" << shortName()<< "**\n";
-  os << " - description **" << description()<< "**\n";
-  M_params.saveMD(os);
-  M_mat.saveMD(os);
-  M_bc.saveMD(os);
-  M_postproc.saveMD(os);
-}
-
-void ModelProperties::put(std::string const &key, std::string const &entry)
-{
-  M_p.put(key,entry);
-}
-
-void ModelProperties::write(std::string const &f)
-{
-    pt::write_json(f,M_p);
-}
-
-ModelProperties&
-ModelProperties::enableBoundaryConditions2()
-{
-    M_bc2_enabled = true; 
-    auto bc = M_p.get_child_optional("BoundaryConditions");
-    if ( bc )
-    {
-        VLOG(1) << "Model with boundary conditions\n";
-        M_bc2.setPTree( *bc );
-    }
-    return *this; 
-}
 }

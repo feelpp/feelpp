@@ -12,7 +12,7 @@
         "omega":
         {
             "name":"copper",
-            "cond":"58e+3"
+            "poisson_c":"58e+3"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"58e+3",
@@ -23,12 +23,8 @@
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-            "SourceTerm":
-            {
-                "" : { "expr":"0"}
-            },
             "Dirichlet":
             {
                 "V1":
@@ -54,10 +50,7 @@
                 {
                     "expr":"0"
                 }
-            }
-        },
-        "flux":
-        {
+            },
             "Integral":
             {
                 "V0":
@@ -65,27 +58,11 @@
                     "expr":"-800"
                 }
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
-		        }
-	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{2*sigma0*dif/Pi*y/(x*x+y*y),-2*sigma0*dif/Pi*x/(x*x+y*y),0}:x:y:z:dif:sigma0"
-                }
-            }
-	    }
+        }
     },
     "PostProcess":
     {
+        "poisson":{
         "Exports":
         {
             "fields":["potential","flux"]
@@ -161,15 +138,15 @@
                     "value":3.6799872684964548e-02,
                     "tolerance":1e-1
                 },
-                "Points_V0_potential":
+                "Points_V0_field_potential":
                 {
                     "value":3.1238703842923307e-02,
                     "tolerance":1e-1
                 },
-                "Points_V1_potential":
+                "Points_V1_field_potential":
                 {
-                    "value":4.2548539363050999e-06,
-                    "tolerance":1e-1
+                    "value":0,
+                    "tolerance":1e-4
                 },
                 "Norm_potential_error_L2-error":
                 {
@@ -182,6 +159,7 @@
                     "tolerance":10
                 }
             }
+        }
         }
     }
 }

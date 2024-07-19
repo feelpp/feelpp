@@ -30,7 +30,7 @@
 namespace Feel {
 
 template<typename T>
-using unwrap_ptr_t = remove_shared_ptr_type<T>;
+using unwrap_ptr_t = remove_shared_ptr_type<std::remove_pointer_t<T>>;
 
 /**
  * @return the c++ objet pointed by c++ pointer or shared_ptr or same object otherwise
@@ -61,6 +61,17 @@ unwrap_ptr( C * c )
 {
     return *c;
 }
+#if 0
+template<typename C>
+unwrap_ptr_t<C>&&
+unwrap_ptr( C && c )
+{
+    if constexpr ( is_ptr_or_shared_ptr<std::decay_t<C>>() )
+        return *std::forward<C>(c);
+    else
+        return std::forward<C>(c);
+}
+#endif
 
 
 } // Feel

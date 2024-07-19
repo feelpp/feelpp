@@ -51,7 +51,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::FastMarching(
     // First find active dofs with sharing procs
     M_dofSharedOnCluster = dofTable->activeDofSharedOnCluster();
     // Then send this information with sharing procs so that
-    // they can also which are the other ghost-owning procs
+    // they also know which are the other ghost-owning procs
     rank_type const localPid = dofTable->worldCommPtr()->localRank();
     int nRequests = 2 * dofTable->neighborSubdomains().size();
     mpi::request * mpiRequests = new mpi::request[nRequests];
@@ -125,7 +125,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
 {
     // Initialize return
     element_type sol = this->functionSpace()->element();
-    sol.on( _range=elements( this->mesh() ), _expr=idv(phi) );
+    sol = phi;
 
     // Initialize helper structures
     std::fill( M_dofStatus.begin(), M_dofStatus.end(), FastMarchingDofStatus::FAR );
@@ -133,17 +133,31 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
     M_negativeCloseDofHeap.clear();
 
     // Initialize DONE dofs
-    auto itEltDone = boost::get<1>( rangeDone );
-    auto enEltDone = boost::get<2>( rangeDone );
+    auto itEltDone = rangeDone.begin();
+    auto enEltDone = rangeDone.end();
     for( ; itEltDone != enEltDone; ++itEltDone )
     {
         auto const eltDone = boost::unwrap_ref( *itEltDone );
         size_type const eltDoneId = eltDone.id();
-        for( uint16_type j = 0; j < nDofPerElt; ++j )
+#ifdef DEBUG_FM_COUT
+        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
+            << "fixing elt " << eltDoneId << " with dofs { ";
+#endif
+        for( auto const& lDof: this->functionSpace()->dof()->localDof( eltDoneId ) )
         {
-            size_type dofId = this->functionSpace()->dof()->localToGlobalId( eltDoneId, j );
+            size_type dofId = lDof.second.index();
             M_dofStatus[dofId] = FastMarchingDofStatus::DONE_FIX;
+#ifdef DEBUG_FM_COUT
+            std::cout << "(" 
+                << lDof.first.localDof() << ","
+                << dofId << ","
+                << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( dofId ) << "; "
+                << sol( dofId ) << "); ";
+#endif
         }
+#ifdef DEBUG_FM_COUT
+        std::cout << " }" << std::endl;
+#endif
     }
     Feel::syncDofs( M_dofStatus, *sol.dof(), rangeDone,
             []( FastMarchingDofStatus curStatus, std::set<FastMarchingDofStatus> ghostVals ) 
@@ -170,29 +184,105 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
         }
     }
 
+    bool hasPositiveBound = M_positiveNarrowBandWidth > 0.;
+    value_type positiveBound = -1.;
+    bool hasNegativeBound = M_negativeNarrowBandWidth > 0.;
+    value_type negativeBound = -1.;
+    bool hasStride = M_stride > 0.;
+
     // Perform parallel fast-marching
-    bool closeDofHeapsAreEmptyOnAllProc = false;
-    //while( !closeDofHeapsAreEmptyOnAllProc )
+    value_type minPositiveAbsGlobalValue = -1.;
+    value_type minNegativeAbsGlobalValue = -1.;
     while( true )
     {
-        this->marchNarrowBand( sol );
-        this->syncDofs( sol );
-        // The second marchNarrowBand is only needed when the stride is finite
-        //this->marchNarrowBand( sol );
-        // Update closeDofHeapsAreEmptyOnAllProc
-        bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
-        closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
+        if( hasPositiveBound )
+        {
+            // Compute global absolute positive min values
+            value_type minPositiveAbsLocalValue = ( !M_positiveCloseDofHeap.empty() ) ? std::abs( M_positiveCloseDofHeap.front().second ) : M_positiveNarrowBandWidth;
+            minPositiveAbsGlobalValue = mpi::all_reduce(
                 this->functionSpace()->worldComm(),
-                closeDofHeapsAreEmpty,
-                std::logical_and<bool>()
+                minPositiveAbsLocalValue,
+                mpi::minimum<value_type>()
                 );
+            positiveBound = hasStride ? std::min( minPositiveAbsGlobalValue + M_stride, M_positiveNarrowBandWidth ) : M_positiveNarrowBandWidth;
+        }
+        if( hasNegativeBound )
+        {
+            // Compute global absolute negative min values
+            value_type minNegativeAbsLocalValue = ( !M_negativeCloseDofHeap.empty() ) ? std::abs( M_negativeCloseDofHeap.front().second ) : M_negativeNarrowBandWidth;
+            minNegativeAbsGlobalValue = mpi::all_reduce(
+                this->functionSpace()->worldComm(),
+                minNegativeAbsLocalValue,
+                mpi::minimum<value_type>()
+                );
+            negativeBound = hasStride ? std::min( minNegativeAbsGlobalValue + M_stride, M_negativeNarrowBandWidth ) : M_negativeNarrowBandWidth;
+        }
+
+        // Update maxNumberOfNewDofsOnAllProc
         int maxNumberOfNewDofsOnAllProc = mpi::all_reduce(
                 this->functionSpace()->worldComm(),
                 M_nNewDofs,
                 mpi::maximum<int>()
                 );
-        if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
-            break;
+        if( !hasPositiveBound )
+        {
+            if( !hasNegativeBound )
+            {
+                // Check if both positive and negative heaps are empty on all proc
+                bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
+                bool closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
+                        this->functionSpace()->worldComm(),
+                        closeDofHeapsAreEmpty,
+                        std::logical_and<bool>()
+                        );
+                if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
+            else
+            {
+                // Check positive heap is empty on all proc
+                bool closeDofPositiveHeapIsEmpty = M_positiveCloseDofHeap.empty();
+                bool closeDofPositiveHeapIsEmptyOnAllProc = mpi::all_reduce(
+                        this->functionSpace()->worldComm(),
+                        closeDofPositiveHeapIsEmpty,
+                        std::logical_and<bool>()
+                        );
+                if( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth
+                        && closeDofPositiveHeapIsEmptyOnAllProc
+                        && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
+        }
+        else
+        {
+            if( !hasNegativeBound )
+            {
+                // Check negative heap is empty on all proc
+                bool closeDofNegativeHeapIsEmpty = M_negativeCloseDofHeap.empty();
+                bool closeDofNegativeHeapIsEmptyOnAllProc = mpi::all_reduce(
+                        this->functionSpace()->worldComm(),
+                        closeDofNegativeHeapIsEmpty,
+                        std::logical_and<bool>()
+                        );
+                if( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth
+                        && closeDofNegativeHeapIsEmptyOnAllProc
+                        && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
+            else
+            {
+                if( ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth ) 
+                        && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) 
+                        && maxNumberOfNewDofsOnAllProc == 0 )
+                    break;
+            }
+        }
+
+        this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
+        this->syncDofs( sol, positiveBound, negativeBound );
+        // The second marchLocalNarrowBand is only needed when the stride is finite
+        if( hasStride )
+            this->marchLocalNarrowBand( sol, positiveBound, negativeBound );
     }
 
     return sol;
@@ -234,7 +324,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
             // CLOSE or DONE neighbors are only considered
             // if they have the same sign than the dofDone
             int dofSgn = (0. < sol(dofId)) - (sol(dofId) < 0.);
-            if( dofSgn != dofDoneSgn 
+            if( dofSgn != dofDoneSgn && dofDoneSgn != 0.
                     && !(M_dofStatus[dofId] & FastMarchingDofStatus::FAR) )
                 continue;
 #ifdef DEBUG_FM_COUT
@@ -287,11 +377,13 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
     for( auto const& [closeDofId,closeDofVal]: closeDofsIdVals )
     {
 #ifdef DEBUG_FM_COUT
+        int dofDoneSgn = (0. < sol(dofDoneIds[0])) - (sol(dofDoneIds[0]) < 0.);
         std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
             << "updating dof(" << closeDofId << "," 
             << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( closeDofId ) << ")"
             << " with value " << sol(closeDofId)
-            << " to value " << closeDofVal
+            //<< " to value " << closeDofVal << "(" << ( (sol(dofDoneIds[0]) > 0.) ? "+":"-" ) << ")"
+            << " to value " << closeDofVal << "(" << dofDoneSgn << ")"
             << " using dofs {";
         for( auto dofId: dofDoneIds )
             std::cout << "(" << dofId << "," 
@@ -304,31 +396,71 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
 #endif
         if( less_abs<value_type>()( closeDofVal, sol(closeDofId) ) )
         {
-            if( sol(dofDoneIds[0]) > 0. )
+            // we look for the first non-zero sign of done dofs
+            int dofSgn = 0;
+            for( size_type dofDoneId: dofDoneIds )
+            {
+                if( sol(dofDoneId) > 0. )
+                {
+                    dofSgn = 1;
+                    break;
+                }
+                else if( sol(dofDoneId) < 0. )
+                {
+                    dofSgn = -1;
+                    break;
+                }
+            }
+            if( dofSgn >= 0 ) // positive or no signed done dof (default to positive)
             {
                 sol(closeDofId) = closeDofVal;
                 M_positiveCloseDofHeap.insert_or_assign( pair_dof_value_type(closeDofId, closeDofVal) );
-                M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
             }
-            else
+            else if( dofSgn < 0 )
             {
                 sol(closeDofId) = -closeDofVal;
                 M_negativeCloseDofHeap.insert_or_assign( pair_dof_value_type(closeDofId, -closeDofVal) );
-                M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
             }
+
+            M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
         }
     }
 }
 
 template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
 void
-FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchNarrowBand( element_type & sol )
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalNarrowBand( element_type & sol, const value_type & positiveBound, const value_type & negativeBound )
 {
+    // Perform local positive and negative fast-marching
+    if( positiveBound > 0. )
+        this->marchLocalSignedNarrowBand<true>( sol, M_positiveCloseDofHeap, positiveBound );
+    else
+        this->marchLocalSignedNarrowBand<false>( sol, M_positiveCloseDofHeap, positiveBound );
+
+    if( negativeBound > 0. )
+        this->marchLocalSignedNarrowBand<true>( sol, M_negativeCloseDofHeap, negativeBound );
+    else
+        this->marchLocalSignedNarrowBand<false>( sol, M_negativeCloseDofHeap, negativeBound );
+}
+
+template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
+template< bool HasBound >
+void
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalSignedNarrowBand( element_type & sol, heap_type & heap, const value_type & bound )
+{
+    if constexpr( HasBound )
+        DCHECK( bound > 0. ) << "bound should be positive";
+
     // Perform local fast-marching
-    while( !M_positiveCloseDofHeap.empty() )
+    while( !heap.empty() )
     {
-        auto [nextDofDoneId, nextDofDoneValue] = M_positiveCloseDofHeap.pop_front();
+        auto [nextDofDoneId, nextDofDoneValue] = heap.pop_front();
         sol(nextDofDoneId) = nextDofDoneValue;
+        if constexpr( HasBound )
+        {
+            if( std::abs( nextDofDoneValue ) > bound )
+                break;
+        }
         if( M_dofStatus[nextDofDoneId] != FastMarchingDofStatus::DONE_OLD )
             M_dofStatus[nextDofDoneId] = FastMarchingDofStatus::DONE_NEW;
 #ifdef DEBUG_FM_COUT
@@ -341,19 +473,11 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchNarrowBand( element_
 #endif
         this->updateNeighborDofs( nextDofDoneId, sol );
     }
-    while( !M_negativeCloseDofHeap.empty() )
-    {
-        auto [nextDofDoneId, nextDofDoneValue] = M_negativeCloseDofHeap.pop_front();
-        sol(nextDofDoneId) = nextDofDoneValue;
-        if( M_dofStatus[nextDofDoneId] != FastMarchingDofStatus::DONE_OLD )
-            M_dofStatus[nextDofDoneId] = FastMarchingDofStatus::DONE_NEW;
-        this->updateNeighborDofs( nextDofDoneId, sol );
-    }
 }
 
 template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
 void
-FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & sol )
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & sol, const value_type & positiveBound, const value_type & negativeBound )
 {
     // Dof table
     auto const& dofTable = sol.dof();
@@ -426,7 +550,11 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
                 heap_type & closeDofHeap = ( valNew > 0. ) ? M_positiveCloseDofHeap : M_negativeCloseDofHeap;
                 sol.set( dofId, valNew );
                 closeDofHeap.insert_or_assign( pair_dof_value_type( dofId, valNew ) );
-                M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
+                if( ( positiveBound > 0. && valNew > positiveBound )
+                 || ( negativeBound > 0. && valNew < 0. && std::abs(valNew) > negativeBound ) )
+                    M_dofStatus[dofId] = FastMarchingDofStatus::CLOSE_OLD;
+                else
+                    M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
 #ifdef DEBUG_FM_COUT
                 std::cout << "["<<localPid<<"]" << "updating active dof(" << dofId << "," << dofGCId << ")" 
                     << std::endl;

@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef __faces_H
-#define __faces_H 1
+#ifndef FEELPP_MESH_FACES_HPP
+#define FEELPP_MESH_FACES_HPP
 
 #include <unordered_map>
 #include <feel/feelcore/commobject.hpp>
@@ -312,7 +312,7 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
-                if ( !face.hasMarker( markerType ) )
+                if ( !face.hasMarkerType( markerType ) )
                     continue;
                 if ( face.marker( markerType ).isOff() )
                     continue;
@@ -337,11 +337,9 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( face.processId() != part )
                     continue;
-                if ( !face.hasMarker( markerType ) )
+                if ( !face.hasMarkerType( markerType ) )
                     continue;
-                if ( face.marker( markerType ).isOff() )
-                    continue;
-                if ( markerFlags.find( face.marker( markerType ).value() ) == markerFlags.end() )
+                if ( !face.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
@@ -621,15 +619,15 @@ public:
                     continue;
                 if( !faceModified.isConnectedTo1() )
                 {
-                    if ( !faceModified.element0().hasMarker( markerType ) )
+                    if ( !faceModified.element0().hasMarkerType( markerType ) )
                         continue;
                     flag_type tag_0 = faceModified.element0().marker( markerType ).value();
                     faceModified.setMarker( markerType, tag_0 );
                 }
                 else
                 {
-                    bool hasMarkerElt0 = faceModified.element0().hasMarker( markerType );
-                    bool hasMarkerElt1 = faceModified.element1().hasMarker( markerType );
+                    bool hasMarkerElt0 = faceModified.element0().hasMarkerType( markerType );
+                    bool hasMarkerElt1 = faceModified.element1().hasMarkerType( markerType );
                     flag_type tag_0 = (hasMarkerElt0)? faceModified.element0().marker( markerType ).value() : 0;
                     flag_type tag_1 = (hasMarkerElt1)? faceModified.element1().marker( markerType ).value() : 0;
                     if ( hasMarkerElt0 && hasMarkerElt1 )
@@ -658,7 +656,7 @@ public:
     }
 
     /**
-     * update faces marker 2 from a vector whose size is exactely the number of
+     * update faces marker 2 from a vector whose size is exactly the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
@@ -666,8 +664,8 @@ public:
     void updateFacesMarker( uint16_type markerType, ElementVecType const& evec )
     {
         auto rangeElt = Feel::elements( evec.mesh() );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
+        auto it = rangeElt.begin();
+        auto en = rangeElt.end();
         size_type id = 0;
         for ( ; it != en; ++it )
         {
@@ -682,7 +680,7 @@ public:
 
 
     /**
-     * update faces marker 2 from a vector whose size is exactely the number of
+     * update faces marker 2 from a vector whose size is exactly the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
@@ -693,7 +691,7 @@ public:
     }
 
     /**
-     * update faces marker 3 from a vector whose size is exactely the number of
+     * update faces marker 3 from a vector whose size is exactly the number of
      * faces. This vector can be generated using a P0 discontinuous space
      * associated to a mesh whose elements are the faces
      */
@@ -705,20 +703,18 @@ public:
 
 
     template<typename IteratorRange>
-    void updateMarkerWithRangeFaces( uint16_type markerType, IteratorRange const& range, flag_type flag )
+    void updateMarkerWithRangeFaces( uint16_type markerType, IteratorRange && range, flag_type flag )
     {
-        auto it = boost::get<1>( range );
-        auto en = boost::get<2>( range );
-        for (  ; it != en; ++it )
+        for ( auto& f : std::forward<IteratorRange>(range) )
         {
-            auto & faceModified = this->faceIterator( boost::unwrap_ref( *it ).id() )->second;
+            auto & faceModified = this->faceIterator( boost::unwrap_ref( f ).id() )->second;
             faceModified.setMarker( markerType, flag );
         }
     }
     template<typename IteratorRange>
-    void updateMarker2WithRangeFaces( IteratorRange const& range, flag_type flag )
+    void updateMarker2WithRangeFaces( IteratorRange&& range, flag_type flag )
     {
-        this->updateMarkerWithRangeFaces( 2, range, flag );
+        this->updateMarkerWithRangeFaces( 2, std::forward<IteratorRange>(range), flag );
     }
     template<typename IteratorRange>
     void updateMarker3WithRangeFaces( IteratorRange const& range, flag_type flag )

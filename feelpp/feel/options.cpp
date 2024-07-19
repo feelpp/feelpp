@@ -30,7 +30,6 @@
 
 #include <feel/options.hpp>
 #include <feel/feelalg/enums.hpp>
-#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 
 #if defined(FEELPP_HAS_HARTS)
@@ -93,6 +92,8 @@ generic_options()
         ( "repository.prefix", po::value<std::string>(), "change directory to specified one" )
         ( "repository.case", po::value<std::string>(), "change directory to specified one relative to repository.prefix" )
         ( "repository.npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
+        ( "repository.append.np", po::value<bool>(), "enable/disable sub-directory np_<number of processors>")
+        ( "repository.append.date", po::value<bool>(), "enable/disable appending sub-directory <date> ")
         ( "npdir", po::value<bool>()->default_value(true), "enable/disable sub-directory np_<number of processors>")
         ( "fail-on-unknown-option", po::value<bool>()->default_value(false), "exit feel++ application if unknown option found" )
         ( "show-preconditioner-options", "show on the fly the preconditioner options used" )
@@ -108,7 +109,7 @@ case_options( int default_dim, std::string const& default_discr, std::string con
 {
     po::options_description file( "Case options" );
     file.add_options()
-        ( prefixvm( prefix, "case.dim").c_str(), po::value<int>()->default_value(default_dim), "case dimenstion" )
+        ( prefixvm( prefix, "case.dim").c_str(), po::value<int>()->default_value(default_dim), "case dimension" )
         ( prefixvm( prefix, "case.discretization").c_str(), po::value<std::string>()->default_value(default_discr), "case discretization" )
         ;
     return file;
@@ -181,6 +182,7 @@ nlopt_options( std::string const& prefix )
     po::options_description _options( "NLopt " + prefix + " options" );
     _options.add_options()
     // solver options
+        ( prefixvm( prefix,"nlopt.algo" ).c_str(), Feel::po::value<std::string>()->default_value( "LN_COBYLA" ), "NLopt algorithm: refer to /feel/feelopt/enums.cpp for a list" )
         ( prefixvm( prefix,"nlopt.ftol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt objective function relative tolerance" )
         ( prefixvm( prefix,"nlopt.ftol_abs" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "NLopt objective function  absolute tolerance" )
         ( prefixvm( prefix,"nlopt.xtol_rel" ).c_str(), Feel::po::value<double>()->default_value( 1e-4 ), "NLopt variables  relative tolerance" )
@@ -247,10 +249,10 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.savehdf5" ).c_str(), Feel::po::value<bool>()->default_value( false ), "save msh file to disk once generated in HDF5 format" )
         ( prefixvm( prefix,"gmsh.use-json" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use json/hdf5 file if it exists, instead of the Gmsh files (geo or msh)" )
         ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
-        ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect paritioning when mesh is loaded, false to ensure that partition is within the number of processors" )
+        ( prefixvm( prefix,"gmsh.respect_partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "true to respect partitioning when mesh is loaded, false to ensure that partition is within the number of processors" )
         ( prefixvm( prefix,"gmsh.npartitions" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "Number of partitions" )
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
-        ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 5 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
+        ( prefixvm( prefix,"gmsh.verbosity" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "Gmsh verbosity level (0:silent except fatal errors, 1:+errors, 2:+warnings, 3:+direct, 4:+info except status bar, 5:normal, 99:debug)" )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
 
         ( prefixvm( prefix,"gmsh.in-memory" ).c_str(), Feel::po::value<bool>()->default_value( false ), "false to save on disk, true to read geometry directly from memory" )
@@ -280,6 +282,8 @@ gmsh_options( std::string const& prefix )
 
 
 }
+
+
 po::options_description
 gmsh_domain_options( std::string const& prefix )
 {
@@ -313,6 +317,7 @@ gmsh_domain_options( std::string const& prefix )
 
 }
 
+po::options_description remesh_options( std::string const& prefix = "" );
 
 po::options_description
 arm_options( std::string const& prefix )
@@ -539,7 +544,7 @@ deimOptions( std::string const& prefix )
         ( prefixvm( prefix, "deim.default-sampling-size" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "Offline  sampling size"  )
         ( prefixvm( prefix, "deim.default-sampling-mode" ).c_str(), Feel::po::value<std::string>()->default_value( "equidistribute" ), "DEIM Offline : random, log-random, log-equidistribute, equidistribute "  )
         ( prefixvm( prefix, "deim.rebuild-database" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Rebuild the database from beginning if true"  )
-        ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Asbolute Tolerance for greedy algorithm"  )
+        ( prefixvm( prefix, "deim.greedy.rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "Absolute Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.greedy.atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-16 ), "Relative Tolerance for greedy algorithm"  )
         ( prefixvm( prefix, "deim.store-vectors" ).c_str(), Feel::po::value<bool>()->default_value(true ), "Store Vectors for the parameters in the trainset in DEIM"  )
         ( prefixvm( prefix, "deim.store-matrices" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store Matrices for the parameters in the trainset in MDEIM"  )
@@ -684,16 +689,16 @@ crbOptions( std::string const& prefix )
         ( prefixvm( prefix, "crb.absolute-error").c_str() , Feel::po::value<bool>()->default_value( false ), "Impose to compute absolute error PFEM/CRB instead of relative" )
         ( prefixvm( prefix, "crb.dimension-max").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline max WN size, set to 1 by default to avoid to enrich the existing database if this option doesn't appear in onefeel interface or in the config file." )
         ( prefixvm( prefix, "crb.dimension").c_str()   , Feel::po::value<int>()->default_value( -1 ),       "Online  WN size" )
-        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( ( int )CRB_RESIDUAL_SCM ),       "CRB error type to be computed" )
+        ( prefixvm( prefix, "crb.error-type").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "CRB error type to be computed: =0 residual, =1 residual scm, =2 random, =3 empirical" )
         ( prefixvm( prefix, "crb.compute-apee-for-each-time-step").c_str(),Feel::po::value<bool>()->default_value( true ),"Compute error estimation for each time step (parabolic problems) is true, else compute only for the last one")
         ( prefixvm( prefix, "crb.factor").c_str()   , Feel::po::value<int>()->default_value( -1 ),  "factor useful to estimate error by empirical method" )
         ( prefixvm( prefix, "crb.Nm").c_str()   , Feel::po::value<int>()->default_value( 1 ),       "Offline  number of modes per mu (for the POD) " )
         ( prefixvm( prefix, "crb.apply-POD-to-WN").c_str()   , Feel::po::value<bool>()->default_value( false ), "apply a POD on approximation functions spaces (primal and dual) if true and if deal with a transient problem " )
         ( prefixvm( prefix, "crb.check.rb").c_str()   , Feel::po::value<int>()->default_value( 0 ),       "check reduced basis" )
-        ( prefixvm( prefix, "crb.orthonormality-tol").c_str() , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalisation : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
+        ( prefixvm( prefix, "crb.orthonormality-tol").c_str() , Feel::po::value<double>()->default_value( 1e-13 ),"tolerance of orthonormalization : i.e. norm of matrix A(i,j)=scalarProduct( Wn[j], Wn[i] )" )
         ( prefixvm( prefix, "crb.orthonormality-max-iter").c_str() , Feel::po::value<int>()->default_value( 10 ),"while the tolerance is not reached, the orthonormalization step is done or until max-iter is reached" )
-        ( prefixvm( prefix, "crb.gram-schmidt.selection").c_str() , Feel::po::value<bool>()->default_value( false ),"Use selection in Gram-Schmidt orthonormalizatin to erase useless basis vectors" )
-        ( prefixvm( prefix, "crb.gram-schmidt.selection.tol").c_str() , Feel::po::value<double>()->default_value( 1e-8 ),"Selective Gram-Schmidt alogrithm tolerance" )
+        ( prefixvm( prefix, "crb.gram-schmidt.selection").c_str() , Feel::po::value<bool>()->default_value( false ),"Use selection in Gram-Schmidt orthonormalization to erase useless basis vectors" )
+        ( prefixvm( prefix, "crb.gram-schmidt.selection.tol").c_str() , Feel::po::value<double>()->default_value( 1e-8 ),"Selective Gram-Schmidt algorithm tolerance" )
 
         ( prefixvm( prefix, "crb.check.residual").c_str()   , Feel::po::value<bool>()->default_value( false ),  "check residual" )
         ( prefixvm( prefix, "crb.reuse-prec").c_str()   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
@@ -743,7 +748,7 @@ crbOptions( std::string const& prefix )
         ( prefixvm( prefix, "crb.run-on-WNmu").c_str(),Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
         ( prefixvm( prefix, "crb.run-on-scm-parameters").c_str(),Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")
         ( prefixvm( prefix, "crb.script-mode").c_str(),Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
-        ( "crb.db.format", Feel::po::value<std::string>()->default_value("boost"), "format in which the crb database is saved, either boost of hdf5")
+        ( "crb.db.format", Feel::po::value<std::string>()->default_value("hdf5"), "format in which the crb database is saved, either boost of hdf5")
         ( prefixvm( prefix, "crb.results-repo-name").c_str(), Feel::po::value<std::string>()->default_value("default_repo"), "name for results repository, and also use for database storage")
         ( prefixvm( prefix, "crb.compute-fem-during-online").c_str(),Feel::po::value<bool>()->default_value( true ), "compute fem during online step, necessary to compute the error between fem and crb")
 
@@ -772,7 +777,7 @@ crbOptions( std::string const& prefix )
         ( prefixvm( prefix, "crb.use-fast-eim").c_str(),Feel::po::value<bool>()->default_value( true ), "use fast eim algo (with rbspace context)")
 
 
-
+        ( prefixvm( prefix,"crb.copy-files-inside-db.path" ).c_str(), po::value<std::vector<std::string>>()->multitoken(), "List of path file(s) that will be copied in database" )
         ;
 
     crboptions
@@ -993,6 +998,7 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.ensightgold.save-face" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Save nodal functions on the face" )
         //  single
         ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+        ( prefixvm( prefix,"exporter.byparts" ).c_str(), Feel::po::value<bool>()->default_value( true ), "export by parts the mesh" )
 
         // merge timeteps or domains into single files
         ( prefixvm( prefix,"exporter.ensightgold.merge.timesteps" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Merge exported timesteps into a single file (reduces the number of output files)" )
@@ -1125,6 +1131,18 @@ ptree_options( std::string const& prefix )
 }
 
 po::options_description
+json_options( std::string const& prefix )
+{
+    po::options_description _options( "JSON " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"json.filename" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of json filename" )
+        ( prefixvm( prefix,"json.patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of patch to be applied" )
+        ( prefixvm( prefix,"json.merge_patch" ).c_str(), po::value<std::vector<std::string> >()->multitoken(), "specify a list of merge_patch to be applied" )
+        ;
+    return _options;
+}
+
+po::options_description
 eq_options( std::string const& prefix )
 {
     po::options_description _options( "EQ " + prefix + " options" );
@@ -1145,94 +1163,95 @@ po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
-        .add( mesh_options( 1, prefix ) )
-        .add( mesh_options( 2, prefix ) )
-        .add( mesh_options( 3, prefix ) )
-        /* alg options */
-        .add( backend_options() )
+                   .add( mesh_options( 1, prefix ) )
+                   .add( mesh_options( 2, prefix ) )
+                   .add( mesh_options( 3, prefix ) )
+                   /* alg options */
+                   .add( backend_options() )
 #if defined(FEELPP_HAS_PETSC_H)
-        .add( backendpetsc_options( prefix ) )
+                   .add( backendpetsc_options( prefix ) )
 #endif
-        .add( solvereigen_options( prefix ) )
+                   .add( solvereigen_options( prefix ) )
 #if defined( FEELPP_HAS_TRILINOS_EPETRA )
-        .add( backendtrilinos_options( prefix ) )
+                   .add( backendtrilinos_options( prefix ) )
 #endif
-        .add( backend_options("Ap") )
-        .add( backend_options("Fp") )
-        .add( backend_options("Mp") )
-        .add( backend_options("Fu") )
-        .add( backend_options("Bt") )
-        .add( blockns_options( prefix ) )
-        .add( sc_options( prefix ) )
-        //.add( blockms_options( prefix ) )
+                   .add( backend_options( "Ap" ) )
+                   .add( backend_options( "Fp" ) )
+                   .add( backend_options( "Mp" ) )
+                   .add( backend_options( "Fu" ) )
+                   .add( backend_options( "Bt" ) )
+                   .add( blockns_options( prefix ) )
+                   .add( sc_options( prefix ) )
+                   //.add( blockms_options( prefix ) )
 
-        /* nonlinear solver options */
-        .add( nlsolver_options() )
+                   /* nonlinear solver options */
+                   .add( nlsolver_options() )
 
-        /* discr options */
-        .add( ts_options( prefix ) )
-        .add( bdf_options( prefix ) )
-        .add( cnab2_options( prefix ) )
+                   /* discr options */
+                   .add( ts_options( prefix ) )
+                   .add( bdf_options( prefix ) )
+                   .add( cnab2_options( prefix ) )
 
-        /* exporter options */
-        .add( exporter_options( prefix ) )
+                   /* exporter options */
+                   .add( exporter_options( prefix ) )
 
         /* nlopt options */
 #if defined(FEELPP_HAS_NLOPT)
-        .add( nlopt_options( prefix ) )
+                   .add( nlopt_options( prefix ) )
 #endif
         /* glpk options */
 #if defined(FEELPP_HAS_GLPK_H)
-        .add( glpk_options( prefix ) )
+                   .add( glpk_options( prefix ) )
 #endif
 
-        .add( mesh_options( prefix ) )
-        /* arm options */
-        .add( arm_options( prefix ) )
-        /* gmsh options */
-        .add( gmsh_options( prefix ) )
-
-        /* gmsh domain options */
-        .add( gmsh_domain_options( prefix ) )
+                   .add( mesh_options( prefix ) )
+                   /* arm options */
+                   .add( arm_options( prefix ) )
+                   /* gmsh options */
+                   .add( gmsh_options( prefix ) )
+                   /* remeshing options */
+                   .add( remesh_options( prefix ) )
+                   /* gmsh domain options */
+                   .add( gmsh_domain_options( prefix ) )
         #
 #if defined(FEELPP_HAS_HARTS)
-        .add( parallel_options( prefix ) )
+                   .add( parallel_options( prefix ) )
 #endif
 
-        /* ginac options */
-        .add( ginac_options( prefix ) )
+                   /* ginac options */
+                   .add( ginac_options( prefix ) )
 
-        /* material options */
-        .add( material_options( prefix ) )
+                   /* material options */
+                   .add( material_options( prefix ) )
 
-        /* error options */
-        .add( error_options( prefix ) )
+                   /* error options */
+                   .add( error_options( prefix ) )
 
-        /* functions options */
-        .add( functions_options( prefix ) )
+                   /* functions options */
+                   .add( functions_options( prefix ) )
 
-        /* parameters options */
-        .add( parameters_options( prefix ) )
+                   /* parameters options */
+                   .add( parameters_options( prefix ) )
 
-        /* functions options */
-        .add( on_options( prefix ) )
+                   /* functions options */
+                   .add( on_options( prefix ) )
 
-        /* onelab options */
-        .add( onelab_options( prefix ) )
+                   /* onelab options */
+                   .add( onelab_options( prefix ) )
 
         /* function space options */
 #if !defined( FEELPP_HAS_TRILINOS_EPETRA )
-        .add( functionspace_options( prefix ) )
+                   .add( functionspace_options( prefix ) )
 #endif
-        .add( aitken_options( prefix ) )
+                   .add( aitken_options( prefix ) )
 
-        .add( msi_options(prefix) )
-        .add( fit_options(prefix) )
-        .add( checker_options(prefix) )
-        .add( journal_options(prefix) )
-        .add( fmu_options(prefix) )
-        .add( ptree_options( prefix ) )
-        ;
+                   .add( msi_options( prefix ) )
+                   .add( fit_options( prefix ) )
+                   .add( checker_options( prefix ) )
+                   .add( journal_options( prefix ) )
+                   .add( fmu_options( prefix ) )
+        //.add( ptree_options( prefix ) )
+                   .add( json_options( prefix ) );
 
     return opt;
 

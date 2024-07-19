@@ -26,9 +26,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-01
  */
-#include <boost/timer.hpp>
 
 #include <feel/feelmesh/regiontree.hpp>
+#include <feel/feeltiming/timer.hpp>
 
 namespace Feel
 {
@@ -548,7 +548,7 @@ void
 RegionTree::build()
 {
     DVLOG(2) << "build tree\n";
-    boost::timer __timer;
+    Feel::Timer __timer;
 
     if ( M_boxes.size() == 0 )
         return;

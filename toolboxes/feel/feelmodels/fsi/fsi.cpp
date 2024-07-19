@@ -31,16 +31,17 @@
 #include <feel/feelmodels/modelmesh/fsimesh.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
 
-namespace Feel
+namespace Feel::FeelModels
 {
-namespace FeelModels
-{
-
 template< class FluidType, class SolidType >
-FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& worldComm, std::string const& rootRepository )
+FSI<FluidType,SolidType>::FSI( std::string const& prefix,
+                               std::string const& keyword,
+                               worldcomm_ptr_t const& worldComm,
+                               ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
-    ModelBase( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
+    super_type( prefix, keyword, worldComm, "", modelRep ),
+    ModelPhysics<mesh_fluid_type::nRealDim>( "fsi" ),
+    ModelBase( prefix, keyword, worldComm, "", modelRep ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
@@ -87,16 +88,6 @@ FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& w
     }
 
     this->log("FSI","constructor","finish");
-}
-
-template <typename FluidType,typename SolidType>
-std::string
-FSI<FluidType,SolidType>::expandStringFromSpec( std::string const& expr )
-{
-    std::string res = expr;
-    res = fluid_type::expandStringFromSpec( res );
-    res = solid_type::expandStringFromSpec( res );
-    return res;
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -168,6 +159,7 @@ FSI<FluidType,SolidType>::createMesh()
     fsimeshTool.setForceRebuild( boption(_prefix=this->prefix(),_name="mesh-save.force-rebuild" ) );
 
 
+    this->modelMesh( this->keyword() ).importConfig().setStraightenMesh( false );
     this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
     this->modelMesh( this->keyword() ).importConfig().setMeshComponents( MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES );
     if ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || fsimeshTool.forceRebuild() )
@@ -189,67 +181,72 @@ namespace detail
 
 template <typename FluidType,typename SolidType>
 typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
-{
-    auto submeshStruct = createSubmesh( _mesh=FM->meshALE()->referenceMesh(), _range=markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
-    auto hola = boundaryfaces(submeshStruct);
-    for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
-
-    typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
-    typedef std::shared_ptr<smd_type> smd_ptrtype;
-    smd_ptrtype smd( new smd_type(FM->mesh()) );
-    for ( auto const& ew : elements(submeshStruct) )
-    {
-        auto const& e = unwrap_ref(ew);
-        auto const& theface = FM->meshALE()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
-        size_type idElt2 = FM->meshALE()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
-        //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
-        auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
-        //smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
-        smd->bm.insert( { e.id(), theface2.id() } );
-    }
-    submeshStruct->setSubMeshData( smd );
-
-    return submeshStruct;
-}
-
-template <typename FluidType,typename SolidType>
-typename FluidType::mesh_type::trace_mesh_ptrtype
-createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<true> /**/ )
-{
-    auto submeshStruct = createSubmesh( _mesh=FM->mesh(), _range=markedfaces( FM->mesh(),FM->markersFSI() ) );
-    auto hola = boundaryfaces(submeshStruct);
-    for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
-
-    return submeshStruct;
-}
-
-template <typename FluidType,typename SolidType>
-typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<2> /**/ )
+createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI )
 {
     static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::solid_1dreduced_type::mesh_type::nOrder;
-  return createMeshStruct1dFromFluidMesh2d<FluidType,SolidType>(FM, mpl::bool_<hasSameOrderGeo>() );
-}
+    if constexpr ( ( SolidType::nDim == 2 ) ) 
+    {
+        if constexpr ( hasSameOrderGeo == false )
+        {
+            auto submeshStruct = createSubmesh( _mesh = FM->meshMotionTool()->referenceMesh(), _range = markedfaces( FM->meshMotionTool()->referenceMesh(), markersFSI ) );
+        #if 0
+            auto hola = boundaryfaces(submeshStruct);
+            for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
+                submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
+        #endif
+            typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
+            typedef std::shared_ptr<smd_type> smd_ptrtype;
+            smd_ptrtype smd( new smd_type(FM->mesh()) );
+            for ( auto const& ew : elements(submeshStruct) )
+            {
+                auto const& e = unwrap_ref(ew);
+                auto const& theface = FM->meshMotionTool()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
+                size_type idElt2 = FM->meshMotionTool()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
+                //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
+                auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
+                //smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
+                smd->bm.insert( { e.id(), theface2.id() } );
+            }
+            submeshStruct->setSubMeshData( smd );
 
-template <typename FluidType,typename SolidType>
-typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<3> /**/ )
-{
-    CHECK( false ) << "not possible";
-    return typename SolidType::solid_1dreduced_type::mesh_ptrtype();
-}
-
-template <typename FluidType,typename SolidType>
-typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM )
-{
-  return createMeshStruct1dFromFluidMesh<FluidType,SolidType>( FM, mpl::int_<SolidType::nDim>() );
+            return submeshStruct;
+        }
+        else
+        {
+            auto submeshStruct = createSubmesh( _mesh=FM->mesh(), _range=markedfaces( FM->mesh(),markersFSI ) );
+            #if 0
+                auto hola = boundaryfaces(submeshStruct);
+                for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
+                    submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
+            #endif
+            return submeshStruct;
+        }
+    }
+    else
+    {
+        CHECK( false ) << "not possible";
+        return typename SolidType::solid_1dreduced_type::mesh_ptrtype();
+    }
 }
 
 } // namespace detail
+
+
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models )
+{
+    if ( !M_fluidModel )
+        M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
+    if ( !M_solidModel )
+        M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
+
+    physicsTree.addChild( M_fluidModel, models );
+    physicsTree.addChild( M_solidModel, models );
+
+    physicsTree.updateMaterialSupportFromChildren( "merge" );
+}
 
 template< class FluidType, class SolidType >
 void
@@ -257,45 +254,95 @@ FSI<FluidType,SolidType>::init()
 {
     this->log("FSI","init","start");
 
+    this->initModelProperties();
+
+    this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
+
+    // physical properties
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
+
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
+
     // create fsimesh and partitioned meshes if require
     if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
         this->createMesh();
 
-    // fluid model build
-    if ( !M_fluidModel )
+    std::set<std::string> markersFSI_fluid;// = { "fsiWall" /*"fsi-wall"*/ }; // this->fluidModel()->markersFSI()
+    std::set<std::string> markersFSI_solid;// = { "fsiWall" /*"fsi-wall"*/ }; // this->solidModel()->markerNameFSI()
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
+        auto physicFSIData = std::static_pointer_cast<ModelPhysicFSI<mesh_fluid_type::nRealDim>>(physicData);
+        markersFSI_fluid.insert( physicFSIData->interfaceFluid().begin(),physicFSIData->interfaceFluid().end() );
+        markersFSI_solid.insert( physicFSIData->interfaceSolid().begin(),physicFSIData->interfaceSolid().end() );
+    }
+    // if ( this->worldComm().isMasterRank() )
+    // {
+    //     std::cout << "markersFSI_fluid :  " << markersFSI_fluid << std::endl;
+    //     std::cout << "markersFSI_solid :  " << markersFSI_solid << std::endl;
+    // }
+
+
+    // fluid model build
+    //if ( !M_fluidModel )
+    {
+
+        // if ( this->hasModelMesh( M_fluidModel->keyword() ) )
+        //     M_heatModel->setModelMeshAsShared( this->modelMesh() );
+        //M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->modelMesh( M_fluidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathFluidPartN.string() );
+
+        M_fluidModel->setManageParameterValues( false );
+        if ( !M_fluidModel->modelPropertiesPtr() )
+        {
+            M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+            M_fluidModel->setManageParameterValuesOfModelProperties( false );
+        }
+        M_fluidModel->setMaterialsProperties( M_materialsProperties );
 
         // temporary fix (else use in dirichle-neunamm bc in residual) TODO !!!!
         M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
         M_fluidModel->init( false );
     }
 
+    this->log("FSI","init","fluid init done");
+
+
+    // up mesh motion tool
+    this->fluidModel()->meshMotionTool()->addMarkersInBoundaryCondition( "moving", markersFSI_fluid );
+     //this->fluidModel()->meshMotionTool()->setDisplacementImposedOnInitialDomainOverFaces( M_fluidModel->keyword()+"_"+this->keyword(), markersFSI_fluid );
+
     // revert fluid reference mesh if restart
     if ( this->fluidModel()->doRestart() )
     {
-        this->fluidModel()->meshALE()->revertReferenceMesh();
+        this->fluidModel()->meshMotionTool()->revertReferenceMesh();
         // need to rebuild this dof point because updated in meshale after restart
-        this->fluidModel()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
+        this->fluidModel()->meshMotionTool()->displacement()->functionSpace()->rebuildDofPoints();
         //this->fluidModel()->functionSpaceVelocity()->rebuildDofPoints();
     }
 
+
+
     // solid model build
-    if ( !M_solidModel )
+    //if ( !M_solidModel )
     {
-        M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
+        //M_solidModel = std::make_shared<solid_type>("solid","solid",this->worldCommPtr(), "", this->repository() );
         bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
         if ( doExtractSubmesh )
         {
-            CHECK( !M_fluidModel->markersFSI().empty() ) << "no marker moving boundary in fluid model";
+            //CHECK( !M_fluidModel->markersFSI().empty() ) << "no marker moving boundary in fluid model";
 
             //if ( M_fluidModel->doRestart() )
-            //M_fluidModel->meshALE()->revertReferenceMesh();
-            auto submeshStruct = detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluidModel );
+            //M_fluidModel->meshMotionTool()->revertReferenceMesh();
+            auto submeshStruct = Feel::FeelModels::detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluidModel, markersFSI_fluid );
             //if ( M_fluidModel->doRestart() )
-            //M_fluidModel->meshALE()->revertMovingMesh();
+            //M_fluidModel->meshMotionTool()->revertMovingMesh();
 
             M_solidModel->createsSolid1dReduced();
             // TODO ( save 1d mesh and reload )
@@ -311,6 +358,15 @@ FSI<FluidType,SolidType>::init()
                 M_solidModel->modelMesh( M_solidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathSolidPartN.string() );
         }
 
+
+        M_solidModel->setManageParameterValues( false );
+        if ( !M_solidModel->modelPropertiesPtr() )
+        {
+            M_solidModel->setModelProperties( this->modelPropertiesPtr() );
+            M_solidModel->setManageParameterValuesOfModelProperties( false );
+        }
+        M_solidModel->setMaterialsProperties( M_materialsProperties );
+
         // temporary fix TODO !!!!
         M_solidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
         if (this->fsiCouplingType()=="Semi-Implicit")
@@ -318,6 +374,10 @@ FSI<FluidType,SolidType>::init()
 
         M_solidModel->init();
     }
+
+    this->log("FSI","init","solid init done");
+
+    CHECK( this->fluidModel()->hasMeshMotion() ) << "aiaie";
 
     CHECK( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" ||
            this->fsiCouplingBoundaryCondition() == "robin-neumann" || this->fsiCouplingBoundaryCondition() == "robin-neumann-genuine" ||
@@ -335,7 +395,8 @@ FSI<FluidType,SolidType>::init()
         M_solidModel->useFSISemiImplicitScheme(true);
     }
 
-    M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersFSI() );
+
+    M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_fluid );
     auto submeshfsi_fluid = createSubmesh( _mesh=this->fluidModel()->mesh(),_range=M_rangeFSI_fluid,_view=1 );
     M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
     M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
@@ -344,6 +405,9 @@ FSI<FluidType,SolidType>::init()
     // mesh velocity only on moving interface
     M_meshVelocityInterface.reset(new element_fluid_meshvelocityonboundary_type( M_XhMeshVelocityInterface ) );
 
+    M_meshDisplacementOnInterface_fluid = this->fluidModel()->meshMotionTool()->displacement()->functionSpace()->elementPtr();
+
+    this->log("FSI","init","fsi functionspace done");
 
     this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
 
@@ -351,11 +415,13 @@ FSI<FluidType,SolidType>::init()
                                                      std::bind( &self_type::initInHousePreconditionerPCD_fluid, std::ref( *this ), std::placeholders::_1 ),
                                                      std::bind( &self_type::updateInHousePreconditionerPCD_fluid, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 ) );
     M_fluidModel->initAlgebraicFactory();
+    this->log("FSI","init","fluid initAlgebraicFactory done");
 
 
     if ( M_solidModel->isStandardModel() )
     {
-        M_rangeFSI_solid = markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI());
+        M_rangeFSI_solid = markedfaces(this->solidModel()->mesh(),markersFSI_solid);
+
         //M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=M_solidModel->mesh() );
         auto subfsimesh = createSubmesh( _mesh=this->solidModel()->mesh(),_range=M_rangeFSI_solid, _view=true ) ;
         M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=subfsimesh );
@@ -374,8 +440,9 @@ FSI<FluidType,SolidType>::init()
         M_fieldNormalStressFromFluidVectorial_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_vect_type( M_spaceNormalStressFromFluid_solid1dReduced ) );
     }
 
+    this->log("FSI","init","fsi functionspace [solid] done");
 
-    // save if reuse prec option at the begining
+    // save if reuse prec option at the beginning
     M_reusePrecOptFluid = M_fluidModel->backend()->reusePrec();
     M_reuseJacOptFluid = M_fluidModel->backend()->reuseJac();
     M_reuseJacRebuildAtFirstNewtonStepOptFluid = M_fluidModel->backend()->reuseJacRebuildAtFirstNewtonStep();
@@ -432,8 +499,8 @@ FSI<FluidType,SolidType>::init()
 
     if ( this->fluidModel()->doRestart() )
     {
-        this->fluidModel()->meshALE()->revertMovingMesh();
-        this->fluidModel()->meshALE()->displacement()->functionSpace()->rebuildDofPoints();
+        this->fluidModel()->meshMotionTool()->revertMovingMesh();
+        this->fluidModel()->meshMotionTool()->displacement()->functionSpace()->rebuildDofPoints();
     }
 
     //-------------------------------------------------------------------------//
@@ -533,7 +600,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
 #if 0
         else if ( true )
         {
-            // compute algebraic counterpart of the operator B (my work V2 but not enought accurate)
+            // compute algebraic counterpart of the operator B (my work V2 but not accurate enough)
             auto const& u = this->solidModel()->fieldDisplacement();
             auto massMatrixRestrictFSI = backend()->newMatrix(_test=Vh,_trial=Vh);
             form2(_test=Vh,_trial=Vh,_matrix=massMatrixRestrictFSI ) =
@@ -572,7 +639,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
         else
         {
-            // compute algebraic counterpart of the operator B (my work V1 but not enought accurate)
+            // compute algebraic counterpart of the operator B (my work V1 but not accurate enough)
             auto vecDiagMassLumpedRestrictedFSI = Vh->element();
             auto markedDofsOnFSI = Vh->element();
             for ( size_type k : dofsIdOnFSI )
@@ -860,6 +927,48 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_
     }
 }
 
+
+
+//---------------------------------------------------------------------------------------------------------//
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateParameterValues()
+{
+    if ( !this->manageParameterValues() )
+        return;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
+
+    this->setParameterValues( paramValues );
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    // for ( auto const& [param,val] : paramValues )
+    //     M_currentParameterValues[param] = val;
+
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_fluidModel->setParameterValues( paramValues );
+    M_solidModel->setParameterValues( paramValues );
+}
+
 //---------------------------------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >
@@ -919,11 +1028,11 @@ FSI<FluidType,SolidType>::solveImpl1()
         //--------------------------------------------------------------//
         timerCur.restart();
         // revert ref mesh
-        //M_fluidModel->meshALE()->revertReferenceMesh();
+        //M_fluidModel->meshMotionTool()->revertReferenceMesh();
         // transfert stress
         this->transfertStress();
         // revert moving mesh
-        //M_fluidModel->meshALE()->revertMovingMesh();
+        //M_fluidModel->meshMotionTool()->revertMovingMesh();
         double t3 = timerCur.elapsed();
         this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
         //--------------------------------------------------------------//
@@ -998,11 +1107,11 @@ FSI<FluidType,SolidType>::solveImpl2()
         //--------------------------------------------------------------//
         if (solveStruct)
         {
-            //M_fluidModel->meshALE()->revertReferenceMesh();
+            //M_fluidModel->meshMotionTool()->revertReferenceMesh();
             // transfert stress
             this->transfertStress();
             // revert moving mesh
-            //M_fluidModel->meshALE()->revertMovingMesh();
+            //M_fluidModel->meshMotionTool()->revertMovingMesh();
             if ( ( this->fsiCouplingBoundaryCondition()=="robin-robin" || this->fsiCouplingBoundaryCondition()=="robin-robin-genuine" ||
                    this->fsiCouplingBoundaryCondition()=="nitsche" ) &&
                  M_solidModel->isStandardModel() )
@@ -1137,11 +1246,11 @@ FSI<FluidType,SolidType>::solveImpl3()
         M_fluidModel->solve();
 
         //--------------------------------------------------------------//
-        //M_fluidModel->meshALE()->revertReferenceMesh();
+        //M_fluidModel->meshMotionTool()->revertReferenceMesh();
         // transfert stress
         this->transfertStress();
         // revert moving mesh
-        //M_fluidModel->meshALE()->revertMovingMesh();
+        //M_fluidModel->meshMotionTool()->revertMovingMesh();
         M_solidModel->solve();
         M_solidModel->updateVelocity();
         //--------------------------------------------------------------//
@@ -1219,6 +1328,7 @@ FSI<FluidType,SolidType>::startTimeStep()
     M_fluidModel->startTimeStep();
     M_solidModel->startTimeStep();
     this->updateTime( M_fluidModel->currentTime() );
+    this->updateParameterValues();
 }
 
 template< class FluidType, class SolidType >
@@ -1233,18 +1343,20 @@ FSI<FluidType,SolidType>::updateTimeStep()
     M_currentTimeOrder=M_fluidModel->timeStepBDF()->timeOrder();
 
     this->updateTime( M_fluidModel->currentTime() );
+    this->updateParameterValues();
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 template< class FluidType, class SolidType >
 std::shared_ptr<std::ostringstream>
 FSI<FluidType,SolidType>::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+#if 0
     *_ostr << this->fluidModel()->getInfo()->str()
            << this->solidModel()->getInfo()->str();
-#if 0
+
     *_ostr << "\n||==============================================||"
            << "\n||-----------------Info : FSI-------------------||"
            << "\n||==============================================||"
@@ -1295,7 +1407,7 @@ FSI<FluidType,SolidType>::getInfo() const
 #endif
     return _ostr;
 }
-
+#endif
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateInformationObject( nl::json & p ) const
@@ -1305,9 +1417,10 @@ FSI<FluidType,SolidType>::updateInformationObject( nl::json & p ) const
 
     super_type::super_model_base_type::updateInformationObject( p["Environment"] );
 
+    super_physics_type::updateInformationObjectFromCurrentType( p["Physics"] );
+
     p["Toolbox Fluid"] = M_fluidModel->journalSection().to_string();
     p["Toolbox Solid"] = M_solidModel->journalSection().to_string();
-
 
     nl::json subPt;
     subPt["type"] = this->fsiCouplingType();
@@ -1356,6 +1469,9 @@ FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, Tabula
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Environment") )
         tabInfo->add( "Environment",  super_type::super_model_base_type::tabulateInformations( jsonInfo.at("Environment"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Physics") )
+        tabInfo->add( "Physics", super_physics_type::tabulateInformations( jsonInfo.at("Physics"), tabInfoProp ) );
 
     if ( jsonInfo.contains( "Coupling" ) )
     {
@@ -1407,5 +1523,4 @@ FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, Tabula
     return tabInfo;
 }
 
-} // namespace FeelModels
-} // namespace Feel
+} // namespace Feel::FeelModels

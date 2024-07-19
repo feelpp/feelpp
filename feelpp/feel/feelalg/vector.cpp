@@ -560,7 +560,8 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
     mpi::request * reqs = new mpi::request[nbRequest];
     // apply isend/irecv
     int cptRequest=0;
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
 
     if ( opSync.hasOperator() )
     {
@@ -582,7 +583,8 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
         cptRequest=0;
         for ( rank_type neighborRank : dataMap->neighborSubdomains() )
         {
-            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+            sizeSend[neighborRank] = dataToSend[neighborRank].size();
+            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
             reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
         }
         // wait all requests
@@ -592,17 +594,17 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
         cptRequest=0;
         for ( rank_type neighborRank : dataMap->neighborSubdomains() )
         {
-            int nSendData = dataToSend[neighborRank].size();
+            std::size_t nSendData = dataToSend[neighborRank].size();
             if ( nSendData > 0 )
-                reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
-            int nRecvData = sizeRecv[neighborRank];
+                reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+            std::size_t nRecvData = sizeRecv[neighborRank];
             dataToRecv[neighborRank].resize( nRecvData );
             if ( nRecvData > 0 )
-                reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+                reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
         }
         // wait all requests
         mpi::wait_all(reqs, reqs + cptRequest);
-        // update value of active dofs (repect to the sync operator)
+        // update value of active dofs (respect to the sync operator)
         std::map<size_type, std::set<std::pair< rank_type, T > > > ghostDofValues;
         for ( auto const& dataR : dataToRecv )
         {
@@ -641,7 +643,7 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
         size_type gcdof = dataMap->mapGlobalProcessToGlobalCluster( gpdof );
         for ( rank_type pNeighborId : dofActive.second )
         {
-            if( pNeighborId != dataMap->worldComm().localRank() ) // normaly this check is useless
+            if( pNeighborId != dataMap->worldComm().localRank() ) // normally this check is useless
                 dataToReSend[pNeighborId].push_back( boost::make_tuple(gcdof,val) );
         }
     }
@@ -651,7 +653,8 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
     cptRequest=0;
     for ( rank_type neighborRank : dataMap->neighborSubdomains() )
     {
-        reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToReSend[neighborRank].size();
+        reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -660,13 +663,13 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
     cptRequest=0;
     for ( rank_type neighborRank : dataMap->neighborSubdomains() )
     {
-        int nSendData = dataToReSend[neighborRank].size();
+        std::size_t nSendData = dataToReSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, &(dataToReSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = dataMap->worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToReRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = dataMap->worldComm().localComm().irecv( neighborRank , 0, dataToReRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);

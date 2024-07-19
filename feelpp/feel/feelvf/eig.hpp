@@ -130,9 +130,9 @@ class Eig : public ExprDynamicBase
     }
 
     evaluate_type
-    evaluate( bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool p ) const
         {
-            auto evalExpr = M_expr.evaluate( p, worldcomm );
+            auto evalExpr = M_expr.evaluate( p );
             Eigen::SelfAdjointEigenSolver<typename expression_type::evaluate_type> es( evalExpr );
             return es.eigenvalues();
         }
@@ -188,11 +188,6 @@ class Eig : public ExprDynamicBase
               M_eigv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -204,11 +199,6 @@ class Eig : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeEig();
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
             computeEig();
         }
 

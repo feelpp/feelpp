@@ -43,6 +43,7 @@ enum FaceLocation { INTERNAL = false, ON_BOUNDARY = true };
 
 /**
  * \enum GeoEntityContext
+ * @ingroup Mesh
  */
 enum GeoEntityContext
 {
@@ -52,6 +53,7 @@ enum GeoEntityContext
 
 /**
  * \enum ReferenceGeometry
+ * @ingroup Mesh
  *
  */
 enum ReferenceGeometry
@@ -66,7 +68,7 @@ enum ReferenceGeometry
 
 /**
  * \enum ReferenceShapes
- *
+ * @ingroup Mesh
  */
 enum ReferenceShapes
 {
@@ -84,11 +86,6 @@ enum ReferenceShapes
     SHAPE_SP4      = ( 1<<11 ),
     SHAPE_SP5      = ( 1<<12 )
 };
-
-/**
- * @defgroup GeoEntites Basis Reference Shapes
- \ingroup Obsolet_Groups */
-//@{
 
 /// \cond detail
 /**
@@ -110,7 +107,7 @@ class EntityRange
                 >::type // int_<2>
                 >::type // int_<1>
                 >::type type;
-        static const uint16_type value = type::value;
+        static inline const uint16_type value = type::value;
     };
     uint16_type d;
 public:
@@ -184,9 +181,9 @@ struct pow<N, 0>
  */
 struct no_permutation: public boost::detail::identifier<uint16_type, no_permutation>
 {
-    static const uint16_type NO_PERMUTATION       = 0; //!< no permutation
-    static const uint16_type IDENTITY             = 1; //!< no permutation
-    static const uint16_type N_PERMUTATIONS       = 2; //!< number of permutations
+    static inline const uint16_type NO_PERMUTATION       = 0; //!< no permutation
+    static inline const uint16_type IDENTITY             = 1; //!< no permutation
+    static inline const uint16_type N_PERMUTATIONS       = 2; //!< number of permutations
     typedef boost::detail::identifier<uint16_type, no_permutation> super;
     typedef super::value_type value_type;
     no_permutation()                           : super( IDENTITY ) {}
@@ -214,16 +211,16 @@ private :
 
 /**
  * \typedef edge_permutation_type
- *
+ * @ingroup Mesh
  * defines an enum for the possible edge permutation with respect to
  * its parent elements
  */
 struct line_permutations: public boost::detail::identifier<uint16_type, line_permutations>
 {
-    static const uint16_type NO_PERMUTATION       = 0; //!< the edge has no permutation defined
-    static const uint16_type IDENTITY             = 1; //!< the edge is oriented according to the standard one
-    static const uint16_type REVERSE_PERMUTATION  = 2; //!< the edge is orientated reversely wrt parent element
-    static const uint16_type N_PERMUTATIONS       = 3; //!< number of permutations
+    static inline const uint16_type NO_PERMUTATION       = 0; //!< the edge has no permutation defined
+    static inline const uint16_type IDENTITY             = 1; //!< the edge is oriented according to the standard one
+    static inline const uint16_type REVERSE_PERMUTATION  = 2; //!< the edge is orientated reversely wrt parent element
+    static inline const uint16_type N_PERMUTATIONS       = 3; //!< number of permutations
     typedef boost::detail::identifier<uint16_type, line_permutations> super;
     typedef super::value_type value_type;
     line_permutations()                           : super( IDENTITY ) {}
@@ -253,18 +250,18 @@ enum line_permutations_dummy {};
 
 struct triangular_faces_type: public boost::detail::identifier<uint16_type, triangular_faces_type>
 {
-    static const uint16_type NO_PERMUTATION       = 0; //!< the face has no permutation associated
-    static const uint16_type IDENTITY             = 1; //!< the face has the identity permutation associated (standard one)
-    static const uint16_type REVERSE_HEIGHT       = 2; //!< reflection according to the height direction
-    static const uint16_type REVERSE_BASE         = 3; //!< reflection according to the base direction
-    static const uint16_type REVERSE_HYPOTENUSE   = 4; //!< reflection according to the hypotenuse direction
-    static const uint16_type ROTATION_ANTICLOCK   = 5; //!< rotates the points once in the anticlockwise sense
-    static const uint16_type ROTATION_CLOCKWISE   = 6; //!< rotates the points once in the clockwise sense
-    static const uint16_type N_PERMUTATIONS       = 7; //!< number of permutations
+    static inline const uint16_type NO_PERMUTATION       = 0; //!< the face has no permutation associated
+    static inline const uint16_type IDENTITY             = 1; //!< the face has the identity permutation associated (standard one)
+    static inline const uint16_type REVERSE_HEIGHT       = 2; //!< reflection according to the height direction
+    static inline const uint16_type REVERSE_BASE         = 3; //!< reflection according to the base direction
+    static inline const uint16_type REVERSE_HYPOTENUSE   = 4; //!< reflection according to the hypotenuse direction
+    static inline const uint16_type ROTATION_ANTICLOCK   = 5; //!< rotates the points once in the anticlockwise sense
+    static inline const uint16_type ROTATION_CLOCKWISE   = 6; //!< rotates the points once in the clockwise sense
+    static inline const uint16_type N_PERMUTATIONS       = 7; //!< number of permutations
 
-    static const uint16_type PRINCIPAL_DIAGONAL       = 4; //!< reflection according to the principal diagonal
-    static const uint16_type SECOND_DIAGONAL          = 7; //!< reflection according to the second diagonal
-    static const uint16_type ROTATION_TWICE_CLOCKWISE = 8; //!< rotates the points twice in the (anti)clockwise sense
+    static inline const uint16_type PRINCIPAL_DIAGONAL       = 4; //!< reflection according to the principal diagonal
+    static inline const uint16_type SECOND_DIAGONAL          = 7; //!< reflection according to the second diagonal
+    static inline const uint16_type ROTATION_TWICE_CLOCKWISE = 8; //!< rotates the points twice in the (anti)clockwise sense
 
     typedef boost::detail::identifier<uint16_type, triangular_faces_type> super;
     typedef super::value_type value_type;
@@ -293,19 +290,19 @@ private :
 
 struct quadrangular_faces: public boost::detail::identifier<uint16_type, quadrangular_faces>
 {
-    static const uint16_type NO_PERMUTATION           = 0; //!< the face has no permutation associated
-    static const uint16_type IDENTITY                 = 1; //!< the face has the identity permutation associated (standard one)
-    static const uint16_type REVERSE_HEIGHT           = 2; //!< reflection according to the height direction
-    static const uint16_type REVERSE_BASE             = 3; //!< reflection according to the base direction
-    static const uint16_type PRINCIPAL_DIAGONAL       = 4; //!< reflection according to the principal diagonal
-    static const uint16_type ROTATION_ANTICLOCK       = 5; //!< rotates the points once in the anticlockwise sense
-    static const uint16_type ROTATION_CLOCKWISE       = 6; //!< rotates the points once in the clockwise sense
-    static const uint16_type SECOND_DIAGONAL          = 7; //!< reflection according to the second diagonal
-    static const uint16_type ROTATION_TWICE_CLOCKWISE = 8; //!< rotates the points twice in the (anti)clockwise sense
+    static inline const uint16_type NO_PERMUTATION           = 0; //!< the face has no permutation associated
+    static inline const uint16_type IDENTITY                 = 1; //!< the face has the identity permutation associated (standard one)
+    static inline const uint16_type REVERSE_HEIGHT           = 2; //!< reflection according to the height direction
+    static inline const uint16_type REVERSE_BASE             = 3; //!< reflection according to the base direction
+    static inline const uint16_type PRINCIPAL_DIAGONAL       = 4; //!< reflection according to the principal diagonal
+    static inline const uint16_type ROTATION_ANTICLOCK       = 5; //!< rotates the points once in the anticlockwise sense
+    static inline const uint16_type ROTATION_CLOCKWISE       = 6; //!< rotates the points once in the clockwise sense
+    static inline const uint16_type SECOND_DIAGONAL          = 7; //!< reflection according to the second diagonal
+    static inline const uint16_type ROTATION_TWICE_CLOCKWISE = 8; //!< rotates the points twice in the (anti)clockwise sense
 
-    static const uint16_type N_PERMUTATIONS           = 9; //!< number of permutations
+    static inline const uint16_type N_PERMUTATIONS           = 9; //!< number of permutations
 
-    static const uint16_type REVERSE_HYPOTENUSE   = 4; //!< reflection according to the hypotenuse direction
+    static inline const uint16_type REVERSE_HYPOTENUSE   = 4; //!< reflection according to the hypotenuse direction
 
     typedef boost::detail::identifier<uint16_type, quadrangular_faces> super;
     typedef super::value_type value_type;

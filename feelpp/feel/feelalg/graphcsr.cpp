@@ -26,7 +26,6 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-10-29
  */
-#include <boost/timer.hpp>
 
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/graphcsr.hpp>
@@ -673,7 +672,6 @@ GraphCSR::close()
     M_is_closed = true;
     //return;
     //std::cout << "closing graph " << this << "...\n";
-    boost::timer ti;
     DVLOG(2) << "[close] nrows=" << this->size() << "\n";
     DVLOG(2) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
     DVLOG(2) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
@@ -1219,7 +1217,7 @@ BlocksBaseGraphCSR::close()
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)
     {
-        // search a data row avalaible
+        // search a data row available
         bool findDataMapRow=false;
         for ( index_type j=0 ; j<this->nCol() && !findDataMapRow ;++j)
         {
@@ -1235,7 +1233,7 @@ BlocksBaseGraphCSR::close()
     // search reference col datamap foreach col
     for ( index_type j=0 ; j<this->nCol() ;++j)
     {
-        // search a data col avalaible
+        // search a data col available
         bool findDataMapCol=false;
         for ( index_type i=0 ; i<this->nRow() && !findDataMapCol ;++i)
         {

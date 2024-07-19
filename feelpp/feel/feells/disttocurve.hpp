@@ -89,6 +89,7 @@ public :
     typedef typename FunctionSpaceP1Type::value_type value_type;
     typedef typename FunctionSpaceP1Type::mesh_type mesh_type;
     typedef typename mesh_type::node_type node_type;
+    using size_type = typename mesh_type::size_type;
 
     // Used to store a node and its distance to a point
     typedef std::pair< node_type, double > nodeDist_type;
@@ -159,7 +160,7 @@ public :
                                            double t1Start, double t1End, double dt1,
                                            double t2Start, double t2End, double dt2,
                                            bool broadenCurveForElementDetection = true,
-                                           double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2.,
+                                           double broadenessAmplitude = doption(_name="gmsh.hsize") / 2.,
                                            bool exportPoints = false,
                                            std::string exportName="",
                                            bool signedDistance = true
@@ -191,7 +192,7 @@ public :
                                            std::vector<double> const& ylist,
                                            std::vector<double> const& zlist,
                                            bool broadenCurveForElementDetection = true,
-                                           double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2.,
+                                           double broadenessAmplitude = doption(_name="gmsh.hsize") / 2.,
                                            bool exportPoints = false, std::string exportName="",
                                            bool signedDistance = true
                                            )
@@ -255,7 +256,7 @@ public :
         }
 
 
-    // TFilename = boost::filesystem::path or std::string
+    // TFilename = fs::path or std::string
     template< class TFilename, class TList = std::vector<node_type> >
     element_ptrtype fromCoordinateFile( TFilename filename, TList insidePoints = std::vector<node_type>() )
         {
@@ -294,14 +295,14 @@ public :
                                            std::function<double(double)> yexpr,
                                            double t1Start, double t1End, double dt1,
                                            bool broadenCurveForElementDetection = true,
-                                           double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2.,
+                                           double broadenessAmplitude = doption(_name="gmsh.hsize") / 2.,
                                            bool exportPoints = false,
                                            std::string exportName="",
                                            bool signedDistance = true
                                            )
         {
             clear();
-            CHECK( dim==2 ), "need 2d here";
+            CHECK( dim==2 ) << "need 2d here";
             generatePointsFromParametrization(xexpr, yexpr,
                                               t1Start, t1End, dt1,
                                               exportPoints, exportName);
@@ -328,7 +329,7 @@ public :
     element_ptrtype fromParametrizedCurve( std::tuple< std::function<double(double)>, std::function<double(double)> > paramFct,
                                            double tStart, double tEnd, double dt,
                                            bool broadenCurveForElementDetection = true,
-                                           double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2.,
+                                           double broadenessAmplitude = doption(_name="gmsh.hsize") / 2.,
                                            bool exportPoints = false,
                                            std::string exportName=""
                                            )
@@ -346,7 +347,7 @@ public :
     element_ptrtype fromParametrizedCurve( std::tuple< std::function<double(double)>, std::function<double(double)>, double, double > paramFct,
                                            double dt,
                                            bool broadenCurveForElementDetection = true,
-                                           double broadenessAmplitude = option("gmsh.hsize").as<double>() / 2.,
+                                           double broadenessAmplitude = doption(_name="gmsh.hsize") / 2.,
                                            bool exportPoints = false,
                                            std::string exportName=""
                                            )
@@ -447,7 +448,7 @@ private :
                                             bool exportPoints = false, std::string exportName="" )
         {
             std::ofstream nodeFile;
-            CHECK( dim==2 ), "need 2d here";
+            CHECK( dim==2 ) <<  "need 2d here";
             if (exportPoints && (Environment::worldComm().rank() == 0) )
             {
                 std::string expName = exportName.empty() ? "nodes.particles" : exportName+".particles";
@@ -485,7 +486,7 @@ private :
         {
             std::ofstream nodeFile;
 
-            CHECK( dim==3 ), "need 3d here";
+            CHECK( dim==3 ) << "need 3d here";
             if (exportPoints && (Environment::worldComm().rank() == 0) )
             {
                 std::string expName = exportName.empty() ? "nodes.particles" : exportName+".particles";
@@ -601,7 +602,7 @@ private :
             return true;
         }
 
-    void locateElementsCrossedByCurve(bool randomlyBroadenNodesPositions=false, double randomnessAmplitude = option("gmsh.hsize").as<double>() / 2.)
+    void locateElementsCrossedByCurve(bool randomlyBroadenNodesPositions=false, double randomnessAmplitude = doption(_name="gmsh.hsize") / 2.)
         {
             // locate the elements crossed by the curve
             // store their ids in a map with the "t" of the nodes being in the element
@@ -678,7 +679,7 @@ private :
     element_ptrtype makeDistanceFunctionSequential( bool shapeHasRevolution, bool signDistance = true )
         {
             auto shape = M_spaceP1->elementPtr();
-            *shape = vf::project(M_spaceP1, elements(M_mesh), cst(bigdouble) );
+            shape->on(_range=elements(M_mesh), _expr=cst(bigdouble) );
 
             // squared distance between a point where only its "t" is given, and a node nd2
             auto distToPt = [this] (size_type t, node_type nd2) -> double
@@ -771,7 +772,7 @@ private :
                             const node_type v = dofCoord - closestPointCoord;
 
                             // the sign of the distance function is ruled by the vectorial product of the tangent vector and the vector v : sign(v x t)
-                            // in 3D, it should be somthing like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
+                            // in 3D, it should be something like :  sign( (v x t) . n ) where n is the normal of the param surface pointing outward
                             double signProdVec;
 
                             if (!shapeHasRevolution)
@@ -803,7 +804,7 @@ private :
         {
             // given a distance function made by makeDistanceFunctionSequential which has different values on nodes being at the interface between several subdomain, make a nice, homogeneous distance function (requires several communications though all the proc !)
 
-            auto eltHavingPointP1 = vf::project(M_spaceP1, marked2elements(M_mesh, 1), cst(1) );
+            auto eltHavingPointP1 = vf::project(_space=M_spaceP1, _range=marked2elements(M_mesh, 1), _expr=cst(1) );
 
 
             // search for all the dof being marked on at least one proc and being ghost on at least one proc (not necessarily the same proc)
@@ -1044,8 +1045,8 @@ private :
                     }
                 }
 
-            eltHavingPoints = vf::project(M_spaceP0, elements(M_mesh),
-                                          vf::chi( idv(eltHavingPoints) + idv(widenBand) ) );
+            eltHavingPoints = vf::project(_space=M_spaceP0, _range=elements(M_mesh),
+                                          _expr=vf::chi( idv(eltHavingPoints) + idv(widenBand) ) );
 
             M_mesh->updateMarker2( eltHavingPoints );
 
@@ -1066,7 +1067,7 @@ private :
             CHECK( dim == 2 )<<"works only in 2d for now\n";
 
             auto shape = M_spaceP1->elementPtr();
-            *shape = vf::project(M_spaceP1, elements(M_mesh), cst(bigdouble) );
+            shape->on(_range=elements(M_mesh), _expr=cst(bigdouble) );
 
             auto it_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
             auto en_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;

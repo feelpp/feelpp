@@ -2,12 +2,14 @@ set_directory_properties(PROPERTIES LABEL testcore )
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST traits singleton factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums mongo)
+foreach(TEST json git traits singleton enumerate factory debug context simget ${OTESTS} env removecomments feelio boostmpi enums mongo hana)
 
   feelpp_add_test( ${TEST} )
 
 endforeach()
-
+if ( SPECX_FOUND )
+  feelpp_add_test(taskflow LINK_LIBRARIES Feelpp::feelpp_taskflow)
+endif()
 feelpp_add_test( range )
 
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC)
@@ -61,3 +63,4 @@ feelpp_add_test(ptree_editions CFG test_ptree_editions.cfg GEO test_ptree_editio
 
 feelpp_add_test( observer )
 feelpp_add_test( observer_mesh )
+feelpp_add_test( eigenrand )

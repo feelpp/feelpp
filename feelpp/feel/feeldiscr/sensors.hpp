@@ -27,6 +27,7 @@
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
+#include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feelcore/json.hpp>
 
 namespace Feel
@@ -46,15 +47,13 @@ public:
 
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
-    using node_t = typename space_type::mesh_type::node_type;
     using mesh_type = typename space_type::mesh_type;
 
 
     SensorBase() = default;
-    SensorBase( space_ptrtype const& space, node_t const& p, std::string const& name = "sensor" , std::string const& t = ""):
+    SensorBase( space_ptrtype const& space, std::string const& name = "sensor" , std::string const& t = ""):
         super_type( space ),
         M_name( name ),
-        M_position( p ),
         M_type( t )
     {}
 
@@ -70,17 +69,11 @@ public:
     void setName( std::string const& n ) { M_name = n; }
     std::string const& name() const { return M_name; }
 
-    void setPosition( node_t const& p ) { M_position = p; this->init(); }
-    node_t const& position() const { return M_position; }
-
     std::string const& type() const { return M_type; }
     virtual json to_json() const
     {
         json j;
         j["type"] = M_type;
-        j["coord"] = json::array();
-        for(int i = 0; i < space_type::nDim; ++i)
-            j["coord"].push_back(M_position(i));
         return j;
     }
 
@@ -95,13 +88,11 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & M_name;
-        ar & M_position;
         ar & M_type;
     }
 
 protected:
     std::string M_name;
-    node_t M_position;
     std::string M_type;
 };
 
@@ -119,23 +110,107 @@ public:
 
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
-    using node_t = typename super_type::node_t;
+    using mesh_type = typename space_type::mesh_type;
+    using node_t = typename mesh_type::node_type;
+    using geometricspace_type = GeometricSpace<mesh_type>;
+    using geometricspacectx_type = typename geometricspace_type::Context;
+    using gmc_type = typename geometricspace_type::gmc_type;
+    using gmc_ptrtype = std::shared_ptr<gmc_type>;
+    using gm_type = typename gmc_type::gm_type;
+    using geoelement_type = typename gmc_type::element_type;
+    using fe_type = typename space_type::fe_type;
 
-    SensorPointwise() = default;
-    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
-        super_type( space, p, n, "pointwise" )
+    SensorPointwise() :
+        super_type(),
+        M_position(),
+        scale_expr_( "1" )
+    {}
+    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise", std::string const& scale = "1"):
+        super_type( space, n, "pointwise" ),
+        M_position(p),
+        scale_expr_( scale.empty() ? "1" : scale )
     {
         this->init();
     }
 
     virtual ~SensorPointwise(){}
 
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
+    node_t const& position() const { return M_position; }
+
     void init() override
     {
-        // auto v=this->space()->element();
-        //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
-        //super_type::operator=( expr );
-        // this->close();
+        auto space = this->space();
+        auto mesh = space->mesh();
+        auto geospace = std::make_shared<geometricspace_type>(mesh);
+        auto geospacectx = std::make_shared<geometricspacectx_type>( geospace );
+        geospacectx->add(M_position, false);
+        geospacectx->updateForUse();
+
+        auto u = space->element();
+        auto scaling = [this]() {
+            if constexpr ( space_type::is_scalar )
+                return expr(this->scale_expr_);
+            else
+                return expr<dimension_v<mesh_type>,1>( this->scale_expr_ );
+        };
+        auto dirac_expr_fn = [this,&u,&scaling](){
+            if constexpr ( space_type::is_scalar )
+                return scaling()*id(u);
+            else
+                return trans(scaling())*id(u);
+        };
+        auto dirac_expr = dirac_expr_fn();
+        geospacectx->template updateGmcContext<std::decay_t<decltype(dirac_expr)>::context>();
+
+        using expr_type = std::decay_t<decltype(dirac_expr)>;
+        using expr_basis_t = typename expr_type::test_basis;
+        static constexpr size_type expr_context = expr_type::context;
+        // fe context
+        using fecontext_type = typename space_type::fe_type::template Context< expr_context, fe_type, gm_type, geoelement_type>;
+        using fecontext_ptrtype = std::shared_ptr<fecontext_type>;
+
+        for ( auto& [geoCtxId,geoCtx] : *geospacectx )
+        {
+            auto gmc = std::get<0>(geoCtx)->gmContext();
+            auto const& curCtxIdToPointIds = std::get<1>(geoCtx);
+            auto const& elt = gmc->element();
+            auto fepc = space->fe()->preCompute( space->fe(), gmc->xRefs() );
+            auto fec = std::make_shared<fecontext_type>( space->fe(), gmc, fepc );
+            auto mapgmc = Feel::vf::mapgmc( gmc );
+            auto mapfec = Feel::vf::mapfec( fec );
+            auto tExpr = dirac_expr.evaluator(mapgmc, mapfec);
+
+            // TODO check if next lines are really useful?
+            fec->update( gmc );
+            tExpr.update( mapgmc, mapfec );
+
+            Eigen::MatrixXd IhLoc = space->fe()->localInterpolants(curCtxIdToPointIds.size(),1);
+            //Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof*dimension_v<mesh_type>,gmc->nPoints());
+            space->fe()->interpolateBasisFunction( tExpr, IhLoc );
+
+
+            for( auto const& ldof : space->dof()->localDof( elt.id() ) )
+            {
+                index_type index = ldof.second.index();
+
+                for ( uint16_type q=0;q<curCtxIdToPointIds.size();++q )
+                {
+                    this->containerPtr()->set( index, IhLoc( ldof.first.localDof(), q ) ); // TODO use datamap mapping
+                }
+            }
+        }
+
+        this->containerPtr()->close();
+    }
+
+    json to_json() const override
+    {
+        json j = super_type::to_json();
+        j["coord"] = json::array();
+        for(int i = 0; i < space_type::nDim; ++i)
+            j["coord"].push_back(M_position(i));
+        return j;
     }
 
 private:
@@ -144,7 +219,12 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & boost::serialization::base_object<super_type>(*this);
+        ar & M_position;
     }
+
+
+    node_t M_position;
+    std::string scale_expr_;
 };
 
 
@@ -163,20 +243,23 @@ public:
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
     using mesh_type = typename super_type::mesh_type;
-    using node_t = typename super_type::node_t;
+    using node_t = typename space_type::mesh_type::node_type;
     static const int nDim = space_type::mesh_type::nDim;
 
     SensorGaussian() = default;
     SensorGaussian( space_ptrtype const& space, node_t const& center,
                     double radius = 1., std::string const& n = "gaussian"):
-        super_type( space, center, n, "gaussian" ),
-        M_radius( radius )
+        super_type( space, n, "gaussian" ),
+        M_radius( radius ),
+        M_position( center )
     {
         this->init();
     }
 
     virtual ~SensorGaussian(){}
 
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
+    node_t const& position() const { return M_position; }
     void setRadius( double radius ) { M_radius = radius; this->init(); }
     double radius() { return M_radius; }
 
@@ -184,9 +267,10 @@ public:
     {
         auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
-        auto n = integrate(_range=elements(this->space()->mesh()), _expr=phi).evaluate()(0,0);
+        auto order = this->space()->fe()->nOrder;
+        auto n = integrate(_range=elements(support(this->space())), _expr=phi).evaluate()(0,0);
         form1( _test=this->space(), _vector=this->containerPtr() ) =
-            integrate(_range=elements(this->space()->mesh()), _expr=id(v)*phi/n );
+            integrate(_range=elements(support(this->space())), _expr=id(v)*phi/n, _quad=2*order );
         this->close();
     }
 
@@ -194,6 +278,9 @@ public:
     {
         json j = super_type::to_json();
         j["radius"] = M_radius;
+        j["coord"] = json::array();
+        for(int i = 0; i < space_type::nDim; ++i)
+            j["coord"].push_back(M_position(i));
         return j;
     }
 
@@ -216,10 +303,72 @@ private:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & boost::serialization::base_object<super_type>(*this);
+        ar & M_position;
         ar & M_radius;
     }
 
     double M_radius;
+    node_t M_position;
+};
+
+//!
+//! surface type sensor
+//!
+template<typename Space>
+class SensorSurface: public SensorBase<Space>
+{
+public:
+
+    // -- TYPEDEFS --
+    typedef SensorSurface<Space> this_type;
+    typedef SensorBase<Space> super_type;
+
+    using space_type = typename super_type::space_type;
+    using space_ptrtype = typename super_type::space_ptrtype;
+    using mesh_type = typename super_type::mesh_type;
+    static const int nDim = space_type::mesh_type::nDim;
+
+    SensorSurface() = default;
+    SensorSurface( space_ptrtype const& space, std::set<std::string> const& markers, std::string const& n = "surface"):
+        super_type( space, n, "surface" ),
+        M_markers( markers )
+    {
+        this->init();
+    }
+
+    virtual ~SensorSurface(){}
+
+    void setMarkers( std::set<std::string> const& markers ) { M_markers = markers; this->init(); }
+    std::set<std::string> markers() { return M_markers; }
+
+    void init() override
+    {
+        auto v = this->space()->element();
+        auto n = integrate(_range=markedfaces(support(this->space()), M_markers), _expr=cst(1.)).evaluate()(0,0);
+        form1( _test=this->space(), _vector=this->containerPtr() ) =
+            integrate(_range=markedfaces(support(this->space()), M_markers), _expr=id(v)/n );
+        this->close();
+    }
+
+    json to_json() const override
+    {
+        json j = super_type::to_json();
+        j["markers"] = json::array();
+        for(auto const& m : M_markers)
+            j["markers"].push_back(m);
+        return j;
+    }
+
+private:
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<super_type>(*this);
+        ar & M_markers;
+    }
+
+    std::set<std::string> M_markers;
 };
 
 template<typename Space>
@@ -235,33 +384,52 @@ public:
     using space_ptrtype = std::shared_ptr<space_type>;
     using fselement_type = typename space_type::element_type;
 
-    using node_t = typename element_type::node_t;
-
     SensorMap() = default;
     explicit SensorMap( space_ptrtype const& Xh ): M_Xh(Xh) {}
     explicit SensorMap( space_ptrtype const& Xh, json j)
-        : M_Xh(Xh),
-          M_j(j)
+        : M_Xh(Xh)
     {
+        this->loadJson(j);
+    }
+
+    void loadJson(json const& j)
+    {
+        M_j = j;
         for( auto const& /*it*/[name, sensor] : M_j.items() )
         {
             // auto name = it.first;
             // auto sensor = it.second;
             std::string type = sensor.value("type", "");
-            node_t n(space_type::nDim);
-            auto coords = sensor["coord"].template get<std::vector<double>>();
-            for( int i = 0; i < space_type::nDim; ++i )
-                n(i) = coords[i];
 
             if( type == "pointwise" )
             {
-                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name);
+                using node_t = typename SensorPointwise<space_type>::node_t;
+                node_t n(space_type::nDim);
+                auto coords = sensor["coord"].template get<std::vector<double>>();
+                for( int i = 0; i < space_type::nDim; ++i )
+                    n(i) = coords[i];
+                std::string scale_expr = "1";
+                if ( sensor.contains("scale") )
+                    scale_expr = sensor["scale"].template get<std::string>();
+
+                auto s = std::make_shared<SensorPointwise<space_type>>(M_Xh, n, name, scale_expr);
                 this->insert(value_type(name, s));
             }
             else if( type == "gaussian" )
             {
                 double radius = sensor.value("radius", 0.1);
+                using node_t = typename SensorGaussian<space_type>::node_t;
+                node_t n(space_type::nDim);
+                auto coords = sensor["coord"].template get<std::vector<double>>();
+                for( int i = 0; i < space_type::nDim; ++i )
+                    n(i) = coords[i];
                 auto s = std::make_shared<SensorGaussian<space_type>>(M_Xh, n, radius, name);
+                this->insert(value_type(name, s));
+            }
+            else if( type == "surface" )
+            {
+                auto markers = sensor["markers"].template get<std::set<std::string>>();
+                auto s = std::make_shared<SensorSurface<space_type>>(M_Xh, markers, name);
                 this->insert(value_type(name, s));
             }
         }
@@ -298,6 +466,7 @@ private:
         // add any subtype of SensorBase here
         ar.template register_type<SensorPointwise<space_type>>();
         ar.template register_type<SensorGaussian<space_type>>();
+        ar.template register_type<SensorSurface<space_type>>();
         ar & boost::serialization::base_object<super_type>(*this);
         if( Archive::is_loading::value )
         {

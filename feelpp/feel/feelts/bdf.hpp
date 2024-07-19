@@ -27,23 +27,20 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
 */
-#ifndef _BDF_H
-#define _BDF_H
+#ifndef FEELPP_TS_BDF_H
+#define FEELPP_TS_BDF_H
 
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 
-#include <boost/timer.hpp>
-#include <boost/shared_array.hpp>
+//#include <boost/shared_array.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/utility.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -55,18 +52,17 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 
-#include <boost/parameter.hpp>
 #include <feel/feelcore/parameter.hpp>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
-#include <feel/feelts/tsbase.hpp>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feelts/tsbase.hpp>
 
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
-namespace fs = boost::filesystem;
 
 enum BDFTimeScheme { BDF_ORDER_ONE=1, BDF_ORDER_TWO, BDF_ORDER_THREE, BDF_ORDER_FOUR, BDF_MAX_ORDER = 4 };
 
@@ -133,11 +129,43 @@ public:
      */
     Bdf( space_ptrtype const& space, std::string const& name, std::string const& prefix="", po::variables_map const& vm =  Environment::vm() );
 
+    Bdf( space_ptrtype const& __space, std::string const& name, std::string const& prefix, po::variables_map const& vm, int order,
+         double ti, double tf, double dt, bool steady, bool reverse, bool restart, std::string const& restart_path, bool restart_at_last_save,
+         bool save, int freq, bool rank_proc_in_files_name, std::string const& format, int n_consecutive_save );
+
     //! copy operator
     Bdf( Bdf const& b );
 
     ~Bdf() override;
 
+    //! @return the FunctionSpace associated to BDF
+    space_ptrtype const& functionSpace() const { return M_space; }
+
+    //! apply a remesh by given the new functionspace and the interpolation matrix between previous and new function space
+    void applyRemesh( space_ptrtype const& space, std::shared_ptr<MatrixSparse<double>> const& matInterp )
+        {
+            //! change space/fields and interpolate
+            M_space = space;
+
+            // not yet init : do nothing
+            if ( M_unknowns.empty() )
+                return;
+
+            // interpolate unknown fields
+            unknowns_type oldUnknowns = M_unknowns;
+            for ( int k=0;k< M_unknowns.size();++k )
+            {
+                M_unknowns[k] = M_space->elementPtr();
+                matInterp->multVector( unwrap_ptr(oldUnknowns[k]), unwrap_ptr(M_unknowns[k]) );
+            }
+
+            //! recompute poly and polyDeriv
+            M_poly.reset();
+            M_polyDeriv.reset();
+            this->computePolyAndPolyDeriv();
+
+            // TODO : change repository where fields are saved
+        }
 
     //! return a deep copy of the bdf object
     bdf_ptrtype deepCopy() const
@@ -198,15 +226,15 @@ public:
     //! return number of consecutive save
     int numberOfConsecutiveSave() const { return M_numberOfConsecutiveSave; }
 
-    //! set number of consecutive save (max is BDF_MAX_ORDER)
+    //! set number of consecutive save
     void setNumberOfConsecutiveSave( int n )
     {
         if ( n > 0 )
-            M_numberOfConsecutiveSave = std::min( n,(int)BDF_MAX_ORDER );
+            M_numberOfConsecutiveSave = n;
     }
 
     //! return a vector of the times prior to timeInitial() (included)
-    std::map<int,double> priorTimes() const
+    std::map<int,double> priorTimes() const override
         {
             std::map<int,double> prior;
             for( int i = 0; i < this->M_order; ++i )
@@ -317,13 +345,19 @@ public:
     element_ptrtype const& polyPtr() const { return M_poly; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const;
+    unknowns_type const& unknowns() const { return M_unknowns; }
+
+    //! Return a vector with the last n state vectors
+    unknowns_type& unknowns() { return M_unknowns; }
 
     //! Return the previous element at previous time i-1
     element_type& unknown( int i );
 
     //! Return the previous element at previous time i-1
     element_ptrtype unknownPtr( int i );
+
+    //! update field \u with derivative at previous time indexed by \i (i.e. curent_time - i - 1)
+    void updateDerivative( element_type & u, int i = 0 ) const;
 
     element_type const& prior() const { return *M_unknowns[0]; }
 
@@ -421,19 +455,50 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
-    M_poly( M_space->elementPtr() ),
-    M_polyDeriv( M_space->elementPtr() ),
     M_numberOfConsecutiveSave( M_order )
 {
-    M_unknowns.resize( BDF_MAX_ORDER );
+    computeCoefficients();
 
-    for ( uint8_type __i = 0; __i < ( uint8_type )BDF_MAX_ORDER; ++__i )
+    CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
+    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
+    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
     {
         M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
         M_unknowns[__i]->zero();
     }
-    computeCoefficients();
+
+    this->computePolyAndPolyDeriv();
 }
+
+template <typename SpaceType>
+Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std::string const& prefix, po::variables_map const& vm, int order,
+                     double ti, double tf, double dt, bool steady, bool reverse, bool restart, std::string const& restart_path, bool restart_at_last_save,
+                     bool save, int freq, bool rank_proc_in_files_name, std::string const& format, int n_consecutive_save )
+    :
+    super( name, prefix, __space->worldComm(), vm, ti, tf, dt, steady, reverse, restart, restart_path, restart_at_last_save,
+           save, freq, rank_proc_in_files_name, format ),
+    M_order( order ),
+    M_strategyHighOrderStart( ioption(_prefix=prefix,_name="bdf.strategy-high-order-start",_vm=vm) ),
+    M_order_cur( M_order ),
+    M_iterations_between_order_change( ioption(_prefix=prefix,_name="bdf.iterations-between-order-change",_vm=vm) ),
+    M_space( __space ),
+    M_alpha( BDF_MAX_ORDER ),
+    M_beta( BDF_MAX_ORDER ),
+    M_numberOfConsecutiveSave( n_consecutive_save )
+{
+    computeCoefficients();
+
+    CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
+    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
+    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+    {
+        M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
+        M_unknowns[__i]->zero();
+    }
+
+    this->computePolyAndPolyDeriv();
+}
+
 
 //! copy operator
 template <typename SpaceType>
@@ -510,6 +575,22 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::init()
 {
+
+    CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
+    int sizeUnknowns = std::max(this->bdfOrder(), this->numberOfConsecutiveSave());
+    if ( M_unknowns.size() != sizeUnknowns )
+    {
+        M_unknowns.resize( sizeUnknowns );
+        for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+        {
+            if ( !M_unknowns[__i] )
+            {
+                M_unknowns[__i] = M_space->elementPtr();
+                M_unknowns[__i]->zero();
+            }
+        }
+    }
+
     if ( this->path().empty() )
     {
         this->setPathSave( (boost::format("%3%bdf_o_%1%_dt_%2%")
@@ -597,7 +678,7 @@ Bdf<SpaceType>::init()
                     ostr << M_name << "-" << iteration;
                 DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
-                fs::ifstream ifs;
+                std::ifstream ifs;
                 ifs.open( dirPath/ostr.str() );
 
                 // load data from archive
@@ -709,14 +790,6 @@ Bdf<SpaceType>::restart()
 }
 
 template <typename SpaceType>
-const
-typename Bdf<SpaceType>::unknowns_type&
-Bdf<SpaceType>::unknowns() const
-{
-    return M_unknowns;
-}
-
-template <typename SpaceType>
 typename Bdf<SpaceType>::element_type&
 Bdf<SpaceType>::unknown( int i )
 {
@@ -771,7 +844,7 @@ Bdf<SpaceType>::saveCurrent()
             else
                 ostr << M_name << "-" << iteration;
             // load data from archive
-            fs::ofstream ofs( M_path_save / ostr.str() );
+            std::ofstream ofs( M_path_save / ostr.str() );
             boost::archive::binary_oarchive oa( ofs );
             oa << *M_unknowns[0];
         }
@@ -830,7 +903,7 @@ Bdf<SpaceType>::loadCurrent()
             else
                 ostr << M_name << "-" << iteration;
 
-            fs::ifstream ifs( M_path_save / ostr.str() );
+            std::ifstream ifs( M_path_save / ostr.str() );
 
             // load data from archive
             boost::archive::binary_iarchive ia( ifs );
@@ -898,49 +971,48 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
         M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
 }
 
-
-BOOST_PARAMETER_FUNCTION(
-    ( std::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
-    bdf, tag,
-    ( required
-      ( space,*( boost::is_convertible<mpl::_,std::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
-    ( optional
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ( prefix,*,"" )
-      ( name,*,"bdf" )
-      ( order,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.order",_vm=vm) )
-      ( initial_time,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-initial",_vm=vm) )
-      ( final_time,*( boost::is_floating_point<mpl::_> ),  doption(_prefix=prefix,_name="bdf.time-final",_vm=vm) )
-      ( time_step,*( boost::is_floating_point<mpl::_> ), doption(_prefix=prefix,_name="bdf.time-step",_vm=vm) )
-      ( strategy,*( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.strategy",_vm=vm) )
-      ( steady,*( bool ), boption(_prefix=prefix,_name="bdf.steady",_vm=vm) )
-      ( reverse,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.reverse",_vm=vm) )
-      ( restart,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart",_vm=vm) )
-      ( restart_path,*, soption(_prefix=prefix,_name="bdf.restart.path",_vm=vm) )
-      ( restart_at_last_save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.restart.at-last-save",_vm=vm) )
-      ( save,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.save",_vm=vm) )
-      ( freq,*(boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="bdf.save.freq",_vm=vm) )
-      ( format,*, soption(_prefix=prefix,_name="bdf.file-format",_vm=vm) )
-      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="bdf.rank-proc-in-files-name",_vm=vm) )
-      ( n_consecutive_save,*( boost::is_integral<mpl::_> ), order )
-    ) )
+template <typename SpaceType>
+void
+Bdf<SpaceType>::updateDerivative( element_type & u, int i ) const
 {
-    typedef typename meta::remove_all<space_type>::type::element_type _space_type;
-    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix,vm ) );
-    thebdf->setTimeInitial( initial_time );
-    thebdf->setTimeFinal( final_time );
-    thebdf->setTimeStep( time_step );
-    thebdf->setOrder( order );
-    thebdf->setSteady( steady );
-    thebdf->setReverse( reverse );
-    thebdf->setRestart( restart );
-    thebdf->setRestartPath( restart_path );
-    thebdf->setRestartAtLastSave( restart_at_last_save );
-    thebdf->setSaveInFile( save );
-    thebdf->setSaveFreq( freq );
-    thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
-    thebdf->setfileFormat( format );
-    thebdf->setNumberOfConsecutiveSave( n_consecutive_save );
+    CHECK( M_unknowns.size() >= (this->timeOrder()+1+i) );
+    u.zero();
+    u.add( this->polyDerivCoefficient( 0 ), *M_unknowns[i] );
+    for ( uint8_type k = 0; k < this->timeOrder(); ++k )
+        u.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[i+k+1] );
+}
+
+template <typename ... Ts>
+auto bdf( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && space = args.get(_space);
+    po::variables_map const& vm = args.get_else(_vm,Environment::vm());
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& name = args.get_else(_name,"bdf");
+    int order = args.get_else_invocable( _order, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="bdf.order",_vm=vm); } );
+    double initial_time = args.get_else_invocable( _initial_time, [&prefix,&vm](){ return doption(_prefix=prefix,_name="bdf.time-initial",_vm=vm); } );
+    double final_time = args.get_else_invocable( _final_time, [&prefix,&vm](){ return doption(_prefix=prefix,_name="bdf.time-final",_vm=vm); } );
+    double time_step = args.get_else_invocable( _time_step, [&prefix,&vm](){ return doption(_prefix=prefix,_name="bdf.time-step",_vm=vm); } );
+    int strategy = args.get_else_invocable( _strategy, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="bdf.strategy",_vm=vm); } );
+    bool steady = args.get_else_invocable( _steady, [&prefix,&vm](){ return boption(_prefix=prefix,_name="bdf.steady",_vm=vm); } );
+    bool reverse = args.get_else_invocable( _reverse, [&prefix,&vm](){ return boption(_prefix=prefix,_name="bdf.reverse",_vm=vm); } );
+    bool restart = args.get_else_invocable( _restart, [&prefix,&vm](){ return boption(_prefix=prefix,_name="bdf.restart",_vm=vm); } );
+    std::string const& restart_path = args.get_else_invocable( _restart_path, [&prefix,&vm](){ return soption(_prefix=prefix,_name="bdf.restart.path",_vm=vm); } );
+    bool restart_at_last_save = args.get_else_invocable( _restart_at_last_save, [&prefix,&vm](){ return boption(_prefix=prefix,_name="bdf.restart.at-last-save",_vm=vm); } );
+    bool save = args.get_else_invocable( _save, [&prefix,&vm](){ return boption(_prefix=prefix,_name="bdf.save",_vm=vm); } );
+    int freq = args.get_else_invocable( _freq, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="bdf.save.freq",_vm=vm); } );
+    std::string const& format = args.get_else_invocable( _format,[&prefix,&vm](){ return soption(_prefix=prefix,_name="bdf.file-format",_vm=vm); } );
+    bool rank_proc_in_files_name = args.get_else_invocable( _rank_proc_in_files_name, [&prefix,&vm](){ return boption(_prefix=prefix,_name="bdf.rank-proc-in-files-name",_vm=vm); } );
+    int n_consecutive_save = args.get_else( _n_consecutive_save, order );
+
+    using _space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
+    auto thebdf = std::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( space,name,prefix,vm,order,
+                                                                            initial_time, final_time, time_step, steady, reverse,
+                                                                            restart, restart_path, restart_at_last_save,
+                                                                            save, freq, rank_proc_in_files_name, format, n_consecutive_save
+                                                                            ) );
+
     return thebdf;
 }
 

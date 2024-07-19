@@ -51,24 +51,24 @@ public :
     typedef typename functionspace1_type::mesh_type mesh1_type;
     typedef typename functionspace2_type::mesh_type mesh2_type;
 
-    static const uint16_type nDim = mesh1_type::nDim;
+    static inline const uint16_type nDim = mesh1_type::nDim;
     static const bool is_simplex = mesh1_type::shape_type::is_simplex;
 
-    static const uint16_type nDofPerVertex = functionspace1_type::fe_type::nDofPerVertex;
-    static const uint16_type numVertices = mesh1_type::element_type::numVertices;
-    static const uint16_type nDofPerEdge = functionspace1_type::fe_type::nDofPerEdge;
-    static const uint16_type numEdges = mesh1_type::element_type::numEdges;
-    static const uint16_type nDofPerFace = functionspace1_type::fe_type::nDofPerFace;
-    static const uint16_type numGeometricFaces = mesh1_type::element_type::numGeometricFaces;
-    static const uint16_type nDofPerVolume = functionspace1_type::fe_type::nDofPerVolume;
-    static const uint16_type numVolumes = mesh1_type::element_type::numVolumes;
+    static inline const uint16_type nDofPerVertex = functionspace1_type::fe_type::nDofPerVertex;
+    static inline const uint16_type numVertices = mesh1_type::element_type::numVertices;
+    static inline const uint16_type nDofPerEdge = functionspace1_type::fe_type::nDofPerEdge;
+    static inline const uint16_type numEdges = mesh1_type::element_type::numEdges;
+    static inline const uint16_type nDofPerFace = functionspace1_type::fe_type::nDofPerFace;
+    static inline const uint16_type numGeometricFaces = mesh1_type::element_type::numGeometricFaces;
+    static inline const uint16_type nDofPerVolume = functionspace1_type::fe_type::nDofPerVolume;
+    static inline const uint16_type numVolumes = mesh1_type::element_type::numVolumes;
 
     DofRelationshipMap(functionspace1_ptrtype __Xh1,functionspace2_ptrtype __Xh2 )
         :
         M_Xh1(__Xh1),
         M_Xh2(__Xh2),
-        M_dofRelMapRefToHo( M_Xh1->nLocalDof() ),
-        M_dofRelMapHoToRef( M_Xh2->nLocalDof() )
+        M_dofRelMapRefToHo( M_Xh1->nLocalDof(), invalid_v<size_type> ),
+        M_dofRelMapHoToRef( M_Xh2->nLocalDof(), invalid_v<size_type> )
         {
             buidGeoElementMap();
             buildDofRelMap();
@@ -190,11 +190,19 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
     std::set<size_type> elt1Done;
 
     CHECK ( M_Xh1->dof()->buildDofTableMPIExtended() == M_Xh2->dof()->buildDofTableMPIExtended() ) << "buildDofTableMPIExtended between space must be equal \n";
-
+#if 0
     bool upExtendedElt = M_Xh1->dof()->buildDofTableMPIExtended();
     EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     auto rangeElt1 = elements( M_Xh1->mesh(), entityProcess );
     auto rangeElt2 = elements( M_Xh2->mesh(), entityProcess );
+#else
+    auto rangeElt1 = M_Xh1->template meshSupport<0>()->rangeElements();
+    auto rangeElt2 = M_Xh2->template meshSupport<0>()->rangeElements();
+#endif
+
+    auto dof1 = M_Xh1->dof();
+    auto dof2 = M_Xh2->dof();
+    bool isPartialSupport1 = dof1->hasMeshSupport() && dof1->meshSupport()->isPartialSupport();
 
     M_geoElementMap.clear();
 
@@ -207,6 +215,10 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
         if ( useSubMeshRelation )
         {
             size_type elt1Id = M_Xh1->mesh()->meshToSubMesh( elt2.id() );
+            if ( elt1Id == invalid_v<size_type> )
+                continue;
+            if ( isPartialSupport1 && !dof1->isElementDone( elt1Id ) )
+                continue;
             M_geoElementMap[elt1Id] = std::make_pair(elt2.id(),elt2.processId());
         }
         else
@@ -354,9 +366,12 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
             else if (iloc1 < nDofPerVertex*numVertices + nDofPerEdge*numEdges + nDofPerFace*numGeometricFaces + nDofPerVolume*numVolumes)
                 iloc2=iloc1;// we guess only one dof in volume ( 3d,order=4 only)
 
-
             for ( uint16_type comp = 0;comp < functionspace1_type::basis_type::nComponents;++comp )
             {
+#if 0
+                CHECK( dof1->isElementDone( elem1.id() ) ) << "dofTable1 not build this elt id : " << elem1.id();
+                CHECK( dof2->isElementDone( eltIdRelated ) ) << "dofTable2 not build this elt id : " << eltIdRelated;
+#endif
                 size_type i1 = dof1->localToGlobal( elem1.id(), iloc1 , comp ).index();
                 size_type i2 = dof2->localToGlobal( eltIdRelated , iloc2 , comp ).index();
 
@@ -364,6 +379,7 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buildDofRelMap()
                 M_dofRelMapHoToRef[i2]=i1;
 
             }
+
         }
 
     } //end it
@@ -543,7 +559,7 @@ std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::mapTrianglePoints2Face(std::vector<uint16_type> const & mapPoint)
 {
     std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    mapFaces[0]= 0; // trivial: only 1 face
 
     return mapFaces;
 }
@@ -553,7 +569,7 @@ std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::mapQuadranglePoints2Face(std::vector<uint16_type> const & mapPoint)
 {
     std::vector<uint16_type> mapFaces(1);// 1 faces
-    mapFaces[0]= 0; // trival : only 1 face
+    mapFaces[0]= 0; // trivial: only 1 face
 
     return mapFaces;
 }

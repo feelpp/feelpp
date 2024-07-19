@@ -23,6 +23,39 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
+if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
+  FEELPP_COMPONENT STREQUAL "mor" OR
+  FEELPP_COMPONENT STREQUAL "testsuite" OR
+  FEELPP_COMPONENT STREQUAL "benchmarks" OR
+  FEELPP_COMPONENT STREQUAL "python" OR
+  FEELPP_COMPONENT STREQUAL "mor;python"
+)
+      
+      string(REPLACE ";" "_" THENAME_ "${FEELPP_COMPONENT}")
+      project(feelpp-${THENAME_})
+      message(STATUS "[component] ${PROJECT_NAME} -- components: ${FEELPP_COMPONENT}")
+      include(CTest)
+      enable_testing()
+      list(LENGTH FEELPP_COMPONENT FEELPP_COMPONENT_LENGTH)
+      message(STATUS "[component] FEELPP_COMPONENT_LENGTH: ${FEELPP_COMPONENT_LENGTH}")
+      list(GET FEELPP_COMPONENT 0 FIRST_COMPONENT)
+      message(STATUS "[component] FIRST_COMPONENT: ${FIRST_COMPONENT}")
+      list(GET FEELPP_COMPONENT -1 LAST_COMPONENT)
+      message(STATUS "[component] LAST_COMPONENT: ${LAST_COMPONENT}")
+      list(FIND FEELPP_COMPONENT mor MOR_COMPONENT)
+      message(STATUS "[component] MOR_COMPONENT: ${MOR_COMPONENT}")
+      list(FIND FEELPP_COMPONENT "python" PYTHON_COMPONENT)
+      message(STATUS "[component] PYTHON_COMPONENT: ${PYTHON_COMPONENT}")
+      foreach(component IN LISTS FEELPP_COMPONENT)
+        message(STATUS "[component] ${component}")
+        add_subdirectory(${component})
+      endforeach()
+      if ( NOT FEELPP_VERSION_MAJOR )
+        include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
+      endif()
+      include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
+else()
+
 if ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
   message(STATUS "[feelpp] use new policy CMP0022" )
   cmake_policy(SET CMP0022 NEW)
@@ -109,9 +142,10 @@ endif()
 OPTION(FEELPP_ENABLE_ASAN "enable asan flags" OFF)
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
+option(FEELPP_ENABLE_FEELPP_PYTHON "Enable Feel++ python component" OFF)
 
 # enable PCH only for GCC as for now
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -161,7 +195,6 @@ message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
-include(feelpp.version)
 
 #
 # Enable testing
@@ -178,42 +211,7 @@ add_custom_target(install-testcase
 
 add_custom_target(check-full COMMAND "ctest")
 
-#
-# list of sub-directories of curdir
-MACRO(project_list_subdir result curdir)
-  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  FOREACH(child ${children})
-    IF(IS_DIRECTORY ${curdir}/${child})
-      LIST(APPEND dirlist ${child})
-    ENDIF()
-  ENDFOREACH()
-  SET(${result} ${dirlist})
-ENDMACRO()
-
-# Load documented project for Doxygen
-# it assumes that a project is valid if :
-#   there is README.{md,adoc} file in the directory
-#   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
-# option which are set to OFF by default
-MESSAGE(STATUS "[feelpp] Feel++ projects :")
-project_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
-foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
-      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
-    string(TOUPPER ${project} PROJECT)
-    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "BRAIN" OR ${PROJECT} STREQUAL "SWIMMER"  )
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    else()
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    endif()
-    option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
-		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
-		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION}" )
-  endif()
-endforeach()
-
+include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
 
 ################################################################################
 # Feel
@@ -242,6 +240,11 @@ endif()
 include(feelpp.module.mor)
 if ( FEELPP_HAS_MOR )
   add_subdirectory(mor)
+endif()
+
+#include(feelpp.module.pyfeelpp)
+if ( FEELPP_ENABLE_FEELPP_PYTHON )
+  add_subdirectory(python)
 endif()
 
 #
@@ -294,17 +297,19 @@ endforeach(OPT)
 ################################################################################
 # Installation procedure
 ################################################################################
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include(feelpp.install)
 
 ################################################################################
 # Packaging procedure
 ################################################################################
-include(feelpp.package)
+include(${CMAKE_SOURCE_DIR}/feelpp.package.cmake)
 
 ################################################################################
 # Post-config message
 ################################################################################
 include(feelpp.directive)
-
+feelpp_print_directive()
 
 feelpp_message( INFO ${FEELPP_MESSAGE_INFO_END} )
+endif()

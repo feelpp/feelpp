@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
  */
-#if !defined(FEELPP_LOADGMSHMESH_HPP)
-#define FEELPP_LOADGMSHMESH_HPP 1
+#ifndef FEELPP_FILTERS_LOADGMSHMESH_H
+#define FEELPP_FILTERS_LOADGMSHMESH_H
 
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
@@ -45,38 +45,17 @@ namespace Feel {
  * \arg update update the mesh data structure (build internal faces and edges) (default : true)
  * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    loadGMSHMesh,    // 2. function name
 
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( mesh, * )
-      ( filename, * )
-      ) // 4. one required parameter, and
-
-    ( optional
-      ( prefix,(std::string), "" )
-      ( vm, ( po::variables_map const& ), Environment::vm() )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale",_vm=vm) )
-      ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) )
-      ( update,          *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,		   *, boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) )
-      ( worldcomm,       (worldcomm_ptr_t), mesh->worldCommPtr() )
-      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) )
-      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) )
-      ( rebuild_partitions_filename,	*, ""/*filename*/ )
-      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm->globalSize() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) )
-      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
-      )
-                         )
+template <typename MeshType>
+std::shared_ptr<MeshType>
+loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, std::string const& prefix, po::variables_map const& vm,
+                  double scale, bool straighten, int refine, size_type update, bool physical_are_elementary_regions, worldcomm_ptr_t const& worldcomm,
+                  bool respect_partition, bool rebuild_partitions, std::string const& rebuild_partitions_filename, int partitions,int partitioner, int partition_file, int verbose )
 {
-    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
-    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+    using _mesh_type = MeshType;
+    using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
+    //typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    //typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
@@ -156,7 +135,7 @@ BOOST_PARAMETER_FUNCTION(
                 fnamePartitioned = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
 
             io_t io( fnamePartitioned );
-            std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
+            std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
             io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
 #endif
         }
@@ -186,6 +165,35 @@ BOOST_PARAMETER_FUNCTION(
 
     return _mesh;
 }
+
+template <typename ... Ts>
+auto loadGMSHMesh( Ts && ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && mesh = args.get(_mesh);
+    std::string const& filename = args.get( _filename );
+    std::string const& prefix = args.get_else( _prefix, "" );
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    double scale = args.template get_else_invocable<std::is_arithmetic>( _scale, [&prefix,&vm](){ return doption(_prefix=prefix,_name="mesh.scale",_vm=vm); } );
+    bool straighten = args.get_else_invocable( _straighten, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm); } );
+    int refine = args.get_else_invocable( _refine, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm); } );
+    size_type update = args.get_else( _update, MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    bool physical_are_elementary_regions = args.get_else_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } );
+    worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );
+    bool respect_partition = args.get_else_invocable(_respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } );
+    bool rebuild_partitions = args.get_else_invocable(_rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } );
+    std::string const& rebuild_partitions_filename = args.get_else(_rebuild_partitions_filename, "");
+    int partitions = args.get_else(_partitions, worldcomm->globalSize() );
+    int partitioner = args.get_else_invocable(_partitioner, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm); } );
+    int partition_file = args.get_else(_partition_file, 0 );
+    int verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm); } );
+
+    using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    return loadGMSHMeshImpl( std::shared_ptr<mesh_type>( mesh ), filename, prefix, vm,
+                             scale, straighten, refine, update, physical_are_elementary_regions, worldcomm,
+                             respect_partition, rebuild_partitions, rebuild_partitions_filename, partitions, partitioner, partition_file, verbose );
+}
+
 
 }
 #endif /* FEELPP_LOADGMSHMESH_HPP */

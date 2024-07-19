@@ -50,7 +50,7 @@ makeOptions()
 /**
  * Nonlinearpow Problem
  *
- * solve \f$ -\Delta u + u^\lambda = 0, \quad u_\Gamma = 0\f$ on \f$\Omega\f$
+ * solve \f$ -\Delta u + u^\lambda = 1, \quad u_\Gamma = 0\f$ on \f$\Omega\f$
  */
 int
 main( int argc, char** argv )
@@ -69,30 +69,36 @@ main( int argc, char** argv )
     double penalbc = doption(_name="penalbc");
     double lambda = doption(_name="lambda");
 
+    auto a = form2( _test=Vh, _trial=Vh );
+    a = integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
+    a += integrate( _range=boundaryfaces( mesh ),
+                    _expr=
+                        ( - trans( id( v ) )*( gradt( u )*N() )
+                        - trans( idt( u ) )*( grad( v )*N() )
+                        + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
-            if (!J) J = backend()->newMatrix( Vh, Vh );
-            auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
-
-            a += integrate( elements( mesh ),  lambda*pow( idv( u ), lambda-1 )*idt( u )*id( v ) );
-
-            a += integrate( boundaryfaces( mesh ),
-                            ( - trans( id( v ) )*( gradt( u )*N() )
-                              - trans( idt( u ) )*( grad( v )*N() )
-                              + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
+            if (!J) J = backend()->newMatrix( _test=Vh, _trial=Vh );
+            auto anl = form2( _test=Vh, _trial=Vh, _matrix=J );
+            anl = a;
+            anl += integrate( _range=elements( mesh ),  _expr=lambda*pow( idv( u ), lambda-1 )*idt( u )*id( v ) );
+            anl.close();
         };
+    auto r = form1( _test=Vh );
+    r =  integrate( _range=elements( mesh ),  _expr= -id(v) );
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
             auto u = Vh->element();
             u = *X;
-            auto r = form1( _test=Vh, _vector=R );
-            r = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
-            r +=  integrate( elements( mesh ),  pow( idv( u ), lambda )*id( v ) - id(v) );
-            r +=  integrate( boundaryfaces( mesh ),
-                             ( - trans( id( v ) )*( gradv( u )*N() )
-                               - trans( idv( u ) )*( grad( v )*N() )
-                               + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
+            auto rnl = form1( _test=Vh, _vector=R );
+            rnl = r;
+            rnl +=  integrate( _range=elements( mesh ),  _expr=pow( idv( u ), lambda )*id( v ) );
+            rnl += integrate( _range=elements( mesh ), _expr=gradv( u )*trans( grad( v ) ) );
+            rnl +=  integrate( _range=boundaryfaces( mesh ),
+                               _expr= ( - trans( id( v ) )*( gradv( u )*N() )
+                                        - trans( idv( u ) )*( grad( v )*N() )
+                                        + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
+            rnl.close();
         };
 
     u.zero();

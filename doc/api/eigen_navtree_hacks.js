@@ -135,7 +135,7 @@ function initNavTree(toroot,relpath)
   $(window).load(showRoot);
 }
 
-// return false if the the node has no children at all, or has only section/subsection children
+// return false if the node has no children at all, or has only section/subsection children
 function checkChildrenData(node) {
   if (!(typeof(node.childrenData)==='string')) {
     for (var i in node.childrenData) {
@@ -216,7 +216,7 @@ $(document).ready(function() {
   (function (){ // wait until the first "selected" element has been created
     try {
       
-      // this line will triger an exception if there is no #selected element, i.e., before the tree structure is complete.
+      // this line will trigger an exception if there is no #selected element, i.e., before the tree structure is complete.
       document.getElementById("selected").className = "item selected";
       
       // ok, the default tree has been created, we can keep going...

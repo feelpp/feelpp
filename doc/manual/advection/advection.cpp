@@ -140,7 +140,7 @@ createRing( int Dim, int Order, double meshSize, std::string const& convex )
 }
 
 /**
- * Advection Solver using discontinous approximation spaces
+ * Advection Solver using discontinuous approximation spaces
  *
  * solve \f$ -\beta\cdot\nabla u + \mu u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma_{in}\f$
  */
@@ -285,8 +285,9 @@ Advection<Dim, Order, Cont, Entity>::run()
     auto f = ( constant( 0.0 ) );
 
     auto F = backend->newVector( Xh );
-    form1( _test=Xh, _vector=F, _init=true )  =
-        integrate( elements( mesh ), trans( f )*id( v ) );
+    form1( _test=Xh, _vector=F )  =
+        integrate( _range=elements( mesh ),
+                   _expr=trans( f )*id( v ) );
 
     if ( bctype == 1 || !Cont::is_continuous )
     {
@@ -294,7 +295,7 @@ Advection<Dim, Order, Cont, Entity>::run()
             integrate( _range=boundaryfaces( mesh ), _expr=trans( beta_minus*g )*id( v ),_geomap=geomap );
     }
 
-    auto D = backend->newMatrix( Xh, Xh );
+    auto D = backend->newMatrix( _test=Xh, _trial=Xh );
     //size_type pattern = Pattern::COUPLED|Pattern::EXTENDED;
     size_type pattern = Pattern::COUPLED;
     form2( _test=Xh, _trial=Xh, _matrix=D, _init=true, _pattern=pattern ) =
@@ -320,7 +321,8 @@ Advection<Dim, Order, Cont, Entity>::run()
     else // continuous case: stabilization by interior penalty
     {
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            integrate( internalfaces( mesh ),
+            integrate( _range=internalfaces( mesh ),
+                       _expr=
                        // penal*[grad(u)] . [grad(v)]
                        + penalisation*beta_abs*hFace()*hFace()*( trans( jumpt( gradt( u ) ) )*jump( grad( v ) ) ) );
     }
@@ -339,7 +341,7 @@ Advection<Dim, Order, Cont, Entity>::run()
         D->close();
         F->close();
         form2( _test=Xh, _trial=Xh, _matrix=D ) +=
-            on( boundaryfaces( mesh ), u, F, g );
+            on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=g );
     }
 
     if ( this->vm().count( "export-matlab" ) )
@@ -350,8 +352,8 @@ Advection<Dim, Order, Cont, Entity>::run()
 
     backend->solve( _matrix=D, _solution=u, _rhs=F );
 
-    double c = integrate( internalfaces( mesh ), trans( jumpv( idv( u ) ) )*jumpv( idv( u ) )  ).evaluate()( 0, 0 );
-    double error = integrate( elements( mesh ), trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
+    double c = integrate( _range=internalfaces( mesh ), _expr=trans( jumpv( idv( u ) ) )*jumpv( idv( u ) )  ).evaluate()( 0, 0 );
+    double error = integrate( _range=elements( mesh ), _expr=trans( idv( u )-g )*( idv( u )-g ) ).evaluate()( 0, 0 );
 
     LOG(INFO) << "||error||_0 =" << error << "\n";
     std::cout << "c =" << c << "\n";
@@ -374,10 +376,10 @@ Advection<Dim, Order, Cont, Entity>::exportResults( f1_type& U,
     auto betaC = Xvch->element();
 
     auto L2Proj = projector( Xch, Xch );
-    uEx = L2Proj->project( E );
-    uC = L2Proj->project( vf::idv( U ) );
+    uEx = L2Proj->project( _expr=E );
+    uC = L2Proj->project( _expr=vf::idv( U ) );
     auto L2Projv = projector( Xvch, Xvch );
-    betaC = L2Projv->project( ( beta ) );
+    betaC = L2Projv->project( _expr=beta );
 
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", U );

@@ -31,14 +31,13 @@
 #define FEELPP_EXPR_HPP 1
 
 #undef max
-#include <boost/version.hpp>
-#include <boost/none.hpp>
 #include <algorithm>
+
+//#include <boost/version.hpp>
+#include <boost/none.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/foreach.hpp>
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/container/map.hpp>
-#include <boost/fusion/support/pair.hpp>
+
 #include <boost/multi_array.hpp>
 
 #include <Eigen/Core>
@@ -143,9 +142,9 @@ public:
     }
 
     evaluate_type
-    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool p ) const
         {
-            return evaluate_type::Constant( M_expr.evaluate( p, worldcomm )(M_c1,M_c2) );
+            return evaluate_type::Constant( M_expr.evaluate( p )(M_c1,M_c2) );
         }
 
     void setParameterValues( std::map<std::string,double> const& mp )
@@ -241,11 +240,6 @@ public:
             M_c2( exprExpanded.M_c2 )
             {}
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensor_expr.update( geom, fev, feu );
@@ -257,10 +251,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
         template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
         void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
@@ -327,7 +317,7 @@ constexpr bool is_vf_expr_v = is_vf_expr<T>::value;
 template <typename T, typename = void>
 struct has_evaluate_without_context : std::false_type {};
 template <typename T>
-struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true,Feel::worldcomm_ptr_t{} )) >>
+struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true )) >>
     : std::true_type {};
 template <typename T>
 constexpr bool has_evaluate_without_context_v = has_evaluate_without_context<T>::value;
@@ -564,6 +554,7 @@ public:
                   M_expr.updateParameterValues( pv );
         }
 
+#if 0
     template<typename ExprTT>
     explicit Expr( ExprTT const& )
         {
@@ -574,6 +565,7 @@ public:
         {
             
         }
+#endif
     //! @return the dynamic context of the expression
     size_type dynamicContext() const
         {
@@ -707,11 +699,6 @@ public:
 
         int nPoints() const { return M_geo->nPoints(); }
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept
         {
             M_tensor_expr.update( geom, fev, feu );
@@ -723,10 +710,6 @@ public:
         void update( Geo_t const& geom ) noexcept 
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face ) noexcept
-        {
-            M_tensor_expr.update( geom, face );
         }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx ) noexcept 
@@ -838,8 +821,8 @@ public:
         std::vector<uint16_type> M_permutation;
     };
 
-    template<typename Geo_t>
-    tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
+    template<typename Geo_t,typename ... Basis_t>
+    tensor<Geo_t,Basis_t...> evaluator( Geo_t const& geo,const Basis_t&... basisArg  ) const { return tensor<Geo_t,Basis_t...>( *this, geo, basisArg... ); }
 
     template<typename Geo_t>
     tensorPermutation<Geo_t> evaluatorWithPermutation( Geo_t geo ) const { return tensorPermutation<Geo_t>( *this, geo ); }
@@ -965,22 +948,23 @@ public :
         return M_expr.evaluate( mp );
     }
     evaluate_type
-    evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
+    evaluate( bool parallel = true ) const
     {
         if constexpr ( has_evaluate_without_context_v<expression_type> )
-                         return M_expr.evaluate( parallel,worldcomm );
+        {
+            return M_expr.evaluate( parallel );
+        }
         else
         {
-            CHECK( false ) << "expression can not be evaluated without context";
-            return evaluate_type{};
+            throw std::invalid_argument( "expression can not be evaluated without context" );
         }
     }
     template<typename T, int M, int N=1>
     decltype(auto)
-    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
-        {
-            return M_expr.evaluate( v, true, worldcomm );
-        }
+    evaluate( std::vector<Eigen::Matrix<T,M,N>> const& v, bool parallel = true ) const
+    {
+        return M_expr.evaluate( v, true );
+    }
     typename expression_type::value_type
     evaluateAndSum() const
     {
@@ -1061,13 +1045,17 @@ extern Expr<LambdaExpr3V> _e3v;
 template<typename IntElts,typename ExprT>
 struct ExpressionOrder
 {
-
+    using element_iterator_type = typename IntElts::iterator_t;
+    using the_face_element_type = typename IntElts::element_t;
+    using the_element_type = typename the_face_element_type::super2::template Element<the_face_element_type>::type;
+#if 0    
     typedef typename boost::tuples::template element<1, IntElts>::type element_iterator_type;
+
     typedef typename boost::remove_reference<typename element_iterator_type::reference>::type const_t;
     typedef typename boost::unwrap_reference<typename boost::remove_const<const_t>::type>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
-
-    static const uint16_type nOrderGeo = the_element_type::nOrder;
+#endif
+    static inline const uint16_type nOrderGeo = the_element_type::nOrder;
 #if 0
     static const bool is_polynomial = ExprT::imIsPoly;
 #if 0
@@ -1079,8 +1067,8 @@ struct ExpressionOrder
                      boost::mpl::int_<10> >::type::value;
 #else
     // this is a very rough approximation
-    static const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
+    static inline const uint16_type value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
+    static inline const uint16_type value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
 #else
     static bool isPolynomial( ExprT const& expr ) { return expr.isPolynomial(); }
@@ -1093,176 +1081,7 @@ struct ExpressionOrder
 
 
 
-
-
-/**
- * \class EvalFace
- * \brief Variational Formulation Expression
- *
- * @author Christophe Prud'homme
- * @see
- */
-template<int GeoId, typename ExprT>
-class EvalFace
-{
-public:
-
-    static const size_type context = ExprT::context;
-    static const bool is_terminal = false;
-
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef ExprT expression_type;
-    typedef typename expression_type::value_type value_type;
-    typedef EvalFace<GeoId,ExprT> this_type;
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    explicit EvalFace( expression_type const & __expr )
-        :
-        M_expr( __expr )
-    {}
-    ~EvalFace()
-    {}
-
-    //@}
-
-    //! polynomial order
-    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
-
-    //! expression is polynomial?
-    bool isPolynomial() const { return M_expr.isPolynomial(); }
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    template<typename VecGeo_t, typename Basis_i_t = boost::none_t, typename Basis_j_t = Basis_i_t>
-    struct tensor
-    {
-        typedef typename fusion::result_of::at_c<VecGeo_t,GeoId>::type Geo_t;
-
-        typedef typename expression_type::template tensor<Geo_t,
-                Basis_i_t,
-                Basis_j_t> tensor_expr_type;
-        typedef typename tensor_expr_type::value_type value_type;
-
-        template <class Args> struct sig
-        {
-            typedef value_type type;
-        };
-
-        tensor( this_type const& expr,
-                VecGeo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ), fev, feu )
-        {}
-
-        tensor( this_type const& expr,
-                VecGeo_t const& geom, Basis_i_t const& fev )
-            :
-            M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ), fev )
-        {}
-
-        tensor( this_type const& expr,
-                VecGeo_t const& geom )
-            :
-            M_tensor_expr( expr.expression(), fusion::at_c<GeoId>(  geom ) )
-        {}
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
-        void update( VecGeo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-        {
-            M_tensor_expr.update( fusion::at_c<GeoId>(  geom ), fev, feu );
-        }
-        void update( VecGeo_t const& geom, Basis_i_t const& fev )
-        {
-            M_tensor_expr.update( fusion::at_c<GeoId>(  geom ), fev );
-        }
-        void update( VecGeo_t const& geom )
-        {
-            M_tensor_expr.update( fusion::at_c<GeoId>(  geom ) );
-        }
-
-
-        value_type
-        evalij( uint16_type i, uint16_type j ) const
-        {
-            return M_tensor_expr.evalij( i, j );
-        }
-
-
-        value_type
-        evalijq( uint16_type i, uint16_type j, int q ) const
-        {
-            return M_tensor_expr.evalijq( i, j, q );
-        }
-
-
-        value_type
-        evaliq( uint16_type i, int q ) const
-        {
-            return M_tensor_expr.evaliq( i, q );
-        }
-
-        value_type
-        evalq( int q, int c ) const
-        {
-            return M_tensor_expr.evalq( q, c );
-        }
-
-        tensor_expr_type M_tensor_expr;
-    };
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    expression_type const& expression() const
-    {
-        return M_expr;
-    }
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-    //@}
-
-protected:
-
-private:
-
-    mutable expression_type  M_expr;
-};
-
-template<int GeoId, typename ExprT>
-inline
-Expr< EvalFace<GeoId, ExprT> >
-evalface( ExprT const& v )
-{
-    typedef EvalFace<GeoId, ExprT> eval_t;
-    return Expr< eval_t >(  eval_t( v ) );
-}
-
+#if 0
 template < class Element, int Type>
 class GElem
 {
@@ -1282,9 +1101,9 @@ public:
     typedef typename functionspace_type::geoelement_type geoelement_type;
     typedef typename functionspace_type::gm_type gm_type;
     typedef typename functionspace_type::value_type value_type;
-    static const uint16_type rank = fe_type::rank;
-    static const uint16_type nComponents1 = fe_type::nComponents1;
-    static const uint16_type nComponents2 = fe_type::nComponents2;
+    static inline const uint16_type rank = fe_type::rank;
+    static inline const uint16_type nComponents1 = fe_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_type::nComponents2;
     typedef std::map<size_type,std::vector<element_ptrtype> > basis_type;
 
     template<typename Func>
@@ -1478,6 +1297,7 @@ basis( std::map<size_type,std::vector<std::shared_ptr<Elem> > > const& v )
     typedef GElem<Elem,0> expr_t;
     return Expr< expr_t >(  expr_t( v ) );
 }
+#endif
 
 #if 1
 template<typename ExprType>

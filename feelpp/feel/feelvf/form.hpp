@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-05-30
  */
-#ifndef __Form_H
-#define __Form_H 1
+#ifndef FEELPP_VF_FORM_H
+#define FEELPP_VF_FORM_H
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -79,165 +79,71 @@ form( std::string name,
     return vf::detail::LinearForm<X1, RepType, RepType>( name, __X1, __M, rowstart, init, do_threshold, threshold );
 }
 
-
-
-
-/// \cond detail
-template<typename Args>
-struct compute_form1_return
-{
-#if 1
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::test>::type>::type::element_type test_type;
-    //typedef typename boost::remove_reference<typename parameter::binding<Args, tag::vector>::type>::type::element_type vector_type;
-    typedef typename Backend<double>::vector_type vector_type;
-    typedef vf::detail::LinearForm<test_type,
-            vector_type,
-            vector_type> type;
-#else
-    typedef typename parameter::value_type<Args, tag::test>::type test_type;
-    typedef typename parameter::value_type<Args, tag::vector>::type vector_type;
-
-
-    typedef vf::detail::LinearForm<test_type,vector_type,vector_type> type;
-#endif
-};
-
-/// \endcond
-
 /**
- * @addtogroup FreeFunction
- * @{
+ * @brief create a linear form using named arguments
+ * @ingroup DSEL-Variational-Formulation
+ *
+ * @code {.cpp}
+ * auto a = form1(_test=Xh, _backend=backend(_worldcomm=Xh->worldCommPtr()), _vector=backend->newVector( _test=Xh ) );
+ * a = integrate(...);
+ * @endcode
+ *
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_form1_return<Args>::type ), // 1. return type
-    form1,                                       // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
-    ( optional                                  //    four optional parameters, with defaults
-      //( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
-      ( backend,          *, Feel::backend(_worldcomm=test->worldCommPtr()) )
-      ( in_out( vector ),   *, backend->newVector( test ) )
-      ( init,             *( boost::is_integral<mpl::_> ), false )
-      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
-      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
-      ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
-      ( name,            ( std::string ), std::string("linearform.f"))
-    )
-)
+template <typename ... Ts>
+auto form1( Ts && ... v )
 {
-#if BOOST_VERSION < 105900
-    //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    //return form( test, *vector, init, false, 1e-16 );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test );
+    auto && backend = args.get_else_invocable(_backend, [&test](){ return Feel::backend(_worldcomm=test->worldCommPtr()); } );
+    auto && vector = args.get_else_invocable(_vector, [&test,&backend](){ return backend->newVector( _test=test ); } );
+    bool init = args.get_else(_init, false );
+    bool do_threshold = args.get_else(_do_threshold, false );
+    double threshold = args.get_else(_threshold, type_traits<double>::epsilon() );
+    size_type rowstart = args.get_else(_rowstart, 0 );
+    std::string const& name = args.get_else(_name, "linearform.f" );
+
     return form( name, test, vector, rowstart, init, do_threshold, threshold );
-} // form
+}
 
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_form1_return<Args>::type ), // 1. return type
-    lform,                                       // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( vector ),   *(Feel::detail::is_vector_ptr<mpl::_> ) )
-        ) // required
-    ( optional                                  //    four optional parameters, with defaults
-      ( init,             *( boost::is_integral<mpl::_> ), false )
-      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
-      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
-      ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
-    )
-)
-{
-    //return form( test, *vector, init, false, 1e-16 );
-    return form( test, *vector, rowstart, init, do_threshold, threshold );
-} // form
 /**
- * @}
+ * @brief create a bi-linear form using named arguments
+ * @ingroup DSEL-Variational-Formulation
+ *
+ * @code {.cpp}
+ * auto a = form2(_test=Xh, _trial=Yh,  _backend=backend(_worldcomm=Xh->worldCommPtr()), _matrix=backend->newVector( _test=Xh, _trial=Yh ) );
+ * a = integrate(...);
+ * @endcode
+ *
+ * @param _test test space
+ * @param _trial trial space
+ * @param _init initialize the form (default: false)
+ * @param _properties
+ * @param _backend algrebraic backend
+ * @param _matrix algebraic representation of the bilinear form 
+ * @param _pattern
+ * @param _rowstart
+ * @param _colstart
+ * @param _name name of the bilinear for; (default: bilinearform.a)
  */
-
-/// \cond detail
-template<typename Args, typename T>
-struct compute_form2_return
-{};
-
-template<typename Args>
-struct compute_form2_return<Args, mpl::false_>
+template <typename ... Ts>
+auto form2( Ts && ... v )
 {
-    typedef typename parameter::value_type<Args, tag::test>::type::element_type::value_type value_type;
-    typedef vf::detail::BilinearForm<typename parameter::value_type<Args, tag::test>::type::element_type,
-            typename parameter::value_type<Args, tag::trial>::type::element_type,
-            //typename parameter::value_type<Args, tag::matrix>::type::element_type,
-            VectorUblas<value_type> > type;
-};
-template<typename Args>
-struct compute_form2_return<Args, mpl::true_>
-{
-    typedef typename parameter::value_type<Args, tag::test>::type::element_type::value_type value_type;
-    typedef vf::detail::BilinearForm<typename parameter::value_type<Args, tag::test>::type::element_type,
-            typename parameter::value_type<Args, tag::test>::type::element_type,
-            //typename parameter::value_type<Args, tag::vector>::type::element_type,
-            VectorUblas<value_type> > type;
-};
-/// \endcond
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && test = args.get(_test );
+    auto && trial = args.get(_trial );
+    bool init = args.get_else(_init, false );
+    size_type properties = args.get_else(_properties, NON_HERMITIAN );
+    size_type pattern = args.get_else(_pattern,Pattern::COUPLED );
+    auto && backend = args.get_else_invocable(_backend, [&test](){ return Feel::backend(_worldcomm=test->worldCommPtr() ); } );
+    std::shared_ptr<MatrixSparse<double>> matrix = args.get_else_invocable(_matrix, [&backend,&test,&trial,&pattern,&properties](){ return backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ); } );
+    size_type rowstart = args.get_else(_rowstart, 0 );
+    size_type colstart = args.get_else(_colstart, 0 );
+    std::string const& name = args.get_else(_name, "bilinearform.a" );
 
-BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
-                          form2,                                       // 2. name of the function template
-                          tag,                                        // 3. namespace of tag types
-                          ( required                                  // 4. one required parameter, and
-                            ( test,             * )
-                            ( trial,            * )
-                          ) // required
-                          (deduced
-                           ( optional                                  //    four optional parameters, with defaults
-                             ( init,             *( boost::is_integral<mpl::_> ), false )
-                             ( properties,       ( size_type ), NON_HERMITIAN )
-                             ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-                             ( backend,          *, Feel::backend(_worldcomm=test->worldCommPtr()) )
-                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, std::shared_ptr<MatrixSparse<double>>>), backend->newMatrix( _test=test, _trial=trial, _pattern=pattern, _properties=properties ) )
-                             ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
-                             ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
-                             ( name,            ( std::string ), std::string("bilinearform.a"))
-                               ) // optional
-                              ) // deduced
-                        )
-{
-    //DCHECK( test->worldCommPtr() == trial->worldCommPtr( )) << "test and trial spaces communicators should be the same" << std::endl;
-#if BOOST_VERSION < 105900
-    Feel::detail::ignore_unused_variable_warning( args );
-#endif
-    //return form( test, trial, *matrix, init, false, 1e-16, pattern );
-    //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;
     double threshold = 1e-16;
     return form( name, test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
-    //return form( test, trial, *matrix, init, false, threshold, pattern );
-    //return form( test, trial, *matrix, init, false, threshold, 0 );
-} //
-
-
-#if 0
-BOOST_PARAMETER_FUNCTION(
-    ( typename compute_form2_return<Args,mpl::bool_<boost::is_same<typename parameter::value_type<Args, tag::trial>::type, boost::parameter::void_>::value> >::type ), // 1. return type
-    blform,                                       // 2. name of the function template
-    tag,                                        // 3. namespace of tag types
-    ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( trial,            *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( matrix ),   *(Feel::detail::is_matrix_ptr<mpl::_> ) ) ) // required
-    ( optional                                  //    four optional parameters, with defaults
-      ( init,             *( boost::is_integral<mpl::_> ), false )
-      ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
-      ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
-      ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-    )
-)
-{
-    return form( test, trial, *matrix, init, do_threshold, threshold, pattern );
-    //return form( test, trial, *matrix, init, false, 1e-16, pattern );
-} //
-#endif
+}
 
 
 

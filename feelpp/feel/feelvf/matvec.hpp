@@ -29,15 +29,6 @@
 #ifndef FEELPP_VF_MATVEC_H
 #define FEELPP_VF_MATVEC_H 1
 
-// #include <boost/fusion/container/vector.hpp>
-// #include <boost/fusion/algorithm/iteration.hpp>
-// #include <boost/mpl/bitor.hpp>
-// #include <boost/mpl/bitwise.hpp>
-// #include <boost/mpl/transform.hpp>
-
-// #include <boost/mpl/plus.hpp>
-// #include <boost/mpl/arithmetic.hpp>
-
 #include <boost/mp11.hpp>
 
 namespace Feel
@@ -161,9 +152,9 @@ public:
     typedef MatrixExpr expression_matrix_type;
     typedef Mat<M, N, expression_matrix_type> this_type;
 
-    static const uint16_type matrix_size1 = M;
-    static const uint16_type matrix_size2 = N;
-    static const uint16_type matrix_size  = M*N;
+    static inline const uint16_type matrix_size1 = M;
+    static inline const uint16_type matrix_size2 = N;
+    static inline const uint16_type matrix_size  = M*N;
 
     //typedef double value_type;
     using value_type = typename first_expression_type::value_type;
@@ -291,15 +282,15 @@ public:
         }
 
     //! evaluate the expression without context
-    evaluate_type evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate( bool parallel ) const
         {
             evaluate_type res;
             uint16_type k = 0;
-            hana::for_each( M_expr, [&parallel,&worldcomm,&k,&res]( auto const& e )
+            hana::for_each( M_expr, [&parallel,&k,&res]( auto const& e )
                             {
                                 uint16_type i = k / res.cols();
                                 uint16_type j = k % res.cols();
-                                res( i,j ) = e.evaluate(parallel,worldcomm)(0,0);
+                                res( i,j ) = e.evaluate(parallel)(0,0);
                                 ++k;
                             } );
             return res;
@@ -440,10 +431,6 @@ public:
                                      } ) )
             {}
 
-        template<typename IM>
-        void init( IM const& im )
-        {
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             hana::for_each( M_expr, [&geom,&fev,&feu]( auto & e ) { e.update( geom, fev, feu ); } );
@@ -455,10 +442,6 @@ public:
         void update( Geo_t const& geom )
         {
             hana::for_each( M_expr, [&geom]( auto & e ) { e.update( geom ); } );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            hana::for_each( M_expr, [&geom,&face]( auto & e ) { e.update( geom, face ); } );
         }
         template<typename ... CTX>
         void updateContext( CTX const& ... ctx )

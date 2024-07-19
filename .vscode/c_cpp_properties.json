@@ -48,6 +48,8 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
+                "PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,0)",
+                "FEELPP_HAS_PETSC_H",
                 "FEELPP_HAS_PETSC=1",
                 "FEELPP_HAS_PETSC4PY=1",
             ],
@@ -63,7 +65,6 @@
             },
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "compileCommands": "${workspaceFolder}/build-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}/compile_commands.json",
             "configurationProvider": "ms-vscode.cmake-tools"
         },
         {

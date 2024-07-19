@@ -37,13 +37,8 @@
 #include <set>
 
 #include <boost/smart_ptr/make_shared.hpp>
-#include <boost/parameter.hpp>
-#include <boost/fusion/support/pair.hpp>
-#include <boost/fusion/container.hpp>
-#include <boost/fusion/sequence.hpp>
 #include <boost/fusion/algorithm.hpp>
-//#include <boost/spirit/home/phoenix.hpp>
-//#include <boost/spirit/home/phoenix/core/argument.hpp>
+
 #include <feel/feelcore/context.hpp>
 #include <feel/feelalg/matrixvalue.hpp>
 #include <feel/feelalg/vectorublas.hpp>
@@ -380,11 +375,11 @@ public:
 
 
 
-        static const uint16_type nDim = test_geometric_mapping_type::nDim;
+        static inline const uint16_type nDim = test_geometric_mapping_type::nDim;
 
-        static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
-        static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
-        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
+        static inline const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+        static inline const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+        static inline const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
 
         typedef ExprT expression_type;
 
@@ -1110,8 +1105,29 @@ public:
                   value_type threshold = type_traits<value_type>::epsilon(),
                   size_type graph_hints = Pattern::COUPLED );
 
-    BilinearForm( BilinearForm const& __vf ) = default;
+    /**
+     * @brief Construct a new Bilinear Form object  
+     * 
+     * @param f bilinear form to copy
+     */
+    BilinearForm( BilinearForm const& f )
+    {
+        bool same_spaces = (M_X1 == f.M_X1) && ( M_X2 == f.M_X2 );
+        //tic(M_name, FLAGS_v > 0 );
+        M_X1 = f.M_X1;
+        M_X2 = f.M_X2;
+        if ( !this->isMatrixAllocated() || !same_spaces )
+            this->allocateMatrix( M_X1, M_X2 );
+        super::operator=( f );
+        //toc(M_name, FLAGS_v > 0 );   
+    }
+    /**
+     * @brief Construct a new Bilinear Form object
+     * 
+     * @param __vf 
+     */
     BilinearForm( BilinearForm && __vf ) = default;
+
     ~BilinearForm() override
     {
         //toc(M_name, FLAGS_v > 0 );
@@ -1170,12 +1186,44 @@ public:
         return this->M_matrix->energy( __v, __u );
     }
 
+    /**
+     * @brief Computes the linear form associated with the bilinear form for a given trial function
+     * 
+     * @param __u 
+     * @return form1_t<test_space_type> 
+     */
     form1_t<test_space_type> operator()( element_2_type const& __u ) const
         {
             auto l = form1_t<test_space_type>( "linearform.l", M_X1, backend()->newVector( M_X1 ) );
             this->M_matrix->multVector( __u, l.vector() );
             return l;
         }
+
+    BilinearForm& operator+=( super const& a )
+    {
+        return BilinearFormBase<value_type>::operator+=(a);
+    }
+    BilinearForm& operator-=( BilinearForm const& a )
+    {
+        return BilinearFormBase<value_type>::operator-=(a);
+    }
+    BilinearForm& operator*=( value_type const& a )
+    {
+        return BilinearFormBase<value_type>::operator*=(a);
+    }
+    BilinearForm& operator/=( value_type const& a )
+    {
+        return BilinearFormBase<value_type>::operator/=(a);
+    }
+    /**
+     * @brief unary minus operator
+     * 
+     * @return new BilinearForm 
+     */
+    BilinearForm operator-() const
+    {
+        return BilinearForm( *this ) *= -1;
+    }
 
     /**
      * \return the entry \f$M_{i,j}\f$
@@ -1593,6 +1641,53 @@ struct BilinearForm
 }
 
 /// \endcond
+
+template<typename FE1,
+         typename FE2,
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> operator+( Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> const& __a,
+                                                                Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> const& __b )
+{
+    BilinearForm<FE1,FE2,ElemContType> __c( __a );
+    __c += __b;
+    return __c;
+}
+template<typename FE1,
+         typename FE2,
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> operator-( Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> const& __a,
+                                                                Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> const& __b )
+{
+    BilinearForm<FE1,FE2,ElemContType> __c( __a );
+    __c -= __b;
+    return __c;
+}
+
+/**
+ * @brief sum of bilinear forms
+ * 
+ * @tparam FE1 
+ * @tparam FE2 
+ * @tparam BinaryOperation 
+ * @tparam VectorUblas<typename functionspace_type<FE1>::value_type> 
+ * @param v vector of bilinear forms
+ * @param op is the binary operation to apply
+ * @param init is the initial value
+ * @return BilinearForm<FE1,FE2,ElemContType> 
+ */
+template<typename FE1,
+         typename FE2,
+         class BinaryOperation,
+         typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
+Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> sum( std::vector<Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> > const& v, 
+                                                          BinaryOperation op, 
+                                                          Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> init = Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType>() )
+{
+    for(auto const& a : v)
+        init = op( std::move(init), a );
+    return init;
+}
+
 template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >

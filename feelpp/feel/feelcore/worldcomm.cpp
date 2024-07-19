@@ -877,5 +877,34 @@ WorldComm::setColorMap( std::vector<int> const& colormap )
                      this->globalRank(),
                      M_mapLocalRankToGlobalRank );
 }
+std::tuple<int, worldcomm_ptr_t, worldcomm_ptr_t>
+WorldComm::split( int n ) const
+{
+    int color = this->rank() % n;
+    // create map which color the world
+    std::vector<int> mapColorWorld;
+    for ( int rank : irange( 0, this->size() ) )
+        mapColorWorld.push_back( rank % n );
+    worldcomm_ptr_t worldColored = std::make_shared<worldcomm_t>( mapColorWorld );
+    worldcomm_ptr_t w = worldColored->subWorldComm( color );
+    return std::tuple( color, w, worldColored );
+}
+void WorldComm::print( std::string const& text, bool sync, bool print_to_cout, bool flush )
+{
+    std::string str = fmt::format( "[rank {}] {}",this->localRank(), text );
+    LOG(INFO) << str; 
+    if ( flush )
+        google::FlushLogFiles(google::INFO);
+    if ( print_to_cout )
+    {
+        if ( sync )
+            this->globalComm().barrier();
+        std::cout << str << std::endl;
+        if ( flush )
+            std::cout << std::flush;
+        if ( sync )
+            this->globalComm().barrier();
+    }
+}
 
 } //namespace Feel

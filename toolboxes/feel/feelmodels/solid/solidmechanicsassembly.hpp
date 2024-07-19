@@ -163,6 +163,23 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
 
                 }
             }
+
+            //--------------------------------------------------------------------------------------------------//
+            // body forces
+            //--------------------------------------------------------------------------------------------------//
+            for ( auto const& bodyForce : physicSolidData->bodyForces() )
+            {
+                auto theExpr = bodyForce.expr( se );
+                bool buildBodyForceTerm = BuildNonCstPart_SourceTerm;//theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( buildBodyForceTerm )
+                {
+                    linearFormDisp +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*inner( theExpr,id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+
             //---------------------------------------------------------------------------------------//
             // discretisation acceleration term
             if ( !this->isStationary() )
@@ -295,50 +312,64 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
     } // physics
 
     //---------------------------------------------------------------------------------------//
-    // source term
-    if ( BuildNonCstPart_SourceTerm )
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->normalStress() )
     {
-        for( auto const& d : this->M_volumicForcesProperties )
+        if ( bcData->isFrameLagrangian() )
         {
-            auto rangeBodyForceUsed = markers(d).empty()? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            linearFormDisp +=
-                integrate( _range=rangeBodyForceUsed,
-                           _expr= timeSteppingScaling*inner( expression(d,se),id(v) ),
-                           _geomap=this->geomap() );
+            if ( bcData->isScalarExpr() )
+            {
+                if (BuildNonCstPart_BoundaryNeumannTerm)
+                {
+                    auto normalStessExpr = bcData->exprScalar( se );
+                    linearFormDisp +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= timeSteppingScaling*normalStessExpr*inner( N(),id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if ( bcData->isVectorialExpr() )
+            {
+                if (BuildNonCstPart_BoundaryNeumannTerm)
+                {
+                    auto normalStessExpr = bcData->exprVectorial( se );
+                    linearFormDisp +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= timeSteppingScaling*inner( normalStessExpr,id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if ( bcData->isMatrixExpr() )
+            {
+                if (BuildNonCstPart_BoundaryNeumannTerm)
+                {
+                    auto normalStessExpr = bcData->exprMatrix( se );
+                    linearFormDisp +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= timeSteppingScaling*inner( normalStessExpr*N(),id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+        else
+        {
+            // TODO : eulerian frame
         }
     }
-    // neumann boundary condition
-    if (BuildNonCstPart_BoundaryNeumannTerm)
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
     {
-        for( auto const& d : this->M_bcNeumannScalar )
-            linearFormDisp +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= timeSteppingScaling*expression(d,se)*inner( N(),id(v) ),
-                           _geomap=this->geomap() );
-        for( auto const& d : this->M_bcNeumannVectorial )
-            linearFormDisp +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= timeSteppingScaling*inner( expression(d,se),id(v) ),
-                           _geomap=this->geomap() );
-        for( auto const& d : this->M_bcNeumannTensor2 )
-            linearFormDisp +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= timeSteppingScaling*inner( expression(d,se)*N(),id(v) ),
-                           _geomap=this->geomap() );
-    }
-    // robin bc
-    if ( !BuildCstPart )
-    {
-        // Warning : take only first component of expression1
-        for( auto const& d : this->M_bcRobin )
+        if ( BuildNonCstPart )
         {
+            auto exprRobin1 = bcData->expr1( se );
             bilinearFormDD +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                           _expr= timeSteppingScaling*expression1(d,se)(0,0)*inner( idt(u) ,id(u) ),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                           _expr= timeSteppingScaling*exprRobin1*inner( idt(u) ,id(u) ),
                            _geomap=this->geomap() );
+            auto exprRobin2 = bcData->expr2( se );
             linearFormDisp +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                           _expr= timeSteppingScaling*inner( expression2(d,se) , id(u) ),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                           _expr= timeSteppingScaling*inner( exprRobin2 , id(u) ),
                            _geomap=this->geomap() );
         }
     }
@@ -360,61 +391,17 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDEDofElimination(
 
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
+        if ( !M_boundaryConditions->hasTypeDofElimination() )
+            return;
 
         auto Xh = this->functionSpace();
+        auto mesh = Xh->mesh();
         auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
                                    _rowstart=this->rowStartInMatrix(),
                                    _colstart=this->colStartInMatrix() );
         auto const& u = this->fieldDisplacement();
-        for( auto const& d : this->M_bcDirichlet )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            if ( !listMarkerFaces.empty() )
-                bilinearForm +=
-                    on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u,_rhs=F,_expr=expression(d,se),
-                        _prefix=this->prefix() );
-            if ( !listMarkerEdges.empty() )
-                bilinearForm +=
-                    on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u,_rhs=F,_expr=expression(d,se),
-                        _prefix=this->prefix() );
-            if ( !listMarkerPoints.empty() )
-                bilinearForm +=
-                    on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u,_rhs=F,_expr=expression(d,se),
-                        _prefix=this->prefix() );
-        }
-        for ( auto const& bcDirComp : this->M_bcDirichletComponents )
-        {
-            ComponentType comp = bcDirComp.first;
-            for( auto const& d : bcDirComp.second )
-            {
-                auto ret = detail::distributeMarkerListOnSubEntity(this->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d),comp ) );
-                auto const& listMarkerFaces = std::get<0>( ret );
-                auto const& listMarkerEdges = std::get<1>( ret );
-                auto const& listMarkerPoints = std::get<2>( ret );
-                if ( !listMarkerFaces.empty() )
-                    bilinearForm +=
-                        on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                            _element=u[comp],_rhs=F,_expr=expression(d,se),
-                            _prefix=this->prefix() );
-                if ( !listMarkerEdges.empty() )
-                    bilinearForm +=
-                        on( _range=markededges(this->mesh(), listMarkerEdges),
-                            _element=u[comp],_rhs=F,_expr=expression(d,se),
-                            _prefix=this->prefix() );
-                if ( !listMarkerPoints.empty() )
-                    bilinearForm +=
-                        on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                            _element=u[comp],_rhs=F,_expr=expression(d,se),
-                            _prefix=this->prefix() );
-            }
-        }
+
+        M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
     }
 
     if ( this->hasSolidEquation1dReduced() )
@@ -427,7 +414,8 @@ template <typename ModelContextType>
 void
 SolidMechanics<ConvexType,BasisDisplacementType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    if ( !this->hasDirichletBC() ) return;
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
+        return;
 
     this->log("SolidMechanics","updateNewtonInitialGuess","start" );
 
@@ -437,42 +425,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateNewtonInitialGuess( Data
     auto u = this->functionSpaceDisplacement()->element( U, this->rowStartInVector() );
     auto const& se = mctx.symbolsExpr();
 
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto ret = detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
-        auto const& listMarkerFaces = std::get<0>( ret );
-        auto const& listMarkerEdges = std::get<1>( ret );
-        auto const& listMarkerPoints = std::get<2>( ret );
-        if ( !listMarkerFaces.empty() )
-            u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                 _expr=expression(d,se) );
-        if ( !listMarkerEdges.empty() )
-            u.on(_range=markededges(mesh,listMarkerEdges),
-                 _expr=expression(d,se) );
-        if ( !listMarkerPoints.empty() )
-            u.on(_range=markedpoints(mesh,listMarkerPoints),
-                 _expr=expression(d,se) );
-    }
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto ret = detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d), comp ) );
-            auto const& listMarkerFaces = std::get<0>( ret );
-            auto const& listMarkerEdges = std::get<1>( ret );
-            auto const& listMarkerPoints = std::get<2>( ret );
-            if ( !listMarkerFaces.empty() )
-                u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                           _expr=expression(d,se) );
-            if ( !listMarkerEdges.empty() )
-                u[comp].on(_range=markededges(mesh,listMarkerEdges),
-                           _expr=expression(d,se) );
-            if ( !listMarkerPoints.empty() )
-                u[comp].on(_range=markedpoints(mesh,listMarkerPoints),
-                           _expr=expression(d,se) );
-        }
-    }
+    M_boundaryConditions->applyNewtonInitialGuess( mesh, u, se );
 
     // update info for synchronization
     this->updateDofEliminationIds( "displacement", data );
@@ -560,14 +513,14 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                     // stress tensor terms
                     this->timerTool("Solve").start();
 
-                    auto dFPK_disp = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,*physicSolidData,matProperties,se);
+                    auto dFPK_disp = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,physicSolidData,matProperties,se);
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*inner( dFPK_disp, grad(v) ),
                                    _geomap=this->geomap() );
                     if ( physicSolidData->useDisplacementPressureFormulation() )
                     {
-                        auto dFPK_pressure = solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure(u,p,*physicSolidData,matProperties,se);
+                        auto dFPK_pressure = solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure(u,p,physicSolidData,matProperties,se);
                         form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                                _rowstart=rowStartInMatrix,
                                _colstart=colStartInMatrix+blockIndexPressure ) +=
@@ -735,42 +688,59 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
     this->updateJacobianViscoElasticityTerms(u,J);
 #endif
     //--------------------------------------------------------------------------------------------------//
-    // follower pressure bc
-    if ( !buildCstPart )
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->normalStress() )
     {
-        for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
+        if ( bcData->isFrameEulerian() )
         {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)) ,
-                           _expr= -timeSteppingScaling*expression(d,se)*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
-                           _geomap=this->geomap() );
-        }
-        for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)) ,
-                           _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d,se),id(u) ),
-                           _geomap=this->geomap() );
-        }
-        for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
-        {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)) ,
-                           _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*expression(d,se)*N(),id(u) ),
-                           _geomap=this->geomap() );
+            if ( bcData->isScalarExpr() )
+            {
+                if ( buildNonCstPart )
+                {
+                    auto normalStessExpr = bcData->exprScalar( se );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*normalStessExpr*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*N(),id(u) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if ( bcData->isVectorialExpr() )
+            {
+                if ( buildNonCstPart )
+                {
+                    auto normalStessExpr = bcData->exprVectorial( se );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*normalStessExpr,id(u) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if ( bcData->isMatrixExpr() )
+            {
+                if ( buildNonCstPart )
+                {
+                    auto normalStessExpr = bcData->exprMatrix( se );
+                    bilinearForm_PatternCoupled +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*normalStessExpr*N(),id(u) ),
+                                   _geomap=this->geomap() );
+                }
+            }
         }
     }
-    //--------------------------------------------------------------------------------------------------//
-    // robin bc
-    if ( !buildCstPart )
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
     {
-        // Warning : take only first component of expression1
-        for( auto const& d : this->M_bcRobin )
+        if ( buildNonCstPart )
+        {
+            auto exprRobin1 = bcData->expr1( se );
             bilinearForm_PatternDefault +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                           _expr= timeSteppingScaling*expression1(d,se)(0,0)*inner( idt(u) ,id(u) ),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                           _expr= timeSteppingScaling*exprRobin1*inner( idt(u) ,id(u) ),
                            _geomap=this->geomap() );
+        }
     }
+
     //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = this->timerTool("Solve").stop();
@@ -858,7 +828,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                 {
                     this->timerTool("Solve").start();
 
-                    auto evalFPK = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,*physicSolidData,matProperties,se,timeSteppingScaling);
+                    auto evalFPK = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,physicSolidData,matProperties,se,timeSteppingScaling);
                     linearFormDisplacement +=
                         integrate( _range=range,
                                    _expr= inner(evalFPK,grad(v)),
@@ -911,6 +881,22 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                                    _geomap=this->geomap() );
                 }
 
+            }
+
+            //--------------------------------------------------------------------------------------------------//
+            // body forces
+            //--------------------------------------------------------------------------------------------------//
+            for ( auto const& bodyForce : physicSolidData->bodyForces() )
+            {
+                auto theExpr = bodyForce.expr( se );
+                bool buildBodyForceTerm = buildCstPart;//theExpr.expression().isConstant()? buildCstPart : buildNonCstPart;
+                if ( buildBodyForceTerm )
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   _expr= -timeSteppingScaling*inner( theExpr,id(v) ),
+                                   _geomap=this->geomap() );
+                }
             }
 
             //--------------------------------------------------------------------------------------------------//
@@ -1053,72 +1039,85 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
     this->updateResidualViscoElasticityTerms(u,R);
 #endif
     //--------------------------------------------------------------------------------------------------//
-    // source term
-    if (buildCstPart)
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->normalStress() )
     {
-        for( auto const& d : this->M_volumicForcesProperties )
+        if ( bcData->isFrameLagrangian() )
         {
-            auto rangeBodyForceUsed = markers(d).empty()? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-            linearFormDisplacement +=
-                integrate( _range=rangeBodyForceUsed,
-                           _expr= -timeSteppingScaling*inner( expression(d,se),id(v) ),
-                           _geomap=this->geomap() );
+            if ( bcData->isScalarExpr() )
+            {
+                if ( buildCstPart )
+                {
+                    auto normalStessExpr = bcData->exprScalar( se );
+                    linearFormDisplacement +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*normalStessExpr*inner( N(),id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if ( bcData->isVectorialExpr() )
+            {
+                if ( buildCstPart )
+                {
+                    auto normalStessExpr = bcData->exprVectorial( se );
+                    linearFormDisplacement +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*inner( normalStessExpr,id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else if ( bcData->isMatrixExpr() )
+            {
+                if ( buildCstPart )
+                {
+                    auto normalStessExpr = bcData->exprMatrix( se );
+                    linearFormDisplacement +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*inner( normalStessExpr*N(),id(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+        else if ( bcData->isFrameEulerian() && buildNonCstPart )
+        {
+            if ( bcData->isScalarExpr() )
+            {
+                auto normalStessExpr = bcData->exprScalar( se );
+                linearFormDisplacement +=
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= -timeSteppingScaling*normalStessExpr*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                               _geomap=this->geomap() );
+            }
+            else if ( bcData->isVectorialExpr() )
+            {
+                auto normalStessExpr = bcData->exprVectorial( se );
+                linearFormDisplacement +=
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*normalStessExpr,id(u) ),
+                               _geomap=this->geomap() );
+            }
+            else if ( bcData->isMatrixExpr() )
+            {
+                auto normalStessExpr = bcData->exprMatrix( se );
+                linearFormDisplacement +=
+                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                               _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*normalStessExpr*N(),id(u) ),
+                               _geomap=this->geomap() );
+            }
         }
     }
-    //--------------------------------------------------------------------------------------------------//
-    // neumann bc
-    if (buildCstPart)
+
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->robin() )
     {
-        for( auto const& d : this->M_bcNeumannScalar )
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= -timeSteppingScaling*expression(d,se)*inner( N(),id(v) ),
-                           _geomap=this->geomap() );
-        for( auto const& d : this->M_bcNeumannVectorial )
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= -timeSteppingScaling*inner( expression(d,se),id(v) ),
-                           _geomap=this->geomap() );
-        for( auto const& d : this->M_bcNeumannTensor2 )
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= -timeSteppingScaling*inner( expression(d,se)*N(),id(v) ),
-                           _geomap=this->geomap() );
-    }
-    // follower pressure bc
-    if (buildNonCstPart)
-    {
-        for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
+        if ( buildNonCstPart )
         {
+            auto exprRobin1 = bcData->expr1( se );
+            auto exprRobin2 = bcData->expr2( se );
             linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)),
-                           _expr= -timeSteppingScaling*expression(d,se)*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*N(),id(u) ),
+                integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                           _expr= timeSteppingScaling*inner( exprRobin1*idv(u) - exprRobin2 ,id(u) ),
                            _geomap=this->geomap() );
         }
-        for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
-        {
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)),
-                           _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d,se),id(u) ),
-                           _geomap=this->geomap() );
-        }
-        for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
-        {
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)),
-                           _expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*expression(d,se)*N(),id(u) ),
-                           _geomap=this->geomap() );
-        }
-    }
-    // robin bc
-    if ( buildNonCstPart )// && !UseJacobianLinearTerms)
-    {
-        // Warning : take only first component of expression1
-        for( auto const& d : this->M_bcRobin )
-            linearFormDisplacement +=
-                integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                           _expr= timeSteppingScaling*inner( expression1(d,se)(0,0)*idv(u) - expression2(d,se) ,id(u) ),
-                           _geomap=this->geomap() );
     }
 
     double timeElapsed = this->timerTool("Solve").stop();

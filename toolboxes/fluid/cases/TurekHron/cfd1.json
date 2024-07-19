@@ -3,7 +3,13 @@
     "ShortName":"cfd1",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "fluid":{
+            "setup":
+            {
+                "equation":"Navier-Stokes"
+                //"formulation":"emac" // "convective","skew-symmetric","conservative","rotational","emac"
+            }
+        }
     },
     "Meshes":
     {
@@ -29,9 +35,9 @@
     },
     "BoundaryConditions":
     {
-        "velocity":
+        "fluid":
         {
-            "Dirichlet":
+            "velocity":
             {
                 "inlet":
                 {
@@ -45,11 +51,8 @@
                 {
                     "expr":"{0,0}"
                 }
-            }
-        },
-        "fluid":
-        {
-            "outlet":
+            },
+            "normal_stress":
             {
                 "outlet":
                 {
@@ -60,43 +63,44 @@
     },
     "PostProcess":
     {
-        "Exports":
-        {
-            "fields":["velocity","pressure","pid"]
-        },
-        "Measures":
-        {
-            "Forces":"wall2",
-            "Points":
+        "fluid":{
+            "Exports":
             {
-                "pointA":
-                {
-                    "coord":"{0.6,0.2,0}",
-                    "fields":"pressure"
-                },
-                "pointB":
-                {
-                    "coord":"{0.15,0.2,0}",
-                    "fields":"pressure"
-                }
-            }
-        },
-        "Checkers":
-        {
+                "fields":["velocity","pressure","pid"]
+            },
             "Measures":
             {
-                "lift_wall2":
+                "Forces":"wall2",
+                "Points":
                 {
-                    "value":-1.119,
-                    "tolerance":1e-1
-                },
-                "drag_wall2":
+                    "pointA":
+                    {
+                        "coord":"{0.6,0.2,0}",
+                        "fields":"pressure"
+                    },
+                    "pointB":
+                    {
+                        "coord":"{0.15,0.2,0}",
+                        "fields":"pressure"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":-14.29,
-                    "tolerance":1e-1
+                    "lift_wall2":
+                    {
+                        "value":-1.119,
+                        "tolerance":1e-1
+                    },
+                    "drag_wall2":
+                    {
+                        "value":-14.29,
+                        "tolerance":1e-1
+                    }
                 }
             }
         }
     }
-
 }

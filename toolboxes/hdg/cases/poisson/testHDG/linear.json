@@ -1,115 +1,94 @@
 {
-    "Name": "HDG-Mixed-Poisson coupled with an OpenModelica circuit model",
-    "ShortName":"MP_LC",
+    "Name": "HDG-Mixed-Poisson Test",
+    "ShortName":"MP",
     "Models": { "equations":"hdg"},
+    "Parameters":
+    {
+        "p_exact":"t+x+y:x:y:z:t",
+        "u1_exact":"-1:x:y:z:t",
+        "u2_exact":"-1:x:y:z:t"
+    },
     "Materials":
     {
         "omega":
         {
             "name":"simulation_domain",
-            "k":"1"
+            "poisson_d":"1",
+            "poisson_c":"1",
+            "poisson_f":"1:x:y:t"
+        }
+    },
+    "InitialConditions":
+    {
+        "poisson":{
+            "potential":
+            {
+                "Expression":
+                {
+                    "myic1":
+                    {
+                        "markers":"omega",
+					    "expr":"p_exact:p_exact"
+                    }
+                }
+            }
         }
     },
     "BoundaryConditions":
     {
-        "potential":
+        "poisson":
         {
-			"InitialSolution":
-			{
-				"omega":
-				{
-					"expr":"-3*x*(10-t):x:t"
-				}
-			},
-            "SourceTerm":
-            {
-                "omega":
-                {
-					"expr":"3*x:x:y:t"
-                }
-            },
             "Dirichlet":
             {
-                "bottom":
+                "bc":
 				{
-					"expr":"-3*x*(10-t):x:t"
+                    "markers":["bottom","top","lateral"],
+					"expr":"p_exact:p_exact"
 				}
-            },
-			"Neumann":
-			{
-                "lateral":
-				{
-					"expr":"0.0"
-				}
-			}
-        },
-        "flux":
-        {
-            "Integral":
-            {
-                "top":
-                {
-                    "expr":"3*(10-t):t"
-                }
             }
-        },
-		"Exact solution":
-		{
-	    	"p_exact":
-	    	{
-				"omega":
-				{
-					"expr":"-3*x*(10-t):x:t"
-				}
-	    	},
-	    	"u_exact":
-	    	{
-				"omega":
-				{
-					"expr":"{3*(10-t),0}:x:t"
-				}
-	    	}
-		}
+        }
     },
     "PostProcess":
     {
-		"Exports":
-		{
-        	"fields":["potential","flux"]
-		},
-        "Measures":
-        {
-            "Norm":
-            {
-                "potential_error":
-                {
-                    "type":"L2-error",
-                    "field":"potential",
-                    "solution":"-3*x*(10-0.5):x:t",
-                    "markers":"omega"
-                },
-                "flux_error":
-                {
-                    "type":"L2-error",
-                    "field":"flux",
-                    "solution":"{3*(10-0.5),0}:x:t",
-                    "markers":"omega"
-                }
-            }
-        },
-        "Checkers":
-        {
+        "poisson":{
+		    "Exports":
+		    {
+        	    "fields":["potential","flux"]
+		    },
             "Measures":
             {
-                "Norm_potential_error_L2-error":
+                "Norm":
                 {
-                    "value":0,
-                    "tolerance":1
-                },
-                "Norm_flux_error_L2-error":
+                    "potential_error":
+                    {
+                        "type":"L2-error",
+                        "field":"potential",
+                        "solution":"p_exact:p_exact",
+                        "markers":"omega"
+                    },
+                    "flux_error":
+                    {
+                        "type":"L2-error",
+                        "field":"flux",
+                        "solution":"{u1_exact,u2_exact}:u1_exact:u2_exact:u3_exact",
+                        "markers":"omega"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
                 {
-                    "value":0,
-                    "tolerance":2
+                    "Norm_potential_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-7
+                    },
+                    "Norm_flux_error_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-7
+                    }
                 }
             }
         }

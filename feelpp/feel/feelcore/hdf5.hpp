@@ -39,7 +39,7 @@
 #include <string>
 
 #ifdef FEELPP_HAS_HDF5
-
+#undef OMPI_SKIP_MPICXX
 #include <hdf5.h>
 
 //Tell the compiler to restore the warning previously silented
@@ -79,7 +79,7 @@ public:
     //! @name Constructors and Destructor
     //@{
     //! Default empty constructor
-    HDF5() = default;
+    HDF5();
 
     //! Constructor
     /*!
@@ -88,9 +88,11 @@ public:
      * \param comm pointer to Epetra_Comm
      * \param existing boolean flag indicating whether the file exists already
      *        or not. If it exists, data is appended
+     * \param useCollectiveMetadataOps enable or disable collective metadata opts
+     * \param useCollMetadataWrite enable or disable collective metadata write
      */
     HDF5( const std::string& fileName, const comm_type& comm,
-          const bool& existing = false );
+          const bool& existing = false, bool useCollectiveMetadataOps = true, bool useCollMetadataWrite = true );
 
     // Copy constructor and assignment operator are disabled
     HDF5 (const HDF5&) = delete;
@@ -102,6 +104,16 @@ public:
 
     //! @name Public Methods
     //@{
+
+    void enableCollectiveMetadataOps(bool enable = true) 
+    {
+        useCollectiveMetadataOps_ = enable;
+    }
+
+    void enableCollMetadataWrite(bool enable = true) 
+    {
+        useCollMetadataWrite_ = enable;
+    }
 
     //! Check if group exist.
     /*!
@@ -232,6 +244,22 @@ public:
                void* buffer,
                int nbDims = 2 );
 
+    //! Read_element
+    /*!
+     * \param tableName a string containing the table name
+     * \param memDataType the type (described as an HDF5 machine native type)
+     *        of the data in the destination buffer
+     * \param currentCount an array of hsize_t of size two describing the shape
+     *        of the block to be read (see HDF5 documentation)
+     * \param num_elem number of elements to be selected
+     * \param coord a pointer to a buffer containing a serialized copy of a 2-dimensional array of zero-based values specifying the coordinates of the elements in the point selection
+     * \param buffer pointer to a memory region that represents the destination
+     *        of the read operation
+     * \param nbDims the number of dimensions of the array to store
+     */
+     void read_elements( const std::string& tableName,
+                         hid_t& memDataType, hsize_t currentCount[], hsize_t num_elem, const hsize_t * coord,
+                         void* buffer, int nbDims = 2 );
     //! Close an open group.
     /*
      * \param groupName A string containing the group name.
@@ -259,6 +287,10 @@ public:
     //@}
 
 private:
+    
+    bool useCollectiveMetadataOps_;
+    bool useCollMetadataWrite_;
+
     // typedef for internal use
     typedef struct
     {

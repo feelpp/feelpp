@@ -21,7 +21,7 @@
             "T0":"293",
             "Lorentz":2.47e-8,
             "sigma0":"58e3",
-            "cond":"sigma0:sigma0",
+            "poisson_c":"sigma0:sigma0",
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"58e+3",
@@ -32,7 +32,7 @@
     },
     "BoundaryConditions":
     {
-        "flux":
+        "poisson":
         {
             "Integral":
             {
@@ -40,13 +40,6 @@
                 {
                     "expr":-800
                 }
-            }
-        },
-        "potential":
-        {
-            "SourceTerm":
-            {
-                "": {"expr":"0"}
             },
             "Dirichlet":
             {
@@ -103,6 +96,7 @@
     },
     "PostProcess":
     {
+        "poisson":{
         "Exports":
         {
             "fields":["potential","flux"]
@@ -178,15 +172,15 @@
                     "value":3.6799872684964548e-02,
                     "tolerance":1e-1
                 },
-                "Points_V0_potential":
+                "Points_V0_field_potential":
                 {
                     "value":3.1238703842923307e-02,
                     "tolerance":1e-1
                 },
-                "Points_V1_potential":
+                "Points_V1_field_potential":
                 {
-                    "value":4.2548539363050999e-06,
-                    "tolerance":1e-1
+                    "value":0,
+                    "tolerance":1e-4
                 },
                 "Norm_potential_error_L2-error":
                 {
@@ -199,6 +193,7 @@
                     "tolerance":10
                 }
             }
+        }
         }
     }
 }

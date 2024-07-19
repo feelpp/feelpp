@@ -5,9 +5,22 @@
     // tag::models[]
     "Models":
     {
-        "equations":"Hyper-Elasticity"
+        "solid":{
+            "equations":"Hyper-Elasticity"
+        }
     },
     // end::models[]
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/torsionbar.geo",
+                "hsize":0.1
+            }
+        }
+    },
     // tag::materials[]
     "Materials":
     {
@@ -32,39 +45,27 @@
     // tag::boundaryconditions[]
     "BoundaryConditions":
     {
-        "displacement_y":
+        "solid":
         {
-            "Dirichlet":
+            "displacement":
             {
-                "Torsion":
-                {
+                "Torsion_y":{
+                    "markers":"Torsion",
+                    "component":"y",
                     "expr":"0.5 + (y - 0.5)*cos(rotation) - (z-0.5)*sin(rotation) - y :y:z:rotation"
-                }
-            }
-        },
-        "displacement_z":
-        {
-            "Dirichlet":
-            {
-                "Torsion":
-                {
+                },
+                "Torsion_z":{
+                    "markers":"Torsion",
+                    "component":"z",
                     "expr":"0.5 + (y - 0.5)*sin(rotation) + (z-0.5)*cos(rotation) - z :y:z:rotation"
-                }
-            }
-        },
-        "displacement" :
-        {
-            "Dirichlet":
-            {
-                "Fixed":
-                {
+                },
+                "Fixed":{
                     "expr":"{0,0,0}"
                 }
             },
-            "Neumann_scalar" :
+            "normal_stress":
             {
-                "BoundaryForce":
-                {
+                "BoundaryForce":{
                     "expr":"0" 
                 }
             }
@@ -74,13 +75,16 @@
     // tag::postprocess[]
     "PostProcess":
     {
-        "Exports":
+        "solid":
         {
-            "fields":["displacement","pressure","pid","von-mises-criterion","tresca-criterion","principal-stresses"]
-        },
-        "Measures":
-        {
-            "VolumeVariation":""
+            "Exports":
+            {
+                "fields":["displacement","pressure","pid","von-mises-criterion","tresca-criterion","principal-stresses"]
+            },
+            "Measures":
+            {
+                "VolumeVariation":""
+            }
         }
     }
     // end::postprocess[]

@@ -126,12 +126,7 @@ public:
         return M_r();
     }
 
-    constexpr value_type evaluate( bool ) const
-    {
-        return M_r();
-    }
-
-    constexpr evaluate_type evaluate( bool, WorldComm const& ) const
+    constexpr evaluate_type evaluate( bool ) const
     {
         return evaluate_type::Constant( M_r() );
     }
@@ -185,10 +180,6 @@ public:
             M_r(expr.low(), expr.high())
         {
         }
-        template<typename IM>
-        void init( IM const& /*im*/ )
-        {
-        }
         void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
         {
         }
@@ -196,9 +187,6 @@ public:
         {
         }
         void update( Geo_t const& )
-        {
-        }
-        void update( Geo_t const&, uint16_type )
         {
         }
         template<typename ... CTX>

@@ -41,10 +41,9 @@ namespace FeelModels
 
 template< typename HeatType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
-                       public ModelPhysics<HeatType::convex_type::nDim>,
-                       public std::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
+                       public ModelPhysics<HeatType::convex_type::nDim>
 {
-
+    typedef ModelPhysics<HeatType::convex_type::nDim> super_physics_type;
 public:
     typedef ModelNumerical super_type;
     typedef ThermoElectric<HeatType,ElectricType> self_type;
@@ -72,12 +71,13 @@ public:
     //___________________________________________________________________________________//
     // constructor
     ThermoElectric( std::string const& prefix,
-                    std::string const& keyword = "thermo-electric",
+                    std::string const& keyword = "thermoelectric",
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-    std::shared_ptr<std::ostringstream> getInfo() const override;
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
@@ -86,6 +86,9 @@ private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initPostProcess() override;
+
+    void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
+
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
@@ -103,7 +106,7 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    //Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
     heat_model_ptrtype heatModel() { return M_heatModel; }
@@ -130,17 +133,19 @@ public :
     auto modelFields( std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( this->heatModel()->modelFields( prefixvm( prefix, this->heatModel()->keyword() ) ),
-                                                  this->electricModel()->modelFields( prefixvm( prefix, this->electricModel()->keyword() ) ) );
+                                                  this->electricModel()->modelFields( prefixvm( prefix, this->electricModel()->keyword() ) ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorElectric, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( this->heatModel()->modelFields( sol, rowStartInVectorHeat, prefixvm( prefix,this->heatModel()->keyword() ) ),
-                                                  this->electricModel()->modelFields( sol, rowStartInVectorElectric, prefixvm( prefix,this->electricModel()->keyword() ) ) );
+                                                  this->electricModel()->modelFields( sol, rowStartInVectorElectric, prefixvm( prefix,this->electricModel()->keyword() ) ),
+                                                  this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
     template <typename ModelFieldsHeatType,typename ModelFieldsElectricType>
     auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsElectricType const& mfieldsElectric, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsElectric );
+            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsElectric, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexElectric ) const
@@ -183,9 +188,11 @@ public :
             auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
             auto seElectric = this->electricModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat,seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMeshes,seMat,seFields,sePhysics );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

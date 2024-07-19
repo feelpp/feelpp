@@ -53,7 +53,8 @@ enum MeshFormat
     GMSH,
     NETGEN,
     GAMBIT,
-    ACUSIM
+    ACUSIM,
+    SAMCEF
 };
 
 

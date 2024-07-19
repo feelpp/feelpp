@@ -142,9 +142,9 @@ class Trace : public ExprDynamicBase
     }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            return evaluate_type::Constant( M_expr.evaluate(p,worldcomm).trace() );
+            return evaluate_type::Constant( M_expr.evaluate(p).trace() );
         }
 
     //@}
@@ -187,11 +187,6 @@ class Trace : public ExprDynamicBase
             : M_tensor_expr( expr.expression(), geom )
         {
         }
-        template <typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_tensor_expr.update( geom, fev, feu );
@@ -203,10 +198,6 @@ class Trace : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
 
         value_type

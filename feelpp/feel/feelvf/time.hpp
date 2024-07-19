@@ -41,7 +41,7 @@ public:
     static const size_type context = TimeExprT::context;
     static const bool is_terminal = false;
 
-    static const uint16_type imorder = TimeExprT::imorder;
+    static inline const uint16_type imorder = TimeExprT::imorder;
     static const bool imIsPoly = TimeExprT::imIsPoly;
 
     template<typename Func>
@@ -130,11 +130,6 @@ public:
             M_tag( expr.tag() )
         {
         }
-        template<typename IM>
-        void init( IM const& im )
-        {
-            M_tensor_expr.init( im );
-        }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             tic();
@@ -148,10 +143,6 @@ public:
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-        }
-        void update( Geo_t const& geom, uint16_type face )
-        {
-            M_tensor_expr.update( geom, face );
         }
 
 

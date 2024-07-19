@@ -12,6 +12,7 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feelmodels/solid/solidmechanics1dreducedboundaryconditions.hpp>
 
 namespace Feel
 {
@@ -20,9 +21,9 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisDisplacementType>
 class SolidMechanics1dReduced : public ModelNumerical,
-                                public ModelPhysics<ConvexType::nRealDim>,
-                                public std::enable_shared_from_this< SolidMechanics1dReduced<ConvexType,BasisDisplacementType> >
+                                public ModelPhysics<ConvexType::nRealDim>
 {
+    using super_physics_type = ModelPhysics<ConvexType::nRealDim>;
 public :
     using super_type = ModelNumerical;
     using size_type = typename super_type::size_type;
@@ -32,9 +33,9 @@ public :
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -44,7 +45,7 @@ public :
 
     // basis
     using basis_displacement_type = BasisDisplacementType;
-    static const uint16_type nOrderDisplacement = basis_displacement_type::nOrder;
+    static inline const uint16_type nOrderDisplacement = basis_displacement_type::nOrder;
     // function space displacement
     typedef FunctionSpace<mesh_type, bases<basis_displacement_type> > space_displacement_type;
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
@@ -66,7 +67,7 @@ public :
 
 
 #if 0
-    typedef elements_reference_wrapper_t<mesh_type> range_elt_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elt_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt_type> op_interpolation2dTo1d_normalstress_type;
     typedef std::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 #endif
@@ -81,6 +82,8 @@ public :
                              worldcomm_ptr_t const& worldComm,// = Environment::worldCommPtr(),
                              std::string const& subPrefix,//  = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
     void init();
 
@@ -201,7 +204,7 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // mesh
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     // function space
     space_displacement_component_ptrtype M_spaceDisp;
@@ -218,8 +221,12 @@ private :
     newmark_ptrtype M_timeStepNewmark;
 
     // boundary conditions
+    using boundary_conditions_type = SolidMechanics1dReducedBoundaryConditions<nRealDim>;
+    std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
+#if 0
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_volumicForcesProperties;
+#endif
 
     // exporter
     exporter_ptrtype M_exporter;
@@ -360,6 +367,7 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDE( Data
                 // linearFormDisplacement +=
                 //     integrate( _range=M_rangeMeshElements1dReduced,
                 //                _expr=idv(*M_stress_1dReduced)*id(v) );
+#if 0 // VINCENT
                 for( auto const& d : M_volumicForcesProperties )
                 {
                     //std::cout << "apply
@@ -369,12 +377,11 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDE( Data
                                    _expr= expression(d,se)*id(v),
                                    _geomap=this->geomap() );
                 }
+#endif
             }
         }
     }
     //---------------------------------------------------------------------------------------//
-
-    //this->log( "SolidMechanics","updateLinearGeneralizedString","finish");
 
     this->log( "SolidMechanics1dReduced","updateLinearPDE","finish");
 
@@ -385,38 +392,20 @@ template <typename ModelContextType>
 void
 SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
+    if ( !M_boundaryConditions->hasTypeDofElimination() )
+        return;
+
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     auto const& se = mctx.symbolsExpr();
 
-#if 0
-        if ( this->M_bcDirichlet.empty() ) return;
+    auto Xh = M_spaceDisp;
+    auto const& u = *M_fieldDisp;
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=this->colStartInMatrix() );
 
-        auto Xh = this->functionSpace1dReduced();
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                   _rowstart=this->rowStartInMatrix(),
-                                   _colstart=this->colStartInMatrix() );
-        auto const& u = this->fieldDisplacementScal1dReduced();
-        //WARNING : fixed at zero
-        for( auto const& d : this->M_bcDirichlet )
-            bilinearForm +=
-                on( _range=markedfaces(Xh->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-                    _element=u, _rhs=F, _expr=cst(0.),
-                    _prefix=this->prefix() );
-#endif
-
-        auto Xh = M_spaceDisp;
-        auto const& u = *M_fieldDisp;
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                   _rowstart=this->rowStartInMatrix(),
-                                   _colstart=this->colStartInMatrix() );
-
-        for( auto const& d : M_bcDirichlet )
-            bilinearForm +=
-                on( _range=markedfaces(this->mesh(),markers(d)),
-                    _element=u, _rhs=F, _expr=expression(d,se),
-                    _prefix=this->prefix() );
-
+    M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, this->mesh(), u, se );
 }
 
 

@@ -28,10 +28,9 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-15
  */
-#ifndef FEELPP_INTEGRATORON_HPP
-#define FEELPP_INTEGRATORON_HPP 1
+#ifndef FEELPP_VF_ON_H
+#define FEELPP_VF_ON_H
 
-#include <boost/timer.hpp>
 #include <boost/foreach.hpp>
 
 #include <feel/feelalg/enums.hpp>
@@ -150,11 +149,11 @@ public:
     static const size_type context = OnExpr::context|vm::POINT;
     static const size_type is_terminal = false;
 
-    //static const uint16_type imorder = OnExpr::imorder;
+    //static inline const uint16_type imorder = OnExpr::imorder;
     //static const bool imIsPoly = OnExpr::imIsPoly;
 
-    using on_type =  typename boost::tuples::template element<0, ElementRange>::type;
-    using element_iterator =  typename boost::tuples::template element<1, ElementRange>::type;
+    using on_type =  typename ElementRange::idim_t;
+    using element_iterator =  typename ElementRange::iterator_t;
 
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
@@ -182,7 +181,7 @@ public:
     using trial_basis = typename element_type::functionspace_type::basis_type;
 
 
-    static const uint16_type nComponents = element_type::nComponents;
+    static inline const uint16_type nComponents = element_type::nComponents;
 
     //@}
 
@@ -199,8 +198,8 @@ public:
                       double value_on_diag )
         :
         M_elts(),
-        M_eltbegin( __elts.template get<1>() ),
-        M_eltend( __elts.template get<2>() ),
+        M_eltbegin( __elts.begin() ),
+        M_eltend( __elts.end() ),
         M_u( __u ),
         M_rhs( __rhs ),
         M_expr( __expr ),
@@ -209,6 +208,27 @@ public:
     {
         M_elts.push_back( __elts );
     }
+
+    IntegratorOnExpr( ElementRange const& __elts,
+                      element_type && __u,
+                      rhs_element_type const& __rhs,
+                      expression_type const& __expr,
+                      size_type __on,
+                      double value_on_diag )
+        :
+        M_elts(),
+        M_eltbegin( __elts.begin() ),
+        M_eltend( __elts.end() ),
+        M_uFromRValue( std::make_shared<element_type>( std::forward<element_type>(__u) ) ),
+        M_u( *M_uFromRValue ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on ),
+        M_value_on_diagonal( value_on_diag )
+    {
+        M_elts.push_back( __elts );
+    }
+
     IntegratorOnExpr( std::list<ElementRange> const& __elts,
                       element_type const& __u,
                       rhs_element_type const& __rhs,
@@ -225,8 +245,8 @@ public:
     {
         if ( __elts.size() )
         {
-            M_eltbegin = __elts.begin()->template get<1>();
-            M_eltend = __elts.begin()->template get<2>();
+            M_eltbegin = __elts.begin()->begin();
+            M_eltend = __elts.begin()->end();
         }
     }
     IntegratorOnExpr( IntegratorOnExpr const& ioe ) = default;
@@ -314,6 +334,7 @@ private:
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
+    std::shared_ptr<element_type> M_uFromRValue;
     element_type const& M_u;
     mutable rhs_element_type M_rhs;
     expression_type M_expr;
@@ -351,8 +372,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAElt = false;
     for( auto& lit : M_elts )
     {
-        elt_it = lit.template get<1>();
-        elt_en = lit.template get<2>();
+        elt_it = lit.begin();
+        elt_en = lit.end();
         if ( elt_it != elt_en )
         {
             findAElt=true;
@@ -377,8 +398,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         for( auto& lit : M_elts )
         {
-            elt_it = lit.template get<1>();
-            elt_en = lit.template get<2>();
+            elt_it = lit.begin();
+            elt_en = lit.end();
             DVLOG(2) << "element nb: " << std::distance(elt_it,elt_en);
             for ( ; elt_it != elt_en; ++elt_it )
             {
@@ -462,7 +483,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     typedef std::shared_ptr<gm_type> gm_ptrtype;
     static const size_type gmc_v = is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ? context|vm::JACOBIAN|vm::KB|vm::TANGENT|vm::NORMAL : context;
 
-    static const uint16_type nDim = geoshape_type::nDim;
+    constexpr uint16_type nDim = geoshape_type::nDim;
 
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
@@ -479,7 +500,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // start
     //
     DVLOG(2)  << "assembling Dirichlet conditions\n";
-    boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -489,8 +509,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAFace = false;
     for( auto& lit : M_elts )
     {
-        __face_it = lit.template get<1>();
-        __face_en = lit.template get<2>();
+        __face_it = lit.begin();
+        __face_en = lit.end();
         if ( __face_it != __face_en )
         {
             findAFace=true;
@@ -503,8 +523,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         bool findAFaceToInit=false;
         for( auto& lit : M_elts )
         {
-            __face_it = lit.template get<1>();
-            __face_en = lit.template get<2>();
+            __face_it = lit.begin();
+            __face_en = lit.end();
             for( ; __face_it != __face_en; ++__face_it )
             {
                 if ( boost::unwrap_ref(*__face_it).isConnectedTo0() )
@@ -574,8 +594,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         auto IhLoc = __fe->faceLocalInterpolant();
         for( auto& lit : M_elts )
         {
-        __face_it = lit.template get<1>();
-        __face_en = lit.template get<2>();
+        __face_it = lit.begin();
+        __face_en = lit.end();
         for ( ;
               __face_it != __face_en;//this->endElement();
               ++__face_it )
@@ -723,7 +743,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     // start
     //
     DVLOG(2)  << "assembling Dirichlet conditions\n";
-    boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -733,8 +752,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAEdge = false;
     for( auto& lit : M_elts )
     {
-        edge_it = lit.template get<1>();
-        edge_en = lit.template get<2>();
+        edge_it = lit.begin();
+        edge_en = lit.end();
         if ( edge_it != edge_en )
         {
             findAEdge=true;
@@ -780,8 +799,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         for( auto& lit : M_elts )
         {
-            edge_it = lit.template get<1>();
-            edge_en = lit.template get<2>();
+            edge_it = lit.begin();
+            edge_en = lit.end();
             DVLOG(2) << "edge nb: " << std::distance(edge_it,edge_en);
             for ( ;
                   edge_it != edge_en;//this->endElement();
@@ -916,8 +935,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     bool findAPt = false;
     for( auto& lit : M_elts )
     {
-        pt_it = lit.template get<1>();
-        pt_en = lit.template get<2>();
+        pt_it = lit.begin();
+        pt_en = lit.end();
         if ( pt_it != pt_en )
         {
             findAPt=true;
@@ -930,8 +949,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         bool findAPtToInit=false;
         for( auto& lit : M_elts )
         {
-            pt_it = lit.template get<1>();
-            pt_en = lit.template get<2>();
+            pt_it = lit.begin();
+            pt_en = lit.end();
             for( ; pt_it != pt_en; ++pt_it )
             {
                 if ( boost::unwrap_ref( *pt_it).elements().size() )
@@ -973,8 +992,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         for( auto& lit : M_elts )
         {
-            pt_it = lit.template get<1>();
-            pt_en = lit.template get<2>();
+            pt_it = lit.begin();
+            pt_en = lit.end();
             DVLOG(2) << "point " << boost::unwrap_ref( *pt_it ).id() << " nb: " << std::distance(pt_it,pt_en);
 
             if ( pt_it == pt_en )
@@ -1060,13 +1079,14 @@ struct v_ptr2
     typedef typename T::vector_ptrtype type;
 };
 
-template<typename Args>
+
+template<typename ArgRangeType,typename ArgRhsType,typename ArgElementType,typename ArgExprType>
 struct integratoron_type
 {
-    typedef clean_type<Args,tag::range> _range_base_type;
-    typedef clean_type<Args,tag::rhs> _rhs_type;
-    typedef clean_type<Args,tag::element> _element_type;
-    typedef clean_type<Args,tag::expr> _expr_type;
+    using _range_base_type = std::decay_t<ArgRangeType>;
+    using _rhs_type = std::decay_t<ArgRhsType>;
+    using _element_type = std::decay_t<ArgElementType>;
+    using _expr_type = std::decay_t<ArgExprType>;
 
     typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
                                mpl::identity<_range_base_type>,
@@ -1122,33 +1142,30 @@ getRhsVector( V const&  v )
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
  * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integratoron_type<Args>::expr_type ), // return type
-    on,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( element, *  )
-      ( rhs, *  )
-      ( expr,   * )
-        ) // 4. one required parameter, and
-
-    ( optional
-      ( prefix,   ( std::string ), "" )
-      ( type,   ( std::string ), soption(_prefix=prefix,_name="on.type") )
-      ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )
-      ( value_on_diagonal,   ( double ), doption(_prefix=prefix,_name="on.value_on_diagonal") )
-        )
-    )
+template <typename ... Ts>
+auto on( Ts && ... v )
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range,
-                                                            element,
-                                                            Feel::vf::detail::getRhsVector(rhs),
-                                                            expr,
-                                                            size_type(ContextOnMap[type]),
-                                                            value_on_diagonal );
+    auto args = NA::make_arguments( std::forward<Ts>(v)... );
+    auto && range = args.get(_range);
+    //auto && element = args.get(_element);
+    // NOTE : the line below allows to defined element as an lvalue or rvalue (as given when called the function) : TODO : add api in NApp
+    auto && element = std::move(args.template getArgument<na::element>()).value();
+    auto && rhs = args.get(_rhs);
+    auto && expr = args.get(_expr);
+    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    std::string const& prefix = args.get_else(_prefix,"");
+    std::string const& type = args.get_else_invocable(_type,[&prefix,&vm](){ return soption(_prefix=prefix,_name="on.type",_vm=vm); } );
+    bool verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return boption(_prefix=prefix,_name="on.verbose",_vm=vm); } );
+    double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix,&vm](){ return doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm); } );
+
+    using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
+
+    typename integratoron_helper_type::type ion( range,
+                                                 std::forward<decltype(element)>( element ),
+                                                 Feel::vf::detail::getRhsVector(rhs),
+                                                 expr,
+                                                 size_type(ContextOnMap[type]),
+                                                 value_on_diagonal );
     if ( verbose )
     {
         LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
@@ -1174,7 +1191,7 @@ BOOST_PARAMETER_FUNCTION(
         }
     }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename vf::detail::integratoron_type<Args>::expr_type( ion );
+    return typename integratoron_helper_type::expr_type( std::move(ion) );
 }
 
 

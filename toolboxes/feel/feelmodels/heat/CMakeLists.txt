@@ -1,10 +1,14 @@
 
+feelpp_toolboxes_add_library( heatbase SRCS heatboundaryconditions.cpp LINK_LIBRARIES feelpp_modelcore )
+
+
 # geo order 1
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_T_ORDER})
   message(STATUS "[feelpp] HEAT TRANSFER ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _T_ORDER RANGE 1 ${MAX_ORDER} )
+    message(STATUS "[feelpp] HEAT TRANSFER ${_DIM}D P<N>G1 N=${_T_ORDER}")
     genLibHeat(
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
@@ -18,28 +22,22 @@ endforeach()
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_T_ORDER})
-  message(STATUS "[feelpp] HEAT TRANSFER ${_DIM}D PNGN N=2..${MAX_ORDER}")
-  foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
-    genLibHeat(
-      DIM     ${_DIM}
-      T_ORDER ${_T_ORDER}
-      GEO_ORDER ${_T_ORDER}
-      )
-    set(FEELPP_MODELS_LIBRARIES_HEAT  ${FEELPP_MODELS_LIBRARIES_HEAT} ${HEAT_LIB_NAME} )
-  endforeach()
+  # check that start order is greater than stop order for RANGE below otherwise cmake may have an undefined behavior
+  if(${MAX_ORDER} GREATER_EQUAL 2 )
+    message(STATUS "[feelpp] HEAT TRANSFER ${_DIM}D PNGN N=2..${MAX_ORDER}")
+    foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
+      message(STATUS "[feelpp] HEAT TRANSFER ${_DIM}D P<N>G<N> N=${_T_ORDER}")
+      genLibHeat(
+        DIM     ${_DIM}
+        T_ORDER ${_T_ORDER}
+        GEO_ORDER ${_T_ORDER}
+        )
+      set(FEELPP_MODELS_LIBRARIES_HEAT  ${FEELPP_MODELS_LIBRARIES_HEAT} ${HEAT_LIB_NAME} )
+    endforeach()
+  endif()
 endforeach()
 
-add_library(feelpp_toolbox_heat_lib SHARED libheat.cpp )
-add_library(Feelpp::feelpp_toolbox_heat_lib ALIAS feelpp_toolbox_heat_lib )  # to match exported target
-set_target_properties(feelpp_toolbox_heat_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_heat_lib")
-target_link_libraries(feelpp_toolbox_heat_lib ${FEELPP_MODELS_LIBRARIES_HEAT})
-set_property(TARGET feelpp_toolbox_heat_lib PROPERTY MACOSX_RPATH ON)
-set_target_properties(feelpp_toolbox_heat_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_heat_lib EXPORT feelpp-toolboxes-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+feelpp_toolboxes_add_library(heat_lib SRCS libheat.cpp LINK_LIBRARIES ${FEELPP_MODELS_LIBRARIES_HEAT})
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/heat COMPONENT Devel)

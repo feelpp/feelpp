@@ -3,8 +3,14 @@
 
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
+#include <boost/preprocessor/comparison/greater_equal.hpp>
+#include <boost/preprocessor/array/to_list.hpp>
+#include <boost/preprocessor/list/append.hpp>
+
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feells/distancetorange.hpp>
+
 
 namespace Feel
 {
@@ -13,11 +19,12 @@ namespace FeelModels
 
 
 template <typename IndexType>
-ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& mMeshes )
+ModelMeshCommon<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& mMeshes )
     :
     M_generatePartitioning( boption(_prefix=mMeshes.prefix(),_name="gmsh.partition",_vm=mMeshes.clovm()) ),
     M_numberOfPartition( mMeshes.worldComm().localSize() ),
     M_meshSize( doption(_prefix=mMeshes.prefix(),_name="gmsh.hsize",_vm=mMeshes.clovm()) ),
+    M_straightenMesh( boption(_prefix=mMeshes.prefix(),_name="gmsh.straighten",_vm=mMeshes.clovm()) ),
     M_meshComponents( MESH_UPDATE_FACES|MESH_UPDATE_EDGES ),
     M_loadByMasterRankOnly( false )
 {
@@ -27,27 +34,46 @@ ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
+ModelMeshCommon<IndexType>::ImportConfig::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
 {
-    if ( auto filenameOpt = pt.template get_optional<std::string>( "filename" ) )
-        M_inputFilename = Environment::expand( *filenameOpt );
-
-    if ( auto generatePartitioningOpt = pt.template get_optional<bool>( "partition" ) )
-        M_generatePartitioning = *generatePartitioningOpt;
-
-    if ( auto nPartitionOpt = pt.template get_optional<int>( "number-of-partition" ) )
+    if ( jarg.contains("filename") )
     {
-        CHECK( *nPartitionOpt > 0 && *nPartitionOpt <= mMeshes.worldComm().localSize() ) << "invalid number of partition : " << *nPartitionOpt;
-        M_numberOfPartition = *nPartitionOpt;
+        auto const& j_filename = jarg.at("filename");
+        if ( j_filename.is_string() )
+            M_inputFilename = Environment::expand( j_filename.template get<std::string>() );
     }
-
-    if ( auto hsizeOpt = pt.template get_optional<double>( "hsize" ) )
-        M_meshSize = *hsizeOpt;
+    if ( jarg.contains("partition") )
+    {
+        auto const& j_partition = jarg.at("partition");
+        if ( j_partition.is_boolean() )
+            M_generatePartitioning = j_partition.template get<bool>();
+        else if ( j_partition.is_number_unsigned() )
+            M_generatePartitioning = j_partition.template get<int>() > 0;
+        else if ( j_partition.is_string() )
+            M_generatePartitioning = boost::lexical_cast<bool>( j_partition.template get<std::string>() );
+    }
+    if ( jarg.contains("number-of-partition") )
+    {
+        auto const& j_nparts = jarg.at("number-of-partition");
+        if ( j_nparts.is_number_integer() )
+            M_numberOfPartition = j_nparts.template get<int>();
+        else if ( j_nparts.is_string() )
+            M_numberOfPartition = std::stoi( j_nparts.template get<std::string>() );
+        CHECK( M_numberOfPartition > 0 && M_numberOfPartition <= mMeshes.worldComm().localSize() ) << "invalid number of partition : " << M_numberOfPartition;
+    }
+    if ( jarg.contains("hsize") )
+    {
+        auto const& j_hsize = jarg.at("hsize");
+        if ( j_hsize.is_number() )
+            M_meshSize = j_hsize.template get<double>();
+        else if ( j_hsize.is_string() )
+            M_meshSize = std::stod( j_hsize.template get<std::string>() );
+    }
 }
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename )
+ModelMeshCommon<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename )
 {
     M_inputFilename = filename;
     M_generatePartitioning = false;
@@ -55,7 +81,7 @@ ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioni
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
+ModelMeshCommon<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
 {
     M_generatePartitioning = false;
     M_numberOfPartition = 1;
@@ -64,7 +90,7 @@ ModelMesh<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
+ModelMeshCommon<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 {
     if ( M_inputFilename.empty() )
         return;
@@ -93,7 +119,7 @@ ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) const
+ModelMeshCommon<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) const
 {
     if ( this->hasMeshFilename() )
     {
@@ -112,7 +138,7 @@ ModelMesh<IndexType>::ImportConfig::updateInformationObject( nl::json & p ) cons
 
 template <typename IndexType>
 tabulate_informations_ptr_t
-ModelMesh<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+ModelMeshCommon<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
 {
     Feel::Table tabInfo;
     if ( jsonInfo.contains("mesh-filename") )
@@ -130,41 +156,276 @@ ModelMesh<IndexType>::ImportConfig::tabulateInformations( nl::json const& jsonIn
     return TabulateInformations::New( tabInfo );
 }
 
+
+template <typename IndexType>
+ModelMesh<IndexType>::FieldsSetup::FieldsSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+    :
+    M_name( name )
+{
+    if ( jarg.contains("basis") )
+        M_basis = Environment::expand( jarg.at("basis") );
+    else
+        throw std::runtime_error( "basis required" );
+
+    if ( jarg.contains("parts") )
+    {
+        auto const& j_parts = jarg.at("parts");
+        if ( j_parts.is_array() )
+        {
+            for ( auto const& [j_partkey,j_partval] : j_parts.items() )
+            {
+                auto partSetup = PartSetup::create( mMeshes, j_partval );
+                if ( partSetup )
+                    M_parts.push_back( std::move(*partSetup) );
+            }
+        }
+        else if ( j_parts.is_object() )
+        {
+            auto partSetup = PartSetup::create( mMeshes, j_parts );
+            if ( partSetup )
+                M_parts.push_back( std::move(*partSetup) );
+        }
+    }
+    else
+    {
+        auto partSetup = PartSetup::create( mMeshes, jarg );
+        if ( partSetup )
+            M_parts.push_back( std::move(*partSetup) );
+    }
+}
+
+template <typename IndexType>
+std::optional<typename ModelMesh<IndexType>::FieldsSetup::PartSetup>
+ModelMesh<IndexType>::FieldsSetup::PartSetup::create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    PartSetup ret;
+    if ( jarg.contains("markers") )
+        ret.M_markers.setup( jarg.at("markers") );
+    if ( jarg.contains("expr") )
+    {
+        ModelExpression mexpr;
+        mexpr.setExpr( jarg.at("expr"), mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+        if ( mexpr.hasAtLeastOneExpr() )
+            ret.M_mexpr = mexpr;
+    }
+    if ( jarg.contains("filename") )
+        ret.M_filename = Environment::expand( jarg.at("filename") );
+
+    return ret;
+}
+
+
+template <typename IndexType>
+ModelMesh<IndexType>::DistanceToRangeSetup::DistanceToRangeSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+    :
+    M_name( name )
+{
+    auto itFind = jarg.find("markers");
+    if ( itFind == jarg.end() )
+        itFind = jarg.find("marker");
+    if ( itFind != jarg.end() )
+    {
+        ModelMarkers mm;
+        mm.setup( *itFind );
+        M_markers = mm;
+    }
+
+    if ( jarg.contains( "max_distance" ) )
+        M_maxDistance.setExpr( jarg.at( "max_distance" ), mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+
+    if ( jarg.contains( "normalization" ) )
+    {
+        auto const& j_normalization = jarg.at( "normalization" );
+
+        auto createNormalization = [this,&mMeshes]( nl::json const& jargLambda )
+                                       {
+                                           if ( auto optn = Normalization::create( mMeshes,jargLambda ) )
+                                           {
+                                               M_normalizations.push_back( std::move( optn.value() ) );
+                                           }
+                                           else
+                                               throw std::runtime_error( "wrong json with normalization" );
+                                       };
+
+        if ( j_normalization.is_string() || j_normalization.is_object() )
+        {
+            createNormalization( j_normalization );
+        }
+        else if ( j_normalization.is_array() )
+        {
+            for ( auto const& [j_normalizationkey,j_normalizationval] : j_normalization.items() )
+                createNormalization( j_normalizationval );
+        }
+    }
+}
+
+template <typename IndexType>
+std::optional<typename ModelMesh<IndexType>::DistanceToRangeSetup::Normalization>
+ModelMesh<IndexType>::DistanceToRangeSetup::Normalization::create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    std::string type, name;
+    std::optional< std::pair<ModelExpression,ModelExpression> > range;
+    if ( jarg.is_string() )
+        type = jarg.template get<std::string>();
+    else if ( jarg.is_object() )
+    {
+        if ( jarg.contains("type") )
+            type = jarg.at("type").template get<std::string>();
+        if ( jarg.contains("name") )
+            name = jarg.at("name").template get<std::string>();
+        if ( jarg.contains("range") )
+        {
+            auto const& j_range = jarg.at("range");
+            if ( !j_range.is_array() )
+                throw std::runtime_error( "range should be an array" );
+            if ( j_range.size() != 2 )
+                throw std::runtime_error( "range should be an array of size 2" );
+            ModelExpression mexpr_a, mexpr_b;
+            mexpr_a.setExpr( j_range[0], mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+            mexpr_b.setExpr( j_range[1], mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+            if ( !mexpr_a.hasExpr<1,1>() )
+                throw std::runtime_error( "no scalar expr left bound in range" );
+            if ( !mexpr_b.hasExpr<1,1>() )
+                throw std::runtime_error( "no scalar expr left bound in range" );
+
+            range = std::make_pair( std::move(mexpr_a),std::move(mexpr_b) );
+        }
+    }
+    if ( name.empty() )
+        name = type;
+
+    if ( type == "min_max" )
+    {
+        if ( !range )
+            range = std::make_pair( ModelExpression{0.},ModelExpression{1.} );
+        return Normalization{ name,"min_max", *range };
+    }
+    else if ( type == "mean" )
+    {
+        return Normalization{ name,"mean" };
+    }
+    return {};
+}
+
+template <typename IndexType>
+ModelMesh<IndexType>::MeshMotionSetup::MeshMotionSetup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+{
+    if ( jarg.contains("ComputationalDomain") )
+    {
+        auto const& j_cd = jarg.at("ComputationalDomain");
+        if ( j_cd.contains( "markers" ) )
+        {
+            ModelMarkers markers;
+            markers.setup( j_cd.at("markers")/*, indexes*/ );
+            M_computationalDomainMarkers = markers;
+        }
+    }
+
+    if ( jarg.contains("Displacement") )
+    {
+        auto const& j_disp = jarg.at("Displacement");
+        if ( j_disp.contains( "Imposed" ) )
+        {
+            for ( auto const& [j_dispimposedkey,j_dispimposedval] : j_disp.at( "Imposed" ).items() )
+            {
+                std::set<std::string> markers = { j_dispimposedkey };
+                if ( j_dispimposedval.contains( "markers") )
+                {
+                    ModelMarkers _markers;
+                    _markers.setup( j_dispimposedval.at("markers")/*, indexes*/ );
+                    markers = _markers;
+                }
+                ModelExpression mexpr;
+                if ( j_dispimposedval.contains( "expr" ) )
+                    mexpr.setExpr( j_dispimposedval.at( "expr" ), mMeshes.worldComm(), mMeshes.repository().expr()/*, indexes*/ );
+                M_displacementImposed.emplace( j_dispimposedkey, std::make_tuple( std::move(mexpr),std::move( markers ) ) );
+            }
+        }
+        if ( j_disp.contains( "Zero" ) )
+        {
+             ModelMarkers _markers;
+             _markers.setup( j_disp.at("Zero")/*, indexes*/ );
+             M_displacementZeroMarkers = _markers;
+        }
+        if ( j_disp.contains( "Free" ) )
+        {
+             ModelMarkers _markers;
+             _markers.setup( j_disp.at("Free")/*, indexes*/ );
+             M_displacementFreeMarkers = _markers;
+        }
+    }
+}
+
 template <typename IndexType>
 ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes )
     :
     M_name( name ),
-    M_importConfig( mMeshes )
+    M_mmeshCommon( std::make_shared<ModelMeshCommon<IndexType>>( mMeshes ) )
 {}
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
+ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const& mMeshes )
 {
-    if ( auto importPtree = pt.get_child_optional("Import") )
+    if ( jarg.contains("Import") )
+        M_mmeshCommon->importConfig().setup( jarg.at("Import"), mMeshes );
+
+    if ( jarg.contains("Data") )
     {
-        M_importConfig.setup( *importPtree, mMeshes );
+        for ( auto const& el : jarg.at("Data").items() )
+         {
+             std::string const& dataName = el.key();
+             collection_data_by_mesh_entity_type c;
+             c.setup( el.value() );
+             M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
+         }
     }
 
-    if ( auto dataPtree = pt.get_child_optional("Data") )
+    if ( jarg.contains("Fields") )
     {
-        for ( auto const& item : *dataPtree )
+        for ( auto const& el : jarg.at("Fields").items() )
         {
-            std::string dataName = item.first;
-            collection_data_by_mesh_entity_type c;
-            c.setup( item.second );
-            M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
+            std::string const& dataName = el.key();
+            FieldsSetup fs(dataName,mMeshes,el.value() );
+            if ( !fs.parts().empty() )
+                M_fieldsSetup.push_back( std::move( fs ) );
         }
     }
 
-    if ( auto fieldsPtree = pt.get_child_optional("Fields") )
+    if ( jarg.contains("DistanceToRange") )
     {
-        for ( auto const& item : *fieldsPtree )
+        for ( auto const& el : jarg.at("DistanceToRange").items() )
         {
-            std::string dataName = item.first;
-            FieldsSetup fs(dataName,item.second );
-            M_fieldsSetup.push_back( std::move( fs ) );
+            std::string const& dataName = el.key();
+            DistanceToRangeSetup dtrs(dataName,mMeshes,el.value() );
+            M_distanceToRangeSetup.push_back( std::move( dtrs ) );
         }
+    }
+
+    if ( jarg.contains("MeshMotion") )
+    {
+        MeshMotionSetup mms( mMeshes, jarg.at("MeshMotion") );
+        M_meshMotionSetup.emplace( std::move( mms ) );
+    }
+
+    if ( jarg.contains("MeshAdaptation") )
+    {
+        auto const& j_meshadapt = jarg.at("MeshAdaptation");
+        if ( j_meshadapt.is_object() )
+        {
+            typename MeshAdaptation::Setup mas( mMeshes, j_meshadapt );
+            M_meshAdaptationSetup.push_back( std::move( mas ) );
+        }
+        else if ( j_meshadapt.is_array() )
+        {
+            for ( auto const& [j_meshadaptkey,j_meshadaptval] : j_meshadapt.items() )
+            {
+                typename MeshAdaptation::Setup mas( mMeshes, j_meshadaptval );
+                M_meshAdaptationSetup.push_back( std::move( mas ) );
+            }
+        }
+        else
+            throw std::runtime_error( "meshadaptation JSON value should be a an object or an array" );
     }
 }
 
@@ -172,6 +433,9 @@ template <typename IndexType>
 void
 ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
 {
+    if ( M_mmeshCommon->hasMesh() )
+        return;
+
     std::string meshFilename;
     if ( mMeshes.worldComm().isMasterRank() )
     {
@@ -190,7 +454,7 @@ ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
     mpi::broadcast( mMeshes.worldComm().localComm(), meshFilename, mMeshes.worldComm().masterRank() );
 
     mMeshes.log("ModelMesh","setupRestart", "mesh file : " + meshFilename);
-    M_importConfig.setupInputMeshFilenameWithoutApplyPartitioning( meshFilename );
+    M_mmeshCommon->importConfig().setupInputMeshFilenameWithoutApplyPartitioning( meshFilename );
 }
 
 
@@ -201,133 +465,333 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 {
     using mesh_type = MeshType;
 
-    if ( !M_mesh )
+    if ( !M_mmeshCommon->hasMesh() )
     {
-        M_importConfig.updateForUse( mMeshes );
+        std::shared_ptr<mesh_type> meshLoaded;
+        std::string meshFilename;
+        std::string meshFilenameBase = fmt::format("{}.mesh",mMeshes.keyword());
+        auto & importConfig = M_mmeshCommon->importConfig();
+        importConfig.updateForUse( mMeshes );
 
-        auto wcPtr = ( M_importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
-        if ( M_importConfig.hasMeshFilename() )
+        auto wcPtr = ( importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
+        if ( importConfig.hasMeshFilename() )
         {
-            std::string const& inputMeshFilename = M_importConfig.meshFilename();
+            std::string const& inputMeshFilename = importConfig.meshFilename();
             mMeshes.log("ModelMesh","updateForUse", "load mesh file : " + inputMeshFilename);
 
             std::string rootpath = mMeshes.rootRepository();
-            std::string meshPartitionedFilename = (fs::path( rootpath ) / (mMeshes.prefix() + ".json")).string();
+            std::string meshPartitionedFilename = (fs::path( rootpath ) / (meshFilenameBase + ".json")).string();
             std::string meshFileExt = fs::path( inputMeshFilename ).extension().string();
-            bool generatePartitioning = M_importConfig.generatePartitioning();
+            bool generatePartitioning = importConfig.generatePartitioning();
             if ( generatePartitioning && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
-            if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
+            if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
-                M_mesh = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                   _filename=inputMeshFilename,
                                   _prefix=mMeshes.prefix(),
                                   _vm=mMeshes.clovm(),
                                   _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                  _straighten=importConfig.straightenMesh(),
                                   _rebuild_partitions=generatePartitioning,
                                   _rebuild_partitions_filename=meshPartitionedFilename,
-                                  _partitions=M_importConfig.numberOfPartition(),
+                                  _partitions=importConfig.numberOfPartition(),
                                   _savehdf5=0,
-                                  _update= M_importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+                                  _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
             }
 
-            M_meshFilename = (generatePartitioning)? meshPartitionedFilename : M_importConfig.meshFilename();
+            meshFilename = (generatePartitioning)? meshPartitionedFilename : importConfig.meshFilename();
         }
-        else if ( M_importConfig.hasGeoFilename() )
+        else if ( importConfig.hasGeoFilename() )
         {
-            std::string const& inputGeoFilename = M_importConfig.geoFilename();
+            std::string const& inputGeoFilename = importConfig.geoFilename();
             mMeshes.log("ModelMesh","updateForUse", "load geo file : " + inputGeoFilename);
             std::string path = mMeshes.rootRepository();
 
-            std::string mshfile = (fs::path( path ) / mMeshes.prefix()).string();
-            if ( M_importConfig.numberOfPartition() > 1 )
+            std::string mshfile = (fs::path( path ) / meshFilenameBase).string();
+            if ( importConfig.numberOfPartition() > 1 )
                 mshfile += ".json";
             else
                 mshfile += ".msh";
-            if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
+            if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
                 gmsh_ptrtype geodesc = geo( _filename=inputGeoFilename,
                                             _prefix=mMeshes.prefix(),
                                             _vm=mMeshes.clovm(),
                                             _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                            _h=M_importConfig.meshSize());
+                                            _h=importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
-                geodesc->setPrefix(mMeshes.prefix());
-                M_mesh = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                geodesc->setPrefix(meshFilenameBase);
+                meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                         _desc=geodesc,
                                         _prefix=mMeshes.prefix(),
                                         _vm=mMeshes.clovm(),
                                         _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                        _h=M_importConfig.meshSize(),
-                                        _partitions=M_importConfig.numberOfPartition(),
-                                        _update=M_importConfig.meshComponents(),
+                                        _h=importConfig.meshSize(),
+                                        _straighten=importConfig.straightenMesh(),
+                                        _partitions=importConfig.numberOfPartition(),
+                                        _update=importConfig.meshComponents(),
                                         _directory=mMeshes.rootRepository() );
             }
-            M_meshFilename = mshfile;
+            meshFilename = mshfile;
         }
 
-        if ( M_mesh && !M_meshFilename.empty() && mMeshes.worldComm().isMasterRank() )
+        this->setMesh( meshLoaded, meshFilename );
+
+        if ( meshLoaded )
+        {
+            if ( !M_metadata.contains("preprocess") )
+                M_metadata["preprocess"] = json::array();
+
+            nl::json importMeta = { { "event","import" }, { "filename",meshFilename } };
+            M_metadata["preprocess"].push_back( std::move( importMeta ) );
+        }
+
+        if ( meshLoaded && !meshFilename.empty() && mMeshes.worldComm().isMasterRank() )
         {
             fs::path thedir = mMeshes.rootRepository();//fs::path( fileSavePath ).parent_path();
             std::string fileNameMeshPath = (thedir/prefixvm(M_name,"mesh.path")).string();
             if ( !fs::exists(thedir))
                 fs::create_directories(thedir);
             std::ofstream file( fileNameMeshPath.c_str(), std::ios::out|std::ios::trunc);
-            file << M_meshFilename;
+            file << meshFilename;
             file.close();
         }
-    } // if ( !M_mesh )
+    } // if ( !hasMesh )
+
+    auto themesh = this->mesh<MeshType>();
 
     // update data by mesh entity
     for ( auto & [name,data] : M_codbme )
     {
-        data.setMesh( M_mesh );
-        data.template updateForUse<MeshType>();
+        data.setMesh( this->mesh<mesh_type>() );
+        data.template updateForUse<mesh_type>();
     }
 
 
     // fields
-    static constexpr auto tuple_t_basis = hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
-                                                            hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
-                                                            );
+    static constexpr auto tuple_t_basis = ModelMesh<IndexType>::template basisFieldTypeSupported<mesh_type>();
     for ( auto const& fs : M_fieldsSetup )
     {
         std::string const& basis = fs.basis();
-        hana::for_each( tuple_t_basis, [this,&basis,&fs]( auto const& b )
+        hana::for_each( tuple_t_basis, [this,&basis,&fs,&themesh]( auto const& b )
                         {
                             if ( basis == hana::at_c<0>( b ) )
                             {
                                 using basis_type = typename std::decay_t<decltype(hana::at_c<1>( b ) )>::type;
                                 using space_type = FunctionSpace<MeshType, bases<basis_type> >;
 
-                                if ( M_functionSpaces.find( basis ) == M_functionSpaces.end() )
-                                    M_functionSpaces[basis] = space_type::New(_mesh=this->mesh<MeshType>());
-
-                                auto Vh = std::dynamic_pointer_cast<space_type>( M_functionSpaces[basis] );
+                                auto Vh = M_mmeshCommon->template createFunctionSpace<space_type>( basis );
                                 auto u = Vh->elementPtr();
-                                u->load(_path=fs.filename(),_type="default");
+
+                                // TODO : manage sync of dof interprocess
+                                for ( auto const& partSetup : fs.parts() )
+                                {
+                                    auto rangeMeshElt = partSetup.markers().empty() ? elements(themesh) : markedelements(themesh, (std::set<std::string>)partSetup.markers() );
+                                    if ( partSetup.hasExpr() )
+                                    {
+                                        if ( !partSetup.mExpr().template hasExpr<space_type::nComponents1,space_type::nComponents2>() )
+                                            throw std::runtime_error( fmt::format("ModelMesh<IndexType>::updateForUse fields basis and expr rank invalid, expr should be [{},{}]", space_type::nComponents1,space_type::nComponents2 ) );
+                                        auto const& theexpr = partSetup.mExpr().template expr<space_type::nComponents1,space_type::nComponents2>();
+                                        u->on(_range=rangeMeshElt, _expr=theexpr );
+                                    }
+                                    else
+                                    {
+                                        // TODO use rangeMeshElt
+                                        CHECK( partSetup.markers().empty() ) << "TODO ModelMesh<IndexType>::updateForUse fields : requires the use of range elements with file loading";
+                                        u->load(_path=partSetup.filename(),_type="default");
+                                    }
+                                }
                                 M_fields[fs.name()] = u;
                             }
                         });
     }
+
+    // distance to range
+    this->updateDistanceToRange<MeshType>();
+
+    // mesh adaptation
+    if ( std::find_if( M_meshAdaptationSetup.begin(), M_meshAdaptationSetup.end(),
+                       []( auto const& mas ){ return mas.isExecutedWhen( MeshAdaptation::template createEvent<MeshAdaptation::Event::Type::after_import>() ); } ) != M_meshAdaptationSetup.end() )
+    {
+        const_cast<ModelMeshes<IndexType>&>( mMeshes ).modelProperties().parameters().updateParameterValues();
+        auto paramValues = mMeshes.modelProperties().parameters().toParameterValues();
+        for ( typename MeshAdaptation::Setup & mas : M_meshAdaptationSetup )
+            mas.setParameterValues( paramValues );
+        this->updateMeshAdaptation<MeshType>( MeshAdaptation::template createEvent<MeshAdaptation::Event::Type::after_import>(),
+                                              Feel::vf::symbolsExpr( mMeshes.symbolsExprParameter(), mMeshes.template symbolsExpr<MeshType>() ) );
+    }
+
+    if constexpr ( mesh_type::nDim>1 )
+    {
+        if ( M_meshMotionSetup )
+        {
+            //auto themesh = this->mesh<MeshType>();
+            auto meshALE = meshale( _mesh=themesh,
+                                    _prefix=mMeshes.prefix(),
+                                    _keyword=fmt::format("meshes_{}_meshmotion",M_name),
+                                    _directory=mMeshes.repository() );
+
+            auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
+            if ( cdm.find( "@elements@" ) != cdm.end() )
+                meshALE->setWholeMeshAsComputationalDomain( M_name/*mMeshes.keyword()*/ );
+            else
+                meshALE->setComputationalDomain( M_name/*mMeshes.keyword()*/, markedelements(themesh, cdm) );
+            meshALE->init();
+
+            std::set<std::string> markersDispImposedOverFaces;
+            for ( auto const& [name,dispData] : M_meshMotionSetup->displacementImposed() )
+                markersDispImposedOverFaces.insert(  std::get<1>( dispData ).begin(),  std::get<1>( dispData ).end() );
+            if ( !markersDispImposedOverFaces.empty() )
+                meshALE->setDisplacementImposedOnInitialDomainOverFaces( M_name/*this->keyword()*/, markersDispImposedOverFaces );
+
+            meshALE->addMarkersInBoundaryCondition( "fixed", M_meshMotionSetup->displacementZeroMarkers() );
+            meshALE->addMarkersInBoundaryCondition( "free", M_meshMotionSetup->displacementFreeMarkers() );
+            for ( auto const& [name,dispData] : M_meshMotionSetup->displacementImposed() )
+                meshALE->addMarkersInBoundaryCondition( "moving", std::get<1>( dispData ) );
+
+            M_mmeshCommon->setMeshMotionTool( meshALE );
+        }
+    }
+
+}
+
+
+template <typename IndexType>
+template <typename MeshType>
+void
+ModelMesh<IndexType>::updateDistanceToRange()
+{
+    for ( auto const& dtrs : M_distanceToRangeSetup )
+    {
+        auto themesh = this->mesh<MeshType>();
+        std::string basis = fmt::format( "Pch{}", MeshType::nOrder );
+        //std::cout << "distance to range  create basis " << basis << std::endl;
+        using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
+        auto Vh = M_mmeshCommon->template createFunctionSpace<distange_to_range_space_type>( basis );
+        auto u = Vh->elementPtr();
+        auto rangeFaces = dtrs.markers().empty()? boundaryfaces(themesh) : markedfaces( themesh, dtrs.markers() );
+        *u = distanceToRange( _space=Vh, _range=rangeFaces, _max_distance = dtrs.maxDistance() );
+        M_distanceToRanges[dtrs.name()] = u;
+
+        for ( auto const& normalization : dtrs.normalizations() )
+        {
+            std::string const& normalizationType = normalization.type();
+            if ( normalizationType == "min_max" || normalizationType == "mean" )
+            {
+                double uMax = u->max();
+                double uMin = u->min();
+
+                // min_max normalization : u_normalized \in [0,1] with u_normalized = (u-min(u))/(max(u)-min(u)
+                if ( normalizationType == "min_max" )
+                {
+                    //std::cout << "uMax=" << uMax << " uMin=" << uMin << std::endl;
+                    auto uNormalizedMinMax = Vh->elementPtr();
+                    *uNormalizedMinMax = *u;
+                    //*uNormalizedMinMax -= uMin;
+                    uNormalizedMinMax->add( -uMin );
+                    *uNormalizedMinMax *= 1./(uMax-uMin);
+                    if ( true )
+                    {
+                        // u_normalized_ab = a + u_normalized*(b-a)
+                        auto const& [aExpr,bExpr] = normalization.range();
+                        double a = aExpr.template expr<1,1>().evaluate()(0,0);
+                        double b = bExpr.template expr<1,1>().evaluate()(0,0);
+                        if ( b < a )
+                            throw std::runtime_error( fmt::format("b={} less than a={}",a,b) );
+                        //double a = 0, b = 1;
+                        *uNormalizedMinMax *= (b-a);
+                        uNormalizedMinMax->add( a );
+                    }
+                    M_distanceToRanges[fmt::format("{}_normalized_{}",dtrs.name(),normalization.name())] = uNormalizedMinMax;
+                }
+
+                // mean normalization :  u_normalized = (u-average(u))/(max(u)-min(u))
+                if ( normalizationType == "mean" )
+                {
+                    double average = mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
+                    auto uNormalizedMean = Vh->elementPtr();
+                    *uNormalizedMean = *u;
+                    //*uNormalizedMean -= average;
+                    uNormalizedMean->add( -average );
+                    *uNormalizedMean *= 1./(uMax-uMin);
+                    M_distanceToRanges[fmt::format("{}_normalized_{}",dtrs.name(),normalization.name())] = uNormalizedMean;
+                }
+            }
+        }
+    }
+}
+
+template <typename IndexType>
+template <typename MeshType>
+void
+ModelMesh<IndexType>::applyRemesh( std::shared_ptr<MeshType> const& newMesh )
+{
+    auto oldmesh = this->mesh<MeshType>();
+    if ( oldmesh == newMesh )
+        return;
+
+    this->setMesh( newMesh );
+
+    M_mmeshCommon->clearFunctionSpaces();
+    // TODO : common clear space + applyRemesh to pointmeasure
+
+    M_distanceToRanges.clear();
+    this->updateDistanceToRange<MeshType>();
+
+    if constexpr ( MeshType::nDim > 1 )
+    {
+        if ( this->hasMeshMotion() )
+        {
+            auto mmt = this->meshMotionTool<MeshType>();
+
+            std::vector<std::tuple<std::string,Range<MeshType,MESH_ELEMENTS>>> computationDomains;
+            if ( M_meshMotionSetup )
+            {
+                auto const& cdm = M_meshMotionSetup->computationalDomainMarkers();
+                if ( cdm.find( "@elements@" ) == cdm.end() )
+                    computationDomains.push_back( std::make_tuple( M_name, markedelements(newMesh, cdm) ) );
+            }
+            mmt->applyRemesh( newMesh, computationDomains );
+        }
+    }
+    // TODO : other fields
 }
 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::updateInformationObject( nl::json & p ) const
+ModelMesh<IndexType>::updateInformationObject( nl::json & p, std::string const& prefix_symbol ) const
 {
-    if ( M_mesh )
+    if ( M_mmeshCommon->hasMesh() )
     {
-        p["Discretization"] = M_mesh->journalSection().to_string();
-        M_importConfig.updateInformationObject( p["Import configuration"] );
+        p["Discretization"] = this->mesh()->journalSection().to_string();
+        M_mmeshCommon->importConfig().updateInformationObject( p["Import configuration"] );
 
-        if ( !M_meshFilename.empty() )
-            p.emplace( "filename", M_meshFilename );
+        if ( !M_mmeshCommon->meshFilename().empty() )
+            p.emplace( "filename", M_mmeshCommon->meshFilename() );
     }
+
+    nl::json::array_t j_meshAdapArray;
+    for ( auto const& mas : M_meshAdaptationSetup )
+    {
+        nl::json j_meshAdap;
+        mas.updateInformationObject( j_meshAdap );
+        if ( !j_meshAdap.is_null() )
+            j_meshAdapArray.push_back( std::move(j_meshAdap) );
+    }
+    if ( !j_meshAdapArray.empty() )
+        p["MeshAdaptation"] = std::move( j_meshAdapArray );
+
+    // TODO here : other types
+    using geoshape_list_type = boost::mp11::mp_list< boost::mp11::mp_identity_t<Simplex<2>>,
+                                                     boost::mp11::mp_identity_t<Simplex<3>> >;
+    boost::mp11::mp_for_each<geoshape_list_type>( [this,&p,&prefix_symbol]( auto I ){
+                                                      using _mesh_type = typename Mesh<std::decay_t<decltype(I)>>::type;
+                                                      if ( this->mesh<_mesh_type>() )
+                                                          this->modelFields<_mesh_type>( "",prefix_symbol ).updateInformationObject( p["Fields"] );
+                                                  } );
 }
 
 template <typename IndexType>
@@ -347,7 +811,7 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
 
     if ( jsonInfo.contains("Import configuration") )
     {
-        tabInfo->add( "Import configuration",  ImportConfig::tabulateInformations( jsonInfo.at("Import configuration"), tabInfoProp ) );
+        tabInfo->add( "Import configuration", import_config_type::tabulateInformations( jsonInfo.at("Import configuration"), tabInfoProp ) );
     }
 
     if ( jsonInfo.contains("Discretization") )
@@ -418,22 +882,39 @@ ModelMesh<IndexType>::tabulateInformations( nl::json const& jsonInfo, TabulateIn
             tabInfo->add("Discretization", tabInfoDiscr );
         }
     }
+
+
+    if ( jsonInfo.contains( "MeshAdaptation" ) )
+    {
+        auto tabInfoMeshAdaptation = TabulateInformationsSections::New( tabInfoProp );
+        for ( auto const& [j_meshadaptkey,j_meshadaptval ] : jsonInfo.at( "MeshAdaptation" ).items() )
+            tabInfoMeshAdaptation->add( "", MeshAdaptation::Setup::tabulateInformations( j_meshadaptval, tabInfoProp/*.newByIncreasingVerboseLevel()*/ ) );
+        tabInfo->add("Mesh Adaptation", tabInfoMeshAdaptation );
+    }
+
+    // fields
+    if ( jsonInfo.contains("Fields") )
+        tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
+
     return tabInfo;
 }
 
 template <typename IndexType>
 void
-ModelMeshes<IndexType>::setup( pt::ptree const& pt )
+ModelMeshes<IndexType>::setup( nl::json const& jarg, std::set<std::string> const& keywordsToSetup )
 {
-    for ( auto const& item : pt )
+    for ( auto const& el : jarg.items() )
     {
-        std::string meshName = item.first;
-        if ( this->hasModelMesh( meshName ) )
-            this->at( meshName )->setup( item.second, *this );
+         std::string const& meshName = el.key();
+         if ( keywordsToSetup.find( meshName ) == keywordsToSetup.end() )
+             continue;
+
+         if ( this->hasModelMesh( meshName ) )
+            this->at( meshName )->setup( el.value(), *this );
         else
         {
             auto me = std::make_shared<ModelMesh<IndexType>>( meshName );
-            me->setup( item.second, *this );
+            me->setup( el.value(), *this );
             this->emplace( std::make_pair( meshName, std::move( me ) ) );
         }
     }
@@ -441,11 +922,11 @@ ModelMeshes<IndexType>::setup( pt::ptree const& pt )
 
 template <typename IndexType>
 void
-ModelMeshes<IndexType>::updateInformationObject( nl::json & p ) const
+ModelMeshes<IndexType>::updateInformationObject( nl::json & p, std::string const& prefix_symbol ) const
 {
     for ( auto & [meshName,mMesh] : *this )
     {
-        mMesh->updateInformationObject( p[meshName] );
+        mMesh->updateInformationObject( p[meshName], prefixvm( prefix_symbol, meshName, "_" ) );
     }
 }
 
@@ -479,26 +960,87 @@ ModelMeshes<IndexType>::tabulateInformations( nl::json const& jsonInfo, Tabulate
 }
 
 
+template class ModelMeshCommon<uint32_type>;
 template class ModelMesh<uint32_type>;
 template class ModelMeshes<uint32_type>;
 
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,1>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,1>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,1,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,1,3>>>( ModelMeshes<uint32_type> const& );
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,1,2),                                             \
+          ( Simplex,3,1,3),                                             \
+          ( Simplex,1,1,2),                                             \
+          ( Simplex,1,1,3) ) )                                          \
+    /**/
+
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,2,2>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,2,3>>>( ModelMeshes<uint32_type> const& );
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,2,2),                                             \
+          ( Simplex,3,2,3),                                             \
+          ( Simplex,1,2,2),                                             \
+          ( Simplex,1,2,3) ) )                                          \
+    /**/
+#else
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST BOOST_PP_NIL
 #endif
+
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,3>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,3>>>( ModelMeshes<uint32_type> const& );
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,3,2),                                             \
+          ( Simplex,3,3,3) ) )                                          \
+    /**/
+#else
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST BOOST_PP_NIL
 #endif
+
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,4>>>( ModelMeshes<uint32_type> const& );
-template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,4>>>( ModelMeshes<uint32_type> const& );
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,4,2),                                             \
+          ( Simplex,3,4,3) ) )                                          \
+    /**/
+#else
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST BOOST_PP_NIL
 #endif
+
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)   BOOST_PP_TUPLE_ELEM(4, 0, T)
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T)   BOOST_PP_TUPLE_ELEM(4, 1, T)
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_ORDER(T)   BOOST_PP_TUPLE_ELEM(4, 2, T)
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_REALDIM(T)   BOOST_PP_TUPLE_ELEM(4, 3, T)
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(T)               \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)              \
+    < FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T),                  \
+      FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_ORDER(T),                \
+      FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_REALDIM(T) >             \
+    /**/
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST     \
+    BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST, \
+                          BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST, \
+                                                BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST, \
+                                                                      FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST ) ) ) \
+    /**/
+
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST    \
+    BOOST_PP_ARRAY_TO_LIST((1, (uint32_type)))                          \
+    /**/
+
+
+/* Generates code for all binary operators and integral type pairs. */
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP(_, IS) \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE IS    \
+   /**/
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE(PP_I,PP_GS) \
+    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const& ); \
+    template void ModelMesh<PP_I>::applyRemesh<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( std::shared_ptr<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>> const& );
+    /**/
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP, 2, (FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST,FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST) )
+/**/
+
 } // namespace FeelModels
 } // namespace Feel

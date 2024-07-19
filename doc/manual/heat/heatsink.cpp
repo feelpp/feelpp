@@ -179,7 +179,7 @@ private:
     /* thermal coeff */
     double therm_coeff;
 
-    /* ambien temperature, and heat flux (Q) */
+    /* ambient temperature, and heat flux (Q) */
     double Tamb;
     double heat_flux;
 
@@ -286,7 +286,7 @@ HeatSink<Dim, Order>::run()
     /*
      * Left hand side construction (steady state)
      */
-    auto a = form2( Xh, Xh );
+    auto a = form2( _test=Xh, _trial=Xh );
     a = integrate( _range= markedelements( mesh,"spreader" ), _expr= kappa_s*gradt( T )*trans( grad( v ) ) );
     a += integrate( _range= markedelements( mesh,"fin" ), _expr= kappa_f*gradt( T )*trans( grad( v ) ) );
     a += integrate( _range= markedfaces( mesh, "gamma1" ), _expr= therm_coeff*idt( T )*id( v ) );
@@ -381,7 +381,7 @@ main( int argc, char** argv )
     /* define application */
     typedef Feel::HeatSink<nDim, nOrder> heat_sink_type;
 
-    /* instanciate */
+    /* instantiate */
     heat_sink_type heatsink;
 
     /* run */

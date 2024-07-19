@@ -21,8 +21,8 @@
 //! @date 23 Sep 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#ifndef FEELPP_BILINEARFORMBASE_HPP
-#define FEELPP_BILINEARFORMBASE_HPP 1
+#ifndef FEELPP_VF_BILINEARFORMBASE_H
+#define FEELPP_VF_BILINEARFORMBASE_H
 
 #include <future>
 
@@ -105,7 +105,7 @@ public:
     BilinearFormBase&
     operator=( BilinearFormBase const& form );
 
-    BilinearFormBase& operator+=( BilinearFormBase& a )
+    BilinearFormBase& operator+=( BilinearFormBase const& a )
         {
             if ( this == &a )
             {
@@ -116,12 +116,51 @@ public:
             return *this;
         }
 
-    BilinearFormBase& add( double alpha, BilinearFormBase&  a )
+    BilinearFormBase& add( double alpha, BilinearFormBase const&  a )
         {
             M_matrix->addMatrix( alpha, a.M_matrix );
             return *this;
         }
     
+    BilinearFormBase& operator-=( BilinearFormBase const& a )
+        {
+            if ( this == &a )
+            {
+                M_matrix->zero();
+                return *this;
+            }
+            M_matrix->addMatrix( -1.0, a.M_matrix );
+            return *this;
+        }
+    /**
+     * @brief operator *=
+     * 
+     * @param __a bilinear form
+     * @return Bilinear& 
+     */
+    BilinearFormBase& operator*=( value_type const& alpha )
+        {
+            M_matrix->scale( alpha );
+            return *this;
+        }
+    /**
+     * @brief operator/= by a scalar
+     * 
+     * @param __a scalar to divide by
+     * @return BilinearForm& 
+     */
+    BilinearFormBase& operator/=( value_type const& alpha )
+        {
+            M_matrix->scale( 1.0/alpha );
+            return *this;
+        }
+    //! scale the form
+    BilinearFormBase& scale( double alpha )
+        {
+            M_matrix->scale( alpha );
+            return *this;
+        }
+
     virtual void push_back( std::future<void>&& f ) { M_fut_assign.push_back( std::forward<std::future<void>>( f ) ); }
     virtual void get()
         {
@@ -406,50 +445,46 @@ public:
     {
         return (bool)M_matrix;
     }
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
-                                     solve,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * ) )
-                                     ( optional
-                                       ( name,           ( std::string ), "" )
-                                       ( kind,           ( std::string ), soption(_prefix=name,_name="backend") )
-                                       ( rebuild,        ( bool ), boption(_prefix=name,_name="backend.rebuild") )
-                                       ( pre, (pre_solve_type), pre_solve_type() )
-                                       ( post, (post_solve_type), post_solve_type() )
-                                         ) )
+
+    template <typename ... Ts>
+    typename Backend<value_type>::solve_return_type solve( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            std::string const& name = args.get_else(_name,"");
+            std::string const& kind = args.get_else_invocable(_kind,[&name]() { return soption(_prefix=name,_name="backend"); } );
+            bool rebuild = args.get_else_invocable(_rebuild,[&name]() { return boption(_prefix=name,_name="backend.rebuild"); } );
+            pre_solve_type pre = args.get_else(_pre,pre_solve_type());
+            post_solve_type post = args.get_else(_post,post_solve_type());
+
             this->close();
             return Feel::backend( _name=name, _kind=kind, _rebuild=rebuild,
                                   _worldcomm=this->worldCommPtr() )->solve( _matrix=this->matrixPtr(),
-                                                            _rhs=rhs.vectorPtr(),
-                                                            _solution=solution,
-                                                            _pre=pre,
-                                                            _post=post
-                                                            );
+                                                                            _rhs=rhs.vectorPtr(),
+                                                                            _solution=solution,
+                                                                            _pre=pre,
+                                                                            _post=post
+                                                                            );
         }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
-                                     solveb,
-                                     tag,
-                                     ( required
-                                       ( in_out( solution ),* )
-                                       ( rhs, * )
-                                       ( backend, *) )
-                                     ( optional
-                                       ( prec,           ( preconditioner_ptrtype ),
-                                         preconditioner( _prefix=backend->prefix(),
-                                                         _matrix=this->matrixPtr(),
-                                                         _pc=backend->pcEnumType()/*LU_PRECOND*/,
-                                                         _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
-                                                         _backend=backend ) )
-                                         ) )
+    template <typename ... Ts>
+    typename Backend<value_type>::solve_return_type solveb( Ts && ... v )
         {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            auto && solution = args.get(_solution);
+            auto && rhs = args.get(_rhs);
+            auto && backend = args.get(_backend);
+            preconditioner_ptrtype prec = args.get_else_invocable(_prec, [&backend,this](){ return preconditioner( _prefix=backend->prefix(),
+                                                                                                                   _matrix=this->matrixPtr(),
+                                                                                                                   _pc=backend->pcEnumType()/*LU_PRECOND*/,
+                                                                                                                   _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
+                                                                                                                   _backend=backend ); } );
             this->close();
             return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
                                    _solution=solution, _prec = prec );
         }
+
 
     //@}
 
@@ -500,7 +535,6 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
-    boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
     if ( !Xh->worldComm().isActive() ) return;
@@ -513,7 +547,6 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
     this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
 
-    DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
     DVLOG(2) << "begin constructor with default listblock done\n";
 }
 
