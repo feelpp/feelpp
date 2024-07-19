@@ -485,23 +485,15 @@ public :
         // if ( this->isFaceIm() )
         if constexpr ( gmc_t::is_on_face )
         {
-            if constexpr ( gmc_t::PDim == gmc_t::NDim-1 )
-            {
                 for ( uint16_type q = 0; q < this->nPoints(); ++q )
                 {
-                    M_prod[q] = M_w( q )*gmc.J( q )*gmc.normalNorm( q );
+                    M_prod[q] = M_w( q ) * gmc.J( q ) * gmc.normalNorm( q );
                 }
-            }
-            else
-            {
-                for ( uint16_type q = 0; q < this->nPoints(); ++q )
-                {
-                    M_prod[q] = M_w( q ) * gmc.J( q );
-                }
-            }
+
         }
         else
         {
+
             for ( uint16_type q = 0; q < this->nPoints(); ++q )
             {
                 M_prod[q] = M_w( q )*gmc.J( q );

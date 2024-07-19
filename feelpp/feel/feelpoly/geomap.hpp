@@ -1991,6 +1991,8 @@ class GeoMap
         void updateNormals( eigen_matrix_np_type const& K, eigen_matrix_np_type const& B,
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm ) noexcept
         {
+            N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
+            #if 0
             if constexpr ( PDim == NDim-1 && NDim == 3)
             {
                 N.noalias() = K.col(0).cross(K.col(1));
@@ -1999,7 +2001,7 @@ class GeoMap
             {
                 N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
             }
-            
+            #endif
             Nnorm = N.norm();
             unitN = N/Nnorm;
 
