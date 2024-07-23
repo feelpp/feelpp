@@ -181,7 +181,9 @@ public:
     DataMap( size_type n, std::vector<int> const& firstdof, std::vector<int> const& lastdof );
 
     /**
-     *
+     * build a DataMap from a list of DataMaps, usually in the case of a multiple blocs problem
+     * \param listofdm list of DataMap
+     * \param _worldComm world communicator
      */
     DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, worldcomm_ptr_t const& _worldComm );
 
