@@ -49,7 +49,7 @@ template <typename IndexT> class SubMeshData;
 //!
 //! @brief Mesh components enum
 //! @ingroup Mesh
-//! 
+//!
 //! Components of a mesh that can be enabled or disabled when calling
 //! \c updateForUse()
 //!
@@ -184,7 +184,7 @@ public:
     //! set the real dimension
     //!
     void setRealDimension( int d ) { M_realdim = d; }
-    
+
     /**
      * \return the number of elements
      */
@@ -275,13 +275,13 @@ public:
      */
     //@{
 
-    //! set the number of partitions 
+    //! set the number of partitions
     void setNumberOfPartitions( rank_type n )
     {
         M_n_parts = n;
     }
 
-    //! set the number of vertices 
+    //! set the number of vertices
     void setNumVertices( size_type n )
     {
         M_n_vertices = n ;
@@ -597,7 +597,8 @@ public:
     //!
     //! @return true if the list strings are all  mesh marker
     //!
-    bool hasAllMarkers( std::initializer_list<std::string> l )
+    template<typename Container>
+    bool hasAllMarkers( Container&& l )
         {
             bool f = true;
             for (auto n : l )
@@ -610,15 +611,16 @@ public:
     //!
     //! @return true if any of the list string contain a mesh marker
     //!
-    bool hasAnyMarker( std::initializer_list<std::string> l )
+    template<typename Container>
+    bool hasAnyMarker( Container&& l )
+    {
+        for (auto n : l )
         {
-            for (auto n : l )
-            {
-                if ( this->hasMarker( n ) )
-                    return true;
-            }
-            return false;
+            if ( this->hasMarker( n ) )
+                return true;
         }
+        return false;
+    }
     /**
      * @return true if \p marker exists, false otherwise
      */
@@ -671,7 +673,8 @@ public:
     /**
      * @return true if all markers are defined in the mesh, false otherwise
      */
-    bool hasMarkers( std::initializer_list<std::string> l ) const
+    template <typename Container>
+    bool hasMarkers( Container&& l ) const
         {
             for( auto m : l )
             {
@@ -736,7 +739,7 @@ public:
         return M_markername;
     }
     /**
-     * set the marker names 
+     * set the marker names
      */
     void setMarkerNames( std::map<std::string, std::vector<size_type> > const& m )
     {
@@ -776,7 +779,7 @@ public:
     };
     typedef std::pair< vtkSmartPointer<vtkUnstructuredGrid>, std::shared_ptr<MappingDataWithVTK> > vtk_export_type;
     //!
-    //! exporter to VTK data structure 
+    //! exporter to VTK data structure
     //!
     virtual vtk_export_type exportVTK( bool exportMarkers=false, std::string const& vtkFieldNameMarkers="markers" ) const = 0;
 #endif // FEELPP_HAS_VTK
@@ -925,5 +928,22 @@ private:
 #if !defined(FEELPP_INSTANTIATE_NOEXTERN_MESHBASE)
 extern template class MeshBase<uint32_type>;
 #endif
+
+/**
+ * @brief Check if T is a base of MeshBase
+ *
+ */
+template <typename T>
+using is_base_of_meshbase = std::is_base_of<MeshBase<>, T>;
+
+/**
+ * @brief Check if T is a base of MeshBase
+  *
+ * @tparam T
+ * @return true if T is a base of MeshBase, false otherwise
+ */
+template <typename T>
+constexpr bool is_base_of_meshbase_v = is_base_of_meshbase<T>::value;
+
 }
 #endif /* __MeshBase_H */
