@@ -235,12 +235,12 @@ public:
         FEELPP_STRONG_INLINE Eigen::Map<const vector_type>
         evaliq( uint16_type i, uint16_type /*q*/ ) const
         {
-            return Eigen::Map<const vector_type>(M_one.data());
+            return Eigen::Map<const vector_type>{M_one.data()};
         }
         FEELPP_STRONG_INLINE Eigen::Map<const vector_type>
         evalq( uint16_type /*q*/ ) const
         {
-            return Eigen::Map<const vector_type>(M_one.data());
+            return Eigen::Map<const vector_type>{M_one.data()};
         }
     private:
         vector_type M_one;
