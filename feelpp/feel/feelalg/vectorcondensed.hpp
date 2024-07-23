@@ -178,6 +178,21 @@ using condensed_vector_t = VectorCondensed<T>;
 template<typename T>
 using condensed_vector_ptr_t = std::shared_ptr<condensed_vector_t<T>>;
 
+template<typename V>
+struct is_vectorblock: std::is_base_of<VectorBlockBase<typename V::value_type>,V> {};
+
+template<typename V>
+constexpr bool is_vectorblock_v = is_vectorblock<V>::value;
+
+template<typename V>
+struct is_vectorcondensed: std::is_base_of<VectorCondensed<typename V::value_type>,V> {};
+
+template<typename V>
+constexpr bool is_vectorcondensed_v = is_vectorcondensed<V>::value;
+
+
+
+
 //!
 //! Create a shared pointer \p VectorCondensed<T> from \p Args
 //! @code
