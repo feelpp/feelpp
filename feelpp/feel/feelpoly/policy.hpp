@@ -31,11 +31,13 @@
 #define FEELPP_FEELPOLY_POLICY_HPP 1
 
 
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/mpl/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#pragma GCC diagnostic pop
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/find.hpp>
