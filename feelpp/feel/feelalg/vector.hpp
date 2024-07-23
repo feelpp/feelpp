@@ -745,6 +745,10 @@ struct is_vector_ptr<std::shared_ptr<VectorType> >
         VectorType>
 {};
 
+template <class VectorType>
+constexpr bool is_vector_ptr_v = is_vector_ptr<VectorType>::value;
+
+
 template <typename T,typename SizeT=uint32_type>
 struct FEELPP_EXPORT syncOperator
 {
