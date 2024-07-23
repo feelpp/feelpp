@@ -59,6 +59,12 @@ struct remove_shared_ptr<std::shared_ptr<T> >
     typedef T type;
 };
 
+template <class T>
+struct remove_shared_ptr<std::unique_ptr<T>>
+{
+    typedef T type;
+};
+
 template<class T>
 constexpr bool is_shared_ptr_v = is_shared_ptr<T>::value;
 
