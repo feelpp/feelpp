@@ -161,9 +161,9 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
          sc_param = 0.5;
 
     tic();
-    auto ps = product( Vh, Wh, Mh );
-	auto a = blockform2( ps, strategy , backend() );
-	auto rhs = blockform1( ps, strategy , backend() );
+    auto ps = productPtr( Vh, Wh, Mh );
+	auto a = blockform2( _test=ps, _strategy=strategy , _backend=backend() );
+	auto rhs = blockform1( _test=ps, _strategy=strategy , _backend=backend() );
 
 
     // Building the RHS
@@ -297,8 +297,8 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
             b->attachNullSpace( myNullSpace );
     }
     
-    auto U = ps.element();
-    auto Ue = ps.element();
+    auto U = ps->element();
+    auto Ue = ps->element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);

@@ -1,3 +1,5 @@
 triangle-oneelt-{x,-y} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg --gmsh.hsize=4 --functions.f={0,0} --checker.solution={x,-y}:x:y
+triangle-oneelt-{x,-y}-weak --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg --gmsh.hsize=4 --functions.f={0,0} --checker.solution={x,-y}:x:y --weak-bc.use=1
 triangle-{x,-y} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg --functions.f={0,0} --checker.solution={x,-y}:x:y
+triangle-{x,-y}-weak --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/triangle/triangle.cfg --functions.f={0,0} --checker.solution={x,-y}:x:y --weak-bc.use=1
 square-ricka --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/square/square.cfg --functions.f={-4,-4} --checker.solution={y*y-2*y+1,x*x-x}:x:y --mu=1

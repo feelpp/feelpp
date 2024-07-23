@@ -67,7 +67,7 @@ int main(int argc, char**argv )
     #else
         auto V0h = Pchv<0>( mesh );
     #endif
-        auto Xh = product( Vh, V0hv, V0h );
+        auto Xh = productPtr( Vh, V0hv, V0h );
         toc("Vh");
         
 
@@ -97,7 +97,7 @@ int main(int argc, char**argv )
         auto rigid_body_domain_name = soption(_name="domain");
         
         tic();
-        auto l = blockform1( Xh, solve::strategy::monolithic, backend() );
+        auto l = blockform1( _test=Xh, _strategy=solve::strategy::monolithic, _backend=backend() );
         l(0_c) = integrate(_range=elements(mesh),
                         _expr=inner(f,id(v)));
         l(0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
@@ -114,7 +114,7 @@ int main(int argc, char**argv )
         toc("l");
 
         tic();
-        auto a = blockform2( Xh, solve::strategy::monolithic, backend() );
+        auto a = blockform2( _test=Xh, _strategy=solve::strategy::monolithic, _backend=backend() );
         a(0_c, 0_c) = integrate(_range=elements(mesh),
                                 _expr=inner( sigmat, grad(v) ) );
         a(0_c,1_c) += integrate(_range=elements(mesh),
@@ -143,7 +143,7 @@ int main(int argc, char**argv )
             if ( boption(_name="nullspace") )
                 backend()->attachNearNullSpace( myNullSpace );
 
-            auto U=Xh.element();
+            auto U=Xh->element();
             a.solve(_rhs=l,_solution=U);
             u=U(0_c);
             //m=U(1_c);

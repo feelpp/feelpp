@@ -22,134 +22,171 @@
 //! @date 03 May 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/thch.hpp>
-#include <feel/feeldiscr/p2ch.hpp>
-#include <feel/feeldiscr/traits.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/check.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/p2ch.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feeldiscr/thch.hpp>
+#include <feel/feeldiscr/traits.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feelvf/vf.hpp>
 
 ///[stokes]
-template<typename SpacePtrType>
-int
-stokes(SpacePtrType Vh)
+template <typename SpaceT>
+int stokes( std::shared_ptr<SpaceT>  Vh )
 {
     using namespace Feel;
 
     // tag::mesh_space[]
     tic();
     auto mesh = Vh->mesh();
-    auto U = Vh->element("U");
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-    auto v = U.template element<0>();
-    auto q = U.template element<1>();
-    auto mu = doption(_name="mu");
-    auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
-    auto thechecker = checker(_name="qs_stokes",_solution_key=soption("checker.solution"));
-    auto solution = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
+    auto U = Vh->element( "U" );
+    auto u = U( 0_c );
+    auto p = U( 1_c );
+    auto v = U( 0_c );
+    auto q = U( 1_c );
+    auto mu = doption( _name = "mu" );
+    auto f = expr<FEELPP_DIM, 1>( soption( _name = "functions.f" ) );
+    auto thechecker = checker( _name = "qs_stokes", _solution_key = soption( "checker.solution" ) );
+    auto solution = expr<FEELPP_DIM, 1>( thechecker.check() ? thechecker.solution() : soption( _name = "functions.g" ) );
     auto g = solution;
-    toc("Vh");
+    toc( "Vh" );
     // end::mesh_space[]
 
     // tag::forms[]
     tic();
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=inner(f,id(v)));
-    toc("l");
+    auto l = blockform1( _test=Vh );
+    l = integrate( _range = elements( mesh ), _expr = inner( f, id( v ) ) );
+    toc( "l" );
 
     tic();
-    auto a = form2( _trial=Vh, _test=Vh);
-    auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
-    auto deft = sym(gradt(u));
-    auto sigmat = -idt(p)*Id + 2*mu*deft;
+    auto a = blockform2( _test=Vh );
+    auto Id = eye<FEELPP_DIM, FEELPP_DIM>();
+    auto deft = sym( gradt( u ) );
+    auto def = sym( grad( v ) );
+    auto sigmat = -idt( p ) * Id + 2 * mu * deft;
+    auto sigma = -id( q ) * Id + 2 * mu * def;
     tic();
-    a = integrate(_range=elements(mesh),
-                  _expr=inner( 2*mu*deft, grad(v) ) );
-    a += integrate(_range=elements(mesh),
-                   _expr=-idt(p)*div(v) );
-    a += integrate(_range=elements(mesh),
-                   _expr=id(q)*divt(u) );
-    toc("a");
+    a += integrate( _range = elements( mesh ), _expr = inner( sigmat, grad( v ) ) + id( q ) * divt( u ) );
+    toc( "a" );
 
-    if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
-        a+=on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l, _element=u, _expr=g );
-    if ( mesh->hasAnyMarker({"wall","letters"}) )
-        a+=on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l, _element=u, _expr=zero<FEELPP_DIM,1>() );
-    toc("a");
+    tic();
+    LOG( INFO ) << fmt::format( "adding Dirichlet boundary conditions" );
 
+    auto addDirichlet = [&]( std::vector<std::string> const& markers, auto const& theexpr )
+    {
+        if ( mesh->hasAnyMarker( markers ) )
+        {
+            if ( boption( "weak-bc.use" ) )
+            {
+                double penalty=doption( "weak-bc.penalty" );
+                a += integrate( _range = markedfaces( mesh, markers ), _expr = inner( -sigmat * N(), id( v ) ) - inner( sigma * N(), idt( v ) ) + inner( penalty * idt( u ) / hFace(), id( v ) ) );
+                l += integrate( _range = markedfaces( mesh, markers ), _expr = inner( -sigma * N() + penalty * id( v ) / hFace(), theexpr ) );
+            }
+            else
+            {
+                a.on( _range = markedfaces( mesh, markers ), _test = 0_c, _rhs = l, _element = u, _expr = theexpr );
+            }
+        }
+    };
+    auto z = zero<FEELPP_DIM, 1>();
+    addDirichlet( std::vector<std::string>{ "inlet", "Dirichlet" }, g );
+    addDirichlet( std::vector<std::string>{ "wall", "letters" }, z );
+
+    LOG( INFO ) << fmt::format( "adding Dirichlet boundary conditions done" );
+
+    toc( "a dirichlet" );
+    U.vector()->setOnes();
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( !boption( "no-solve" ) )
-        a.solve(_rhs=l,_solution=U);
-    toc("a.solve");
+    {
+        LOG( INFO ) << fmt::format( "solving linear system" );
+        a.solve( _rhs = l, _solution = U );
+        LOG( INFO ) << fmt::format( "solving linear system done" );
+    }
+    toc( "a.solve" );
     // end::forms[]
 
     // tag::export[]
     tic();
-    auto e = exporter( _mesh=mesh );
+    auto e = exporter( _mesh = mesh );
     e->addRegions();
     e->add( "uh", u );
+    e->add( "Uh0", U( 0_c ) );
     e->add( "ph", p );
+    e->add( "Uh1", U( 1_c ) );
     if ( thechecker.check() )
     {
         e->add( "u", solution );
     }
     e->save();
-    toc("Exporter");
+    toc( "Exporter" );
     // end::export[]
 
-    return check( thechecker, u );
+    return check( thechecker, U( 0_c ) );
 }
 ///[stokes]
-int main(int argc, char**argv )
+int main( int argc, char** argv )
 {
     ///[stokes-env]
     using namespace Feel;
     try
     {
-	    po::options_description laplacianoptions( "Stokes options" );
-	    laplacianoptions.add_options()
+        po::options_description laplacianoptions( "Stokes options" );
+        laplacianoptions.add_options()
             ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
             ( "space", po::value<std::string>()->default_value( "P2P1" ), "space type: P2P1(default), P1P1, P1P0" )
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-	    	;
+            ( "weak-bc.use", po::value<bool>()->default_value( false ), "Use weak boundary conditions (Nitsche)" )
+            ( "weak-bc.penalty", po::value<double>()->default_value( 10 ), "Penalty parameter for weak boundary conditions" )
+            ;
 
-	    Environment env( _argc=argc, _argv=argv,
-                       _desc=laplacianoptions,
-                       _about=about(_name="qs_stokes",
-                                    _author="Feel++ Consortium",
-                                    _email="feelpp-devel@feelpp.org"));
+        Environment env( _argc = argc, _argv = argv,
+                         _desc = laplacianoptions,
+                         _about = about( _name = "qs_stokes",
+                                         _author = "Feel++ Consortium",
+                                         _email = "feelpp-devel@feelpp.org" ) );
         ///[stokes-env]
 
         tic();
         ///[stokes-mesh]
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+        auto mesh = loadMesh( _mesh = new Mesh<Simplex<FEELPP_DIM, 1>> );
         ///[stokes-mesh]
-        toc("loadMesh");
+        toc( "loadMesh" );
 
         ///[stokes-space]
         int status;
-        if ( soption("space") == "P1P0" )
-            status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
-        else if ( soption("space") == "P1P1" )
-            status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
+        if ( soption( "space" ) == "P1P0" )
+        {
+            auto P1hv = Pchv<1>( mesh );
+            auto P0h = Pdh<0>( mesh );
+
+            status = stokes( productPtr( P1hv, P0h ) );
+        }
+        else if ( soption( "space" ) == "P1P1" )
+        {
+            auto P1hv = Pchv<1>( mesh );
+            auto P1h = Pch<1>( mesh );
+            status = stokes( productPtr( P1hv, P1h ) );
+        }
         else
         {
             // default P2P1: good space
-            status = stokes( THch<1>( mesh ) );
+            auto P2hv = Pchv<2>( mesh );
+            auto P1h = Pch<1>( mesh );
+            status = stokes( productPtr( P2hv, P1h ) );
         }
         ///[stokes-space]
         return status;
     }
-    catch( ... ) 
+    catch ( ... )
     {
         handleExceptions();
     }

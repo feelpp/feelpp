@@ -259,12 +259,12 @@ int hdg_laplacian()
         props.push_back( "Ode" );
     }
     ibcSpaces->setProperties( props );
-    auto ps = product2( ibcSpaces, Vh, Wh, Mh );
+    auto ps = product2Ptr( ibcSpaces, Vh, Wh, Mh );
     toc("space",true);
     tic();
     solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
-    auto a = blockform2( ps, strategy ,backend() );
-    auto rhs = blockform1( ps, strategy, backend() );
+    auto a = blockform2( _test=ps, _strategy=strategy ,_backend=backend() );
+    auto rhs = blockform1( _test=ps, _strategy=strategy, _backend=backend() );
     toc("forms",true);
 
 
@@ -497,7 +497,7 @@ int hdg_laplacian()
 
 
         tic();
-        auto U=ps.element();
+        auto U=ps->element();
         a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
         toc("solve",true);
 
@@ -513,17 +513,17 @@ int hdg_laplacian()
         tic();
         tic();
         auto Whp = Pdh<OrderP+1>( mesh, true );
-        auto pps = product( Whp );
-        auto PP = pps.element();
+        auto pps = productPtr( Whp );
+        auto PP = pps->element();
         auto ppp = PP(0_c);
         toc("postprocessing.space",FLAGS_v>0);
         tic();
         tic();
-        auto b = blockform2( pps, solve::strategy::local, backend() );
+        auto b = blockform2( _test=pps, _strategy=solve::strategy::local, _backend=backend() );
         b( 0_c, 0_c ) = integrate( _range=elements(mesh), _expr=inner(gradt(ppp),grad(ppp)));
         toc("postprocessing.assembly.a",FLAGS_v>0);
         tic();
-        auto ell = blockform1( pps, solve::strategy::local, backend() );
+        auto ell = blockform1( _test=pps, _strategy=solve::strategy::local, _backend=backend() );
         ell(0_c) = integrate( _range=elements(mesh), _expr=-lambda*grad(ppp)*idv(up));
         toc("postprocessing.assembly.l",FLAGS_v>0);
         toc("postprocessing.assembly",FLAGS_v>0);
