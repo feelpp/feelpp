@@ -1363,6 +1363,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
             std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         myOpPCD->assemble();
     }
+    //-------------------------------------------------------------------//
+    // update operator PMM
+    if ( M_preconditionerAttachPMM && this->algebraicFactory() && this->algebraicFactory()->preconditionerTool()->hasOperatorPMM("pmm") )
+    {
+        this->log("FluidMechanics","updateALEmesh", "rebuild operatorPMM");
+        CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPMM("pmm") ) << "operator PMM does not init";
+        typedef Feel::Alternatives::OperatorPMM<space_velocity_type,space_pressure_type> op_pmm_type;
+        std::shared_ptr<op_pmm_type> myOpPMM =
+            std::dynamic_pointer_cast<op_pmm_type>( this->algebraicFactory()->preconditionerTool()->operatorPMM( "pmm" ) );
+        myOpPMM->assemble();
+    }
 }
 
 //#endif

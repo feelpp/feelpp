@@ -2,6 +2,7 @@
 #define FEELPP_TOOLBOXES_FLUIDMECHANICS_OTHERS_HPP 1
 
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelpde/operatorpmm.hpp>
 
 namespace Feel
 {
@@ -91,7 +92,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePre
     pmmMat->zero();
     auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
     //auto u = this->functionSpaceVelocity()->element( vecSol, this->rowStartInVector() );
-    auto const& u = mctx.field( FieldTag::velocity(this), "velocity" );
     auto const& p = this->fieldPressure();
     auto const& se = mctx.symbolsExpr();
 
