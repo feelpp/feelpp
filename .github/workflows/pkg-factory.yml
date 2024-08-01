@@ -18,6 +18,7 @@ on:
             - 'bookworm'
             - 'testing'
             - 'sid'
+            - 'none'
         enable-ubuntu:
             description: 'Enable ubuntu distros'
             required: false
@@ -28,6 +29,7 @@ on:
             - 'noble'
             - 'jammy'
             - 'focal'
+            - 'none'
         enable-spack:
             description: 'Enable spack distros'
             required: false
@@ -37,6 +39,7 @@ on:
             - 'all'
             - 'spack-mpich'
             - 'spack-openmpi'
+            - 'none'
         enable-docker:
             description: 'Enable docker container'
             required: false
@@ -45,6 +48,7 @@ on:
             options:
             - 'all'
             - 'docker'
+            - 'none'
         enable-apptainer:
             description: 'Enable apptainer container'
             required: false
@@ -53,6 +57,7 @@ on:
             options:
             - 'all'
             - 'apptainer'
+            - 'none'
         parallel:
           description: 'Number of parallel jobs'
           required: false
