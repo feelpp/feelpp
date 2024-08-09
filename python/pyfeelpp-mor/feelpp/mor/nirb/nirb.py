@@ -1125,19 +1125,21 @@ class nirbOnline(ToolboxModel):
         """
         if Nb is None: Nb = self.N
 
-        BH = coeffCoarse[:Nb, :Nb]
-        Bh = coeffFine[:Nb, :Nb]
+        CH = coeffCoarse[:Nb, :Nb]
+        Ch = coeffFine[:Nb, :Nb]
 
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
-        R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh)
-        
-        if False:
-            R_old = np.zeros((Nb, Nb))
-            for i in range(Nb):
-                R_old[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
+        R = np.linalg.solve(CH.transpose() @ CH + lambd * np.eye(Nb), (CH.transpose() @ Ch)).transpose()
 
-            print("Condition number of matrix", np.linalg.cond(BH.transpose() @ BH + lambd*np.eye(Nb)))
-            print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_old))
+        if False:
+            R_2 = np.zeros((Nb, Nb))
+            for i in range(Nb):
+                R_2[i,:] = np.linalg.solve(CH.transpose() @ CH + lambd*np.eye(Nb), CH.transpose() @ Ch[:,i])
+
+            print("Condition number of matrix", np.linalg.cond(CH.transpose() @ CH + lambd*np.eye(Nb)))
+            print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_2))
+            # print(f"R = {R}")
+            # print(f"R_2 = {R_2}")
 
         return R
 
