@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 from feelpp.mor.nirb.nirb_perf import *
 import argparse
-
+from feelpp.core.timing import tic, toc
 
 if __name__ == "__main__":
 
@@ -64,18 +64,31 @@ if __name__ == "__main__":
     mu = nirb_on.Dmu.mumin()
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
+    tic()
+    uHh_r = nirb_on.getOnlineSol(mu)
+    toc("NIRB w/ rectification")
+    nirb_on.doRectification = False
+    tic()
     uHh = nirb_on.getOnlineSol(mu)
+    toc("NIRB w/o rectification")
     finish = time()
 
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    error_r = nirb_on.normMat(uHh_r - uh)
     error = nirb_on.normMat(uHh - uh)
-    print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
 
-    if exporter:    
+    if nirb_on.worldcomm.isMasterRank():
+        print(f"[NIRB] L2 norm between nirb online rectified and toolbox sol = {error_r}")
+        print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
+
+    if exporter:
+        if nirb_on.worldcomm.isMasterRank():
+            print(f"[NIRB] Exporting nirb sol for vizualisation")
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
-        fieldname = 'T'
-        nirb_on.exportField(uHh,fieldname)
+        nirb_on.exportField(uh, "uh")
+        nirb_on.exportField(uHh_r, "uNirb_r")
+        nirb_on.exportField(uHh, "uNirb")
         nirb_on.saveExporter()
 
 

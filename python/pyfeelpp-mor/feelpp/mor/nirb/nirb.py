@@ -743,8 +743,8 @@ class nirbOffline(ToolboxModel):
 
         for j in range(Ntest):
             for k in range(self.N):
-                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
-                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
+                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j], self.reducedBasis[k])
+                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j], self.reducedBasis[k])
 
         Unirb = self.Xh.element()
         UnirbRect = self.Xh.element()
@@ -753,13 +753,13 @@ class nirbOffline(ToolboxModel):
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        pas = 1 if (self.N < 50) else 5
+        pas = 1 if (self.N < 50) else 2
         for i in tqdm(range(1, self.N+1, pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
             # Get rectification matrix
-            BH = self.coeffCoarse[:nb, :nb]
-            Bh = self.coeffFine[:nb, :nb]
-            R = np.linalg.solve(BH.transpose() @ BH + regulParam * np.eye(nb), BH.transpose() @ Bh).T
+            CH = self.coeffCoarse[:nb, :nb]
+            Ch = self.coeffFine[:nb, :nb]
+            R = np.linalg.solve(CH.transpose() @ CH + regulParam * np.eye(nb), CH.transpose() @ Ch).T
 
             for j in range(Ntest):
                 Unirb.setZero()
@@ -768,18 +768,18 @@ class nirbOffline(ToolboxModel):
                 tabRect = R @ tabcoef[j,:nb]
 
                 for k in range(nb): # get reduced sol in a basis function space
-                    Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
+                    Unirb.add(float(tabcoef[j,k]), self.reducedBasis[k])
                     UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
-                    Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
+                    Uhn.add(float(tabcoefuh[j,k]), self.reducedBasis[k])
 
                 Unirb.add(-1, soltestFine[j])
                 UnirbRect.add(-1, soltestFine[j])
                 Uhn.add(-1, soltestFine[j])
                 Uhint = soltestFine[j] - soltest[j]
-                err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb,Unirb)))
-                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect)))
-                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))
-                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint,Uhint)))
+                err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb, Unirb)))
+                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect, UnirbRect)))
+                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn, Uhn)))
+                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint, Uhint)))
 
                 Error['l2(uh-uHn)'].append(err1)
                 Error['l2(uh-uHn)rec'].append(err2)
