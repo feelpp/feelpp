@@ -93,7 +93,7 @@ if __name__ == "__main__":
     print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
     if convergence :
-        Xi_test_path = RESPATH + f"/sampling_test.sample"
+        Xi_test_path = RESPATH + "/sampling_test.sample"
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
             N = s.readFromFile(Xi_test_path)
@@ -104,9 +104,12 @@ if __name__ == "__main__":
             Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
 
-        Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
+        nirb_on = nirbOnline(**config_nirb)
+        nirb_on.initModel()
+
+        Err = nirb_off.checkConvergence(nirb_on, Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
-        file =RESPATH +f"/offlineError.csv"
+        file = RESPATH + "/offlineError.csv"
         df.to_csv(file, index=False)
         print(f"[NIRB] Offline error saved in {file}")
 
