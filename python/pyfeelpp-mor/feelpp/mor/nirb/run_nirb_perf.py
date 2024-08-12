@@ -30,7 +30,7 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
         nirb.initProblemGreedy(500, 1e-3, Xi_train=Xi_train, Nmax=N, computeCoarse=True, samplingMode="log-random")
     else:
         nirb.initProblem(N, Xi_train=Xi_train)
-    RIC = nirb.generateReducedBasis(regulParam=regulParam)
+    RIC = nirb.generateReducedBasis()
 
     nirb.saveData(RESPATH, force=True)
 
@@ -151,6 +151,7 @@ if __name__ == '__main__':
     parser.add_argument("--greedy", help="With or without Greedy [default=0]", type=int, default=0)
     parser.add_argument("--savetime", help="Save or not the execution time [default=0]", type=int, default=0)
     parser.add_argument("--convergence", help="Get convergence error [default=1]", type=int, default=1)
+    parser.add_argument("--regul", help="Regularization parameter [default=1e-10]", type=float, default=1e-10)
 
     ## get parser args
     args = parser.parse_args()
@@ -161,6 +162,7 @@ if __name__ == '__main__':
     conv = args.convergence
     Nsample = args.Ntest
     Nbase = args.Nbase
+    lambda_regul = args.regul
 
     bo = [False, True]
     timeExec = bo[save_time]
@@ -217,7 +219,7 @@ if __name__ == '__main__':
         Xi_train = s.getVector()
         if fppc.Environment.isMasterRank():
             print(f"[NIRB] Xi_train loaded from {Xi_train_path}")
-    else :
+    else:
         Xi_train = generatedAndSaveSampling(Dmu, 200, path=Xi_train_path, samplingMode="log-random")
 
     if os.path.isfile(Xi_test_path):
@@ -233,7 +235,7 @@ if __name__ == '__main__':
     ## generate nirb offline and online object :
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
     nirb_off.initModel()
-    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=1e-10)
+    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=lambda_regul)
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel()
 
@@ -280,3 +282,5 @@ if __name__ == '__main__':
         print(f"Set execution time = {timeExec}")
         print(f"Elapsed time offline = {resOffline}")
         print("=============================================")
+
+    fppc.Environment.saveTimers(display=True)

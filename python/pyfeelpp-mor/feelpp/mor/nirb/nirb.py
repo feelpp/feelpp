@@ -402,11 +402,11 @@ class nirbOffline(ToolboxModel):
                     print(f"[NIRB] Running simulation with mu = {mu}")
                 tic()
                 fineSnapshot = self.getToolboxSolution(self.tbFine, mu)
-                toc(f"NIRB: compute fine snapshot")
+                toc(f"NIRB: compute fine snapshot", display=False)
                 self.fineSnapShotList.append(fineSnapshot)
                 tic()
                 coarseSnapshot = self.getToolboxSolution(self.tbCoarse, mu)
-                toc(f"NIRB: compute coarse snapshot")
+                toc(f"NIRB: compute coarse snapshot", display=False)
                 self.coarseSnapShotList.append(coarseSnapshot)
 
         else:
@@ -415,7 +415,7 @@ class nirbOffline(ToolboxModel):
                     print(f"Running simulation with mu = {mu}")
                 tic()
                 fineSnapshot = self.getToolboxSolution(self.tbFine, mu)
-                toc(f"NIRB: compute fine snapshot")
+                toc(f"NIRB: compute fine snapshot", display=False)
                 self.fineSnapShotList.append(fineSnapshot)
 
         if self.worldcomm.isMasterRank():
@@ -554,7 +554,7 @@ class nirbOffline(ToolboxModel):
             self.l2ScalarProductMatrixCoarse.to_petsc().close()
             self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
-    def generateReducedBasis(self, tolerance=1.e-12, regulParam=1.e-10):
+    def generateReducedBasis(self, tolerance=1.e-12):
         """Generate the reduced basis, and store it in the list self.reducedBasis
 
         Args:
@@ -711,7 +711,7 @@ class nirbOffline(ToolboxModel):
     """
     Check convergence
     """
-    def checkConvergence(self,Ns=10, Xi_test=None, regulParam=1.e-10):
+    def checkConvergence(self, nirb_on, Ns=10, Xi_test=None, regulParam=1.e-10):
         """
             check convergence of the offline step
         """
@@ -738,16 +738,12 @@ class nirbOffline(ToolboxModel):
             uH = self.getToolboxSolution(self.tbCoarse, mu)
             soltest.append(interpolationOperator.interpolate(uH))
 
-        tabcoef = np.zeros((Ntest, self.N))
         tabcoefuh = np.zeros((Ntest, self.N))
 
         for j in range(Ntest):
             for k in range(self.N):
-                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j], self.reducedBasis[k])
                 tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j], self.reducedBasis[k])
 
-        Unirb = self.Xh.element()
-        UnirbRect = self.Xh.element()
         Uhn = self.Xh.element()
 
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
@@ -756,20 +752,13 @@ class nirbOffline(ToolboxModel):
         pas = 1 if (self.N < 50) else 2
         for i in tqdm(range(1, self.N+1, pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
-            # Get rectification matrix
-            CH = self.coeffCoarse[:nb, :nb]
-            Ch = self.coeffFine[:nb, :nb]
-            R = np.linalg.solve(CH.transpose() @ CH + regulParam * np.eye(nb), CH.transpose() @ Ch).T
 
             for j in range(Ntest):
-                Unirb.setZero()
-                UnirbRect.setZero()
-                Uhn.setZero()
-                tabRect = R @ tabcoef[j,:nb]
 
+                Unirb = nirb_on.getOnlineSol(vector_mu[j], Nb=nb, doRectification=False)
+                UnirbRect = nirb_on.getOnlineSol(vector_mu[j], Nb=nb, doRectification=True)
+                Uhn.setZero()
                 for k in range(nb): # get reduced sol in a basis function space
-                    Unirb.add(float(tabcoef[j,k]), self.reducedBasis[k])
-                    UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
                     Uhn.add(float(tabcoefuh[j,k]), self.reducedBasis[k])
 
                 Unirb.add(-1, soltestFine[j])
@@ -1069,7 +1058,7 @@ class nirbOnline(ToolboxModel):
         interpSol = self.solveOnline(mu)[1]
         return interpSol
 
-    def getOnlineSol(self, mu, Nb=None):
+    def getOnlineSol(self, mu, doRectification=None, Nb=None, verbose=False):
         """Get the Online nirb approximate solution
 
         Parameters
@@ -1091,14 +1080,17 @@ class nirbOnline(ToolboxModel):
 
         compressedSol = self.getCompressedSol(mu=mu, Nb=Nb)
 
-        if self.doRectification:
+        if doRectification is None:
+            doRectification = self.doRectification
+
+        if doRectification:
             if Nb not in self.RectificationMat:
                 self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb)
             coef = self.RectificationMat[Nb] @ compressedSol
             for i in range(Nb):
                 onlineSol.add(float(coef[i]), self.reducedBasis[i])
 
-            if self.worldcomm.isMasterRank():
+            if verbose and self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
         else:
             for i in range(Nb):
@@ -1131,12 +1123,13 @@ class nirbOnline(ToolboxModel):
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
         R = np.linalg.solve(CH.transpose() @ CH + lambd * np.eye(Nb), (CH.transpose() @ Ch)).transpose()
 
+        if fppc.Environment.worldCommPtr().isMasterRank():
+            print("Condition number of matrix", np.linalg.cond(CH.transpose() @ CH + lambd*np.eye(Nb)))
         if False:
             R_2 = np.zeros((Nb, Nb))
             for i in range(Nb):
                 R_2[i,:] = np.linalg.solve(CH.transpose() @ CH + lambd*np.eye(Nb), CH.transpose() @ Ch[:,i])
 
-            print("Condition number of matrix", np.linalg.cond(CH.transpose() @ CH + lambd*np.eye(Nb)))
             print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_2))
             # print(f"R = {R}")
             # print(f"R_2 = {R_2}")

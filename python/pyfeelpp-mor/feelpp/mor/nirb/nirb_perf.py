@@ -29,37 +29,37 @@ def ComputeErrors(nirb_on,mu, Nb=None,h1=False, relative=True):
               If relativ is True, the error is divided by the norm of the True sol.
               If h1 is True, the same norm are computed in h1 norm.
     """
-    if h1: 
+    if h1:
         l2Mat, h1Mat = nirb_on.generateOperators(h1=True)
     else :
         l2Mat = nirb_on.generateOperators()
 
     uH = nirb_on.getInterpSol(mu)
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-    
+
     uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
     uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
     uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
-    
+
     error = {'l2(uh-uHn)':[],'l2(uh-uHn)rec':[],'l2(uh-uhn)':[],'l2(uh)':[], 'l2(uh-uH)':[]}
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
-        
-    # error 
+
+    # error
     rel = nirb_on.normMat(l2Mat,uh) if relative else 1
     error['l2(uh-uHn)'].append(nirb_on.normMat(uNH-uh, l2Mat) / rel)
     error['l2(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, l2Mat) / rel)
     error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat) / rel)
     error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
     error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh, l2Mat) / rel)
-    if h1 : 
+    if h1 :
         rel = nirb_on.normMat(h1Mat,uh) if relative else 1
         error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat) / rel)
         error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat) / rel)
         error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat) / rel)
         error['h1(uh)'].append(nirb_on.normMat(uh, h1Mat))
-        error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat) / rel) 
+        error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat) / rel)
 
 
     return error
@@ -103,30 +103,30 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
     if h1:
         error.update({'h1(uh-uHn)':[],'h1(uh-uHn)rec':[],'h1(uh-uhn)':[],'h1(uh)':[], 'h1(uh-uH)':[]})
 
-    # for i, mu in enumerate(mus): 
+    # for i, mu in enumerate(mus):
     for i, mu in enumerate(tqdm(mus,desc=f"[NIRB] ComputeErrorSampling", ascii=False, ncols=120)):
 
         uH = nirb_on.getInterpSol(mu)
         uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
-        
-        uNH = getNirbProjection(nirb_on, uH, Nb=Nb)
-        uNHr = getNirbProjection(nirb_on, uH, doRectification=True, Nb=Nb)
+
+        uNH = nirb_on.getOnlineSol(mu, doRectification=False, Nb=Nb)
+        uNHr = nirb_on.getOnlineSol(mu, doRectification=True, Nb=Nb)
         uNh = getNirbProjection(nirb_on, uh, Nb=Nb)
 
-        # error 
+        # error
         error['l2(uh-uHn)'].append(nirb_on.normMat(uNH-uh, l2Mat))
         error['l2(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, l2Mat))
         error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat))
         error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
         error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh,l2Mat))
-        if h1 : 
+        if h1 :
             error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat))
             error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat))
             error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat))
             error['h1(uh)'].append(nirb_on.normMat(uh, h1Mat))
-            error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat))    
+            error['h1(uh-uH)'].append(nirb_on.normMat(uH-uh, h1Mat))
 
-    return error 
+    return error
 
 
 def ComputeErrorsH(nirb_on, tbRef, mu, path=None, name=None):
@@ -179,7 +179,7 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
         Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         doRectification (bool) : default to True
     """
-    if Nb is None : Nb=nirb_on.N
+    if Nb is None : Nb = nirb_on.N
     if doRectification:
         assert nirb_on.doRectification, f"set doRectification from nirb_on class"
 
@@ -192,8 +192,8 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
         if Nb not in nirb_on.RectificationMat :
                 nirb_on.RectificationMat[Nb] = nirb_on.getRectification(nirb_on.coeffCoarse, nirb_on.coeffFine, Nb=Nb)
         coef = nirb_on.RectificationMat[Nb] @ coef
-    
+
     for i in range(Nb):
         uNh.add(float(coef[i]), nirb_on.reducedBasis[i])
 
-    return uNh 
+    return uNh

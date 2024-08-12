@@ -61,15 +61,14 @@ if __name__ == "__main__":
 
     start= time()
 
-    mu = nirb_on.Dmu.mumin()
+    mu = nirb_on.Dmu.element()
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
     tic()
-    uHh_r = nirb_on.getOnlineSol(mu)
+    uHh_r = nirb_on.getOnlineSol(mu, doRectification=True)
     toc("NIRB w/ rectification")
-    nirb_on.doRectification = False
     tic()
-    uHh = nirb_on.getOnlineSol(mu)
+    uHh = nirb_on.getOnlineSol(mu, doRectification=False)
     toc("NIRB w/o rectification")
     finish = time()
 
