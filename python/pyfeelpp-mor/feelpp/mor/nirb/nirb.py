@@ -87,6 +87,7 @@ class ToolboxModel():
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
+            print(f"[NIRB] Number of degrees of freedom : {self.Ndofs}")
 
     def setModel(self, tb):
         """Set model from a ToolboxModel object already initialized
@@ -480,7 +481,6 @@ class nirbOffline(ToolboxModel):
         S = []
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
-        self.coarseSnapShotListGreedy = []
         N = 0
 
         # Computation of coarse solutions
@@ -491,12 +491,10 @@ class nirbOffline(ToolboxModel):
         for i in range(2):
             mu0 = self.Dmu.element()
             S.append(mu0)
-            self.fineSnapShotList.append(   self.getToolboxSolution(self.tbFine  , mu0) )
+            self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu0))
             uH = self.getToolboxSolution(self.tbCoarse, mu0)
             self.coarseSnapShotList.append(uH)
-            self.coarseSnapShotListGreedy.append(uH)
             N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
         Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train_copy[0], 2).mean()
                          - self.getReducedSolution(coarseSolutions, Xi_train_copy[1], 1).mean())
 
@@ -518,12 +516,15 @@ class nirbOffline(ToolboxModel):
 
             S.append(mu_star)
             del Xi_train_copy[idx]
-            self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
-            uH = self.getToolboxSolution(self.tbCoarse, mu_star)
-            self.coarseSnapShotList.append(uH)
-            self.coarseSnapShotListGreedy.append(uH)
+            tic()
+            fineSnapshot = self.getToolboxSolution(self.tbFine, mu_star)
+            toc(f"NIRB: compute fine snapshot", display=False)
+            self.fineSnapShotList.append(fineSnapshot)
+            tic()
+            coarseSnapshot = self.getToolboxSolution(self.tbCoarse, mu_star)
+            toc(f"NIRB: compute coarse snapshot", display=False)
+            self.coarseSnapShotList.append(coarseSnapshot)
             N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
 
             Deltas_conv.append(Delta_star)
             if self.worldcomm.isMasterRank():
@@ -532,8 +533,7 @@ class nirbOffline(ToolboxModel):
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
-
-        print(Deltas_conv)
+            print("Delta_max", Deltas_conv)
 
         return S, Xi_train, Deltas_conv
 
@@ -562,7 +562,7 @@ class nirbOffline(ToolboxModel):
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
             regulParam(float), optional : the regularization parameter for rectification
         """
-        self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
+        self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
@@ -631,6 +631,8 @@ class nirbOffline(ToolboxModel):
         RIC (list) : Relative innformation content
         """
 
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Compute reduced basis using POD algorithm")
+
         Nsnap = len(self.fineSnapShotList)
 
         if self.correlationMatrix == None :
@@ -652,6 +654,8 @@ class nirbOffline(ToolboxModel):
             self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:-1]))
             self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
 
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Correlation matrices computed")
+
         eigenValues, eigenVectors = eigh(self.correlationMatrix)
         # get ordred eigenvalues
         idx = eigenValues.argsort()[::-1]
@@ -668,6 +672,8 @@ class nirbOffline(ToolboxModel):
         sum_eigenValues = eigenValues.sum()
         RIC = []
 
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Compute reduced basis")
+
         for i in range(Nmode):
             vec = self.Xh.element()
             vec.setZero()
@@ -678,6 +684,8 @@ class nirbOffline(ToolboxModel):
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
             # if abs(1. - RIC[i])<= tolerance :
             #     break
+
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Reduced basis computed")
 
         return reducedBasis, RIC
 
@@ -711,7 +719,7 @@ class nirbOffline(ToolboxModel):
     """
     Check convergence
     """
-    def checkConvergence(self, nirb_on, Ns=10, Xi_test=None, regulParam=1.e-10):
+    def checkConvergence(self, nirb_on, Ns=10, Xi_test=None):
         """
             check convergence of the offline step
         """
@@ -876,11 +884,13 @@ class nirbOffline(ToolboxModel):
                 matH1[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matH1[i, j] - 1) > tol:
-                        print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j]-1.)} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j]-1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matH1[i, j]) > tol :
-                        print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j])} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j])} tol = {tol}")
                         return False
         return True
 
@@ -901,11 +911,13 @@ class nirbOffline(ToolboxModel):
                 matL2[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matL2[i, j] - 1) > tol:
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matL2[i, j]) > tol :
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
                         return False
         return True
 
@@ -1123,8 +1135,8 @@ class nirbOnline(ToolboxModel):
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
         R = np.linalg.solve(CH.transpose() @ CH + lambd * np.eye(Nb), (CH.transpose() @ Ch)).transpose()
 
-        if fppc.Environment.worldCommPtr().isMasterRank():
-            print("Condition number of matrix", np.linalg.cond(CH.transpose() @ CH + lambd*np.eye(Nb)))
+        # if fppc.Environment.worldCommPtr().isMasterRank():
+            # print("Condition number of matrix", np.linalg.cond(CH.transpose() @ CH + lambd*np.eye(Nb)))
         if False:
             R_2 = np.zeros((Nb, Nb))
             for i in range(Nb):

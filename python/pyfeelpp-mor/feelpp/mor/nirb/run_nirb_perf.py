@@ -48,8 +48,8 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
     res['nirb_offline'] = [offline_time]
 
     if fppc.Environment.isMasterRank():
-        print(f"[NIRB] Offline Elapsed time = ", offline_time)
-        print(f"[NIRB] Offline part Done !")
+        print("[NIRB] Offline Elapsed time =", offline_time)
+        print("[NIRB] Offline part Done !")
 
     return res
 
@@ -206,8 +206,8 @@ if __name__ == '__main__':
     # Xi_train_path = RESPATH + f"/sampling_train3dfin_N200.sample"
     # Xi_test_path = RESPATH + f"/sampling_test3dfin_Ns{Nsample}.sample"
 
-    pas = 3
-    baseList = range(1,Nbase, pas)
+    pas = 4
+    baseList = range(1, Nbase, pas)
 
     Dmu = loadParameterSpace(model_path)
     # Xi_train_path = RESPATH + f"/sampling_train4_N200.sample"
@@ -251,8 +251,9 @@ if __name__ == '__main__':
         ## Get convergence error
         for N in baseList:
             N = int(N)
-            print("\n\n-----------------------------")
-            print(f"[NIRB] Test with N = {N}")
+            if fppc.Environment.isMasterRank():
+                print("\n\n-----------------------------")
+                print(f"[NIRB] Test with N = {N}")
             err = nirb_on.loadData(nbSnap=N, path=RESPATH)
             assert err == 0, "loadData failed"
             online_error_sampling(nirb_on, RESPATH, Nsample=Nsample, Xi_test=Xi_test, verbose=False, save=True)

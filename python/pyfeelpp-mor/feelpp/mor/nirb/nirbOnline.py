@@ -62,6 +62,8 @@ if __name__ == "__main__":
     start= time()
 
     mu = nirb_on.Dmu.element()
+    if fppc.Environment.isMasterRank(): print(mu.parameterNames())
+    mu.setParameters([0.01, 0.1, 0.1, 0.1, 0.1])
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
     tic()

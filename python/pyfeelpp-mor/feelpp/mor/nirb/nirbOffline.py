@@ -73,17 +73,14 @@ if __name__ == "__main__":
     nirb_off.generateOperators(coarse=True)
 
     if doGreedy:
-        _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
+        _, Xi_train, _ = nirb_off.initProblemGreedy(500, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
     else:
         Xi_train = nirb_off.initProblem(nbSnap, Xi_train=Xi_train)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10, tolerance=1.e-12)
+    RIC = nirb_off.generateReducedBasis(tolerance=1.e-12)
 
+    N = len(nirb_off.fineSnapShotList)
 
     tolortho = 1.e-8
-
-    # nirb_off.orthonormalizeL2(tol=tolortho)
-    # nirb_off.orthonormalizeH1(tol=tolortho)
-    # nirb_off.orthonormalizeL2(tol=tolortho)
 
     nirb_off.saveData(RESPATH, force=True)
 
@@ -96,22 +93,24 @@ if __name__ == "__main__":
         Xi_test_path = RESPATH + "/sampling_test.sample"
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
-            N = s.readFromFile(Xi_test_path)
+            Ns = int(s.readFromFile(Xi_test_path))
             Xi_test = s.getVector()
             if nirb_off.worldcomm.isMasterRank():
                 print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
-        else :
+        else:
             Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
 
         nirb_on = nirbOnline(**config_nirb)
         nirb_on.initModel()
+        nirb_on.loadData(nbSnap=N, path=RESPATH)
 
         Err = nirb_off.checkConvergence(nirb_on, Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
         file = RESPATH + "/offlineError.csv"
         df.to_csv(file, index=False)
-        print(f"[NIRB] Offline error saved in {file}")
+
+        if nirb_off.worldcomm.isMasterRank(): print(f"[NIRB] Offline error saved in {file}")
 
 
     perf = []
