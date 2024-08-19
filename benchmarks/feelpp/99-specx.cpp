@@ -9,16 +9,18 @@
 #include <specx/Data/SpDataAccessMode.hpp>
 #include <specx/Legacy/SpRuntime.hpp>
 #include <specx/Task/SpPriority.hpp>
+#include <specx/Utils/SpArrayView.hpp>
 #include <specx/Task/SpProbability.hpp>
 
 //#include <spdlog/spdlog.h>
 //#include <spdlog/fmt/chrono.h>
 
+
 template <typename Iterator>
-std::vector<std::pair<Iterator, Iterator>>
+std::vector<std::tuple<Iterator, Iterator, int>>
 divide_work( Iterator begin, Iterator end, std::size_t n )
 {
-    std::vector<std::pair<Iterator, Iterator>> ranges;
+    std::vector<std::tuple<Iterator, Iterator,int>> ranges;
     ranges.reserve(n);
 
     auto dist = std::distance(begin, end);
@@ -27,14 +29,14 @@ divide_work( Iterator begin, Iterator end, std::size_t n )
 
     for (size_t i = 0; i < n-1; ++i) {
         auto next_end = std::next(begin, chunk + (remainder ? 1 : 0));
-        ranges.emplace_back(begin, next_end);
+        ranges.emplace_back(begin, next_end,i);
 
         begin = next_end;
         if (remainder) remainder -= 1;
     }
 
     // last chunk
-    ranges.emplace_back(begin, end);
+    ranges.emplace_back(begin, end,n-1);
     return ranges;
 }
 
@@ -79,27 +81,40 @@ int main(int argc, char** argv )
     auto ranges = divide_work( it, en, NumThreads );
     beg = std::chrono::high_resolution_clock::now();
     
-    for( auto [i,r] : enumerate(ranges) )
+    Eigen::VectorXd area_vec(NumThreads);
+    area_vec.setZero();
+    for( auto const& r : ranges )
     {
-        runtime.task( SpRead( r.first ), SpRead( r.second  ), SpWrite( area ), 
-                               []( auto const& beg, auto const& end, double& a ) -> double
-                               {
-                                    for( auto it = beg, en = end; it != en; ++it ) 
-                                    {
-                                        auto const& f = boost::unwrap_ref( *it );
-                                        a += f.measure();
-                                    }
-                                    return a;
-                                } ).setTaskName( fmt::format("area-{}",i) );;
+        runtime.task( //SpWriteArray( area_vec.data(), SpArrayView( NumThreads ).removeItems( 0, NumThreads ).addItem( std::get<2>( r ) ) ),
+                      SpWrite( area_vec( std::get<2>( r ) ) ),
+                      [&r]( double& a ) -> double
+                      {
+                          double buffer = 0;
+                          for ( auto it = std::get<0>( r ), en = std::get<1>( r ); it != en; ++it )
+                          {
+                              auto const& f = boost::unwrap_ref( *it );
+                              buffer += std::sqrt(f.measure());
+                          }
+                          a += buffer;
+                          return a;
+                      } )
+            .setTaskName( fmt::format( "area-{}", std::get<2>( r ) ) );
     }
-    
-    
+    runtime.task(SpReadArray( area_vec.data(), SpArrayView( NumThreads )),  
+                 [&area](SpArrayAccessor<const double>& a)
+                    {
+                        Eigen::Map<const Eigen::VectorXd> v(*a.begin(),a.getSize());
+                        area = v.sum();
+                    }).setTaskName("area");
 
     // We wait for all tasks to finish
     runtime.waitAllTasks();
-
+#if !defined( USE_FINAL_TASK )
+    area = area_vec.sum();
+#endif    
     // We make all runtime threads exit
     runtime.stopAllThreads();
+
     end = std::chrono::high_resolution_clock::now();
     std::cout << fmt::format("area domain specx({} threads): {} in {}", ioption("nt"), area, std::chrono::duration_cast<std::chrono::milliseconds>(end - beg)) << std::endl;
     // We generate the task graph corresponding to the execution
@@ -137,7 +152,7 @@ int main(int argc, char** argv )
     for (auto const& wf : r)
     {
         auto const &f = boost::unwrap_ref(wf);
-        area_seq += f.measure();
+        area_seq += std::sqrt(f.measure());
     }
     end = std::chrono::high_resolution_clock::now();
     std::cout << fmt::format("area domain standard: {} in {}", area_seq, std::chrono::duration_cast<std::chrono::milliseconds>(end - beg)) << std::endl;

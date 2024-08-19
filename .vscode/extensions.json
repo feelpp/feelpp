@@ -7,10 +7,14 @@
 		"formulahendry.github-actions",
 		"ms-vscode.cmake-tools",
 		"ms-vscode.cpptools",
+		"ms-vscode-remote.remote-containers",
+		"ms-vscode-remote.vscode-remote-extensionpack",
 		"bbenoist.doxygen",
 		"ms-python.python",
 		"github.vscode-pull-request-github",
-		"shardulm94.trailing-spaces"
+		"shardulm94.trailing-spaces",
+		"maouw.vscode-apptainer",
+		"redhat.vscode-yaml"
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": [

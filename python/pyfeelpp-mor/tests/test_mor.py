@@ -3,8 +3,9 @@ import os
 import pytest
 
 
-import feelpp
+import feelpp.core as fppc
 from feelpp.mor import CRBModelProperties
+from feelpp.mor import *
 
 # desc : (('path/to/cfg/file', dimension, {mumin}, {mumax}), 'name-of-the-test')
 cases = [
@@ -34,13 +35,13 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
         init_feelpp (_fixture_):
     """
     e = init_feelpp
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
-    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties = CRBModelProperties(worldComm=fppc.Environment.worldCommPtr())
     model_properties.setup(model_path)
     modelParameters = model_properties.parameters()
-    Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
+    Dmu = ParameterSpace.New(modelParameters, fppc.Environment.worldCommPtr())
 
     # mubar = Dmu.mubar()       # /!\ doesn't exist anymore !
     mumin = Dmu.min()
@@ -60,15 +61,15 @@ def test_init_from_ModelPropeties(casefile, dim, mumin_th, mumax_th,  init_feelp
 @pytest.mark.parametrize("casefile", [cases_params[-1][0]], ids=[cases_ids[-1]])
 def test_sampling(casefile, init_feelpp):
     e = init_feelpp
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
-    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties = CRBModelProperties(worldComm=fppc.Environment.worldCommPtr())
     model_properties.setup(model_path)
     modelParameters = model_properties.parameters()
-    Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
+    Dmu = ParameterSpace.New(modelParameters, fppc.Environment.worldCommPtr())
 
-    print(feelpp.mor.__file__)
+#    print(feelpp.mor.__file__)
     Nsamples = 10
     s = Dmu.sampling()
     s.sample(Nsamples, samplingMode="random")
@@ -93,13 +94,13 @@ def test_sampling(casefile, init_feelpp):
 @pytest.mark.parametrize("casefile,dim,Mu", [cases_params[-1][:3]], ids=[cases_ids[-1]])
 def test_param_not_in_range(casefile, dim, Mu,  init_feelpp):
     e = init_feelpp
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
 
     model_path = "$cfgdir/"+os.path.splitext(os.path.basename(casefile))[0] + ".json"
-    model_properties = CRBModelProperties(worldComm=feelpp.Environment.worldCommPtr())
+    model_properties = CRBModelProperties(worldComm=fppc.Environment.worldCommPtr())
     model_properties.setup(model_path)
     modelParameters = model_properties.parameters()
-    Dmu = feelpp.mor._mor.ParameterSpace.New(modelParameters, feelpp.Environment.worldCommPtr())
+    Dmu = ParameterSpace.New(modelParameters, fppc.Environment.worldCommPtr())
 
     mu = Dmu.element()
     # just set values

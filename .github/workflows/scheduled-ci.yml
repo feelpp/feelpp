@@ -1,4 +1,5 @@
 name: Scheduled CI
+run-name : "Scheduled Feel++ CI [${{ matrix.flavor }}/${{ matrix.version }}]"
 
 on: 
   schedule:
@@ -28,12 +29,13 @@ jobs:
       fail-fast: false
       matrix: 
         include:
-          - {flavor: ubuntu, version: "20.04", dotw: '0'}
-          - {flavor: ubuntu, version: "22.04", dotw: '1'}
-#          - {flavor: ubuntu, version: "23.10", dotw: '2'}
-          - {flavor: debian, version: "testing", dotw: '3'}
-          - {flavor: debian, version: "sid", dotw: '4'}
-          - {flavor: fedora, version: "36", dotw: '5'}
+#          - {flavor: ubuntu, version: "20.04", dotw: '0'}
+          - {flavor: ubuntu, version: "22.04", dotw: '1', preset: "release-clang-cmake"}
+          - {flavor: ubuntu, version: "24.04", dotw: '2', preset: "release-clang-cmake"}
+          - {flavor: ubuntu, version: "24.04", dotw: '3', preset: "release-clang-cpp20-cmake"}
+#          - {flavor: debian, version: "testing", dotw: '3'}
+#          - {flavor: debian, version: "sid", dotw: '4'}
+#          - {flavor: fedora, version: "36", dotw: '5'}
           - {flavor: fedora, version: "37", dotw: '6'}
     name: Trigger build on ${{ matrix.flavor }}-${{ matrix.version }}
     runs-on: ubuntu-latest
@@ -42,10 +44,10 @@ jobs:
       - 
         if: ${{ github.event.schedule == format('30 0 * * {0}', matrix.dotw ) }}
         name: "Trigger build [${{ github.event.schedule }}] ${{ matrix.flavor }}-${{ matrix.version }}"
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CR_PAT }}
           repository: feelpp/feelpp
           event-type: trigger-feelpp-build
-          client-payload: '{"flavor":"${{ matrix.flavor }}","version":"${{ matrix.version }}"}'
+          client-payload: '{"flavor":"${{ matrix.flavor }}","version":"${{ matrix.version }}", "preset":"${{ matrix.preset }}"'
 

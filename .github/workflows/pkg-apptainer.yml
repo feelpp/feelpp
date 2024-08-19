@@ -1,0 +1,152 @@
+name: Feelpp PKG Apptainer
+run-name: "PKG Apptainer Feel++ [ ${{ inputs.flavor }}/${{ inputs.dist }} ]"
+on:
+    workflow_dispatch:
+      inputs:
+        flavor:
+          description: 'Flavor to build'
+          required: true
+          default: 'ubuntu'
+          type: choice
+          options:
+          - 'ubuntu'
+          - 'debian'
+        dist:
+          description: 'Distribution to build'
+          required: true
+          default: 'jammy'
+          type: choice
+          options:
+          - 'jammy'
+          - 'focal'
+          - 'noble'
+          - 'bullseye'
+          - 'bookworm'
+          - 'testing'
+          - 'sid'
+        version:
+          description: 'Version of Feel++ packages'
+          required: false
+          type: string
+          default: ''
+        apptainer:
+          description: 'Build apptainer image'
+          required: false
+          default: '1.3.3'
+          type: choice
+          options:
+          - '1.2.2'
+          - '1.3.3'
+          - 'false'
+        docker:
+          description: 'docker image'
+          required: false
+          type: string
+          default: 'ghcr.io/feelpp/feelpp'
+        docker-dev:
+          description: 'docker dev image'
+          required: false
+          type: string
+          default: 'ghcr.io/feelpp/feelpp-dev'
+        parallel:
+          description: 'Number of parallel jobs'
+          required: false
+          default: "20"
+          type: string
+        skip:
+          description: 'Skip build'
+          required: false
+          default: ""
+          type: string
+    workflow_call:
+        inputs:
+            flavor:
+                description: 'Flavor of the distribution'
+                required: true
+                type: string
+                default: "ubuntu"
+            dist:
+                description: 'Name of the distribution'
+                required: true
+                type: string
+                default: "jammy"
+            version:
+                description: 'Version of Feel++ packages'
+                required: true
+                type: string
+            parallel:
+                description: 'Number of parallel jobs'
+                required: false
+                type: string
+                default: "20"
+            docker:
+                description: 'docker image'
+                required: false
+                type: string
+                default: 'ghcr.io/feelpp/feelpp'
+            docker-dev:
+                description: 'docker dev image'
+                required: false
+                type: string
+                default: 'ghcr.io/feelpp/feelpp-dev'
+            apptainer:
+                description: 'Build apptainer image'
+                required: false
+                type: string
+                default: "1.3.3"
+            skip:
+                description: 'Skip apptainer build'
+                required: false
+                type: string
+                default: ""
+            continue-on-error:
+                description: 'Continue on error'
+                required: false
+                type: string
+                default: "false"
+
+jobs:
+  version:
+    uses: ./.github/workflows/version.yml
+    with:
+        continue-on-error: "false"
+    secrets: inherit
+
+  apptainer:
+    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false'}}
+    runs-on: self-apptainer
+    needs: version
+    name: Build and Push apptainer image
+    continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+    env:
+        version: ${{ inputs.version || needs.version.outputs.version }}
+        docker: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}"
+        sif: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}-sif"
+        apptainer: /opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer
+    steps:
+      -
+        name: Login to GitHub Container Registry
+        run: |
+          ${{ env.apptainer }} remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
+
+      -
+        name: Get docker image ${{ env.docker }}
+        run: |
+          echo "Using docker image: ${{ env.docker }}"
+          ${{ env.apptainer }} pull -F feelpp.sif docker://${{ env.docker }}
+          ${{ env.apptainer }} inspect feelpp.sif
+          ls -lrt
+      -
+        name: Push apptainer image ${{ env.sif }} to ghcr.io
+        run: |
+          echo "Using sif: ${{ env.sif }}"
+          ${{ env.apptainer }} push feelpp.sif oras://${{ env.sif }}
+
+#      -
+#        name: Trigger feelpp:${{ needs.docker.outputs.tag }}
+#        uses: peter-evans/repository-dispatch@v3
+#        with:
+#          token: ${{ secrets.CR_PAT }}
+#          repository: feelpp/feelpp
+#          event-type: feelpp-apptainer-updated
+#          client-payload: '{"sif":"${{ env.sif }}"}'

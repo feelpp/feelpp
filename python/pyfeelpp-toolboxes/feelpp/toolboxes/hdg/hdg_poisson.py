@@ -1,9 +1,9 @@
 import sys
 
-import feelpp
-import feelpp.toolboxes as tb
+import feelpp.core as fppc
+import feelpp.toolboxes as fppt
 
-e=feelpp.Environment(sys.argv,opts=tb.toolboxes_options("hdg"))
+e=fppc.Environment(sys.argv,opts=tb.toolboxes_options("hdg"))
 
 #from pyfeelpp import discr,ts,filters
 from feelpp.toolboxes.hdg import *
@@ -21,6 +21,6 @@ for k,v in f.modelProperties().materials():
 f.modelProperties().materials().at("omega").setProperty("k","10")
 f.modelProperties().materials().at("omega").setProperty("cond","10")
 print("xx",f.modelProperties().materials().at("omega"))
-    
+
 f.solve()
 f.exportResults()

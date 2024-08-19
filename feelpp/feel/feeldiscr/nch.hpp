@@ -37,12 +37,13 @@ namespace meta
 template<typename MeshType,
          int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         typename T=double,
          int Tag = 0>
 struct NChv
 {
     typedef FunctionSpace<MeshType,
                           bases<CrouzeixRaviart<Order,Vectorial,Pts,Tag>>,
-                          double,
+                          T,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
@@ -53,13 +54,15 @@ struct NChv
 template<typename MeshType,
          int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         typename T=double,
          int Tag = 0>
-using NChv_type = typename meta::NChv<MeshType,Order,Pts,Tag>::type;
+using NChv_type = typename meta::NChv<MeshType,Order,Pts,T,Tag>::type;
 template<typename MeshType,
          int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         typename T=double,
          int Tag = 0>
-using NChv_ptrtype = typename meta::NChv<MeshType,Order,Pts,Tag>::ptrtype;
+using NChv_ptrtype = typename meta::NChv<MeshType,Order,Pts,T,Tag>::ptrtype;
 
 /**
    Given a \p mesh, build a function space of vectorial continuous function
@@ -69,12 +72,13 @@ using NChv_ptrtype = typename meta::NChv<MeshType,Order,Pts,Tag>::ptrtype;
 template<int Order,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          typename MeshType,
+         typename T=double,
          int Tag = 0>
 inline
-NChv_ptrtype<MeshType,Order,Pts,Tag>
-NChv( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false  )
+NChv_ptrtype<MeshType,Order,Pts,T,Tag>
+NChv( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false  )
 {
-    return NChv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
+    return NChv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
                                                    _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }

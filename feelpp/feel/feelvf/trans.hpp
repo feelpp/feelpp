@@ -100,9 +100,9 @@ class Trans : public ExprDynamicBase
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
     //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate_type evaluate(bool p ) const
         {
-            return M_expr.evaluate(p,worldcomm).transpose();
+            return M_expr.evaluate(p).transpose();
         }
     /** @name Operator overloads
      */

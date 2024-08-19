@@ -40,7 +40,7 @@ namespace Feel {
  * \endcode
  */
 template<typename IteratorType, typename Predicate>
-ext_entities_from_iterator_t<IteratorType>
+auto
 complement( IteratorType&& it, Predicate pred )
 {
     using entity_t = filter_entity_t<IteratorType>;
@@ -49,10 +49,10 @@ complement( IteratorType&& it, Predicate pred )
 
     auto append = [&myelts,&pred]( entity_t const& e ) { if ( !pred( e ) ) myelts->push_back( boost::cref(e) ); };
     std::for_each( begin( it ), end( it ), append );
-    return boost::make_tuple( filter_enum_t<IteratorType>(),
+    return range( _range=boost::make_tuple( filter_enum_t<IteratorType>(),
                               myelts->begin(),
                               myelts->end(),
-                              myelts );
+                              myelts ), _mesh=it.mesh() );
 }
 
 } // Feel

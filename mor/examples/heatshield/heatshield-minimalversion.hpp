@@ -29,7 +29,6 @@
 #ifndef FEELPP_HEATSHIELDMINIMALVERSION_HPP
 #define FEELPP_HEATSHIELDMINIMALVERSION_HPP 1
 
-#include <boost/timer.hpp>
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -82,8 +81,8 @@ public:
     typedef typename super_type::bdf_ptrtype bdf_ptrtype;
 
     HeatShieldMinimalVersion() : super_type( "thermalblockminver" ) {}
-        
-    
+
+
     //! initialization of the model
     void initModel();
 

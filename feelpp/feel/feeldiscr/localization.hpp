@@ -40,7 +40,7 @@ public:
 
     using mesh_type = MeshType;
     typedef std::weak_ptr<mesh_type> mesh_ptrtype;
-    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
 
     using index_type = typename MeshType::index_type;
     using size_type = typename MeshType::size_type;
@@ -438,8 +438,8 @@ Localization<MeshType>::initBoundaryFaces()
     // typename mesh_type::location_face_iterator face_en;
     // boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
     auto rangeBoundaryFaces = Feel::boundaryfaces( mesh );
-    auto face_it = boost::get<1>( rangeBoundaryFaces );
-    auto face_en = boost::get<2>( rangeBoundaryFaces );
+    auto face_it = rangeBoundaryFaces.begin();
+    auto face_en = rangeBoundaryFaces.end();
     bool hasInitGic=false;
     for ( ; face_it != face_en; ++face_it )
     {

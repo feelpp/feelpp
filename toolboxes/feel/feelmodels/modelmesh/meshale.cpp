@@ -592,7 +592,7 @@ MeshALE<Convex>::ComputationalDomain::ComputationalDomain( self_type const* mesh
         myelts->push_back( boost::cref( eltRef ) );
     }
     myelts->shrink_to_fit();
-    range_elements_ref_type rangeEltOnRef = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(),myelts->end(),myelts );
+    range_elements_ref_type rangeEltOnRef = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(),myelts->end(),myelts ), _mesh=M_meshALE->referenceMesh());
 
     // build data
     M_aleFactory = ale_map_type::build(M_meshALE->referenceMesh(), rangeEltOnRef, M_meshALE->prefix(), M_meshALE->worldCommPtr(), M_meshALE->repository()  );
@@ -843,7 +843,7 @@ MeshALE<Convex>::DisplacementImposedOnInitialDomainOverFaces::transformFromRelat
         myelts->push_back( boost::cref( eltRelated ) );
     }
     myelts->shrink_to_fit();
-    trace_range_elements_type res = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(),myelts->end(),myelts );
+    trace_range_elements_type res = range(_range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),myelts->begin(),myelts->end(),myelts ), _mesh=M_mesh);
     return res;
 }
 

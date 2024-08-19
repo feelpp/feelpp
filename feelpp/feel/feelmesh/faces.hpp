@@ -664,8 +664,8 @@ public:
     void updateFacesMarker( uint16_type markerType, ElementVecType const& evec )
     {
         auto rangeElt = Feel::elements( evec.mesh() );
-        auto it = rangeElt.template get<1>();
-        auto en = rangeElt.template get<2>();
+        auto it = rangeElt.begin();
+        auto en = rangeElt.end();
         size_type id = 0;
         for ( ; it != en; ++it )
         {
@@ -703,20 +703,18 @@ public:
 
 
     template<typename IteratorRange>
-    void updateMarkerWithRangeFaces( uint16_type markerType, IteratorRange const& range, flag_type flag )
+    void updateMarkerWithRangeFaces( uint16_type markerType, IteratorRange && range, flag_type flag )
     {
-        auto it = boost::get<1>( range );
-        auto en = boost::get<2>( range );
-        for (  ; it != en; ++it )
+        for ( auto& f : std::forward<IteratorRange>(range) )
         {
-            auto & faceModified = this->faceIterator( boost::unwrap_ref( *it ).id() )->second;
+            auto & faceModified = this->faceIterator( boost::unwrap_ref( f ).id() )->second;
             faceModified.setMarker( markerType, flag );
         }
     }
     template<typename IteratorRange>
-    void updateMarker2WithRangeFaces( IteratorRange const& range, flag_type flag )
+    void updateMarker2WithRangeFaces( IteratorRange&& range, flag_type flag )
     {
-        this->updateMarkerWithRangeFaces( 2, range, flag );
+        this->updateMarkerWithRangeFaces( 2, std::forward<IteratorRange>(range), flag );
     }
     template<typename IteratorRange>
     void updateMarker3WithRangeFaces( IteratorRange const& range, flag_type flag )

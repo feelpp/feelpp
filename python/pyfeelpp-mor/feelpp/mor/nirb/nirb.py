@@ -4,14 +4,14 @@
 ## 09/2022
 
 
-import feelpp
+import feelpp.core as fppc
 from .utils import *
-import feelpp.operators as FppOp
+import feelpp.core.operators as fppcop
 # from NIRBinitCase import *
 import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
-import feelpp.interpolation as fi
+import feelpp.core.interpolation as fppci
 from tqdm import tqdm
 import random 
 import math
@@ -51,10 +51,10 @@ class ToolboxModel():
 
         self.toolboxType = toolboxType
         assert self.toolboxType in ["heat", "fluid"], "toolboxType must be 'heat' or 'fluid'"
-        self.model_path = feelpp.Environment.expand(model_path)
-        self.finemesh_path = feelpp.Environment.expand(finemesh_path)
+        self.model_path = fppc.Environment.expand(model_path)
+        self.finemesh_path = fppc.Environment.expand(finemesh_path)
 
-        self.worldcomm = feelpp.Environment.worldComm()
+        self.worldcomm = fppc.Environment.worldComm()
 
         if pathlib.Path(self.finemesh_path).suffix==".geo" :
             self.coarsemesh_path = self.finemesh_path
@@ -77,9 +77,9 @@ class ToolboxModel():
     def initModel(self):
         """Initialize the model
         """
-        self.model = feelpp.readJson(self.model_path)
+        self.model = fppc.readJson(self.model_path)
         self.tbFine = self.setToolbox(self.h)
-        self.Xh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+        self.Xh = fppc.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
         self.Ndofs = self.getFieldSpace().nDof()
 
@@ -110,7 +110,7 @@ class ToolboxModel():
             coarse (bool, optional): get the coarse space. Defaults to False.
 
         Returns:
-            feelpp._discr.*: field space
+            fppc._discr.*: field space
         """
         if not coarse:
             if self.toolboxType == "heat":
@@ -132,7 +132,7 @@ class ToolboxModel():
         """Initialize the rectification problem
         """
         self.tbCoarse = self.setToolbox(self.H,mesh_path=self.coarsemesh_path)
-        self.XH = feelpp.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
+        self.XH = fppc.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
 
@@ -150,8 +150,8 @@ class ToolboxModel():
         """
         if mesh_path == None: mesh_path=self.finemesh_path
         # load meshes
-        mesh_ = feelpp.mesh(dim=self.dimension, realdim=self.dimension)
-        mesh = feelpp.load(mesh_, mesh_path, hsize)
+        mesh_ = fppc.mesh(dim=self.dimension, realdim=self.dimension)
+        mesh = fppc.load(mesh_, mesh_path, hsize)
 
         # set mesh and model properties
         if self.toolboxType == "heat":
@@ -219,7 +219,7 @@ class ToolboxModel():
         elif self.toolboxType == "fluid":
             Vh_image = image_tb.spaceVelocity()
             Vh_domain = domain_tb.spaceVelocity()
-        interpolator = fi.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
+        interpolator = fppci.interpolator(domain = Vh_domain, image = Vh_image, range = image_tb.rangeMeshElements())
         return interpolator
 
     def getToolboxInfos(self):
@@ -532,15 +532,15 @@ class nirbOffline(ToolboxModel):
         """Assemble L2 and H1 operators, stored in self.l2ScalarProduct and self.h1ScalarProduct
         """
         if self.l2ScalarProductMatrix is None or self.h1ScalarProductMatrix is None:
-            # Vh = feelpp.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
-            self.l2ScalarProductMatrix = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            self.h1ScalarProductMatrix = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
+            # Vh = fppc.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+            self.l2ScalarProductMatrix = fppcop.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            self.h1ScalarProductMatrix = fppcop.stiffness(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
             self.l2ScalarProductMatrix.to_petsc().close()
             self.h1ScalarProductMatrix.to_petsc().close()
 
         if coarse:
-            self.l2ScalarProductMatrixCoarse = FppOp.mass(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
-            self.h1ScalarProductMatrixCoarse = FppOp.stiffness(test=self.XH, trial=self.XH, range=feelpp.elements(self.tbCoarse.mesh()))
+            self.l2ScalarProductMatrixCoarse = fppcop.mass(test=self.XH, trial=self.XH, range=fppc.elements(self.tbCoarse.mesh()))
+            self.h1ScalarProductMatrixCoarse = fppcop.stiffness(test=self.XH, trial=self.XH, range=fppc.elements(self.tbCoarse.mesh()))
             self.l2ScalarProductMatrixCoarse.to_petsc().close()
             self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
@@ -597,7 +597,7 @@ class nirbOffline(ToolboxModel):
         """
         assert self.reducedBasis is not None, f"reduced Basis have to be computed before"
 
-        backend = feelpp.backend(worldcomm=feelpp.Environment.worldCommPtr())
+        backend = fppc.backend(worldcomm=fppc.Environment.worldCommPtr())
 
         self.l2ProductBasis = []
         for i in range(self.N):
@@ -843,7 +843,7 @@ class nirbOffline(ToolboxModel):
         """Ortohnormalize the matrix Z using L2 norm
 
         Args:
-            Z (list of feelpp._discr.Element): list of feelpp functions
+            Z (list of fppc._discr.Element): list of feelpp functions
 
         Returns:
             Z: the matrix orthonormalized, inplace
@@ -1021,7 +1021,7 @@ class nirbOnline(ToolboxModel):
 
         Parameters
         ----------
-        solution (feelpp._discr.Element) : the solution to be projected
+        solution (fppc._discr.Element) : the solution to be projected
         mu (ParameterSpaceElement) : parameter to compute the solution if not given
         Nb (int, optional) : Size of the basis, by default None. If None, the whole basis is used
 
@@ -1054,7 +1054,7 @@ class nirbOnline(ToolboxModel):
 
         Returns
         -------
-            interpSol (feelpp._discr.Element): interpolated solution on fine mesh
+            interpSol (fppc._discr.Element): interpolated solution on fine mesh
         """
         interpSol = self.solveOnline(mu)[1]
         return interpSol
@@ -1071,7 +1071,7 @@ class nirbOnline(ToolboxModel):
 
         Returns
         -------
-        feelpp._discr.Element
+        fppc._discr.Element
             NIRB online solution uHn^N
         """
         if Nb is None: Nb = self.N
@@ -1135,13 +1135,13 @@ class nirbOnline(ToolboxModel):
         """Assemble L2 and H1 operators associated to the fine toolbox
         """
         if h1:
-            l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
-            h1Mat = FppOp.stiffness(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
+            l2Mat = fppcop.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
+            h1Mat = fppcop.stiffness(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
             l2Mat.to_petsc().close()
             h1Mat.to_petsc().close()
             return l2Mat, h1Mat
         else :
-            l2Mat = FppOp.mass(test=self.Xh, trial=self.Xh, range=feelpp.elements(self.tbFine.mesh()))
+            l2Mat = fppcop.mass(test=self.Xh, trial=self.Xh, range=fppc.elements(self.tbFine.mesh()))
             l2Mat.to_petsc().close()
             return l2Mat
 
@@ -1222,8 +1222,8 @@ class nirbOnline(ToolboxModel):
             if Mat is not specified, L2 matrix will be computed 
         Args:
         -----
-            Mat (feelpp.__alg.SparseMatrix): the matrix. Defaults to None.
-            u (feelpp.__discr_Vector): the vector to compute the norm
+            Mat (fppc.__alg.SparseMatrix): the matrix. Defaults to None.
+            u (fppc.__discr_Vector): the vector to compute the norm
         """
         if Mat is None:
             Mat = self.generateOperators()
@@ -1240,8 +1240,8 @@ class nirbOnline(ToolboxModel):
 
         Returns
         -------
-            feelpp._discr.Element: FE solution on coarse mesh
-            feelpp._discr.Element: interpolated solution on fine mesh
+            fppc._discr.Element: FE solution on coarse mesh
+            fppc._discr.Element: interpolated solution on fine mesh
         """
         if self.tbCoarse is None:
             super().initCoarseToolbox()
@@ -1262,13 +1262,13 @@ class nirbOnline(ToolboxModel):
             name (str): name of the exporter
             toolbox (str, optional): mesh to use, "fine" or "coarse". Defaults to "fine".
         """
-        self.exporter = feelpp.exporter(self.tbFine.mesh() if toolbox == "fine" else self.tbCoarse.mesh(), name)
+        self.exporter = fppc.exporter(self.tbFine.mesh() if toolbox == "fine" else self.tbCoarse.mesh(), name)
 
     def exportField(self, field, name):
         """export a field to the exporter, if it has already been initialized
 
         Args:
-            field (feelpp._discr.Element): field to export
+            field (fppc._discr.Element): field to export
             name (str): name of the field
         """
         if self.exporter is not None:

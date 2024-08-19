@@ -24,6 +24,8 @@
 #ifndef FEELPP_FILTERS_DETAILS_MESHCONTIGUOUSNUMBERINGMAPPING_HPP
 #define FEELPP_FILTERS_DETAILS_MESHCONTIGUOUSNUMBERINGMAPPING_HPP 1
 
+#include <feel/feelmesh/meshfragmentation.hpp>
+
 namespace Feel
 {
 namespace detail
@@ -36,45 +38,31 @@ struct MeshContiguousNumberingMapping
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using index_type = typename mesh_type::index_type;
     using storage_node_value_type = StorageNodeValueType;
-    using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using range_element_type = Range<mesh_type,MESH_ELEMENTS>; //elements_reference_wrapper_t<mesh_type>;
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
 
-    explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false )
+    explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false, MeshFragmentation<mesh_type> const& meshFragmentation = MeshFragmentation<mesh_type>{} )
         :
         M_mesh( mesh ),
         M_interprocessPointAreDuplicated( interprocessPointAreDuplicated )
         {
-            this->updateForUse();
+            this->updateForUse( meshFragmentation );
         }
 
-    void updateForUse()
+    void updateForUse( MeshFragmentation<mesh_type> const& meshFragmentation )
         {
             mesh_type* mesh = M_mesh;
             rank_type currentPid = mesh->worldComm().localRank();
             rank_type worldSize = mesh->worldComm().localSize();
 
-            if ( M_partIdToRangeElement.empty() )
-            {
-                if ( false )
-                {
-                    for ( auto const& [fragmentId,fragmentData] : fragmentationMarkedElements( mesh ) )
-                    {
-                        auto const& [range,mIds,fragmentName] = fragmentData;
-                        M_partIdToRangeElement[fragmentId] = std::make_tuple(fragmentName,range);
-                    }
-                }
-                else
-                {
-                    M_partIdToRangeElement[0] = std::make_tuple("elements",elements(mesh));
-                }
-            }
+            M_partIdToRangeElement = meshFragmentation.toContainer( *M_mesh );
 
             // point id -> (  ( map of idsInOtherPart ), ( vector of ( marker, element id, id in elt) ) )
             std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<int,index_type,uint16_type>> >> dataPointsInterProcess;
 
             for ( auto const& [part,nameAndRangeElt] : M_partIdToRangeElement )
             {
-                auto const& rangeElt = std::get<1>( nameAndRangeElt );
+                auto const& rangeElt  = std::get<1>( nameAndRangeElt );
                 index_type nEltInRange = nelements(rangeElt);
                 auto & elementIdToContiguous = M_elementIdToContiguous[part];
                 auto & pointIdsInElements = M_pointIdsInElements[part];
@@ -139,12 +127,14 @@ struct MeshContiguousNumberingMapping
                 int nbRequest = 2 * neighborSubdomains;
                 mpi::request* reqs = new mpi::request[nbRequest];
                 int cptRequest = 0;
-                std::map<rank_type,size_type> sizeRecv;
+                std::map<rank_type,std::size_t> sizeRecv;
+                std::map<rank_type,std::size_t> sizeSend;
 
                 // get size of data to transfer
                 for ( rank_type neighborRank : mesh->neighborSubdomains() )
                 {
-                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+                    sizeSend[neighborRank] = dataToSend[neighborRank].size();
+                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
                     reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
                 }
                 // wait all requests
@@ -153,13 +143,13 @@ struct MeshContiguousNumberingMapping
                 cptRequest = 0;
                 for ( rank_type neighborRank : mesh->neighborSubdomains() )
                 {
-                    int nSendData = dataToSend[neighborRank].size();
+                    std::size_t nSendData = dataToSend[neighborRank].size();
                     if ( nSendData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
-                    int nRecvData = sizeRecv[neighborRank];
+                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+                    std::size_t nRecvData = sizeRecv[neighborRank];
                     dataToRecv[neighborRank].resize( nRecvData );
                     if ( nRecvData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
                 }
                 // wait all requests
                 mpi::wait_all( reqs, reqs + cptRequest );
@@ -223,7 +213,8 @@ struct MeshContiguousNumberingMapping
                 cptRequest = 0;
                 for ( rank_type neighborRank : mesh->neighborSubdomains() )
                 {
-                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+                    sizeSend[neighborRank] = dataToReSend[neighborRank].size();
+                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
                     reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
                 }
                 // wait all requests
@@ -234,11 +225,11 @@ struct MeshContiguousNumberingMapping
                 {
                     int nSendData = dataToReSend[neighborRank].size();
                     if ( nSendData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, &(dataToReSend[neighborRank][0]), nSendData );
+                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToReSend[neighborRank].data(), nSendData );
                     int nRecvData = sizeRecv[neighborRank];
                     dataToReRecv[neighborRank].resize( nRecvData );
                     if ( nRecvData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToReRecv[neighborRank].data(), nRecvData );
                 }
                 // wait all requests
                 mpi::wait_all( reqs, reqs + cptRequest );
@@ -595,7 +586,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             coords[3 * i] = (T)p.node()[0];
         }
 
-        if ( MeshType::nRealDim >= 2 )
+        if constexpr ( MeshType::nRealDim >= 2 )
         {
             if ( outer )
             {
@@ -622,7 +613,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
             }
         }
 
-        if ( MeshType::nRealDim >= 3 )
+        if constexpr ( MeshType::nRealDim >= 3 )
         {
             if ( outer )
             {

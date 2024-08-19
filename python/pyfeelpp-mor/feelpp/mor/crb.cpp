@@ -31,6 +31,7 @@
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/stl.h>
 #include <feel/feelpython/pybind11/stl_bind.h>
+#include <pybind11/stl/filesystem.h>
 //#include <feel/feelpython/pybind11/eigen.h>
 //#include <feel/feelpython/pybind11/numpy.h>
 
