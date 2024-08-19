@@ -21,16 +21,18 @@
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
-#include <mesh_partitioner.hpp>
+
+#include <mesh_partitioner_impl.hpp>
 
 namespace Feel {
 
-template void partition<Simplex<1>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<2>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<2,2>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<3>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Simplex<3,2>>( std::vector<int> const& nParts, nl::json const& );
+template void partition<Simplex<1>>( nl::json const& );
+template void partition<Simplex<2>>( nl::json const& );
+template void partition<Simplex<2,1,3>>( nl::json const& );
+template void partition<Simplex<2,2>>( nl::json const& );
+template void partition<Simplex<2,2,3>>( nl::json const& );
+template void partition<Simplex<3>>( nl::json const& );
+template void partition<Simplex<3,2>>( nl::json const& );
 
 
 }
-

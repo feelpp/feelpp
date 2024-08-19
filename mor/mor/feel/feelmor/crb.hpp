@@ -852,6 +852,38 @@ public:
         element_type const& M_composite_e2;
     };
 
+    struct SaveCompositeFunctionSpace
+    {
+        SaveCompositeFunctionSpace( std::string const& localPath ,
+                                std::string const& modelName,
+                                WorldComm const& worldcomm,
+                                truth_model_ptrtype model)
+            :
+            M_localPath ( localPath ),
+            M_modelName( modelName ),
+            M_worldcomm_fs( worldcomm ),
+            M_model_fs(model)
+            {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+            {
+                int i = T::value;
+                std::string functionSpaceFilenameBase = fmt::format("{}_functionSpace_{}_p{}.json", M_modelName, i, M_worldcomm_fs.size());
+                std::string functionSpaceFilename = M_localPath + "/" + ( fs::path(functionSpaceFilenameBase)).string();
+                if( M_worldcomm_fs.isMasterRank() )
+                    std::cout << "save Function Space : " << functionSpaceFilename << std::endl;
+                M_model_fs->functionSpace()->template functionSpace<T::value>()->save( functionSpaceFilename );
+            }
+
+    private:
+        std::string M_localPath;
+        std::string  M_modelName;
+        WorldComm M_worldcomm_fs;
+        truth_model_ptrtype M_model_fs;
+    };
+
     //@}
 
     /** @name  Methods
@@ -2573,13 +2605,19 @@ CRB<TruthModelType>::offline()
             M_model->rBFunctionSpace()->saveMesh( meshFilename );
         }
         // save the rb function space
-        if ( true )
+        if constexpr (!functionspace_type::is_composite)
         {
             std::string functionSpaceFilenameBase = fmt::format("{}_functionSpace_p{}.json",this->name(),this->worldComm().size());
             std::string functionSpaceFilename = (M_elements_database.dbLocalPath() / fs::path(functionSpaceFilenameBase)).string();
             if( this->worldComm().isMasterRank() )
                 std::cout << "save Function Space : " << functionSpaceFilename << std::endl;
             M_model->rBFunctionSpace()->functionSpace()->save( functionSpaceFilename );
+        }
+        else
+        {
+            mpl::range_c<int,0,space_type::nSpaces> keySpaces;
+            std::string localPath = M_elements_database.dbLocalPath().string();
+            boost::fusion::for_each( keySpaces, SaveCompositeFunctionSpace(localPath, this->name(), this->worldComm(), M_model ));
         }
         M_model->copyAdditionalModelFiles( this->dbDirectory() );
 

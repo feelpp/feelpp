@@ -159,17 +159,22 @@ public:
      */
     //@{
 
-    CRBModelTrilinear( crb::stage stage, int level = 0 )
+    CRBModelTrilinear( std::string modelName, crb::stage stage, int level = 0 )
         :
-        super( std::make_shared<model_type>(), stage, level )
+        super( modelName, std::make_shared<model_type>(), stage, level )
         {
         }
 
-    CRBModelTrilinear( model_ptrtype const& model, crb::stage stage, int level = 0 )
+    CRBModelTrilinear( std::string modelName, model_ptrtype const& model, crb::stage stage, int level = 0 )
         :
-        super( model, stage, level )
+        super( modelName, model, stage, level )
         {}
-    
+
+    CRBModelTrilinear( std::shared_ptr<Feel::CRBModelDB> crbmodeldb, model_ptrtype const& model, crb::stage stage, int level = 0 )
+        :
+        super( crbmodeldb, model, stage, level )
+        {}
+
     FEELPP_DEPRECATED CRBModelTrilinear( int level=0, bool doInit=true )
         :
         super(level,doInit)

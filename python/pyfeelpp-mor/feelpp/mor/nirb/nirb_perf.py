@@ -175,7 +175,7 @@ def getNirbProjection(nirb_on, u, Nb=None, doRectification=False):
     Args
     ----
         nirb_on (class): initialized nirbOnline class
-        u (feelpp._discr.element) : function
+        u (fppc._discr.element) : function
         Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
         doRectification (bool) : default to True
     """

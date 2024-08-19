@@ -6,10 +6,17 @@
 
 == run offline
 ```
-./bin/crb_heat3dapp --config-file share/feel/testcases/CRB/heat3d/heat3d.cfg 
+./feelpp_mor_heat3dapp --config-file heat3d/heat3d.cfg --crb.rebuild-database=1
 ```
 
 == run online
+
+Minimal example of command line for online simulation. It runs the online model for 10 different sets of parameters.
+```
+./feelpp_mor_onlinerun --crbmodel.name myheat3d_p1g1  --plugin.dir <PATH_TO_PLUGIN> 
+```
+
+Other examples of command line options
 
 evaluate output from one parameter
 ```

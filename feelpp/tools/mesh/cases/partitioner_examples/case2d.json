@@ -1,0 +1,24 @@
+{
+    "input":{
+        "filename":"$cfgdir/domain2d.geo"
+    },
+    "output":{
+        "directory":"examples/case2d"
+    },
+    "visualization-exporter":{
+        "enabled":true
+    },
+    "partitioner":
+    {
+        "number-of-partition":[5,8,13,21,58,265],
+        "splitting":[ "OmegaTE","OmegaHT", ["OmegaHT2","OmegaHT3","OmegaTE2"] ],
+        //"size": 10,
+        "AAaggregates":
+        {
+            "spheres":{
+                "type": "faces",
+                "markers": ["interface"] // ["CenterSphere","LeftSphere","RightSphere"]
+            }
+        }
+    }
+}

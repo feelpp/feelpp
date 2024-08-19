@@ -58,7 +58,9 @@ void defHDGPoisson(py::module &m)
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
         .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
-
+        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
+        .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
+        
         // elements
         .def( "spaceFlux", &toolbox_t::spaceFlux, "returns the flux function space")
         .def( "fieldFlux", &toolbox_t::fieldFlux, "returns the flux field")
@@ -69,6 +71,11 @@ void defHDGPoisson(py::module &m)
         .def( "spacePostPotential", &toolbox_t::spacePostPotential, "returns the post processed potential function space")
         .def( "fieldPostPotential", &toolbox_t::fieldPostPotential, "returns the post processed potential field")
         .def( "fieldPostPotentialPtr", &toolbox_t::fieldPostPotentialPtr, "returns the post processed potential field shared_tr")
+
+        // time stepping
+        .def( "timeStepBase", static_cast<std::shared_ptr<TSBase> ( toolbox_t::* )() const>( &toolbox_t::timeStepBase ), "get time stepping base" )
+        .def( "startTimeStep", &toolbox_t::startTimeStep, "start time stepping" )
+        .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time stepping" )
 
         // solve
         .def("solve",&toolbox_t::solve, "solve the electric mechanics problem, set boolean to true to update velocity and acceleration")

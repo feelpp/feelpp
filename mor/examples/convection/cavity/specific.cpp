@@ -106,7 +106,7 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
         std::bind( &self_type::updateR, std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
 
     vector_ptrtype R( M_backend->newVector( Xh ) );
-    sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
+    sparse_matrix_ptrtype J( M_backend->newMatrix( _test = Xh, _trial = Xh ) );
 
     double current_gr=mu(0);
     double current_pr=mu(1);
@@ -160,18 +160,18 @@ ConvectionCrb::output( int output_index,
     A_OUT << "====================================================\n"
           << "                     MEASURES\n";
     // domain measure
-    double meas = integrate( elements(mesh), cst(1.0) ).evaluate()(0,0);
+    double meas = integrate( _range = elements(mesh), _expr =  cst(1.0) ).evaluate()(0,0);
     A_OUT << "measure of the domain = " << meas << std::endl;
 
     // mean value of div(u)
-    double mean_div_u = integrate( elements(mesh), divv(u) ).evaluate()(0,0);
+    double mean_div_u = integrate( _range = elements(mesh), _expr =  divv(u) ).evaluate()(0,0);
     A_OUT << "mean div(u) = " << mean_div_u << std::endl;
 
     // L2 norme of div(u) (should be 0)
-    double div_u_error_L2 = integrate( elements(mesh), divv(u)*divv(u) ).evaluate()(0,0);
+    double div_u_error_L2 = integrate( _range = elements(mesh), _expr =  divv(u)*divv(u) ).evaluate()(0,0);
     A_OUT << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
 
-    double mean_T = integrate( elements(mesh), idv(t) ).evaluate()(0,0) ;
+    double mean_T = integrate( _range = elements(mesh), _expr =  idv(t) ).evaluate()(0,0) ;
     A_OUT << "mean temperature = " << mean_T << std::endl;
 
 
@@ -187,8 +187,8 @@ ConvectionCrb::output( int output_index,
     // output 1 : Nusselt number
     case 1 :
     {
-        output = integrate( markedfaces( mesh,"wallRight" ) ,
-                            idv( t ) ).evaluate()( 0,0 ) ;
+        output = integrate( _range = markedfaces( mesh  ,"wallRight" ) ,
+                            _expr =idv( t ) ).evaluate()( 0,0 ) ;
         A_OUT << "output 1 : Nu = " << output << std::endl;
         break;
     }

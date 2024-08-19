@@ -1390,7 +1390,7 @@ private :
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = decltype(makeInterpolation<nonconforming_t>(nonconforming_t())) >
 class OperatorInterpolation : public OperatorLinear<DomainSpaceType, ImageSpaceType >
 {
@@ -1443,8 +1443,8 @@ public:
     typedef typename dual_image_space_type::basis_type image_basis_type;
     typedef typename domain_space_type::basis_type domain_basis_type;
 
-    typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
-    typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
+    using idim_type = typename IteratorRange::idim_t;
+    using iterator_type = typename IteratorRange::iterator_t;
     typedef IteratorRange range_iterator;
 
 
@@ -1811,10 +1811,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     int cptRequest=0;
 
     // get size of data to transfer (first phase)
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -1824,14 +1826,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     cptRequest=0;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
 
-        int nRecvData = sizeRecv[neighborRank];
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -1866,7 +1868,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     cptRequest=0;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToReSend[neighborRank].size();
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -1876,13 +1879,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     cptRequest=0;
     for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        int nSendData = dataToReSend[neighborRank].size();
+        std::size_t nSendData = dataToReSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToReSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, dataToReSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToReRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, dataToReRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -4199,10 +4202,10 @@ struct opinterprangetype
 /**
  * get the type of an OperatorInterpolation
  * \code
- * operator_interpolation_t<space_1_type,space_2_type,elements_pid_t<typename space_2_type::mesh_type>, >
+ * operator_interpolation_t<space_1_type,space_2_type,Range<typename space_2_type::mesh_type,MESH_ELEMENTS>, >
  * \endcode
  */
-template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange= elements_pid_t<typename ImageSpaceType::mesh_type>, typename InterpType = InterpolationNonConforming >
+template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange= Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>, typename InterpType = InterpolationNonConforming >
 using operator_interpolation_t =
 OperatorInterpolation<DomainSpaceType,
                       ImageSpaceType,
@@ -4211,20 +4214,20 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange= elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange= Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationNonConforming >
 using I_t = operator_interpolation_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>;
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange= elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange= Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType =InterpolationNonConforming>
 using I_ptr_t = std::shared_ptr<I_t<DomainSpaceType,ImageSpaceType,IteratorRange,InterpType>>;
 
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationGradient<nonconforming_t>>
 using Grad_t =
 OperatorInterpolation<DomainSpaceType,
@@ -4234,7 +4237,7 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationGradient<nonconforming_t>>
 using Grad_ptr_t = std::shared_ptr<Grad_t<DomainSpaceType,
                                             ImageSpaceType,
@@ -4243,7 +4246,7 @@ using Grad_ptr_t = std::shared_ptr<Grad_t<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationCurl<nonconforming_t>>
 using Curl_t =
 OperatorInterpolation<DomainSpaceType,
@@ -4253,7 +4256,7 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationCurl<nonconforming_t>>
 using Curl_ptr_t = std::shared_ptr<Curl_t<DomainSpaceType,
                                             ImageSpaceType,
@@ -4262,7 +4265,7 @@ using Curl_ptr_t = std::shared_ptr<Curl_t<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationDiv<nonconforming_t>>
 using Div_t =
 OperatorInterpolation<DomainSpaceType,
@@ -4272,7 +4275,7 @@ OperatorInterpolation<DomainSpaceType,
 
 template<typename DomainSpaceType,
          typename ImageSpaceType,
-         typename IteratorRange = elements_pid_t<typename ImageSpaceType::mesh_type>,
+         typename IteratorRange = Range<typename ImageSpaceType::mesh_type,MESH_ELEMENTS>,
          typename InterpType = InterpolationDiv<nonconforming_t>>
 using Div_ptr_t = std::shared_ptr<Div_t<DomainSpaceType,
                                           ImageSpaceType,

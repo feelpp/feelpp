@@ -31,11 +31,8 @@
 #include <feel/feelmodels/modelmesh/fsimesh.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
 
-namespace Feel
+namespace Feel::FeelModels
 {
-namespace FeelModels
-{
-
 template< class FluidType, class SolidType >
 FSI<FluidType,SolidType>::FSI( std::string const& prefix,
                                std::string const& keyword,
@@ -184,66 +181,52 @@ namespace detail
 
 template <typename FluidType,typename SolidType>
 typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI, mpl::bool_<false> /**/ )
-{
-    auto submeshStruct = createSubmesh( _mesh=FM->meshMotionTool()->referenceMesh(), _range=markedfaces( FM->meshMotionTool()->referenceMesh(), markersFSI ) );
-#if 0
-    auto hola = boundaryfaces(submeshStruct);
-    for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
-#endif
-    typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
-    typedef std::shared_ptr<smd_type> smd_ptrtype;
-    smd_ptrtype smd( new smd_type(FM->mesh()) );
-    for ( auto const& ew : elements(submeshStruct) )
-    {
-        auto const& e = unwrap_ref(ew);
-        auto const& theface = FM->meshMotionTool()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
-        size_type idElt2 = FM->meshMotionTool()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
-        //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
-        auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
-        //smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
-        smd->bm.insert( { e.id(), theface2.id() } );
-    }
-    submeshStruct->setSubMeshData( smd );
-
-    return submeshStruct;
-}
-
-template <typename FluidType,typename SolidType>
-typename FluidType::mesh_type::trace_mesh_ptrtype
-createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI, mpl::bool_<true> /**/ )
-{
-    auto submeshStruct = createSubmesh( _mesh=FM->mesh(), _range=markedfaces( FM->mesh(),markersFSI ) );
-#if 0
-    auto hola = boundaryfaces(submeshStruct);
-    for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
-        submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
-#endif
-    return submeshStruct;
-}
-
-template <typename FluidType,typename SolidType>
-typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI, mpl::int_<2> /**/ )
-{
-    static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::solid_1dreduced_type::mesh_type::nOrder;
-    return createMeshStruct1dFromFluidMesh2d<FluidType,SolidType>(FM, markersFSI, mpl::bool_<hasSameOrderGeo>() );
-}
-
-template <typename FluidType,typename SolidType>
-typename SolidType::solid_1dreduced_type::mesh_ptrtype
-createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI, mpl::int_<3> /**/ )
-{
-    CHECK( false ) << "not possible";
-    return typename SolidType::solid_1dreduced_type::mesh_ptrtype();
-}
-
-template <typename FluidType,typename SolidType>
-typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, std::set<std::string> const& markersFSI )
 {
-    return createMeshStruct1dFromFluidMesh<FluidType,SolidType>( FM, markersFSI, mpl::int_<SolidType::nDim>() );
+    static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::solid_1dreduced_type::mesh_type::nOrder;
+    if constexpr ( ( SolidType::nDim == 2 ) ) 
+    {
+        if constexpr ( hasSameOrderGeo == false )
+        {
+            auto submeshStruct = createSubmesh( _mesh = FM->meshMotionTool()->referenceMesh(), _range = markedfaces( FM->meshMotionTool()->referenceMesh(), markersFSI ) );
+        #if 0
+            auto hola = boundaryfaces(submeshStruct);
+            for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
+                submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
+        #endif
+            typedef SubMeshData<typename FluidType::mesh_type::index_type> smd_type;
+            typedef std::shared_ptr<smd_type> smd_ptrtype;
+            smd_ptrtype smd( new smd_type(FM->mesh()) );
+            for ( auto const& ew : elements(submeshStruct) )
+            {
+                auto const& e = unwrap_ref(ew);
+                auto const& theface = FM->meshMotionTool()->referenceMesh()->face( submeshStruct->subMeshToMesh(e.id()) );
+                size_type idElt2 = FM->meshMotionTool()->dofRelationShipMap()->geoElementMap().at( theface.element0().id() ).first;
+                //std::cout << " e.G() " << e.G() << " other.G() " <<  theface.G() << std::endl;
+                auto const& theface2 = FM->mesh()->element(idElt2).face(theface.pos_first());
+                //smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), theface2.id() ) );
+                smd->bm.insert( { e.id(), theface2.id() } );
+            }
+            submeshStruct->setSubMeshData( smd );
+
+            return submeshStruct;
+        }
+        else
+        {
+            auto submeshStruct = createSubmesh( _mesh=FM->mesh(), _range=markedfaces( FM->mesh(),markersFSI ) );
+            #if 0
+                auto hola = boundaryfaces(submeshStruct);
+                for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
+                    submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
+            #endif
+            return submeshStruct;
+        }
+    }
+    else
+    {
+        CHECK( false ) << "not possible";
+        return typename SolidType::solid_1dreduced_type::mesh_ptrtype();
+    }
 }
 
 } // namespace detail
@@ -357,7 +340,7 @@ FSI<FluidType,SolidType>::init()
 
             //if ( M_fluidModel->doRestart() )
             //M_fluidModel->meshMotionTool()->revertReferenceMesh();
-            auto submeshStruct = detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluidModel, markersFSI_fluid );
+            auto submeshStruct = Feel::FeelModels::detail::createMeshStruct1dFromFluidMesh<fluid_type,solid_type>( M_fluidModel, markersFSI_fluid );
             //if ( M_fluidModel->doRestart() )
             //M_fluidModel->meshMotionTool()->revertMovingMesh();
 
@@ -1540,5 +1523,4 @@ FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, Tabula
     return tabInfo;
 }
 
-} // namespace FeelModels
-} // namespace Feel
+} // namespace Feel::FeelModels

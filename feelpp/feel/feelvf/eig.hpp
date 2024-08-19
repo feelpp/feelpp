@@ -130,9 +130,9 @@ class Eig : public ExprDynamicBase
     }
 
     evaluate_type
-    evaluate( bool p,  worldcomm_ptr_t const& worldcomm ) const
+    evaluate( bool p ) const
         {
-            auto evalExpr = M_expr.evaluate( p, worldcomm );
+            auto evalExpr = M_expr.evaluate( p );
             Eigen::SelfAdjointEigenSolver<typename expression_type::evaluate_type> es( evalExpr );
             return es.eigenvalues();
         }

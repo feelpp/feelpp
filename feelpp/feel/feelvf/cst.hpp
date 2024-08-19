@@ -110,18 +110,7 @@ public:
     {
         return M_constant;
     }
-#if 0
-    constexpr value_type evaluate() const
-    {
-        return M_constant;
-    }
-
-    constexpr value_type evaluate( bool ) const
-    {
-        return M_constant;
-    }
-#endif
-    constexpr evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+    constexpr evaluate_type evaluate( bool ) const
     {
         return evaluate_type::Constant( M_constant );
     }

@@ -1118,7 +1118,7 @@ public:
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostDofMapExtended( mesh_type& mesh );
-    void buildGhostDofMapExtended( mesh_type& mesh, ext_elements_t<mesh_type> const& ghostEltRange, ext_elements_t<mesh_type> const& activeEltTouchInterProcessRange );
+    void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange, Range<mesh_type,MESH_ELEMENTS> const& activeEltTouchInterProcessRange );
     void buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
                                                                            std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend );
@@ -1348,9 +1348,15 @@ public:
 
             if ( this->worldComm().localSize()>1 && this->buildDofTableMPIExtended() )
             {
-                auto rangeExtendedElements = (this->hasMeshSupport())?
-                    this->meshSupport()->rangeElements( EntityProcessType::GHOST_ONLY ) :
-                    elements( M, EntityProcessType::GHOST_ONLY );
+                Range<mesh_type,MESH_ELEMENTS> rangeExtendedElements;
+                if (this->hasMeshSupport())
+                {
+                    rangeExtendedElements = this->meshSupport()->rangeElements( EntityProcessType::GHOST_ONLY );
+                }
+                else
+                {
+                    rangeExtendedElements =  elements( M, EntityProcessType::GHOST_ONLY );
+                }
                 this->generateDofPoints( rangeExtendedElements );
                 //this->generateDofPointsExtendedGhostMap(M);
             }
@@ -1516,7 +1522,7 @@ private:
     void generateDofPoints( mesh_type& M, bool buildMinimalParallel = false ) const;
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_periodic_points_type& periodic_dof_points );
     void generateDofPointsExtendedGhostMap( mesh_type& M ) const;
-    void generateDofPoints( ext_elements_t<mesh_type> const& range ) const;
+    void generateDofPoints( Range<mesh_type,MESH_ELEMENTS> const& range ) const;
 
 private:
     //void generateDofPoints( mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const;
@@ -1797,6 +1803,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
     tic();
     M_mesh = boost::addressof( M );
+    wc( this )->print( fmt::format( "[DofTable::build] starts, has mesh support: {}", this->hasMeshSupport() ), 
+                       FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
 
     if ( this->hasMeshSupport() )
     {
@@ -2025,9 +2033,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     toc("DofTable::reordering global id in doftable", FLAGS_v>1);
     tic();
     EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    auto rangeMeshElt = (this->hasMeshSupport())?
-        this->meshSupport()->rangeElements( entityProcess ) :
-        elements( M, entityProcess );
+    Range<mesh_type,MESH_ELEMENTS> rangeMeshElt;
+    if ( this->hasMeshSupport() )
+        rangeMeshElt = this->meshSupport()->rangeElements( entityProcess );
+    else
+        rangeMeshElt = elements( M, entityProcess );
+
     for ( auto const& eltWrap : rangeMeshElt )
     {
         auto const& elt = boost::unwrap_ref(eltWrap);
@@ -2365,6 +2376,8 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
 {
+    wc( this )->print( fmt::format( "[DofTable::buildDofMap] starts, dof_indices empty: {}", M_dof_indices.empty() ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
+
     if ( !M_dof_indices.empty() )
     {
         return;
@@ -2396,15 +2409,18 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                     fe_type::nDofPerEdge*element_type::numEdges-1-i;
         }
     toc( "DofTable buildDofMap allocation", FLAGS_v > 1 );
+    wc( this )->print( fmt::format( "[DofTable::buildDofMap] allocation done" ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
+
     tic();
+    
     // compute the number of dof on current processor
-    auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = boost::get<1>( rangeElements );
-    auto en_elt = boost::get<2>( rangeElements );
+    Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
     bool hasNoElt = ( it_elt == en_elt );
 
     //size_type n_elts = std::distance( it_elt, en_elt);
-    //DVLOG(2) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
+    wc( this )->print( fmt::format( "[DofTable::buildDofMap]  n_elts =  {} on processor {}", std::distance( it_elt, en_elt ), this->worldComm().localRank() ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
 
     size_type theFirstDf = start_next_free_dof;
 
@@ -2461,6 +2477,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     }
 
     toc( "DofTable buildDofMap dof generation", FLAGS_v > 1 );
+    const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
+    const rank_type myrank = this->worldComm().localRank();
+    wc( this )->print( fmt::format( "[builddofmap - {}] dof generation hasNoElt : {} theFirstDF: {} thelastDof: {}",
+                                    rank(this), hasNoElt, theFirstDf, thelastDof ),
+                       FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
     tic();
 #if 0
     for ( auto mit = M_dof_marker.right.begin(), men = M_dof_marker.right.end() ; mit != men ; ++mit )
@@ -2483,12 +2504,13 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         LOG(INFO) << "global dof " << it->first.index() << " --> local dof (" << it->second.elementId()<< ","<< it->second.localDof() << ")";
     }
 #endif
-    const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
 
-    const rank_type myrank = this->worldComm().localRank();
 
     if ( isP0Continuous<fe_type>::result || !is_continuous )
     {
+        wc(this)->print(fmt::format("[builddofmap - {}] gather discontinuous dof info hasNoElt : {} theFirstDF: {} thelastDof: {}",
+                                  myrank, hasNoElt, theFirstDf, thelastDof ), FLAGS_v>1, FLAGS_v>0, FLAGS_v>1);
+        tic();
         std::vector<boost::tuple<bool,size_type,size_type> > dataRecvFromGather;
         auto dataSendToGather = boost::make_tuple(hasNoElt,theFirstDf,thelastDof);
         mpi::all_gather( this->worldComm().localComm(),
@@ -2505,6 +2527,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                 this->M_last_df[p] - this->M_first_df[p] + 1 : 0;
             this->M_n_localWithGhost_df[p] = mynDofWithGhost;
         }
+        toc("DofTable buildDofMap all_gather", FLAGS_v>1);
     }
     else
     {
@@ -2521,6 +2544,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
               << " local rank DofT " << this->worldComm().localRank()
               << " local rank mesh " << M.worldComm().localRank()
               << std::endl;
+    LOG( INFO ) << fmt::format( "[builddofmap] localrank {}", this->worldComm().localRank() ) << std::endl;
+    google::FlushLogFiles( google::INFO );
 #endif
 
     // only true in sequential, redefine in buildDofGhostMap
@@ -2723,8 +2748,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     auto en_elt = std::get<1>( rangeElements );
 #else
     auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = boost::get<1>( rangeElements );
-    auto en_elt = boost::get<2>( rangeElements );
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
 #endif
 
     if ( it_elt == en_elt )
@@ -2855,12 +2880,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
 #if 0
     auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
-    auto it_elt = std::get<0>( rangeElements );
-    auto en_elt = std::get<1>( rangeElements );
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
 #else
     auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = boost::get<1>( rangeElements );
-    auto en_elt = boost::get<2>( rangeElements );
+    auto it_elt = rangeElements.begin();
+    auto en_elt = rangeElements.end();
 #endif
 
     if ( it_elt == en_elt )
@@ -2938,7 +2963,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                     M_dof_points[thedof] = boost::make_tuple( ctxCurrent->xReal( ldofParentId ), thedof, c1 );
                 }
 #if !defined( NDEBUG )
-                else if ( !isP0Continuous<fe_type>::result )
+                else if ( !isP0Continuous<fe_type>::result && !is_mortar )
                 {
                     auto dofpointFromGmc = ctxCurrent->xReal( ldofParentId );
                     auto dofpointStored = M_dof_points[thedof].template get<0>();

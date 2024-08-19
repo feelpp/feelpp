@@ -1,6 +1,6 @@
+import feelpp.core as fppc
 from ._modelcore import *
 from ._modelmesh import *
-import feelpp
 
 has_tqdm = False
 try:
@@ -21,7 +21,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True, data=None, v
         a tuple (status,results) where status is a boolean(True if success, False otherwise) and results is a dictionary provided by the PostProcessing step 
 
     Example::
-        feelpp.Environment.setConfigFile('toolboxs/laplace/l-shape/l-shape.cfg')
+        fppc.Environment.setConfigFile('toolboxs/laplace/l-shape/l-shape.cfg')
         toolbox = toolboxs.toolboxs(dim=2)
         [success,measures]=simulate(toolbox)        
         import pandas as pd
@@ -29,7 +29,8 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True, data=None, v
         print(df.head())
     """
     toolbox.init(buildModelAlgebraicFactory)
-    #toolbox.printAndSaveInfo()
+    if verbose > 0:
+        toolbox.printAndSaveInfo()
     meas=[]
     if toolbox.isStationary():
         toolbox.solve()
@@ -47,7 +48,7 @@ def simulate(toolbox, export=True, buildModelAlgebraicFactory=True, data=None, v
         else:
             steps = range(int(toolbox.timeStepBase().timeFinal()/toolbox.timeStepBase().timeStep()))
         for step in steps:
-            if feelpp.Environment.isMasterRank() and verbose > 0:
+            if fppc.Environment.isMasterRank() and verbose > 0:
                 print("============================================================\n")
                 print("time simulation: {}s/{}s with step: {}".format(toolbox.time(), toolbox.timeFinal(), toolbox.timeStep()))
                 print("============================================================\n")

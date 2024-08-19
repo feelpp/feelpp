@@ -119,14 +119,14 @@ public:
 
     SubFaceOf()
         :
-        M_element0( 0, invalid_uint16_type_value ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element0( nullptr, invalid_uint16_type_value ),
+        M_element1( nullptr, invalid_uint16_type_value )
     {}
 
     SubFaceOf( element_connectivity_type const& connect0 )
         :
         M_element0( connect0 ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element1( nullptr, invalid_uint16_type_value )
     {}
     SubFaceOf( element_connectivity_type const& connect0,
                element_connectivity_type const& connect1 )
@@ -146,14 +146,14 @@ public:
         M_element0( std::move( sf.M_element0 ) ),
         M_element1( std::move( sf.M_element1 ) )
     {
-     }
+    }
 
-        template <typename TheEltType >
-        /*explicit*/ SubFaceOf( SubFaceOf<TheEltType> const& /*sf*/,
-                                std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr )
+    template <typename TheEltType >
+    SubFaceOf( SubFaceOf<TheEltType> const& /*sf*/,
+               std::enable_if_t< !std::is_same<TheEltType, entity_type>::value >* = nullptr )
         :
-        M_element0( 0, invalid_uint16_type_value ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element0( nullptr, invalid_uint16_type_value ),
+        M_element1( nullptr, invalid_uint16_type_value )
     {
     }
 
@@ -161,11 +161,16 @@ public:
     explicit SubFaceOf( SubFaceOfNone<SFoD> const& /*sf*/,
                         std::enable_if_t<SFoD == nDim || SFoD == 0>* = nullptr )
         :
-        M_element0( 0, invalid_uint16_type_value ),
-        M_element1( 0, invalid_uint16_type_value )
+        M_element0( nullptr, invalid_uint16_type_value ),
+        M_element1( nullptr, invalid_uint16_type_value )
     {
     }
     virtual ~SubFaceOf() {}
+
+    SubFaceOf const& connectedTo() const
+    {
+        return *this;
+    }
 
     SubFaceOf& operator=( SubFaceOf const& sf ) = default;
 
@@ -193,6 +198,14 @@ public:
     entity_type const& element1() const
     {
         return *boost::get<0>( M_element1 );
+    }
+    entity_type const* element0Ptr() const
+    {
+        return boost::get<0>( M_element0 );
+    }
+    entity_type const* element1Ptr() const
+    {
+        return boost::get<0>( M_element1 );
     }
     size_type idElement0() const { return this->element0().id(); }
     uint16_type idInElement0() const { return boost::get<1>( M_element0 ); }
@@ -268,11 +281,11 @@ public:
 
     bool isConnectedTo0() const
     {
-        return ( boost::get<0>( M_element0 ) != 0 );
+        return ( boost::get<0>( M_element0 ) != nullptr );
     }
     bool isConnectedTo1() const
     {
-        return ( boost::get<0>( M_element1 ) != 0 );
+        return ( boost::get<0>( M_element1 ) != nullptr );
     }
 
     /**
@@ -344,6 +357,33 @@ public:
         }
     }
 
+    template<typename MeshSupportT>
+    SubFaceOf updateConnectionFromMeshSupport( std::shared_ptr<MeshSupportT> const& ms )
+    {
+        if ( this->isConnectedTo0() && !this->isConnectedTo1() )
+        {
+            SubFaceOf sfo( *this );
+            return sfo;
+        }
+
+        bool hasMS0 =  ms->hasElement( this->idElement0() );
+        bool hasMS1 =  ms->hasElement( this->idElement1() );
+
+        if ( hasMS0 && hasMS1 )
+        {
+            SubFaceOf sfo( *this );
+            return sfo;
+        }
+
+        if ( !hasMS0 && hasMS1 )
+        {
+            SubFaceOf sfo( this->connection1() );
+            return sfo;
+        }
+        // hasMS0 && !hasMS1
+        SubFaceOf sfo( this->connection0() );
+        return sfo;
+    }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -779,6 +819,7 @@ public:
                   > super;
 
     typedef SubFace super2;
+    using connection_t = SubFace;
 
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
@@ -1081,7 +1122,7 @@ public:
 
     typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
     typedef SubFace super2;
-
+    using connection_t = SubFace;
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nRealDim = super::nRealDim;

@@ -24,6 +24,8 @@
 #ifndef FEELPP_PARTITIONERMETIS_IMPL_HPP
 #define FEELPP_PARTITIONERMETIS_IMPL_HPP 1
 
+#include <fmt/chrono.h>
+
 namespace Metis {
 extern "C" {
 #if defined(FEELPP_USE_INTERNAL_METIS)
@@ -123,6 +125,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 #endif
             for ( auto const& [name, agg] : this->aggregates() )
             {
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ]  aggregate {} markers: {} analysis...\n", fmt::localtime( std::time( nullptr ) ), name, agg.markers() ) << std::endl;
                 LOG(INFO) << " -- aggregate " << name << " markers:" << agg.markers() << std::endl;
                 for ( auto const& eltWrap : rangeMeshElt )
                 {
@@ -136,6 +139,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                     }
                 }
                 LOG(INFO) << " -- aggregate " << name << " size:" << vibc[name].size() << std::endl;
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} analysis complete, size: {}\n", fmt::localtime( std::time( nullptr ) ), name, vibc[name].size() ) << std::endl;
             }
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
@@ -280,6 +284,34 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
         rank_type newPid = static_cast<rank_type>(part[gid]);
         auto & eltToUpdate = mesh->elementIterator( eltId )->second;
         eltToUpdate.setProcessId( newPid );
+    }
+
+    for ( auto const& [name, agg] : this->aggregates() )
+    {
+        LOG( INFO ) << " -- [check] aggregate " << name << " markers:" << agg.markers() << std::endl;
+        bool same_pid = true;
+        int pid = -1;
+        for ( auto const& eltWrap : rangeMeshElt )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            if ( hasFaceWithAnyOfTheMarkers( elt, agg.markers() ) )
+            {
+                if ( pid == -1 ) pid = elt.processId();
+                if ( pid != elt.processId() )
+                {
+                    same_pid = false;
+                    break;
+                }
+            }
+        }
+        if ( same_pid )
+        {
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} same pid {}\n", fmt::localtime( std::time( nullptr ) ), name, agg.markers(), pid ) << std::endl;
+        }
+        else
+        {
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} different pid\n", fmt::localtime( std::time(nullptr) ), name, agg.markers() ) << std::endl;
+        }
     }
 }
 
