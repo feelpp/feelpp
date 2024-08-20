@@ -20,33 +20,72 @@ void runModel( const nl::json& specs )
     int dimension = specs["/Models/LinearElasticity/dimension"_json_pointer];
     int order = specs["/Models/LinearElasticity/order"_json_pointer];
     int orderGeo = specs["/Models/LinearElasticity/orderGeo"_json_pointer];
-    bool sta = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
-    std::string method = specs["/Collision/LinearElasticity/method"_json_pointer];
-
-    if ( dimension == 2 )
+    int rigidmotion = specs["/Models/LinearElasticity/rigidMotion"_json_pointer];
+    bool steady = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
+    
+    if (rigidmotion == 0)
     {
-        if ( sta )
+        if (dimension == 2)
         {
-            ContactStatic<2, 1> model( specs );
-            model.run();
+            if (steady)
+            {
+                ContactStatic<2, 1> model( specs );
+                model.run();
+            }
+            else 
+            {
+                if ( orderGeo == 1 )
+                {
+                    ContactDynamic<2, 1,1> model( specs );
+                    model.run();
+                }
+                else if (orderGeo == 2) 
+                {
+                    ContactDynamic<2, 2, 2> model(specs);
+                    model.run();
+                }
+            }
         }
-        else
+        else if (dimension == 3)
+        {
+            if (steady)
+            {
+                ContactStatic<3, 1> model( specs );
+                model.run();
+            }
+            else 
+            {
+                if ( orderGeo == 1 )
+                {
+                    ContactDynamic<3, 1,1> model( specs );
+                    model.run();
+                }
+                else if (orderGeo == 2) 
+                {
+                    ContactDynamic<3, 2, 2> model(specs);
+                    model.run();
+                }
+            }
+        }
+    }
+    else if (rigidmotion == 1)
+    {
+        if (dimension == 2)
         {
             if ( orderGeo == 1 )
             {
                 ElasticRigid<2, 1> model( specs );
                 model.run();
             }
-            else if (orderGeo == 2) {
-                ContactDynamic<2, 2, 2> model(specs);
+        }
+        else if (dimension == 3)
+        {
+            if ( orderGeo == 1 )
+            {
+                ElasticRigid<2, 1> model( specs );
                 model.run();
             }
         }
-    }
-    else if ( dimension == 3 && order == 1 )
-    {
-        ElasticRigid<3, 1> model( specs );
-        model.run();
     }
     else
     {

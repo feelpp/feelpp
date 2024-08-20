@@ -1,9 +1,6 @@
 #pragma once
 
 #include "qs_elasticity_contact.hpp"
-
-
-
 namespace Feel
 {
 
@@ -67,7 +64,6 @@ public:
     void run();
     Range<mesh_t, MESH_FACES> getContactRegion( elementv_t const& u );
     void exportResults();
-    void initG();
     void storeData();
     void error();
 
@@ -95,7 +91,7 @@ private:
     double theta_, gamma0_, gamma_;
     std::string method_, direction_;
     std::vector<double> ddirection_;
-    int withMarker_,save_, computeerror_;
+    int save_, computeerror_;
 };
 
 // Constructor
@@ -146,7 +142,6 @@ void ContactStatic<Dim, Order>::initialize()
 
     // Initialize exporter
     e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
-
 }
 
 // Initialization of the contact terms
@@ -155,6 +150,10 @@ void ContactStatic<Dim, Order>::initializeContact()
 {
     // Define Xh
     Xh_ = Pch<Order>(mesh_);
+    u_ = Xhv_->element();
+
+    g_ = Xh_->element();
+    g_.zero();
 
     // Initialize contact field
     contactRegion_ =  project(_space=Xh_, _range=elements(mesh_), _expr = cst(0.));
@@ -181,9 +180,6 @@ void ContactStatic<Dim, Order>::initializeContact()
     std::string matGamma0 = fmt::format( "/Collision/LinearElasticity/gamma0" );
     gamma0_ = specs_[nl::json::json_pointer( matGamma0 )].get<double>();
     gamma_ = gamma0_/H_;
-
-    std::string matwithMarker = fmt::format( "/Collision/LinearElasticity/marker" );
-    withMarker_ = specs_[nl::json::json_pointer( matwithMarker )].get<int>();
 
     std::string mattolContactRegion = fmt::format( "/Collision/LinearElasticity/tolContactRegion" );
     tolContactRegion_ = specs_[nl::json::json_pointer( mattolContactRegion )].get<double>();
@@ -221,58 +217,33 @@ void ContactStatic<Dim, Order>::processMaterials( form2_type &a )
 template <int Dim, int Order>
 void ContactStatic<Dim, Order>::processContactPenalty( form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts, elementv_t const& u )
 {
-    if (withMarker_ == 0)
-    {
-        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
-        auto XhCFaces = Pdh<0>(face_mesh);
-        auto contactFaces = XhCFaces->element();
-        contactFaces.on(_range=elts, _expr = cst(1.));
+    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
+    auto XhCFaces = Pdh<0>(face_mesh);
+    auto contactFaces = XhCFaces->element();
+    contactFaces.on(_range=elts, _expr = cst(1.));
 
-        a += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-        l += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-    }
-    else
-    {
-        a += integrate (_range=markedfaces(mesh_,"contact"),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
-        l += integrate (_range=markedfaces(mesh_,"contact"),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)));
-    }
+    a += integrate (_range=markedfaces(mesh_,"contact"),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
+    l += integrate (_range=markedfaces(mesh_,"contact"),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)));
 }
 
 // Process contact conditions Nitsche method
 template <int Dim, int Order>
 void ContactStatic<Dim, Order>::processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts , elementv_t const& u )
 {
-    if (withMarker_ == 0)
-    {
-        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
-        auto XhCFaces = Pdh<0>(face_mesh);
-        auto contactFaces = XhCFaces->element();
-        contactFaces.on(_range=elts, _expr = cst(1.));
+    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
+    auto XhCFaces = Pdh<0>(face_mesh);
+    auto contactFaces = XhCFaces->element();
+    contactFaces.on(_range=elts, _expr = cst(1.));
 
-        auto const Id = eye<Dim,Dim>();
-        auto deft = sym(gradt(u));
-        auto def = sym(grad(u));
-        auto sigma = (lambda_*trace(def)*Id + 2*mu_*def)*N();
-        auto sigmat = (lambda_*trace(deft)*Id + 2*mu_*deft)*N();
+    auto const Id = eye<Dim,Dim>();
+    auto deft = sym(gradt(u));
+    auto def = sym(grad(u));
+    auto sigma = (lambda_*trace(def)*Id + 2*mu_*def)*N();
+    auto sigmat = (lambda_*trace(deft)*Id + 2*mu_*deft)*N();
 
-        a += integrate (_range=boundaryfaces(mesh_),_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));
-        a += integrate (_range=boundaryfaces(mesh_),_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));
-        l += integrate (_range=boundaryfaces(mesh_),_expr= inner(idv(g_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));
-
-    }
-    else
-    {
-        auto const Id = eye<Dim,Dim>();
-        auto deft = sym(gradt(u));
-        auto def = sym(grad(u));
-        auto sigma = (lambda_*trace(def)*Id + 2*mu_*def)*N();
-        auto sigmat = (lambda_*trace(deft)*Id + 2*mu_*deft)*N();
-
-        a += integrate (_range=markedfaces(mesh_,"contact"),_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma));
-        a += integrate (_range=markedfaces(mesh_,"contact"),_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));
-        l += integrate (_range=markedfaces(mesh_,"contact"),_expr= inner(idv(g_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));
-    }
-
+    a += integrate (_range=markedfaces(mesh_,"contact"),_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma));
+    a += integrate (_range=markedfaces(mesh_,"contact"),_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));
+    l += integrate (_range=markedfaces(mesh_,"contact"),_expr= inner(idv(g_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));
 }
 
 
@@ -306,66 +277,47 @@ void ContactStatic<Dim, Order>::run()
     std::cout << "***** Initialize contact parameters *****" << std::endl;
     initializeContact();
 
-    std::cout <<  "***** Initialize distance g *****" << std::endl;
-    initG();
+    // Initialize linear and bilinear forms
+    auto a_ = form2( _test = Xhv_, _trial = Xhv_ );
+    auto l_ = form1( _test = Xhv_ );
 
-    if ((method_.compare("penalty") == 0) || (method_.compare("nitsche") == 0))
+    l_.zero();
+    a_.zero();
+
+    std::cout << "***** Process loading *****" << std::endl;
+    processLoading(l_);
+
+    std::cout << "***** Process materials *****" << std::endl;
+    processMaterials(a_);
+
+    std::cout << "***** Process contact *****" << std::endl;
+    contactRegion_.on( _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
+        
+    if (method_.compare("penalty") == 0)
+        processContactPenalty(l_, a_, myelts_, u_);
+    else if (method_.compare("nitsche") == 0)
+        processContactNitsche(l_, a_, myelts_, u_);
+
+    std::cout << "***** Process boundary conditions *****" << std::endl;
+    processBoundaryConditions(l_, a_);
+
+    std::cout << "***** Solve *****" << std::endl;
+    a_.solve( _rhs = l_, _solution = u_ );
+
+    std::cout << "***** Export results *****" << std::endl;
+    exportResults();
+
+    if (save_ == 1)
     {
-        // Initialize elements
-        u_ = Xhv_->element();
-
-        // Initialize linear and bilinear forms
-        auto a_ = form2( _test = Xhv_, _trial = Xhv_ );
-        auto l_ = form1( _test = Xhv_ );
-
-        l_.zero();
-        a_.zero();
-
-        std::cout << "***** Process loading *****" << std::endl;
-        processLoading(l_);
-
-        std::cout << "***** Process materials *****" << std::endl;
-        processMaterials(a_);
-
-        std::cout << "***** Process contact *****" << std::endl;
-        if (withMarker_ == 0)
-        {
-            myelts_ = getContactRegion(u_);
-            std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
-        }
-        else
-        {
-            contactRegion_.on( _range=markedfaces(mesh_,"contact"), _expr = cst(1.));
-        }
-
-        if (method_.compare("penalty") == 0)
-            processContactPenalty(l_, a_, myelts_, u_);
-        else if (method_.compare("nitsche") == 0)
-            processContactNitsche(l_, a_, myelts_, u_);
-
-        std::cout << "***** Process boundary conditions *****" << std::endl;
-        processBoundaryConditions(l_, a_);
-
-        std::cout << "***** Solve *****" << std::endl;
-        a_.solve( _rhs = l_, _solution = u_ );
-
-        std::cout << "***** Export results *****" << std::endl;
-        exportResults();
-
-        if (save_ == 1)
-        {
-            std::cout << "***** Save results *****" << std::endl;
-            storeData();
-        }
-
-        if (computeerror_ == 1)
-        {
-            std::cout << "***** Compute error *****" << std::endl;
-            error();
-        }
-
+        std::cout << "***** Save results *****" << std::endl;
+        storeData();
     }
-    
+
+    if (computeerror_ == 1)
+    {
+        std::cout << "***** Compute error *****" << std::endl;
+        error();
+    }    
 }
 
 template <int Dim, int Order>
@@ -382,7 +334,8 @@ ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
 
     nbrFaces_ = 0;
     auto const& trialDofIdToContainerId =  form2(_test=Xh_, _trial=Xh_).dofIdToContainerIdTest();
-    for (auto const& theface : boundaryfaces(mesh_) )
+
+    for (auto const& theface : markedfaces(mesh_,"contact") )
     {
         auto & face = boost::unwrap_ref( theface );
         int contactDof = 0;
@@ -441,60 +394,6 @@ ContactStatic<Dim, Order>::getContactRegion( elementv_t const& u )
 
 template <int Dim, int Order>
 void
-ContactStatic<Dim, Order>::initG()
-{
-    // Init the distance fields
-    g_ = Xh_->element();
-
-    // Load and export rigid obstacles
-    auto wall = loadMesh(_mesh=new mesh_t, _filename = "$cfgdir/wall.geo");
-
-    auto expWall = Feel::exporter(_mesh = wall, _name = fmt::format("Wall"));
-    expWall->addRegions();
-    expWall->save();
-
-    // Raytracing to compute distance
-    using bvh_ray_type = BVHRay<Dim>;
-    Eigen::VectorXd origin(Dim);
-    Eigen::VectorXd dir(Dim);
-
-    if constexpr(Dim == 2)
-        dir << ddirection_[0], ddirection_[1];
-    else if constexpr(Dim == 3)
-        dir << ddirection_[0], ddirection_[1], ddirection_[2];
-
-    for (auto const& theface : boundaryfaces(mesh_) )
-    {
-        auto & face = boost::unwrap_ref( theface );
-
-        auto &point = face.point(0);
-        if (point.isOnBoundary())
-        {
-
-            if constexpr(Dim == 2)
-                origin << point.node()[0], point.node()[1];
-            else if constexpr(Dim == 3)
-                origin << point.node()[0], point.node()[1], point.node()[2];
-
-            bvh_ray_type ray(origin,dir);
-            auto bvh = boundingVolumeHierarchy(_range=boundaryfaces(wall));
-            auto rayIntersection = bvh->intersect(_ray=ray) ;
-
-            if (!rayIntersection.empty())
-            {
-                for ( auto const& rir : rayIntersection )
-                {
-                    for (auto const& ldof  : Xh_->dof()->faceLocalDof( face.id() ))
-                        g_[ldof.index()] = rir.distance() - tolDistance_;
-                }
-            }
-        }
-    }
-}
-
-
-template <int Dim, int Order>
-void
 ContactStatic<Dim, Order>::storeData()
 {
     u_.saveHDF5("solution_ref.h5");
@@ -506,9 +405,9 @@ template <int Dim, int Order>
 void
 ContactStatic<Dim, Order>::error()
 {
-    auto meshref = loadMesh(_mesh=new mesh_t, _filename = "/data/scratch/vanlandeghem/feel/qs_elasticity_contact/benchmark/np_1/mesh_ref.msh");
+    auto meshref = loadMesh(_mesh=new mesh_t, _filename = "/data/scratch/vanlandeghem/feel/qs_elasticity_contact/square/np_1/mesh_ref.msh");
     auto uref = spacev_t::New(meshref)->elementPtr() ;
-    uref->loadHDF5("/data/scratch/vanlandeghem/feel/qs_elasticity_contact/benchmark/np_1/solution_ref.h5");
+    uref->loadHDF5("/data/scratch/vanlandeghem/feel/qs_elasticity_contact/square/np_1/solution_ref.h5");
 
     auto op_inter = opInterpolation(_domainSpace =  spacev_t::New(mesh_), _imageSpace = spacev_t::New(meshref) );
     auto uinter =  spacev_t::New(meshref)->element();
@@ -532,10 +431,6 @@ ContactStatic<Dim, Order>::exportResults()
     myelts_ = getContactRegion(u_);
     std::cout << "Nbr faces for export : " << nbrFaces_ << std::endl;
 
-    auto realcontactRegion = Xh_->element();
-    realcontactRegion.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_));
-    e_->add( "realcontactRegion", realcontactRegion) ;
-
     auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
     auto XhCFaces = Pdh<0>(face_mesh);
     auto contactFaces = XhCFaces->element();
@@ -549,21 +444,13 @@ ContactStatic<Dim, Order>::exportResults()
     contactPressure_.on(_range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
     contactDisplacement_.on(_range=elements(mesh_), _expr = (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_))*idv(contactFaces));
 
-    auto expression = Xh_->element();
-    if (method_.compare("penalty") == 0)
-        expression.on(_range=elements(mesh_), _expr =  (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_))*idv(contactFaces)  );
-    else if (method_.compare("nitsche") == 0)
-        expression.on(_range=boundaryfaces(mesh_), _expr = (cst(gamma_)*(trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_)) - trans(expr<Dim,1>(direction_))*sigmav)*idv(contactFaces)  );
-
     e_->add( "contactRegion", contactRegion_) ;
     e_->add( "contactPressure", contactPressure_);
     e_->add( "contactDisplacement", contactDisplacement_ );
-    e_->add( "expression", expression);
-    e_->add("g", g_);
     e_->save();
 
     // Print values on contact boundary
-
+    /*
     int nbr = 1;
     for (auto &bfaceC : markedfaces(mesh_,"contact"))
     {
@@ -582,6 +469,7 @@ ContactStatic<Dim, Order>::exportResults()
 
         nbr++;
     }
+    */
 }
 
 }
