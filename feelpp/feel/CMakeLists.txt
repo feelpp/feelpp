@@ -111,7 +111,7 @@ endif()
 
 message(CHECK_START "[feelpp] configuring python3 development")
 if(Python3_Development_FOUND)
-  
+
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PYTHON )
   set_property( TARGET feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
   target_include_directories( feelpp PUBLIC ${Python3_INCLUDE_DIRS})
@@ -120,10 +120,10 @@ if(Python3_Development_FOUND)
 else()
   message(CHECK_FAIL "failed")
 endif()
-if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
+
+if ( TARGET HDF5::HDF5 AND HDF5_IS_PARALLEL )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_HDF5 )
-  target_include_directories( feelpp PUBLIC ${HDF5_INCLUDE_DIRS})
-  target_link_libraries( feelpp PUBLIC ${HDF5_LINK_LIBRARIES} )
+  target_link_libraries( feelpp PUBLIC HDF5::HDF5 )
 elseif( HDF5_FOUND AND HDF5_PKGCONFIG)
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_HDF5 )
   target_include_directories( feelpp PUBLIC ${HDF5_INCLUDE_DIRS})
