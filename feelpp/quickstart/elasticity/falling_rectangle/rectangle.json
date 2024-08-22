@@ -7,8 +7,7 @@
             "dimension": 2,
             "order": 1,
             "orderGeo":1,
-            "quad":4,
-            "quad1":4,
+            "rigidMotion":0,
             "Materials":[
                 "Caoutchouc"
             ],
@@ -53,7 +52,7 @@
     "Meshes": {
         "LinearElasticity": {
             "Import": {
-                "filename": "$cfgdir/falling_rectangle.geo",
+                "filename": "$cfgdir/ellipse.geo",
                 "partition": 0,
                 "h": 0.4
             }
@@ -65,10 +64,10 @@
             "steady": false,
             "order" : 2,
             "start": 0.0,
-            "end": 20.0,
+            "end": 30.0,
             "gamma":0.5,
             "beta":0.5,
-            "step": "1/10"
+            "step": "1/20"
         }
     },
     "InitialConditions": {
@@ -88,17 +87,15 @@
             "method":"penalty",
             "direction":"{0,-1}",
             "ddirection":[0,-1],
-            "theta":-1,
+            "theta":0,
             "epsilon":0.001,
             "gamma0":1750,
             "fixedPoint":1,
             "fixedPointTol":0.0001,
-            "pressurePoint":[0,4],
-            "marker":0,
+            "pressurePoint":[0,10],
             "tolContactRegion":-0.01,
             "tolDistance":0,
-            "save":0,
-            "error":0
+            "nbrObs":1
         }
     },
     "Parameters": {

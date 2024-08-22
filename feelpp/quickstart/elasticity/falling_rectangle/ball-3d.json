@@ -7,8 +7,7 @@
             "dimension": 3,
             "order": 1,
             "orderGeo":1,
-            "quad":4,
-            "quad1":4,
+            "rigidMotion":0,
             "Materials":[
                 "Caoutchouc"
             ],
@@ -65,10 +64,10 @@
             "steady": false,
             "order" : 2,
             "start": 0.0,
-            "end": 120.0,
+            "end": 40.0,
             "gamma":0.5,
             "beta":0.5,
-            "step": "1/20"
+            "step": "1/10"
         }
     },
     "InitialConditions": {
@@ -97,8 +96,7 @@
             "marker":0,
             "tolContactRegion":-0.01,
             "tolDistance":0,
-            "save":0,
-            "error":0
+            "nbrObs":1
         }
     },
     "Parameters": {

@@ -12,14 +12,12 @@ Physical Point("CM")={100};
 Physical Surface("Wall") = {1};
 Physical Volume("Caoutchouc") = {1};
 
-
-
 hwall = 1;
 
 Box(2) = {-25, -25, -1, 50, 50, 1};
 
-Physical Surface("Gbdy") = {2,3,4,5,6,7};
-Physical Volume("Ground") = {2};
+Physical Surface("Obs1") = {2,3,4,5,6,7};
+Physical Volume("obstacle") = {2};
 
 Characteristic Length { PointsOf{ Volume{1}; } } = h;
 Characteristic Length { PointsOf{ Volume{2}; } } = hwall;
