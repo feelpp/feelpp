@@ -1,6 +1,7 @@
 #include "qs_elasticity_contact.hpp"
 #include "qs_elasticity_contact_dynamic.hpp"
 #include "qs_elasticity_contact_static.hpp"
+#include "qs_contact_lagrange.hpp"
 #include "qs_elasticity_rigid.hpp"
 
 namespace Feel
@@ -13,6 +14,8 @@ extern template class ContactDynamic<3, 1,1>;
 extern template class ContactDynamic<3, 2,2>;
 extern template class ElasticRigid<2, 1>;
 extern template class ElasticRigid<3, 1>;
+extern template class ContactLagrange<2,2,1>;
+extern template class ContactLagrange<3,2,2>;
 
 
 void runModel( const nl::json& specs )
@@ -22,8 +25,31 @@ void runModel( const nl::json& specs )
     int orderGeo = specs["/Models/LinearElasticity/orderGeo"_json_pointer];
     int rigidmotion = specs["/Models/LinearElasticity/rigidMotion"_json_pointer];
     bool steady = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
-    
-    if (rigidmotion == 0)
+    std::string method = specs["/Collision/LinearElasticity/method"_json_pointer];
+
+     
+    if (method.compare("lagrange") == 0)
+    {
+        if (dimension == 2)
+        {
+            ContactLagrange<2,2,1> model( specs );
+            if (steady)
+                model.runStatic();
+            else 
+                 model.runDynamic();
+        }
+        else 
+        {
+            ContactLagrange<3,2,1> model( specs );
+            if (steady)
+                model.runStatic();
+            else 
+                 model.runDynamic();
+        }
+    }
+
+
+    else if (rigidmotion == 0)
     {
         if (dimension == 2)
         {
