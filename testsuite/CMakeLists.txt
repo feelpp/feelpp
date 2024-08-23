@@ -62,7 +62,7 @@ message(STATUS "[feelpp/testsuite] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}
 message(STATUS "[feelpp/testsuite] Python3_LIBRARIES: ${Python3_LIBRARIES}")
 message(STATUS "[feelpp/testsuite] Python3_VERSION: ${Python3_VERSION}")
 
-foreach( testdir core python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event viewfactor)
+foreach( testdir core python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event viewfactor bvhgpu tasks)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 

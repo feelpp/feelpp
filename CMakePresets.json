@@ -26,7 +26,6 @@
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE"
             },
             "environment": {
-                "LDFLAGS": "-Wl,--copy-dt-needed-entries",
                 "NINJA_STATUS": "[run %r|beg %s|fin %f|tot %t|rate %o|time %e]:"
             },
             "vendor": {

@@ -23,6 +23,10 @@
 #
 project(Feelpp)
 
+
+
+
+
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
@@ -72,6 +76,110 @@ set(CTEST_TIMEOUT "20")
 #else()
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
 #endif()
+
+
+if (TRUE)
+    MESSAGE("{COMPILE_WITH_HIP STEP 0}")
+    if(NOT DEFINED HIP_PATH)
+        if(NOT DEFINED ENV{HIP_PATH})
+            set(HIP_PATH "/opt/rocm-5.7.2/hip" CACHE PATH "Path to which HIP has been installed")
+        else()
+            set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to which HIP has been installed")
+        endif()
+    endif()
+
+    if(NOT DEFINED HCC_PATH)
+      if(DEFINED ENV{HCC_PATH})
+          set(HCC_PATH $ENV{HCC_PATH} CACHE PATH "Path to which HCC has been installed")
+      else()
+          set(HCC_PATH "${ROCM_PATH}/hcc" CACHE PATH "Path to which HCC has been installed")
+      endif()
+      set(HCC_HOME "${HCC_PATH}")
+    endif()
+
+    if(NOT DEFINED HIP_CLANG_PATH)
+        if(NOT DEFINED ENV{HIP_CLANG_PATH})
+            set(HIP_CLANG_PATH "${ROCM_PATH}/llvm/bin" CACHE PATH "Path to which HIP compatible clang binaries have been installed")
+        else()
+            set(HIP_CLANG_PATH $ENV{HIP_CLANG_PATH} CACHE PATH "Path to which HIP compatible clang binaries have been installed")
+        endif()
+    endif()
+
+
+    set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
+
+    list(APPEND CMAKE_PREFIX_PATH
+    "${HIP_PATH}/lib/cmake"
+    "${HIP_PATH}/../lib/cmake" # hopefully catches all extra HIP dependencies
+    )
+
+
+    find_package(BLAS)
+    find_package(LAPACK)
+    find_package(hip)
+    find_package(HIP QUIET)
+    
+
+    if(HIP_FOUND)
+        message(STATUS "Found HIP: " ${HIP_VERSION})
+    else()
+        message(FATAL_ERROR "Could not find HIP. Ensure that HIP is either installed in /opt/rocm/hip or the variable HIP_PATH is set to point to the right location.")
+    endif()
+
+
+    message(STATUS "HIP Path: " ${HIP_PATH})
+
+   
+
+    if($ENV{VERBOSE})
+            MESSAGE(STATUS "GEMM -- BLAS_LIBRARIES   : ${BLAS_LIBRARIES}")
+            MESSAGE(STATUS "GEMM -- BLAS_LINKER_FLAGS   : ${BLAS_LINKER_FLAGS}")
+            MESSAGE(STATUS "GEMM -- LAPACK_LIBRARIES   : ${LAPACK_LIBRARIES}")
+            MESSAGE(STATUS "GEMM -- LAPACK_LINKER_FLAGS   : ${LAPACK_LINKER_FLAGS}")
+    endif()
+
+    MESSAGE("")
+    MESSAGE("{BEGIN::COMPILE_WITH_HIP}")
+
+    include_directories(${HIP_PATH}/include)
+    include_directories(/opt/rocm-5.7.2/hip/include)
+    include_directories(/opt/rocm-5.7.2/hipblas/include)
+    include_directories(/opt/rocm-5.7.2/hipblas/lib)
+
+    list(APPEND CMAKE_PREFIX_PATH /opt/rocm-5.7.2 /opt/rocm-5.7.2)
+
+    # Set the GPU to compile for
+    #set(GPU_TARGETS "gfx900:gfx906:gfx1032;gfx1035" CACHE STRING "GPU targets to compile for")
+
+    set(GPU_RUNTIME "HIP" CACHE STRING "Switches between HIP and CUDA")
+    set(GPU_RUNTIMES "HIP" "CUDA")
+    set_property(CACHE GPU_RUNTIME PROPERTY STRINGS ${GPU_RUNTIMES})
+
+    if(NOT "${GPU_RUNTIME}" IN_LIST GPU_RUNTIMES)
+        set(ERROR_MESSAGE "GPU_RUNTIME is set to \"${GPU_RUNTIME}\".\nGPU_RUNTIME must be either HIP or CUDA.")
+        message(FATAL_ERROR ${ERROR_MESSAGE})
+    endif()
+
+    #enable_language(${GPU_RUNTIME})
+
+    set(CMAKE_${GPU_RUNTIME}_STANDARD 17)
+    set(CMAKE_${GPU_RUNTIME}_EXTENSIONS OFF)
+    set(CMAKE_${GPU_RUNTIME}_STANDARD_REQUIRED ON)
+
+    set(ROCM_ROOT "/opt/rocm-5.7.2" CACHE PATH "Root directory of the ROCm installation")
+    list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
+
+    add_compile_definitions( __HIP_PLATFORM_AMD__)
+    list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas)
+
+    if(GPU_RUNTIME STREQUAL "HIP")
+      list(APPEND include_dirs "${ROCM_ROOT}/include")
+      MESSAGE(${ROCM_ROOT}/include)
+    endif()
+
+    MESSAGE("{END::COMPILE_WITH_HIP}")
+    MESSAGE("")
+endif()
 
 
 if ( FEELPP_BENCHMARK_FLAGS )
