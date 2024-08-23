@@ -3,8 +3,6 @@
 #include "qs_elasticity_contact.hpp"
 namespace Feel
 {
-
-
 template <int Dim, int Order>
 class ElasticRigid
 {
@@ -56,6 +54,7 @@ public:
     Range<mesh_t, MESH_FACES> getContactRegion(elementv_t const& u);
     void run();
     void timeLoop();
+    void timeLoopFixedPoint();
     void exportResults(double t);
     void initG();
 
@@ -82,7 +81,7 @@ private:
     exporter_ptrtype e_;
     nl::json meas_;
 
-    double H_,E_, nu_, lambda_, mu_, rho_,m_;
+    double H_,E_, nu_, lambda_, mu_, rho_, m_;
     std::string externalforce_;
 
     double epsilon_,tolContactRegion_,tolDistance_;
@@ -90,6 +89,9 @@ private:
     std::string method_, direction_;
     std::vector<double> ddirection_;
     int withMarker_,save_, computeerror_;
+    std::vector<double> pressurePoint_;
+    int fixedPoint_;
+    double fixedPointtol_;
 };
 
 
@@ -103,15 +105,14 @@ ElasticRigid<Dim, Order>::ElasticRigid(nl::json const& specs) : specs_(specs)
 template <int Dim, int Order>
 void ElasticRigid<Dim, Order>::initialize()
 {
-    // Get mesh size
+    // Mesh and spaces
     H_ = specs_["/Meshes/LinearElasticity/Import/h"_json_pointer].get<double>();
-    // Load mesh
     mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
-    // Define Xhv
-    Xhv_ = Pchv<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );
-    VhvC_ = Pchv<0>(mesh_,markedelements(mesh_, "Caoutchouc"));
 
-    // Get elastic structure parameters
+    Xhv_ = Pchv<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );
+    VhvC_ = Pchv<0>(mesh_, markedelements(mesh_, "Caoutchouc"));
+
+    // Solid parameters
     std::string matRho = fmt::format( "/Materials/Caoutchouc/parameters/rho/value");
     rho_ = std::stod(specs_[nl::json::json_pointer( matRho )].get<std::string>());
     m_ = integrate( _range = elements(support(Xhv_)), _expr = cst(rho_) ).evaluate()(0,0);
@@ -125,7 +126,7 @@ void ElasticRigid<Dim, Order>::initialize()
     lambda_ = E_*nu_/( (1+nu_)*(1-2*nu_) );
     mu_ = E_/(2*(1+nu_));
 
-    // Initialize external forces
+    // External force
     if ( specs_["/Models/LinearElasticity"_json_pointer].contains("loading") )
     {
         for ( auto [key, loading] : specs_["/Models/LinearElasticity/loading"_json_pointer].items() )
@@ -141,9 +142,8 @@ void ElasticRigid<Dim, Order>::initialize()
         }
     }
 
-    // Initialize exporter
+    // Exporter
     e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
-
 
     // Initialize Newmark scheme
     bool steady = get_value(specs_, "/TimeStepping/LinearElasticity/steady", true);
@@ -215,29 +215,20 @@ ElasticRigid<Dim, Order>::initializeContact()
     gamma0_ = specs_[nl::json::json_pointer( matGamma0 )].get<double>();
     gamma_ = gamma0_/H_;
 
-    std::string matwithMarker = fmt::format( "/Collision/LinearElasticity/marker" );
-    withMarker_ = specs_[nl::json::json_pointer( matwithMarker )].get<int>();
-
     std::string mattolContactRegion = fmt::format( "/Collision/LinearElasticity/tolContactRegion" );
     tolContactRegion_ = specs_[nl::json::json_pointer( mattolContactRegion )].get<double>();
 
     std::string mattolDistance = fmt::format("/Collision/LinearElasticity/tolDistance");
     tolDistance_ = specs_[nl::json::json_pointer( mattolDistance )].get<double>();
 
-    std::string matcomputeerror = fmt::format( "/Collision/LinearElasticity/error" );
-    computeerror_ = specs_[nl::json::json_pointer( matcomputeerror )].get<int>();
+    std::string matFixedPointtol = fmt::format( "/Collision/LinearElasticity/fixedPointTol" );
+    fixedPointtol_ = specs_[nl::json::json_pointer( matFixedPointtol )].get<double>();
 
-    std::string matsave = fmt::format( "/Collision/LinearElasticity/save" );
-    save_ = specs_[nl::json::json_pointer( matsave )].get<int>();
+    std::string matFixedPoint = fmt::format( "/Collision/LinearElasticity/fixedPoint" );
+    fixedPoint_ = specs_[nl::json::json_pointer( matFixedPoint )].get<int>();
 
-    //std::string matFixedPointtol = fmt::format( "/Collision/LinearElasticity/fixedPointTol" );
-    //fixedPointtol_ = specs_[nl::json::json_pointer( matFixedPointtol )].get<double>();
-
-    //std::string matFixedPoint = fmt::format( "/Collision/LinearElasticity/fixedPoint" );
-    //fixedPoint_ = specs_[nl::json::json_pointer( matFixedPoint )].get<int>();
-
-    //std::string matpressurePoint = fmt::format( "/Collision/LinearElasticity/pressurePoint" );
-    //pressurePoint_ = specs_[nl::json::json_pointer( matpressurePoint )].get<std::vector<double>>();
+    std::string matpressurePoint = fmt::format( "/Collision/LinearElasticity/pressurePoint" );
+    pressurePoint_ = specs_[nl::json::json_pointer( matpressurePoint )].get<std::vector<double>>();
 }
 
 
@@ -313,15 +304,14 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t const& u)
 }
 
 
+
+
 template <int Dim, int Order>
 void
 ElasticRigid<Dim, Order>::initG()
 {
     // Init the distance fields
     g_ = Xh_->element();
-
-    // Load and export rigid obstacles
-    //auto wall = loadMesh(_mesh=new mesh_t, _filename = "$cfgdir/wall.geo",_h = 0.4);
 
     // Raytracing to compute distance
     using bvh_ray_type = BVHRay<Dim>;
@@ -335,7 +325,7 @@ ElasticRigid<Dim, Order>::initG()
 
     std::string kind = (Dim==2)?"in-house":"third-party";
 
-    auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_, "Gbdy"), _kind=kind);
+    auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_, "Obs1"), _kind=kind);
 
     BVHRaysDistributed<Dim> allrays;
 
@@ -377,43 +367,37 @@ ElasticRigid<Dim, Order>::initG()
             g_[ldof.index()] = rir.distance() - tolDistance_;
     }
 #endif    
+
 }
 
 // Time loop
 template <int Dim, int Order>
 void ElasticRigid<Dim, Order>::timeLoop()
 {
-    /*
+    
+    // Elasticity equations
 
-    Elasticity equations
+    auto a_e = form2( _test = Xhv_, _trial = Xhv_ );
+    auto at_e = form2( _test = Xhv_, _trial = Xhv_ );
+    auto l_e = form1( _test = Xhv_ );
+    auto lt_e = form1( _test = Xhv_ );
 
-    */
+    a_e.zero();
+    at_e.zero();
+    l_e.zero();
+    lt_e.zero();
 
-    auto a_ = form2( _test = Xhv_, _trial = Xhv_ );
-    auto at_ = form2( _test = Xhv_, _trial = Xhv_ );
-    auto l_ = form1( _test = Xhv_ );
-    auto lt_ = form1( _test = Xhv_ );
-
-    a_.zero();
-    at_.zero();
-    l_.zero();
-    lt_.zero();
-
-    //l_ += integrate( _range = elements(support(Xhv_)), _expr = cst(0.));
-
+   
     auto deft = sym(gradt(u_e_));
     auto def = sym(grad(u_e_));
     auto Id = eye<Dim,Dim>();
     auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-    a_ += integrate( _range = elements(support(Xhv_)), _expr = cst(rho_)*inner( ts_e_->polyDerivCoefficient()*idt(u_e_),id( u_e_ ) ) + inner(sigmat,def));
-    l_ = integrate( _range = elements(support(Xhv_)), _expr = cst( rho_ ) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_e_ ) );
 
-    /*
+    a_e += integrate( _range = elements(support(Xhv_)), _expr = cst(rho_)*inner( ts_e_->polyDerivCoefficient()*idt(u_e_),id( u_e_ ) ) + inner(sigmat,def));
+    l_e = integrate( _range = elements(support(Xhv_)), _expr = cst( rho_ ) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_e_ ) );
 
-    Rigid equations
-
-    */
-
+    
+    // Rigid equations
 
     auto a_r_ = form2( _test = VhvC_, _trial = VhvC_ );
     auto at_r_ = form2( _test = VhvC_, _trial = VhvC_ );
@@ -427,122 +411,140 @@ void ElasticRigid<Dim, Order>::timeLoop()
     lt_r_.zero();
     lt_r_f_.zero();
 
+    auto dir = oneZ(); //-expr<Dim,1>(direction_);
 
-    auto dir = oneZ();//-expr<Dim,1>(direction_);
+    l_r_ += integrate( _range = elements(support(VhvC_)), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_r_));
+    a_r_ += integrate( _range = elements(support(VhvC_)), _expr = cst(rho_)*inner( ts_r_->polyDerivCoefficient()*idt(u_r_),id( u_r_ ) ) );
 
-    l_r_ += integrate( _range = elements(support(Xhv_)), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_r_));
-    a_r_ += integrate( _range = elements(support(Xhv_)), _expr = cst(rho_)*inner( ts_r_->polyDerivCoefficient()*idt(u_r_),id( u_r_ ) ) );
-
+    // output 
     std::ofstream ofs("outputs.csv");
-    ofs << fmt::format( "time, f_s, f_C, f_t, mean_displ_ex, mean_displ_ey, mean_displ_rx, mean_displ_ry, mean_disp_x, mean_displ_y") << std::endl;
+    ofs << fmt::format( "time, f_s, f_C, f_t, mean_displ_ex, mean_displ_ey, mean_displ_rx, mean_displ_ry, mean_disp_x, mean_displ_y, evaluateStress, evaluateDisp") << std::endl;
 
+
+    // Time iterations
+    int iteration = 1;
     for ( ts_e_->start(); ts_e_->isFinished() == false; ts_e_->next( u_e_ ), ts_r_->next( u_r_ ) )
     {
         if (Environment::isMasterRank())
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_e_->time(),ts_e_->timeFinal()) << std::endl;
 
-
-
         std::cout << "***** Compute new contact region *****" << std::endl;
 
         myelts_ = getContactRegion(u_);
-        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+        std::cout << "At iteration : " << iteration << " Nbr faces for processContact : " << nbrFaces_ << std::endl;
 
         auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xh_) ), _update=0 );
         auto XhCFaces = Pdh<0>(face_mesh);
         auto contactFaces = XhCFaces->element();
         contactFaces.on( _range=myelts_, _expr = cst(1.));
 
+        
+        
         std::cout << "***** Solve rigid *****" << std::endl;
-
         lt_r_f_ = l_r_;
         at_r_ = a_r_;
 
-
-        //for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
         lt_r_ += integrate( _range = markedelements( support( VhvC_ ), "Caoutchouc" ), _expr = cst( rho_ ) * inner( idv( ts_r_->polyDeriv() ), id( u_r_ ) ) );
-
-        //auto fc_density_expr = vec(cst(0.),  cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_)));
-
-
 
         if (nbrFaces_ > 0)
         {
             auto epsv = sym(gradv(u_e_));
             auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
 
-            auto fc_density_expr = (-trans(expr<Dim,1>(direction_))*sigmav)*dir;
-            //lt_r_ +=  integrate( _range=boundaryfaces(support(Xh_)), _expr= inner( fc_density_expr,id( u_r_ )) * idv(contactFaces));
             lt_r_f_ +=  integrate( _range=boundaryfaces(support(VhvC_)), _expr= inner( sigmav,id( u_r_ )) * idv(contactFaces));
         }
+
         lt_r_ += lt_r_f_;
         at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
         ts_r_->updateFromDisp(u_r_);
 
         std::cout << "***** Solve elasticity *****" << std::endl;
 
-        lt_ = l_;
-        at_ = a_;
+        lt_e = l_e;
+        at_e = a_e;
 
-        //for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
-        {
-            lt_ +=  integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
-            lt_ += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
 
-        }
-
+        lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
+        lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
+        
         if (nbrFaces_ > 0)
         {
             auto epsv = sym(gradv(u_));
             auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
 
-            at_ += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
-            lt_ += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
+            at_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
+            lt_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
 
-            // auto fc_density_expr = vec(cst(0.),  cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_r_) - idv(g_)));
-            // lt_ += integrate( _range=boundaryfaces(support(Xh_)), _expr= inner( fc_density_expr,id( u_e_ )) * idv(contactFaces));
         }
 
-        at_+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_, _element=u_e_, _expr=0.*one());
+        // deleting translation
+        at_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_e, _element=u_e_, _expr=0.*one());
 
-        at_.solve( _rhs = lt_, _solution = u_e_ , _rebuild = true);
-
+        at_e.solve( _rhs = lt_e, _solution = u_e_ , _rebuild = true);
         ts_e_->updateFromDisp(u_e_);
-
 
         std::cout << "***** Solve displacement *****" << std::endl;
         u_.on(_range=elements(support(Xhv_)),_expr=idv(u_e_) + idv(u_r_));
 
-
+        // Exports
         auto vr = VhvC_->element();
-        vr.on(_range=elements(support(Xhv_)),_expr=dir);
+        vr.on(_range=elements(support(VhvC_)),_expr=dir);
+        
         auto f_s = l_r_(vr);
         auto f_t = lt_r_f_(vr);
         auto epsv = sym(gradv(u_e_));
         auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-        auto fc_density_expr = -trans(expr<Dim,1>(direction_))*sigmav; //vec(cst(0.),  -trans(expr<Dim,1>(direction_))*sigmav);
+        auto fc_density_expr = -trans(expr<Dim,1>(direction_))*sigmav;
         auto f_C = integrate(_range=boundaryfaces(support(Xh_)), _expr = fc_density_expr * idv(contactFaces)).evaluate();
+
         std::cout << fmt::format("forces : gravity: [{}] contact [{}] sum: [{}]", f_s, f_C, f_t) << std::endl;
+        
         double meas = integrate(_range=elements(support(Xhv_)),_expr=cst(1.)).evaluate()(0,0);
-        auto dist2wall_r = integrate(_range=elements(support(Xhv_)),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_r_))).evaluate()(0,0)/meas;
+        auto dist2wall_r = integrate(_range=elements(support(VhvC_)),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_r_))).evaluate()(0,0)/meas;
         auto dist2wall_ = integrate(_range=elements(support(Xhv_)),_expr=(idv(g_)-trans(expr<Dim,1>(direction_))*idv(u_))).evaluate()(0,0)/meas;
+
         std::cout << fmt::format("distance to wall, rigid: [{}] total: [{}]", dist2wall_r, dist2wall_) << std::endl;
+       
         auto mean_displ_e = integrate(_range=elements(support(Xhv_)),_expr=idv(u_e_)).evaluate()/meas;
-        auto mean_displ_r = integrate(_range=elements(support(Xhv_)),_expr=idv(u_r_)).evaluate()/meas;
+        auto mean_displ_r = integrate(_range=elements(support(VhvC_)),_expr=idv(u_r_)).evaluate()/meas;
         auto mean_displ = integrate(_range=elements(support(Xhv_)),_expr=idv(u_)).evaluate()/meas;
+
         std::cout << fmt::format("mean displacement, elastic: [{}] rigid: [{}] total: [{}]", mean_displ_e, mean_displ_r, mean_displ) << std::endl;
 
+        auto ctx = Xh_->context();
+        node_type t1(Dim);
+       
+        
+        if (Dim == 2)
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
+        }
+        else 
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
+        }    
+                
+        ctx.add( t1 );
+
+        auto contactPressure = Xh_->element();
+        contactPressure.on(_range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
+        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure) ); 
+
+        auto evaluateDispExpr = Xh_->element();
+        evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
+        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
+    
         if ( Dim == 2 )
-            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",
                                 ts_e_->time(), f_s, f_C( 0, 0 ), f_t,
-                                mean_displ_e( 0, 0 ), mean_displ_e( 1, 0 ), mean_displ_r( 0, 0 ), mean_displ_r( 1, 0 ), mean_displ( 0, 0 ), mean_displ( 1, 0 ) )
+                                mean_displ_e( 0, 0 ), mean_displ_e( 1, 0 ), mean_displ_r( 0, 0 ), mean_displ_r( 1, 0 ), mean_displ( 0, 0 ), mean_displ( 1, 0 ), evaluateStress(0,0), evaluateDisp(0,0))
                 << std::endl;
         else
-            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",
                                 ts_e_->time(), f_s, f_C( 0, 0 ), f_t,
                                 mean_displ_e( 0, 0 ), mean_displ_e( 1, 0 ), mean_displ_e( 2, 0 ),
                                 mean_displ_r( 0, 0 ), mean_displ_r( 1, 0 ), mean_displ_r( 2, 0 ), 
-                                mean_displ( 0, 0 ), mean_displ( 1, 0 ), mean_displ( 2, 0 ) )
+                                mean_displ( 0, 0 ), mean_displ( 1, 0 ), mean_displ( 2, 0 ), evaluateStress(0,0), evaluateDisp(0,0) )
                 << std::endl;
 
         // Export
@@ -552,14 +554,263 @@ void ElasticRigid<Dim, Order>::timeLoop()
         at_r_.zero();
         lt_r_.zero();
         lt_r_f_.zero();
-        at_.zero();
-        lt_.zero();
+        at_e.zero();
+        lt_e.zero();
 
-
+        iteration++;
 
     }
     ofs.close();
 }
+
+
+
+template <int Dim, int Order>
+void ElasticRigid<Dim, Order>::timeLoopFixedPoint()
+{
+    // Elasticity equations   
+
+    auto a_e = form2( _test = Xhv_, _trial = Xhv_ );
+    auto at_e = form2( _test = Xhv_, _trial = Xhv_ );
+    auto at_tmp_e = form2( _test = Xhv_, _trial = Xhv_ );
+    auto l_e = form1( _test = Xhv_ );
+    auto lt_e = form1( _test = Xhv_ );
+    auto lt_tmp_e = form1( _test = Xhv_ );
+
+    a_e.zero();
+    at_e.zero();
+    at_tmp_e.zero();
+    l_e.zero();
+    lt_e.zero();
+    lt_tmp_e.zero();
+
+    auto deft = sym(gradt(u_e_));
+    auto def = sym(grad(u_e_));
+    auto Id = eye<Dim,Dim>();
+    auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
+
+    a_e += integrate( _range = elements(support(Xhv_)), _expr = cst(rho_)*inner( ts_e_->polyDerivCoefficient()*idt(u_e_),id( u_e_ ) ) + inner(sigmat,def));
+    l_e = integrate( _range = elements(support(Xhv_)), _expr = cst( rho_ ) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_e_ ) );
+
+    // Rigid equations
+    auto a_r_ = form2( _test = VhvC_, _trial = VhvC_ );
+    auto at_r_ = form2( _test = VhvC_, _trial = VhvC_ );
+    auto l_r_ = form1( _test = VhvC_ );
+    auto lt_r_ = form1( _test = VhvC_ );
+    auto lt_tmp_r_ = form1( _test = VhvC_ );
+
+    a_r_.zero();
+    at_r_.zero();
+    l_r_.zero();
+    lt_r_.zero();
+    lt_tmp_r_.zero();
+
+    auto dir = oneZ();//-expr<Dim,1>(direction_);
+
+    l_r_ += integrate( _range = elements(support(VhvC_)), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_r_));
+    a_r_ += integrate( _range = elements(support(VhvC_)), _expr = cst(rho_)*inner( ts_r_->polyDerivCoefficient()*idt(u_r_),id( u_r_ ) ) );
+
+    // Outputs
+    std::ofstream ofs("outputs.csv");
+    ofs << fmt::format( "time, evaluateStress, evaluateDisp") << std::endl;
+
+    int iteration = 0;
+    for ( ts_e_->start(); ts_e_->isFinished() == false; ts_e_->next( u_e_ ), ts_r_->next( u_r_ ) )
+    {
+        if (Environment::isMasterRank())
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_e_->time(),ts_e_->timeFinal()) << std::endl;
+
+        std::cout << "***** Compute new contact region *****" << std::endl;
+        myelts_ = getContactRegion(u_);
+        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+
+        if (nbrFaces_ == 0)
+        {
+            std::cout << "At iteration : " << iteration << " no contact" << std::endl;
+
+            std::cout << "***** Solve rigid *****" << std::endl;
+            lt_r_ = l_r_;
+            at_r_ = a_r_;
+
+            lt_r_ += integrate( _range = markedelements( support( VhvC_ ), "Caoutchouc" ), _expr = cst( rho_ ) * inner( idv( ts_r_->polyDeriv() ), id( u_r_ ) ) );
+
+            at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
+            ts_r_->updateFromDisp(u_r_);
+
+            std::cout << "***** Solve elasticity *****" << std::endl;
+            lt_e = l_e;
+            at_e = a_e;
+
+            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
+            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
+            
+            at_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_e, _element=u_e_, _expr=0.*one());
+            at_e.solve( _rhs = lt_e, _solution = u_e_ , _rebuild = true);
+            ts_e_->updateFromDisp(u_e_);
+
+            std::cout << "***** Solve displacement *****" << std::endl;
+            u_.on(_range=elements(support(Xhv_)),_expr=idv(u_e_) + idv(u_r_));
+        }
+        else
+        {
+            std::cout << "At iteration : " << iteration << " contact" << std::endl;
+
+            int fixedPointIteration = 0;
+            double fixedPointerror = 0.;
+
+            std::cout << "***** Solve rigid *****" << std::endl;
+            lt_r_ = l_r_;
+            at_r_ = a_r_;
+
+            lt_r_ += integrate( _range = markedelements( support( VhvC_ ), "Caoutchouc" ), _expr = cst( rho_ ) * inner( idv( ts_r_->polyDeriv() ), id( u_r_ ) ) );
+
+            std::cout << "***** Solve elasticity *****" << std::endl;
+            lt_e = l_e;
+            at_e = a_e;
+
+            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
+            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
+
+            auto u_e_tmp =  Xhv_->element();
+            u_e_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_e_));
+
+            auto u_e_tmpNew = Xhv_->element();
+            u_e_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_e_)); 
+
+            auto u_r_tmp =  VhvC_->element();
+            u_r_tmp.on( _range=elements(support(VhvC_)), _expr = idv(u_r_));
+
+            auto u_r_tmpNew = VhvC_->element();
+            u_r_tmpNew.on( _range=elements(support(VhvC_)), _expr = idv(u_r_)); 
+
+            auto u_tmp =  Xhv_->element();
+            u_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_));
+
+            auto u_tmpNew = Xhv_->element();
+            u_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_)); 
+            
+        
+            while ((fixedPointerror > fixedPointtol_) || (fixedPointIteration < 1))
+            {
+            
+                std::cout << "Fixed point iteration : " << fixedPointIteration << std::endl;
+                u_e_tmp.on( _range=elements(mesh_), _expr = idv(u_e_tmpNew)); ;
+                u_r_tmp.on( _range=elements(mesh_), _expr = idv(u_r_tmpNew)); ;
+                u_tmp.on( _range=elements(mesh_), _expr = idv(u_tmpNew)); ;
+            
+                std::cout << "***** Compute new contact region *****" << std::endl;
+                myelts_ = getContactRegion(u_);
+                std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+                auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xh_) ), _update=0 );
+                auto XhCFaces = Pdh<0>(face_mesh);
+                auto contactFaces = XhCFaces->element();
+                contactFaces.on( _range=myelts_, _expr = cst(1.));
+
+                lt_tmp_r_ = lt_r_;
+
+                auto epsv = sym(gradv(u_e_tmp));
+                auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+
+                lt_tmp_r_ +=  integrate( _range=boundaryfaces(support(VhvC_)), _expr= inner( sigmav,id( u_r_tmp )) * idv(contactFaces));
+
+                at_r_.solve( _rhs = lt_tmp_r_, _solution = u_r_tmpNew, _rebuild = true );
+
+                
+                at_tmp_e = at_e;
+                lt_tmp_e = lt_e;
+
+                at_tmp_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_tmp),trans(expr<Dim,1>(direction_))*id(u_e_tmp)) * idv(contactFaces));
+                lt_tmp_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_tmp), trans(expr<Dim,1>(direction_))*id(u_e_tmp)) * idv(contactFaces));
+                        
+                at_tmp_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_tmp_e, _element=u_e_tmp, _expr=0.*one());
+                at_tmp_e.solve( _rhs = lt_tmp_e, _solution = u_e_tmpNew , _rebuild = true);
+
+                std::cout << "***** Solve displacement *****" << std::endl;
+                u_tmpNew.on(_range=elements(support(Xhv_)),_expr=idv(u_e_tmpNew) + idv(u_r_tmpNew));
+
+                std::cout << "***** Compute error *****" << std::endl;
+                fixedPointerror = integrate(_range=elements(support(Xhv_)), _expr = norm2( idv(u_tmp)-idv(u_tmpNew))).evaluate()(0,0) / integrate(_range=elements(support(Xhv_)),_expr=norm2(idv(u_))).evaluate()(0,0); 
+            
+                std::cout << "Error fixed point : " << fixedPointerror << std::endl;
+                fixedPointIteration++;
+
+                if (fixedPointIteration == 10)
+                    break;
+            
+                // Reset
+                lt_tmp_r_.zero();
+                at_tmp_e.zero();
+                lt_tmp_e.zero();
+            
+            }
+
+            u_e_.on( _range=elements(support(Xhv_)), _expr = idv(u_e_tmpNew));
+            u_r_.on( _range=elements(support(VhvC_)), _expr = idv(u_r_tmpNew));
+            u_.on( _range=elements(support(Xhv_)), _expr = idv(u_tmpNew)); 
+
+
+            ts_r_->updateFromDisp(u_r_);
+            ts_e_->updateFromDisp(u_e_);
+        }
+
+        // Reset
+        at_r_.zero();
+        lt_r_.zero();
+        at_e.zero();
+        lt_e.zero();
+
+
+        // Exports
+        myelts_ = getContactRegion(u_);
+        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xh_) ), _update=0 );
+        auto XhCFaces = Pdh<0>(face_mesh);
+        auto contactFaces = XhCFaces->element();
+        contactFaces.on( _range=myelts_, _expr = cst(1.));
+
+        auto ctx = Xh_->context();
+        node_type t1(Dim);
+       
+        
+        if (Dim == 2)
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
+        }
+        else 
+        {
+            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
+        }    
+                
+        ctx.add( t1 );
+
+        auto epsv = sym(gradv(u_e_));
+        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+
+        auto contactPressure = Xh_->element();
+        contactPressure.on(_range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
+        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure) ); 
+
+        auto evaluateDispExpr = Xh_->element();
+        evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
+        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
+    
+        if ( Dim == 2 )
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",
+                                ts_e_->time(), evaluateStress(0,0), evaluateDisp(0,0))
+                << std::endl;
+        else
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",
+                                ts_e_->time(), evaluateStress(0,0), evaluateDisp(0,0) )
+                << std::endl;
+
+        // Export
+        this->exportResults( ts_e_->time() );
+
+        iteration++;
+    }
+    ofs.close();
+    
+}
+
 
 // Run method
 template <int Dim, int Order>
@@ -577,8 +828,10 @@ void ElasticRigid<Dim, Order>::run()
     this->exportResults(0.);
 
     std::cout <<  "***** Start time loop *****" << std::endl;
-    timeLoop();
-
+    if (fixedPoint_ == 1)
+        timeLoopFixedPoint();
+    else 
+        timeLoop();
 }
 
 // Export results
@@ -586,17 +839,11 @@ template <int Dim, int Order>
 void
 ElasticRigid<Dim, Order>::exportResults(double t)
 {
-
     e_->step(t)->addRegions();
-
     e_->step(t)->add( "displacement", u_ );
     e_->step(t)->add( "displacement_elastic", u_e_ );
     e_->step(t)->add( "displacement_rigid", u_r_ );
     e_->step(t)->add( "g", g_ );
-
-    //e_->step(*it)->add( "velocity_elastic", ts_e_->currentVelocity() );
-    //e_->step(t)->add( "velocity_rigid", ts_r_->currentVelocity() );
-
     e_->save();
 }
 
