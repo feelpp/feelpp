@@ -65,7 +65,7 @@ var searchData=
   ['filterbasisunknownturbulencemodel_62',['FilterBasisUnknownTurbulenceModel',['../structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel.html',1,'Feel::FeelModels::FluidMechanics']]],
   ['filters_63',['Filters',['../group__Filters.html',1,'']]],
   ['filters_2ehpp_64',['filters.hpp',['../filters_8hpp.html',1,'']]],
-  ['finalized_65',['finalized',['../classFeel_1_1Application.html#a557a482f6bd88fb483cb9e6377229da0',1,'Feel::Application::finalized()'],['../classFeel_1_1Environment.html#afd3a4ef2925b1469ddee0bf77d94c64d',1,'Feel::Environment::finalized()'],['../classFeel_1_1Application.html#a557a482f6bd88fb483cb9e6377229da0',1,'Feel::Application::finalized()']]],
+  ['finalized_65',['finalized',['../classFeel_1_1Environment.html#afd3a4ef2925b1469ddee0bf77d94c64d',1,'Feel::Environment::finalized()'],['../classFeel_1_1Application.html#a557a482f6bd88fb483cb9e6377229da0',1,'Feel::Application::finalized()'],['../classFeel_1_1Application.html#a557a482f6bd88fb483cb9e6377229da0',1,'Feel::Application::finalized()']]],
   ['find_66',['find',['../classnlohmann_1_1basic__json.html#a17a516671c29a69bb2e11ca12030316b',1,'nlohmann::basic_json::find(KeyT &amp;&amp;key) const'],['../classnlohmann_1_1basic__json.html#acdf9b3aab82dcf443dd91ca5ec06b80c',1,'nlohmann::basic_json::find(KeyT &amp;&amp;key)']]],
   ['find_5flargest_5fpow10_67',['find_largest_pow10',['../namespacenlohmann_1_1detail_1_1dtoa__impl.html#a36ded358763b5dbcea9867660fbe4e28',1,'nlohmann::detail::dtoa_impl']]],
   ['findfile_68',['findFile',['../classFeel_1_1Environment.html#ace781e8da2c930e0297dd005cf5ddbbf',1,'Feel::Environment']]],
