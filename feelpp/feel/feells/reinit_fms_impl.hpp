@@ -238,7 +238,7 @@ reduceDonePoints(element_type const& __v, element_type& status, std::set<size_ty
   checkStatus->zero();
 
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
-      checkStatus->add(k, status(k) == DONE ? 1 : 0);
+      checkStatus->add(k, status(k) == value_type(DONE) ? 1 : 0);
 
   // communications are done here. The sum of the real values and ghost values is done
   // thus if a dof has been set to DONE, even on a ghost value, checkStatus is 1
@@ -273,7 +273,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
   valueAtClose->zero();
 
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
-    if ( status(k) == CLOSE )
+    if ( status(k) == value_type(CLOSE) )
       {
         checkStatus->add(k, 1);
         valueAtClose->add(k, theHeap.valueAtIndex( k ) );
@@ -289,7 +289,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
     {
 
       // if a dof has been marked as CLOSE on an other processor, mark it as CLOSE and take its value
-      if ( ((*checkStatus)(k) == 1) && (status(k) != CLOSE) )
+      if ( ((*checkStatus)(k) == 1) && (status(k) != value_type(CLOSE)) )
         {
           status(k) = CLOSE;
           heap_entry_type newEntry = { (*valueAtClose)(k), k };
@@ -297,7 +297,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
         }
 
       // if a point is marked as CLOSE from at least two different processors, store its value of phi in order to be compared with the others
-      else if ( ( (*checkStatus)(k) > 1 ) && (status(k) == CLOSE) )
+      else if ( ( (*checkStatus)(k) > 1 ) && (status(k) == value_type(CLOSE)) )
         phiValueAtGlobalId[ processorToCluster( k ) ] = theHeap.valueAtIndex( k );
     }
 
@@ -553,9 +553,9 @@ fmsHeapUpdate( size_type idDone,
     std::vector<size_type> ids( 1, idDone );
     for ( auto n0it = nbrs.begin(); n0it != nbrs.end(); ++n0it )
         {
-            if ( status[*n0it] == FAR )
+            if ( status[*n0it] == value_type(FAR) )
                 status[*n0it] = CLOSE;
-            if ( status[*n0it] == CLOSE )
+            if ( status[*n0it] == value_type(CLOSE) )
                 {
 
                   /* to give a reference, compute phi with only one DONE neighbours
@@ -603,7 +603,7 @@ fmsDistRec( std::vector<size_type> & ids,
         {
 
           // if the next neighbors is not a DONE neighbors
-            if ( status[*nit] != DONE )
+            if ( status[*nit] != value_type(DONE) )
                 continue;
 
             // if this node has already been accepted, stop
