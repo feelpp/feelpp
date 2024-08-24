@@ -18,6 +18,7 @@ on:
             - 'bookworm'
             - 'testing'
             - 'sid'
+            - 'none'
         enable-ubuntu:
             description: 'Enable ubuntu distros'
             required: false
@@ -28,6 +29,7 @@ on:
             - 'noble'
             - 'jammy'
             - 'focal'
+            - 'none'
         enable-spack:
             description: 'Enable spack distros'
             required: false
@@ -37,6 +39,7 @@ on:
             - 'all'
             - 'spack-mpich'
             - 'spack-openmpi'
+            - 'none'
         enable-docker:
             description: 'Enable docker container'
             required: false
@@ -45,6 +48,7 @@ on:
             options:
             - 'all'
             - 'docker'
+            - 'none'
         enable-apptainer:
             description: 'Enable apptainer container'
             required: false
@@ -53,6 +57,7 @@ on:
             options:
             - 'all'
             - 'apptainer'
+            - 'none'
         parallel:
           description: 'Number of parallel jobs'
           required: false
@@ -142,9 +147,10 @@ jobs:
                 'apptainer': ['all', 'apptainer']
               };
               console.log("checkEnable:", distro, dist, enabledMap[distro], enabledMap[distro].includes(distros[distro]), enabledMap[distro].includes(dist),distros[distro] );
-              console.log("checkEnable:",( distros[distro] === 'all' || distros[distro] === distro || enabledMap[distro].includes(distros[distro])  ));
+              const res = ( distros[distro] != 'none' ) && (( distros[distro] === 'all' || distros[distro] === distro ) || ( enabledMap[distro].includes(distros[distro])  && distros[distro] === dist ));
+              console.log("checkEnable:",res);
 
-              return ( distros[distro] === 'all' || distros[distro] === distro ) || ( enabledMap[distro].includes(distros[distro])  && distros[distro] === dist );
+              return res;
             }
 
             const skips = ['all', 'debian', 'bookworm', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
@@ -161,7 +167,7 @@ jobs:
 
             console.log("debian bookworm:",enables['debian-bookworm'], enables['debian-all'], skips.all, skips.debian, skips.bookworm);
             const includes = [];
-            if ((!skips.all && !skips.debian && !skips.bookworm) || ( enables['debian-bookworm']  ) ) {
+            if ((!skips.all && !skips.debian && !skips.bookworm) && ( enables['debian-bookworm']  ) ) {
               
               includes.push({
                 'distro': 'debian/bookworm',
@@ -176,7 +182,7 @@ jobs:
 
 
             console.log("debian testing:",enables['debian-testing'], enables['debian-all'], skips.all, skips.debian, skips.testing);
-            if ((!skips.all && !skips.debian && !skips.testing) || (enables['debian-testing']  )) {
+            if ((!skips.all && !skips.debian && !skips.testing) && (enables['debian-testing']  )) {
               includes.push({
                 'distro': 'debian/testing',
                 'flavor': 'debian',
@@ -188,7 +194,7 @@ jobs:
               });
             }
             console.log("debian sid:",enables['debian-sid'], enables['debian-all'], skips.all, skips.debian, skips.sid);
-            if ((!skips.all && !skips.debian && !skips.sid) || (enables['debian-sid']  )) {
+            if ((!skips.all && !skips.debian && !skips.sid) && (enables['debian-sid']  )) {
               includes.push({
                 'distro': 'debian/sid',
                 'flavor': 'debian',
@@ -200,7 +206,7 @@ jobs:
               });
             }
             console.log("ubuntu noble:",enables['ubuntu-noble'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.noble);
-            if ((!skips.all && !skips.ubuntu && !skips.noble) || (enables['ubuntu-noble'] )) {
+            if ((!skips.all && !skips.ubuntu && !skips.noble) && (enables['ubuntu-noble'] )) {
               includes.push({
                 'distro': 'ubuntu/noble',
                 'flavor': 'ubuntu',
@@ -212,7 +218,7 @@ jobs:
               });
             }
             console.log("ubuntu jammy:",enables['ubuntu-jammy'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.jammy);
-            if ((!skips.all && !skips.ubuntu && !skips.jammy) || (enables['ubuntu-jammy'])) {
+            if ((!skips.all && !skips.ubuntu && !skips.jammy) && (enables['ubuntu-jammy'])) {
               includes.push({
                 'distro': 'ubuntu/jammy',
                 'flavor': 'ubuntu',
@@ -224,7 +230,7 @@ jobs:
               });
             }
             console.log("ubuntu focal:",enables['ubuntu-focal'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.focal);
-            if ((!skips.all && !skips.ubuntu && !skips.focal) || (enables['ubuntu-focal'] )) {
+            if ((!skips.all && !skips.ubuntu && !skips.focal) && (enables['ubuntu-focal'] )) {
               includes.push({
                 'distro': 'ubuntu/focal',
                 'flavor': 'ubuntu',
@@ -236,7 +242,7 @@ jobs:
               });
             }
             console.log("spack mpich:",enables['spack-mpich'], enables['spack-all'], skips.all, skips.spack, skips['spack-mpich']);
-            if ((!skips.all && !skips.spack && !skips['spack-mpich']) || (enables['spack-mpich'])) {
+            if ((!skips.all && !skips.spack && !skips['spack-mpich']) && (enables['spack-mpich'])) {
               includes.push({
                 'distro': 'spack/mpich',
                 'flavor': 'spack',
@@ -248,7 +254,7 @@ jobs:
               });
             }
             console.log("spack openmpi:",enables['spack-openmpi'], enables['spack-all'], skips.all, skips.spack, skips['spack-openmpi']);
-            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) || (enables['spack-openmpi'] )) {
+            if ((!skips.all && !skips.spack && !skips['spack-openmpi']) && (enables['spack-openmpi'] )) {
               includes.push({
                 'distro': 'spack/openmpi',
                 'flavor': 'spack',
