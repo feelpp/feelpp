@@ -173,7 +173,7 @@ template&lt;typename ExprT &gt; </div>
 <p >The following code times the intermediary results of the evaluation of \(\int_\Omega x y\)</p>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> e = Px()*Py();</div>
 <div class="line">std::cout &lt;&lt; integrate( _range=<a class="code hl_function" href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">elements</a>(mesh), _expr=<a class="code hl_function" href="time_8hpp.html#aa4e352ae47fbd22d9e9f2f3dd7e1c872">time</a>(e,<span class="stringliteral">&quot;e=&quot;</span>) ).evaluate();</div>
-<div class="ttc" id="anamespaceFeel_html_ac20d23cc8e912e4b7919da0c978d7b17"><div class="ttname"><a href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">Feel::elements</a></div><div class="ttdeci">auto elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:113</div></div>
+<div class="ttc" id="anamespaceFeel_html_ac20d23cc8e912e4b7919da0c978d7b17"><div class="ttname"><a href="namespaceFeel.html#ac20d23cc8e912e4b7919da0c978d7b17">Feel::elements</a></div><div class="ttdeci">auto elements(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:106</div></div>
 <div class="ttc" id="atime_8hpp_html_aa4e352ae47fbd22d9e9f2f3dd7e1c872"><div class="ttname"><a href="time_8hpp.html#aa4e352ae47fbd22d9e9f2f3dd7e1c872">Feel::vf::time</a></div><div class="ttdeci">Expr&lt; TimeExpr&lt; ExprT &gt; &gt; time(ExprT v, std::string t=&quot;&quot;)</div><div class="ttdoc">time an expression during evaluation.</div><div class="ttdef"><b>Definition:</b> time.hpp:274</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the expression that was timeed. </dd></dl>
 

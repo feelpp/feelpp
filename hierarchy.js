@@ -1469,7 +1469,6 @@ var hierarchy =
       [ "Feel::StatusRequestHTTP", "classFeel_1_1StatusRequestHTTP.html", null ],
       [ "Feel::TimeStepInfo", "structFeel_1_1TimeStepInfo.html", null ]
     ] ],
-    [ "std::tuple_element< I, T >", "structstd_1_1tuple__element.html", null ],
     [ "std::tuple_element< N, ::nlohmann::detail::iteration_proxy_value< IteratorType > >", "classstd_1_1tuple__element_3_01N_00_01_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html", null ],
     [ "std::tuple_element< n, boost::hana::tuple< Types... > >", "structstd_1_1tuple__element_3_01n_00_01boost_1_1hana_1_1tuple_3_01Types_8_8_8_01_4_01_4.html", null ],
     [ "std::vector< T >", null, [
