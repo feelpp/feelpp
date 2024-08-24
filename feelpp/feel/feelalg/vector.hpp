@@ -22,8 +22,12 @@
 
 #include <vector>
 #include <memory>
-#include <boost/shared_ptr.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
+#pragma GCC diagnostic pop
+
 #include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
