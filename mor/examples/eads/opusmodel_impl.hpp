@@ -30,7 +30,7 @@
 #define OPUSMODEL_IMPL_HPP_ 1
 
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
+
 
 
 #include <feel/feelcore/environment.hpp>

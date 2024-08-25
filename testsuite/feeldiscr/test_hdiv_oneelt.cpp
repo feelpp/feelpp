@@ -287,7 +287,7 @@ void
         // alpha_i(N_j) = \int_face(i) u.n
         // Piola transformation : u -> (J/detJ)u_ref
         int faceid = 0;
-        BOOST_FOREACH( std::string face, faces )
+        for( std::string face : faces )
         {
             auto int_u_n = integrate( _range=markedfaces( oneelement_mesh, face ), _expr=trans(N())*idv( u_vec[i]) ).evaluate()( 0,0 );
 
@@ -342,7 +342,7 @@ void
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int faceid = 0;
-        BOOST_FOREACH( std::string face, faces )
+        for( std::string face : faces )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << face << " face) *** \n"
                                 << "alpha_"<< faceid << "(N_"<<i<<") = " << checkidv[3*i+faceid] );
@@ -359,7 +359,7 @@ void
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int faceid = 0;
-        BOOST_FOREACH( std::string face, faces )
+        for( std::string face : faces )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << face << " edge) *** \n"
                                 << "alpha_"<< faceid << "(N_"<<i<<") = " << checkform1[3*i+faceid] );

@@ -306,7 +306,7 @@ The compact form of (\ref{eq:40}) is
 // Assembly of the right hand side $ B = \mathlarger \int_\Gamma \kappa v w $
  auto B = M_backend->newMatrix( Xh, Xh ) ;
  form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
- BOOST_FOREACH( int marker, flags )
+ for( int marker : flags )
  {
    form2( Xh, Xh, _matrix=B ) +=
    integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );
