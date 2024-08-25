@@ -143,7 +143,7 @@ int cg_laplacian_app()
     }
 
     // cgLaplacian may not solve the problem, hence u is std::optional
-    auto opt_u = cgLaplacianDirichlet( Vh, std::tuple(k,f,g));//std::tuple{k,f,g,un,r_1,r_2} );
+    auto opt_u = cgLaplacian( _space=Vh, _data=std::tuple{k,f,g,un,r_1,r_2} );
 
     // tag::export[]
     tic();
