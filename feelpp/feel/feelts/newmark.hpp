@@ -391,7 +391,7 @@ Newmark<SpaceType>::initialize( element_type const& u0 )
     M_time_values_map.push_back( M_Ti );
 
     std::for_each( M_previousUnknown.begin(), M_previousUnknown.end(),
-                   [u0]( auto& element ) { element = u0; } );
+                   [u0]( auto& element ) { *element = u0; } );
 
     // compute first derivative poly of rhs
     this->computePolyFirstDeriv();
@@ -633,17 +633,17 @@ Newmark<SpaceType>::shiftRight(typename space_type::template Element<value_type,
     // Shift all previously stored BDF data for displacements
     auto itDisp = std::next(M_previousUnknown.rbegin());
     std::for_each(M_previousUnknown.rbegin(), std::prev(M_previousUnknown.rend()), 
-                  [&itDisp](auto& element) { element = *itDisp; ++itDisp; });
+                  [&itDisp](auto& element) { *element = *(*itDisp); ++itDisp; });
 
     // Shift all previously stored BDF data for velocities
     auto itVel = std::next(M_previousVel.rbegin());
     std::for_each(M_previousVel.rbegin(), std::prev(M_previousVel.rend()), 
-                  [&itVel](auto& element) { element = *itVel;++itVel; });
+                  [&itVel](auto& element) { *element = *(*itVel);++itVel; });
 
     // Shift all previously stored BDF data for accelerations
     auto itAcc = std::next(M_previousAcc.rbegin());
     std::for_each(M_previousAcc.rbegin(), std::prev(M_previousAcc.rend()), 
-                  [&itAcc](auto& element) { element = *itAcc; ++itAcc; });
+                  [&itAcc](auto& element) { *element = *(*itAcc); ++itAcc; });
 
     // Shift all previously stored data
     *M_previousUnknown[0] = new_unk;
