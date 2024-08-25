@@ -143,7 +143,7 @@ int cg_laplacian_app()
     }
 
     // cgLaplacian may not solve the problem, hence u is std::optional
-    auto opt_u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
+    auto opt_u = cgLaplacianDirichlet( Vh, std::tuple(k,f,g));//std::tuple{k,f,g,un,r_1,r_2} );
 
     // tag::export[]
     tic();
@@ -187,7 +187,9 @@ int main( int argc, char** argv )
 
         po::options_description laplacianoptions( "Laplacian options" );
 
-        laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+        laplacianoptions.add_options()
+            ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+            ( "weakbc", po::value<bool>()->default_value( false ), "Weak Dirichlet conditions" )
             ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
             ( "f", po::value<std::string>()->default_value( "" ), "right hand side" )
             ( "g", po::value<std::string>()->default_value( "" ), "Dirichlet boundary condition" )

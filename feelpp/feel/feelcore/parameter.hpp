@@ -57,6 +57,8 @@ using argc = NA::named_argument_t<struct argc_tag>;
 using argv = NA::named_argument_t<struct argv_tag>;
 using remove = NA::named_argument_t<struct remove_tag>;
 using logging = NA::named_argument_t<struct logging_tag>;
+using print = NA::named_argument_t<struct print_tag>;
+using data = NA::named_argument_t<struct data_tag>;
 
 using verbose = NA::named_argument_t<struct verbose_tag>;
 using threading = NA::named_argument_t<struct threading_tag>;
@@ -110,6 +112,7 @@ using interval_a = NA::named_argument_t<struct interval_a_tag>;
 using interval_b = NA::named_argument_t<struct interval_b_tag>;
 using backend = NA::named_argument_t<struct backend_tag>;
 using problem = NA::named_argument_t<struct problem_tag>;
+using solve = NA::named_argument_t<struct solve_tag>;
 using solver = NA::named_argument_t<struct solver_tag>;
 using spectrum = NA::named_argument_t<struct spectrum_tag>;
 using transform = NA::named_argument_t<struct transform_tag>;
@@ -117,6 +120,8 @@ using value_on_diagonal = NA::named_argument_t<struct value_on_diagonal_tag>;
 using condense = NA::named_argument_t<struct condense_tag>;
 using condenser = NA::named_argument_t<struct condenser_tag>;
 using local = NA::named_argument_t<struct local_tag>;
+using weak_dirichlet = NA::named_argument_t<struct weak_dirichlet_tag>;
+
 // parameter for exporter
 using geo = NA::named_argument_t<struct geo_tag>;
 using fileset = NA::named_argument_t<struct fileset_tag>;
@@ -369,6 +374,8 @@ inline constexpr auto& _argc = NA::identifier<na::argc>;
 inline constexpr auto& _argv = NA::identifier<na::argv>;
 inline constexpr auto& _remove = NA::identifier<na::remove>;
 inline constexpr auto& _logging = NA::identifier<na::logging>;
+inline constexpr auto& _print = NA::identifier<na::print>;
+inline constexpr auto& _data = NA::identifier<na::data>;
 
 inline constexpr auto& _verbose = NA::identifier<na::verbose>;
 inline constexpr auto& _threading = NA::identifier<na::threading>;
@@ -422,6 +429,7 @@ inline constexpr auto& _interval_a = NA::identifier<na::interval_a>;
 inline constexpr auto& _interval_b = NA::identifier<na::interval_b>;
 inline constexpr auto& _backend = NA::identifier<na::backend>;
 inline constexpr auto& _problem = NA::identifier<na::problem>;
+inline constexpr auto& _solve = NA::identifier<na::solve>;
 inline constexpr auto& _solver = NA::identifier<na::solver>;
 inline constexpr auto& _spectrum = NA::identifier<na::spectrum>;
 inline constexpr auto& _transform = NA::identifier<na::transform>;
@@ -429,6 +437,10 @@ inline constexpr auto& _value_on_diagonal = NA::identifier<na::value_on_diagonal
 inline constexpr auto& _condense = NA::identifier<na::condense>;
 inline constexpr auto& _condenser = NA::identifier<na::condenser>;
 inline constexpr auto& _local = NA::identifier<na::local>;
+inline constexpr auto& _weak_dirichlet = NA::identifier<na::weak_dirichlet>;
+
+
+
 // parameter for exporter
 inline constexpr auto& _geo = NA::identifier<na::geo>;
 inline constexpr auto& _fileset = NA::identifier<na::fileset>;
