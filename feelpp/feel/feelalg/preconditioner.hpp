@@ -352,7 +352,7 @@ public:
 
     void attachOperatorPMM( std::string const& key, operator_pmmbase_ptrtype const& opPMM )
     {
-        M_operatorPMM[key] = opPCD;
+        M_operatorPMM[key] = opPMM;
     }
 
     //@}
@@ -414,6 +414,8 @@ protected:
     std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 
     std::map<std::string,operator_pcdbase_ptrtype> M_operatorPCD;
+    std::map<std::string,operator_pmmbase_ptrtype> M_operatorPMM;
+
 };
 
 typedef Preconditioner<double,uint32_type> preconditioner_type;

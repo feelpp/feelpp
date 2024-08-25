@@ -1784,8 +1784,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
     }
     if ( M_preconditionerAttachPMM )
     {
-        using op_pmm_type = Feel::Alternatives::OperatorPMM<space_velocity_type,space_pressure_type>;
-        auto opPMM = std::make_shared<op_pcd_type>( this->functionSpacePressure(),
+        using op_pmm_type = Feel::Alternatives::OperatorPMM<space_pressure_type>;
+        auto opPMM = std::make_shared<op_pmm_type>( this->functionSpacePressure(),
                                                     this->backend(), this->prefix(), true);
 
         opPMM->initialize();
