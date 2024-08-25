@@ -3079,6 +3079,18 @@ ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->subPCtype : " << M_subPCtype << "\n";
     google::FlushLogFiles(google::INFO);
     run( pc );
+
+    CHECK( this->precFeel()->hasOperatorPMM( "pmm" ) ) << "operator pmm is not given";
+
+    auto opPMM = this->precFeel()->operatorPMM( "pmm" );
+    MatrixPetsc<double>* pmMatPetsc = const_cast<MatrixPetsc<double>*>( dynamic_cast<MatrixPetsc<double> const*>( &( *( opPMM->pressureMassMatrix() ) ) ) );
+    this->check( PCSetPressureMassMatrix_PMM_Feelpp( pc, pmMatPetsc->mat()) );
+    VLOG(2) << "ConfigurePC : PMM\n"
+            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->prefixPMM : " << M_prefixPMM  << "\n"
+            << "  |->subPCtype : " << M_subPCtype << "\n";
+    google::FlushLogFiles( google::INFO );
+    run( pc );
 }
 
 void
@@ -3207,68 +3219,6 @@ ConfigurePCPCD::run( PC& pc )
         this->check( KSPView( subksp_Ap, PETSC_VIEWER_STDOUT_WORLD ) );
     else if ( M_subPCview_Ap )
         this->check( PCView( subpc_Ap, PETSC_VIEWER_STDOUT_WORLD ) );
-    if ( kspConf_Mp.kspView() )
-        this->check( KSPView( subksp_Mp, PETSC_VIEWER_STDOUT_WORLD ) );
-    else if ( M_subPCview_Mp )
-        this->check( PCView( subpc_Mp, PETSC_VIEWER_STDOUT_WORLD ) );
-}
-
-/**
- * ConfigurePCPCD
- */
-ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
-                                std::string const& sub, std::string const& prefix )
-    :
-    ConfigurePCBase( precFeel, worldComm,sub,prefix,getOptionsDescPMM(prefix,sub) ),
-    M_subPCtype_Mp( option(_name="pc-type",_prefix=M_prefixPMM_Mp,_vm=this->vm()).as<std::string>() ),
-    M_subMatSolverPackage_Mp( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixPMM_Mp,_vm=this->vm()).as<std::string>() ),
-    M_subPCview_Mp( option(_name="pc-view",_prefix=M_prefixPMM_Mp,_vm=this->vm()).as<bool>() )
-{
-    CHECK( this->precFeel()->hasOperatorPMM("pcd") ) << "operator pMM is not given";
-
-    auto opPMM = this->precFeel()->operatorPMM("pMM");
-    MatrixPetsc<double> * pmMatPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*(opPMM->pressureMassMatrix())) ) );
-    this->check( PCSetMatMp_PMM_Feelpp( pc, pmMatPetsc->mat()) );
-    VLOG(2) << "ConfigurePC : PMM\n"
-            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
-            << "  |->prefixPMM_Mp : " << M_prefixPMM_Mp  << "\n"
-            << "  |->subPCtype_Mp : " << M_subPCtype_Mp << "\n";
-    google::FlushLogFiles(google::INFO);
-    run( pc );
-}
-
-
-
-void
-ConfigurePCPMM::run( PC& pc )
-{
-    std::vector<std::string> prefixOverwrite;
-
-    // setup sub-pc
-    this->check( PCSetUp( pc ) );
-
-    //-----------------------------------------------------------//
-    // get sub-ksp
-    KSP subksp_Ap, subksp_Mp;
-    this->check( PCGetKSP_Mp_PMM_Feelpp( pc, subksp_Mp ) );
-    // configure sub-ksp
-    ConfigureKSP kspConf_Mp( subksp_Mp, this->precFeel(), this->worldCommPtr(), "", M_prefixPMM_Mp,prefixOverwrite,"preonly", 1e-5, 50 );
-    // setup sub-ksp
-    this->check( KSPSetUp( subksp_Mp ) );
-    //-----------------------------------------------------------//
-    // get sub-pc
-    PC subpc_Ap, subpc_Mp;
-    this->check( KSPGetPC( subksp_Ap, &subpc_Ap ) );
-    this->check( KSPGetPC( subksp_Mp, &subpc_Mp ) );
-    // configure sub-pc
-    SetPCType( subpc_Mp, pcTypeConvertStrToEnum( M_subPCtype_Mp ),
-               matSolverPackageConvertStrToEnum( M_subMatSolverPackage_Mp ),
-               this->worldCommPtr() );
-    ConfigurePC( subpc_Mp, this->precFeel(), this->worldCommPtr(), "", M_prefixPMM_Mp,prefixOverwrite,this->vm() );
-    // setup sub-pc
-    this->check( PCSetUp( subpc_Mp ) );
-    //-----------------------------------------------------------//
-    // ksp and pc view
     if ( kspConf_Mp.kspView() )
         this->check( KSPView( subksp_Mp, PETSC_VIEWER_STDOUT_WORLD ) );
     else if ( M_subPCview_Mp )
