@@ -456,7 +456,7 @@ if ( FEELPP_ENABLE_HDF5 )
 
 
   set(HDF5_PREFER_PARALLEL TRUE)
-  pkg_check_modules(HDF5 hdf5)
+  pkg_check_modules(HDF5 hdf5 IMPORTED_TARGET)
   if ( HDF5_FOUND )
     message(STATUS "[feelpp] (pkgconfig) HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
     message(STATUS "[feelpp] (pkgconfig) HDF5 - Libraries ${HDF5_LIBRARIES}" )
