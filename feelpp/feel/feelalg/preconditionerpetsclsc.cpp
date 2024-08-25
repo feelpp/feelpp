@@ -346,7 +346,9 @@ PETSC_EXTERN PetscErrorCode PCCreate_LSC2(PC pc)
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,18,0 )
+  ierr     = PetscNew(&lsc);CHKERRQ(ierr);  
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
   ierr     = PetscNewLog(pc,&lsc);CHKERRQ(ierr);
 #else
   ierr     = PetscNewLog(pc,PC_LSC2,&lsc);CHKERRQ(ierr);
