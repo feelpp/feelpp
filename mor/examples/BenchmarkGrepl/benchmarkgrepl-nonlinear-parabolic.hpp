@@ -384,7 +384,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
     {
     int cpt = 0;
     auto exporter_eim = exporter(_mesh=mesh,_name="eim");
-    BOOST_FOREACH( auto mu, *Pset )
+    for( auto mu : *Pset )
     {
       Feel::cout<<"check gM for mu = ["<< mu(0)<<" , "<<mu(1)<<" , "<<mu(2)<<" , " << mu(3) << "]"<<std::endl;
       auto g = vf::project(_space=Xh,

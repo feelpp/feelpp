@@ -355,7 +355,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                                                                     FormType& __form ) const
 {
     LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements()");
-    
+
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
@@ -469,7 +469,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-    
+
     //
     // a few typedefs
     //
@@ -650,7 +650,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
                     index_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
                     thedof = trialDofIdToContainerId[ thedof ];
 
-                    DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
+                    DCHECK( ldof.localDofInFace() < IhLoc.size() )
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
@@ -1056,56 +1056,68 @@ namespace detail
 template<typename T >
 struct v_ptr1
 {
-    typedef T type;
+    using type = T;
 };
+template<typename T >
+using v_ptr1_t = typename v_ptr1<T>::type;
+
 template<typename T >
 struct v_ptr2
 {
     typedef typename T::vector_ptrtype type;
 };
 
+template<typename T >
+using v_ptr2_t = typename v_ptr2<T>::type;
+
+
 
 template<typename ArgRangeType,typename ArgRhsType,typename ArgElementType,typename ArgExprType>
 struct integratoron_type
 {
-    using _range_base_type = std::decay_t<ArgRangeType>;
-    using _rhs_type = std::decay_t<ArgRhsType>;
-    using _element_type = std::decay_t<ArgElementType>;
-    using _expr_type = std::decay_t<ArgExprType>;
+    using _range_base_type = std::remove_reference_t<std::decay_t<ArgRangeType>>;
+    using _rhs_type = std::remove_reference_t<std::decay_t<ArgRhsType>>;
+    using _element_type = std::remove_reference_t<std::decay_t<ArgElementType>>;
+    using _expr_type = std::remove_reference_t<std::decay_t<ArgExprType>>;
 
-    typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
-                               mpl::identity<_range_base_type>,
-                               mpl::identity<std::list<_range_base_type> > >::type::type::value_type _range_type;
+    using _range_type = typename mp11::mp_if<
+            boost::is_std_list<_range_base_type>,   // Condition: Check if _range_base_type is a std::list
+            _range_base_type,                       // If true, use _range_base_type directly
+            std::list<_range_base_type>             // If false, wrap _range_base_type in std::list
+        >::value_type;
 
-#if 1
-    typedef typename mpl::if_<Feel::detail::is_vector_ptr<_rhs_type>,
-                              mpl::identity<v_ptr1<_rhs_type> >,
-                              mpl::identity<v_ptr2<_rhs_type> > >::type::type::type the_rhs_type;
-#else
-    typedef _rhs_type the_rhs_type;
-#endif
-typedef IntegratorOnExpr<_range_type, _element_type, the_rhs_type,
-            typename mpl::if_<boost::is_arithmetic<_expr_type>,
-            mpl::identity<Expr<Cst<_expr_type> > >,
-            mpl::identity<_expr_type> >::type::type> type;
-    typedef Expr<type> expr_type;
+    using the_rhs_type = _rhs_type;//mp11::mp_if<is_vector_ptr<_rhs_type>, v_ptr1_t<_rhs_type>, v_ptr2_t<_rhs_type> >;
+
+    using type = IntegratorOnExpr<
+        _range_type,
+        _element_type,
+        the_rhs_type,
+        mp11::mp_if<
+            boost::is_arithmetic<_expr_type>,          // Condition: Check if _expr_type is an arithmetic type
+            Expr<Cst<_expr_type>>,                     // If true, wrap it in Expr<Cst<_expr_type>>
+            _expr_type                                 // If false, use _expr_type directly
+        >
+    >;
+
+    using expr_type = Expr<type>;
 };
 
-
-template<typename V>
-auto
-getRhsVector( V const&  v )
+template <typename V>
+auto getRhsVectorAsPtr( V const& v )
 {
-    LOG(INFO) << fmt::format("call getRhsVector(V const& v) : is_vector_ptr: {} is_vectorblock: {}, is_vectorcondensed: {}",Feel::detail::is_vector_ptr_v<V>, Feel::is_vectorblock_v<V>, Feel::is_vectorcondensed_v<V>);
+    LOG(INFO) << fmt::format("call getRhsVectorAsPtr(V const& v) : is_vector_ptr: {} is_vectorblock: {}, is_vectorcondensed: {}",is_vector_ptr_v<V>, is_vectorblock_v<V>, is_vectorcondensed_v<V>);
 
-    if constexpr ( Feel::detail::is_vector_ptr_v<V> )
-        return v;
-    if constexpr ( Feel::is_vectorblock_v<V> )
-        return v.getVector();
-    else if constexpr ( Feel::is_vectorcondensed_v<V> )
-        return v.getVector();
-    else
-        return v.vectorPtr();
+    auto getVectorPtr = []( auto const& v )
+    {
+        if constexpr ( is_vector_ptr_v<V> )
+            return v;
+        else
+            return v.vectorPtr();
+    };
+    auto r = getVectorPtr(v);
+    CHECK( is_shared_ptr_v<std::decay_t<decltype(r)>> ) << "Invalid rhs type";
+    LOG(INFO) << fmt::format("call getRhsVectorAsPtr(V const& v) : done");
+    return r;
 }
 
 
@@ -1138,11 +1150,11 @@ auto on( Ts && ... v )
     bool verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return boption(_prefix=prefix,_name="on.verbose",_vm=vm); } );
     double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix,&vm](){ return doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm); } );
 
-    using integratoron_helper_type = vf::detail::integratoron_type<decltype( range ), decltype( Feel::vf::detail::getRhsVector( rhs ) ), decltype( element ), decltype( expr )>;
+    using integratoron_helper_type = vf::detail::integratoron_type<decltype( range ), decltype( Feel::vf::detail::getRhsVectorAsPtr( rhs ) ), decltype( element ), decltype( expr )>;
 
     typename integratoron_helper_type::type ion( range,
                                                  std::forward<decltype(element)>( element ),
-                                                 Feel::vf::detail::getRhsVector(rhs),
+                                                 Feel::vf::detail::getRhsVectorAsPtr(rhs),
                                                  expr,
                                                  size_type(ContextOnMap[type]),
                                                  value_on_diagonal );

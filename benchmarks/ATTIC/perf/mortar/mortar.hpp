@@ -281,7 +281,7 @@ MortarBench<Dim, Order1, Order2>::run()
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements( mesh1 ), f*id( v1 ) );
 
-    BOOST_FOREACH( int marker, outside1 )
+    for( int marker : outside1 )
     {
         form1( _test=Xh1, _vector=F1 ) +=
             integrate( markedfaces( mesh1,marker ),
@@ -295,7 +295,7 @@ MortarBench<Dim, Order1, Order2>::run()
     form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
         integrate( elements( mesh1 ), coeff*gradt( u1 )*trans( grad( v1 ) ) );
 
-    BOOST_FOREACH( int marker, outside1 )
+    for( int marker : outside1 )
     {
         form2( _trial=Xh1, _test=Xh1, _matrix=D1 ) +=
             integrate( markedfaces( mesh1,marker ),
@@ -328,7 +328,7 @@ MortarBench<Dim, Order1, Order2>::run()
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements( mesh2 ), f*id( v2 ) );
 
-    BOOST_FOREACH( int marker, outside2 )
+    for( int marker : outside2 )
     {
         form1( _test=Xh2, _vector=F2 ) +=
             integrate( markedfaces( mesh2,marker ),
@@ -344,7 +344,7 @@ MortarBench<Dim, Order1, Order2>::run()
     form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
         integrate( elements( mesh2 ), coeff*gradt( u2 )*trans( grad( v2 ) ) );
 
-    BOOST_FOREACH( int marker, outside2 )
+    for( int marker : outside2 )
     {
         form2( _trial=Xh2, _test=Xh2, _matrix=D2 ) +=
             integrate( markedfaces( mesh2,marker ),

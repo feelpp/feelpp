@@ -60,8 +60,9 @@ void OptimizationLinearProgramming::setMatrix(std::vector<std::vector<double> > 
     if( R == 0 )
         return;
     int C = matrix[0].size();
-    int ia[1+C*R], ja[1+C*R];
-    double ar[1+C*R];
+    int *ia = new int[1+C*R];
+    int *ja = new int[1+C*R];
+    double* ar = new double[1+C*R];
     for( int r = 0; r < R; ++r)
     {
         for( int c = 0; c < C; ++c)
@@ -73,6 +74,10 @@ void OptimizationLinearProgramming::setMatrix(std::vector<std::vector<double> > 
         }
     }
     glp_load_matrix( M_pb, C*R, ia, ja, ar );
+    delete[] ar;
+    delete[] ja;
+    delete[] ia;
+
 }
 
 double OptimizationLinearProgramming::getObjectiveValue()

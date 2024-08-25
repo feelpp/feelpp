@@ -30,7 +30,7 @@
 #include <vector>
 #include <boost/multi_array.hpp>
 #include <boost/multi_array/extent_gen.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/optional.hpp>
 #include <boost/mpl/min_max.hpp>
 #include <Eigen/Core>

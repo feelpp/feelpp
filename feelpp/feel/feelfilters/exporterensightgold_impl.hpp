@@ -1569,7 +1569,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
 #if 0
         if ( boption( _name="exporter.ensightgold.save-face" ) )
         {
-            BOOST_FOREACH( auto m, __mesh->markerNames() )
+            for( auto m : __mesh->markerNames( ) )
             {
                 if ( m.second[1] != __mesh->nDim-1 )
                     continue;

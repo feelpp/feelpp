@@ -68,8 +68,6 @@
 #include <boost/numeric/ublas/io.hpp>
 #pragma GCC diagnostic pop
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
 

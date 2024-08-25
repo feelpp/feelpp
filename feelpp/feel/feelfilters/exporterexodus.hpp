@@ -33,7 +33,6 @@
 #include <fstream>
 
 
-#include <boost/lambda/lambda.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 
