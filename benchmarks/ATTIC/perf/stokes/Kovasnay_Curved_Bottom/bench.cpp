@@ -133,7 +133,7 @@ int main( int argc, char** argv )
 ( "P5P4G1" )( "P5P4G2" )( "P5P4G3" )( "P5P4G4" )
 ( "P6P5G1" )( "P6P5G2" )( "P6P5G3" )( "P6P5G4" );
     auto cmdoptions = makeOptions();
-    BOOST_FOREACH( auto o, boptions )
+    for( auto o : boptions )
     {
         cmdoptions.add( makeBenchmarkOptions( o ) );
     }

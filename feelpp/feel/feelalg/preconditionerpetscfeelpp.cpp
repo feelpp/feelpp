@@ -144,7 +144,9 @@ PETSC_EXTERN PetscErrorCode PCCreate_FEELPP(PC pc)
   PetscErrorCode ierr;
 
   PetscFunctionBegin;
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,18,0 )
+  ierr     = PetscNew(&pcfeelpp);CHKERRQ(ierr);
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
   ierr     = PetscNewLog(pc,&pcfeelpp);CHKERRQ(ierr);
 #else
   ierr     = PetscNewLog(pc,PC_FEELPP,&pcfeelpp);CHKERRQ(ierr);

@@ -176,6 +176,9 @@ namespace FeelModels
         //! attach operator PCD to the preconditioner
         void attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD );
 
+        //! attach operator PCD to the preconditioner
+        void attachOperatorPMM( std::string const& key, typename preconditioner_type::operator_pmmbase_ptrtype const& opPMM );
+
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//

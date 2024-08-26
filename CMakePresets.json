@@ -139,6 +139,23 @@
             }
         },
         {
+            "name": "spack",
+            "hidden": true,
+            "displayName": "spack package manager",
+            "description": "spack config",
+            "inherits": [
+                "default"
+            ],
+            "cacheVariables": {
+                "FEELPP_ENABLE_VTK": "OFF",
+                "USE_VTK": "OFF",
+                "FEELPP_ENABLE_OPENTURNS": "OFF"
+            },
+            "environment": {
+                "VERBOSE": "1"
+            }
+        },
+        {
             "name": "gcc",
             "hidden": true,
             "cacheVariables": {
@@ -204,6 +221,25 @@
             "name": "release-clang-cmake",
             "displayName": "Release|clang|cmake package manager",
             "inherits": [
+                "clang",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-spack",
+            "displayName": "Release|clang|spack package manager",
+            "inherits": [
+                "spack",
+                "clang",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cpp20-spack",
+            "displayName": "Release|clang|cpp20|spack package manager",
+            "inherits": [
+                "cpp20",
+                "spack",
                 "clang",
                 "release-cmake"
             ]
@@ -543,6 +579,16 @@
             "inherits": "release"
         },
         {
+            "name": "release-clang-spack",
+            "configurePreset": "release-clang-spack",
+            "inherits": "release"
+        },
+        {
+            "name": "release-clang-cpp20-spack",
+            "configurePreset": "release-clang-cpp20-spack",
+            "inherits": "release"
+        },
+        {
             "name": "release-gcc-cpp20-cmake",
             "configurePreset": "release-gcc-cpp20-cmake",
             "inherits": "release"
@@ -696,6 +742,18 @@
         {
             "name": "release-clang-cmake",
             "configurePreset": "release-clang-cmake",
+            "configuration": "Release",
+            "inherits": "default"
+        },
+        {
+            "name": "release-clang-spack",
+            "configurePreset": "release-clang-spack",
+            "configuration": "Release",
+            "inherits": "default"
+        },
+        {
+            "name": "release-clang-cpp20-spack",
+            "configurePreset": "release-clang-cpp20-spack",
             "configuration": "Release",
             "inherits": "default"
         },

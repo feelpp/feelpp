@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-05-27
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -234,7 +234,7 @@ StVenantKirchhoff<Dim, Order>::initElastoStaticProblem()
                    lambda*divt( u )*div( v )  +
                    2*mu*trace( trans( deft )*def ) );
 
-    BOOST_FOREACH( std::string marker, this->dirichletMarkers() )
+    for( std::string marker : this->dirichletMarkers( ) )
     {
         LOG(INFO) << "[LinearElasticty::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_opelas +=
@@ -280,7 +280,7 @@ StVenantKirchhoff<Dim, Order>::initLinearPart()
                    - trans( idt( uu ) )*id( vv )
                  );
 
-    BOOST_FOREACH( std::string marker, this->dirichletMarkers() )
+    for( std::string marker : this->dirichletMarkers( ) )
     {
         LOG(INFO) << "[LinearPart::Dirichlet] weakbc boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_oplin +=

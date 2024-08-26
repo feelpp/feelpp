@@ -284,7 +284,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
     }
 
 #endif
-    BOOST_FOREACH( std::string marker, this->dirichletVelocityMarkers() )
+    for( std::string marker : this->dirichletVelocityMarkers( ) )
     {
         LOG(INFO) << "[add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_oplin +=
@@ -303,7 +303,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
     }
 
 #if 0
-    BOOST_FOREACH( std::string marker, this->dirichletPressureMarkers() )
+    for( std::string marker : this->dirichletPressureMarkers( ) )
     {
         LOG(INFO) << "[add weakbc boundary terms pressure] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_oplin +=

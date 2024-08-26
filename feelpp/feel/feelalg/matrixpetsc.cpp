@@ -1785,8 +1785,15 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
     {
         LOG(INFO) << "MatrixPETSc:: zeroRows seq elimination";
         rhs.setIsClosed( false );
-        VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
+
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
+        CHECK( pvalues ) << "values must be a VectorPetsc";
+
+        VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
+        CHECK( prhs ) << "rhs must be a VectorPetsc";
+        
+     
+
 
         int start, stop;
         int ierr = MatGetOwnershipRange( M_mat, &start, &stop );
@@ -1824,9 +1831,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
         }
         else // non symmetric case
         {
-            LOG(INFO) << "MatrixPETSc:: zeroRows seq unsymmetric";
+            LOG(INFO) << fmt::format("MatrixPETSc:: zeroRows seq unsymmetric number of rows : {} value on diagonal : {}", rows.size(), value_on_diagonal );
+
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal,PETSC_IGNORE,PETSC_IGNORE );
+            //MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal,PETSC_IGNORE,PETSC_IGNORE );
+            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
 #else
             MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
 #endif
@@ -1841,19 +1850,6 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
                         rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
-                }
-            }
-            else
-            {
-                for ( size_type i = 0; i < rows.size(); ++i )
-                {
-                    // eliminate column
-
-                    // warning: a row index may belong to another
-                    // processor, so make sure that we access only the
-                    // rows that belong to this processor
-                    if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(rows[i]) );
                 }
             }
         }

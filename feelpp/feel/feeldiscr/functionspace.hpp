@@ -59,12 +59,15 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 // #include <boost/numeric/ublas/vector_serialize.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
+#pragma GCC diagnostic pop
+
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
 

@@ -35,7 +35,7 @@
 #include <list>
 
 #include <boost/algorithm/string/split.hpp>
-#include <boost/foreach.hpp>
+
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
