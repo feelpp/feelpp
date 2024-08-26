@@ -359,6 +359,9 @@ typedef <a class="el" href="classFeel_1_1OperatorInterpolation.html">OperatorInt
 <tr class="memitem:a8fa94d42b30d72c053ed4073d1e83a2a"><td class="memItemLeft" align="right" valign="top"><a id="a8fa94d42b30d72c053ed4073d1e83a2a" name="a8fa94d42b30d72c053ed4073d1e83a2a"></a>
 typedef OperatorPCDBase&lt; typename space_velocity_type::value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operatorpcdbase_type</b></td></tr>
 <tr class="separator:a8fa94d42b30d72c053ed4073d1e83a2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05fc4db53e1d88ec21d8da179cd904bc"><td class="memItemLeft" align="right" valign="top"><a id="a05fc4db53e1d88ec21d8da179cd904bc" name="a05fc4db53e1d88ec21d8da179cd904bc"></a>
+typedef OperatorPMMBase&lt; typename space_velocity_type::value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operatorpmmbase_type</b></td></tr>
+<tr class="separator:a05fc4db53e1d88ec21d8da179cd904bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60f4c591644f0d9294b9d97792ef762c"><td class="memItemLeft" align="right" valign="top"><a id="a60f4c591644f0d9294b9d97792ef762c" name="a60f4c591644f0d9294b9d97792ef762c"></a>
 typedef <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a>, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>range_elements_type</b></td></tr>
 <tr class="separator:a60f4c591644f0d9294b9d97792ef762c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -638,6 +641,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a78a0c9144a27445f202b4e3a2dbc2a2c"><td class="memItemLeft" align="right" valign="top"><a id="a78a0c9144a27445f202b4e3a2dbc2a2c" name="a78a0c9144a27445f202b4e3a2dbc2a2c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addUpdateInHousePreconditionerPCD</b> (std::string const &amp;name, std::function&lt; void(operatorpcdbase_type &amp;)&gt; const &amp;init, std::function&lt; void(operatorpcdbase_type &amp;, <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html">DataUpdateBase</a> &amp;)&gt; const &amp;up=std::function&lt; void(operatorpcdbase_type &amp;, <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html">DataUpdateBase</a> &amp;)&gt;())</td></tr>
 <tr class="separator:a78a0c9144a27445f202b4e3a2dbc2a2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f989b62cd914fb9c67a4bd02a124f27"><td class="memItemLeft" align="right" valign="top"><a id="a2f989b62cd914fb9c67a4bd02a124f27" name="a2f989b62cd914fb9c67a4bd02a124f27"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addUpdateInHousePreconditionerPMM</b> (std::string const &amp;name, std::function&lt; void(operatorpmmbase_type &amp;)&gt; const &amp;init, std::function&lt; void(operatorpmmbase_type &amp;, <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html">DataUpdateBase</a> &amp;)&gt; const &amp;up=std::function&lt; void(operatorpmmbase_type &amp;, <a class="el" href="classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html">DataUpdateBase</a> &amp;)&gt;())</td></tr>
+<tr class="separator:a2f989b62cd914fb9c67a4bd02a124f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa410969443d1b12fe7b008b314005823"><td class="memItemLeft" align="right" valign="top"><a id="aa410969443d1b12fe7b008b314005823" name="aa410969443d1b12fe7b008b314005823"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>applyCIPStabOnlyOnBoundaryFaces</b> () const</td></tr>
 <tr class="separator:aa410969443d1b12fe7b008b314005823"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -830,6 +836,9 @@ space_velocity_ptrtype const &amp;&#160;</td><td class="memItemRight" valign="bo
 <tr class="memitem:a23b0447daf5a7e5d1278add791de71dc"><td class="memItemLeft" align="right" valign="top"><a id="a23b0447daf5a7e5d1278add791de71dc" name="a23b0447daf5a7e5d1278add791de71dc"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasOperatorPCD</b> () const</td></tr>
 <tr class="separator:a23b0447daf5a7e5d1278add791de71dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82efcaf78322defb32287801ff09af51"><td class="memItemLeft" align="right" valign="top"><a id="a82efcaf78322defb32287801ff09af51" name="a82efcaf78322defb32287801ff09af51"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasOperatorPMM</b> () const</td></tr>
+<tr class="separator:a82efcaf78322defb32287801ff09af51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9af2afb96af954741901e87ef0c22e54"><td class="memItemLeft" align="right" valign="top"><a id="a9af2afb96af954741901e87ef0c22e54" name="a9af2afb96af954741901e87ef0c22e54"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasSolveNewtonianAtKickOff</b> () const</td></tr>
 <tr class="separator:a9af2afb96af954741901e87ef0c22e54"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -906,6 +915,9 @@ virtual <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemR
 <tr class="memitem:afb451e15e2faea547943457ad52395e0"><td class="memItemLeft" align="right" valign="top"><a id="afb451e15e2faea547943457ad52395e0" name="afb451e15e2faea547943457ad52395e0"></a>
 std::shared_ptr&lt; operatorpcdbase_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operatorPCD</b> () const</td></tr>
 <tr class="separator:afb451e15e2faea547943457ad52395e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83869251eae651f107490cfcc62a3d96"><td class="memItemLeft" align="right" valign="top"><a id="a83869251eae651f107490cfcc62a3d96" name="a83869251eae651f107490cfcc62a3d96"></a>
+std::shared_ptr&lt; operatorpmmbase_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operatorPMM</b> () const</td></tr>
+<tr class="separator:a83869251eae651f107490cfcc62a3d96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad91f2902e1c850ea797b06ce8ed15798"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html#ad91f2902e1c850ea797b06ce8ed15798">postSolveLinear</a> (vector_ptrtype rhs, vector_ptrtype sol) const override</td></tr>
 <tr class="separator:ad91f2902e1c850ea797b06ce8ed15798"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5365e55636594e583933ea34dbdd8d13"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics.html#a5365e55636594e583933ea34dbdd8d13">postSolveNewton</a> (vector_ptrtype rhs, vector_ptrtype sol) const override</td></tr>

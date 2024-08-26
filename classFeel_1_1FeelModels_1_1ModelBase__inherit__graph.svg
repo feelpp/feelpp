@@ -541,35 +541,36 @@ var sectionId = 'dynsection-0';
 <g id="node11" class="node">
 <title>Node11</title>
 <g id="a_node11"><a xlink:href="classFeel_1_1FeelModels_1_1FluidMechanics.html" target="_top" xlink:title="Fluid Mechanics Toolbox.">
-<polygon fill="white" stroke="black" points="1404,-243 1404,-476 1595,-476 1595,-243 1404,-243"/>
-<text text-anchor="start" x="1412" y="-464" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
-<text text-anchor="start" x="1412" y="-453" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ConvexType, BasisVelocityType,</text>
-<text text-anchor="middle" x="1499.5" y="-442" font-family="Helvetica,sans-Serif" font-size="10.00"> BasisPressureType &gt;</text>
-<polyline fill="none" stroke="black" points="1404,-435 1595,-435 "/>
-<text text-anchor="start" x="1412" y="-423" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
-<text text-anchor="start" x="1412" y="-412" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderGeo</text>
-<text text-anchor="start" x="1412" y="-401" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderPressure</text>
-<text text-anchor="start" x="1412" y="-390" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderVelocity</text>
-<text text-anchor="start" x="1412" y="-379" font-family="Helvetica,sans-Serif" font-size="10.00">+ nRealDim</text>
-<text text-anchor="start" x="1412" y="-368" font-family="Helvetica,sans-Serif" font-size="10.00">+ useMixedBasis</text>
-<polyline fill="none" stroke="black" points="1404,-361 1595,-361 "/>
-<text text-anchor="start" x="1412" y="-349" font-family="Helvetica,sans-Serif" font-size="10.00">+ addUpdateInHousePreconditioner</text>
-<text text-anchor="start" x="1412" y="-338" font-family="Helvetica,sans-Serif" font-size="10.00">PCD()</text>
-<text text-anchor="start" x="1412" y="-327" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyCIPStabOnlyOnBoundary</text>
-<text text-anchor="start" x="1412" y="-316" font-family="Helvetica,sans-Serif" font-size="10.00">Faces()</text>
-<text text-anchor="start" x="1412" y="-305" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyCIPStabOnlyOnBoundary</text>
-<text text-anchor="start" x="1412" y="-294" font-family="Helvetica,sans-Serif" font-size="10.00">Faces()</text>
-<text text-anchor="start" x="1412" y="-283" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyMovingMeshBeforeSolve()</text>
-<text text-anchor="start" x="1412" y="-272" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyRemesh()</text>
-<text text-anchor="start" x="1412" y="-261" font-family="Helvetica,sans-Serif" font-size="10.00">and 193 more...</text>
-<text text-anchor="start" x="1412" y="-250" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
+<polygon fill="white" stroke="black" points="1404,-237.5 1404,-481.5 1595,-481.5 1595,-237.5 1404,-237.5"/>
+<text text-anchor="start" x="1412" y="-469.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::FluidMechanics</text>
+<text text-anchor="start" x="1412" y="-458.5" font-family="Helvetica,sans-Serif" font-size="10.00">&lt; ConvexType, BasisVelocityType,</text>
+<text text-anchor="middle" x="1499.5" y="-447.5" font-family="Helvetica,sans-Serif" font-size="10.00"> BasisPressureType &gt;</text>
+<polyline fill="none" stroke="black" points="1404,-440.5 1595,-440.5 "/>
+<text text-anchor="start" x="1412" y="-428.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nDim</text>
+<text text-anchor="start" x="1412" y="-417.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderGeo</text>
+<text text-anchor="start" x="1412" y="-406.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderPressure</text>
+<text text-anchor="start" x="1412" y="-395.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nOrderVelocity</text>
+<text text-anchor="start" x="1412" y="-384.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ nRealDim</text>
+<text text-anchor="start" x="1412" y="-373.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ useMixedBasis</text>
+<polyline fill="none" stroke="black" points="1404,-366.5 1595,-366.5 "/>
+<text text-anchor="start" x="1412" y="-354.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addUpdateInHousePreconditioner</text>
+<text text-anchor="start" x="1412" y="-343.5" font-family="Helvetica,sans-Serif" font-size="10.00">PCD()</text>
+<text text-anchor="start" x="1412" y="-332.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ addUpdateInHousePreconditioner</text>
+<text text-anchor="start" x="1412" y="-321.5" font-family="Helvetica,sans-Serif" font-size="10.00">PMM()</text>
+<text text-anchor="start" x="1412" y="-310.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyCIPStabOnlyOnBoundary</text>
+<text text-anchor="start" x="1412" y="-299.5" font-family="Helvetica,sans-Serif" font-size="10.00">Faces()</text>
+<text text-anchor="start" x="1412" y="-288.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyCIPStabOnlyOnBoundary</text>
+<text text-anchor="start" x="1412" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">Faces()</text>
+<text text-anchor="start" x="1412" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyMovingMeshBeforeSolve()</text>
+<text text-anchor="start" x="1412" y="-255.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 196 more...</text>
+<text text-anchor="start" x="1412" y="-244.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
 </a>
 </g>
 </g>
 <!-- Node6&#45;&gt;Node11 -->
 <g id="edge10" class="edge">
 <title>Node6&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M1105.41,-567.65C1133.08,-553.14 1163.25,-539.12 1192.5,-529 1278.68,-499.19 1316.21,-539.77 1394.5,-493 1402.56,-488.18 1410.25,-482.5 1417.53,-476.24"/>
+<path fill="none" stroke="midnightblue" d="M1105.41,-567.65C1133.08,-553.14 1163.25,-539.12 1192.5,-529 1278.68,-499.19 1316.21,-539.77 1394.5,-493 1400.17,-489.61 1405.65,-485.8 1410.94,-481.66"/>
 <polygon fill="none" stroke="midnightblue" points="1103.71,-564.59 1096.52,-572.37 1106.99,-570.77 1103.71,-564.59"/>
 </g>
 <!-- Node12 -->
@@ -746,7 +747,7 @@ var sectionId = 'dynsection-0';
 <!-- Node17&#45;&gt;Node11 -->
 <g id="edge20" class="edge">
 <title>Node17&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M1357.99,-543.06C1374.62,-521.61 1392.57,-498.45 1409.92,-476.07"/>
+<path fill="none" stroke="midnightblue" d="M1357.93,-543.14C1373.21,-523.43 1389.6,-502.28 1405.62,-481.62"/>
 <polygon fill="none" stroke="midnightblue" points="1355.04,-541.15 1351.68,-551.2 1360.58,-545.44 1355.04,-541.15"/>
 </g>
 <!-- Node17&#45;&gt;Node12 -->

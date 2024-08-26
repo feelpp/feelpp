@@ -1,5 +1,7 @@
 var NAVTREEINDEX21 =
 {
+"structFeel_1_1StencilRangeMap1Type.html":[5,0,1,273],
+"structFeel_1_1StencilRangeMap1Type.html":[4,0,1,273],
 "structFeel_1_1StencilRangeMap2Type.html":[5,0,1,274],
 "structFeel_1_1StencilRangeMap2Type.html":[4,0,1,274],
 "structFeel_1_1StencilRangeMapTypeBase.html":[5,0,1,275],
@@ -247,7 +249,5 @@ var NAVTREEINDEX21 =
 "structFeel_1_1is__geoelement_3_01GeoElement1D_3_01Dim_00_01GEOSHAPE_00_01SubFace_00_01T_00_01Indba8c2899dfa3a0f4d3915af3d9526e7f.html":[5,0,1,141],
 "structFeel_1_1is__geoelement_3_01GeoElement2D_3_01Dim_00_01GEOSHAPE_00_01SubFace_00_01T_00_01Indb21eeabab776fc98d88b6b78ac48c076.html":[4,0,1,142],
 "structFeel_1_1is__geoelement_3_01GeoElement2D_3_01Dim_00_01GEOSHAPE_00_01SubFace_00_01T_00_01Indb21eeabab776fc98d88b6b78ac48c076.html":[5,0,1,142],
-"structFeel_1_1is__geoelement_3_01GeoElement3D_3_01Dim_00_01GEOSHAPE_00_01T_00_01IndexT_00_01UseMeasuresStorage_01_4_01_4.html":[4,0,1,143],
-"structFeel_1_1is__geoelement_3_01GeoElement3D_3_01Dim_00_01GEOSHAPE_00_01T_00_01IndexT_00_01UseMeasuresStorage_01_4_01_4.html":[5,0,1,143],
-"structFeel_1_1is__hypercube.html":[5,0,1,144]
+"structFeel_1_1is__geoelement_3_01GeoElement3D_3_01Dim_00_01GEOSHAPE_00_01T_00_01IndexT_00_01UseMeasuresStorage_01_4_01_4.html":[4,0,1,143]
 };

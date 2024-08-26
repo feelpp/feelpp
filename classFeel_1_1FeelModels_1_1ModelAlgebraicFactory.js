@@ -3,6 +3,7 @@ var classFeel_1_1FeelModels_1_1ModelAlgebraicFactory =
     [ "applyAssemblyLinear", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#ab52cd2c7311b155ce067f54cdc871cc9", null ],
     [ "attachAuxiliarySparseMatrix", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#afe4bb741d782fa7959e518c1400f0112", null ],
     [ "attachOperatorPCD", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#a09e4f1943e85831d2e650a20832a19d1", null ],
+    [ "attachOperatorPMM", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#a6d0ca2b3922fba779e54be9cf52482d1", null ],
     [ "auxiliarySparseMatrix", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#a914b48e3ec0c37550a269a63b7b4d7c2", null ],
     [ "backend", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#ad2e60919047d1e8d39d11a304f327076", null ],
     [ "dataInfos", "classFeel_1_1FeelModels_1_1ModelAlgebraicFactory.html#ad4e227d330c6b5760ee37c5869a1a83b", null ],

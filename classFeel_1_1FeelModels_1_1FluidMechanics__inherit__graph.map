@@ -1,5 +1,5 @@
 <map id="Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;" name="Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;">
-<area shape="rect" id="node1" title="Fluid Mechanics Toolbox." alt="" coords="311,1321,565,1633"/>
+<area shape="rect" id="node1" title="Fluid Mechanics Toolbox." alt="" coords="311,1321,565,1648"/>
 <area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="167,991,437,1273"/>
 <area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="263,564,520,715"/>
 <area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="319,777,559,928"/>

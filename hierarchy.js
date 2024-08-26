@@ -1287,8 +1287,6 @@ var hierarchy =
     ] ],
     [ "std::bool_constant", null, [
       [ "Feel::is_ptr_or_shared_ptr< T >", "structFeel_1_1is__ptr__or__shared__ptr.html", null ],
-      [ "Feel::is_shared_ptr< T >", "structFeel_1_1is__shared__ptr.html", null ],
-      [ "Feel::is_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1is__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
       [ "Feel::is_std_vector< T >", "structFeel_1_1is__std__vector.html", null ],
       [ "Feel::is_std_vector< std::vector< T > >", "structFeel_1_1is__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html", null ]
     ] ],
@@ -1334,6 +1332,7 @@ var hierarchy =
       [ "Feel::is_iterable< T, typename >", "structFeel_1_1is__iterable.html", null ],
       [ "Feel::is_iterable_of< T, V, typename >", "structFeel_1_1is__iterable__of.html", null ],
       [ "Feel::is_reference_convex< T >", "structFeel_1_1is__reference__convex.html", null ],
+      [ "Feel::is_shared_ptr< T >", "structFeel_1_1is__shared__ptr.html", null ],
       [ "Feel::is_tuple< typename >", "structFeel_1_1is__tuple.html", null ],
       [ "nlohmann::detail::has_from_json< BasicJsonType, T, typename >", "structnlohmann_1_1detail_1_1has__from__json.html", null ],
       [ "nlohmann::detail::has_non_default_from_json< BasicJsonType, T, typename >", "structnlohmann_1_1detail_1_1has__non__default__from__json.html", null ],
@@ -1450,6 +1449,7 @@ var hierarchy =
       [ "Feel::is_iterable_of< T, V, std::void_t< decltype(std::declval< T >().begin()), decltype(std::declval< T >().end()), std::is_same< decltype(*std::declval< T >().begin()), V > > >", "structFeel_1_1is__iterable__of_3_01T_00_01V_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_dfe806ee660b09a85b57435717287147.html", null ],
       [ "Feel::is_reference_convex< Reference< Hypercube< Dim, Order, RDim >, Dim, Order, RDim, T > >", "structFeel_1_1is__reference__convex_3_01Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_d10526581737785a3b6f78d52185ed4f.html", null ],
       [ "Feel::is_reference_convex< Reference< Simplex< Dim, Order, RDim >, Dim, Order, RDim, T > >", "structFeel_1_1is__reference__convex_3_01Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_7942c028eecb11bc3174ad89f8815f2b.html", null ],
+      [ "Feel::is_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1is__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
       [ "Feel::is_tuple< std::tuple< T... > >", "structFeel_1_1is__tuple_3_01std_1_1tuple_3_01T_8_8_8_01_4_01_4.html", null ],
       [ "nlohmann::detail::conjunction<... >", "structnlohmann_1_1detail_1_1conjunction.html", null ],
       [ "nlohmann::detail::is_basic_json< basic_json< ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType > >", "structnlohmann_1_1detail_1_1is__basic__json_3_01basic__json_3_01ObjectType_00_01ArrayType_00_01S22724cadd4c00141f83926df5e541441.html", null ],

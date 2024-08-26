@@ -1,5 +1,7 @@
 var NAVTREEINDEX22 =
 {
+"structFeel_1_1is__geoelement_3_01GeoElement3D_3_01Dim_00_01GEOSHAPE_00_01T_00_01IndexT_00_01UseMeasuresStorage_01_4_01_4.html":[5,0,1,143],
+"structFeel_1_1is__hypercube.html":[5,0,1,144],
 "structFeel_1_1is__hypercube.html":[4,0,1,144],
 "structFeel_1_1is__iterable.html":[5,0,1,145],
 "structFeel_1_1is__iterable.html":[4,0,1,145],
@@ -247,7 +249,5 @@ var NAVTREEINDEX22 =
 "structFeel_1_1vf_1_1PrintExpr_1_1tensor.html":[5,0,1,13,29,2],
 "structFeel_1_1vf_1_1PrintExpr_1_1tensor.html":[4,0,1,13,29,2],
 "structFeel_1_1vf_1_1PrintExpr_1_1tensor_1_1is__zero.html":[5,0,1,13,29,2,0],
-"structFeel_1_1vf_1_1PrintExpr_1_1tensor_1_1is__zero.html":[4,0,1,13,29,2,0],
-"structFeel_1_1vf_1_1PrintExpr_1_1tensor_1_1sig.html":[5,0,1,13,29,2,1],
-"structFeel_1_1vf_1_1PrintExpr_1_1tensor_1_1sig.html":[4,0,1,13,29,2,1]
+"structFeel_1_1vf_1_1PrintExpr_1_1tensor_1_1is__zero.html":[4,0,1,13,29,2,0]
 };

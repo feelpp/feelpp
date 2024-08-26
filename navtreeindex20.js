@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html":[3,1,2,0,0],
+"structFeel_1_1FeelModels_1_1ExprTraits.html":[5,0,1,4,14],
 "structFeel_1_1FeelModels_1_1ExprTraits.html":[4,0,1,4,14],
 "structFeel_1_1FeelModels_1_1ExprTraitsFromContext.html":[4,0,1,4,15],
 "structFeel_1_1FeelModels_1_1ExprTraitsFromContext.html":[5,0,1,4,15],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "structFeel_1_1Repository_1_1Owner.html":[5,0,1,256,2],
 "structFeel_1_1Repository_1_1Owner.html":[4,0,1,256,2],
 "structFeel_1_1StencilRangeMap0Type.html":[5,0,1,272],
-"structFeel_1_1StencilRangeMap0Type.html":[4,0,1,272],
-"structFeel_1_1StencilRangeMap1Type.html":[5,0,1,273],
-"structFeel_1_1StencilRangeMap1Type.html":[4,0,1,273]
+"structFeel_1_1StencilRangeMap0Type.html":[4,0,1,272]
 };
