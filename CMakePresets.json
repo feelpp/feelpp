@@ -129,10 +129,11 @@
                 "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
                 "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
                 "FEELPP_ENABLE_TOOLBOXES": "ON",
-                "FEELPP_ENABLE_MOR": "ON",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
                 "FEELPP_INSTANTIATION_ORDER_MAX": "1",
-                "FEELPP_MESH_MAX_ORDER": "1"
+                "FEELPP_MESH_MAX_ORDER": "1",
+                "FEELPP_ENABLE_VTK":"OFF"
             },
             "environment": {
                 "VERBOSE": "1"
@@ -192,11 +193,20 @@
             ]
         },
         {
-            "name": "release-clang-cmake-dev",
-            "displayName": "Release|clang|cmake package manager",
+            "name": "release-gcc-cmake-dev",
+            "displayName": "Release|gcc|cmake|dev package manager",
             "inherits": [
+                "gcc",
                 "dev",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cmake-dev",
+            "displayName": "Release|clang|cmake|dev package manager",
+            "inherits": [
                 "clang",
+                "dev",
                 "release-cmake"
             ]
         },
@@ -218,11 +228,31 @@
             ]
         },
         {
+            "name": "release-gcc-cpp20-cmake-dev",
+            "displayName": "Release|gcc|c++20|cmake|dev package manager",
+            "inherits": [
+                "gcc",
+                "dev",
+                "cpp20",
+                "release-cmake"
+            ]
+        },
+        {
             "name": "release-clang-cpp20-cmake",
             "displayName": "Release|clang|c++20|cmake package manager",
             "inherits": [
                 "clang",
                 "cpp20",
+                "release-cmake"
+            ]
+        },
+        {
+            "name": "release-clang-cpp20-cmake-dev",
+            "displayName": "Release|clang|c++20|cmake|dev package manager",
+            "inherits": [
+                "clang",
+                "cpp20",
+                "dev",
                 "release-cmake"
             ]
         },
@@ -533,6 +563,11 @@
             "inherits": "release"
         },
         {
+            "name": "release-gcc-cmake-dev",
+            "configurePreset": "release-gcc-cmake-dev",
+            "inherits": "release"
+        },
+        {
             "name": "release-clang-cmake",
             "configurePreset": "release-clang-cmake",
             "inherits": "release"
@@ -548,8 +583,18 @@
             "inherits": "release"
         },
         {
+            "name": "release-gcc-cpp20-cmake-dev",
+            "configurePreset": "release-gcc-cpp20-cmake-dev",
+            "inherits": "release"
+        },
+        {
             "name": "release-clang-cpp20-cmake",
             "configurePreset": "release-clang-cpp20-cmake",
+            "inherits": "release"
+        },
+        {
+            "name": "release-clang-cpp20-cmake-dev",
+            "configurePreset": "release-clang-cpp20-cmake-dev",
             "inherits": "release"
         },
         {
