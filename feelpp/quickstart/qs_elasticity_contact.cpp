@@ -2,6 +2,7 @@
 #include "qs_elasticity_contact_dynamic.hpp"
 #include "qs_elasticity_contact_static.hpp"
 #include "qs_contact_lagrange.hpp"
+#include "qs_active_elasticity_contact.hpp"
 #include "qs_elasticity_rigid.hpp"
 
 namespace Feel
@@ -27,7 +28,7 @@ void runModel( const nl::json& specs )
     bool steady = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
     std::string method = specs["/Collision/LinearElasticity/method"_json_pointer];
 
-     
+    
     if (method.compare("lagrange") == 0)
     {
         if (dimension == 2)
@@ -46,6 +47,12 @@ void runModel( const nl::json& specs )
             else 
                  model.runDynamic();
         }
+    }
+
+    else if (method.compare("active") == 0)
+    {
+        ActiveContact<2,1> model(specs);
+        model.run();
     }
 
 

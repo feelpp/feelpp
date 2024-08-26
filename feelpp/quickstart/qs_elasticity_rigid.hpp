@@ -450,8 +450,8 @@ void ElasticRigid<Dim, Order>::timeLoop()
         {
             auto epsv = sym(gradv(u_e_));
             auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-
-            lt_r_f_ +=  integrate( _range=boundaryfaces(support(VhvC_)), _expr= inner( sigmav,id( u_r_ )) * idv(contactFaces));
+            
+            lt_r_f_ +=  integrate( _range=boundaryfaces(support(VhvC_)), _expr= inner( sigmav,id( u_r_ )) * idv(contactFaces));            
         }
 
         lt_r_ += lt_r_f_;
@@ -469,12 +469,25 @@ void ElasticRigid<Dim, Order>::timeLoop()
         
         if (nbrFaces_ > 0)
         {
-            auto epsv = sym(gradv(u_));
-            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+            
+            if (method_.compare("penalty") == 0)
+            {
+                at_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
+                lt_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
+            }
 
-            at_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_),trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
-            lt_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), trans(expr<Dim,1>(direction_))*id(u_e_)) * idv(contactFaces));
+            else if (method_.compare("nitsche") == 0)
+            {
+                auto const Id = eye<Dim,Dim>();
+                auto deft = sym(gradt(u_e_));
+                auto def = sym(grad(u_e_));
+                auto sigma = (lambda_*trace(def)*Id + 2*mu_*def)*N();
+                auto sigmat = (lambda_*trace(deft)*Id + 2*mu_*deft)*N();
 
+                at_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces)); 
+                at_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u_e_) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u_e_) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));
+                lt_e += integrate (_range=boundaryfaces(support(Xh_)),_expr= inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u_e_) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));     
+            }
         }
 
         // deleting translation
@@ -708,11 +721,11 @@ void ElasticRigid<Dim, Order>::timeLoopFixedPoint()
 
                 lt_tmp_r_ = lt_r_;
 
-                auto epsv = sym(gradv(u_e_tmp));
+                //auto epsv = sym(gradv(u_e_tmp));
+                auto epsv = sym(gradv(u_tmp));
                 auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
 
                 lt_tmp_r_ +=  integrate( _range=boundaryfaces(support(VhvC_)), _expr= inner( sigmav,id( u_r_tmp )) * idv(contactFaces));
-
                 at_r_.solve( _rhs = lt_tmp_r_, _solution = u_r_tmpNew, _rebuild = true );
 
                 
