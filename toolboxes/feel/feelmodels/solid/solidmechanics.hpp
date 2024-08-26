@@ -231,7 +231,6 @@ public:
     typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
 
-
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -377,10 +376,15 @@ public :
         else// if (this->hasSolidEquation1dReduced())
             return M_solid1dReduced->timeStepBase();
     }
+
     void initTimeStep();
     void startTimeStep();
     void updateTimeStep();
     void updateVelocity();
+
+    //! update initial conditions with symbols expression \se
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
 
     // post process
     void initPostProcess() override;
@@ -828,6 +832,70 @@ private :
 
 
 }; // SolidMechanics
+
+
+template< typename ConvexType, typename BasisDisplacementType>
+template <typename SymbolsExprType>
+void
+SolidMechanics<ConvexType,BasisDisplacementType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    if (this->doRestart())
+        return;
+
+    std::vector<element_displacement_ptrtype> icDisplacementFields;
+    std::map<int, double> icPriorTimes;
+
+    if ( this->isStationary() )
+    {
+        icDisplacementFields = { this->fieldDisplacementPtr() };
+        icPriorTimes = {{0,0}};
+    }
+    else
+    {
+        std::cout << "Dynamic case" << std::endl;
+        
+        /*
+        for (int k=0;k<icDisplacementFields.size();++k)
+            *icDisplacementFields[k] = M_timeStepNewmark->previousUnknown(k);
+        */
+
+        icDisplacementFields = { this->fieldDisplacementPtr() };
+        
+        // Initial condition
+        auto initexpr = [&]() 
+        { 
+            if constexpr(nDim == 2) 
+                return "{0,4}";
+            else if constexpr(nDim == 3) 
+                return "{0,4,0}";
+        };
+
+        std::cout << "Size : " <<  icDisplacementFields.size() << std::endl;
+        
+
+        for ( int k=0;k<icDisplacementFields.size();k++ )
+        {
+            std::cout << "update for k = " << k << std::endl;
+            icDisplacementFields[k]->on(_range=M_rangeMeshElements,_expr=expr<nDim,1>(initexpr()));
+            //std::cout << *icDisplacementFields[k] << std::endl;
+        }
+                
+
+        icPriorTimes = M_timeStepNewmark->priorTimes();
+    }
+
+    super_type::updateInitialConditions( "displacement", M_rangeMeshElements, se, icDisplacementFields, icPriorTimes );
+
+    /*
+    if ( !this->isStationary() )
+    {
+        *this->fieldDisplacementPtr() = M_timeStepNewmark->previousUnknown(0);
+    }
+    */
+        
+
+
+}
 
 template< typename ConvexType, typename BasisDisplacementType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>

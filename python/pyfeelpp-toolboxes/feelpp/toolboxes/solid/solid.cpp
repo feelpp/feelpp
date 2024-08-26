@@ -25,7 +25,7 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/solid/solidmechanics.hpp>
-
+#include "contactforce.hpp"
 namespace py = pybind11;
 using namespace Feel;
 
@@ -88,6 +88,62 @@ void defSM(py::module &m)
         .def("solve",&sm_t::solve, py::arg("upVelAcc")=true, "solve the solid mechanics problem, set boolean to true to update velocity and acceleration")
         .def("exportResults",static_cast<void (sm_t::*)()>(&sm_t::exportResults), "export the results of the solid mechanics problem")
         .def("exportResults",static_cast<void (sm_t::*)( double )>(&sm_t::exportResults), "export the results of the solid mechanics problem", py::arg("time"))
+        
+        
+        .def(
+            "init_Measures",[](const sm_t& t)
+            {
+                init_Measures(t);
+            },
+            "init measures"
+        )
+
+        .def(
+            "export_Measures",[](const sm_t& t)
+            {
+                export_Measures(t);
+            },
+            "export measures"
+        )
+
+        .def(
+            "storeData",[](const sm_t& t)
+            {
+                storeData(t);
+            },
+            "store data"
+        )
+
+        .def(
+            "error",[](const sm_t& t)
+            {
+                error<nDim>(t);
+            },
+            "compute error"
+        )
+
+        .def(
+            "energy",[](const sm_t& t)
+            {
+                energy<nDim>(t);
+            },
+            "compute energies"
+        )
+
+        .def(
+            "addContactForceModel",[](const sm_t& t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    contactForceModels<nDim,0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+
+            },
+            "add function linear assembly"
+        ) 
+        
         ;
         
 }

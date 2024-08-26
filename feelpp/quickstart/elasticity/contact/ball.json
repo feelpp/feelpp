@@ -1,0 +1,111 @@
+{
+    "Name": "2D falling ball",
+    "ShortName": "FallingBall2D",
+    "Models": {
+        "LinearElasticity": {
+            "Name": "FallingBall2D",
+            "dimension": 2,
+            "order": 2,
+            "Materials":[
+                "Caoutchouc"
+            ],
+            "loading": {
+                "F1": {
+                    "type" : "Gravity",
+                    "parameters" : {
+                        "expr": "{0,-0.1}",
+                        "unit": "N"
+                    }
+                }
+            }
+        }
+    },
+    "Materials": {
+        "Caoutchouc": {
+            "type": "LinearElastic",
+            "parameters": {
+                "E": {
+                    "value":"75.0",
+                    "unit":"Pa",
+                    "description":"Young's modulus of caoutchouc",
+                    "min": "75.0",
+                    "max": "75.0"
+                },
+                "nu": {
+                    "value":"0.25",
+                    "unit":"",
+                    "description":"Poisson ratio of caoutchouc",
+                    "min": "0.25",
+                    "max": "0.25"
+                },
+                "rho": {
+                    "value":"1",
+                    "unit":"kg/m^3",
+                    "description":"Density of caoutchouc",
+                    "min": "1",
+                    "max": "1"
+                }
+            }
+        }
+    },
+    "Meshes": {
+        "LinearElasticity": {
+            "Import": {
+                "filename": "$cfgdir/ball.geo",
+                "partition": 0,
+                "h": 0.4
+            }
+        }
+    },
+    "TimeStepping":
+    {
+        "LinearElasticity" :{
+            "steady": false,
+            "order" : 2,
+            "start": 0.0,
+            "end": 15.0,
+            "step": "1/10"
+        }
+    },
+    "InitialConditions": {
+        "LinearElasticity": {
+            "displacement": {
+                "expr": "{0.0,0.0}"
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "LinearElasticity": {
+
+        }
+    },
+    "Collision":{
+        "LinearElasticity":{
+            "distance":-24,
+            "direction":"{0,-1}",
+            "theta":1,
+            "gamma0":200,
+            "fixedPoint":1,
+            "tolerance":0.001
+        }
+    },
+    "Parameters": {
+        "LinearElasticity": {
+            "E": {
+                "expr": 75
+            },
+            "nu": {
+                "expr": 0.25
+            },
+            "rho": {
+                "expr": 1.0
+            },
+            "beta": {
+                "expr": 0.25
+            },
+            "gamma": {
+                "expr": 0.5
+            }
+        }
+    }
+}

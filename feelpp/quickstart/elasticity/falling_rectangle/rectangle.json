@@ -1,0 +1,120 @@
+{
+    "Name": "2D falling rectangle",
+    "ShortName": "FallingRectangle2D",
+    "Models": {
+        "LinearElasticity": {
+            "Name": "FallingRectangle2D",
+            "dimension": 2,
+            "order": 1,
+            "orderGeo":1,
+            "rigidMotion":0,
+            "Materials":[
+                "Caoutchouc"
+            ],
+            "loading": {
+                "F1": {
+                    "type" : "Gravity",
+                    "parameters" : {
+                        "expr": "{0,-0.1}"
+                    }
+                }
+            }
+        }
+    },
+    "Materials": {
+        "Caoutchouc": {
+            "type": "LinearElastic",
+            "parameters": {
+                "E": {
+                    "value":"75.0",
+                    "unit":"Pa",
+                    "description":"Young's modulus of caoutchouc",
+                    "min": "75.0",
+                    "max": "75.0"
+                },
+                "nu": {
+                    "value":"0.25",
+                    "unit":"",
+                    "description":"Poisson ratio of caoutchouc",
+                    "min": "0.25",
+                    "max": "0.25"
+                },
+                "rho": {
+                    "value":"1",
+                    "unit":"kg/m^3",
+                    "description":"Density of caoutchouc",
+                    "min": "1",
+                    "max": "1"
+                }
+            }
+        }
+    },
+    "Meshes": {
+        "LinearElasticity": {
+            "Import": {
+                "filename": "$cfgdir/ellipse.geo",
+                "partition": 0,
+                "h": 0.4
+            }
+        }
+    },
+    "TimeStepping":
+    {
+        "LinearElasticity" :{
+            "steady": false,
+            "order" : 2,
+            "start": 0.0,
+            "end": 30.0,
+            "gamma":0.5,
+            "beta":0.5,
+            "step": "1/20"
+        }
+    },
+    "InitialConditions": {
+        "LinearElasticity": {
+            "displacement": {
+                "expr": "{0.0,0.0}"
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "LinearElasticity": {
+
+        }
+    },
+    "Collision":{
+        "LinearElasticity":{
+            "method":"penalty",
+            "direction":"{0,-1}",
+            "ddirection":[0,-1],
+            "theta":0,
+            "epsilon":0.001,
+            "gamma0":1750,
+            "fixedPoint":1,
+            "fixedPointTol":0.0001,
+            "pressurePoint":[0,10],
+            "tolContactRegion":-0.01,
+            "tolDistance":0,
+            "nbrObs":1
+        }
+    },
+    "Parameters": {
+        "LinearElasticity": {
+            "E": {
+                "expr": 75
+            },
+            "nu": {
+                "expr": 0.25
+            },
+            "rho": {
+                "expr": 1.0
+            },
+            "beta": {
+                "expr": 0.25
+            },
+            "gamma": {
+                "expr": 0.5
+            }
+        }
+    }
+}
