@@ -932,7 +932,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::initInHousePreconditionerPMM_fluid( operatorpmmbase_fluid_type & opPMMBase ) const
 {
-    using op_pmm_type = Feel::Alternatives::OperatorPMM<typename fluid_type::space_velocity_type,typename fluid_type::space_pressure_type>;
+    using op_pmm_type = Feel::Alternatives::OperatorPMM<typename fluid_type::space_pressure_type>;
     op_pmm_type * opPMM = dynamic_cast<op_pmm_type*>(&opPMMBase);
     CHECK( opPMM ) << "fails to cast OperatorPMM";
 }
@@ -942,7 +942,7 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPMM_fluid( operatorpmmbase_
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        using op_pmm_type =  Feel::Alternatives::OperatorPMM<typename fluid_type::space_velocity_type,typename fluid_type::space_pressure_type>;
+        using op_pmm_type =  Feel::Alternatives::OperatorPMM<typename fluid_type::space_pressure_type>;
         op_pmm_type * opPMM = dynamic_cast<op_pmm_type*>(&opPMMBase);
         CHECK( opPMM ) << "fails to cast OperatorPMM";
     }
