@@ -161,7 +161,7 @@ Test<Dim,Order>::run()
     std::cout << " -- |op_trace-trace|  =" << error << "\n";
 
     std::vector<std::string> bdynames = boost::assign::list_of( "Dirichlet" )( "Neumann" );
-    BOOST_FOREACH( auto bdy, bdynames )
+    for( auto bdy : bdynames )
     {
         std::cout << "============================================================\n";
         std::cout << "Boundary "  << bdy << "\n";

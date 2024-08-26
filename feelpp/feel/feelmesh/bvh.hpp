@@ -166,6 +166,12 @@ public:
         rank_type processId() const noexcept { return M_processId; }
         index_type primitiveId() const noexcept { return M_primitiveId; }
         double distance() const noexcept { return M_distance; }
+
+        template <typename T>
+        void setCoordinates( T && coord ) { M_coordinates = std::forward<T>( coord ); }
+        bool hasCoordinates() const noexcept { return M_coordinates.has_value(); }
+        vector_realdim_type const& coordinates() const noexcept { return *M_coordinates; }
+
     private:
         friend class boost::serialization::access;
         template <class Archive>
@@ -174,12 +180,31 @@ public:
                 ar & M_processId;
                 ar & M_primitiveId;
                 ar & M_distance;
+
+                if constexpr ( Archive::is_saving::value )
+                {
+                    bool hasCoordinates = this->hasCoordinates();
+                    ar & boost::serialization::make_nvp( "hasCoordinates", hasCoordinates );
+                    if ( hasCoordinates )
+                        ar & boost::serialization::make_nvp( "coordinates", this->coordinates() );
+                }
+                else if constexpr ( Archive::is_loading::value )
+                {
+                    bool hasCoordinates = false;
+                    ar & boost::serialization::make_nvp( "hasCoordinates", hasCoordinates );
+                    if ( hasCoordinates )
+                    {
+                        vector_realdim_type coord;
+                        ar & boost::serialization::make_nvp( "coordinates", coord );
+                        this->setCoordinates( std::move( coord ) );
+                    }
+                }
             }
     private:
         rank_type M_processId = invalid_v<rank_type>;
         index_type M_primitiveId = invalid_v<index_type>;
         double M_distance = std::numeric_limits<double>::max();
-        //std::array<double,2> M_coordinates;
+        std::optional<vector_realdim_type> M_coordinates;
     };
     using rayintersection_result_type = BVHRayIntersectionResult;
 
@@ -470,6 +495,7 @@ private:
                                                                                  {
                                                                                      //std::tie(u, v) = *hit;
                                                                                      res.push_back( rayintersection_result_type(this->worldComm().rank(), M_bvh->prim_ids[i], rayBackend.tmax) );
+                                                                                     res.back().setCoordinates( this->barycentricToCartesianCoordinates( M_precomputeTriangle[j].convert_to_tri(), hit->first, hit->second ) );
                                                                                      if constexpr ( isAnyHit )
                                                                                           return true;
                                                                                  }
@@ -481,6 +507,19 @@ private:
             std::sort( res.begin(), res.end(), [](auto const& res0,auto const& res1){ return res0.distance() < res1.distance(); } );
             return res;
         }
+
+    template <typename TriType>
+    vector_realdim_type barycentricToCartesianCoordinates( TriType const& tri, double u, double v ) const {
+        auto const& pt0 = tri.p1;
+        auto const& pt1 = tri.p2;
+        auto const& pt2 = tri.p0;
+        return vector_realdim_type{{
+                u*pt0[0]+v*pt1[0]+(1-u-v)*pt2[0],
+                u*pt0[1]+v*pt1[1]+(1-u-v)*pt2[1],
+                u*pt0[2]+v*pt1[2]+(1-u-v)*pt2[2],
+            }};
+    }
+
 private:
     std::unique_ptr<backend_bvh_type> M_bvh;
     std::vector<backend_precompute_triangle_type> M_precomputeTriangle;

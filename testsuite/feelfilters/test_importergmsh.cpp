@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
                                       _order=1,
                                       _h=0.2 ) );
     std::vector<boost::reference_wrapper<const mesh_type::element_type> > v;
-    BOOST_FOREACH( const mesh_type::element_type& i,mesh->elements() )
+    for( const mesh_type::element_type& i : mesh->elements( ) )
     v.push_back( boost::cref( i ) );
     tbb::blocked_range<decltype( v.begin() )> r( v.begin(), v.end() );
     BOOST_TEST_MESSAGE( "range size=" << r.size() << "\n" );

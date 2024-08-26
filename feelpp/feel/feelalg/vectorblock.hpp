@@ -318,6 +318,9 @@ public:
     /** @name Accessors
      */
     //@{
+    vector_ptrtype& vectorPtr() { return M_vec; }
+    vector_ptrtype const& vectorPtr() const { return M_vec; }
+    
     vector_ptrtype& getVector() { return M_vec; }
     vector_ptrtype const& getVector() const { return M_vec; }
     //@}

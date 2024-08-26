@@ -22,8 +22,12 @@
 
 #include <vector>
 #include <memory>
-#include <boost/shared_ptr.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
+#pragma GCC diagnostic pop
+
 #include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -728,18 +732,26 @@ dot( Vector<T> const& v1,
     return inner_product( v1, v2 );
 }
 
+// Primary template: assumes false by default
+template <typename T, typename = void>
+struct is_vector_ptr : std::false_type
+{
+};
+
+// Specialization for when T is a shared_ptr and its element type is a Vector
+template <typename T>
+struct is_vector_ptr<T, std::enable_if_t<
+                            is_shared_ptr_v<T> &&
+                            std::is_base_of_v<Vector<typename T::element_type::value_type>, typename T::element_type>>> : std::true_type
+{
+};
+
+// Helper variable template to simplify usage
+template <typename T>
+constexpr bool is_vector_ptr_v = is_vector_ptr<T>::value;
 
 namespace detail
 {
-template <class VectorType>
-struct is_vector_ptr : mpl::false_ {};
-
-template <class VectorType>
-struct is_vector_ptr<std::shared_ptr<VectorType> >
-        :
-        boost::is_base_of<Vector<typename VectorType::value_type>,
-        VectorType>
-{};
 
 template <class VectorType>
 constexpr bool is_vector_ptr_v = is_vector_ptr<VectorType>::value;

@@ -376,51 +376,57 @@ class GeoMap
     }
 
     /**
- *  apply the geometric mapping to the point \c pt given the real
- *  geometric nodes stored in a NxNg matrix \c G
- */
-    node_t_type transform( const node_t_type& __ref_p,
-                           matrix_node_t_type const& __G ) const
+     *  apply the geometric mapping to the point \c pt given the real
+     *  geometric nodes stored in a NxNg matrix \c G
+     */
+    node_t_type transform(const node_t_type& ref_p,
+                          const matrix_node_t_type& G) const
     {
-        namespace lambda = boost::lambda;
+        // Create a real_p node of the appropriate size and clear it
+        typename node<value_type>::type real_p(G.size1());
+        real_p.clear();
 
-        typename node<value_type>::type __real_p( __G.size1() );
-        __real_p.clear();
-
-        for ( uint16_type __i = 0; __i < nNodes; ++__i )
+        // Loop over all nodes
+        for (uint16_type i = 0; i < nNodes; ++i)
         {
-            //value_type __phi_at_pt = super::phi( __i, __ref_p );
-            value_type __phi_at_pt = super::evaluate( __i, __ref_p )( 0 );
-            __real_p.plus_assign( __phi_at_pt * ublas::column( __G, __i ) );
+            // Evaluate phi at the current point and assign it to phi_at_pt
+            value_type phi_at_pt = super::evaluate(i, ref_p)(0);
+
+            // Perform the transformation by accumulating the product of phi_at_pt and the i-th column of G
+            real_p.plus_assign(phi_at_pt * ublas::column(G, i));
         }
 
-        return __real_p;
+        return real_p;
     }
 
     /**
- * apply the geometric mapping to the point index \c id_pt given the real
- * geometric nodes stored in a NxNg matrix \c G
- */
-    node_t_type transform( uint16_type __idref,
-                           matrix_node_t_type const& __G,
-                           precompute_type const* __pc ) const
+     * apply the geometric mapping to the point index \c id_pt given the real
+     * geometric nodes stored in a NxNg matrix \c G
+     */
+    node_t_type transform( uint16_type id_ref,
+                           const matrix_node_t_type& G,
+                           const precompute_type* pc) const
     {
-        node_t_type __real_p( __G.size1() );
-        __real_p.clear();
+        // Initialize the real_p node with the appropriate size and clear it
+        node_t_type real_p(G.size1());
+        real_p.clear();
 
-        for ( uint16_type __i = 0; __i < nNodes; ++__i )
+        // Loop over all nodes
+        for (uint16_type i = 0; i < nNodes; ++i)
         {
-            // evaluate transformation at point pt
-            value_type __phi_at_pt = __pc->phi( __idref, __i );
-            __real_p.plus_assign( __phi_at_pt * ublas::column( __G, __i ) );
+            // Evaluate the transformation at the given point
+            value_type phi_at_pt = pc->phi(id_ref, i);
+
+            // Accumulate the result of phi_at_pt multiplied by the i-th column of G
+            real_p.plus_assign(phi_at_pt * ublas::column(G, i));
         }
 
-        return __real_p;
-    }
+        return real_p;
+}
 
     /**
- * compute real coordinates from a matrix of ref coordinates
- */
+     * compute real coordinates from a matrix of ref coordinates
+     */
     void transform( matrix_node_t_type const& G,
                     precompute_type const* pc,
                     matrix_type& x ) const
@@ -433,18 +439,16 @@ class GeoMap
     }
 
     /**
- *  compute the gradient of the transformation in the reference
- *  element
- *
- *  Compute the gradient at node \c x, pc is resized to
- *  [nbNodes() x dim()] if the transformation is linear, \c x is
- *  not used at all
- */
+     *  compute the gradient of the transformation in the reference
+     *  element
+     *
+     *  Compute the gradient at node \c x, pc is resized to
+     *  [nbNodes() x dim()] if the transformation is linear, \c x is
+     *  not used at all
+     */
     void gradient( const node_t_type& __pt,
                    matrix_type& __g ) const
         {
-            namespace lambda = boost::lambda;
-
             if ( trans == fem::LINEAR )
             {
                 __g = M_g_linear;

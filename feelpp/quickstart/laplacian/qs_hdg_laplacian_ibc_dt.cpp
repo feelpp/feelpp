@@ -226,7 +226,7 @@ int hdg_laplacian()
     {
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{k,f,p_exact,un,r_1,r_2} );
+        auto u = cgLaplacian( _space=cgXh, _data=std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
         if ( u )        
             status_cg = check( checker( _name= "L2/H1 convergence cG", 

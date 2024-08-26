@@ -42,21 +42,21 @@ template <typename... T>
 using strongest_numeric_type = std::common_type_t<T...>;
 
 template <class T>
-struct is_shared_ptr : std::bool_constant<false> {};
+struct is_shared_ptr : std::false_type {};
 
 template <class T>
-struct is_shared_ptr<std::shared_ptr<T> > : std::bool_constant<true> {};
+struct is_shared_ptr<std::shared_ptr<T> > : std::true_type {};
 
 template <class T>
 struct remove_shared_ptr
 {
-    typedef T type;
+    using type = T;
 };
 
 template <class T>
 struct remove_shared_ptr<std::shared_ptr<T> >
 {
-    typedef T type;
+    using type = T;
 };
 
 template <class T>

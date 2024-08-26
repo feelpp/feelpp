@@ -335,12 +335,12 @@ TestHCurl::eightElementsMesh()
     //Check matrix assembly (non zero components)
     std::vector<int> diag_48 = {0,1,2,3,5,6,7,9,12,13,14,15};
     std::vector<int> diag_24 = {4,8,10,11};
-    BOOST_FOREACH( int comp, diag_48 )
+    for( int comp : diag_48 )
         {
             BOOST_TEST_MESSAGE( "a(N" << comp << ",N" << comp << ") = " << a_cst.matrix()(comp,comp) << "\n");
             BOOST_CHECK_CLOSE( a_cst.matrix()(comp,comp), 1./3., 1e-10 );
         }
-    BOOST_FOREACH( int comp, diag_24 )
+    for( int comp : diag_24 )
         {
             BOOST_TEST_MESSAGE( "a(N" << comp << ",N" << comp << ") = " << a_cst.matrix()(comp,comp) << "\n");
             BOOST_CHECK_CLOSE( a_cst.matrix()(comp,comp), 2./3., 1e-10 );
@@ -349,13 +349,13 @@ TestHCurl::eightElementsMesh()
     typedef std::pair<int,int> map_value_type;
     std::map<int,int> other_comp_inf1 ={{1,2},{5,4},{8,4},{8,7},{11,10},{15,14}};
     std::map<int,int> other_comp_inf2 ={{11,12},{10,13}};
-    BOOST_FOREACH( map_value_type comp, other_comp_inf1)
+    for( map_value_type comp : other_comp_inf1 )
         {
             BOOST_TEST_MESSAGE( "a(N" << comp.first << ",N" << comp.second << ") = " << a_cst.matrix()(comp.first,comp.second) << "\n");
             BOOST_CHECK_CLOSE( a_cst.matrix()(comp.first,comp.second), -1./6., 1e-10 );
             BOOST_CHECK_CLOSE( a_cst.matrix()(comp.second,comp.first), -1./6., 1e-10 );
         }
-    BOOST_FOREACH( map_value_type comp, other_comp_inf2)
+    for( map_value_type comp : other_comp_inf2 )
         {
             BOOST_TEST_MESSAGE( "a(N" << comp.first << ",N" << comp.second << ") = " << a_cst.matrix()(comp.first,comp.second) << "\n");
             BOOST_CHECK_CLOSE( a_cst.matrix()(comp.first,comp.second), 1./6., 1e-10 );

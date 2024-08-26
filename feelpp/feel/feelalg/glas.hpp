@@ -6,7 +6,7 @@
        Date: 2005-08-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2011-2024 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -45,11 +45,8 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/algorithm.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/if.hpp>
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
@@ -57,6 +54,7 @@
 #include <boost/numeric/ublas/operation.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#pragma GCC diagnostic pop
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>
