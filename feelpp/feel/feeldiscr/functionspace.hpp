@@ -1590,24 +1590,13 @@ public:
     template<typename ThePeriodicityType, int pos>
     struct GetPeriodicity
     {
-#if 0
-        typedef typename boost::remove_reference<periodicity_type>::type periodicity_list_noref;
-        typedef typename fusion::result_of::at_c<periodicity_list_noref, pos>::type _type;
+        using _type = typename fusion::result_of::at_c<ThePeriodicityType,0>::type;
         typedef typename boost::remove_reference<_type>::type type;
-#else
-        typedef typename mpl::if_<mpl::equal_to<fusion::result_of::size<ThePeriodicityType>,mpl::int_<1> >,
-                                  mpl::identity<fusion::result_of::at_c<ThePeriodicityType,0> >,
-                                  mpl::identity<fusion::result_of::at_c<ThePeriodicityType,pos> > >::type::type::type _type;
-        typedef typename boost::remove_reference<_type>::type type;
-
-#endif
     };
     template<typename TheMortarType, int pos>
     struct GetMortar
     {
-        typedef typename mpl::if_<mpl::equal_to<fusion::result_of::size<TheMortarType>,mpl::int_<1> >,
-                                  mpl::identity<fusion::result_of::at_c<TheMortarType,0> >,
-                                  mpl::identity<fusion::result_of::at_c<TheMortarType,pos> > >::type::type::type _type;
+        using _type = typename fusion::result_of::at_c<TheMortarType,0>::type;
         typedef typename boost::remove_reference<_type>::type type;
     };
 
@@ -1615,17 +1604,23 @@ public:
     struct ChangeMesh
     {
         typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
+#if 0        
         typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
         typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
+
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
+#else
+        using _mesh_type = typename fusion::result_of::at_c<meshes_list_noref, 0 >::type;
+#endif
 
         typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
                               Feel::detail::bases<BasisType>,value_type,
-                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
+                              Periodicity<typename GetPeriodicity<periodicity_type,0>::type >,
                               mortar_list> _type;
         typedef std::shared_ptr<_type> type;
     };
+#if 1    
     template<typename BasisType>
     struct ChangeBasis
     {
@@ -1641,21 +1636,23 @@ public:
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
     };
     typedef typename mpl::transform<bases_list, ChangeBasis<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type functionspace_vector_type;
-
+#endif
     template<typename BasisType>
     struct ChangeMeshToComponentBasis
     {
         typedef typename boost::remove_reference<meshes_list>::type meshes_list_noref;
         typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
+#if 0        
         typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
-
+#else
+        using _mesh_type = typename fusion::result_of::at_c<meshes_list_noref, 0 >::type;
+#endif
         typedef typename BasisType::component_basis_type component_basis_type;
-
         typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
                               Feel::detail::bases<component_basis_type>,value_type,
-                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
+                              Periodicity<typename GetPeriodicity<periodicity_type,0>::type >,
                               mortar_list> _type;
         typedef std::shared_ptr<_type> type;
     };
@@ -1664,10 +1661,18 @@ public:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
+#if 0        
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase<>, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                   mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMeshToComponentBasis<BasisType> > >::type::type::type type;
+#else
+            using type = typename mp11::mp_if_c<
+                    is_base_of_meshbase_v<meshes_list>,
+                    mp11::mp_identity<std::shared_ptr<FunctionSpace<meshes_list, Feel::detail::bases<component_basis_type>, int, periodicity_type, mortar_list>>>,
+                    mp11::mp_identity<ChangeMeshToComponentBasis<BasisType>>
+                >::type;
+#endif
     };
 
     typedef typename mpl::transform<bases_list,
@@ -1691,20 +1696,24 @@ public:
     /** @name Constants
      */
     //@{
-    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    static const bool is_composite = false; //( mpl::size<bases_list>::type::value > 1 );
 
     template<typename MeshListType,int N>
     struct GetMesh
     {
+#if 0        
         typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase<>, MeshListType >,
                                            is_shared_ptr<MeshListType> >,
                                   mpl::identity<mpl::identity<MeshListType> >,
                                   mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
+#else
+        using type = MeshListType;
+#endif
     };
     template<typename MeshListType,int N>
     struct GetMeshSupport
     {
-        typedef typename GetMesh<MeshListType,N>::type mesh_ptrtype;
+        typedef typename GetMesh<MeshListType,0>::type mesh_ptrtype;
         typedef MeshSupport<typename mesh_ptrtype::element_type> type;
         typedef typename type::range_elements_type range_type;
         typedef std::shared_ptr<type> ptrtype;
@@ -1714,9 +1723,7 @@ public:
     typedef typename GetMesh<meshes_list,0>::type mesh_0_type;
     using index_type = typename mesh_0_type::index_type;
     using size_type = typename mesh_0_type::size_type;
-    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
-                              mpl::identity<meshes_list>,
-                              mpl::identity<mesh_0_type> >::type::type mesh_type;
+    using mesh_type = mesh_0_type;
 
     template<typename MeshType>
     struct ChangeToMeshPtr
@@ -1724,12 +1731,18 @@ public:
         typedef std::shared_ptr<MeshType> type;
     };
 
+#if 0
     typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                               mpl::identity<std::shared_ptr<mesh_type> >,
                               mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
     typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
-            mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
+            mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;                              
+#else
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    using convex_type = typename mesh_type::element_type;
+#endif
+
 
     template<typename SpaceType>
     struct ChangeMeshSupport
@@ -1746,26 +1759,36 @@ public:
     struct GetNComponents
     {
         //typedef mpl::int_<BasisType::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type::nComponents> type;
-        typedef mpl::int_<BasisType::template apply<mesh_type::nDim,
-                mesh_type::nRealDim,
-                value_type,
-                typename mesh_type::element_type>::type::nComponents> type;
+        //typedef mpl::int_<BasisType::template apply<mesh_type::nDim, mesh_type::nRealDim,value_type, typename mesh_type::element_type>::type::nComponents> type;
+        static inline const int value = BasisType::nComponents;
+        using type = mpl::int_<value>;
     };
+    template<typename BasisType>
+    using ncomponents_t = typename GetNComponents<BasisType>::type;
+    template<typename BasisType>
+    static inline const int ncomponents_v = ncomponents_t<BasisType>::value;
+
+    static inline const int nDim = is_base_of_meshbase_v<meshes_list>?meshes_list::nDim:-1;
+    static inline const int nRealDim = is_base_of_meshbase_v<meshes_list>?meshes_list::nRealDim:-1;
+#if 0
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
+    mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                           mpl::identity<meshes_list >,
                                           mpl::identity<nodim> >::type::type::nDim;
     static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                               mpl::identity<meshes_list>,
                                               mpl::identity<nodim> >::type::type::nRealDim;
+#endif
 
-
-
+#if 0
     //typedef typename mpl::at_c<bases_list,0>::type::template apply<mesh_type::nDim,value_type,typename mesh_type::element_type>::type basis_0_type;
     typedef typename mpl::at_c<bases_list,0>::type::template apply<GetMesh<meshes_list,0>::type::nDim,
                                                                    GetMesh<meshes_list,0>::type::nRealDim,
                                                                    value_type,
                                                                    typename GetMesh<meshes_list,0>::type::element_type>::type basis_0_type;
+#else
+    using basis_0_type = typename mpl::at_c<bases_list,0>::type::template apply<nDim, nRealDim, value_type,convex_type>::type;
+#endif
 
     static constexpr uint16_type rank = ( is_composite? invalid_uint16_type_value : basis_0_type::rank );
     static constexpr bool is_scalar = ( is_composite? false : basis_0_type::is_scalar );
@@ -1782,6 +1805,7 @@ public:
     static constexpr bool is_product = ( is_composite? false : basis_0_type::is_product );
     typedef typename  basis_0_type::continuity_type continuity_type;
 
+#if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<boost::none_t>,
                               mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
@@ -1789,6 +1813,10 @@ public:
     static constexpr uint16_type nComponents = mpl::transform<bases_list,
                              GetNComponents<mpl::_1>,
                              mpl::inserter<mpl::int_<0>,mpl::plus<mpl::_,mpl::_> > >::type::value;
+#else
+    using polyset_type = typename basis_0_type::polyset_type;
+    static inline const uint16_type nComponents = ncomponents_v<basis_0_type>;
+#endif
     static constexpr uint16_type N_COMPONENTS = nComponents;
     static constexpr uint16_type nSpaces = mpl::size<bases_list>::type::value;
     static constexpr uint16_type nRealComponents = is_tensor2symm?basis_0_type::nComponents1*(basis_0_type::nComponents1+1)/2:nComponents;
@@ -1826,22 +1854,34 @@ public:
     {
         typedef typename mpl::at_c<bases_list,N>::type type;
     };
+#if 0    
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<bases_list>,
             mpl::identity<basis_0_type> >::type::type basis_type;
+#else
+    using basis_type = basis_0_type;
+#endif
 
 
     typedef std::shared_ptr<basis_type> basis_ptrtype;
     typedef basis_type reference_element_type;
     typedef std::shared_ptr<reference_element_type> reference_element_ptrtype;
     typedef reference_element_type fe_type;
+#if 0    
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<fe_type>,
                               mpl::identity<typename basis_0_type::SSpace::type> >::type::type mortar_fe_type;
+#else
+    using mortar_fe_type = typename basis_0_type::SSpace::type;
+#endif
     typedef reference_element_ptrtype fe_ptrtype;
+#if 0    
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<boost::none_t>,
             mpl::identity<typename basis_0_type::PreCompute> >::type pc_type;
+#else
+    using pc_type = typename basis_0_type::PreCompute;
+#endif
     typedef std::shared_ptr<pc_type> pc_ptrtype;
 
     /**
@@ -1923,16 +1963,24 @@ public:
     static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
         vm::POINT|vm::GRAD|vm::JACOBIAN|vm::KB :
         vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB;
+#endif
+#if 0        
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<mpl::void_>,
                               mpl::identity<typename basis_0_type::template Context<basis_context_value, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
+#else
+    using basis_context_type =  typename basis_0_type::template Context<basis_context_value, basis_0_type, gm_type, geoelement_type>;                            
 #endif
     typedef std::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
+#if 0    
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<DofComposite>,
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
+#else
+    using dof_type = DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type>;
+#endif
 
     typedef std::shared_ptr<dof_type> dof_ptrtype;
     typedef std::shared_ptr<DataMap<>> datamap_ptrtype;
@@ -1940,10 +1988,13 @@ public:
 
     // return types
     //typedef typename bases_list::polyset_type return_value_type;
-
+#if 0
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<N_COMPONENTS>, mpl::int_<1> >,
             mpl::identity<value_type>,
             mpl::identity<node_type> >::type::type return_type;
+#else
+    using return_type = mp11::mp_if_c<N_COMPONENTS==1,value_type,node_type>;
+#endif
 
     typedef boost::function<return_type ( node_type const& )> function_type;
     //@}
@@ -4707,6 +4758,7 @@ public:
      */
     size_type nDof() const
     {
+#if 0        
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nDof(<composite>) begin\n";
@@ -4718,6 +4770,9 @@ public:
         {
             return M_dof->nDof();
         }
+#else
+        return M_dof->nDof();
+#endif
     }
 
     /**
@@ -4725,6 +4780,7 @@ public:
      */
     size_type nLocalDof() const
     {
+#if 0        
         if constexpr( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -4737,10 +4793,14 @@ public:
             //return M_dof->nLocalDof();
             return M_dof->nLocalDofWithGhost();
         }
+#else
+        return M_dof->nLocalDofWithGhost();
+#endif
     }
 
     size_type nLocalDofWithGhost() const
     {
+#if 0        
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -4749,6 +4809,7 @@ public:
             return ndof;
         }
         else
+#endif        
         {
             return M_dof->nLocalDofWithGhost();
         }
@@ -4756,6 +4817,7 @@ public:
 
     size_type nLocalDofWithoutGhost() const
     {
+#if 0        
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -4764,6 +4826,7 @@ public:
             return ndof;
         }
         else
+#endif        
         {
             return M_dof->nLocalDofWithoutGhost();
         }
@@ -4771,6 +4834,7 @@ public:
 
     size_type nLocalDofWithGhostOnProc( const int proc ) const
     {
+#if 0        
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -4779,6 +4843,7 @@ public:
             return ndof;
         }
         else
+#endif        
         {
             return M_dof->nLocalDofWithGhost(proc);
         }
@@ -4786,6 +4851,7 @@ public:
 
     size_type nLocalDofWithoutGhostOnProc(const int proc) const
     {
+#if 0        
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -4794,6 +4860,7 @@ public:
             return ndof;
         }
         else
+#endif        
         {
             return M_dof->nLocalDofWithoutGhost(proc);
         }
@@ -5755,7 +5822,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES && 
+               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES &&
                                 !std::is_same<typename RangeType::super,faces_reference_wrapper_t<mesh_type> >::value >* = nullptr ) const
         {
             CHECK(false) << "TODO";
@@ -6062,6 +6129,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
             M_mesh->addObserver( *this );
 #endif
     }
+#if 0    
     else if constexpr ( is_composite )
     {
         M_mesh = __m;
@@ -6076,12 +6144,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
         this->initList();
     }
+#endif    
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::initList()
 {
+#if 0    
     if constexpr ( is_composite )
     {
         if ( !this->hasWorldComm() )
@@ -6141,6 +6211,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
         //M_dof->indexSplit().showMe();
         this->applyUpdateInformationObject();
     }
+#endif    
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -6148,19 +6219,23 @@ template<typename FSpaceHead>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::initHead( FSpaceHead& head )
 {
+#if 0    
     DVLOG(2) << "calling initHead(<composite>) begin\n";
     M_mesh = head->mesh();
     M_worldsComm.push_back( head->worldComm() );
     M_extendedDofTableComposite.push_back( head->M_extendedDofTable );
     M_extendedDofTable = head->M_extendedDofTable;
+#endif    
 }
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename FSpaceHead, typename... FSpaceTail>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::initList( FSpaceHead& head, FSpaceTail... tail )
 {
+#if 0    
     initHead( head );
     initList( tail... );
+#endif
 }
 
 
