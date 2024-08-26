@@ -30,6 +30,7 @@
 #include <feel/feelmodels/fsi/fsi.hpp>
 #include <feel/feelmodels/modelmesh/fsimesh.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelpde/operatorpmm.hpp>
 
 namespace Feel::FeelModels
 {
@@ -926,6 +927,27 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_
         }
     }
 }
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::initInHousePreconditionerPMM_fluid( operatorpmmbase_fluid_type & opPMMBase ) const
+{
+    using op_pmm_type = Feel::Alternatives::OperatorPMM<typename fluid_type::space_pressure_type>;
+    op_pmm_type * opPMM = dynamic_cast<op_pmm_type*>(&opPMMBase);
+    CHECK( opPMM ) << "fails to cast OperatorPMM";
+}
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateInHousePreconditionerPMM_fluid( operatorpmmbase_fluid_type & opPMMBase, DataUpdateBase & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        using op_pmm_type =  Feel::Alternatives::OperatorPMM<typename fluid_type::space_pressure_type>;
+        op_pmm_type * opPMM = dynamic_cast<op_pmm_type*>(&opPMMBase);
+        CHECK( opPMM ) << "fails to cast OperatorPMM";
+    }
+}
+
 
 
 

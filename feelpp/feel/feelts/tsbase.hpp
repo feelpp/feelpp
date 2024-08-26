@@ -35,12 +35,8 @@
 #include <algorithm>
 
 
-//#include <boost/shared_array.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/utility.hpp>
 
-#include <boost/foreach.hpp>
+
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>

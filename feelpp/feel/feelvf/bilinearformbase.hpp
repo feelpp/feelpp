@@ -61,10 +61,7 @@ public:
 
     using size_type =  typename matrix_type::size_type;
     
-    typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
-                              mpl::identity<ublas::row_major>,
-                              mpl::identity<ublas::column_major> >::type::type layout_type;
-
+    using layout_type = mp11::mp_if_c<is_row_major, ublas::row_major,ublas::column_major>;
 
     BilinearFormBase() = default;
     

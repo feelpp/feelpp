@@ -8,6 +8,7 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 //#include <feel/feelvf/inv.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelpde/operatorpmm.hpp>
 #include <feel/feells/reinit_fms.hpp>
 
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
@@ -1196,6 +1197,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( this->hasOperatorPCD() )
         this->algebraicFactory()->attachOperatorPCD("pcd", this->operatorPCD());
+    if ( this->hasOperatorPMM() )
+        this->algebraicFactory()->attachOperatorPMM("pmm", this->operatorPMM());
 
     if ( this->timeStepping() == "Theta" )
     {
@@ -1778,6 +1781,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         opPCD->initialize();
         M_operatorPCD = opPCD;
+    }
+    if ( M_preconditionerAttachPMM )
+    {
+        using op_pmm_type = Feel::Alternatives::OperatorPMM<space_pressure_type>;
+        auto opPMM = std::make_shared<op_pmm_type>( this->functionSpacePressure(),
+                                                    this->backend(), this->prefix(), true);
+
+        opPMM->initialize();
+        M_operatorPMM = opPMM;
     }
 }
 
