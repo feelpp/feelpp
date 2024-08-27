@@ -64,7 +64,7 @@ int main(int argc, char**argv )
         LOG(INFO) << "Time = " << time << "s";
         if ( ts->iteration() == 1 )
         {
-            BOOST_FOREACH( auto i, Vh->dof()->markerToDof( std::string("center") ) )
+            for( auto i : Vh->dof( )->markerToDof( std::string("center") ) )
             {
                 l.add( i.second, 1 );
             }

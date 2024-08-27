@@ -37,7 +37,7 @@
 #include <sstream>
 
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -572,7 +572,7 @@ Application::doOptions( int argc, char** argv )
                                          ( fs::path ( "/usr/local/share/feel/config" ) )
                                          ( fs::path ( "/opt/local/share/feel/config" ) );
 
-        BOOST_FOREACH( auto prefix, prefixes )
+        for( auto prefix : prefixes )
         {
             std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % this->about().appName() ).str();
             DVLOG(2) << "[Application] Looking for " << config_name << "\n";
@@ -648,7 +648,7 @@ Application::unknownArgv() const
     int n_a = 0;
     DVLOG(2) << "argv[ " << n_a << " ]=" << argv[0] << "\n";
     ++n_a;
-    BOOST_FOREACH( std::string const& s, M_to_pass_further )
+    for( std::string const& s : M_to_pass_further )
     {
         size_type ssize=s.size();
         DVLOG(2) << "new arg " << s << " size = " << ssize << "\n";
@@ -855,7 +855,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
     DVLOG(2) << "[Application::Application] number of unrecognized options: " << ( M_to_pass_further.size() ) << "\n";
 
-    BOOST_FOREACH( std::string const& s, M_to_pass_further )
+    for( std::string const& s : M_to_pass_further )
     {
         DVLOG(2) << "[Application::Application] option: " << s << "\n";
     }
@@ -1036,7 +1036,7 @@ printErrors( std::ostream& out,
         if ( !flat )
             out << std::setw( 10 ) << std::right << "levels"
                 << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( auto v, statsit->get_child( key ) )
+        for( auto v : statsit->get_child( key ) )
         {
             if ( !flat )
                 out << std::setw( detail::spaces ) << std::right << v.first
@@ -1061,7 +1061,7 @@ printErrors( std::ostream& out,
             if ( !flat )
                 out << std::right << std::setw( 10 ) << l
                     << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-            BOOST_FOREACH( auto v, it->get_child( key ) )
+            for( auto v : it->get_child( key ) )
             {
                 double u  = it->template get<double>( key+"."+v.first );
                 double roc  = it->template get<double>( key+"."+v.first+".roc" );
@@ -1089,7 +1089,7 @@ printNumbers( std::ostream& out,
         if ( !flat )
             out << std::setw( 10 ) << std::right << "levels"
                 << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( auto v, statsit->get_child( key ) )
+        for( auto v : statsit->get_child( key ) )
         {
             if ( !flat )
                 out << std::setw( detail::spaces ) << std::right << v.first;
@@ -1107,7 +1107,7 @@ printNumbers( std::ostream& out,
             if ( !flat )
                 out << std::right << std::setw( 10 ) << l
                     << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-            BOOST_FOREACH( auto v, it->get_child( key ) )
+            for( auto v : it->get_child( key ) )
             {
                 size_type u  = it->template get<size_type>( key+"."+v.first );
                 out << std::right << std::setw( detail::spaces )  << u;
@@ -1135,7 +1135,7 @@ printData( std::ostream& out,
                 out << std::setw( 10 ) << std::right << "levels"
                     << std::setw( 10 ) << std::right << "h";
             try {
-                BOOST_FOREACH( auto v, statsit->get_child( key+".bool" ) )
+                for( auto v : statsit->get_child( key+".bool" ) )
                 {
                     out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
                 }
@@ -1143,7 +1143,7 @@ printData( std::ostream& out,
             catch(...)
             {}
             try {
-                BOOST_FOREACH( auto v, statsit->get_child( key+".int" ) )
+                for( auto v : statsit->get_child( key+".int" ) )
                 {
                     out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
                 }
@@ -1151,7 +1151,7 @@ printData( std::ostream& out,
             catch(...)
             {}
             try{
-                BOOST_FOREACH( auto v, statsit->get_child( key+".double" ) )
+                for( auto v : statsit->get_child( key+".double" ) )
                 {
                     out << std::setw( detail::spaces ) << std::right << (flat?key+"."+v.first:v.first);
                 }
@@ -1170,7 +1170,7 @@ printData( std::ostream& out,
                     out << std::right << std::setw( 10 ) << l
                         << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
                 try {
-                    BOOST_FOREACH( auto v, it->get_child( key+".bool" ) )
+                    for( auto v : it->get_child( key+".bool" ) )
                     {
                         bool u  = it->template get<bool>( key+".bool."+v.first );
                         out << std::right << std::setw( detail::spaces )  << u;
@@ -1178,7 +1178,7 @@ printData( std::ostream& out,
                 }
                 catch(...){}
                 try {
-                    BOOST_FOREACH( auto v, it->get_child( key+".int" ) )
+                    for( auto v : it->get_child( key+".int" ) )
                     {
                         size_type u  = it->template get<size_type>( key+".int."+v.first );
                         out << std::right << std::setw( detail::spaces )  << u;
@@ -1186,7 +1186,7 @@ printData( std::ostream& out,
                 }
                 catch(...){}
                 try {
-                    BOOST_FOREACH( auto v, it->get_child( key+".double" ) )
+                    for( auto v : it->get_child( key+".double" ) )
                     {
                         double u  = it->template get<double>( key+".double."+v.first );
                         out << std::right << std::setw( detail::spaces ) << std::scientific << std::setprecision( 2 ) << u;
@@ -1220,7 +1220,7 @@ printTime( std::ostream& out,
             if ( !flat )
                 out << std::setw( 10 ) << std::right << "levels"
                     << std::setw( 10 ) << std::right << "h";
-            BOOST_FOREACH( auto v, statsit->get_child( key ) )
+            for( auto v : statsit->get_child( key ) )
             {
                 int len1 = std::max( detail::spaces,( int )v.first.size() );
                 int len2 = std::max( detail::spaces,( int )( std::string( " normalized" ).size() ) );
@@ -1239,7 +1239,7 @@ printTime( std::ostream& out,
                 if ( !flat )
                     out << std::right << std::setw( 10 ) << l
                         << std::right << std::setw( 10 ) << std::fixed  << std::setprecision( 4 ) << h;
-                BOOST_FOREACH( auto v, it->get_child( key ) )
+                for( auto v : it->get_child( key ) )
                 {
                     std::string thekey = key+"."+v.first;
                     int len1 = std::max( detail::spaces,( int )(flat?key+"."+v.first:v.first).size() );
@@ -1300,7 +1300,7 @@ Application::printStats( std::ostream& out,
             out << "================================================================================\n";
             out << "Simulation " << i->name() << "\n";
         }
-        BOOST_FOREACH( auto key, keys )
+        for( auto key : keys )
         {
             if ( flat == false )
             {

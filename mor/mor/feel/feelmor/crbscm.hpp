@@ -33,7 +33,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -827,11 +827,11 @@ CRBSCM<TruthModelType>::offlineSCM()
             checkEigenVectorEigenValue( symmMatrix, B, eigenvector, eigenvalue );
         }
 
-        //BOOST_FOREACH( key_t eig, M_C_eigenvalues )
+        //for( key_t eig : M_C_eigenvalues )
 	    //std::cout << "[fe eig] stored/map eig=" << eig.second <<" ( " << eig.first << " ) " << "\n";
 
         M_eig.push_back( M_C_eigenvalues[index] );
-        //BOOST_FOREACH( value_type eig, M_eig )
+        //for( value_type eig : M_eig )
 	    //std::cout << "[fe eig] stored/vec eig=" << eig << "\n";
 
 

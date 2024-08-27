@@ -2410,6 +2410,16 @@ public:
 
     std::shared_ptr<operatorpcdbase_type> operatorPCD() const { return M_operatorPCD; }
     bool hasOperatorPCD() const { return ( M_operatorPCD.use_count() > 0 ); }
+
+    typedef OperatorPMMBase<typename space_velocity_type::value_type> operatorpmmbase_type;
+    void addUpdateInHousePreconditionerPMM( std::string const& name, std::function<void(operatorpmmbase_type &)> const& init,
+                                            std::function<void(operatorpmmbase_type &,DataUpdateBase &)> const& up = std::function<void(operatorpmmbase_type &,DataUpdateBase &)>() )
+        {
+            M_addUpdateInHousePreconditionerPMM[name] = std::make_pair(init,up);
+        }
+
+    std::shared_ptr<operatorpmmbase_type> operatorPMM() const { return M_operatorPMM; }
+    bool hasOperatorPMM() const { return ( M_operatorPMM.use_count() > 0 ); }
 private :
     template <typename ModelContextType>
     void updateInHousePreconditionerPMM( DataUpdateBase & data, ModelContextType const& mctx ) const;
@@ -2676,6 +2686,8 @@ private :
     mutable bool M_pmmNeedUpdate;
     std::shared_ptr<operatorpcdbase_type> M_operatorPCD;
     std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
+    std::shared_ptr<operatorpmmbase_type> M_operatorPMM;
+    std::map<std::string,std::pair<std::function<void(operatorpmmbase_type &)>,std::function<void(operatorpmmbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPMM;
 
 }; // FluidMechanics
 
