@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-11-15
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universitï¿½ Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <boost/foreach.hpp>
+
 
 #include <feel/options.hpp>
 
@@ -129,7 +129,7 @@ public:
     {
         return 1.204;
     }
-    //! \return air viscosity (kg/(m·s))
+    //! \return air viscosity (kg/(mï¿½s))
     double nu() const
     {
         return 1.78* 1e-5;
@@ -268,12 +268,12 @@ OpusModelFluidOseen<SpaceType>::initLinearOperators()
 #endif
     ti.restart();
 
-    BOOST_FOREACH( std::string marker, this->data()->dirichletVelocityMarkers() )
+    for( std::string marker : this->data( )->dirichletVelocityMarkers() )
     {
         std::cout << "  -- dirichlet marker: "  << marker << "\n";
         std::cout << "  -- dirichlet perimeter:"  << integrate( _range=markedfaces( mesh,marker ), _expr=cst( 1.0 ) ).evaluate()( 0, 0 ) << std::endl;
     }
-    BOOST_FOREACH( std::string marker, this->data()->dirichletVelocityMarkers() )
+    for( std::string marker : this->data( )->dirichletVelocityMarkers() )
     {
         LOG(INFO) << "[OpusModelFluidOseen::add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         LOG(INFO) << "[OpusModelFluidOseen::add weakbc boundary terms velocity] " << mesh->markerName( marker )

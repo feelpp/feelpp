@@ -290,7 +290,7 @@ Assembly of the right hand side \f$ B = \int_\Gamma \kappa v w \f$
 \co
  auto B = M_backend->newMatrix( Xh, Xh ) ;
  form2( _test=Xh, _trial=Xh, _matrix=B, _init=true );
- BOOST_FOREACH( int marker, flags )
+ for( int marker : flags )
  {
    form2( Xh, Xh, _matrix=B ) +=
    integrate( markedfaces(mesh,marker), kappa*idt(u)*id(v) );

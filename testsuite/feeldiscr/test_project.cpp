@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
     {
         auto const& elt = elit->second;
         BOOST_TEST_MESSAGE( "  check element " << elt.id() << "\n" );
-        BOOST_FOREACH( auto elid, elt.pointElementNeighborIds() )
+        for( auto elid : elt.pointElementNeighborIds( ) )
         {
             BOOST_TEST_MESSAGE( "  element " << elt.id() << " -> element " << elid << "\n" );
         }

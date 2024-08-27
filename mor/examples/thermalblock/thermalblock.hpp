@@ -620,7 +620,7 @@ ThermalBlock::initModel()
     form1( _test=Xh, _vector=M_Fq[0][0] );
     // on boundary north we have u=0 so term from weak dirichlet condition
     // vanish in the right hand side
-    BOOST_FOREACH( auto marker, southMarkers )
+    for( auto marker : southMarkers )
     {
         form1( _test=Xh, _vector=M_Fq[0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
         subdomain_index = subdomainId( marker );
@@ -630,7 +630,7 @@ ThermalBlock::initModel()
 
 
     DVLOG(2) <<"[ThermalBlock::init] done with rhs\n";
-    BOOST_FOREACH( auto domain, domainMarkers )
+    for( auto domain : domainMarkers )
     {
         DVLOG(2) <<"[ThermalBlock::init] domain " << domain << "\n";
 
@@ -655,7 +655,7 @@ ThermalBlock::initModel()
 
     DVLOG(2) <<"[ThermalBlock::init] done with domainMarkers\n";
     int last_index = Qa()-1;
-    BOOST_FOREACH( auto marker, northMarkers )
+    for( auto marker : northMarkers )
     {
         std::string sid = subdomainFromBoundary( marker );
         subdomain_index = subdomainId( marker );
@@ -822,13 +822,13 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     std::cout << "Building rhs restarts\n";
     form1( _test=Xh,_vector=B, _init=true ) ;
 
-    BOOST_FOREACH( auto domain, domainMarkers )
+    for( auto domain : domainMarkers )
     {
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
         form1( _test=Xh, _vector=B ) += integrate( markedelements( mmesh, domain ),K[domain]*pi*pi*2*g*id( v ), _Q<10>() );
     }
 
-    BOOST_FOREACH( auto marker, southMarkers )
+    for( auto marker : southMarkers )
     {
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
@@ -836,7 +836,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
     }
 
-    BOOST_FOREACH( auto marker, northMarkers )
+    for( auto marker : northMarkers )
     {
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
@@ -844,7 +844,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ), g*( -K[sid]*grad( v )*vf::N()+gamma_dir*id( v )/hFace() ) ), _Q<10>()  ;
     }
 
-    BOOST_FOREACH( auto marker, westMarkers )
+    for( auto marker : westMarkers )
     {
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
@@ -852,7 +852,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
         form1( _test=Xh, _vector=B ) +=  integrate( markedfaces( mmesh, marker ),K[sid]*mygrad*id( v ), _Q<10>() )  ;
     }
 
-    BOOST_FOREACH( auto marker, eastMarkers )
+    for( auto marker : eastMarkers )
     {
         // std::cout << "Building rhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
@@ -867,13 +867,13 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     std::cout << "Building lhs restarts\n";
     form2( _test=Xh, _trial=Xh, _matrix=A, _init=true );
 
-    BOOST_FOREACH( auto domain, domainMarkers )
+    for( auto domain : domainMarkers )
     {
         // std::cout << "Building lhs for domain " << domain << std::endl;
         std::cout << domain << " K[" << domain << "]=" << K[domain] << std::endl;
         form2( _test=Xh, _trial=Xh, _matrix=A ) += integrate( markedelements( mmesh, domain ), K[domain]*gradt( u )*trans( grad( v ) ) );
     }
-    BOOST_FOREACH( auto marker, northMarkers )
+    for( auto marker : northMarkers )
     {
         // std::cout << "Building lhs for marker " << marker << std::endl;
         std::string sid = subdomainFromBoundary( marker );
@@ -898,7 +898,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
 
     std::cout << "Compute error restarts\n";
 
-    BOOST_FOREACH( auto domain, domainMarkers )
+    for( auto domain : domainMarkers )
     {
         L2error2 += integrate( markedelements( mmesh, domain ), ( idv( u )-g )*( idv( u )-g ), _Q<15>() ).evaluate()( 0,0 );
         temp = integrate( markedelements( mmesh, domain ), ( idv( u )-g )*( idv( u )-g ), _Q<15>() ).evaluate()( 0,0 );
@@ -913,7 +913,7 @@ ThermalBlock::checkout( const double* X, unsigned long P, double* Y, unsigned lo
     std::cout << "Compute error done\n";
     //  double myerror = 0;
 
-    //  BOOST_FOREACH( auto marker, eastMarkers )
+    //  for( auto marker : eastMarkers )
     //  {
     //      myerror += integrate(markedfaces(mmesh, marker), cst(1.) ).evaluate()(0,0);
     //  }

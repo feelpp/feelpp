@@ -55,8 +55,7 @@ Simget::print( std::ostream& out, std::vector<ptree::ptree> & stats )
     {
         out << std::setw( 10 ) << std::right << "levels"
             << std::setw( 10 ) << std::right << "h";
-        BOOST_FOREACH( ptree::ptree::value_type &v,
-                       stats.front().get_child( "e" ) )
+        for( auto const &v: stats.front().get_child( "e" ) )
         {
             out << std::setw( 15 ) << std::right << v.first
                 << std::setw( 15 ) << std::right << "ROC";

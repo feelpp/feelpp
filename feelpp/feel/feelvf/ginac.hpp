@@ -48,7 +48,7 @@ extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_
 // #endif
 // #endif
 
-#include <boost/foreach.hpp>
+
 #include <boost/range/algorithm/for_each.hpp>
 
 #include <feel/feelvf/expr.hpp>

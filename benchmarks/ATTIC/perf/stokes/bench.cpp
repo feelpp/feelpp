@@ -139,7 +139,7 @@ int main( int argc, char** argv )
         ( "2D-P5P4-Simplex" )( "2D-P5P4-Hypercube" )
         ( "3D-P5P4-Simplex" )( "3D-P5P4-Hypercube" );
     auto cmdoptions = makeOptions();
-    BOOST_FOREACH( auto o, boptions )
+    for( auto o : boptions )
     {
         cmdoptions.add( makeBenchmarkOptions( o ) );
     }

@@ -286,18 +286,21 @@ TestRemesh<Dim, RDim>::execute( int niter )
         }
         backend(_rebuild=true);
         //auto ur = cgLaplacianDirichlet( Vhr, std::tuple{ expr( "1" ), expr( "0" ), expr( "x+y:x:y" ) } );
-        auto ur = cgLaplacianDirichlet( Vhr, std::tuple{ expr( "1" ), expr( "pi*pi*sin(pi*x):x" ), expr( "sin(pi*x):x" ) } );
-        eout->add( "lap_u", ur );
-        //eout->add( "lap_u_exact", expr( "x+y:x:y" ) );
-        eout->add( "lap_u_exact", expr( "sin(pi*x):x" ) );
-        //double errv = normL2( _range = elements( out ), _expr = idv( ur ) - expr( "x+y:x:y" ) );
-        double errv = normL2( _range = elements( out ), _expr = idv( ur ) - expr( "sin(pi*x):x" ) );
-        if ( Environment::isMasterRank() )
-            BOOST_MESSAGE( fmt::format( "cglaplacian L2 error norm {}: {}", "x+y:x:y", errv ) );
-        //BOOST_CHECK_SMALL( errv, 1e-10 );
-        ein->save();
-        eout->save();
-        mesh_ = out;
+        auto ur = cgLaplacianDirichlet( _space=Vhr, _data=std::tuple{ expr( "1" ), expr( "pi*pi*sin(pi*x):x" ), expr( "sin(pi*x):x" ) } );
+        if ( ur )
+        {
+            eout->add( "lap_u", *ur );
+            //eout->add( "lap_u_exact", expr( "x+y:x:y" ) );
+            eout->add( "lap_u_exact", expr( "sin(pi*x):x" ) );
+            //double errv = normL2( _range = elements( out ), _expr = idv( ur ) - expr( "x+y:x:y" ) );
+            double errv = normL2( _range = elements( out ), _expr = idv( *ur ) - expr( "sin(pi*x):x" ) );
+            if ( Environment::isMasterRank() )
+                BOOST_MESSAGE( fmt::format( "cglaplacian L2 error norm {}: {}", "x+y:x:y", errv ) );
+            //BOOST_CHECK_SMALL( errv, 1e-10 );
+            ein->save();
+            eout->save();
+            mesh_ = out;
+        }
     }
     return 1;
 }

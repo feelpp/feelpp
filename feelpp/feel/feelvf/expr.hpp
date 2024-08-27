@@ -36,7 +36,7 @@
 //#include <boost/version.hpp>
 #include <boost/none.hpp>
 #include <boost/static_assert.hpp>
-#include <boost/foreach.hpp>
+
 
 #include <boost/multi_array.hpp>
 

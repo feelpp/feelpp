@@ -34,6 +34,7 @@
 #endif
 
 #include <feel/feelpde/operatorpcdbase.hpp>
+#include <feel/feelpde/operatorpmmbase.hpp>
 
 
 namespace Feel
