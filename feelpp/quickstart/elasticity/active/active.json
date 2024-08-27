@@ -1,0 +1,138 @@
+{
+    "Name": "2D active elasticity",
+    "ShortName": "Active2D",
+    "Models": {
+        "LinearElasticity": {
+            "Name": "Active2D",
+            "dimension": 2,
+            "order": 1,
+            "orderGeo":1,
+            "rigidMotion":0,
+            "Materials":[
+                "Caoutchouc"
+            ],
+            "loading": {
+                "F1": {
+                    "type" : "Gravity",
+                    "parameters" : {
+                        "expr": "{0,0}"
+                    }
+                }
+            }
+        }
+    },
+    "Materials": {
+        "Caoutchouc": {
+            "type": "LinearElastic",
+            "parameters": {
+                "E": {
+                    "value":"1e6",
+                    "unit":"Pa",
+                    "description":"Young's modulus of caoutchouc",
+                    "min": "1e6",
+                    "max": "1e6"
+                },
+                "nu": {
+                    "value":"0.45",
+                    "unit":"",
+                    "description":"Poisson ratio of caoutchouc",
+                    "min": "0.45",
+                    "max": "0.45"
+                },
+                "rho": {
+                    "value":"1",
+                    "unit":"kg/m^3",
+                    "description":"Density of caoutchouc",
+                    "min": "1",
+                    "max": "1"
+                },
+                "Ca":{
+                    "value":"1.3"
+                },
+                "Lc":{
+                    "value":"6.5"
+                },
+                "rc":{
+                    "value":"0.2"
+                },
+                "fa":{
+                    "value":"1.3"
+                }
+            }
+        }
+    },
+    "Meshes": {
+        "LinearElasticity": {
+            "Import": {
+                "filename": "$cfgdir/flagelle.geo",
+                "partition": 0,
+                "h": 0.1
+            }
+        }
+    },
+    "TimeStepping":
+    {
+        "LinearElasticity" :{
+            "steady": false,
+            "order" : 2,
+            "start": 0.0,
+            "end": 1.0,
+            "gamma":0.5,
+            "beta":0.5,
+            "step": "1/1000"
+        }
+    },
+    "InitialConditions": {
+        "LinearElasticity": {
+            "displacement": {
+                "expr": "{0.0,0.0}"
+            }
+        }
+    },
+    "BoundaryConditions": {
+        "LinearElasticity": {
+            "Dirichlet":{
+                "dirichlet":{
+                    "g":{
+                        "expr":"{0.0,0.0}"
+                    }
+                }
+            }
+        }
+    },
+    "Collision":{
+        "LinearElasticity":{
+            "method":"active",
+            "direction":"{0,-1}",
+            "ddirection":[0,-1],
+            "theta":0,
+            "epsilon":0.001,
+            "gamma0":1750,
+            "fixedPoint":1,
+            "fixedPointTol":0.0001,
+            "pressurePoint":[0,10],
+            "tolContactRegion":-0.01,
+            "tolDistance":0,
+            "nbrObs":1
+        }
+    },
+    "Parameters": {
+        "LinearElasticity": {
+            "E": {
+                "expr": 1.4e6
+            },
+            "nu": {
+                "expr": 0.4
+            },
+            "rho": {
+                "expr": 1e3
+            },
+            "beta": {
+                "expr": 0.25
+            },
+            "gamma": {
+                "expr": 0.5
+            }
+        }
+    }
+}

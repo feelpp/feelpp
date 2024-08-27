@@ -56,6 +56,7 @@ private:
     ts_ptrtype ts_;
     exporter_ptrtype e_;
 
+    double Ca_, Lc_, rc_, fa_;
     double H_,E_, nu_, lambda_, mu_, rho_;
     std::string externalforce_;
 };
@@ -89,6 +90,18 @@ void ActiveContact<Dim, Order>::initialize()
     
     lambda_ = E_*nu_/( (1+nu_)*(1-2*nu_) );
     mu_ = E_/(2*(1+nu_));
+
+    std::string matCa = fmt::format("/Materials/Caoutchouc/parameters/Ca/value");
+    Ca_ = std::stod(specs_[nl::json::json_pointer( matCa )].get<std::string>());
+
+    std::string matLc = fmt::format("/Materials/Caoutchouc/parameters/Lc/value");
+    Lc_ = std::stod(specs_[nl::json::json_pointer( matLc )].get<std::string>());
+
+    std::string matRc = fmt::format("/Materials/Caoutchouc/parameters/rc/value");
+    rc_ = std::stod(specs_[nl::json::json_pointer( matRc )].get<std::string>());
+
+    std::string matFa = fmt::format("/Materials/Caoutchouc/parameters/fa/value");
+    fa_ = std::stod(specs_[nl::json::json_pointer( matFa )].get<std::string>());
     
     // External force
     if ( specs_["/Models/LinearElasticity"_json_pointer].contains("loading") )
@@ -174,6 +187,10 @@ void ActiveContact<Dim, Order>::timeLoop()
         if (Environment::isMasterRank())
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_->time(),ts_->timeFinal()) << std::endl;
 
+        std::cout << "time : " << ts_->time() << std::endl;
+        auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
+        std::cout << "sigma_a : " << sigma_a << std::endl;
+
         auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
             auto u = Xhv_->element();
@@ -184,13 +201,23 @@ void ActiveContact<Dim, Order>::timeLoop()
             auto dF = gradt(u);
             auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
             auto dS = lambda_*trace(dE)*Id + 2*mu_*dE;
+            
+            auto ea = vec(cst(1.), cst(0.));
+            auto eaea = ea*trans(ea);
+            //auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*ts_->time())*(-Px());
+            auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
+            
 
+            
             auto a = form2( _test=Xhv_, _trial=Xhv_, _matrix=J );
 
             a = integrate( _range=elements(support(Xhv_)),
                            _expr= inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
             a += integrate( _range=elements(support(Xhv_)),
                             _expr= cst(rho_)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) );
+
+            a += integrate(_range=elements( support(Xhv_) ),
+                    _expr=inner( - dF*sigma_a*Px()*eaea, grad(u) ) );
 
             auto RR = backend()->newVector( Xhv_ );
             a += on( _range=markedfaces(mesh_,"dirichlet"),
@@ -202,10 +229,15 @@ void ActiveContact<Dim, Order>::timeLoop()
         {
             auto u = Xhv_->element();
             u = *X;
-
+            
             auto Fv = Id + gradv(u);
             auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
             auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+
+            auto ea = vec(cst(1.), cst(0.));
+            auto eaea = ea*trans(ea);
+            auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
+        
 
             auto r = form1( _test=Xhv_, _vector=R );
             r = integrate( _range=elements(support(Xhv_)),
@@ -214,6 +246,8 @@ void ActiveContact<Dim, Order>::timeLoop()
                             _expr= - trans( expr<Dim, 1>( externalforce_ ) )*id( u )  );
             r += integrate( _range=elements(support(Xhv_)),
                             _expr= cst(rho_)*inner( ts_->polyDerivCoefficient()*idv(u) -idv(ts_->polyDeriv()),id( u ) ) );
+            r += integrate(_range=elements( support(Xhv_)),
+                    _expr= inner( val(Fv)*sigma_a*Px()*eaea,grad( u )));
 
             R->close();
             auto temp = Xhv_->element();
