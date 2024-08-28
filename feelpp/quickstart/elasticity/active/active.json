@@ -33,11 +33,11 @@
                     "max": "1e6"
                 },
                 "nu": {
-                    "value":"0.45",
+                    "value":"0.49",
                     "unit":"",
                     "description":"Poisson ratio of caoutchouc",
-                    "min": "0.45",
-                    "max": "0.45"
+                    "min": "0.49",
+                    "max": "0.49"
                 },
                 "rho": {
                     "value":"1",
@@ -45,6 +45,9 @@
                     "description":"Density of caoutchouc",
                     "min": "1",
                     "max": "1"
+                },
+                "type": {
+                    "value":"bending"
                 },
                 "Ca":{
                     "value":"1.3"
@@ -56,7 +59,7 @@
                     "value":"0.2"
                 },
                 "fa":{
-                    "value":"1.3"
+                    "value":"10"
                 }
             }
         }
@@ -76,7 +79,7 @@
             "steady": false,
             "order" : 2,
             "start": 0.0,
-            "end": 1.0,
+            "end": 0.501,
             "gamma":0.5,
             "beta":0.5,
             "step": "1/1000"
@@ -103,16 +106,16 @@
     "Collision":{
         "LinearElasticity":{
             "method":"active",
-            "direction":"{0,-1}",
-            "ddirection":[0,-1],
+            "direction":"{-1,0}",
+            "ddirection":[-1,0],
             "theta":0,
-            "epsilon":0.001,
+            "epsilon":0.00001,
             "gamma0":1750,
             "fixedPoint":1,
             "fixedPointTol":0.0001,
             "pressurePoint":[0,10],
-            "tolContactRegion":-0.01,
-            "tolDistance":0,
+            "tolContactRegion":-1e-7,
+            "tolDistance":1e-7,
             "nbrObs":1
         }
     },

@@ -157,6 +157,8 @@ void ContactLagrange<Dim, Order, OrderGeo>::runDynamic()
     ts_->updateFromDisp(u_);
 
     nbrFaces_ = 0;
+    contactRegion_ =  project(_space=Xh_, _range=elements(support(Xhv_)), _expr = cst(0.));
+    
     // Get contact parameters
     std::string matEpsilon = fmt::format( "/Collision/LinearElasticity/epsilon" );
     epsilon_ = specs_[nl::json::json_pointer( matEpsilon )].get<double>(); 
