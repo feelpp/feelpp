@@ -72,8 +72,11 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
     Args:
     -----
         nirb_on (class): initialized nirbOnline class
-        mu (ParameterSpaceElement) : parameter
         Nb (int, optional) : Size of reduced space, by default None. If None, the whole basis is used
+        Nsample (int) : number of parameter to sample
+        Xi_test (np.array) : array of parameter to test
+        samplingType (str) : type of sampling, default to 'log-random'
+        h1 (bool) : if True, also compute the h1 norm. Default to False
 
     Returns:
     --------
@@ -119,7 +122,8 @@ def ComputeErrorSampling(nirb_on, Nb=None, Nsample = 1, Xi_test=None, samplingTy
         error['l2(uh-uhn)'].append(nirb_on.normMat(uNh-uh, l2Mat))
         error['l2(uh)'].append(nirb_on.normMat(uh, l2Mat))
         error['l2(uh-uH)'].append(nirb_on.normMat(uH-uh,l2Mat))
-        if h1 :
+
+        if h1:
             error['h1(uh-uHn)'].append(nirb_on.normMat(uNH-uh, h1Mat))
             error['h1(uh-uHn)rec'].append(nirb_on.normMat(uNHr-uh, h1Mat))
             error['h1(uh-uhn)'].append(nirb_on.normMat(uNh-uh, h1Mat))

@@ -368,7 +368,7 @@ class nirbOffline(ToolboxModel):
         Args:
         -----
             numberOfInitSnapshots (int): number of snapshots to use for the initialization
-            Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
+            Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
 
@@ -424,25 +424,26 @@ class nirbOffline(ToolboxModel):
 
         return vector_mu
 
-    def getReducedSolution(self, coarseSolutions, mu, N):
+    def getReducedSolution(self, coarseSol, coarseSolutions, mu, N):
         """Computed the reduced solution for a given parameter and a size of basis
 
         Args:
         -----
-            coarseSolutions (dict of Feel++ solutions): list of coarse solution
-            mu (parameterSpaceElement): parameter
+            coarseSol (solution on XH): coarse solution
             N (int): size of the sub-basis
 
         Returns:
         --------
             numpy.array: reduced solution u_H^N
         """
-        coarseSol = coarseSolutions[mu]
-        uHN = np.zeros(N)
+        onlineSol = self.XH.element()
+        onlineSol.setZero()
 
         for i in range(N):
-            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
-        return uHN
+            uHN_i = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
+            onlineSol.add(uHN_i, self.coarseSnapShotList[i])
+
+        return onlineSol
 
 
     def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
@@ -485,7 +486,8 @@ class nirbOffline(ToolboxModel):
 
         # Computation of coarse solutions
         coarseSolutions = {}
-        for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing coarse solutions", ncols=120):
+        for mu in Xi_train_copy:
+        # for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing coarse solutions", ncols=120):
             coarseSolutions[mu] = self.getToolboxSolution(self.tbCoarse, mu)
 
         for i in range(2):
@@ -495,24 +497,27 @@ class nirbOffline(ToolboxModel):
             uH = self.getToolboxSolution(self.tbCoarse, mu0)
             self.coarseSnapShotList.append(uH)
             N += 1
-        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train_copy[0], 2).mean()
-                         - self.getReducedSolution(coarseSolutions, Xi_train_copy[1], 1).mean())
 
         while Delta_star > eps and N < Nmax:
+
             M = N - 1
 
             Delta_star = -float('inf')
 
-            for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
-                uHN = self.getReducedSolution(coarseSolutions, mu, N)
-                uHM = self.getReducedSolution(coarseSolutions, mu, M)
+            # for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
+            tic()
+            for i, mu in enumerate(Xi_train_copy,):
+                uHN = self.getReducedSolution(coarseSolutions[mu], N)
+                uHM = self.getReducedSolution(coarseSolutions[mu], M)
 
-                Delta = np.abs( uHN.mean() - uHM.mean() ) / Delta_0
+                diff = uHN - uHM
+                Delta = self.l2ScalarProductMatrixCoarse.energy( diff, diff )
 
                 if Delta > Delta_star:
                     Delta_star = Delta
                     mu_star = mu
                     idx = i
+            toc("NIRB: Greedy selection")
 
             S.append(mu_star)
             del Xi_train_copy[idx]
