@@ -4,8 +4,6 @@
 namespace Feel
 {
 
-
-
 template <int Dim, int Order, int OrderGeo>
 class ContactDynamic
 {
