@@ -350,6 +350,26 @@
             }
         },
         {
+            "name": "feelpp-cpp20-spack",
+            "inherits": [
+                "cpp20",
+                "clang",
+                "spack",
+                "release-cmake"
+            ],
+            "displayName": "feelpp|clang|cpp20|release|spack package manager",
+            "description": "Build only the Feel++ library Component",
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_BENCHMARKS": "OFF"
+            }
+        },
+        {
             "name": "feelpp-usrlocal",
             "inherits": [
                 "usrlocal",
