@@ -147,6 +147,7 @@
                 "default"
             ],
             "cacheVariables": {
+                "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "ON",
                 "FEELPP_USE_EXTERNAL_CLN": "ON",
                 "FEELPP_ENABLE_VTK": "OFF",
                 "USE_VTK": "OFF",
