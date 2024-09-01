@@ -147,6 +147,7 @@
                 "default"
             ],
             "cacheVariables": {
+                "FEELPP_USE_EXTERNAL_CLN": "ON",
                 "FEELPP_ENABLE_VTK": "OFF",
                 "USE_VTK": "OFF",
                 "FEELPP_ENABLE_OPENTURNS": "OFF"
