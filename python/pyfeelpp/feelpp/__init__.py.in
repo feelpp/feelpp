@@ -32,13 +32,24 @@ def readCfg(filename):
 
     Yields:
         ConfigParser: 
-    """    
+    """
+    from collections import OrderedDict
     from configparser import ConfigParser
-    config = ConfigParser()
     # use this function to add a 
     def FeelppHead(fp):
         yield '[feelpp]\n'
         yield from fp
+    class MultiOrderedDict(OrderedDict):
+        def __setitem__(self, key, value):
+            if key in self:
+                if isinstance(value, list):
+                    self[key].extend(value)
+                    return
+                elif isinstance(value,str):
+                    return # ignore conversion list to string (line 554)
+            super(MultiOrderedDict, self).__setitem__(key, value)
+
+    config = ConfigParser.RawConfigParser(dict_type=MultiOrderedDict, strict=False)
     config.read_file(FeelppHead(open(filename)))
     return config
 
