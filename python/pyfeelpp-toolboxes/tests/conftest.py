@@ -32,6 +32,7 @@ class InitFeelpp:
                                 .add(tb.toolboxes_options("heat"))
                                 .add(tb.toolboxes_options("solid"))
                                 .add(tb.toolboxes_options("heat-fluid"))
+                                .add(tb.toolboxes_options("mixedpoisson", "hdg.poisson"))
                                 .add(tb.toolboxes_options("thermo-electric"))
                                 .add(tb.toolboxes_options("coefficient-form-pdes", "cfpdes")),
                 config=config

@@ -292,7 +292,7 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string edge : edges )
         {
             auto int_u_t = integrate( _range=markedfaces( oneelement_mesh, edge ), _expr=trans( T() )*idv( u_vec[i] ) ).evaluate()( 0,0 );
 
@@ -348,7 +348,7 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < 3; ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string edge : edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
                                 << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkidv[3*i+edgeid] << "\n" );
@@ -365,7 +365,7 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < 3; ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string edge : edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
                                 << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkform1[3*i+edgeid] << "\n" );

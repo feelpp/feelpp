@@ -31,10 +31,9 @@
 #ifndef FEELPP_VF_ON_H
 #define FEELPP_VF_ON_H
 
-#include <boost/foreach.hpp>
-
 #include <feel/feelalg/enums.hpp>
-
+#include <feel/feelalg/vectorblock.hpp>
+#include <feel/feelalg/vectorcondensed.hpp>
 namespace Feel
 {
 namespace vf
@@ -296,9 +295,15 @@ public:
         typedef typename Elem::functionspace_type functionspace_type;
         static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
         static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-        VLOG(2) << "[IntegratorOn::assemble()] is_same: "
-                << is_same_space << " is_comp_space:" << is_comp_space << "\n";
-        assemble( __u, __v, __f, mpl::bool_<is_same_space||is_comp_space>(), on_type() );
+        VLOG(2) << fmt::format("[IntegratorOn::assemble()] is_same: {} is_comp: {}", is_same_space, is_comp_space);
+        if constexpr ( ( is_same_space || is_comp_space ) && ( on_type::value == MESH_ELEMENTS ) )
+            onElements( __u, __v, __f );
+        if constexpr ( ( is_same_space || is_comp_space ) && ( on_type::value == MESH_FACES ) )
+            onFaces( __u, __v, __f );
+        if constexpr ( ( is_same_space || is_comp_space ) && ( on_type::value == MESH_EDGES ) )
+            onEdges( __u, __v, __f );
+        if constexpr ( ( is_same_space || is_comp_space ) && ( on_type::value == MESH_POINTS ) )
+            onPoints( __u, __v, __f );
     }
     //@}
 private:
@@ -309,24 +314,24 @@ private:
                    FormType& /*__f*/, mpl::bool_<false>, on_type ) const {}
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( std::shared_ptr<Elem1> const& __u,
-                   std::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_ELEMENTS> ) const;
+    void onElements( std::shared_ptr<Elem1> const& __u,
+                     std::shared_ptr<Elem2> const& __v,
+                     FormType& __f ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( std::shared_ptr<Elem1> const& __u,
+    void onFaces( std::shared_ptr<Elem1> const& __u,
                    std::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_FACES> ) const;
+                   FormType& __f ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( std::shared_ptr<Elem1> const& __u,
+    void onEdges( std::shared_ptr<Elem1> const& __u,
                    std::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_EDGES> ) const;
+                   FormType& __f ) const;
 
     template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( std::shared_ptr<Elem1> const& __u,
+    void onPoints( std::shared_ptr<Elem1> const& __u,
                    std::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true>, mpl::size_t<MESH_POINTS> ) const;
+                   FormType& __f ) const;
 
 private:
 
@@ -345,16 +350,15 @@ private:
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
-                                                                  std::shared_ptr<Elem2> const& /*__v*/,
-                                                                  FormType& __form,
-                                                                  mpl::bool_<true>,
-                                                                  mpl::size_t<MESH_ELEMENTS>) const
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_ptr<Elem1> const& /*__u*/,
+                                                                    std::shared_ptr<Elem2> const& /*__v*/,
+                                                                    FormType& __form ) const
 {
+    LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements()");
+
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-    VLOG(2) << "call on::assemble: " << is_comp_space<< "\n";
 
     if (  M_on_strategy.test( ContextOn::PENALISATION ) )
     {
@@ -444,17 +448,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     x->close();
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
+    LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements() done.");
 }
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
-                                                                  std::shared_ptr<Elem2> const& /*__v*/,
-                                                                  FormType& __form,
-                                                                  mpl::bool_<true>,
-                                                                  mpl::size_t<MESH_FACES>) const
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr<Elem1> const& /*__u*/,
+                                                                 std::shared_ptr<Elem2> const& /*__v*/,
+                                                                 FormType& __form ) const
 {
+    LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces() ");
 #if 0
 
     if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
@@ -465,8 +469,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-    VLOG(2) << "call on::assemble: " << is_comp_space<< "\n";
-    
+
     //
     // a few typedefs
     //
@@ -499,7 +502,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     //
     // start
     //
-    DVLOG(2)  << "assembling Dirichlet conditions\n";
+    LOG(INFO)  << fmt::format("[IntegratorOnExpr<>::onFaces()] start find a face");
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -545,26 +548,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
         auto __gm = faceForInit.element( 0 ).gm();
 
-        //
-        // Precompute some data in the reference element for
-        // geometric mapping and reference finite element
-        //
-        typedef typename geoelement_type::permutation_type permutation_type;
-        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-        typedef typename gm_type::precompute_type geopc_type;
-        DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
-
-        for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
-        {
-            for ( permutation_type __p( permutation_type::IDENTITY );
-                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
-            {
-                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-                //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
-            }
-        }
+        auto __geopc = __gm->preComputeOnFaces( __gm, [&__fe]( int f ) { return __fe->points(f); } );
 
         uint16_type __face_id = faceForInit.pos_first();
         auto ctx = __gm->template context<gmc_v>( faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
@@ -666,7 +650,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     index_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
                     thedof = trialDofIdToContainerId[ thedof ];
 
-                    DCHECK( ldof.localDofInFace() < IhLoc.size() ) 
+                    DCHECK( ldof.localDofInFace() < IhLoc.size() )
                         << "Invalid local dof index in face for face Interpolant "
                         << ldof.localDofInFace() << ">=" << IhLoc.size();
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
@@ -679,7 +663,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 
                     if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
                         {
-                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                            DVLOG(2) << fmt::format("Eliminating row {} using value {}, ldof.index={}", thedof, __value, ldof.index());
 
                             // this can be quite expensive depending on the
                             // matrix storage format.
@@ -698,8 +682,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
                                !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
                         {
-                            __form.set( thedof, thedof, 1.0*1e30 );
-                            M_rhs->set( thedof, __value*1e30 );
+                            // __form.set( thedof, thedof, 1.0*1e30 );
+                            // M_rhs->set( thedof, __value*1e30 );
                         }
                 }
         }// __face_it != __face_en
@@ -710,19 +694,20 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
+
+    LOG(INFO) << fmt::format("IntegratorOnExpr<>::onFaces() zeroRows set {} rhs values and set {} dofs", values.size(), dofs.size());
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
+    LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces() done.");
 }
 
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onEdges( std::shared_ptr<Elem1> const& /*__u*/,
                                                                   std::shared_ptr<Elem2> const& /*__v*/,
-                                                                  FormType& __form,
-                                                                  mpl::bool_<true>,
-                                                                  mpl::size_t<MESH_EDGES>) const
+                                                                  FormType& __form ) const
 {
 
 
@@ -891,12 +876,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_ptr<Elem1> const& /*__u*/,
+IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onPoints( std::shared_ptr<Elem1> const& /*__u*/,
                                                                   std::shared_ptr<Elem2> const& /*__v*/,
-                                                                  FormType& __form,
-                                                                  mpl::bool_<true>,
-                                                                  mpl::size_t<MESH_POINTS>) const
+                                                                  FormType& __form ) const
 {
+    LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onPoints()");
 #if 0
 
     if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
@@ -1062,6 +1046,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
     x->close();
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();
+    LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onPoints() done");
 }
 
 
@@ -1071,62 +1056,68 @@ namespace detail
 template<typename T >
 struct v_ptr1
 {
-    typedef T type;
+    using type = T;
 };
+template<typename T >
+using v_ptr1_t = typename v_ptr1<T>::type;
+
 template<typename T >
 struct v_ptr2
 {
     typedef typename T::vector_ptrtype type;
 };
 
+template<typename T >
+using v_ptr2_t = typename v_ptr2<T>::type;
+
+
 
 template<typename ArgRangeType,typename ArgRhsType,typename ArgElementType,typename ArgExprType>
 struct integratoron_type
 {
-    using _range_base_type = std::decay_t<ArgRangeType>;
-    using _rhs_type = std::decay_t<ArgRhsType>;
-    using _element_type = std::decay_t<ArgElementType>;
-    using _expr_type = std::decay_t<ArgExprType>;
+    using _range_base_type = std::remove_reference_t<std::decay_t<ArgRangeType>>;
+    using _rhs_type = std::remove_reference_t<std::decay_t<ArgRhsType>>;
+    using _element_type = std::remove_reference_t<std::decay_t<ArgElementType>>;
+    using _expr_type = std::remove_reference_t<std::decay_t<ArgExprType>>;
 
-    typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
-                               mpl::identity<_range_base_type>,
-                               mpl::identity<std::list<_range_base_type> > >::type::type::value_type _range_type;
+    using _range_type = typename mp11::mp_if<
+            boost::is_std_list<_range_base_type>,   // Condition: Check if _range_base_type is a std::list
+            _range_base_type,                       // If true, use _range_base_type directly
+            std::list<_range_base_type>             // If false, wrap _range_base_type in std::list
+        >::value_type;
 
-#if 1
-    typedef typename mpl::if_<Feel::detail::is_vector_ptr<_rhs_type>,
-                              mpl::identity<v_ptr1<_rhs_type> >,
-                              mpl::identity<v_ptr2<_rhs_type> > >::type::type::type the_rhs_type;
-#else
-    typedef _rhs_type the_rhs_type;
-#endif
-typedef IntegratorOnExpr<_range_type, _element_type, the_rhs_type,
-            typename mpl::if_<boost::is_arithmetic<_expr_type>,
-            mpl::identity<Expr<Cst<_expr_type> > >,
-            mpl::identity<_expr_type> >::type::type> type;
-    typedef Expr<type> expr_type;
+    using the_rhs_type = _rhs_type;//mp11::mp_if<is_vector_ptr<_rhs_type>, v_ptr1_t<_rhs_type>, v_ptr2_t<_rhs_type> >;
+
+    using type = IntegratorOnExpr<
+        _range_type,
+        _element_type,
+        the_rhs_type,
+        mp11::mp_if<
+            boost::is_arithmetic<_expr_type>,          // Condition: Check if _expr_type is an arithmetic type
+            Expr<Cst<_expr_type>>,                     // If true, wrap it in Expr<Cst<_expr_type>>
+            _expr_type                                 // If false, use _expr_type directly
+        >
+    >;
+
+    using expr_type = Expr<type>;
 };
 
-template<typename V>
-typename V::vector_ptrtype
-getRhsVector( V const&  v, mpl::false_ )
+template <typename V>
+auto getRhsVectorAsPtr( V const& v )
 {
-    return v.vectorPtr();
-}
+    LOG(INFO) << fmt::format("call getRhsVectorAsPtr(V const& v) : is_vector_ptr: {} is_vectorblock: {}, is_vectorcondensed: {}",is_vector_ptr_v<V>, is_vectorblock_v<V>, is_vectorcondensed_v<V>);
 
-template<typename V>
-V
-getRhsVector( V const&  v, mpl::true_ )
-{
-    return v;
-}
-
-template<typename V>
-typename mpl::if_<Feel::detail::is_vector_ptr<V>,
-                  mpl::identity<v_ptr1<V> >,
-                  mpl::identity<v_ptr2<V> > >::type::type::type
-getRhsVector( V const&  v )
-{
-    return getRhsVector( v, Feel::detail::is_vector_ptr<V>() );
+    auto getVectorPtr = []( auto const& v )
+    {
+        if constexpr ( is_vector_ptr_v<V> )
+            return v;
+        else
+            return v.vectorPtr();
+    };
+    auto r = getVectorPtr(v);
+    CHECK( is_shared_ptr_v<std::decay_t<decltype(r)>> ) << "Invalid rhs type";
+    LOG(INFO) << fmt::format("call getRhsVectorAsPtr(V const& v) : done");
+    return r;
 }
 
 
@@ -1145,6 +1136,7 @@ getRhsVector( V const&  v )
 template <typename ... Ts>
 auto on( Ts && ... v )
 {
+    LOG(INFO) << fmt::format("call on(Ts&&... v) : {}",sizeof...(Ts));
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     //auto && element = args.get(_element);
@@ -1158,11 +1150,11 @@ auto on( Ts && ... v )
     bool verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return boption(_prefix=prefix,_name="on.verbose",_vm=vm); } );
     double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix,&vm](){ return doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm); } );
 
-    using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs),decltype(element),decltype(expr)>;
+    using integratoron_helper_type = vf::detail::integratoron_type<decltype( range ), decltype( Feel::vf::detail::getRhsVectorAsPtr( rhs ) ), decltype( element ), decltype( expr )>;
 
     typename integratoron_helper_type::type ion( range,
                                                  std::forward<decltype(element)>( element ),
-                                                 Feel::vf::detail::getRhsVector(rhs),
+                                                 Feel::vf::detail::getRhsVectorAsPtr(rhs),
                                                  expr,
                                                  size_type(ContextOnMap[type]),
                                                  value_on_diagonal );
@@ -1190,8 +1182,10 @@ auto on( Ts && ... v )
             break;
         }
     }
+    auto r = typename integratoron_helper_type::expr_type( std::move(ion) );
+    LOG(INFO) << fmt::format("call on(Ts&&... v) : {} done",sizeof...(Ts));
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename integratoron_helper_type::expr_type( std::move(ion) );
+    return r;
 }
 
 

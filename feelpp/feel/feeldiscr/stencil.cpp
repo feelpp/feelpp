@@ -104,7 +104,7 @@ stencilManagerPrint()
     {
         std::cout << "[stencilManagerPrint] no entries in StencilManager\n";
     }
-    BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
+    for( StencilManagerImpl::value_type& entry : StencilManager::instance( ) )
     {
         auto fspace1 = entry.first.get<0>().lock();
         auto fspace2 = entry.first.get<1>().lock();

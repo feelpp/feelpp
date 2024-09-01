@@ -36,13 +36,21 @@ namespace Feel {
  * The following code solve \f$-\Delta u = 1, u = 0 \mbox{ on } \Omega \f$ using
  * \f$P1\f$ piecewise polynomial continuous functions
  * \code
- * cgLaplacianDirichlet( Pch<1>(mesh), std::tuple{ expr("1"), expr("1"),expr("0") } );
+ * cgLaplacianDirichlet( _space=Pch<1>(mesh), _data=std::tuple{ expr("1"), expr("1"),expr("0") } );
  * \endcode
  */
-template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
+
+template <typename ... Ts>  
 auto
-cgLaplacianDirichlet( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
+cgLaplacianDirichlet( Ts && ... ts  )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(ts)... );
+    auto && Vh =  args.get(_space );
+    auto && data = args.get(_data );
+    bool doweakbc = args.get_else(_weak_dirichlet, false );
+    bool dosolve = args.get_else(_solve, true );
+    bool doprint = args.get_else(_print, false );
+
     auto [k,f,g] = data;
     // tag::v[]
     auto u = Vh->element();
@@ -57,20 +65,41 @@ cgLaplacianDirichlet( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
     auto a = form2( _trial = Vh, _test = Vh );
     a = integrate( _range = elements( support( Vh ) ),
                    _expr = inner( k*gradt( u ), grad( v ) ) );
-    a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
-    // end::forms[]
+    if ( doweakbc )
+    {
+        a += integrate( _range = boundaryfaces( support( Vh ) ), _expr = -inner( k*gradt( u )*N(), id( v ) ) - inner( k*grad( v )*N(), idt( u ) ) + 2*k*idt( u )*id( v )/hFace() );
+        l += integrate( _range = boundaryfaces( support( Vh ) ), _expr = - inner( k*grad( v )*N(), g ) + 2*k*g*id( v )/hFace() );
+    }        
+    else
+        a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
 
+    // end::forms[]
+    if ( doprint )
+    {
+        a.matrix().printMatlab( fmt::format("a.m") );
+        l.vector().printMatlab( fmt::format("l.m") );
+    }
+    
+    
     // tag::solve[]
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
-    a.solve( _rhs = l, _solution = u );
+    if ( dosolve )
+        a.solve( _rhs = l, _solution = u );
     // end::solve[]
-    return u;
+    return dosolve ? std::optional{ u } : std::nullopt;
 }
 
-template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
+template <typename ... Ts> 
 auto
-cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
+cgLaplacian( Ts && ... ts  )
 {
+    auto args = NA::make_arguments( std::forward<Ts>(ts)... );
+    auto && Vh =  args.get(_space );
+    auto && data = args.get(_data );
+    bool doweakbc = args.get_else(_weak_dirichlet, false );
+    bool dosolve = args.get_else(_solve, true );
+    bool doprint = args.get_else(_print, false );
+
     auto [k,f,g,un,r_1,r_2] = data;
     tic();
     // tag::v[]
@@ -111,11 +140,10 @@ cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
     // tag::solve[]
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
-    if ( !boption( "no-solve" ) )
+    if ( dosolve )
         a.solve( _rhs = l, _solution = u );
-    toc( "a.solve" );
     // end::solve[]
-    return boption( "no-solve" )?std::nullopt:std::optional{u};
+    return dosolve ? std::optional{ u } : std::nullopt;
 }
 
 template<typename SpaceType, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>

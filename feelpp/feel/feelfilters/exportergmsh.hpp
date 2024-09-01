@@ -34,7 +34,6 @@
 #include <fstream>
 
 
-#include <boost/lambda/lambda.hpp>
 
 #include <feel/feelcore/debug.hpp>
 

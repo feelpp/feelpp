@@ -148,7 +148,7 @@ Grid<Dim>::run()
 
     auto B = M_backend->newMatrix( _test=Xh, _trial=Xh ) ;
     form2( _test=Xh, _trial=Xh, _matrix=B );
-    BOOST_FOREACH( int marker, flags )
+    for( int marker : flags )
     {
         form2( _test=Xh, _trial=Xh, _matrix=B ) +=
             integrate( _range=markedfaces( mesh,marker ), _expr=kappa*idt( u )*id( v ) );
@@ -184,7 +184,7 @@ Grid<Dim>::run()
         LOG(INFO) << "eigenvalue " << 0 << " = (" << modes.begin()->second.get<0>() << "," <<  modes.begin()->second.get<1>() << ")\n";
 
         int i = 0;
-        BOOST_FOREACH( auto mode, modes )
+        for( auto mode : modes )
         {
             std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
             femodes[i++] = *mode.second.get<2>();
@@ -204,7 +204,7 @@ Grid<Dim>::run()
         exporter->step( 0 )->setMesh( mesh );
 
         int i = 0;
-        BOOST_FOREACH( auto mode, femodes )
+        for( auto mode : femodes )
         {
             exporter->step( 0 )->add( ( boost::format( "mode-%1%" ) % i++ ).str(), mode );
         }

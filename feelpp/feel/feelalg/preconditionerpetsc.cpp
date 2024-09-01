@@ -34,6 +34,7 @@
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
 #include <feel/feelpde/operatorpcdbase.hpp>
+#include <feel/feelpde/operatorpmmbase.hpp>
 //#include <petscsystypes.h>
 
 extern "C" {
@@ -3078,6 +3079,18 @@ ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->subPCtype : " << M_subPCtype << "\n";
     google::FlushLogFiles(google::INFO);
     run( pc );
+
+    CHECK( this->precFeel()->hasOperatorPMM( "pmm" ) ) << "operator pmm is not given";
+
+    auto opPMM = this->precFeel()->operatorPMM( "pmm" );
+    MatrixPetsc<double>* pmMatPetsc = const_cast<MatrixPetsc<double>*>( dynamic_cast<MatrixPetsc<double> const*>( &( *( opPMM->pressureMassMatrix() ) ) ) );
+    this->check( PCSetPressureMassMatrix_PMM_Feelpp( pc, pmMatPetsc->mat()) );
+    VLOG(2) << "ConfigurePC : PMM\n"
+            << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->prefixPMM : " << M_prefixPMM  << "\n"
+            << "  |->subPCtype : " << M_subPCtype << "\n";
+    google::FlushLogFiles( google::INFO );
+    run( pc );
 }
 
 void
@@ -3162,6 +3175,8 @@ ConfigurePCPCD::ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, 
     run( pc );
 }
 
+
+
 void
 ConfigurePCPCD::run( PC& pc )
 {
@@ -3209,7 +3224,6 @@ ConfigurePCPCD::run( PC& pc )
     else if ( M_subPCview_Mp )
         this->check( PCView( subpc_Mp, PETSC_VIEWER_STDOUT_WORLD ) );
 }
-
 
 /**
  * ConfigurePCRedundant

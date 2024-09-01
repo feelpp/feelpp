@@ -30,7 +30,7 @@
 #include <vector>
 #include <boost/multi_array.hpp>
 #include <boost/multi_array/extent_gen.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/optional.hpp>
 #include <boost/mpl/min_max.hpp>
 #include <Eigen/Core>
@@ -1343,6 +1343,31 @@ public:
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P ) );
+            }
+        }
+
+        return geopc;
+    }
+
+    template <typename FacePointGenT>
+    std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
+    preComputeOnFaces( self_ptrtype p, FacePointGenT const& P )
+    {
+#if 0
+        QuadMapped<pointset_type> qm;
+        typedef typename QuadMapped<pointset_type>::permutation_type permutation_type;
+        typename QuadMapped<pointset_type>::permutation_points_type ppts( qm( P ) );
+#endif
+        typedef typename convex_type::permutation_type permutation_type;
+        std::vector<std::map<permutation_type, precompute_ptrtype> > geopc( convex_type::numTopologicalFaces );
+
+        for ( uint16_type __f = 0; __f < convex_type::numTopologicalFaces; ++__f )
+        {
+            for ( permutation_type __p( permutation_type::IDENTITY );
+                    __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P(__f) ) );
             }
         }
 
