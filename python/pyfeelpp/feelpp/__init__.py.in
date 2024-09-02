@@ -31,11 +31,11 @@ def readCfg(filename):
         ConfigParser: a ConfigParser data structure containing the properties
 
     Yields:
-        ConfigParser: 
+        ConfigParser:
     """
     from collections import OrderedDict
-    from configparser import ConfigParser
-    # use this function to add a 
+    from configparser import ConfigParser, RawConfigParser
+    # use this function to add a
     def FeelppHead(fp):
         yield '[feelpp]\n'
         yield from fp
@@ -49,7 +49,7 @@ def readCfg(filename):
                     return # ignore conversion list to string (line 554)
             super(MultiOrderedDict, self).__setitem__(key, value)
 
-    config = ConfigParser.RawConfigParser(dict_type=MultiOrderedDict, strict=False)
+    config = RawConfigParser(dict_type=MultiOrderedDict, strict=False)
     config.read_file(FeelppHead(open(filename)))
     return config
 
@@ -79,7 +79,7 @@ _meshes={
 }
 
 def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
-    """create a mesh 
+    """create a mesh
     The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
     The mesh is configured with a WorldComm which provides the parallel process layout.
     Keyword arguments:
@@ -96,7 +96,7 @@ def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
     return _meshes[key]( worldComm )
 
 def meshstructured( dim=2, geo=1, realdim=2, worldComm=None ):
-    """create a structured mesh 
+    """create a structured mesh
     The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
     The mesh is configured with a WorldComm which provides the parallel process layout.
     Keyword arguments:
@@ -130,7 +130,7 @@ _spaces={
     'Pch(2,1,2)':Pch_2D_P1_G2,
     'Pch(2,2,2)':Pch_2D_P2_G2,
     'Pch(2,3,2)':Pch_2D_P3_G2,
-    
+
     'Pch(3,1,1)':Pch_3D_P1_G1,
     'Pch(3,2,1)':Pch_3D_P2_G1,
     'Pch(3,3,1)':Pch_3D_P3_G1,
@@ -205,7 +205,7 @@ def expr(e,row=1, col=1,filename=None,worldComm=None,directory=None):
 
     Returns:
         Expression: an expression
-    """    
+    """
     if filename is None:
         filename=""
     if directory is None:
@@ -245,7 +245,7 @@ def create_rectangle(filename="rectangle"):
 
     Returns:
         _type_: file name, dimension, length of Gamma_1, length of Gamma_2, total surface, total length
-    """    
+    """
     mshname = None
     if Environment.isMasterRank():
         import gmsh
@@ -273,7 +273,7 @@ def create_box(filename="box"):
 
     Returns:
         _type_: file name, dimension, measure of Gamma_1, measure of Gamma_2
-    """    
+    """
     mshname = None
     if Environment.isMasterRank():
         import gmsh
@@ -297,10 +297,10 @@ def create_box(filename="box"):
 
 def readJson(path):
     """read a json file with comments in it, using json package
-    
+
     Args:
         path (str): path of the json file
-    
+
     Returns:
         dict: loaded model, as a dictionary
     """
