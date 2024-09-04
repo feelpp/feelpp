@@ -253,7 +253,7 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
         norm (str, optional): type of norm to compare. Defaults to 'l2'.
     """
 
-    labels =["$\lambda = 1.e^{-1}$", "$\lambda = 1.e^{-3}$", "$\lambda = 1.e^{-6}$", "$\lambda = 1.e^{-10}$", "$\lambda = 0$"]
+    labels =[r"$\lambda = 1.e^{-1}$", r"$\lambda = 1.e^{-3}$", r"$\lambda = 1.e^{-6}$", r"$\lambda = 1.e^{-10}$", r"$\lambda = 0$"]
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
 
@@ -372,8 +372,8 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
             labeldf = ' Nested'
             labeldg = ' noNested'
         else :
-            labeldf = '$\mathbb{P}_1$'
-            labeldg = '$\mathbb{P}_2$'
+            labeldf = r'$\mathbb{P}_1$'
+            labeldg = r'$\mathbb{P}_2$'
     else :
         labeldf = labellist[0]
         labeldg = labellist[1]
