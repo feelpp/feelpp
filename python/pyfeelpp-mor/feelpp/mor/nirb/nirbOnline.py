@@ -25,10 +25,10 @@ if __name__ == "__main__":
     outdir = args.outdir
 
     cfg = fppc.readCfg(config_file)
-    toolboxType = cfg['nirb']['toolboxType']
+    toolboxType = cfg['nirb']['toolboxType'][0]
     e = init_feelpp_environment(toolboxType, config_file)
 
-    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'])
+    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'][0])
     config_nirb = fppc.readJson(nirb_file)['nirb']
 
 
