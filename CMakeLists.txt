@@ -231,6 +231,7 @@ IF( FEELPP_MINIMAL_CONFIGURATION )
   SET(FEELPP_MESH_MAX_ORDER "1" CACHE STRING "maximum geometrical order in templates to instantiate" FORCE )
 ENDIF( FEELPP_MINIMAL_CONFIGURATION )
 
+
 include(feelpp.module.toolboxes)
 if ( FEELPP_HAS_TOOLBOXES )
   add_custom_target(toolboxes)

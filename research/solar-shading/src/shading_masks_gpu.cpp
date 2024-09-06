@@ -11,7 +11,7 @@
 
 
 
-//#include "bvh_hip_beta.hpp"
+//#include "shading_bvh_hip_beta.hpp"
 
 #include "shading_mask.hpp"
 

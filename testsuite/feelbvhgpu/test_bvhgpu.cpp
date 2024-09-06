@@ -50,11 +50,23 @@
 //#include "hipblas-export.h"
 
 
+#include <thrust/device_vector.h> 
+#include <thrust/transform.h> 
+#include <thrust/functional.h> 
+#include <thrust/execution_policy.h>
+#include <thrust/random.h>
+
+
 #include <feel/feeltask/taskpu.hpp>
 
 using namespace Feel;
 
 #define BLOCK_SIZE 128
+
+
+
+//#include "Gu.hpp"
+//#include "GuHip.hpp"
 
 
 //=========================================================================================================================
@@ -79,8 +91,27 @@ void __global__ vector_add(const double *vecA, const double *vecB, double *vecC,
     if (i < nb)
         vector_add_device(vecA[i], vecB[i], vecC[i]); 
 }
+
+
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //=========================================================================================================================
+
+
+//=========================================================================================================================
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+struct saxpy_functor
+{
+    const float a;
+    saxpy_functor(float _a) : a(_a) {}
+    __host__ __device__
+    float operator()(const float& x, const float& y) const { return a * x + y; }
+};
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//=========================================================================================================================
+
 
 //=========================================================================================================================
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -195,7 +226,7 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
-
+ 
 
 template <typename RangeType>
 void test3D( RangeType const& range )
@@ -205,13 +236,17 @@ void test3D( RangeType const& range )
 
     //Eigen::VectorXd origin(3);
     //origin<< 0.5,0.5,0.5;
-    Eigen::VectorXd origin2(3);
-    origin2<< -10.0,-0.25,-0.25;
+
+    //Eigen::VectorXd origin2(3); origin2<< -10.0,-0.25,-0.25;
+    Eigen::Vector3d origin2={-10.0,-0.25,-0.25};
+    //Eigen::Vector3d origin2={-10.0,-0.25,1.0};
+
     //origin2<< -2.5,-0.25,-0.25;
     //Eigen::VectorXd direction_perp_1(3);
     //direction_perp_1 << 1.,0.,0.;
-    Eigen::VectorXd direction_perp_2(3);
-    direction_perp_2 << 1.,0.,0.;
+    
+    //Eigen::VectorXd direction_perp_2(3); direction_perp_2 << 1.,0.,0.;
+    Eigen::Vector3d direction_perp_2={1.,0.,0.};
 
     std::vector<bvh_ray_type> rays;
     rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
@@ -224,9 +259,27 @@ void test3D( RangeType const& range )
         raysDistributed.push_back( rays[k] );
     }
 
+
+    std::cout<<"\n";
+    std::cout<<"\n";
+
+    std::cout<<"=====================================================================================+============\n";
+    std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
+    std::cout<<"[INFO]: Bounding Colume Hierarchy\n";
+
     auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
     auto bvhThirdParty = boundingVolumeHierarchy(_range=range,_kind="third-party");
     auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::High);
+
+    auto bvhGpuParty = boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
+
+    std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
+    std::cout<<"========================================================================================+=========\n";
+
+    std::cout<<"\n";
+    std::cout<<"\n";
+
+    /*
     for ( auto bvhCurrent : {bvhInHouse.get(),bvhThirdParty.get(),bvhThirdPartyLow.get()} )
     {
         for ( auto const& ray : rays )
@@ -238,6 +291,7 @@ void test3D( RangeType const& range )
             printRayIntersectionResults( bvhCurrent,rayIntersectionResult1 );
         }
 
+    
         auto multiRayIntersectionResult = bvhCurrent->intersect(_ray=rays);
         for ( auto const& rayIntersectionResult : multiRayIntersectionResult)
         {
@@ -256,8 +310,59 @@ void test3D( RangeType const& range )
             printRayIntersectionResults( bvhCurrent,rayIntersectionResult );
         }
     }
+    */
 
-    BVHRay<mesh_entity_type::nRealDim> my_ray(origin2,direction_perp_2, 1e-8 );
+
+
+    //BVHRay<mesh_entity_type::nRealDim> my_ray(origin2,direction_perp_2, 1e-8 );
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+
+    for ( auto const& ray : rays )
+        {
+            std::cout << "rays parts"<< "\n";
+            auto rayIntersectionResult1 = bvhInHouse->intersect(_ray=ray) ;
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhInHouse,rayIntersectionResult1 );
+        }
+
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+    std::cout<<"=================================================================================================\n";
+
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"*************************************************************************************************\n";
+
+    auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+        {
+            std::cout << "multiRayDistributedIntersectionResult parts"<< "\n";
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
+        }
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
+
+
+     std::cout<<"=================================================================================================\n";
+    std::cout<<"*************************************************************************************************\n";
+
+    auto multiRayDistributedIntersectionGpuResult = bvhGpuParty->intersect(_ray=raysDistributed);
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionGpuResult )
+        {
+            std::cout << "GPU parts"<< "\n";
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhGpuParty,rayIntersectionResult);
+        }
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
+
 
     //std::map<std::string,std::unique_ptr<BVH<typename tr_mesh_type::element_type>>> M_bvh_tree_vector;
 
@@ -283,6 +388,7 @@ void test3D( RangeType const& range )
 
 BOOST_AUTO_TEST_SUITE( bvh_intersection_gpu_tests )
 
+/*
 BOOST_AUTO_TEST_CASE( test_gpu_with_specx )
 {
     using namespace Feel;
@@ -345,6 +451,7 @@ BOOST_AUTO_TEST_CASE( test_gpu_with_specx )
             runtime.generateTrace("Test_hip_AMD.svg");  
         }
 
+
     //NOTA: we use my task class
         if (numMode==3) {
             int numTypeThread=3;  //0:No thread  1:Std::thread 2:std:async 3:Specx  
@@ -364,10 +471,16 @@ BOOST_AUTO_TEST_CASE( test_gpu_with_specx )
     free(h_vecA); free(h_vecB); free(h_vecC);
     std::cout<<"\n";
 }
+*/
+
 
 
 BOOST_AUTO_TEST_CASE( test_load_mesh3 )
 {
+
+    //TEST Thrust
+    thrust::device_vector<float> d_x(10, 1.0f);
+
     using namespace Feel;
      using Feel::cout;   
     //typedef Mesh<Simplex<2> > mesh_type;
@@ -415,9 +528,43 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     test3D( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    test3D( elements(submesh) );
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+    //test3D( elements(submesh) );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"\n";
+}
+
+
+BOOST_AUTO_TEST_CASE( test_thrust )
+{
+    // Taille des vecteurs 
+    const int N = 100;
+    // Allocation et initialisation des vecteurs sur le device
+    thrust::device_vector<float> d_x(N, 1.0f); 
+    thrust::device_vector<float> d_y(N, 2.0f);
+    // Scalaire a 
+    float a = 2.0f;
+
+    for (int i = 0; i < d_x.size(); i++) { std::cout << d_x[i] << " "; }
+    std::cout << std::endl;
+
+    for (int i = 0; i < d_y.size(); i++) { std::cout << d_y[i] << " "; }
+    std::cout << std::endl;
+
+    // Exécution de l'opération SAXPY
+    thrust::transform(thrust::device,
+        d_x.begin(), 
+        d_x.end(), 
+        d_y.begin(), 
+        d_y.begin(), 
+        saxpy_functor(a));
+
+    // Affichage des résultats
+    for (int i = 0; i < d_y.size(); i++) { std::cout << d_y[i] << " "; }
+    std::cout << std::endl;
+
+    std::cout << "[INFO]: WELL DONE :-) Test_thrust!"<<"\n";
 }
 
 

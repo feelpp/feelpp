@@ -262,9 +262,11 @@ namespace Feel
             // Launch Nrays from each triangle of each marker
             for(auto const &el : ray_submesh->elements() ) // from each element of the submesh, launch M_Nrays randomly oriented
             {
+                /*
                 auto rays_from_element = [&](int NumOption,matrix_node_type const& element_points,int n_rays_thread, int id_thread){
                     return commonComputePartCTRL(NumOption,element_points,n_rays_thread,id_thread);
                 };
+                */
 
                 // Execute the lambda function on multiple threads using
                 // std::async and std::future to collect the results
@@ -652,7 +654,7 @@ template <typename MeshType>
                     TsK.run();
                     TsK.close();
                 }
-                
+
 
                 if (numModeTaskUsed==3)
                 {

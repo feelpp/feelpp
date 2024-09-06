@@ -118,7 +118,6 @@ if (TRUE)
     find_package(LAPACK)
     find_package(hip)
     find_package(HIP QUIET)
-    
 
     if(HIP_FOUND)
         message(STATUS "Found HIP: " ${HIP_VERSION})
@@ -169,17 +168,72 @@ if (TRUE)
     set(ROCM_ROOT "/opt/rocm-5.7.2" CACHE PATH "Root directory of the ROCm installation")
     list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
 
+
+
+    if(FALSE)
+      find_package(rocprim REQUIRED)
+      if (rocprim_FOUND)
+        message("{*************************** rocprim_LIBRARIES *************************************}") 
+      else()
+        message(FATAL_ERROR "xxxxxxxxxxxxxxxx Could not find rocprim xxxxxxxxxxxxxxxx")     
+      endif()
+    endif()
+
+    if(FALSE)
+      find_package(rocthrust REQUIRED)
+      if (rocthrust_FOUND)
+        message("{*************************** rocthrust_LIBRARIES *************************************}") 
+      else()
+        message(FATAL_ERROR "xxxxxxxxxxxxxxxx Could not find rocThrust xxxxxxxxxxxxxxxx")     
+      endif()
+    endif()
+
+
+    if(TRUE)
+      find_package(rocprim CONFIG PATHS "/nvme0/lemoinep/soft/rocPRIM")
+      if (rocprim_FOUND)
+        message("{*************************** rocprim_LIBRARIES *************************************}") 
+        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/nvme0/lemoinep/soft/rocPRIM/include")
+      else()
+        message(FATAL_ERROR "xxxxxxxxxxxxxxxx Could not find rocprim xxxxxxxxxxxxxxxx")     
+      endif()
+    endif()
+
+    if(TRUE)
+      #find_package(rocthrust REQUIRED)
+      #find_package(rocthrust REQUIRED CONFIG PATHS "/opt/rocm-5.7.2/rocthrust") in future
+      find_package(rocthrust REQUIRED CONFIG PATHS "/nvme0/lemoinep/soft/rocThrust")
+      if (rocthrust_FOUND)
+        message("{*************************** rocthrust_LIBRARIES *************************************}") 
+        #list(APPEND include_dirs "/nvme0/lemoinep/soft/rocThrust/include")
+        #list(APPEND CMAKE_PREFIX_PATH /nvme0/lemoinep/soft/rocThrust/include)
+        #include_directories(/nvme0/lemoinep/soft/rocThrust/include)
+        #include_directories(/opt/rocm-5.7.2/rocthrust/include)
+        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/nvme0/lemoinep/soft/rocThrust/include")
+      else()
+        message(FATAL_ERROR "xxxxxxxxxxxxxxxx Could not find rocThrust xxxxxxxxxxxxxxxx")     
+      endif()
+    endif()
+
     add_compile_definitions( __HIP_PLATFORM_AMD__)
-    list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas)
+    #list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas)
+    list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas roc::rocthrust)
+    list(APPEND GPU_ROCTHRUST_LIBRARIES roc::rocthrust)
 
     if(GPU_RUNTIME STREQUAL "HIP")
       list(APPEND include_dirs "${ROCM_ROOT}/include")
+      list(APPEND include_dirs "/nvme0/lemoinep/soft/rocPRIM/include")
+      list(APPEND include_dirs "/nvme0/lemoinep/soft/rocThrust/include")
       MESSAGE(${ROCM_ROOT}/include)
     endif()
 
     MESSAGE("{END::COMPILE_WITH_HIP}")
     MESSAGE("")
 endif()
+
+
+
+
 
 
 if ( FEELPP_BENCHMARK_FLAGS )
@@ -327,3 +381,5 @@ endif()
 set(FEELPP_CONFIG_LIB_FILE ${FEELPP_BINARY_DIR}/feelpp/cmake/modules/Feel++Config.cmake )
 configure_file(${FEELPP_SOURCE_DIR}/feelpp/cmake/modules/Feel++Config.cmake.in ${FEELPP_CONFIG_LIB_FILE} @ONLY)
 configure_file(${FEELPP_SOURCE_DIR}/feelpp/cmake/modules/feelpp.install.config.cmake.in ${FEELPP_BINARY_DIR}/feelpp/cmake/modules/feelpp.install.config.cmake @ONLY)
+
+
