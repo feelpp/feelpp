@@ -88,7 +88,7 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
     s.sample(size, samplingMode)
     if fppc.Environment.isMasterRank():
         s.writeOnFile(path)
-        print("Sampling saved in ", path)
+        print("Sampling saved in", path)
 
     return s.getVector()
 
@@ -218,3 +218,23 @@ def WriteVecAppend(filename, array):
     """
     with open(filename, 'a+') as file:
         file.write(' '.join(str(i) for i in list(array))+"\n")
+
+
+def expand_model_files(cfg, toolboxType):
+    for key in ["json.filename", "filename"]:
+        if key in cfg[toolboxType]:
+            for i, k in enumerate(cfg[toolboxType][key]):
+                cfg[toolboxType][key][i] = fppc.Environment.expand(k)
+    return cfg
+
+
+def merge_JsonFiles(filename):
+    d = {}
+    for name in filename:
+        json_tmp = fppc.readJson(fppc.Environment.expand(name))
+        for key in json_tmp:
+            if key in d:
+                d[key].update(json_tmp[key])
+            else:
+                d[key] = json_tmp[key]
+    return d
