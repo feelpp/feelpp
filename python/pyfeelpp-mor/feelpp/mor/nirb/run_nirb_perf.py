@@ -1,11 +1,10 @@
 import sys
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
+from feelpp.mor.nirb.utils import init_feelpp_environment, generatedAndSaveSampling, merge_JsonFiles
 import pandas as pd
 from pathlib import Path
 from nirb_perf import *
 import argparse
-from os.path import dirname, basename, isfile, join
 import feelpp.core as fppc
 from feelpp.core.timing import tic, toc
 
@@ -234,10 +233,11 @@ if __name__ == '__main__':
 
     ## generate nirb offline and online object :
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
-    nirb_off.initModel()
+    full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
+    nirb_off.initModel(model=full_model)
     resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=lambda_regul)
     nirb_on = nirbOnline(**config_nirb)
-    nirb_on.initModel()
+    nirb_on.initModel(model=full_model)
 
     # Nglob = nirb_off.N
     # err = nirb_on.loadData(nbSnap=Nglob, path=RESPATH)

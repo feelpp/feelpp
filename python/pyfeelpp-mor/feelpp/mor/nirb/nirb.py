@@ -59,13 +59,13 @@ class ToolboxModel():
 
         if pathlib.Path(self.finemesh_path).suffix==".geo" :
             self.coarsemesh_path = self.finemesh_path
-        else :
-            self.coarsemesh_path = coarsemesh_path
+        else:
+            self.coarsemesh_path = fppc.Environment.expand(coarsemesh_path)
 
         assert self.coarsemesh_path != None, f"Set coarse mesh path"
 
-        self.tbCoarse  = None
-        self.tbFine    = None
+        self.tbCoarse = None
+        self.tbFine   = None
 
         self.Xh = None          # fine function space
 
@@ -75,10 +75,13 @@ class ToolboxModel():
             print(f"[NIRB] ToolboxModel created, but the objects have not yet been initialized. Please call initModel() or setModel() to initialize the objects.")
 
 
-    def initModel(self):
+    def initModel(self, model=None, **kwargs):
         """Initialize the model
         """
-        self.model = fppc.readJson(self.model_path)
+        if model is not None:
+            self.model = model
+        else:
+            self.model = fppc.readJson(self.model_path)
         self.tbFine = self.setToolbox(self.h)
         self.Xh = fppc.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
@@ -130,10 +133,14 @@ class ToolboxModel():
                 raise ValueError("Unknown toolbox")
 
 
-    def initCoarseToolbox(self):
+    def initCoarseToolbox(self, model=None):
         """Initialize the rectification problem
         """
-        self.tbCoarse = self.setToolbox(self.H,mesh_path=self.coarsemesh_path)
+        if model is not None:
+            self.model = model
+        else:
+            self.model = fppc.readJson(self.model_path)
+        self.tbCoarse = self.setToolbox(self.H, mesh_path=self.coarsemesh_path)
         self.XH = fppc.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
@@ -290,15 +297,15 @@ class nirbOffline(ToolboxModel):
         if self.worldcomm.isMasterRank():
             print(f"[NIRB Offline] Initialization done")
 
-    def initModel(self):
+    def initModel(self, **kwargs):
         """Initialize the model
         """
-        super().initModel()
+        super().initModel(**kwargs)
 
         if self.doRectification or self.initCoarse:
-            super().initCoarseToolbox()
+            super().initCoarseToolbox(**kwargs)
 
-    def setModel(self, tb):
+    def setModel(self, tb, **kwargs):
         """Set the model from a ToolboxModel object already initialized
 
         Args:
@@ -308,7 +315,7 @@ class nirbOffline(ToolboxModel):
 
         super().setModel(tb)
         if self.doRectification or self.initCoarse:
-            super().initCoarseToolbox()
+            super().initCoarseToolbox(**kwargs)
 
 
 
@@ -424,7 +431,7 @@ class nirbOffline(ToolboxModel):
 
         return vector_mu
 
-    def getReducedSolution(self, coarseSol, coarseSolutions, mu, N):
+    def getReducedSolution(self, coarseSol, N):
         """Computed the reduced solution for a given parameter and a size of basis
 
         Args:
@@ -446,7 +453,7 @@ class nirbOffline(ToolboxModel):
         return onlineSol
 
 
-    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
+    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random"):
         """Initialize the problem, using a greedy loop
 
         Args:
@@ -687,7 +694,7 @@ class nirbOffline(ToolboxModel):
 
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
-            # if abs(1. - RIC[i])<= tolerance :
+            # if abs(1. - RIC[i])<= tolerance:
             #     break
 
         if self.worldcomm.isMasterRank(): print(f"[NIRB] Reduced basis computed")
@@ -938,7 +945,7 @@ class nirbOffline(ToolboxModel):
         reducedPath = os.path.join(path, 'reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = os.path.join(path,  'l2productBasis')
+        l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
 
         if self.worldcomm.isMasterRank():
@@ -961,8 +968,8 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        coeffCoarseFile = os.path.join(path, f"coeffcoarse")
-        coeffFineFile = os.path.join(path, f"coefffine")
+        coeffCoarseFile = os.path.join(path, "coeffcoarse")
+        coeffFineFile = os.path.join(path, "coefffine")
         if self.doRectification:
             if self.worldcomm.isMasterRank():
                 np.save(coeffCoarseFile, self.coeffCoarse)
@@ -1013,11 +1020,11 @@ class nirbOnline(ToolboxModel):
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
 
-    def initModel(self):
+    def initModel(self, **kwargs):
         """Initialize the model
         """
-        super().initModel()
-        super().initCoarseToolbox()
+        super().initModel(**kwargs)
+        super().initCoarseToolbox(**kwargs)
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
 
     def setModel(self, tb):
@@ -1051,7 +1058,7 @@ class nirbOnline(ToolboxModel):
 
         if solution is None:
             sol = self.getInterpSol(mu)
-        else :
+        else:
             sol = solution
 
         compressedSol = np.zeros(Nb)
