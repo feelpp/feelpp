@@ -19,7 +19,8 @@
 #include <feel/feelmesh/bvh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/blockforms.hpp>
 #include "newmark_contact.hpp"
 
 namespace Feel

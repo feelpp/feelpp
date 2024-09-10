@@ -1,19 +1,31 @@
 #include "qs_active_elasticity.hpp"
 #include "qs_active_elasticity_contact.hpp"
+#include "qs_magnetoswimmer.hpp"
 
 
 namespace Feel
 {
 extern template class ActiveContact<2, 1>;
+extern template class MagnetoSwimmer<2, 1>;
 
 void runModel( const nl::json& specs )
 {
     int dimension = specs["/Models/HyperElasticity/dimension"_json_pointer];
     int order = specs["/Models/HyperElasticity/order"_json_pointer];
     int rigidmotion = specs["/Models/HyperElasticity/rigidMotion"_json_pointer];
+    int swimmer = specs["/Models/HyperElasticity/swimmer"_json_pointer];
     
-    ActiveContact<2,1> model(specs);
-    model.run();
+    if (swimmer == 1)
+    {
+        MagnetoSwimmer<2,1> model(specs);
+        model.run();
+    }
+    else
+    {
+        ActiveContact<2,1> model(specs);
+        model.run();
+    }
+    
 }
 
 } // namespace Feel

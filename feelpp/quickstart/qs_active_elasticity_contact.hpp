@@ -426,20 +426,22 @@ void ActiveContact<Dim, Order>::timeLoopActive()
                 }    
                 else if (method_.compare("nitsche") == 0)
                 {
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_)  * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
                 
+                    
                     if (type_.compare("bending") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
-                        a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
                     }    
                     else if (type_.compare("flapping") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*(Py() - va_*ts_->time()));
-                        a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
                     }
+                    
                 }
             }
 
@@ -506,20 +508,22 @@ void ActiveContact<Dim, Order>::timeLoopActive()
                 else if (method_.compare("nitsche") == 0)
                 {
                     std::cout << "Nitsche method" << std::endl;
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(gamma_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_)  *  inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idv(u),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(cst(gamma_) * idv(g_),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    
                     
                     if (type_.compare("bending") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
-                        r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr=  inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr=  cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
                     }    
                     else if (type_.compare("flapping") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*(Py() - va_*ts_->time()));
-                        r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr=  inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr=  cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
                     }
+                    
                 }
             }
 

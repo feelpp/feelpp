@@ -182,6 +182,9 @@ void ContactLagrange<Dim, Order, OrderGeo>::runDynamic()
     std::string mattolDistance = fmt::format("/Collision/LinearElasticity/tolDistance");
     tolDistance_ = specs_[nl::json::json_pointer( mattolDistance )].get<double>();  
 
+    std::string matpressurePoint = fmt::format( "/Collision/LinearElasticity/pressurePoint" );
+    pressurePoint_ = specs_[nl::json::json_pointer( matpressurePoint )].get<std::vector<double>>();  
+
     initG();
     
     // Outputs
@@ -218,6 +221,84 @@ void ContactLagrange<Dim, Order, OrderGeo>::runDynamic()
         if (nbrFaces_ > 0)
         {
             std::cout << "Contact" << std::endl;
+
+            double fixedPointerror = 0.;
+            int fixedPointIteration = 0;
+            fixedPointtol_ = 0.0001;
+
+            auto u_tmp =  Xhv_->element();
+            u_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_));
+
+            auto u_tmpNew = Xhv_->element();
+            u_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_)); 
+
+
+            while ((fixedPointerror > fixedPointtol_) || (fixedPointIteration < 1))
+            {
+                std::cout << "Fixed Point iteration : " <<  fixedPointIteration << std::endl;
+                std::cout << "Error : " << fixedPointerror << std::endl;
+
+
+                u_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_tmpNew)); ;
+
+
+                std::cout << "Compute contact region" << std::endl;
+                myelts_ = getContactRegion(u_tmp);
+                std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+    
+                // Define lagrange multiplier
+                auto submesh = createSubmesh( _mesh=mesh_, _range=myelts_, _context = EXTRACTION_KEEP_MESH_RELATION, _update = 0 );
+                auto XhLambda = Pch<1>(submesh);
+                auto lambda = XhLambda->element();
+
+                auto ps = product( Xhv_, XhLambda );
+
+                // Process loading and materials
+                std::cout << "create a and rhs" << std::endl;
+                auto at_ = blockform2( ps ,solve::strategy::monolithic,backend() );
+                auto lt_ = blockform1( ps,solve::strategy::monolithic,backend() );
+
+
+                std::cout << "add RHS" << std::endl;
+
+                std::cout << "add RHS_1" << std::endl;
+                lt_(0_c) += integrate(_range=elements(support(Xhv_)), _expr=cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_tmp));
+            
+                std::cout << "add RHS_2" << std::endl;
+                for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
+                    lt_(0_c) +=  integrate( _range=elements( support(Xhv_)), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( u_tmp ) ));
+
+                std::cout << "add RHS_3" << std::endl;
+                lt_(1_c) += integrate(_range=elements(submesh), _expr=idv(g_)*id(lambda));
+
+                std::cout << "add A" << std::endl;
+                auto deft = sym(gradt(u_tmp));
+                auto def = sym(grad(u_tmp));
+                auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
+
+                std::cout << "add A_1" << std::endl;
+                at_(0_c,0_c) += integrate(_range=elements(support(Xhv_)), _expr= cst(rho_)*inner( ts_->polyDerivCoefficient()*idt(u_tmp),id( u_tmp ) ) + inner(sigmat,def));
+                std::cout << "add A_2" << std::endl;
+                at_(0_c,1_c) += integrate( _range=elements(submesh),_expr=idt(lambda)*(trans(expr<Dim,1>(direction_))*id(u_tmp)));
+                std::cout << "add A_3" << std::endl;
+                at_(1_c,0_c) += integrate( _range=elements(submesh),_expr=(trans(expr<Dim,1>(direction_))*idt(u_tmp))*id(lambda) );
+
+            
+                std::cout << "***** Solve *****" << std::endl;
+                auto U=ps.element();
+                at_.solve( _solution=U, _rhs=lt_, _rebuild=true);
+
+                u_tmpNew = U(0_c);
+                fixedPointerror = integrate(_range=elements(support(Xhv_)), _expr = norm2( idv(u_tmp)-idv(u_tmpNew))).evaluate()(0,0) / integrate(_range=elements(support(Xhv_)),_expr=norm2(idv(u_))).evaluate()(0,0); 
+                fixedPointIteration++;
+
+                if (fixedPointIteration == 10)
+                    break;
+
+            }
+
+            u_.on( _range=elements(support(Xhv_)), _expr = idv(u_tmpNew)); 
+            ts_->updateFromDisp(u_);
             
         }
         else 
@@ -241,18 +322,11 @@ void ContactLagrange<Dim, Order, OrderGeo>::runDynamic()
             at_.solve( _rhs=lt_, _solution=u_, _rebuild=true);
 
             ts_->updateFromDisp(u_);
-            at_.zero();
-            lt_.zero();
         }
 
         // Exports
-
-        myelts_ = getContactRegion(u_);
-        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xh_) ), _update=0 );
-        auto XhCFaces = Pdh<0>(face_mesh);
-        auto contactFaces = XhCFaces->element();
-        contactFaces.on( _range=myelts_, _expr = cst(1.));
-
+        std::cout << "***** Exports *****" << std::endl;
+        
         auto ctx = Xh_->context();
         node_type t1(Dim);
        
@@ -270,12 +344,14 @@ void ContactLagrange<Dim, Order, OrderGeo>::runDynamic()
         auto epsv = sym(gradv(u_));
         auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
 
+        std::cout << "***** Exports - contactPressure *****" << std::endl;
         auto contactPressure = Xh_->element();
-        contactPressure.on(_range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
+        contactPressure.on(_range=boundaryfaces(support(Xhv_)), _expr = trans(expr<Dim,1>(direction_))*sigmav);
         auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure) ); 
 
+        std::cout << "***** Exports - evaluateDispExpr *****" << std::endl;
         auto evaluateDispExpr = Xh_->element();
-        evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
+        evaluateDispExpr.on(_range=elements(support(Xhv_)), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
         auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
     
         if ( Dim == 2 )
