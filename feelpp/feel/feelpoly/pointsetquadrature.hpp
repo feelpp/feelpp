@@ -479,19 +479,26 @@ public :
     }
 
     template<typename GMC>
-    void update( GMC const& gmc )
+    void update( GMC&& gmc )
     {
-        if ( this->isFaceIm() )
-            for ( uint16_type q = 0; q < this->nPoints(); ++q )
-            {
-                M_prod[q] = M_w( q )*gmc.J( q )*gmc.normalNorm( q );
-            }
+        using gmc_t = std::decay_t<GMC>;
+        // if ( this->isFaceIm() )
+        if constexpr ( gmc_t::is_on_face )
+        {
+                for ( uint16_type q = 0; q < this->nPoints(); ++q )
+                {
+                    M_prod[q] = M_w( q ) * gmc.J( q ) * gmc.normalNorm( q );
+                }
 
+        }
         else
+        {
+
             for ( uint16_type q = 0; q < this->nPoints(); ++q )
             {
                 M_prod[q] = M_w( q )*gmc.J( q );
             }
+        }
     }
 
     template<typename GMC>

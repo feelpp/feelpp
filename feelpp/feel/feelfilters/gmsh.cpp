@@ -770,7 +770,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     }
 
 
-#else
+#else // use Internal/private Gmsh API
     CTX _backup = *(CTX::instance());
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;

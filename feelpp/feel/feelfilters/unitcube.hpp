@@ -40,6 +40,14 @@ namespace Feel {
 std::shared_ptr<Mesh<Simplex<3>>>
 unitCube( double h = option(_name="gmsh.hsize").as<double>() );
 
+/**
+ * @brief create a surfacique mesh of a cube
+ * 
+ * @param h 
+ * @return std::shared_ptr<Mesh<Simplex<2,1,3>>> 
+ */
+std::shared_ptr<Mesh<Simplex<2,1,3>>>
+unitCubeSurface( double h = option( _name = "gmsh.hsize" ).as<double>() );
 }
 
 #endif /* FEELPP_UNITCUBE_HPP */

@@ -392,6 +392,12 @@ struct IMGeneric
         }
 };
 
+template <int IMORDER,
+          int DIM,
+          template <uint16_type, uint16_type, uint16_type> class Entity,
+          template <class Convex, uint16_type O, typename T2> class QPS,
+          typename T>
+using imgeneric_t = typename IMGeneric<IMORDER,DIM,Entity,QPS,T>::type;
 
 #if 0
 template<int Dim,
@@ -427,8 +433,6 @@ template<int Dim, int IMORDER, typename T> struct ImBestSimplex
         mpl::identity<IM<Dim, IMORDER, T, Simplex> > >::type::type
 {};
 #endif
-
-
 
 ;
 } // Feel

@@ -5,7 +5,8 @@ circle-robin --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/circle/circle-robin
 circle-all --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/circle/circle-all.cfg --checker.tolerance.exact=5e-14 --directory=qs_laplacian/circle-all
 triangle-oneelt-1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg --gmsh.hsize=4 --functions.g=1 --checker.solution=1 --functions.c=0 --directory=qs_laplacian/triangle-oneelt-1
 triangle-oneelt-x+y --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg --gmsh.hsize=4 --functions.g=x+y:x:y --checker.solution=x+y --functions.c=-1 --directory=qs_laplacian/triangle-oneelt-x+y
-triangle-oneelt-x^2+y^2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg --gmsh.hsize=4 --functions.g=x^2+y^2:x:y --checker.solution=x*x+y*y  --functions.f=-4 --functions.c=-2*y:y --directory=qs_laplacian/triangle-oneelt-x^2+y^2
+triangle-oneelt-x^2+y^2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg --gmsh.hsize=4 --functions.g=x^2+y^2:x:y --checker.solution=x*x+y*y  --functions.f=-4 --functions.c=-2*y:y --case.discretization=P2 --directory=qs_laplacian/triangle-oneelt-x^2+y^2
 triangle-1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg  --functions.g=1 --checker.solution=1 --functions.c=0 --directory=qs_laplacian/triangle-1
 triangle-x-plus-y --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg   --functions.g=x+y:x:y --checker.solution=x+y --functions.c=-1 --directory=qs_laplacian/triangle-x+y
-triangle-x2-plus-y2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg --functions.g=x^2+y^2:x:y --checker.solution=x*x+y*y --functions.f=-4 --functions.c=-2*y:y --directory=qs_laplacian/triangle-x^2+y^2
+triangle-x2-plus-y2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle.cfg --functions.g=x^2+y^2:x:y --checker.solution=x*x+y*y --functions.f=-4 --functions.c=-2*y:y --case.discretization=P2 --directory=qs_laplacian/triangle-x^2+y^2
+

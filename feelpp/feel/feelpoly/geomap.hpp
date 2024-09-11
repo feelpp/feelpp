@@ -33,6 +33,7 @@
 #include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include <Eigen/Core>
 #include <Eigen/StdVector>
+#include <Eigen/Geometry>
 #include <Eigen/src/Core/util/ReenableStupidWarnings.h>
 
 #include <boost/functional/hash.hpp>
@@ -933,13 +934,13 @@ class GeoMap
          *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
          */
 
-        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
+        template <size_type CTX, int TheSubEntityCoDim = SubEntityCoDim>
         void update( element_type const& __e,
                      std::enable_if_t< TheSubEntityCoDim == 0 >* = nullptr )
-            {
-                this->setElement( __e );
-                this->updateImpl<CTX>();
-            }
+        {
+            this->setElement( __e );
+            this->updateImpl<CTX>();
+        }
 
         template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
         void update( element_type const& __e, uint16_type __f,
@@ -1187,15 +1188,16 @@ class GeoMap
          * \param q index of the point where the jacobian is requested
          * \return the jacobian of the transformation
          */
-        template<typename GeoMapT=gm_type>
-        value_type J( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        value_type J( int q ) const
         {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
                 return M_J[0];
+            else
+                return M_J[q];
         }
-        template<typename GeoMapT=gm_type>
-        value_type J( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        eigen_vector_type<Eigen::Dynamic,value_type> const& J() const
         {
-            return M_J[q];
+            return M_J;
         }
         /**
          * \return the matrix associated with the geometric nodes
@@ -1210,130 +1212,105 @@ class GeoMap
         /**
          * Get the inverse of the transformation at the \p i -th point
          *
-         * \param i the index of point where the pseudo-inverse is requested
+         * \param q the index of point where the pseudo-inverse is requested
          * \return the pseudo inverse of the transformation
          */
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        eigen_matrix_np_type const& B( int q  ) const
         {
-            return M_B[0];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_B[q];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_B[0](c1,c2);
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_B[q](c1,c2);
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_B[0];
+            else
+                return M_B[q];
         }
 
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& localBasis( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        eigen_matrix_np_type const& B( int c1, int c2, int q ) const
+        {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_B[0](c1,c2);
+            else
+                return M_B[q]( c1, c2 );
+        }
+        vector_eigen_matrix_np_type const& B() const
+        {
+            return M_B;
+        }
+        eigen_matrix_np_type const& localBasis( int q  ) const
             {
-                return M_local_basis_real[0];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& localBasis( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
-                return M_local_basis_real[q];
-            }
-        template<typename GeoMapT=gm_type>
-        typename eigen_matrix_np_type::ColXpr const& basisN( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
-                return M_local_basis_real[0].col(0);
-            }
-        template<typename GeoMapT=gm_type>
-        typename eigen_matrix_np_type::ColXpr const& basisN( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
-                return M_local_basis_real[q].col(0);
+                if constexpr ( is_linear_polynomial_v<gm_type> )
+                    return M_local_basis_real[0];
+                else
+                   return M_local_basis_real[q]; 
             }
 
-        template<typename GeoMapT=gm_type>
-        value_type const& localBasis( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        typename eigen_matrix_np_type::ColXpr const& basisN( int q ) const
             {
-                return M_local_basis_real[0](c1,c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& localBasis( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
-                return M_local_basis_real[q](c1,c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& basisN( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
-                return M_local_basis_real[0](c1,0);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& basisN( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
-                return M_local_basis_real[q](c1,0);
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_nn_type const& projectorTangent( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-        {
-            return M_Ptangent[0];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_nn_type const& projectorTangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-        {
-            return M_Ptangent[q];
-        }
-        template<typename GeoMapT=gm_type>
-        value_type const& projectorTangent( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
-                return M_Ptangent[0](c1,c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& projectorTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
-                return M_Ptangent[q](c1,c2);
+                if constexpr ( is_linear_polynomial_v<gm_type> )
+                    return M_local_basis_real[0].col(0);
+                else
+                    return M_local_basis_real[q].col(0);
             }
 
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& K( int q,  std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-        {
-            return M_K[0];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& K( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+
+        value_type const& localBasis( int c1, int c2, int q ) const
             {
+                if constexpr ( is_linear_polynomial_v<gm_type> )
+                    return M_local_basis_real[0]( c1, c2 );
+                else
+                    return M_local_basis_real[q](c1,c2);
+            }
+
+        value_type const& basisN( int c1, int c2, int q ) const
+            {
+                if constexpr ( is_linear_polynomial_v<gm_type> )
+                    return M_local_basis_real[0](c1,0);
+                else
+                    return M_local_basis_real[q]( c1, 0 );
+            }
+
+        eigen_matrix_nn_type const& projectorTangent( int q ) const
+        {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_Ptangent[0];
+            else
+                return M_Ptangent[q];
+        }
+
+        value_type const& projectorTangent( int c1, int c2, int q ) const
+            {
+                if constexpr ( is_linear_polynomial_v<gm_type> )
+                    return M_Ptangent[0]( c1, c2 );
+                else
+                    return M_Ptangent[q](c1,c2);
+            }
+
+        eigen_matrix_np_type const& K( int q ) const
+        {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_K[0];
+            else
                 return M_K[q];
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& K( int c1, int c2, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-        {
-            return M_K[q]( c1, c2 );
         }
-        template<typename GeoMapT=gm_type>
-        vector_eigen_matrix_np_type const& K( std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+
+        value_type const& K( int c1, int c2, int q ) const
+        {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_K[0]( c1, c2 );
+            else
+                return M_K[q]( c1, c2 );
+        }
+
+        vector_eigen_matrix_np_type const& K() const
             {
                 return M_K;
             }
-        template<typename GeoMapT=gm_type>
-        value_type const& K( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                return M_K[q]( c1, c2 );
-            }
 
-
-        template<typename GeoMapT=gm_type>
-        hessian_type const& hessian( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        hessian_type const& hessian( int q ) const
         {
-            return M_hessian[0];
-        }
-
-        template<typename GeoMapT=gm_type>
-        hessian_type const& hessian( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_hessian[0];
+            else
                 return M_hessian[q];
-            }
+        }
 
         /**
          * the tensor of rank 4 for the transformation of 2nd
@@ -1403,38 +1380,39 @@ class GeoMap
          *
          * @return the norm_2 of the normal of the real element
          */
-        template<typename GeoMapT=gm_type>
-        value_type normalNorm( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
+        value_type normalNorm( int q ) const
+        {
+            if constexpr ( is_linear_polynomial_v<gm_type> )
                 return M_normal_norms[0];
-            }
-        template<typename GeoMapT=gm_type>
-        value_type normalNorm( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
+            else
                 return M_normal_norms[q];
-            }
-
+        }
+        /**
+         * get the norm_2 of normal in the real element
+         *
+         * @return the norm_2 of the normal in the real element
+         */
+        eigen_vector_type<Eigen::Dynamic,value_type> const& normalNorms() const
+        {
+            return M_normal_norms;
+        }
         /**
          * get the normal of the real element
          *
          * @return the normal of the real element
          */
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& normal( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+        eigen_vector_n_type const& normal( int q ) const
             {
-                return M_normals[0];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& normal( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
-                return M_normals[q];
+                if constexpr ( is_linear_polynomial_v<gm_type> )
+                    return M_normals[0];
+                else
+                    return M_normals[q];
             }
 
         //!
         //! @return the unit normal of the real element
         //!
-        template<typename GeoMapT=gm_type>
-        vector_eigen_vector_n_type const& unitNormal( std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        vector_eigen_vector_n_type const& unitNormal() const
         {
             return M_unit_normals;
         }
@@ -1442,31 +1420,23 @@ class GeoMap
         //!
         //! @return the unit_normal at point @c q
         //!
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitNormal( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        eigen_vector_n_type const& unitNormal( int q ) const
         {
-            return M_unit_normals[0];
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_unit_normals[0];
+            else
+                return M_unit_normals[q];
         }
 
         //!
-        //! @return the unit_normal at point @c q
+        //! @return the unit_normal component @c n at point @c q
         //!
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitNormal( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        value_type const& unitNormal( int n, int q ) const
         {
-            return M_unit_normals[q];
-        }
-
-        template<typename GeoMapT=gm_type>
-        value_type const& unitNormal( int n, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_unit_normals[0]( n );
-        }
-
-        template<typename GeoMapT=gm_type>
-        value_type const& unitNormal( int n, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_unit_normals[q]( n );
+            if constexpr ( is_linear_polynomial_v<gm_type> )
+                return M_unit_normals[0]( n );
+            else
+                return M_unit_normals[q]( n );
         }
 
         //!
@@ -2022,10 +1992,20 @@ class GeoMap
         //!
 
         FEELPP_STRONG_INLINE
-        void updateNormals( eigen_matrix_np_type const& B,
+        void updateNormals( eigen_matrix_np_type const& K, eigen_matrix_np_type const& B,
                             eigen_vector_n_type& N, eigen_vector_n_type& unitN, value_type& Nnorm ) noexcept
         {
             N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
+            #if 0
+            if constexpr ( PDim == NDim-1 && NDim == 3)
+            {
+                N.noalias() = K.col(0).cross(K.col(1));
+            }
+            else
+            {
+                N.noalias() = B * M_gm->referenceConvex().normal( M_face_id );
+            }
+            #endif
             Nnorm = N.norm();
             unitN = N/Nnorm;
 
@@ -2158,7 +2138,6 @@ class GeoMap
                 }
 
                 const uint16_type _nComputedPoints = nComputedPoints();
-
                 // K
                 M_K.resize( _nComputedPoints );
 
@@ -2380,12 +2359,12 @@ class GeoMap
                         // normal
                         if constexpr ( vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> )
                         {
-                            updateNormals( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
+                            updateNormals( M_K[q], M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
                         }
                         else if constexpr ( vm::has_dynamic_v<CTX> )
                         {
                             if ( hasNormal )
-                                updateNormals( M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
+                                updateNormals( M_K[q], M_B[q], M_normals[q], M_unit_normals[q], M_normal_norms[q] );
                         }
                         // tangent
                         if constexpr ( vm::has_tangent_v<CTX> )
@@ -2487,13 +2466,13 @@ class GeoMap
         std::vector<std::map<permutation_type, precompute_ptrtype>> M_pc_faces;
         uint16_type M_npoints;
 
-        std::vector<value_type> M_J;
+        eigen_vector_type<Eigen::Dynamic,value_type> M_J;
 
         //matrix_type M_G;
         eigen_matrix_nx_type M_G;
         //vector_eigen_vector_p_type M_ref_normals;
         vector_eigen_vector_n_type M_normals, M_unit_normals;
-        std::vector<value_type> M_normal_norms;
+        eigen_vector_type<Eigen::Dynamic,value_type> M_normal_norms;
         vector_eigen_vector_n_type M_tangents, M_unit_tangents;
         std::vector<value_type> M_tangent_norms;
         vector_eigen_matrix_np_type M_local_basis_real;

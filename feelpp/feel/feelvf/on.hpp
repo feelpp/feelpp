@@ -355,7 +355,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                                                                     FormType& __form ) const
 {
     LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements()");
-
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
@@ -469,7 +468,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
     typedef typename Elem::functionspace_type functionspace_type;
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
-
     //
     // a few typedefs
     //
@@ -1101,6 +1099,7 @@ struct integratoron_type
 
     using expr_type = Expr<type>;
 };
+
 
 template <typename V>
 auto getRhsVectorAsPtr( V const& v )
