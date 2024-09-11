@@ -84,6 +84,8 @@ def test_config_parser(init_feelpp):
     config = fppc.readCfg(os.path.dirname(__file__)+'/test.cfg')
     print("sections: {}".format(config.sections()))
     d = config['feelpp']['directory']
+    print("config[fluid][filename]:", list(config['fluid']['filename']))
     #assert(d == 'toolboxes/fluid/TurekHron/cfd1/P2P1G1')
-    j = config['fluid']['filename']
-    assert(j == "$cfgdir/cfd1.json")
+    for j,fname in enumerate(list(config['fluid']['filename'])):
+        print(f"config[fluid][filename] {j+1}: {fname}")
+        assert(fname == f"$cfgdir/cfd{j+1}.json")
