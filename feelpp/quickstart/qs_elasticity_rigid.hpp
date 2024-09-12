@@ -19,8 +19,8 @@ public:
     using element_t = typename space_t::element_type;
     using form2_type = form2_t<spacev_t,spacev_t>;
     using form1_type = form1_t<spacev_t>;
-    using ts_ptrtype = std::shared_ptr<NewmarkContact<spacev_t>>;
-    using tsr_ptrtype = std::shared_ptr<NewmarkContact<spacerv_t>>;
+    using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
+    using tsr_ptrtype = std::shared_ptr<Newmark<spacerv_t>>;
     using exporter_ptrtype = std::shared_ptr<Exporter<mesh_t>>;
 
     // Constructors
@@ -166,11 +166,11 @@ void ElasticRigid<Dim, Order>::initialize()
     auto init_displ = expr<Dim,1>(get_value(specs_, "/InitialConditions/LinearElasticity/displacement/expr", default_displ ));
     u0_.on(_range=elements(support(Xhv_)), _expr=init_displ);
 
-    ts_e_ = newmarkContact(Xhv_, steady, initial_time, final_time, time_step, gamma, beta );
+    ts_e_ = newmark(_space = Xhv_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
     ts_e_->start();
     ts_e_->initialize( u0_ );
 
-    ts_r_ = newmarkContact(VhvC_, steady, initial_time, final_time, time_step, gamma, beta );
+    ts_r_ = newmark(_space = VhvC_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
     ts_r_->start();
     ts_r_->initialize( ur0_ );
 

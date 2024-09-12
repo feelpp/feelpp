@@ -21,7 +21,7 @@
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
-#include "newmark_contact.hpp"
+#include <feel/feelts/newmark.hpp>
 
 namespace Feel
 {

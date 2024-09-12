@@ -326,6 +326,8 @@ using bc = NA::named_argument_t<struct bc_tag>;
 using mu = NA::named_argument_t<struct mu_tag>;
 using rho = NA::named_argument_t<struct rho_tag>;
 using alpha = NA::named_argument_t<struct alpha_tag>;
+using gamma = NA::named_argument_t<struct gamma_tag>;
+using beta = NA::named_argument_t<struct beta_tag>;
 using tag = NA::named_argument_t<struct tag_tag>;
 
 // create submesh
@@ -637,6 +639,8 @@ inline constexpr auto& _bc = NA::identifier<na::bc>;
 inline constexpr auto& _mu = NA::identifier<na::mu>;
 inline constexpr auto& _rho = NA::identifier<na::rho>;
 inline constexpr auto& _alpha = NA::identifier<na::alpha>;
+inline constexpr auto& _gamma = NA::identifier<na::gamma>;
+inline constexpr auto& _beta = NA::identifier<na::beta>;
 inline constexpr auto& _tag = NA::identifier<na::tag>;
 
 // create submesh

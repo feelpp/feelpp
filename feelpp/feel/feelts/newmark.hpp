@@ -106,16 +106,16 @@ public:
      * @param prefix prefix of the newmark ts
      */
     FEELPP_DEPRECATED
-    Newmark( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="" )
+    Newmark( po::variables_map const& vm, space_ptrtype const& space, std::string const& name, std::string const& prefix="", double gamma = 0.5, double beta = 0.25 )
         : newmark_type( space,name,prefix ) {}
-    Newmark( space_ptrtype const& space, std::string const& name, std::string const& prefix="" );
+    Newmark( space_ptrtype const& space, std::string const& name, std::string const& prefix="", double gamma = 0.5, double beta = 0.25  );
 
     /**
      * Constructor
      * @param space approximation space
      * @param name name of the newmark ts
      */
-    Newmark( space_ptrtype const& space, std::string const& name );
+    Newmark( space_ptrtype const& space, std::string const& name, double gamma = 0.5, double beta = 0.25 ) : newmark_type( space,name,"", gamma, beta ) {}
 
     //! copy operator
     Newmark( Newmark const& b )
@@ -180,7 +180,9 @@ public:
     double gamma() const { return M_gamma; }
     double beta() const { return M_beta; }
 
-
+    void setGamma(double gamma) {M_gamma = gamma;}
+    void setBeta(double beta) {M_beta = beta;}
+    
     double polyDerivCoefficient() const { return this->polySecondDerivCoefficient(); }
     double polyFirstDerivCoefficient() const
     {
@@ -249,7 +251,9 @@ private:
 template <typename SpaceType>
 Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
                              std::string const& name,
-                             std::string const& prefix )
+                             std::string const& prefix,
+                             double gamma,
+                             double beta )
     :
     super( name, prefix, __space->worldComm() ),
     M_space( __space ),
@@ -257,24 +261,8 @@ Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
     M_currentAcc( unknown_type( new element_type( M_space ) ) ),
     M_polyFirstDeriv( unknown_type( new element_type( M_space ) ) ),
     M_polySecondDeriv( unknown_type( new element_type( M_space ) ) ),
-    M_gamma( 0.5 ),
-    M_beta( 0.25 )
-{
-    this->initPreviousFields();
-}
-
-template <typename SpaceType>
-Newmark<SpaceType>::Newmark( space_ptrtype const& __space,
-                             std::string const& name  )
-    :
-    super( name, __space->worldComm() ),
-    M_space( __space ),
-    M_currentVel( unknown_type( new element_type( M_space ) ) ),
-    M_currentAcc( unknown_type( new element_type( M_space ) ) ),
-    M_polyFirstDeriv( unknown_type( new element_type( M_space ) ) ),
-    M_polySecondDeriv( unknown_type( new element_type( M_space ) ) ),
-    M_gamma( 0.5 ),
-    M_beta( 0.25 )
+    M_gamma( gamma ),
+    M_beta( beta )
 {
     this->initPreviousFields();
 }
@@ -778,9 +766,11 @@ auto newmark( Ts && ... v )
     int freq = args.get_else_invocable( _freq, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="ts.save.freq",_vm=vm); } );
     std::string const& format = args.get_else_invocable( _format, [&prefix,&vm](){ return soption(_prefix=prefix,_name="ts.file-format",_vm=vm); } );
     bool rank_proc_in_files_name = args.get_else_invocable( _rank_proc_in_files_name, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.rank-proc-in-files-name",_vm=vm); } );
+    double gamma = args.get_else_invocable( _gamma, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.gamma",_vm=vm); } );
+    double beta = args.get_else_invocable( _beta, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.beta",_vm=vm); } );
 
     using _space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
-    auto thenewmark = std::make_shared<Newmark<_space_type>>( space,name,prefix );
+    auto thenewmark = std::make_shared<Newmark<_space_type>>( space,name,prefix, gamma, beta );
     thenewmark->setTimeInitial( initial_time );
     thenewmark->setTimeFinal( final_time );
     thenewmark->setTimeStep( time_step );
@@ -792,6 +782,11 @@ auto newmark( Ts && ... v )
     thenewmark->setSaveFreq( freq );
     thenewmark->setfileFormat( format );
     thenewmark->setRankProcInNameOfFiles( rank_proc_in_files_name );
+
+    // Check 
+    std::cout << "Gamma : " << thenewmark->gamma() << std::endl;
+    std::cout << "Beta : " << thenewmark->beta() << std::endl;
+
     return thenewmark;
 }
 

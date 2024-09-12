@@ -33,7 +33,7 @@ public:
     using element_t = typename space_t::element_type;
     using form2_type = form2_t<spacev_t,spacev_t>; 
     using form1_type = form1_t<spacev_t>; 
-    using ts_ptrtype = std::shared_ptr<NewmarkContact<spacev_t>>;
+    using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
     using exporter_ptrtype = std::shared_ptr<Exporter<mesh_t>>; 
 
     // Constructors
@@ -160,7 +160,7 @@ void ActiveContact<Dim, Order>::initialize()
     auto init_displ = expr<Dim,1>(get_value(specs_, "/InitialConditions/HyperElasticity/displacement/expr", default_displ ));
     u0_.on(_range=elements(support(Xhv_)), _expr=init_displ);
     
-    ts_ = newmarkContact(Xhv_, steady, initial_time, final_time, time_step, gamma, beta );
+    ts_ =  newmark(_space = Xhv_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
     ts_->start();
     ts_->initialize( u0_ );
     u_ = u0_;

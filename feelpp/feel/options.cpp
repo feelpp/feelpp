@@ -436,6 +436,8 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save elements in file " )
         ( prefixvm( prefix, "ts.save.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "freq for save elements in file " )
         ( prefixvm( prefix, "ts.rank-proc-in-files-name" ).c_str(), Feel::po::value<bool>()->default_value( false ), "the name of files generated has the rank of the processor automatically if true" )
+        ( prefixvm( prefix, "ts.gamma" ).c_str(), Feel::po::value<double>()->default_value( 0.5 ), "gamma coefficient for newmark" )
+        ( prefixvm( prefix, "ts.beta" ).c_str(), Feel::po::value<double>()->default_value( 0.25 ), "beta coefficient for newmark" )
 #if defined(FEELPP_HAS_HDF5)
         ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "hdf5" ), "save elements in file " )
 #else

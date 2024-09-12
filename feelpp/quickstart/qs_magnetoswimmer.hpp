@@ -17,7 +17,7 @@ public:
     using element_t = typename space_t::element_type;
     using form2_type = form2_t<spacev_t,spacev_t>; 
     using form1_type = form1_t<spacev_t>; 
-    using ts_ptrtype = std::shared_ptr<NewmarkContact<spacev_t>>;
+    using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
     using exporter_ptrtype = std::shared_ptr<Exporter<mesh_t>>; 
 
     // Constructors
@@ -165,8 +165,8 @@ void MagnetoSwimmer<Dim, Order>::initialize()
     u_H = Xhv_H->element();
     u_H.on(_range=elements(support(Xhv_H)), _expr = 0.*one());
 
-    ts_F = newmarkContact(Xhv_F, steady, initial_time, final_time, time_step, gamma, beta );
-    ts_H = newmarkContact(Xhv_H, steady, initial_time, final_time, time_step, gamma, beta );
+    ts_F =  newmark(_space = Xhv_F, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
+    ts_H =  newmark(_space = Xhv_H, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
     
     ts_F->start();
     ts_F->initialize( u_F );

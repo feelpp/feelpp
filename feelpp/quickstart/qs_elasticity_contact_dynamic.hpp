@@ -18,7 +18,7 @@ public:
     using element_t = typename space_t::element_type;
     using form2_type = form2_t<spacev_t,spacev_t>; 
     using form1_type = form1_t<spacev_t>; 
-    using ts_ptrtype = std::shared_ptr<NewmarkContact<spacev_t>>;
+    using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
     using exporter_ptrtype = std::shared_ptr<Exporter<mesh_tP1>>; 
 
     // Constructors
@@ -158,7 +158,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::initialize()
     
     u0_.on(_range=elements(support(Xhv_)), _expr=init_displ);
     
-    ts_ = newmarkContact(Xhv_, steady, initial_time, final_time, time_step, gamma, beta );
+    ts_ = newmark(_space = Xhv_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
     
     ts_->start();
     ts_->initialize( u0_ );
@@ -248,13 +248,8 @@ void ContactDynamic<Dim, Order, OrderGeo>::processMaterials( form2_type &a )
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::processContactPenalty(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts , elementv_t const& u )
 {    
-    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-    auto XhCFaces = Pdh<0>(face_mesh);
-    auto contactFaces = XhCFaces->element();
-    contactFaces.on( _range=elts, _expr = cst(1.));
-
-    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-    l += integrate (_range=boundaryfaces(support(Xhv_)),_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));     
+    a += integrate (_range=elts,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
+    l += integrate (_range=elts,_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)));     
 }
 
 
@@ -262,32 +257,22 @@ void ContactDynamic<Dim, Order, OrderGeo>::processContactPenalty(form1_type& l, 
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::processContactPersistency(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts, elementv_t const& u)
 {
-    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-    auto XhCFaces = Pdh<0>(face_mesh);
-    auto contactFaces = XhCFaces->element();
-    contactFaces.on( _range=elts, _expr = cst(1.));
-
-    a += integrate (_range=boundaryfaces(support(Xhv_)),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*(ts_->polyFirstDerivCoefficient()*idt(u_)-idv(ts_->polyFirstDeriv())),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+    a += integrate (_range=elts,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*(ts_->polyFirstDerivCoefficient()*idt(u_)-idv(ts_->polyFirstDeriv())),trans(expr<Dim,1>(direction_))*id(u)));
 }
 
 // Process contact conditions Nitsche method
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts , elementv_t const& u )
 {    
-    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-    auto XhCFaces = Pdh<0>(face_mesh);
-    auto contactFaces = XhCFaces->element();
-    contactFaces.on( _range=elts, _expr = cst(1.));
-
     auto const Id = eye<Dim,Dim>();
     auto deft = sym(gradt(u));
     auto def = sym(grad(u));
     auto sigma = (lambda_*trace(def)*Id + 2*mu_*def)*N();
     auto sigmat = (lambda_*trace(deft)*Id + 2*mu_*deft)*N();
 
-    a += integrate (_range=boundaryfaces(support(Xhv_)),_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces)); 
-    a += integrate (_range=boundaryfaces(support(Xhv_)),_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));
-    l += integrate (_range=boundaryfaces(support(Xhv_)),_expr= inner(idv(g_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma)*idv(contactFaces));     
+    a += integrate (_range=elts,_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma)); 
+    a += integrate (_range=elts,_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));
+    l += integrate (_range=elts,_expr= inner(idv(g_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));     
 }
 
 
@@ -355,6 +340,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoop()
         myelts_ = getContactRegion(u_);
         std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         
+        std::cout << "Add contact terms" << std::endl;
         if (method_.compare("penalty") == 0)
             processContactPenalty(lt_, at_, myelts_, u_);
         else if (method_.compare("persistency") == 0)
@@ -368,8 +354,10 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoop()
         std::cout << "***** Solve *****" << std::endl;
         at_.solve( _rhs = lt_, _solution = u_ );
 
+        std::cout << "***** Export *****" << std::endl;
         ts_->updateFromDisp(u_);
-        this->exportResults(ts_->time());
+        
+        //this->exportResults(ts_->time());
 
         // Reset
         at_.zero();
@@ -513,15 +501,18 @@ void ContactDynamic<Dim, Order, OrderGeo>::run()
     initializeContact();
 
     std::cout <<  "***** Initialize distance g *****" << std::endl;
+    
+    std::cout << "Compute distance" << std::endl;
     initG();
 
     std::cout <<  "***** Start time loop *****" << std::endl;
     
     if ((method_.compare("penalty") == 0) || (method_.compare("nitsche") == 0) || (method_.compare("persistency") == 0) )
     {
-        this->exportResults(0);
-
+        //this->exportResults(0);
+         std::cout << "Start time loop" << std::endl;
         if (fixedPoint_ == 1)
+
             timeLoopFixedPoint();
         else 
             timeLoop();
@@ -625,6 +616,8 @@ ContactDynamic<Dim, Order, OrderGeo>::initG()
 
     auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_, "Obs1"), _kind=kind);
 
+    std::vector<std::size_t> faceIDs;
+
     BVHRaysDistributed<Dim> allrays;
 
     for ( auto const& theface : markedfaces( mesh_, "Wall" ) )
@@ -641,31 +634,44 @@ ContactDynamic<Dim, Order, OrderGeo>::initG()
                 origin << point.node()[0], point.node()[1], point.node()[2];
 
             bvh_ray_type ray(origin,dir);
-            //allrays.push_back(ray);
-#if 1            
-            auto rayIntersection = bvh->intersect( _ray = ray );
-            if (!rayIntersection.empty())
+ 
+            
+            if constexpr(Dim == 2)
             {
-                for ( auto const& rir : rayIntersection )
+                auto rayIntersection = bvh->intersect( _ray = ray );
+                if (!rayIntersection.empty())
                 {
-                    for (auto const& ldof  : Xh_->dof()->faceLocalDof( face.id() ))
-                        g_[ldof.index()] = rir.distance() - tolDistance_;
+                    for ( auto const& rir : rayIntersection )
+                    {
+                        for (auto const& ldof  : Xh_->dof()->faceLocalDof( face.id() ))
+                            g_[ldof.index()] = rir.distance() - tolDistance_;
+                    }
                 }
             }
-#endif            
+            else 
+            {
+                allrays.push_back(std::move(ray));
+                faceIDs.push_back(face.id());
+            }            
+
         }
         
     }
-#if 0    
-    // compute intersections for allrays
-    auto multiRayIntersectionResult = bvh->intersect(_ray=allrays);//,_parallel=false);
-    for (auto const& rir : multiRayIntersectionResult)
+    if constexpr(Dim == 3)
     {
-        for (auto const& ldof : Xh_->dof()->faceLocalDof(rir.face().id()))
-            g_[ldof.index()] = rir.distance() - tolDistance_;
+            // compute intersections for allrays
+        auto multiRayIntersectionResult = bvh->intersect(_ray=allrays);//,_parallel=false);
+    
+        for (auto const& [fid,rirs] : enumerate(multiRayIntersectionResult))
+        {
+            for (auto const& [rid,rir] : enumerate(rirs))
+            {
+                for (auto const& ldof : Xh_->dof()->faceLocalDof(faceIDs[fid]))
+                    g_[ldof.index()] = rir.distance() - tolDistance_;
+            }
+            
+        }
     }
-#endif    
-
 
     auto e = Feel::exporter(_mesh = mesh_, _name = "InitialDistance" );
     e->addRegions();
