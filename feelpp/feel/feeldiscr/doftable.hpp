@@ -87,7 +87,7 @@ struct hash<std::tuple<TT...>>
 #include <vector>
 #include <algorithm>
 
-#include <boost/foreach.hpp>
+
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -502,7 +502,7 @@ public:
     indices_per_element_type  indices( size_type id_el ) const
         {
             indices_per_element_type ind;
-            BOOST_FOREACH( localdof_type const& ldof, localDofSet( id_el ) )
+            for( localdof_type const& ldof : localDofSet( id_el ) )
             {
                 auto it = M_el_l2g.left.find( ldof );
                 DCHECK( it != M_el_l2g.left.end() ) << "Invalid element id " << id_el;
@@ -540,7 +540,7 @@ public:
     void getIndicesSet( size_type id_el, std::vector<size_type>& ind ) const
         {
 #if 0
-            BOOST_FOREACH( localdof_type const& ldof, this->localDofSet( id_el ) )
+            for( localdof_type const& ldof : this->localDofSet( id_el ) )
             {
                 auto it = M_el_l2g.left.find( ldof );
                 DCHECK(it != M_el_l2g.left.end() ) << "Invalid element id " << id_el;
@@ -1185,7 +1185,7 @@ public:
     void printDofMarker(std::string const& filename )
         {
             // std::ofstream ofs( filename.c_str() );
-            // BOOST_FOREACH( auto dof, _M_dof_marker )
+            // for( auto dof : _M_dof_marker )
             // {
             //     //ofs << dof.first << " " << dof.second << "\n";
             // }
@@ -2176,19 +2176,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
     VLOG(2) << "[periodic dof table] start matching the dof points\n";
 
     size_type max_gid = 0;
-    std::pair<size_type,periodic_dof_type> dof;
-    BOOST_FOREACH( dof, periodic_dof[M_periodicity.tag1()] )
+    for( auto [ gid, doftype] : periodic_dof[M_periodicity.tag1( )] )
     {
-        size_type gid = dof.first;
         max_gid = ( max_gid > gid )?max_gid:gid;
     }
 
     size_type max_gid2 = 0;
-    std::pair<size_type,periodic_dof_type> dof2;
-    BOOST_FOREACH( dof2, periodic_dof[M_periodicity.tag2()] )
+    for( auto [gid2, dof2] : periodic_dof[M_periodicity.tag2( )] )
     {
-        size_type gid2 = dof2.first;
-        FEELPP_ASSERT( gid2 > max_gid )( gid2 )( max_gid ).error( "invalid dof index" );
         max_gid2 = ( max_gid2 > gid2 )?max_gid2:gid2;
     }
     CHECK( ( max_gid+1 ) == ( max_gid2+1-( max_gid+1 ) ) )
@@ -2201,10 +2196,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
     std::vector<bool> periodic_dof_done( max_gid+1 );
     std::fill( periodic_dof_done.begin(), periodic_dof_done.end(), false );
 
-    BOOST_FOREACH( dof, periodic_dof[M_periodicity.tag1()] )
+    for( auto [gid,dof] : periodic_dof[M_periodicity.tag1( )] )
     {
-        size_type gid = dof.first;
-
         if ( periodic_dof_done[gid] )
             continue;
 
@@ -2229,16 +2222,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
         {
             // make sure that we iterate over dof belonging to the same function
             // component (e.g. in vectorial)
-            if ( it_dof2->second.template get<2>() != dof.second.template get<2>() )
+            if ( it_dof2->second.template get<2>() != dof.template get<2>() )
                 continue;
             size_type gid2 = it_dof2->first;
-            FEELPP_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
             node_type x2 = periodic_dof_points[gid2].template get<0>();
-            FEELPP_ASSERT( ( x1.size() == x2.size() ) &&
-                           ( x1.size() == M_periodicity.translation().size() ) )
-                ( gid )( dof.second.template get<0>() )( dof.second.template get<1>() )
-                ( gid2 )( it_dof2->second.template get<0>() )( it_dof2->second.template get<1>() )
-                ( x1 )( x2 )( M_periodicity.translation() ).error( "invalid point size" );
 
             if ( ublas::norm_2( x1-( x2-M_periodicity.translation() ) ) < 1e-10 )
             {
@@ -2254,11 +2241,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
         // iterator from dof2 to quicken the search for the next dof1 match
         if ( match )
         {
-            size_type ie1 = dof.second.template get<0>();
-            size_type lid1 = dof.second.template get<1>();
-            size_type c1 = dof.second.template get<2>();
-            size_type gDof1 = dof.second.template get<3>();
-            uint16_type dof1_type = dof.second.template get<4>();
+            size_type ie1 = dof.template get<0>();
+            size_type lid1 = dof.template get<1>();
+            size_type c1 = dof.template get<2>();
+            size_type gDof1 = dof.template get<3>();
+            uint16_type dof1_type = dof.template get<4>();
 
             VLOG(2) << "matching dof id " << gid << " with dof id=" << corresponding_gid << "\n";
 
@@ -2275,7 +2262,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
                 CHECK( c1 == c2 ) << "[periodic] invalid dof component, c1 = " << c1 << ", c2 = " << c2 << "\n";
                 size_type gDof = it_dof2->second.template get<3>();
                 uint16_type dof2_type = it_dof2->second.template get<4>();
-                uint16_type dof1_type = dof.second.template get<4>();
+                uint16_type dof1_type = dof.template get<4>();
 
                 FEELPP_ASSERT( dof1_type == dof2_type )
                     ( gid )( it_dof2->first )( gDof )( lid )( c2) ( ie )
@@ -3272,7 +3259,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
                                                                                    mpl::int_<3> )
 {
     std::vector<std::string> faces = assign::list_of("TOP")("BOTTOM")("NORTH")("EAST")("WEST")("SOUTH");
-    BOOST_FOREACH( auto face, faces )
+    for( auto face : faces )
     {
         auto faces = markedfaces( &M, face );
 

@@ -10,6 +10,17 @@ on:
                 required: true
                 type: string 
                 default: "ubuntu"
+            version:
+                required: true
+                type: string
+            docker:
+                required: false
+                type: string
+                default: "true"
+            apptainer:
+                required: false
+                type: string
+                default: "true"
             parallel:
                 required: false
                 type: string
@@ -22,21 +33,36 @@ on:
                 required: false
                 type: string
                 default: "false"
-
+            feelpp-version:
+                required: true
+                type: string
+            feelpp-main-version:
+                required: true
+                type: string
+            feelpp-extra-version:
+                required: true
+                type: string
 jobs:
     activate:
-        runs-on: self-pkg
-        steps:
-        - name: how
-          run: |
-            echo "  flavor: ${{ inputs.flavor }}"
-            echo "    dist: ${{ inputs.dist }}"
-            echo "    skip: ${{ inputs.skip }}"
-            echo "parallel: ${{ inputs.parallel }}"
-          shell: bash
-          env:
-            DIST: ${{ inputs.dist }}
-            FLAVOR: ${{ inputs.flavor }}
+      runs-on: self-pkg
+      steps:
+      - name: how
+        run: |
+          echo "              flavor: ${{ inputs.flavor }}"
+          echo "                dist: ${{ inputs.dist }}"
+          echo "                skip: ${{ inputs.skip }}"
+          echo "            parallel: ${{ inputs.parallel }}"
+          echo "              docker: ${{ inputs.docker }}"
+          echo "           apptainer: ${{ inputs.apptainer }}"
+          echo "             version: ${{ inputs.version }}"
+          echo "      feelpp-version: ${{ inputs.feelpp-version }}"
+          echo " feelpp-main-version: ${{ inputs.feelpp-main-version }}"
+          echo "feelpp-extra-version: ${{ inputs.feelpp-extra-version }}"
+        shell: bash
+        env:
+          DIST: ${{ inputs.dist }}
+          FLAVOR: ${{ inputs.flavor }}
+
     pkg:
         if: ${{ inputs.flavor == 'ubuntu' || inputs.flavor == 'debian' }}
         needs: activate
@@ -124,26 +150,46 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    pkg-docker-dbg:
-      needs: pkg
-      runs-on: self-docker
+    pkg-print:
+      runs-on: ubuntu-latest
       steps:
         - name: Show
           run: |
             echo "message: ${{ github.event.head_commit.message }}"
             echo "inputs: ${{ inputs.skip }}"
-            echo "skip commit: ${{ contains( github.event.head_commit.message, 'skip docker' ) }}"
+            echo "docker: ${{ inputs.docker }}"
+            echo "apptainer: ${{ inputs.apptainer }}"
+            echo "skip docker: ${{ contains( github.event.head_commit.message, 'skip docker' ) }}"
+            echo "skip apptainer: ${{ contains( github.event.head_commit.message, 'skip apptainer' ) }}"
             echo "skip inputs: ${{ contains( inputs.skip, 'skip docker' ) }}"
             echo "skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}"
 
     pkg-docker:
-      needs: pkg-docker-dbg
+      if: ${{ inputs.docker == 'true' }}
+      needs: pkg
       uses: ./.github/workflows/pkg-docker.yml
       with:
         dist: ${{ inputs.dist }}
         flavor: ${{ inputs.flavor }}
-        version: ${{ inputs.parallel }}
+        parallel: ${{ inputs.parallel }}
         skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}
+        version: ${{ inputs.feelpp-version }}
         continue-on-error: ${{ inputs.continue-on-error }}
       secrets: inherit
+
+    pkg-apptainer:
+      if: ${{ inputs.apptainer == 'true' }}
+      needs: pkg-docker
+      uses: ./.github/workflows/pkg-apptainer.yml
+      with:
+        dist: ${{ inputs.dist }}
+        flavor: ${{ inputs.flavor }}
+        parallel: ${{ inputs.parallel }}
+        docker: ${{ needs.pkg-docker.outputs.image }}
+        docker-dev: ${{ needs.pkg-docker.outputs.image-dev }}
+        skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}
+        version: ${{ inputs.feelpp-version }}
+        continue-on-error: ${{ inputs.continue-on-error }}
+      secrets: inherit
+
 

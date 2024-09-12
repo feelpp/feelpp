@@ -362,7 +362,9 @@ private :
     void initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD ) const;
     void updateInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCD, DataUpdateBase & data ) const;
 
-
+    typedef typename fluid_type::operatorpmmbase_type operatorpmmbase_fluid_type;
+    void initInHousePreconditionerPMM_fluid( operatorpmmbase_fluid_type & opPMM ) const;
+    void updateInHousePreconditionerPMM_fluid( operatorpmmbase_fluid_type & opPMM, DataUpdateBase & data ) const;
 private :
 
     fluid_ptrtype M_fluidModel;

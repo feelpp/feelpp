@@ -1,0 +1,120 @@
+#!/bin/bash
+# This file is part of the Feel library
+#
+# Author(s): Christophe Prud'homme <christophe.prudhomme@cemosis.fr>
+#      Date: 2024-07-14
+#
+# Copyright (C) 2024 Université de Strasbourg
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 3.0 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+# Determine the script's directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Default action is to show help
+action="help"
+
+# Parse command line options
+for arg in "$@"; do
+    case $arg in
+        --version|-v)
+            action="version"
+            shift # Remove --version or -v from processing
+            ;;
+        --version:main|-vm)
+            action="version:main"
+            shift # Remove --version:main or -vm from processing
+            ;;
+        --version:extra|-ve)
+            action="version:extra"
+            shift # Remove --version:extra or -ve from processing
+            ;;
+        --license)
+            action="license"
+            shift # Remove --license from processing
+            ;;
+        --help|-h)
+            action="help"
+            shift # Remove --help or -h from processing
+            ;;
+        *)
+            # Ignore unknown option
+            ;;
+    esac
+done
+
+# add function to get version
+get_version() {
+    cat > toto.cmake << EOF
+# Save the original message function as _original_message
+macro(_original_message)
+    _message(\${ARGN})
+endmacro()
+
+# Override the message function
+function(message)
+    list(GET ARGV 0 MessageType)
+    if("\${MessageType}" STREQUAL "STATUS")
+        # Do nothing when the message is of type STATUS
+    else()
+        # Call the original message function for all other types
+        _original_message(\${ARGN})
+    endif()
+endfunction()
+
+# message(STATUS "CMake version: \${CMAKE_VERSION}")
+include(${PARENT_DIR}/feelpp.version.cmake)
+#message(STATUS "Feel++ version: \${FEELPP_VERSION}")
+message("\${FEELPP_VERSION_STRING}")
+EOF
+local version=$(cmake -P toto.cmake 2>&1)
+echo $version
+rm -f toto.cmake
+}
+
+
+if test $action == "version"; then
+    version=$(get_version)
+    echo "$version"
+fi
+
+if test $action == "version:main"; then
+    version=$(get_version)
+    main_version=$(echo $version | sed  "s/\([0-9.]*\)-*\([a-z.0-9]*\)/\1/g")
+    echo "$main_version"
+fi
+
+if test $action == "version:extra"; then
+    version=$(get_version)
+    extra_version=$(echo $version | sed "s/\([0-9.]*\)-*\([a-z.0-9]*\)/\2/g")
+    echo "$extra_version"
+fi
+
+
+
+if test $action == "license"; then
+    cat "${PARENT_DIR}/LICENSE"
+fi
+
+if test $action == "help"; then
+    printf "Usage: %s [options]\n" "$0"
+    printf "Options:\n"
+    printf "  --version, -v        Show version information\n"
+    printf "  --version:main, -vm  Show main version information\n"
+    printf "  --version:extra,-ve  Show extra version information\n"
+    printf "  --license            Show license information\n"
+    printf "  --help, -h           Show this help message\n"
+fi

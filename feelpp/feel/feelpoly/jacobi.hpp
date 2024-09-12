@@ -33,10 +33,14 @@
 #include <cmath>
 
 #include <boost/function.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#pragma GCC diagnostic pop
 
 #if 0
 #include <Eigen/Core>
