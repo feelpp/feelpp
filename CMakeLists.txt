@@ -23,6 +23,25 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
+# Define a macro to detect SPACK_ENV and set cache variables
+macro(DETECT_SPACK_ENV_AND_SET_CACHE)
+  if(DEFINED ENV{SPACK_ENV})
+    message(STATUS "SPACK_ENV detected: $ENV{SPACK_ENV}")
+
+    # Set CMake cache variables
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON CACHE BOOL "Enable RPATH use with linker")
+    set(FEELPP_USE_EXTERNAL_CLN ON CACHE BOOL "Use external CLN")
+    set(FEELPP_ENABLE_VTK OFF CACHE BOOL "Disable VTK")
+    set(USE_VTK OFF CACHE BOOL "Disable VTK")
+    set(FEELPP_ENABLE_OPENTURNS OFF CACHE BOOL "Disable OpenTURNS")
+  else()
+    message(STATUS "SPACK_ENV not detected")
+  endif()
+endmacro()
+
+
+
+
 if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
   FEELPP_COMPONENT STREQUAL "mor" OR
   FEELPP_COMPONENT STREQUAL "testsuite" OR
@@ -46,6 +65,9 @@ if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
       message(STATUS "[component] MOR_COMPONENT: ${MOR_COMPONENT}")
       list(FIND FEELPP_COMPONENT "python" PYTHON_COMPONENT)
       message(STATUS "[component] PYTHON_COMPONENT: ${PYTHON_COMPONENT}")
+
+      # Example usage of the macro
+      DETECT_SPACK_ENV_AND_SET_CACHE()
       foreach(component IN LISTS FEELPP_COMPONENT)
         message(STATUS "[component] ${component}")
         add_subdirectory(${component})
@@ -129,6 +151,8 @@ macro(set_config_option VARNAME STRING)
   message(STATUS "[feelpp] Found " ${STRING})
 endmacro(set_config_option)
 
+# Example usage of the macro
+DETECT_SPACK_ENV_AND_SET_CACHE()
 # this variable controls the default value of the "FEELPP_ENABLE_XXX" options which are
 # normally set to ON (useful if you want to configure a minimal version of feel++:
 # e.g. "cmake -DFEELPP_DEFAULT=0 -DFEELPP_ENABLE_TESTS=1 -DFEELPP_ENABLE_=1")
