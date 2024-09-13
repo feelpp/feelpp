@@ -400,11 +400,6 @@ testPresets: [
       }
   },
   {
-      name: "mor_python",
-      configurePreset: "mor_python",
-      inherits: "feelpp"
-  },
-  {
       name: "feelpp-testsuite",
       configurePreset: "feelpp-testsuite",
       inherits: "feelpp"

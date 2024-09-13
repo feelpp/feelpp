@@ -2887,11 +2887,6 @@
          "name": "feelpp-python"
       },
       {
-         "configurePreset": "mor_python",
-         "inherits": "feelpp",
-         "name": "mor_python"
-      },
-      {
          "configurePreset": "feelpp-testsuite",
          "inherits": "feelpp",
          "name": "feelpp-testsuite"

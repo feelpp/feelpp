@@ -97,11 +97,11 @@ jobs:
         with:
             submodules: recursive
 
-      - name: Build and Test Feelpp
+      - name: Build and Test Feelpp Core
         id: build-feelpp
         run: |
           echo "Building Feelpp for branch ${{ env.BRANCH }}"
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-core
         env:
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
