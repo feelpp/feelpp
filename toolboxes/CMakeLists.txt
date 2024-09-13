@@ -99,6 +99,9 @@ add_subdirectory(tools/man)
 
 if ( FEELPP_FOUND )
 
+if (NOT TARGET toolboxes)
+  add_custom_target(toolboxes)
+endif()
 add_subdirectory( feel/feelmodels )
 
 list(APPEND TOOLBOXES_CORE "modelalg" "modelmesh" "modelcore")
