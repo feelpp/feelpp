@@ -34,10 +34,12 @@ macro(DETECT_SPACK_ENV_AND_SET_CACHE)
     set(FEELPP_ENABLE_VTK OFF CACHE BOOL "Disable VTK")
     set(USE_VTK OFF CACHE BOOL "Disable VTK")
     set(FEELPP_ENABLE_OPENTURNS OFF CACHE BOOL "Disable OpenTURNS")
+    set(FEELPP_ENABLE_OMC OFF CACHE BOOL "Disable OpenModelica")
+    set(FEELPP_ENABLE_ANN OFF CACHE BOOL "Disable ANN")
   else()
     message(STATUS "SPACK_ENV not detected")
   endif()
-endmacro()
+endmacro() 
 
 
 
