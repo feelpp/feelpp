@@ -35,4 +35,4 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   MAN fluid
 )
 feelpp_add_testcase( cases PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
-
+add_dependencies(toolboxes feelpp_toolbox_fluid)
