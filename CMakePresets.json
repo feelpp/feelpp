@@ -1054,6 +1054,7 @@
          "binaryDir": "${sourceDir}/build/${presetName}$env{DISTRIBUTION}$env{ARCH}",
          "cacheVariables": {
             "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
             "CMAKE_VERBOSE_MAKEFILE": "ON",
             "FEELPP_ENABLE_FMILIB": "OFF",
             "FEELPP_ENABLE_OPENTURNS": "OFF",

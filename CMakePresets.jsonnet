@@ -109,6 +109,7 @@ local wp_generator(component, compiler, cpp, type, config) =
       generator: "Unix Makefiles",
       binaryDir: "${sourceDir}/build/${presetName}$env{DISTRIBUTION}$env{ARCH}",
       cacheVariables: {
+        CMAKE_INSTALL_PREFIX: "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
         CMAKE_EXPORT_COMPILE_COMMANDS: 'ON',
         CMAKE_VERBOSE_MAKEFILE: 'ON',
         FEELPP_ENABLE_VTK: "OFF",
