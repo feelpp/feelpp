@@ -168,7 +168,7 @@ if (TRUE)
     set(ROCM_ROOT "/opt/rocm-5.7.2" CACHE PATH "Root directory of the ROCm installation")
     list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
 
-
+    add_compile_definitions( __HIP_PLATFORM_AMD__)
 
     if(FALSE)
       find_package(rocprim REQUIRED)
@@ -188,16 +188,43 @@ if (TRUE)
       endif()
     endif()
 
-
+    
     if(TRUE)
       find_package(rocprim CONFIG PATHS "/nvme0/lemoinep/soft/rocPRIM")
       if (rocprim_FOUND)
         message("{*************************** rocprim_LIBRARIES *************************************}") 
-        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/nvme0/lemoinep/soft/rocPRIM/include")
+        set(rocPRIM_INCLUDE_DIR "/nvme0/lemoinep/soft/rocPRIM/include")  
+        set(CMAKE_PREFIX_PATH ${rocPRIM_INCLUDE_DIR})
+
+        # BEGIN::LAST ADD
+        add_definitions(-D__HIP_CPU_RT__)
+
+        include_directories(${rocPRIM_INCLUDE_DIR})
+        link_directories(${rocPRIM_INCLUDE_DIR})
+
+        #set(CMAKE_HIP_COMPILER ${HIP_HIPCC_EXECUTABLE})
+
+        #option(BUILD_TEST "Build tests" ON) Not used
+        #add_definitions(-D__HAVE_FLOAT16)
+        #set(NATIVE_HALF_TYPE "uint16_t")
+        #set(NATIVE_HALF_TYPE "half")
+        #set(__HIP_CPU_RT__ ON)
+        #option(DISABLE_FLOAT16 "Disable _FLOAT16 support" ON) 
+        #set(GPU_TARGETS "${AMDGPU_TARGETS}" CACHE STRING "GPU architectures to compile for")
+
+        #add_definitions(-DDISABLE_FLOAT16=ON)
+        #if(DISABLE_FLOAT16)
+        #add_definitions(-DDISABLE_FLOAT16)
+        #endif()
+        #add_definitions(-DCOMPILER_RT_HAS_FLOAT16=0)
+        #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-float16")
+        # END::LAST ADD
+
       else()
         message(FATAL_ERROR "xxxxxxxxxxxxxxxx Could not find rocprim xxxxxxxxxxxxxxxx")     
       endif()
     endif()
+  
 
     if(TRUE)
       #find_package(rocthrust REQUIRED)
@@ -205,25 +232,41 @@ if (TRUE)
       find_package(rocthrust REQUIRED CONFIG PATHS "/nvme0/lemoinep/soft/rocThrust")
       if (rocthrust_FOUND)
         message("{*************************** rocthrust_LIBRARIES *************************************}") 
-        #list(APPEND include_dirs "/nvme0/lemoinep/soft/rocThrust/include")
-        #list(APPEND CMAKE_PREFIX_PATH /nvme0/lemoinep/soft/rocThrust/include)
-        #include_directories(/nvme0/lemoinep/soft/rocThrust/include)
+        set(rocTHRUST_INCLUDE_DIR "/nvme0/lemoinep/soft/rocThrust/include")  
+        set(CMAKE_PREFIX_PATH ${rocTHRUST_INCLUDE_DIR})
+
+        # BEGIN::LAST ADD
+        set(THRUST_DEVICE_SYSTEM "THRUST_DEVICE_SYSTEM_HIP")     
+        add_definitions(-DTHRUST_DEVICE_SYSTEM=${THRUST_DEVICE_SYSTEM})
+        include_directories(${rocTHRUST_INCLUDE_DIR})
+        link_directories(${rocTHRUST_INCLUDE_DIR})
+
+        # END::LAST ADD
+
         #include_directories(/opt/rocm-5.7.2/rocthrust/include)
-        set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/nvme0/lemoinep/soft/rocThrust/include")
+        #set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "/nvme0/lemoinep/soft/rocThrust/include")
+        
       else()
         message(FATAL_ERROR "xxxxxxxxxxxxxxxx Could not find rocThrust xxxxxxxxxxxxxxxx")     
       endif()
     endif()
 
-    add_compile_definitions( __HIP_PLATFORM_AMD__)
+    
+
+
+
     #list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas)
-    list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas roc::rocthrust)
+    list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas PRIVATE roc::rocthrust roc::rocprim)
+
+    #ADD after in Sub CMakeLists...
     list(APPEND GPU_ROCTHRUST_LIBRARIES roc::rocthrust)
+    list(APPEND GPU_ROCPRIM_LIBRARIES roc::rocprim)
+
+    list(APPEND include_dirs "/nvme0/lemoinep/soft/rocPRIM/include")
+    list(APPEND include_dirs "/nvme0/lemoinep/soft/rocThrust/include")
 
     if(GPU_RUNTIME STREQUAL "HIP")
       list(APPEND include_dirs "${ROCM_ROOT}/include")
-      list(APPEND include_dirs "/nvme0/lemoinep/soft/rocPRIM/include")
-      list(APPEND include_dirs "/nvme0/lemoinep/soft/rocThrust/include")
       MESSAGE(${ROCM_ROOT}/include)
     endif()
 
