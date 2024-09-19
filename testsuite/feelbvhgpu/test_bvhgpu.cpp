@@ -69,6 +69,8 @@ using namespace Feel;
 //#include "GuHip.hpp"
 
 
+
+
 namespace bvhhipTestIfCompile
 {
 
@@ -551,6 +553,33 @@ __global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* r
     intersectionPoint[idx] = closestIntersectionPoint;
     //if (closestTriangle!=-1) { printf("t=%f\n",closestT); } OK
 }
+
+
+// Function to load a triangle mesh from a simple OBJ file
+bool loadOBJTriangle(const std::string& filename, std::vector<F3Triangle>& triangles) {
+    std::ifstream file(filename);
+    if (!file.is_open()) return false;
+
+    std::vector<float3> vertices;
+    std::string line;
+    bool isView=false;
+    while (std::getline(file, line)) {
+        if (line[0] == 'v') {
+            float x, y, z;
+            sscanf(line.c_str(), "v %f %f %f", &x, &y, &z);
+            vertices.push_back(make_float3(x, y, z));
+            if (isView) std::cout <<"v=<" << x <<","<<y<<","<<z<< ">\n";
+        } else if (line[0] == 'f') {
+            unsigned int i1, i2, i3;
+            sscanf(line.c_str(), "f %u %u %u", &i1, &i2, &i3);
+            if (isView) std::cout <<"f=<" << i1 <<","<<i2<<","<<i3<< ">\n";
+            triangles.push_back({vertices[i1-1], vertices[i2-1], vertices[i3-1]});
+        }
+    }
+    return true;
+}
+
+
 }
 
 
@@ -1050,6 +1079,94 @@ BOOST_AUTO_TEST_CASE( test_thrust )
     std::cout << std::endl;
 
     std::cout << "[INFO]: WELL DONE :-) Test_thrust!"<<"\n";
+}
+
+
+BOOST_AUTO_TEST_CASE( test_thrust_bvh_hip_amd_gpu )
+{
+    using namespace bvhhipTestIfCompile;
+    std::string filename;
+    filename = "/nvme0/lemoinep/feelppGPUBeta/feelpp/testsuite/feelbvhgpu/cases/Triangle2Cube.obj";
+    std::cout<<"\n";
+    std::cout<<"[INFO]: BEGIN BVH WITH TRIANGLE\n";
+    std::cout<<"[INFO]: LOAD SCENE >>>"<<filename<<"\n";
+
+    // Load the mesh
+    std::vector<F3Triangle> hostTriangles;
+    loadOBJTriangle(filename, hostTriangles);
+    //getchar();
+      
+
+  
+    // Transfer triangles to GPU
+    thrust::device_vector<F3Triangle> deviceTriangles = hostTriangles;
+
+    // Building the BVH
+    thrust::device_vector<BVHNode> deviceNodes;
+    buildBVHWithTriangleVersion1(deviceTriangles, deviceNodes);
+
+    std::cout<<"[INFO]: BVH built with " << deviceNodes.size() << " nodes" << std::endl;
+
+    // Generate test several rays
+    std::cout<<"[INFO]: GENERATE TEST SEVERAL RAYS\n";
+    const int numRays = 1024;
+
+    thrust::host_vector<float3> hostIntersectionPoint(numRays);
+    
+    thrust::host_vector<F3Ray> hostRays(numRays);
+    for (int i = 0; i < numRays; ++i) {
+        hostRays[i].origin = make_float3(0, 0, 10);
+        hostRays[i].direction = make_float3(
+            (float)rand() / RAND_MAX * 2 - 1,
+            (float)rand() / RAND_MAX * 2 - 1,
+            -1
+        );
+        hostRays[i].direction = normalize(hostRays[i].direction);
+        hostIntersectionPoint[i]=make_float3(INFINITY, INFINITY, INFINITY);
+    }
+    thrust::device_vector<F3Ray>  deviceRays              = hostRays;
+    thrust::device_vector<float3> deviceIntersectionPoint = hostIntersectionPoint;
+
+    // Allocate memory for the results
+    thrust::device_vector<int>   deviceHitResults(numRays);
+    thrust::device_vector<float> deviceDistanceResults(numRays);
+
+    // Start the ray tracing kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
+    rayTracingKernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(deviceNodes.data()),
+        thrust::raw_pointer_cast(deviceTriangles.data()),
+        thrust::raw_pointer_cast(deviceRays.data()),
+        thrust::raw_pointer_cast(deviceHitResults.data()),
+        thrust::raw_pointer_cast(deviceDistanceResults.data()),
+        thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
+        numRays
+    );
+
+    // Retrieve the results
+    thrust::host_vector<int>   hostHitResults = deviceHitResults;
+    thrust::host_vector<float> hostDistanceResults = deviceDistanceResults;
+    hostIntersectionPoint=deviceIntersectionPoint;
+
+    // Count intersections
+    int hitCount = thrust::count_if(hostHitResults.begin(), hostHitResults.end(),thrust::placeholders::_1 != -1);
+    std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
+    for (int i=0;i<hostHitResults.size();++i)
+    {
+        if (hostHitResults[i]!=-1)
+        {
+            std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostRays[i].origin.x<<","<<hostRays[i].origin.y<<","<<hostRays[i].origin.z<<"> ";
+            std::cout<<" dir= <"<<hostRays[i].direction.x<<","<<hostRays[i].direction.y<<","<<hostRays[i].direction.z<<"> ";
+            std::cout<<" Hit= "<<hostHitResults[i]<<" min dist="<<hostDistanceResults[i];
+            std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> "<<"\n";
+        }
+    }
+    std::cout<<"\n";
+    std::cout<<"[INFO]: END BVH WITH TRIANGLE\n";
+    std::cout<<"\n";
+
+
 }
 
 
