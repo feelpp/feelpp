@@ -49,12 +49,27 @@
 //#include "hipsolver.h"
 //#include "hipblas-export.h"
 
-
+/*
 #include <thrust/device_vector.h> 
 #include <thrust/transform.h> 
 #include <thrust/functional.h> 
 #include <thrust/execution_policy.h>
 #include <thrust/random.h>
+*/
+
+#include "thrust/device_vector.h"
+#include "thrust/transform.h"
+#include "thrust/functional.h"
+#include "thrust/execution_policy.h"
+#include "thrust/random.h"
+#include "thrust/host_vector.h"
+#include "thrust/device_vector.h"
+#include "thrust/sort.h"
+
+#include "thrust/generate.h"
+#include "thrust/sort.h"
+#include "thrust/copy.h"
+#include "thrust/count.h"
 
 
 #include <feel/feeltask/taskpu.hpp>
@@ -64,11 +79,11 @@ using namespace Feel;
 #define BLOCK_SIZE 128
 
 
-
 //#include "Gu.hpp"
 //#include "GuHip.hpp"
 
 
+#include "bvhHybrid.hpp"
 
 
 namespace bvhhipTestIfCompile
@@ -896,6 +911,95 @@ void test3D( RangeType const& range )
 
 }
 
+
+
+
+template <typename RangeType>
+void test3DWithHybrid( RangeType const& range )
+{
+
+    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
+    using bvh_ray_type = BVHHybrid::BVHRay<mesh_entity_type::nRealDim>;
+    Eigen::Vector3d origin2={-10.0,-0.25,-0.25};
+    Eigen::Vector3d direction_perp_2={1.,0.,0.};
+    std::vector<bvh_ray_type> rays;
+    rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
+    BVHHybrid::BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
+
+    for (int k=0;k<rays.size();++k)
+    {
+        raysDistributed.push_back( rays[k] );
+    }
+
+    std::cout<<"\n";
+    std::cout<<"\n";
+
+    std::cout<<"=====================================================================================+============\n";
+    std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
+    std::cout<<"[INFO]: Bounding Colume Hierarchy\n";
+
+    auto bvhInHouse       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="in-house");
+    auto bvhThirdParty    = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party");
+    auto bvhThirdPartyLow = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::High);
+
+    auto bvhGpuParty       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
+
+    std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
+    std::cout<<"========================================================================================+=========\n";
+
+    std::cout<<"\n";
+    std::cout<<"\n";
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+
+    for ( auto const& ray : rays )
+        {
+            std::cout << "rays parts"<< "\n";
+            auto rayIntersectionResult1 = bvhInHouse->intersect(_ray=ray) ;
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhInHouse,rayIntersectionResult1 );
+        }
+
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+    std::cout<<"=================================================================================================\n";
+
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"*************************************************************************************************\n";
+
+    auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+        {
+            std::cout << "multiRayDistributedIntersectionResult parts"<< "\n";
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
+        }
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
+
+
+     std::cout<<"=================================================================================================\n";
+    std::cout<<"*************************************************************************************************\n";
+
+    auto multiRayDistributedIntersectionGpuResult = bvhGpuParty->intersect(_ray=raysDistributed);
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionGpuResult )
+        {
+            std::cout << "GPU parts"<< "\n";
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhGpuParty,rayIntersectionResult);
+        }
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
+    
+
+}
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //=========================================================================================================================
 
@@ -987,8 +1091,6 @@ BOOST_AUTO_TEST_CASE( test_gpu_with_specx )
 }
 */
 
-
-
 BOOST_AUTO_TEST_CASE( test_load_mesh3 )
 {
 
@@ -1049,7 +1151,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     std::cout<<"\n";
 }
 
-
+/*
 BOOST_AUTO_TEST_CASE( test_thrust )
 {
     // Taille des vecteurs 
@@ -1080,8 +1182,9 @@ BOOST_AUTO_TEST_CASE( test_thrust )
 
     std::cout << "[INFO]: WELL DONE :-) Test_thrust!"<<"\n";
 }
+*/
 
-
+/*
 BOOST_AUTO_TEST_CASE( test_thrust_bvh_hip_amd_gpu )
 {
     using namespace bvhhipTestIfCompile;
@@ -1168,7 +1271,7 @@ BOOST_AUTO_TEST_CASE( test_thrust_bvh_hip_amd_gpu )
 
 
 }
-
+*/
 
 
 

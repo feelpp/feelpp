@@ -253,8 +253,6 @@ if (TRUE)
 
     
 
-
-
     #list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas)
     list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas PRIVATE roc::rocthrust roc::rocprim)
 
