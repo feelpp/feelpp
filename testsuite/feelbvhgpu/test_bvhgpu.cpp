@@ -763,24 +763,20 @@ void test3D( RangeType const& range )
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
-    //Eigen::VectorXd origin(3);
-    //origin<< 0.5,0.5,0.5;
+    Eigen::Vector3d origin1={1000.0,0.0,0.0};
+    Eigen::Vector3d direction_perp_1={1.,0.,0.};
 
-    //Eigen::VectorXd origin2(3); origin2<< -10.0,-0.25,-0.25;
     Eigen::Vector3d origin2={-10.0,-0.25,-0.25};
-    //Eigen::Vector3d origin2={-10.0,-0.25,1.0};
-
-    //origin2<< -2.5,-0.25,-0.25;
-    //Eigen::VectorXd direction_perp_1(3);
-    //direction_perp_1 << 1.,0.,0.;
-    
-    //Eigen::VectorXd direction_perp_2(3); direction_perp_2 << 1.,0.,0.;
     Eigen::Vector3d direction_perp_2={1.,0.,0.};
 
+    Eigen::Vector3d origin3={-5.0,-0.20,-0.20};
+    Eigen::Vector3d direction_perp_3={1.,0.,0.};
+
     std::vector<bvh_ray_type> rays;
+
+    //rays.push_back( bvh_ray_type(origin1,direction_perp_1) );
     rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
-    //rays.push_back( bvh_ray_type(origin,direction_perp_2) );
-    //rays.push_back( bvh_ray_type(origin2,direction_perp_1) );
+    rays.push_back( bvh_ray_type(origin3,direction_perp_3) );
 
     BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
     for (int k=0;k<rays.size();++k)
@@ -797,10 +793,10 @@ void test3D( RangeType const& range )
     std::cout<<"[INFO]: Bounding Colume Hierarchy\n";
 
     auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
-    auto bvhThirdParty = boundingVolumeHierarchy(_range=range,_kind="third-party");
+    //auto bvhThirdParty = boundingVolumeHierarchy(_range=range,_kind="third-party");
     auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::High);
 
-    auto bvhGpuParty = boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
+    //auto bvhGpuParty = boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
 
     std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
     std::cout<<"========================================================================================+=========\n";
@@ -876,7 +872,7 @@ void test3D( RangeType const& range )
     std::cout<<"=================================================================================================\n";
     std::cout<<"=================================================================================================\n";
 
-
+/*
      std::cout<<"=================================================================================================\n";
     std::cout<<"*************************************************************************************************\n";
 
@@ -891,7 +887,7 @@ void test3D( RangeType const& range )
 
     std::cout<<"=================================================================================================\n";
     std::cout<<"=================================================================================================\n";
-
+*/
 
     //std::map<std::string,std::unique_ptr<BVH<typename tr_mesh_type::element_type>>> M_bvh_tree_vector;
 
@@ -920,10 +916,23 @@ void test3DWithHybrid( RangeType const& range )
 
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHHybrid::BVHRay<mesh_entity_type::nRealDim>;
+
+    Eigen::Vector3d origin1={1000.0,0.0,0.0};
+    Eigen::Vector3d direction_perp_1={1.,0.,0.};
+
     Eigen::Vector3d origin2={-10.0,-0.25,-0.25};
     Eigen::Vector3d direction_perp_2={1.,0.,0.};
+
+    Eigen::Vector3d origin3={-5.0,-0.20,-0.20};
+    Eigen::Vector3d direction_perp_3={1.,0.,0.};
+
+
     std::vector<bvh_ray_type> rays;
+
+    rays.push_back( bvh_ray_type(origin1,direction_perp_1) );
     rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
+    rays.push_back( bvh_ray_type(origin3,direction_perp_3) );
+
     BVHHybrid::BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
 
     for (int k=0;k<rays.size();++k)
@@ -952,9 +961,10 @@ void test3DWithHybrid( RangeType const& range )
     std::cout<<"\n";
     std::cout<<"\n";
 
+/*
     std::cout<<"=================================================================================================\n";
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-/*
+
     for ( auto const& ray : rays )
         {
             std::cout << "rays parts"<< "\n";
@@ -963,14 +973,16 @@ void test3DWithHybrid( RangeType const& range )
             std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
             printRayIntersectionResults(bvhInHouse,rayIntersectionResult1 );
         }
-*/
+
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"=================================================================================================\n";
+*/
 
 
+/*
     std::cout<<"=================================================================================================\n";
     std::cout<<"*************************************************************************************************\n";
-/*
+
     auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
         {
@@ -979,15 +991,17 @@ void test3DWithHybrid( RangeType const& range )
             std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
             printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
         }
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
+
 */
-    std::cout<<"=================================================================================================\n";
-    std::cout<<"=================================================================================================\n";
 
-
+/*
     std::cout<<"=================================================================================================\n";
     std::cout<<"*************************************************************************************************\n";
 
-/*
+
     auto multiRayDistributedIntersectionGpuResult = bvhGpuParty->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionGpuResult )
         {
@@ -996,13 +1010,13 @@ void test3DWithHybrid( RangeType const& range )
             std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
             printRayIntersectionResults(bvhGpuParty,rayIntersectionResult);
         }
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
 */
-    std::cout<<"=================================================================================================\n";
-    std::cout<<"=================================================================================================\n";
-
 
     std::cout<<"=================================================================================================\n";
-    std::cout<<"*************************************************************************************************\n";
+    std::cout<<"* HIP GPU ****************************************************************************************\n";
 
 
     auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);

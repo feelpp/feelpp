@@ -125,75 +125,20 @@ struct Vec3 {
 
 struct F3Triangle {
     float3 v0, v1, v2;
+    int id;
 };
 
 
 struct Triangle {
     Vec3 v0, v1, v2;
-
-    __host__ __device__
-    bool intersect(const Vec3& rayOrigin, const Vec3& rayDir, float& t) const {
-        Vec3 edge1 = v1 - v0;
-        Vec3 edge2 = v2 - v0;
-        Vec3 h = rayDir.cross(edge2);
-        float a = edge1.dot(h);
-
-        if (a > -1e-8 && a < 1e-8) return false; // Ray is parallel to triangle
-
-        float f = 1.0f / a;
-        Vec3 s = rayOrigin - v0;
-        float u = f * s.dot(h);
-        if (u < 0.0f || u > 1.0f) return false;
-
-        Vec3 q = s.cross(edge1);
-        float v = f * rayDir.dot(q);
-        if (v < 0.0f || u + v > 1.0f) return false;
-
-        t = f * edge2.dot(q);
-        return t > 1e-8; // Intersection occurs
-    }
+    int id;
 };
 
 
 struct Box {
     Vec3 min;
     Vec3 max;
-
-/*
-    __host__ __device__
-    bool intersect(const Vec3& rayOrigin, const Vec3& rayDir, float& t) const {
-        float tMin = (min.x - rayOrigin.x) / rayDir.x;
-        float tMax = (max.x - rayOrigin.x) / rayDir.x;
-
-        if (tMin > tMax) SWAP(float,tMin, tMax);
-
-        float tyMin = (min.y - rayOrigin.y) / rayDir.y;
-        float tyMax = (max.y - rayOrigin.y) / rayDir.y;
-
-        if (tyMin > tyMax) SWAP(float,tyMin, tyMax);
-
-        if ((tMin > tyMax) || (tyMin > tMax))
-            return false;
-
-        if (tyMin > tMin)
-            tMin = tyMin;
-
-        if (tyMax < tMax)
-            tMax = tyMax;
-
-        float tzMin = (min.z - rayOrigin.z) / rayDir.z;
-        float tzMax = (max.z - rayOrigin.z) / rayDir.z;
-
-        if (tzMin > tzMax) SWAP(float,tzMin, tzMax);
-
-        if ((tMin > tzMax) || (tzMin > tMax))
-            return false;
-
-        t = tMin;
-        return true;
-    }
-    */
-
+    int id;
 };
 
 
@@ -270,7 +215,7 @@ void print_float3(const float3& v) {
 
 float3 toFloat3(const Vec3& v) { return {v.x, v.y, v.z}; }
 
-std::vector<F3Triangle> boxToTriangles(const Box& box) {
+std::vector<F3Triangle> boxToTriangles(const Box& box,const int& id) {
     std::vector<F3Triangle> triangles;
     triangles.reserve(12);
 
@@ -300,7 +245,9 @@ std::vector<F3Triangle> boxToTriangles(const Box& box) {
         tri.v0 = toFloat3(vertices[indices[i][0]]);
         tri.v1 = toFloat3(vertices[indices[i][1]]);
         tri.v2 = toFloat3(vertices[indices[i][2]]);
+        tri.id = id;
         triangles.push_back(tri);
+        triangles.back().id=id;
     }
     return triangles;
 }
@@ -475,8 +422,7 @@ __device__ bool rayTriangleIntersect(const F3Ray& ray, const F3Triangle& triangl
     return (t > 1e-6);
 }
 
-
-__global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* rays, int* hitResults, float* distance,float3* intersectionPoint, int numRays) {
+__global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* rays, int* hitResults, float* distance,float3* intersectionPoint,int* hitId, int numRays) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numRays) return;
 
@@ -487,8 +433,9 @@ __global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* r
 
     float closestT = INFINITY;
     int closestTriangle = -1;
+    int closesIntersectionId = -1;
     float3 closestIntersectionPoint=make_float3(INFINITY, INFINITY, INFINITY);
-    bool isView=false;
+    bool isView=false; //isView=true;
 
     while (stackPtr > 0) {
         int nodeIdx = stack[--stackPtr];
@@ -519,6 +466,8 @@ __global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* r
 
         if (tmax < 0) continue;
 
+        int numIdNodeTrianggleIndex=node.triangleIndex;
+
         if (node.triangleIndex != -1) {
             // Sheet: test the intersection with the triangle
             float t;
@@ -526,12 +475,14 @@ __global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* r
             if (rayTriangleIntersect(ray, triangles[node.triangleIndex], t,intersectionPointT)) {
 
                 //To view all intersections
-                if (isView) printf("[%i] <%f %f %f>\n",idx,intersectionPointT.x,intersectionPointT.y,intersectionPointT.z);
+                if (isView) printf("      Node Idx [%i] Num Ray[%i] <%f %f %f>\n",nodeIdx,idx,intersectionPointT.x,intersectionPointT.y,intersectionPointT.z);
 
                 if (t < closestT) {
                     closestT = t;
                     closestTriangle = node.triangleIndex;
                     closestIntersectionPoint=intersectionPointT;
+                    closesIntersectionId=triangles[numIdNodeTrianggleIndex].id;
+                    //printf("      NodeTriangleIndex=%i %i\n",numIdNodeTrianggleIndex,triangles[numIdNodeTrianggleIndex].id);
                 }
             }
         } else {
@@ -544,6 +495,7 @@ __global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* r
     hitResults[idx]        = closestTriangle;
     distance[idx]          = closestT;
     intersectionPoint[idx] = closestIntersectionPoint;
+    hitId[idx]             = closesIntersectionId;
     //if (closestTriangle!=-1) { printf("t=%f\n",closestT); } OK
 }
 
@@ -664,7 +616,6 @@ public:
     static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
     using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
     using ray_type = BVHRay<nRealDim>;
-
 
     //! @brief Information on the primitive (mesh entity, bounding box, centroid)
     struct BVHPrimitiveInfo
@@ -787,6 +738,8 @@ public:
             bool useRobustTraversal = args.get_else(_robust,true);
             IntersectContext ctx = args.get_else(_context,IntersectContext::closest);
             bool parallel = args.get_else(_parallel,this->worldComm().size() > 1);
+            //bool isGPU = args.get_else(_GPU,false);
+            bool isGPU=true;
 
             bool closestOnly = ctx == IntersectContext::closest;
             using napp_ray_type = std::decay_t<decltype(ray)>;
@@ -821,24 +774,21 @@ public:
                 std::vector<std::vector<rayintersection_result_type>> resSeq;
                 resSeq.reserve( ray.size() );
                 
-                //A modifier ici pour le ray tracing HIP AMD GPU THRUST
-                for ( auto const& currentRay : ray )
+                
+                if ( !isGPU )
                 {
-                    auto currentResSeq = this->intersectSequential( currentRay,useRobustTraversal );
-                    if ( closestOnly && currentResSeq.size() > 1 )
-                        currentResSeq.resize(1);
-                    resSeq.push_back( std::move( currentResSeq ) );
+                    for ( auto const& currentRay : ray )
+                    {
+                        auto currentResSeq = this->intersectSequential( currentRay,useRobustTraversal );
+                        if ( closestOnly && currentResSeq.size() > 1 )
+                            currentResSeq.resize(1);
+                        resSeq.push_back( std::move( currentResSeq ) );
+                    }
                 }
-
-
-                //...//
-                //std::vector<std::vector<rayintersection_result_type>> resSeq2;
-                //resSeq2= this->intersectAllRaysWithGPU(ray); 
-
-                resSeq= this->intersectAllRaysWithGPU(ray); 
-
-  
-
+                else
+                {
+                    resSeq= this->intersectAllRaysWithGPU(ray); 
+                }
 				
                 if ( !parallel )
                     return resSeq;
@@ -917,9 +867,6 @@ public:
 protected:
 
     virtual std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, bool useRobustTraversal = true ) = 0;
-
-    //virtual std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(BVHRay<mesh_entity_type::nRealDim> const& rayons) = 0;
-
     virtual std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) = 0;
 
     template <typename RangeType>
@@ -1355,13 +1302,6 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     using vector_realdim_type = typename super_type::vector_realdim_type;
     static constexpr uint16_type nRealDim = super_type::nRealDim;
 
-    using value_type = double;
-    using node_type = bvh::v2::Node<value_type, nRealDim>;
-    using backend_bvh_type = bvh::v2::Bvh<node_type>;
-    using backend_vector_realdim_type = bvh::v2::Vec<value_type, nRealDim>;
-    using backend_precompute_triangle_type = bvh::v2::PrecomputedTri<value_type>;
-
-
 public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
@@ -1370,7 +1310,7 @@ public:
     thrust::device_vector<bvhhip::F3Triangle> deviceTriangles;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm ) : super_type( quality,worldComm )
-    { }
+    {  }
 
     BVH_HIP_Party( BVH_HIP_Party && ) = default;
 
@@ -1382,6 +1322,8 @@ public:
             super_type::updateForUse( range );
             // init bvh backend
             std::cout << "Size primitiveInfo="<<this->M_primitiveInfo.size()<< std::endl;
+            //std::vector<backend_vector_realdim_type> centers;
+            //centers.reserve( this->M_primitiveInfo.size() );
             //...
             std::vector<bvhhip::F3Triangle> hostTriangles;
 			for (int k=0; k< this->M_primitiveInfo.size();++k)
@@ -1390,36 +1332,34 @@ public:
 					mbox.min=bvhhip::Vec3(this->M_primitiveInfo[k].boundMin()[0],this->M_primitiveInfo[k].boundMin()[1],this->M_primitiveInfo[k].boundMin()[2]);
 					mbox.max=bvhhip::Vec3(this->M_primitiveInfo[k].boundMax()[0],this->M_primitiveInfo[k].boundMax()[1],this->M_primitiveInfo[k].boundMax()[2]);
                     std::vector<bvhhip::F3Triangle>  ltri;
-                    ltri=bvhhip::boxToTriangles(mbox);
+                    ltri=bvhhip::boxToTriangles(mbox,k);
                     hostTriangles.insert(hostTriangles.end(),ltri.begin(),ltri.end());
                     ltri.clear();
+
+                    //auto const& centroid = this->M_primitiveInfo[k].centroid();
+                    //centers.push_back( backend_vector_realdim_type::generate([&centroid] (std::size_t i) { return centroid[i]; }) );
 			}
                 
             //...
             // Transfer triangles to GPU
-            //thrust::device_vector<bvhhip::F3Triangle> deviceTriangles = hostTriangles;  //in declaration
             deviceTriangles = hostTriangles;
-                
             // Building the BVH
-            //thrust::device_vector<bvhhip::BVHNode> deviceNodes; //in declaration
             bvhhip::buildBVHWithTriangleVersion1(deviceTriangles, deviceNodes);
-            std::cout<<"[INFO]: BVH built with " << deviceNodes.size() << " nodes" << std::endl;  
         }
 
 private:
 
     //using rayintersection_result_type = BVHRayIntersectionResult;
-
-    //std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(BVHRay<mesh_entity_type::nRealDim> const &rayons) override
     std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
     {
+                //static constexpr bool isAnyHit = false;
                 int numRays=rayons.size();
                 
 
                 std::vector<std::vector<rayintersection_result_type>> resALL;
-                resALL.reserve(numRays);
+                //resALL.reserve(numRays);
                 std::vector<rayintersection_result_type> res;
-                res.reserve(numRays);
+                //res.reserve(numRays);
                 
 
 
@@ -1447,22 +1387,25 @@ private:
                 // Allocate memory for the results
 				thrust::device_vector<int>   deviceHitResults(numRays);
 				thrust::device_vector<float> deviceDistanceResults(numRays);
+                thrust::device_vector<int>   deviceIdResults(numRays);
 				int threadsPerBlock = 256;
 				int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
-
-				bvhhip::rayTracingKernel<<<blocksPerGrid, threadsPerBlock>>>(
-					thrust::raw_pointer_cast(deviceNodes.data()),
-					thrust::raw_pointer_cast(deviceTriangles.data()),
-					thrust::raw_pointer_cast(deviceRays.data()),
-					thrust::raw_pointer_cast(deviceHitResults.data()),
-					thrust::raw_pointer_cast(deviceDistanceResults.data()),
-					thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
-					numRays
-				);
+                bvhhip::rayTracingKernel<<<blocksPerGrid, threadsPerBlock>>>(
+                        thrust::raw_pointer_cast(deviceNodes.data()),
+                        thrust::raw_pointer_cast(deviceTriangles.data()),
+                        thrust::raw_pointer_cast(deviceRays.data()),
+                        thrust::raw_pointer_cast(deviceHitResults.data()),
+                        thrust::raw_pointer_cast(deviceDistanceResults.data()),
+                        thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
+                        thrust::raw_pointer_cast(deviceIdResults.data()),
+                        numRays
+                 );
 
 				thrust::host_vector<int>   hostHitResults = deviceHitResults;
 				thrust::host_vector<float> hostDistanceResults = deviceDistanceResults;
 				hostIntersectionPoint=deviceIntersectionPoint;
+                thrust::host_vector<int>   IdResults = deviceIdResults;
+
 
                 std::cout<<"[END::RAYS TRACING]"<<"\n";
 
@@ -1472,57 +1415,54 @@ private:
 				// Count intersections
 				int hitCount = thrust::count_if(hostHitResults.begin(), hostHitResults.end(),thrust::placeholders::_1 != -1);
 				std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
-				for (int i=0;i<hostHitResults.size();++i)
+				for (int i=0;i<numRays;++i)
 				{
                     double M_distance = std::numeric_limits<double>::max();
+                    int numId=-1; 
 
 					if (hostHitResults[i]!=-1)
 					{
 						std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostRays[i].origin.x<<","<<hostRays[i].origin.y<<","<<hostRays[i].origin.z<<"> ";
 						std::cout<<" dir= <"<<hostRays[i].direction.x<<","<<hostRays[i].direction.y<<","<<hostRays[i].direction.z<<"> ";
-						std::cout<<" Hit= "<<hostHitResults[i]<<" min dist="<<hostDistanceResults[i];
-						std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> "<<"\n";
-
+						std::cout<<" dist (min)="<<hostDistanceResults[i];
+						std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> ";
+                        std::cout<<" IdObject= "<<IdResults[i]<<"\n";
                         M_distance=double(hostDistanceResults[i]);
+
+
+                        res.push_back( rayintersection_result_type(this->worldComm().rank(),IdResults[i], M_distance)); //(rank,idPrimitiv,distance)
+                        //res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
+                        res.back().setCoordinates( this->CartesianCoordinates(hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z));
+                        res.resize(1);
+                        resALL.push_back( std::move( res ) );
 					}
-
-                    //res.push_back( rayintersection_result_type(this->worldComm().rank(), M_bvh->prim_ids[i], rayBackend.tmax) );
-                    res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); //Ajouter le id
-                    //il faut fournir le (rank,idPrimitiv,distance)
-                    //res.back().setCoordinates(coordonnées de collison)
-                    res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
-
-
-                    resALL.push_back( std::move( res ) );
+                    else
+                    {
+                        res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
+                        res.back().setCoordinates( this->CartesianCoordinates(M_distance,M_distance,M_distance));
+                        res.resize(1);
+                        resALL.push_back( std::move( res ) );
+                    }
+                    
 				}
 
-                std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";
-
+                std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";            
                 
-                
-
         return(resALL);
+    }
+
+
+    vector_realdim_type CartesianCoordinates( float x,float y,float z ) const {
+        return vector_realdim_type{{
+                x,
+                y,
+                z,
+            }};
     }
 
     std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, bool useRobustTraversal = true ) override
         {
-            /*
-            auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
-                backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
-                backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.dir()[i]; }),
-                ray.distanceMin(), ray.distanceMax()
-            };
-            */
-
-            /*
-            if ( useRobustTraversal )
-                return this->intersectImpl<true>( rayBackend );
-            else
-                return this->intersectImpl<false>( rayBackend );
-            */
-
            std::vector<rayintersection_result_type> res;
-
             return (res);
         };
 
