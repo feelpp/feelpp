@@ -938,11 +938,13 @@ void test3DWithHybrid( RangeType const& range )
     std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
     std::cout<<"[INFO]: Bounding Colume Hierarchy\n";
 
-    auto bvhInHouse       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="in-house");
-    auto bvhThirdParty    = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party");
-    auto bvhThirdPartyLow = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::High);
+    //auto bvhInHouse        = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="in-house");
+    //auto bvhThirdParty     = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party");
+    //auto bvhThirdPartyLow  = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::High);
+    //auto bvhGpuParty       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
+    //auto bvhHIPParty       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="hip-party",_quality=BVHEnum::Quality::High);
 
-    auto bvhGpuParty       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
+    auto bvhHIPParty       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="hip-party");
 
     std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
     std::cout<<"========================================================================================+=========\n";
@@ -952,7 +954,7 @@ void test3DWithHybrid( RangeType const& range )
 
     std::cout<<"=================================================================================================\n";
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-
+/*
     for ( auto const& ray : rays )
         {
             std::cout << "rays parts"<< "\n";
@@ -961,14 +963,14 @@ void test3DWithHybrid( RangeType const& range )
             std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
             printRayIntersectionResults(bvhInHouse,rayIntersectionResult1 );
         }
-
+*/
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"=================================================================================================\n";
 
 
     std::cout<<"=================================================================================================\n";
     std::cout<<"*************************************************************************************************\n";
-
+/*
     auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
         {
@@ -977,14 +979,15 @@ void test3DWithHybrid( RangeType const& range )
             std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
             printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
         }
-
+*/
     std::cout<<"=================================================================================================\n";
     std::cout<<"=================================================================================================\n";
 
 
-     std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
     std::cout<<"*************************************************************************************************\n";
 
+/*
     auto multiRayDistributedIntersectionGpuResult = bvhGpuParty->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionGpuResult )
         {
@@ -992,6 +995,23 @@ void test3DWithHybrid( RangeType const& range )
             BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
             std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
             printRayIntersectionResults(bvhGpuParty,rayIntersectionResult);
+        }
+*/
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"=================================================================================================\n";
+
+
+    std::cout<<"=================================================================================================\n";
+    std::cout<<"*************************************************************************************************\n";
+
+
+    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+        {
+            std::cout << "Hip parts"<< "\n";
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
         }
 
     std::cout<<"=================================================================================================\n";
@@ -1147,6 +1167,9 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     //test3D( elements(submesh) );
+
+    std::cout<<"+*-*+*-*+*-*+*+*-*+*-*+*-*+*-*+*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n";
+    test3DWithHybrid( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"\n";
 }

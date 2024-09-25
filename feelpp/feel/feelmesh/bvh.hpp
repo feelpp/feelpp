@@ -717,9 +717,7 @@ public:
                 std::cout<<"["<<k<<"] primInfo= min<"<<this->M_primitiveInfo[k].boundMin()[0]<<"," <<this->M_primitiveInfo[k].boundMin()[1]<<"," <<this->M_primitiveInfo[k].boundMin()[2]<<">";
                 std::cout<<" max=<"<<this->M_primitiveInfo[k].boundMin()[0]<<"," <<this->M_primitiveInfo[k].boundMin()[1]<<"," <<this->M_primitiveInfo[k].boundMin()[2]<<">\n";
             };
-
-
-        
+       
 
             typename bvh::v2::DefaultBuilder<node_type>::Config config;
             switch ( this->M_quality )
