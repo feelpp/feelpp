@@ -41,14 +41,6 @@
 #include "thrust/count.h"
 
 
-/*
-#include "thrust/device_vector.h"
-#include "thrust/generate.h"
-#include "thrust/sort.h"
-#include "thrust/copy.h"
-*/
-
-
 #include <limits>
 #include <climits>
 #include <cstdint>
@@ -530,6 +522,14 @@ using namespace Feel;
 //{
 
 
+// https://en.wikipedia.org/wiki/Orthant
+// https://github.com/madmann91/bvh/blob/master/src/bvh/v2/ray.h
+
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
+// https://github.com/scratchapixel/scratchapixel-code/tree/main/ray-tracing-rendering-a-triangle
+
+//
+
 
 namespace BVHHybrid
 {
@@ -738,9 +738,7 @@ public:
             bool useRobustTraversal = args.get_else(_robust,true);
             IntersectContext ctx = args.get_else(_context,IntersectContext::closest);
             bool parallel = args.get_else(_parallel,this->worldComm().size() > 1);
-            //bool isGPU = args.get_else(_GPU,false);
-            bool isGPU=true;
-
+            
             bool closestOnly = ctx == IntersectContext::closest;
             using napp_ray_type = std::decay_t<decltype(ray)>;
             if constexpr( std::is_same_v<BVHRaysDistributed<nRealDim>,napp_ray_type> ) // case rays distributed on process
@@ -773,9 +771,9 @@ public:
             {
                 std::vector<std::vector<rayintersection_result_type>> resSeq;
                 resSeq.reserve( ray.size() );
-                
-                
-                if ( !isGPU )
+
+                //std::cout<<"Value isGPU="<<this->isGPUHip()<<"\n";        
+                if ( !(this->isGPUHip()))
                 {
                     for ( auto const& currentRay : ray )
                     {
@@ -868,6 +866,7 @@ protected:
 
     virtual std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, bool useRobustTraversal = true ) = 0;
     virtual std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) = 0;
+    virtual bool isGPUHip() = 0;
 
     template <typename RangeType>
     void
@@ -974,6 +973,19 @@ public:
 
 private:
 
+    bool isGPUHip() override
+    {
+        return (false);
+    }
+
+    std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
+    {
+        CHECK(false) << "no implementation";
+        std::vector<std::vector<rayintersection_result_type>> res;
+        return (res);
+    }
+
+
     std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, bool useRobustTraversal = true ) override
         {
             auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
@@ -1046,7 +1058,7 @@ private:
 
 //! @brief implementation of BVH tool with an external third party in GPU
 template <typename MeshEntityType>
-class BVH_GPUParty : public BVH<MeshEntityType>
+class BVH_ThirdPartyPlus : public BVH<MeshEntityType>
 {
     using super_type = BVH<MeshEntityType>;
     using mesh_entity_type = typename super_type::mesh_entity_type;
@@ -1068,12 +1080,12 @@ public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
 
-    BVH_GPUParty( BVHEnum::Quality quality, worldcomm_ptr_t worldComm ) : super_type( quality,worldComm )
+    BVH_ThirdPartyPlus( BVHEnum::Quality quality, worldcomm_ptr_t worldComm ) : super_type( quality,worldComm )
     {
         M_FileName="bvh";
     }
 
-    BVH_GPUParty( BVH_GPUParty && ) = default;
+    BVH_ThirdPartyPlus( BVH_ThirdPartyPlus && ) = default;
 
     static std::optional<backend_bvh_type> load_bvh(const std::string& file_name) {
             std::ifstream in(file_name, std::ofstream::binary);
@@ -1213,6 +1225,18 @@ public:
 
 private:
 
+    bool isGPUHip() override
+    {
+        return (false);
+    }
+
+    std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
+    {
+        CHECK(false) << "no implementation";
+        std::vector<std::vector<rayintersection_result_type>> res;
+        return (res);
+    }
+
     std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, bool useRobustTraversal = true ) override
         {
             auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
@@ -1328,11 +1352,12 @@ public:
             std::vector<bvhhip::F3Triangle> hostTriangles;
 			for (int k=0; k< this->M_primitiveInfo.size();++k)
 			{
+                    int id = this->M_primitiveInfo[k].meshEntity().id();
 					bvhhip::Box mbox;
 					mbox.min=bvhhip::Vec3(this->M_primitiveInfo[k].boundMin()[0],this->M_primitiveInfo[k].boundMin()[1],this->M_primitiveInfo[k].boundMin()[2]);
 					mbox.max=bvhhip::Vec3(this->M_primitiveInfo[k].boundMax()[0],this->M_primitiveInfo[k].boundMax()[1],this->M_primitiveInfo[k].boundMax()[2]);
                     std::vector<bvhhip::F3Triangle>  ltri;
-                    ltri=bvhhip::boxToTriangles(mbox,k);
+                    ltri=bvhhip::boxToTriangles(mbox,id);
                     hostTriangles.insert(hostTriangles.end(),ltri.begin(),ltri.end());
                     ltri.clear();
 
@@ -1348,6 +1373,10 @@ public:
         }
 
 private:
+    bool isGPUHip() override
+    {
+        return (true);
+    }
 
     //using rayintersection_result_type = BVHRayIntersectionResult;
     std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
@@ -1504,6 +1533,7 @@ class BVH_InHouse : public BVH<MeshEntityType>
 public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
+
 
     class BVHNode
     {
@@ -1685,6 +1715,19 @@ public:
         }
 
 private:
+
+    bool isGPUHip() override
+    {
+        return (false);
+    }
+
+    std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
+    {
+        CHECK(false) << "no implementation";
+        std::vector<std::vector<rayintersection_result_type>> res;
+        return (res);
+    }
+
     // Verify if the ray intersects the whole bounding structure
     // Returns the integer corresponding to the intersected element
     // If no element is intersected, return -1
@@ -1911,7 +1954,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     using bvh_type = BVH<mesh_entity_type>;
     std::unique_ptr<bvh_type> bvh;
 
-/*
+
     if ( kind == "in-house" )
     {
         using bvh_inhouse_type = BVH_InHouse<mesh_entity_type>;
@@ -1919,7 +1962,10 @@ auto boundingVolumeHierarchy( Ts && ... v )
         bvhInHouse->updateForUse(range);
         bvh = std::move( bvhInHouse );
     }
-    else if ( kind == "third-party" )
+
+    else
+     
+    if ( kind == "third-party" )
     {
         if constexpr ( mesh_entity_type::nRealDim != 3 )
             throw std::invalid_argument("third-party only implement with triangle in 3D");
@@ -1927,16 +1973,17 @@ auto boundingVolumeHierarchy( Ts && ... v )
         bvhThirdParty->updateForUse(range);
         bvh = std::move( bvhThirdParty );
     }
-    else if ( kind == "gpu-party" )
+    else if ( kind == "thrid-party-plus" )
     {
         if constexpr ( mesh_entity_type::nRealDim != 3 )
             throw std::invalid_argument("gpu-party only implement with triangle in 3D");
-        auto bvhGPUParty = std::make_unique<BVH_GPUParty<mesh_entity_type>>( quality, worldcomm );
-        bvhGPUParty->updateForUse(range);
-        bvh = std::move( bvhGPUParty );
+        auto bvhThirdPartyPlus = std::make_unique<BVH_ThirdPartyPlus<mesh_entity_type>>( quality, worldcomm );
+        bvhThirdPartyPlus->updateForUse(range);
+        bvh = std::move( bvhThirdPartyPlus );
     }
     
-    else */if ( kind == "hip-party" )
+    else 
+    if ( kind == "hip-party" )
     {
         if constexpr ( mesh_entity_type::nRealDim != 3 )
             throw std::invalid_argument("hip-party only implement with triangle in 3D");
