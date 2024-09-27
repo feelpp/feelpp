@@ -53,6 +53,10 @@
 namespace bvhhip
 {
 
+
+
+// Definition of manipulation tools, modifications for the creation of the BVH and doing Ray Tracing on the GPU
+
 #define SWAP(T, a, b) do { T tmp = a; a = b; b = tmp; } while (0)
     
 
@@ -521,7 +525,7 @@ using namespace Feel;
 //namespace Feel
 //{
 
-
+// Internet sources of inspiration
 // https://en.wikipedia.org/wiki/Orthant
 // https://github.com/madmann91/bvh/blob/master/src/bvh/v2/ray.h
 
@@ -1056,6 +1060,9 @@ private:
 
 
 
+/***************************************************************************************************************************************************/
+// Added additional tools to the BVH_ThirdParty class (Saving the BVH, displaying information to control values, etc.)
+
 //! @brief implementation of BVH tool with an external third party in GPU
 template <typename MeshEntityType>
 class BVH_ThirdPartyPlus : public BVH<MeshEntityType>
@@ -1311,11 +1318,7 @@ private:
 
 
 /***************************************************************************************************************************************************/
-
-
-
-
-
+// GPU part for BVH and Ray Tracing
 
 //! @brief implementation of BVH tool with an external third party in GPU
 template <typename MeshEntityType>
@@ -1346,25 +1349,66 @@ public:
             super_type::updateForUse( range );
             // init bvh backend
             std::cout << "Size primitiveInfo="<<this->M_primitiveInfo.size()<< std::endl;
-            //std::vector<backend_vector_realdim_type> centers;
-            //centers.reserve( this->M_primitiveInfo.size() );
-            //...
-            std::vector<bvhhip::F3Triangle> hostTriangles;
-			for (int k=0; k< this->M_primitiveInfo.size();++k)
-			{
-                    int id = this->M_primitiveInfo[k].meshEntity().id();
-					bvhhip::Box mbox;
-					mbox.min=bvhhip::Vec3(this->M_primitiveInfo[k].boundMin()[0],this->M_primitiveInfo[k].boundMin()[1],this->M_primitiveInfo[k].boundMin()[2]);
-					mbox.max=bvhhip::Vec3(this->M_primitiveInfo[k].boundMax()[0],this->M_primitiveInfo[k].boundMax()[1],this->M_primitiveInfo[k].boundMax()[2]);
-                    std::vector<bvhhip::F3Triangle>  ltri;
-                    ltri=bvhhip::boxToTriangles(mbox,id);
-                    hostTriangles.insert(hostTriangles.end(),ltri.begin(),ltri.end());
-                    ltri.clear();
 
-                    //auto const& centroid = this->M_primitiveInfo[k].centroid();
-                    //centers.push_back( backend_vector_realdim_type::generate([&centroid] (std::size_t i) { return centroid[i]; }) );
+            //...
+           std::vector<bvhhip::F3Triangle> hostTriangles;
+            // Definition of operating modes
+			bool isModeBox=true;               isModeBox=false;
+			bool isModeDirectInDevice=false;   //isModeDirectInDevice=true;
+			
+			if (isModeBox)
+			{
+                // Method using the box calculated before by feelpp
+				for (int k=0; k< this->M_primitiveInfo.size();++k)
+				{
+                        // Converting bounding box to triangle for a lego scene
+						int id = this->M_primitiveInfo[k].meshEntity().id();
+						bvhhip::Box mbox;
+						mbox.min=bvhhip::Vec3(this->M_primitiveInfo[k].boundMin()[0],this->M_primitiveInfo[k].boundMin()[1],this->M_primitiveInfo[k].boundMin()[2]);
+						mbox.max=bvhhip::Vec3(this->M_primitiveInfo[k].boundMax()[0],this->M_primitiveInfo[k].boundMax()[1],this->M_primitiveInfo[k].boundMax()[2]);
+						std::vector<bvhhip::F3Triangle>  ltri;
+						ltri=bvhhip::boxToTriangles(mbox,id);
+						
+                        // Adding triangles in the device or in the host
+						if (isModeDirectInDevice) {
+							deviceTriangles.insert(deviceTriangles.end(),ltri.begin(),ltri.end());
+						}
+						else
+						{
+							hostTriangles.insert(hostTriangles.end(),ltri.begin(),ltri.end());
+						}
+						ltri.clear();
+				}
 			}
-                
+			else
+			{
+                // Method using feelpp mesh
+				for (int k=0; k< this->M_primitiveInfo.size();++k)
+				{
+						int id = this->M_primitiveInfo[k].meshEntity().id();
+						auto const& primInfo = this->M_primitiveInfo[k];
+						auto const& meshEntity = primInfo.meshEntity();
+						auto const& pt0 = meshEntity.point(0);
+						auto const& pt1 = meshEntity.point(1);
+						auto const& pt2 = meshEntity.point(2);
+						bvhhip::F3Triangle  ltri;
+						ltri.v0=make_float3(pt0[0],pt0[1],pt0[2]);
+						ltri.v1=make_float3(pt1[0],pt1[1],pt1[2]);
+						ltri.v2=make_float3(pt2[0],pt2[1],pt2[2]);
+						ltri.id = id;
+						
+                        // Adding triangles in device or in host
+						if (isModeDirectInDevice) {
+							deviceTriangles.push_back(ltri);
+						}
+						else
+						{
+							hostTriangles.push_back(ltri);						
+						}
+					
+				}	
+			}
+ 
             //...
             // Transfer triangles to GPU
             deviceTriangles = hostTriangles;
@@ -1437,13 +1481,12 @@ private:
 
 
                 std::cout<<"[END::RAYS TRACING]"<<"\n";
-
-
-
                 std::cout<<"[BEGIN::DEBRIFING COLLISION]"<<"\n";
 				// Count intersections
 				int hitCount = thrust::count_if(hostHitResults.begin(), hostHitResults.end(),thrust::placeholders::_1 != -1);
 				std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
+
+                // Reading the results and transmitting the information that will be used later
 				for (int i=0;i<numRays;++i)
 				{
                     double M_distance = std::numeric_limits<double>::max();
@@ -1458,15 +1501,15 @@ private:
                         std::cout<<" IdObject= "<<IdResults[i]<<"\n";
                         M_distance=double(hostDistanceResults[i]);
 
-
                         res.push_back( rayintersection_result_type(this->worldComm().rank(),IdResults[i], M_distance)); //(rank,idPrimitiv,distance)
-                        //res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
-                        res.back().setCoordinates( this->CartesianCoordinates(hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z));
+                        res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
+                        //res.back().setCoordinates( this->CartesianCoordinates(hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z));
                         res.resize(1);
                         resALL.push_back( std::move( res ) );
 					}
                     else
                     {
+                        // TODO: Define what is returned, if there is no intersection point.
                         res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
                         res.back().setCoordinates( this->CartesianCoordinates(M_distance,M_distance,M_distance));
                         res.resize(1);
@@ -1495,19 +1538,6 @@ private:
             return (res);
         };
 
-/*
-    template <bool UseRobustTraversal>
-    std::vector<rayintersection_result_type> intersectImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend )
-        {
-            //....///
-            //return res;
-            return true;
-        }
-*/    
-
-//private:
-//    std::unique_ptr<backend_bvh_type> M_bvh;
-    //std::vector<backend_precompute_triangle_type> M_precomputeTriangle;
 
 };
 

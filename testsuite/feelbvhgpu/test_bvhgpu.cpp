@@ -37,11 +37,7 @@
 
 
 //#define COMPILE_WITH_HIP
-//#include <feel/feeltask/taskpu.hpp>
 
-
-//#include <hip/hip_runtime.h>
-//#include <hip/hip_runtime_api.h>
 
 #include "hip/hip_runtime.h"
 #include "hip/hip_runtime_api.h"
@@ -49,13 +45,6 @@
 //#include "hipsolver.h"
 //#include "hipblas-export.h"
 
-/*
-#include <thrust/device_vector.h> 
-#include <thrust/transform.h> 
-#include <thrust/functional.h> 
-#include <thrust/execution_policy.h>
-#include <thrust/random.h>
-*/
 
 #include "thrust/device_vector.h"
 #include "thrust/transform.h"
@@ -83,8 +72,6 @@ using namespace Feel;
 
 
 
-//=========================================================================================================================
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 __global__ void kernel(float* x,float* y,int n){
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -115,13 +102,6 @@ struct saxpy_functor
     float operator()(const float& x, const float& y) const { return a * x + y; }
 };
 
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//=========================================================================================================================
-
-
-//=========================================================================================================================
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 void check_solution(double coeff,double* a_in,double* b_in,double* c_in,int nb)
 {
   printf("[INFO]: ");
@@ -138,10 +118,6 @@ void write_vector(std::string ch,double* v,int nb)
 	for (int i = 0; i < nb; i++) { std::cout<<int(v[i]); }
   std::cout<<std::endl;
 }
-
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//=========================================================================================================================
-
 
 
 
@@ -182,33 +158,9 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 //=========================================================================================================================
 
 
+
 //=========================================================================================================================
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-/*
-template <typename BvhType,typename RayIntersectionResultType>
-void printRayIntersectionResultsBeta( BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs )
-{
-    if ( bvh->worldComm().isMasterRank() )
-        BOOST_TEST_MESSAGE( "Number of intersection: " << rirs.size() );
-    for ( auto const& rir : rirs )
-    {
-        if ( rir.processId() == bvh->worldComm().rank() )
-        {
-            BOOST_TEST_MESSAGE( " --  ProcessId: " << rir.processId() );
-            BOOST_TEST_MESSAGE( " --  PrimitiveId: " << rir.primitiveId() );
-            BOOST_TEST_MESSAGE( " --  Distance: " << rir.distance() );
-
-            auto const& prim = bvh->primitiveInfo( rir.primitiveId() );
-            BOOST_TEST_MESSAGE( " --  Mesh entity id: " << prim.meshEntity().id() );
-            BOOST_TEST_MESSAGE( " --  Mesh entity barycenter: " << prim.meshEntity().barycenter() );
-            BOOST_TEST_MESSAGE( " ---------------------------------" );
-        }
-        bvh->worldComm().barrier();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-}
-*/
 
 template <typename BvhType,typename RayIntersectionResultType>
 void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs, std::vector<typename std::remove_pointer_t<BvhType>::vector_realdim_type  /*Eigen::Vector3d*/> const& pointIntersection )
@@ -291,6 +243,12 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
             std::cout << " --  PrimitiveId: " << rir.primitiveId()<< "\n";
             std::cout << " --  Distance: " << rir.distance()<< "\n";
 
+            if ( rir.hasCoordinates() )
+            {
+                if constexpr ( std::decay_t<decltype(*bvh)>::nRealDim == 3 )
+                    std::cout <<  " --  Coordinates: " << rir.coordinates()[0] << "," << rir.coordinates()[1] << "," << rir.coordinates()[2]<< "\n";;
+            }
+
             auto const& prim = bvh->primitiveInfo( rir.primitiveId() );
             std::cout << " --  Mesh entity id: " << prim.meshEntity().id()<< "\n";
             std::cout << " --  Mesh entity barycenter: " << prim.meshEntity().barycenter()<< "\n";
@@ -338,9 +296,6 @@ void test3D( RangeType const& range )
     pointIntersections.push_back( { Eigen::Vector3d( 0, 0, 0 ) } );
     pointIntersections.push_back( { Eigen::Vector3d( 0, 0, 0 ) } );
 
-
-    std::cout<<"\n";
-    std::cout<<"\n";
 
     std::cout<<"=====================================================================================+============\n";
     std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
@@ -460,8 +415,6 @@ void test3DWithHybrid( RangeType const& range )
 }
 
 
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 
 BOOST_AUTO_TEST_SUITE( bvh_intersection_gpu_tests )
@@ -561,9 +514,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     //typedef Mesh<Simplex<2> > mesh_type;
 
     using mesh_type = Mesh<Simplex<3,1,3>>; //<Dim,Order,RDim>
-    //auto mesh = loadMesh(_mesh=new  mesh_type,_filename="/nvme0/lemoinep/feelppGPUBeta/feelpp/testsuite/feeltasks/cases/mesh3d/mymesh3d.geo");
-    //auto mesh = loadMesh(_mesh=new  mesh_type,_filename="/nvme0/lemoinep/feelppGPUBeta/feelpp/testsuite/feelbvhgpu/cases/mesh3d/mymesh3d.geo");
-    //auto mesh = loadMesh(_mesh=new  mesh_type,_filename="/nvme0/lemoinep/feelppGPUBeta/feelpp/testsuite/feelbvhgpu/cubic.geo");
+
     auto mesh = loadMesh(_mesh=new  mesh_type,_filename="/nvme0/lemoinep/feelppGPUBeta/feelpp/testsuite/feelbvhgpu/cases/mesh/Test.geo");
 
     std::cout << "[INFO] maxNumElement : "<< mesh->maxNumElements() << std::endl;
