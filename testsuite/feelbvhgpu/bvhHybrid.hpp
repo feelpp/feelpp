@@ -124,6 +124,25 @@ struct F3Triangle {
     int id;
 };
 
+struct F3TriangleInit {
+    float3 _v0, _v1, _v2;
+    int _id;
+    
+    F3TriangleInit(float3 v0, float3 v1,float3 v2,int id) 
+        : _v0(v0), _v1(v1), _v2(v2),_id(id) {}
+
+    __host__ __device__
+    F3Triangle operator()(int idx) {
+        F3Triangle t;
+        t.v0 = _v0;
+        t.v1 = _v1;
+        t.v2 = _v2;
+        t.id = _id;
+        return t;
+    }
+};
+
+
 
 struct Triangle {
     Vec3 v0, v1, v2;
@@ -977,6 +996,7 @@ public:
 
 private:
 
+    // Value indicating whether we are in GPU mode
     bool isGPUHip() override
     {
         return (false);
@@ -1232,6 +1252,7 @@ public:
 
 private:
 
+    // Value indicating whether we are in GPU mode
     bool isGPUHip() override
     {
         return (false);
@@ -1336,8 +1357,12 @@ public:
     thrust::device_vector<bvhhip::BVHNode> deviceNodes;
     thrust::device_vector<bvhhip::F3Triangle> deviceTriangles;
 
+    int numDevice;
+
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm ) : super_type( quality,worldComm )
-    {  }
+    { 
+        numDevice=0;
+    }
 
     BVH_HIP_Party( BVH_HIP_Party && ) = default;
 
@@ -1348,13 +1373,20 @@ public:
             // up primitiveinfos
             super_type::updateForUse( range );
             // init bvh backend
-            std::cout << "Size primitiveInfo="<<this->M_primitiveInfo.size()<< std::endl;
+            std::cout << "[INFO]: Size primitiveInfo="<<this->M_primitiveInfo.size()<< "\n";
 
             //...
-           std::vector<bvhhip::F3Triangle> hostTriangles;
+
+            //hip device used
+            hipSetDevice(numDevice); 
+            int numDeviceActivated; 
+            hipGetDevice(&numDeviceActivated);
+            std::cout << "[INFO]: Num Device Activated="<<numDeviceActivated<<"\n";
+
+            std::vector<bvhhip::F3Triangle> hostTriangles;
             // Definition of operating modes
 			bool isModeBox=true;               isModeBox=false;
-			bool isModeDirectInDevice=false;   //isModeDirectInDevice=true;
+			bool isModeDirectInDevice=false;   isModeDirectInDevice=true; //Todo CTRL in infinity and size max of HIP GPU
 			
 			if (isModeBox)
 			{
@@ -1410,16 +1442,31 @@ public:
 			}
  
             //...
-            // Transfer triangles to GPU
-            deviceTriangles = hostTriangles;
+            
+            if (!isModeDirectInDevice) { 
+                // Transfer triangles to GPU
+                deviceTriangles = hostTriangles; 
+                // Memory cleaning
+                hostTriangles.clear();
+            }
             // Building the BVH
             bvhhip::buildBVHWithTriangleVersion1(deviceTriangles, deviceNodes);
         }
 
 private:
+    // Value indicating whether we are in GPU mode
     bool isGPUHip() override
     {
         return (true);
+    }
+
+    // Specifies the GPU device number
+    void setNumDevice(int v)
+    {
+        int nbDevices = 0;
+        hipGetDeviceCount( &nbDevices );
+        if ( v> nbDevices ) { v = 0; }
+        numDevice=v;
     }
 
     //using rayintersection_result_type = BVHRayIntersectionResult;
@@ -1511,20 +1558,36 @@ private:
                     {
                         // TODO: Define what is returned, if there is no intersection point.
                         res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
-                        res.back().setCoordinates( this->CartesianCoordinates(M_distance,M_distance,M_distance));
+                        res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
+                        //res.back().setCoordinates( this->CartesianCoordinates(M_distance,M_distance,M_distance));
                         res.resize(1);
                         resALL.push_back( std::move( res ) );
                     }
                     
 				}
+                std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";       
 
-                std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";            
+                // Memory cleaning
+                std::cout<<"[BEGIN::MEMORY CLEANING]"<<"\n";   
+                deviceHitResults.clear();
+                deviceDistanceResults.clear();
+                deviceIntersectionPoint.clear();
+                deviceIdResults.clear();
+                deviceRays.clear();
+
+                hostIntersectionPoint.clear();
+                hostIntersectionPoint.clear();
+                hostHitResults.clear();
+                hostDistanceResults.clear();
+                hostRays.clear();
+                std::cout<<"[END::MEMORY CLEANING]"<<"\n";        
                 
         return(resALL);
     }
 
 
-    vector_realdim_type CartesianCoordinates( float x,float y,float z ) const {
+
+    vector_realdim_type CartesianCoordinates( float x,float y,float z ) const { //Deleted maybe later
         return vector_realdim_type{{
                 x,
                 y,
@@ -1746,6 +1809,7 @@ public:
 
 private:
 
+    // Value indicating whether we are in GPU mode
     bool isGPUHip() override
     {
         return (false);
