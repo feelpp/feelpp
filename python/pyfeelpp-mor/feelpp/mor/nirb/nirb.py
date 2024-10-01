@@ -160,7 +160,7 @@ class ToolboxModel():
         if mesh_path == None: mesh_path=self.finemesh_path
         # load meshes
         mesh_ = fppc.mesh(dim=self.dimension, realdim=self.dimension)
-        mesh = fppc.load(mesh_, mesh_path, hsize)
+        mesh = fppc.load(mesh_, mesh_path, hsize, prefix=self.toolboxType)
 
         # set mesh and model properties
         if self.toolboxType == "heat":
