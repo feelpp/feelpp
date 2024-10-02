@@ -532,6 +532,286 @@ void writeBVHNodes(const thrust::device_vector<BVHNode>& nodes) {
     }
 }
 
+// Function that loads the BVH node
+void loadBVH(const std::string& filename, thrust::device_vector<BVHNode>& nodes) {
+    std::ifstream inFile(filename, std::ios::binary);
+    
+    // Returns an error message if the file does not exist.
+    if (!inFile) {
+        throw std::runtime_error("Could not open file for reading: " + filename);
+    }
+
+    int nodeCount;
+    // Read the number of nodes
+    inFile.read(reinterpret_cast<char*>(&nodeCount), sizeof(int));
+
+    // Resize the device vector to hold the nodes
+    nodes.resize(nodeCount);
+
+    // Read each node
+    for (int i = 0; i < nodeCount; ++i) {
+        BVHNode* raw_ptr = thrust::raw_pointer_cast(nodes.data());
+        BVHNode& node = raw_ptr[i];
+        inFile.read(reinterpret_cast<char*>(&node.min), sizeof(float3));
+        inFile.read(reinterpret_cast<char*>(&node.max), sizeof(float3));
+        inFile.read(reinterpret_cast<char*>(&node.leftChild), sizeof(int));
+        inFile.read(reinterpret_cast<char*>(&node.rightChild), sizeof(int));
+        inFile.read(reinterpret_cast<char*>(&node.triangleIndex), sizeof(int));
+        inFile.read(reinterpret_cast<char*>(&node.boxIndex), sizeof(int)); 
+    }
+
+    inFile.close();
+}
+
+// Function that saves the BVH node
+void saveBVH(const std::string& filename, const thrust::device_vector<BVHNode>& nodes) {
+    std::ofstream outFile(filename, std::ios::binary);
+    
+    // Returns an error message if the file does not exist.
+    if (!outFile) {
+        throw std::runtime_error("Could not open file for writing: " + filename);
+    }
+
+    int nodeCount = nodes.size();
+    // Write the number of nodes
+    outFile.write(reinterpret_cast<const char*>(&nodeCount), sizeof(int));
+
+    // Write each node
+    for (int i = 0; i < nodeCount; ++i) {
+        const BVHNode& node = nodes[i];
+        outFile.write(reinterpret_cast<const char*>(&node.min), sizeof(float3));
+        outFile.write(reinterpret_cast<const char*>(&node.max), sizeof(float3));
+        outFile.write(reinterpret_cast<const char*>(&node.leftChild), sizeof(int));
+        outFile.write(reinterpret_cast<const char*>(&node.rightChild), sizeof(int));
+        outFile.write(reinterpret_cast<const char*>(&node.triangleIndex), sizeof(int));
+        outFile.write(reinterpret_cast<const char*>(&node.boxIndex), sizeof(int)); 
+    }
+
+    outFile.close();
+}
+
+
+struct Camera {
+    float3 position;  // Camera position
+    float3 target;    // Point the camera is looking at
+    float3 up;        // Up vector for the camera
+    float fov;        // Field of view in radians
+    float aspect;     // Aspect ratio (width/height)
+
+    __device__ void getRay(int x, int y, int width, int height, float3* rayOrigin, float3* rayDirection) const {
+        // Calculate normalized device coordinates (NDC)
+        float ndcX = (2.0f * (x + 0.5f) / width - 1.0f) * aspect;
+        float ndcY = 1.0f - 2.0f * (y + 0.5f) / height;
+
+        // Calculate the direction of the ray in world space
+        float3 forward = make_float3(target.x - position.x, target.y - position.y, target.z - position.z);
+        forward = normalize(forward);
+        
+        float3 right = cross(forward, up);
+        right = normalize(right);
+        
+        float3 cameraUp = cross(right, forward);
+
+        // Calculate the ray direction
+        float3 horizontal = right * tan(fov / 2.0f);
+        float3 vertical = cameraUp * tan(fov / 2.0f);
+
+        *rayDirection = forward + horizontal * ndcX + vertical * ndcY;
+        *rayDirection = normalize(*rayDirection);
+        
+        *rayOrigin = position;
+    }
+};
+
+
+__global__ void rayTracingImgKernel(
+    unsigned char* image,
+    int width,
+    int height,
+    Camera camera,
+    BVHNode* nodes, 
+    F3Triangle* triangles, 
+    int* hitResults, 
+    float* distance,
+    float3* intersectionPoint,
+    int* hitId 
+)
+ 
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= width * height) return;
+
+
+    int x = idx % width;
+    int y = idx / width;
+
+    F3Ray ray;
+    camera.getRay(x,y,width,height,&ray.origin,&ray.direction);
+
+    int stack[64];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    float closestT = INFINITY;
+    int closestTriangle = -1;
+    int closesIntersectionId = -1;
+    float3 closestIntersectionPoint=make_float3(INFINITY, INFINITY, INFINITY);
+    bool isView=false; //isView=true;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BVHNode& node = nodes[nodeIdx];
+
+        // Ray-box intersection test
+        float tmin = (node.min.x - ray.origin.x) / ray.direction.x;
+        float tmax = (node.max.x - ray.origin.x) / ray.direction.x;
+        if (tmin > tmax) SWAP(float,tmin, tmax);
+
+        float tymin = (node.min.y - ray.origin.y) / ray.direction.y;
+        float tymax = (node.max.y - ray.origin.y) / ray.direction.y;
+        if (tymin > tymax) SWAP(float,tymin, tymax);
+
+        if ((tmin > tymax) || (tymin > tmax)) continue;
+
+        if (tymin > tmin) tmin = tymin;
+        if (tymax < tmax) tmax = tymax;
+
+        float tzmin = (node.min.z - ray.origin.z) / ray.direction.z;
+        float tzmax = (node.max.z - ray.origin.z) / ray.direction.z;
+        if (tzmin > tzmax) SWAP(float,tzmin, tzmax);
+
+        if ((tmin > tzmax) || (tzmin > tmax)) continue;
+
+        if (tzmin > tmin) tmin = tzmin;
+        if (tzmax < tmax) tmax = tzmax;
+
+        if (tmax < 0) continue;
+
+        int numIdNodeTrianggleIndex=node.triangleIndex;
+
+        if (node.triangleIndex != -1) {
+            // Sheet: test the intersection with the triangle
+            float t;
+            float3 intersectionPointT;
+            if (rayTriangleIntersect(ray, triangles[node.triangleIndex], t,intersectionPointT)) {
+
+                //To view all intersections
+                //if (isView) printf("      Node Idx [%i] Num Ray[%i] <%f %f %f>\n",nodeIdx,idx,intersectionPointT.x,intersectionPointT.y,intersectionPointT.z);
+                if (isView) printf("      Num Ray[%i] <%f %f %f>\n",idx,intersectionPointT.x,intersectionPointT.y,intersectionPointT.z);
+
+                if (t < closestT) {
+                    closestT = t;
+                    closestTriangle = node.triangleIndex;
+                    closestIntersectionPoint=intersectionPointT;
+                    closesIntersectionId=triangles[numIdNodeTrianggleIndex].id;
+                    //printf("      NodeTriangleIndex=%i %i\n",numIdNodeTrianggleIndex,triangles[numIdNodeTrianggleIndex].id);
+                }
+            }
+        } else {
+            // Internal node: add children to the stack
+            stack[stackPtr++] = node.leftChild;
+            stack[stackPtr++] = node.rightChild;
+        }
+    }
+
+    hitResults[idx]        = closestTriangle;
+    distance[idx]          = closestT;
+    intersectionPoint[idx] = closestIntersectionPoint;
+    hitId[idx]             = closesIntersectionId;
+
+    //if (closestTriangle!=-1) { printf("t=%f\n",closestT); } OK
+
+    if (hitId[idx]!=-1)
+    {
+           int value= 255;
+           image[(y * width + x) * 3]     = value;
+           image[(y * width + x) * 3 + 1] = value;
+           image[(y * width + x) * 3 + 2] = value;
+    }
+    else
+    {
+           image[(y * width + x) * 3]     = 0; // Red chanel
+           image[(y * width + x) * 3 + 1] = 0; // Green chanel
+           image[(y * width + x) * 3 + 2] = 0; // Blue chanel
+     
+    }
+
+}
+
+void savePPM(const std::string& filename, unsigned char* data, int width, int height) {
+    std::ofstream file(filename, std::ios::binary);
+    file << "P6\n" << width << " " << height << "\n255\n";
+    file.write(reinterpret_cast<char*>(data), width * height * 3);
+}
+
+
+/*
+void testRayTracingPicture005(const std::string& filename)
+{
+    
+    const int width = 1024;
+    const int height = 768;
+
+    //const int width = 200;
+    //const int height = 200;
+
+    //const int width = 10;
+    //const int height = 10;
+
+    //const int width = 800;
+    //const int height = 600;
+
+    Camera camera;
+    camera.position = {-5.0f, 5.0f, 5.0f};
+    camera.target   = {0.75f, 0.75f, 0.75f};
+    camera.up       = {0.0f, 1.0f, 0.0f};
+    camera.fov      = M_PI / 4;
+    camera.aspect   = static_cast<float>(width) / static_cast<float>(height);
+
+    int idObject=123321;
+    std::vector<F3Triangle> hostTriangles;
+    loadOBJTriangle(filename, hostTriangles,idObject);
+    thrust::device_vector<F3Triangle> deviceTriangles = hostTriangles;
+
+    //BVH
+    thrust::device_vector<BVHNode> deviceNodes;
+    buildBVHWithTriangleVersion1(deviceTriangles, deviceNodes);
+
+    //Ray Tracing
+    const int threadsPerBlock = 256;
+    const int numRays = width * height; // Total number of rays based on image dimensions
+    int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
+    
+    //...
+    thrust::device_vector<unsigned char> deviceImage(width * height * 3);
+    thrust::device_vector<int>           deviceHitResults(numRays);
+    thrust::device_vector<float>         deviceDistanceResults(numRays);
+    thrust::device_vector<float3>        deviceIntersectionPoint(numRays);
+    thrust::device_vector<int>           deviceIdResults(numRays);
+
+    //...
+    rayTracingImgKernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(deviceImage.data()),
+        width,
+        height,
+        camera,
+        thrust::raw_pointer_cast(deviceNodes.data()),
+        thrust::raw_pointer_cast(deviceTriangles.data()),
+        thrust::raw_pointer_cast(deviceHitResults.data()),
+        thrust::raw_pointer_cast(deviceDistanceResults.data()),
+        thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
+        thrust::raw_pointer_cast(deviceIdResults.data())
+    );
+
+    
+    //...
+    thrust::host_vector<unsigned char> hostImage = deviceImage;
+    savePPM("output_image.ppm", hostImage.data(), width, height);
+    //convertPPMtoBMP("output_image.ppm","output_image.bmp");
+}
+*/
+
+
 
 }
 
@@ -842,9 +1122,29 @@ public:
             }
             else // only one ray (all process should have the same ray if parallel=true)
             {
+                // Before addendum
+                /*
                 auto resSeq = this->intersectSequential( ray,useRobustTraversal );
                 if ( closestOnly && resSeq.size() > 1 )
                     resSeq.resize(1);
+                */
+
+                // TODO CTRL This part if OK
+                std::vector<std::vector<rayintersection_result_type>> resSeq;
+                if ( !(this->isGPUHip()))
+                {
+                    resSeq = this->intersectSequential( ray,useRobustTraversal );
+                }
+                else
+                {
+                    resSeq= this->intersectAllRaysWithGPU(ray); 
+
+                }
+                
+                if ( closestOnly && resSeq.size() > 1 )
+                    resSeq.resize(1);
+
+
                 if ( !parallel )
                     return resSeq;
 
@@ -1387,7 +1687,11 @@ public:
             // Definition of operating modes
 			bool isModeBox=true;               isModeBox=false;
 			bool isModeDirectInDevice=false;   isModeDirectInDevice=true; //Todo CTRL in infinity and size max of HIP GPU
-			
+
+            // Memory cleaning before start...
+            deviceNodes.clear(); deviceTriangles.clear();
+
+			// ...
 			if (isModeBox)
 			{
                 // Method using the box calculated before by feelpp
