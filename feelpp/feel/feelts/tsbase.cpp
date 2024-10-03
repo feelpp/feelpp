@@ -258,7 +258,7 @@ TSBase::init()
             bool found = false;
 
             // Determine current iteration.
-            BOOST_FOREACH( auto time, M_time_values_map )
+            for( auto time : M_time_values_map )
             {
                 if ( math::abs( time-M_Ti ) < 1e-10 )
                 {

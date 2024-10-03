@@ -108,7 +108,7 @@ public:
             BOOST_CHECK_EQUAL( Feel::detail::BackendManager::instance().size(), 1 );
             BOOST_CHECK_EQUAL( Feel::detail::BackendManager::instance().begin()->first.first, BACKEND_PETSC );
             BOOST_CHECK_EQUAL( Feel::detail::BackendManager::instance().begin()->first.second, "test1" );
-            BOOST_FOREACH( auto b, Feel::detail::BackendManager::instance() )
+            for( auto b : Feel::detail::BackendManager::instance( ) )
             {
                 BOOST_TEST_MESSAGE( "[test_backend] backend name =" << b.first.second << " kind =" << b.first.first );;
             }

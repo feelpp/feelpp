@@ -33,12 +33,23 @@ def readCfg(filename):
     Yields:
         ConfigParser:
     """
-    from configparser import ConfigParser
-    config = ConfigParser()
+    from collections import OrderedDict
+    from configparser import ConfigParser, RawConfigParser
     # use this function to add a
     def FeelppHead(fp):
         yield '[feelpp]\n'
         yield from fp
+    class MultiOrderedDict(OrderedDict):
+        def __setitem__(self, key, value):
+            if key in self:
+                if isinstance(value, list):
+                    self[key].extend(value)
+                    return
+                elif isinstance(value,str):
+                    return # ignore conversion list to string (line 554)
+            super(MultiOrderedDict, self).__setitem__(key, value)
+
+    config = RawConfigParser(dict_type=MultiOrderedDict, strict=False)
     config.read_file(FeelppHead(open(filename)))
     return config
 
@@ -46,7 +57,7 @@ def download(data,worldComm):
     """Download remote data file"""
     rd = RemoteData(data,worldComm)
     if rd.canDownload():
-        d=Environment.downloadsRepository()
+        d = Environment.downloadsRepository()
         return rd.download( d )
     else:
         raise RuntimeError("Remote Data " + data + " cannot be downloaded")

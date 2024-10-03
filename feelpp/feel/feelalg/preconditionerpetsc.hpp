@@ -695,6 +695,23 @@ private :
 };
 
 /**
+ * ConfigurePCPMMOp
+ */
+class ConfigurePCPMMOp : public ConfigurePCBase
+{
+  public:
+    ConfigurePCPMMOp( PC& pc, PreconditionerPetsc<double>* precFeel, worldcomm_ptr_t const& worldComm,
+                    std::string const& sub, std::string const& prefix );
+
+  private:
+    void run( PC& pc );
+
+  private:
+    std::string M_prefixPMM_Mp;
+    std::string M_subPCtype_Mp, M_subMatSolverPackage_Mp;
+    bool M_subPCview_Mp;
+};
+/**
  * ConfigurePCHYPRE_BOOMERAMG
  */
 class ConfigurePCHYPRE_BOOMERAMG : public ConfigurePCBase

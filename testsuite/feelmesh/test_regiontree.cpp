@@ -31,7 +31,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 
 #include <iostream>
-#include <boost/lambda/lambda.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelalg/boundingbox.hpp>
@@ -45,56 +44,57 @@
 
 
 using namespace Feel;
-namespace lambda = boost::lambda;
 
 
-int main( int argc,  char** argv )
+int main(int argc, char** argv)
 {
-    Feel::Environment env( argc, argv );
-    typedef Mesh<Simplex<3,1> > mesh_type;
+    Feel::Environment env(argc, argv);
+    using mesh_type = Mesh<Simplex<3, 1>>;
+    constexpr uint16_type nDim = mesh_type::nDim;
 
-    static const uint16_type nDim = mesh_type::nDim;
+    std::string shape = "hypercube";
+    auto aMesh = createGMSHMesh(_mesh = new mesh_type,
+                                _desc = domain(_name = (boost::format("%1%-%2%") % shape % nDim).str(),
+                                               _usenames = true,
+                                               _shape = shape,
+                                               _dim = nDim,
+                                               _h = 1));
 
-    auto shape = "hypercube";
-    auto aMesh = createGMSHMesh( _mesh=new mesh_type,
-                                 _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % nDim ).str() ,
-                                         _usenames=true,
-                                         _shape=shape,
-                                         _dim=nDim,
-                                         _h=1 ) );
-
-    RegionTree __rt;
-    typedef node<double>::type node_type;
+    RegionTree regionTree;
+    using node_type = node<double>::type;
     node_type min, max;
-    scalar_type EPS=1E-13;
+    scalar_type EPS = 1E-13;
 
-    __rt.clear();
+    regionTree.clear();
 
-    BoundingBox<> bb( true );
+    BoundingBox<> boundingBox(true);
 
-    for ( auto const& elt : elements(aMesh) )
+    for (const auto& element : elements(aMesh))
     {
-        bb.make( boost::unwrap_ref( elt ).G() );
+        boundingBox.make(boost::unwrap_ref(element).G());
 
-        for ( unsigned k=0; k < min.size(); ++k )
+        for (auto& min_val : boundingBox.min) 
         {
-            bb.min[k]-=EPS;
-            bb.max[k]+=EPS;
+            min_val -= EPS;
         }
 
-        __rt.addBox( bb.min, bb.max, boost::unwrap_ref( elt ).id() );
+        for (auto& max_val : boundingBox.max) 
+        {
+            max_val += EPS;
+        }
+
+        regionTree.addBox(boundingBox.min, boundingBox.max, boost::unwrap_ref(element).id());
     }
 
-    __rt.dump();
+    regionTree.dump();
 
-    node_type __n( 3 );
+    node_type point(3);
+    point[0] = 0;
+    point[1] = 0;
+    point[2] = 0;
 
-    __n[0]=0;
-    __n[1]=0;
-    __n[2]=0;
-
-    //size_type __cv;
+    // size_type cv;
     // FIXME: implementation of function below must have been lost
-    //during some refactoring
-    // find_a_point( __rt, __n, __n, __cv );
+    // during some refactoring
+    // find_a_point(regionTree, point, point, cv);
 }

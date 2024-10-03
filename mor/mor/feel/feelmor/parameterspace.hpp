@@ -31,8 +31,6 @@
 
 #include <vector>
 #include <algorithm>
-#include <boost/lambda/lambda.hpp>
-#include <boost/foreach.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 

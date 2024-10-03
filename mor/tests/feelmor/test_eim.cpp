@@ -255,11 +255,11 @@ public:
             S->logEquidistribute(n);
             int fun_number=0;
             std::vector<vectorN_type> time_vector( M_funs.size() );
-            BOOST_FOREACH( auto fun, M_funs )
+            for( auto fun : M_funs )
             {
                 time_vector[fun_number].resize( n );
                 int mu_number=0;
-                BOOST_FOREACH( auto p, *S )
+                for( auto p : *S )
                 {
                     if( ! chrono )
                     {
@@ -424,9 +424,9 @@ public:
             auto e = exporter( _mesh=mesh, _name="EimModelCircle" );
             auto S = Dmu->sampling();
             S->logEquidistribute(10);
-            BOOST_FOREACH( auto fun, M_funs )
+            for( auto fun : M_funs )
             {
-                BOOST_FOREACH( auto p, *S )
+                for( auto p : *S )
                 {
                     LOG(INFO) << "evaluate model at p = " << p << "\n";
                     auto v = fun->operator()( p );

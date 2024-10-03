@@ -210,7 +210,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     if ( pt_it == pt_en )
         return __v;
 #if 0
-    BOOST_FOREACH( auto dof, M_functionspace->dof()->markerToDof( pt_it->marker() ) );
+    for( auto dof : M_functionspace->dof( )->markerToDof( pt_it->marker() ) );
     {
 
         // get the first element to which the point/dof belong and then build

@@ -34,8 +34,6 @@
 #include <fstream>
 
 
-#include <boost/lambda/lambda.hpp>
-
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 

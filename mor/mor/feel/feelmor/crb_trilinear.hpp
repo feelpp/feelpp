@@ -35,7 +35,7 @@
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/bimap.hpp>
 #include <boost/bimap/support/lambda.hpp>
 #include <boost/archive/text_oarchive.hpp>
@@ -725,7 +725,7 @@ CRBTrilinear<TruthModelType>::offline()
                 //pick randomly an element
                 mu = this->M_Dmu->element();
                 //make sure that the new mu is not already is M_WNmu
-                BOOST_FOREACH( auto _mu, *this->M_WNmu )
+                for( auto _mu : *this->M_WNmu )
                 {
                     if( mu == _mu )
                         already_exist=true;
