@@ -114,5 +114,23 @@
             "topodim": 3,
             "expr": "crb_u:crb_u"
         }
+    },
+
+
+    "nirb":
+    {
+        "H": 0.25,
+        "h": "H**2:H",
+        "dim": 3,
+        "order": 2,
+        "toolboxType": "heat",
+        "finemesh_path": "$cfgdir/3D/M3/Eye_Mesh3D_p$np.json",
+        "coarsemesh_path": "$cfgdir/3D/M0/Eye_Mesh3D_p$np.json",
+        "model_path": "$cfgdir/crb_param.json",
+        "doRectification": true,
+        "doBiorthogonalization": false,
+        "nbSnapshots": 10,
+        "greedy-generation": false,
+        "outdir": "results3d/rect/noGreedy"
     }
 }

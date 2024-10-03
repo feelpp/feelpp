@@ -1,10 +1,8 @@
 from time import time
 import feelpp.core as fppc
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
-import sys
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, merge_JsonFiles
 import pandas as pd
-from pathlib import Path
 import os
 from feelpp.mor.nirb.nirb_perf import *
 import argparse
@@ -57,9 +55,10 @@ if __name__ == "__main__":
         RESPATH = outdir
 
     nirb_on = nirbOnline(**config_nirb)
-    nirb_on.initModel()
+    full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
+    nirb_on.initModel(model=full_model)
 
-    start= time()
+    start = time()
 
     mu = nirb_on.Dmu.element()
     if fppc.Environment.isMasterRank(): print(mu.parameterNames())
@@ -99,13 +98,13 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
-    else :
-        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
+        file = RESPATH + f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
+    else:
+        file = RESPATH + f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
     WriteVecAppend(file,perf)
 
 
-    if convergence :
+    if convergence:
         Nsample = 50
         errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
         # errorN = ComputeErrors(nirb_on, mu, h1=True)
@@ -113,7 +112,7 @@ if __name__ == "__main__":
         df = pd.DataFrame(errorN)
         df['N'] = nirb_on.N
 
-        file =RESPATH +f"/errors{Nsample}Params.csv"
+        file = RESPATH + f"/errors{Nsample}Params.csv"
 
         header = not os.path.isfile(file)
         df.to_csv(file, mode='a', index=False, header=header)
