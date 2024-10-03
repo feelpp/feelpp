@@ -744,11 +744,59 @@ void savePPM(const std::string& filename, unsigned char* data, int width, int he
     file.write(reinterpret_cast<char*>(data), width * height * 3);
 }
 
+void buildPicturRayTracingPPM(
+	thrust::device_vector<F3Triangle>& triangles, 
+	thrust::device_vector<BVHNode>& nodes,
+	Camera camera,
+	int width,
+    int height,
+	const std::string& filename)
+{
+    // Before using this function, the BVH must already be calculated and the triangles must be in the device.
+	// Ray Tracing
+    const int threadsPerBlock = 256;
+    const int numRays = width * height; // Total number of rays based on image dimensions
+    int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
+    
+    //...
+    thrust::device_vector<unsigned char> deviceImage(width * height * 3);
+    thrust::device_vector<int>           deviceHitResults(numRays);
+    thrust::device_vector<float>         deviceDistanceResults(numRays);
+    thrust::device_vector<float3>        deviceIntersectionPoint(numRays);
+    thrust::device_vector<int>           deviceIdResults(numRays);
+
+    //...
+    rayTracingImgKernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(deviceImage.data()),
+        width,
+        height,
+        camera,
+        thrust::raw_pointer_cast(nodes.data()),
+        thrust::raw_pointer_cast(triangles.data()),
+        thrust::raw_pointer_cast(deviceHitResults.data()),
+        thrust::raw_pointer_cast(deviceDistanceResults.data()),
+        thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
+        thrust::raw_pointer_cast(deviceIdResults.data())
+    );
+
+    
+    //...
+    thrust::host_vector<unsigned char> hostImage = deviceImage;
+    savePPM(filename, hostImage.data(), width, height);
+
+	// Memory cleaning
+    deviceHitResults.clear(); //
+    deviceDistanceResults.clear(); //
+    deviceIntersectionPoint.clear(); //
+    deviceIdResults.clear(); //
+	deviceImage.clear(); //
+}
 
 /*
 void testRayTracingPicture005(const std::string& filename)
 {
-    
+    // A small basic example to better understand the steps
+    // Just here for understanding and will be deleted later.
     const int width = 1024;
     const int height = 768;
 
@@ -808,6 +856,16 @@ void testRayTracingPicture005(const std::string& filename)
     thrust::host_vector<unsigned char> hostImage = deviceImage;
     savePPM("output_image.ppm", hostImage.data(), width, height);
     //convertPPMtoBMP("output_image.ppm","output_image.bmp");
+
+    // Memory cleaning
+    deviceNodes.clear();        
+    deviceTriangles.clear();    
+    deviceHitResults.clear(); 
+    deviceDistanceResults.clear(); 
+    deviceIntersectionPoint.clear(); 
+    deviceIdResults.clear(); 
+	deviceImage.clear(); 
+    hostTriangles.clear(); 
 }
 */
 
