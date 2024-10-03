@@ -405,7 +405,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string edge : edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
                                 << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkidv[Xh->nLocalDof()*i+edgeid] << "\n" );
@@ -422,7 +422,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     for ( int i = 0; i < Xh->nLocalDof(); ++i )
     {
         int edgeid = 0;
-        BOOST_FOREACH( std::string edge, edges )
+        for( std::string edge : edges )
         {
             BOOST_TEST_MESSAGE( " *** dof N_"<< i << " (associated with " << edge << " edge) *** \n"
                                 << "alpha_"<< edgeid << "(N_"<<i<<") = " << checkform1[Xh->nLocalDof()*i+edgeid] << "\n" );

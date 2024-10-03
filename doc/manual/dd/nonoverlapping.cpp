@@ -223,7 +223,7 @@ ddmethod<Dim>::localProblem( element_type& u,
     auto Ffull = M_backend->newVector( Xh );
     Ffull->add(1.,*F);
 
-    BOOST_FOREACH( int marker, interfaceFlags )
+    for( int marker : interfaceFlags )
     {
         form1( _test=Xh,_vector=Ffull ) +=
             integrate( _range=markedfaces( mesh, marker ), _expr=w*id( v ) );
@@ -238,7 +238,7 @@ ddmethod<Dim>::localProblem( element_type& u,
     auto Afull = M_backend->newMatrix( _test=Xh, _trial=Xh );
     Afull->addMatrix(1.,*A);
 
-    BOOST_FOREACH( int marker, dirichletFlags )
+    for( int marker : dirichletFlags )
     {
         form2( _test=Xh, _trial=Xh, _matrix=Afull ) +=
             on( _range=markedfaces( mesh, marker ), _element=u, _rhs=Ffull, _expr=gD );

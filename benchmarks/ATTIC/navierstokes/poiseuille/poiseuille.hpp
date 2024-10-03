@@ -97,7 +97,7 @@ poiseuille( int argc, char** argv )
 
     vector<int> markers;
     markers += 1,2,4; // insert values at the end of the container
-    BOOST_FOREACH( int marker, markers )
+    for( int marker : markers )
     {
         form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces( mesh,marker ), -trans( SigmaNt )*id( v ) );
         form2( _test=Xh, _trial=Xh, _matrix=S ) += integrate( markedfaces( mesh,marker ), -trans( SigmaN )*idt( v ) );

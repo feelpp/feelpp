@@ -32,7 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <boost/foreach.hpp>
+
 
 
 #include <feel/feelcore/environment.hpp>
@@ -282,7 +282,7 @@ OpusModelThermal<SpaceType>::update( double time,
                            ,_quad=_Q<2*Order>() );
 
 #endif
-        BOOST_FOREACH( std::string marker, markers )
+        for( std::string marker : markers )
         {
             LOG(INFO) << "[add weakbc boundary terms velocity] boundary " << marker << " id : "
                       << M_Xh->mesh()->markerName( marker ) << "\n";
@@ -310,7 +310,7 @@ OpusModelThermal<SpaceType>::update( double time,
             boost::timer ti;
             // add convection
             std::vector<std::string> air_regions = boost::assign::list_of( "AIR4" )( "AIR123" );
-            BOOST_FOREACH( auto region, air_regions )
+            for( auto region : air_regions )
             {
                 form2( _test=M_Xh, _trial=M_Xh, _matrix=M_Dt, _pattern=pattern )+=
                     integrate( _range=markedelements( M_Xh->mesh(),region ),
@@ -376,7 +376,7 @@ OpusModelThermal<SpaceType>::update( double time,
 #endif
     // right hand side
     form1( _test=M_Xh, _vector=M_F, _init=do_init ) = integrate( _range=elements( M_Xh->mesh() ), _expr=( rhs_coeff )*id( w ) );
-    BOOST_FOREACH( std::string marker, markers )
+    for( std::string marker : markers )
     {
         LOG(INFO) << "[add weakbc boundary terms velocity] boundary "
               << marker << " id : " << M_Xh->mesh()->markerName( marker ) << "\n";

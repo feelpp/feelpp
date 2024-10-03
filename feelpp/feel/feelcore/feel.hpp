@@ -109,7 +109,7 @@
 #include <boost/cstdint.hpp>
 
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
+
 
 #include <feel/feelcore/hana.hpp>
 #include <boost/ref.hpp>

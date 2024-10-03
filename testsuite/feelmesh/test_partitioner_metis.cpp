@@ -47,7 +47,11 @@ BOOST_AUTO_TEST_CASE( partitioner_metis1 )
         Metis::idx_t ncon = 1;
 
         Metis::idx_t options[METIS_NOPTIONS];
+#if defined(FEELPP_USE_INTERNAL_METIS)
         Metis::Feel_METIS_SetDefaultOptions(options);
+#else
+        Metis::METIS_SetDefaultOptions(options);
+#endif
         options[Metis::METIS_OPTION_NUMBERING]= 0;
 
         Metis::idx_t n = 4;
@@ -58,9 +62,15 @@ BOOST_AUTO_TEST_CASE( partitioner_metis1 )
         Metis::idx_t edgecut2;
         std::vector<Metis::idx_t> part(n);
 
+#if defined(FEELPP_USE_INTERNAL_METIS)
         Metis::Feel_METIS_PartGraphRecursive(&n, &ncon, &offset[0], &vals[0], NULL, NULL,
                                              NULL, &nparts, NULL, NULL, options/*NULL*/,
                                              &edgecut2, &part[0]);
+#else
+        Metis::METIS_PartGraphRecursive(&n, &ncon, &offset[0], &vals[0], NULL, NULL,
+                                             NULL, &nparts, NULL, NULL, options/*NULL*/,
+                                             &edgecut2, &part[0]);
+#endif
 
         std::set<int> partIdsBuildUnique( part.begin(), part.end() );
         partIdsBuild = std::vector<int>( partIdsBuildUnique.begin(), partIdsBuildUnique.end() );

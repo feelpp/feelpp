@@ -18,7 +18,6 @@
 */
 #include <cmath>
 
-#include <boost/lambda/lambda.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/bindings/lapack/gesv.hpp>

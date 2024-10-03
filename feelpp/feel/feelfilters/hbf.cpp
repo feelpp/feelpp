@@ -248,7 +248,7 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
     
     int procSize = Yh->worldComm().localSize();
     rank_type partId = Yh->worldComm().localRank(); 
-    int cx[procSize+1];
+    int *cx = new int[procSize+1];
     for (int tmpProc=0;tmpProc<=procSize;tmpProc++)
         cx[tmpProc]=(tmpProc)*(nx-1)/procSize;
 
@@ -263,6 +263,7 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
         }
     }
     toc("structured to feelpp relation",FLAGS_v>0);
+    delete [] cx;
 }
 
 Hbf2FeelppStruc::q1_element_type

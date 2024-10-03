@@ -346,13 +346,6 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
             ++__its;
         }
 
-#if 0
-        namespace lambda = boost::lambda;
-        std::for_each( __ts->beginStep(), __ts->endStep(),
-                       __out << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
-        std::for_each( __ts->beginStep(), __ts->endStep(),
-                       std::cerr << lambda::bind( &timeset_type::step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
-#endif
         ++__ts_it;
     }
 
@@ -365,8 +358,6 @@ template<typename MeshType, int N>
 void
 ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 {
-    namespace lambda = boost::lambda;
-
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
 
@@ -439,9 +430,6 @@ template<typename MeshType, int N>
 void
 ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 {
-    namespace lambda = boost::lambda;
-
-
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
 
