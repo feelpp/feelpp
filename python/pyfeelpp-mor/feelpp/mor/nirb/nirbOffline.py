@@ -1,7 +1,7 @@
 import sys
 import feelpp.core as fppc
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling, merge_JsonFiles
 import time
 import json
 import argparse
@@ -54,7 +54,8 @@ if __name__ == "__main__":
 
     ### Initializa the nirb object
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
-    nirb_off.initModel()
+    full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
+    nirb_off.initModel(model=full_model)
 
     start = time.time()
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
     print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
-    if convergence :
+    if convergence:
         Xi_test_path = RESPATH + "/sampling_test.sample"
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
@@ -119,7 +120,7 @@ if __name__ == "__main__":
 
     if doRectification:
         file = RESPATH + f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat'
-    else :
+    else:
         file = RESPATH + f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat'
     WriteVecAppend(file, perf)
 

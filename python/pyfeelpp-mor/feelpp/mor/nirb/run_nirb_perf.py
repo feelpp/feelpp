@@ -205,8 +205,12 @@ if __name__ == '__main__':
     # Xi_train_path = RESPATH + f"/sampling_train3dfin_N200.sample"
     # Xi_test_path = RESPATH + f"/sampling_test3dfin_Ns{Nsample}.sample"
 
-    pas = 4
-    baseList = range(1, Nbase, pas)
+    pas = 2
+    baseList = list(range(1, Nbase + 1, pas))
+    if Nbase not in baseList:
+        baseList.append(Nbase)
+
+    if fppc.Environment.isMasterRank(): print(f"[NIRB] Base list = {baseList}")
 
     Dmu = loadParameterSpace(model_path)
     # Xi_train_path = RESPATH + f"/sampling_train4_N200.sample"
@@ -219,7 +223,7 @@ if __name__ == '__main__':
         if fppc.Environment.isMasterRank():
             print(f"[NIRB] Xi_train loaded from {Xi_train_path}")
     else:
-        Xi_train = generatedAndSaveSampling(Dmu, 200, path=Xi_train_path, samplingMode="log-random")
+        Xi_train = generatedAndSaveSampling(Dmu, 500, path=Xi_train_path, samplingMode="log-random")
 
     if os.path.isfile(Xi_test_path):
         s = Dmu.sampling()
@@ -235,6 +239,7 @@ if __name__ == '__main__':
     nirb_off = nirbOffline(**config_nirb, initCoarse=doGreedy)
     full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
     nirb_off.initModel(model=full_model)
+
     resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=lambda_regul)
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel(model=full_model)
