@@ -61,14 +61,14 @@
 #include "thrust/count.h"
 
 
-#include <feel/feeltask/taskpu.hpp>
+//#include <feel/feeltask/taskpu.hpp> // A remettre si utilisation de Specx démo
 
 using namespace Feel;
 
 #define BLOCK_SIZE 128
 
 
-#include "bvhHybrid.hpp"
+//#include "bvhHybrid.hpp"
 
 
 
@@ -265,6 +265,7 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
 template <typename RangeType>
 void test3D( RangeType const& range )
 {
+    /*
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
@@ -331,6 +332,7 @@ void test3D( RangeType const& range )
             printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
         }
     std::cout<<"=================================================================================================\n";
+    */
 
 /*
     std::cout<<"*************************************************************************************************\n";
@@ -353,12 +355,13 @@ void test3D( RangeType const& range )
 
 
 
+
 template <typename RangeType>
 void test3DWithHybrid( RangeType const& range )
 {
 
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
-    using bvh_ray_type = BVHHybrid::BVHRay<mesh_entity_type::nRealDim>;
+    using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
     Eigen::Vector3d origin1={1000.0,0.0,0.0};
     Eigen::Vector3d direction_perp_1={1.,0.,0.};
@@ -376,7 +379,7 @@ void test3DWithHybrid( RangeType const& range )
     rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
     rays.push_back( bvh_ray_type(origin3,direction_perp_3) );
 
-    BVHHybrid::BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
+    BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
 
     for (int k=0;k<rays.size();++k)
     {
@@ -386,7 +389,7 @@ void test3DWithHybrid( RangeType const& range )
     std::cout<<"\n";
     std::cout<<"\n";
     std::cout<<"[INFO]: Bounding Colume Hierarchy GPU\n";
-    auto bvhHIPParty       = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="hip-party");
+    auto bvhHIPParty       = boundingVolumeHierarchy(_range=range,_kind="hip-party");
 
     auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
@@ -399,7 +402,7 @@ void test3DWithHybrid( RangeType const& range )
 
 
 
-    auto bvhThirdPartyLow = BVHHybrid::boundingVolumeHierarchy(_range=range,_kind="third-party");
+    auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party");
 
     auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
@@ -548,7 +551,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
         std::cout<<"\n";
 
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    test3D( rangeFaces );
+    //test3D( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     //test3D( elements(submesh) );
     std::cout<<"+*-*+*-*+*-*+*+*-*+*-*+*-*+*-*+*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n";
