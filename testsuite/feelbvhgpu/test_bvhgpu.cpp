@@ -1,13 +1,6 @@
 #define BOOST_TEST_MODULE bvhgpu_tests
 
-
-/*
-#include <feel/feelcore/testsuite.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelmesh/bvh.hpp>
-
-#include <feel/feeldiscr/pdh.hpp>
-*/
+// NOTA : Objective: Ray tracing from inside a cube using BVH Ray Tracing with a CPU and a GPU method. Compare the performances of the two methods.
 
 #include <feel/feelmesh/ranges.hpp>
 
@@ -35,16 +28,8 @@
 #include <feel/feelvf/vf.hpp>
 
 
-
-//#define COMPILE_WITH_HIP
-
-
 #include "hip/hip_runtime.h"
 #include "hip/hip_runtime_api.h"
-//#include "hipblas.h"
-//#include "hipsolver.h"
-//#include "hipblas-export.h"
-
 
 #include "thrust/device_vector.h"
 #include "thrust/transform.h"
@@ -61,68 +46,10 @@
 #include "thrust/count.h"
 
 
-//#include <feel/feeltask/taskpu.hpp> // A remettre si utilisation de Specx démo
+
 
 using namespace Feel;
 
-#define BLOCK_SIZE 128
-
-
-//#include "bvhHybrid.hpp"
-
-
-
-
-__global__ void kernel(float* x,float* y,int n){
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    //int idx = hipblockIdx.x * hipblockDim.x + hipthreadIdx.x;
-    if (idx < n) y[idx] += 1;
-}
-
-
-void __device__ vector_add_device(const double vecA, const double vecB, double &vecC)
-{
-    vecC = vecA + vecB;
-}
-
-void __global__ vector_add(const double *vecA, const double *vecB, double *vecC, const int nb)
-{
-    const int i = hipBlockDim_x*hipBlockIdx_x+hipThreadIdx_x;
-
-    if (i < nb)
-        vector_add_device(vecA[i], vecB[i], vecC[i]); 
-}
-
-
-struct saxpy_functor
-{
-    const float a;
-    saxpy_functor(float _a) : a(_a) {}
-    __host__ __device__
-    float operator()(const float& x, const float& y) const { return a * x + y; }
-};
-
-void check_solution(double coeff,double* a_in,double* b_in,double* c_in,int nb)
-{
-  printf("[INFO]: ");
-	int errors = 0;
-  	for (int i = 0; i < nb; i++) {
-	    if (c_in[i] != coeff*(a_in[i] + b_in[i])) { errors++; }
-	}
-  	if (errors!=0) { printf("FAILED: %d errors\n",errors); } else { printf ("WELL DONE PASSED! :-)\n"); }
-}
-
-void write_vector(std::string ch,double* v,int nb)
-{
-  std::cout<<"[INFO]: "<<ch<<"> ";
-	for (int i = 0; i < nb; i++) { std::cout<<int(v[i]); }
-  std::cout<<std::endl;
-}
-
-
-
-//=========================================================================================================================
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // Section to use if you want to make meshes, otherwise it doesn't work.
 inline
@@ -154,13 +81,7 @@ makeOptions()
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//=========================================================================================================================
 
-
-
-//=========================================================================================================================
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 template <typename BvhType,typename RayIntersectionResultType>
 void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs, std::vector<typename std::remove_pointer_t<BvhType>::vector_realdim_type  /*Eigen::Vector3d*/> const& pointIntersection )
@@ -261,105 +182,9 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
 }
  
  
-
-template <typename RangeType>
-void test3D( RangeType const& range )
-{
-    /*
-    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
-    using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
-
-    Eigen::Vector3d origin1={1000.0,0.0,0.0};
-    Eigen::Vector3d direction_perp_1={1.,0.,0.};
-
-    Eigen::Vector3d origin2={-10.0,-0.25,-0.25};
-    Eigen::Vector3d direction_perp_2={1.,0.,0.};
-
-    Eigen::Vector3d origin3={-5.0,-0.20,-0.20};
-    Eigen::Vector3d direction_perp_3={1.,0.,0.};
-
-    std::vector<bvh_ray_type> rays;
-
-    //rays.push_back( bvh_ray_type(origin1,direction_perp_1) );
-    rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
-    rays.push_back( bvh_ray_type(origin3,direction_perp_3) );
-
-    BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
-    std::vector<std::size_t> raysDistributedIndices;
-    for (int k=0;k<rays.size();++k)
-    {
-        raysDistributed.push_back( rays[k] );
-        raysDistributedIndices.push_back( k );
-    }
-
-    std::vector<std::vector<Eigen::Vector3d>> pointIntersections;
-    pointIntersections.push_back( { Eigen::Vector3d( 0, 0, 0 ) } ); //SEE
-    pointIntersections.push_back( { Eigen::Vector3d( 0, 0, 0 ) } );
-    pointIntersections.push_back( { Eigen::Vector3d( 0, 0, 0 ) } );
-
-
-    std::cout<<"=====================================================================================+============\n";
-    std::cout<<"++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++\n";
-    std::cout<<"[INFO]: Bounding Colume Hierarchy\n";
-
-    auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
-    //auto bvhThirdParty = boundingVolumeHierarchy(_range=range,_kind="third-party");
-    auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::High);
-
-    //auto bvhGpuParty = boundingVolumeHierarchy(_range=range,_kind="gpu-party",_quality=BVHEnum::Quality::High);
-    std::size_t counter = 0;
-    
-    for ( auto const& ray : rays )
-        {
-            std::cout << "rays parts"<< "\n";
-            auto rayIntersectionResult1 = bvhInHouse->intersect(_ray=ray) ;
-            BOOST_CHECK_MESSAGE(!rayIntersectionResult1.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
-            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
-            printRayIntersectionResults(bvhInHouse,rayIntersectionResult1 );
-
-            //printRayIntersectionResults2(bvhInHouse,rayIntersectionResult1, pointIntersections[counter++] );
-        }
-
-
-    std::cout<<"*************************************************************************************************\n";
-
-    auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
-    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
-        {
-            std::cout << "multiRayDistributedIntersectionResult parts"<< "\n";
-            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
-            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
-            printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
-        }
-    std::cout<<"=================================================================================================\n";
-    */
-
-/*
-    std::cout<<"*************************************************************************************************\n";
-
-    auto multiRayDistributedIntersectionGpuResult = bvhGpuParty->intersect(_ray=raysDistributed);
-    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionGpuResult )
-        {
-            std::cout << "GPU parts"<< "\n";
-            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
-            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
-            printRayIntersectionResults(bvhGpuParty,rayIntersectionResult);
-        }
-
-    std::cout<<"=================================================================================================\n";
-*/
-
-
-}
-
-
-
-
-
 template <typename RangeType>
 void test3DWithHybrid( RangeType const& range )
 {
-
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
@@ -387,23 +212,10 @@ void test3DWithHybrid( RangeType const& range )
     }
 
     std::cout<<"\n";
-    std::cout<<"\n";
-    std::cout<<"[INFO]: Bounding Colume Hierarchy GPU\n";
-    auto bvhHIPParty       = boundingVolumeHierarchy(_range=range,_kind="hip-party");
 
-    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
-    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
-        {
-            std::cout << "Hip parts"<< "\n";
-            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
-            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
-            printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
-        }
-
-
-
+    // In normal CPU mode
+    std::cout<<"[INFO]: In normal CPU mode\n";
     auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party");
-
     auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
         {
@@ -413,7 +225,132 @@ void test3DWithHybrid( RangeType const& range )
             printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
         }
 
+    // In GPU mode with AMD HIP
+    std::cout<<"[INFO]: In GPU mode with AMD HIP\n";
+    auto bvhHIPParty       = boundingVolumeHierarchy(_range=range,_kind="hip-party");   
+    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+        {
+            std::cout << "Hip parts"<< "\n";
+            BOOST_CHECK_MESSAGE(!rayIntersectionResult.empty(), fmt::format("Intersection between ray and BVH tree has been found"));
+            std::cout << "Intersection between ray and BVH tree has been found"<< "\n";
+            printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
+        }
+}
 
+
+
+template <typename BvhType,typename RayIntersectionResultType>
+std::vector<double> getAllDistanceRayIntersections( BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs )
+{
+    std::vector<double> distance;
+    for ( auto const& rir : rirs )
+    {
+        if ( rir.processId() == bvh->worldComm().rank() )
+        {
+            std::cout << " --  Distance: " << rir.distance()<< "\n";     
+            distance.push_back(rir.distance());     
+        }
+        bvh->worldComm().barrier();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    return distance;
+}
+
+
+
+Eigen::Vector3d sphericalToCartesian(double r, double theta, double alpha) {
+    Eigen::Vector3d position;
+    position[0] = r * sin(theta) * cos(alpha);
+    position[1] = r * sin(theta) * sin(alpha);
+    position[2] = r * cos(theta);
+    return position;
+}
+
+template <typename RangeType>
+void test3DInsideObjectWithHybrid( RangeType const& range )
+{
+    std::chrono::steady_clock::time_point t_begin_cpu,t_begin_gpu,t_end_cpu,t_end_gpu;
+    long int t_laps;
+
+    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
+    using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
+
+    Eigen::Vector3d ray_origin={0.0f,0.0f,0.0f};
+    double thetaStart = 0.0f;        
+    double thetaEnd   = M_PI;       
+    double alphaStart = 0.0f;        
+    double alphaEnd   = 2.0f * M_PI;   
+    double thetaStep  = M_PI / 18.0f; 
+    double alphaStep  = M_PI / 18.0f; 
+    bool   isViewInfo = false;
+
+    std::vector<bvh_ray_type> rays;
+    for (double theta = thetaStart; theta <= thetaEnd; theta += thetaStep) {
+        for (double alpha = alphaStart; alpha <= alphaEnd; alpha += alphaStep) {
+            Eigen::Vector3d ray_direction = sphericalToCartesian(1.0f, theta, alpha);
+
+            if (isViewInfo)
+            {
+                std::cout << "Origin: <" << ray_origin[0] << ", " << ray_origin[1] << ", " << ray_origin[2] << ">" << " ";
+                std::cout << "Direction: <" << ray_direction[0] << ", " << ray_direction[1] << ", " << ray_direction[2] << ">" << std::endl;              
+            }
+            rays.push_back( bvh_ray_type(ray_origin,ray_direction) );
+        }
+    }
+
+    BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
+    for (int k=0;k<rays.size();++k)
+    {
+        raysDistributed.push_back( rays[k] );
+    }
+
+    std::vector<double> dist;
+
+    // In normal CPU mode
+    std::cout<<"[INFO]: In normal CPU mode\n";
+    t_begin_cpu                                = std::chrono::steady_clock::now();
+    auto bvhThirdPartyLow                      = boundingVolumeHierarchy(_range=range,_kind="third-party");
+    auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
+    std::vector<double> distance_CPU_mode;
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+    {
+        dist=getAllDistanceRayIntersections(bvhThirdPartyLow,rayIntersectionResult);
+        //printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
+        distance_CPU_mode.insert(distance_CPU_mode.end(), dist.begin(), dist.end());
+    }
+    t_end_cpu = std::chrono::steady_clock::now();
+
+    // In GPU mode with AMD HIP
+    std::cout<<"[INFO]: In GPU mode with AMD HIP\n";
+    t_begin_gpu                                   = std::chrono::steady_clock::now();
+    auto bvhHIPParty                              = boundingVolumeHierarchy(_range=range,_kind="hip-party");   
+    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
+    std::vector<double> distance_GPU_mode;
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+    {
+        dist=getAllDistanceRayIntersections(bvhHIPParty,rayIntersectionResult);
+        //printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
+        distance_GPU_mode.insert(distance_GPU_mode.end(), dist.begin(), dist.end());
+    }
+    t_end_gpu = std::chrono::steady_clock::now();
+
+    // Distance comparison
+    double deltaError = 0.00001f;
+    double sumErrors  = 0.0f;
+    for ( int k; k<distance_GPU_mode.size(); ++k)
+    {
+        double e=fabs(distance_GPU_mode[k]-distance_CPU_mode[k]);
+        sumErrors = sumErrors + e;
+    }
+    // Nota : T-Test ? ...
+
+    // Time laps comparison
+    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
+    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+
+    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_gpu - t_begin_gpu).count();
+    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us\n";
 
 }
 
@@ -422,90 +359,6 @@ void test3DWithHybrid( RangeType const& range )
 
 BOOST_AUTO_TEST_SUITE( bvh_intersection_gpu_tests )
 
-/*
-BOOST_AUTO_TEST_CASE( test_gpu_with_specx )
-{
-    using namespace Feel;
-    std::cout<<std::endl;
-    int numDevices=0;
-    HIP_CHECK(hipGetDeviceCount(&numDevices));
-    std::cout<<"[INFO]: Get numDevice = "<<numDevices<<"\n";
-    int deviceID=0;
-    HIP_CHECK(hipGetDevice(&deviceID));
-    std::cout<<"[INFO]: Get deviceID activated = "<<deviceID<<"\n";
-
-    int nbThreads=3;
-    int nbElements=10;
-    double c0=2.0; 
-    double c1=1.5; 
-    int size_array = sizeof(double) * nbElements;
-
-    double *h_vecA = (double *)malloc(size_array);
-    double *h_vecB = (double *)malloc(size_array);
-    double *h_vecC = (double *)malloc(size_array);
-
-    for (int i = 0; i < nbElements; i++)
-    {
-        h_vecA[i] = 1;
-        h_vecB[i] = 2;
-        h_vecC[i] = 0;
-    }
-
-    write_vector("Vector A",h_vecA,nbElements);
-    write_vector("Vector B",h_vecB,nbElements);
-
-
-    auto FC1=[size_array,nbElements](const double* vh_vecA,const double* vh_vecB,double* vh_vecC0) {  
-          double *d_vecA,*d_vecB,*d_vecC;
-          hipMalloc((void **)&d_vecA, size_array);
-          hipMalloc((void **)&d_vecB, size_array);
-          hipMalloc((void **)&d_vecC, size_array);
-          hipMemcpy(d_vecA, vh_vecA, size_array, hipMemcpyHostToDevice);
-          hipMemcpy(d_vecB, vh_vecB, size_array, hipMemcpyHostToDevice);
-          int grid_size = (nbElements + BLOCK_SIZE - 1) / BLOCK_SIZE;
-          hipLaunchKernelGGL(vector_add, grid_size,BLOCK_SIZE, 0, 0, d_vecA, d_vecB, d_vecC, nbElements);
-          hipMemcpy(vh_vecC0, d_vecC, size_array, hipMemcpyDeviceToHost);
-          hipFree(d_vecA); hipFree(d_vecB); hipFree(d_vecC);
-        return true;
-    };
-    
-    int numMode=3;
-    //NOTA: normal configuration
-        if (numMode==1) {
-            FC1(h_vecA,h_vecB,h_vecC);
-        }
-
-    //NOTA: we use normal specx without gpu
-        if (numMode==2) {
-            SpRuntime runtime(nbThreads);
-            runtime.task(SpRead(h_vecA),SpRead(h_vecB),SpWrite(h_vecC),FC1);
-            runtime.waitAllTasks();
-            runtime.stopAllThreads();
-            runtime.generateDot("Test_hip_AMD.dot", true);
-            runtime.generateTrace("Test_hip_AMD.svg");  
-        }
-
-
-    //NOTA: we use my task class
-        if (numMode==3) {
-            int numTypeThread=3;  //0:No thread  1:Std::thread 2:std:async 3:Specx  
-            Task::Task TsK( nbThreads, numTypeThread );
-            TsK.setSave( false );
-            TsK.setInfo( false );
-            TsK.setFileName( "./Test_hip_AMD" );
-            TsK.add( _param(h_vecA,h_vecB,h_vecC), _tasks = FC1 );
-            TsK.run();
-            TsK.close();
-        }
-
-
-
-    write_vector("Vector C = (A + B)",h_vecC,nbElements);
-    check_solution(1.0,h_vecA,h_vecB,h_vecC,nbElements);
-    free(h_vecA); free(h_vecB); free(h_vecC);
-    std::cout<<"\n";
-}
-*/
 
 BOOST_AUTO_TEST_CASE( test_load_mesh3 )
 {
@@ -550,49 +403,14 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
         std::cout << "[INFO]: nbdyfaces : " <<nbdyfaces<<"\n";
         std::cout<<"\n";
 
+
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    //test3D( rangeFaces );
-    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    //test3D( elements(submesh) );
-    std::cout<<"+*-*+*-*+*-*+*+*-*+*-*+*-*+*-*+*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-\n";
     test3DWithHybrid( rangeFaces );
+
+    //test3DInsideObjectWithHybrid( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"\n";
 }
-
-/*
-BOOST_AUTO_TEST_CASE( test_thrust )
-{
-    // Taille des vecteurs 
-    const int N = 100;
-    // Allocation et initialisation des vecteurs sur le device
-    thrust::device_vector<float> d_x(N, 1.0f); 
-    thrust::device_vector<float> d_y(N, 2.0f);
-    // Scalaire a 
-    float a = 2.0f;
-
-    for (int i = 0; i < d_x.size(); i++) { std::cout << d_x[i] << " "; }
-    std::cout << std::endl;
-
-    for (int i = 0; i < d_y.size(); i++) { std::cout << d_y[i] << " "; }
-    std::cout << std::endl;
-
-    // Exécution de l'opération SAXPY
-    thrust::transform(thrust::device,
-        d_x.begin(), 
-        d_x.end(), 
-        d_y.begin(), 
-        d_y.begin(), 
-        saxpy_functor(a));
-
-    // Affichage des résultats
-    for (int i = 0; i < d_y.size(); i++) { std::cout << d_y[i] << " "; }
-    std::cout << std::endl;
-
-    std::cout << "[INFO]: WELL DONE :-) Test_thrust!"<<"\n";
-}
-*/
-
 
 
 BOOST_AUTO_TEST_SUITE_END()
