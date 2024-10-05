@@ -85,12 +85,12 @@ public:
 
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename mesh_type::element_type geoelement_type;
-    static const uint16_type Dim = geoelement_type::nDim;
+    static inline const uint16_type Dim = geoelement_type::nDim;
 
     typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
 
     typedef typename periodicity_type::node_type node_type;
 

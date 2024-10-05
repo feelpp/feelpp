@@ -33,15 +33,11 @@
 #include <fstream>
 
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 
 /**
  * \class ExporterExodus

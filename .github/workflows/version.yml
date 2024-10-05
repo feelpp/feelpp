@@ -1,0 +1,56 @@
+name: Feelpp Version
+on:
+    workflow_call:
+        inputs:
+            continue-on-error:
+                description: 'Continue on error'
+                required: false
+                default: "false"
+                type: string
+        outputs:
+            version:
+                description: "Feel++ version"
+                value: ${{ jobs.version.outputs.version }}
+            main_version:
+                description: "Feel++ main version"
+                value: ${{ jobs.version.outputs.main_version }}
+            extra_version:
+                description: "Feel++ extra version"
+                value: ${{ jobs.version.outputs.extra_version }}
+
+    workflow_dispatch:
+        inputs:
+            continue-on-error:
+                description: 'Continue on error'
+                required: false
+                default: "false"
+                type: string
+
+jobs:
+    version:
+        runs-on: self-pkg
+        continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+        outputs:
+            main_version: ${{ steps.get_version.outputs.main_version }}
+            extra_version: ${{ steps.get_version.outputs.extra_version }}
+            version: ${{ steps.get_version.outputs.version }}
+        steps:
+        - uses: actions/checkout@v4
+          with:
+            token: ${{ secrets.CR_PAT }}
+            submodules: false
+        - name: Get Feel++ Version
+          id: get_version
+          run: |
+                version=$(bin/feelpp --version)
+                main_version=$(bin/feelpp --version:main)
+                extra_version=$(bin/feelpp --version:extra)
+
+                echo "main_version=$main_version"
+                echo "extra_version=$extra_version"
+                echo "version=$version"
+
+                echo "main_version=$main_version" >> $GITHUB_OUTPUT
+                echo "extra_version=$extra_version" >> $GITHUB_OUTPUT
+                echo "version=$version" >> $GITHUB_OUTPUT
+

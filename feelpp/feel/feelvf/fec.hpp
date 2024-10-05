@@ -40,7 +40,7 @@ template<uint16_type Type, typename FormContextType>
 struct FEContextInit
 {
     // 0 : test, 1 : trial
-    static const uint16_type type = Type;
+    static inline const uint16_type type = Type;
     typedef typename FormContextType::test_fe_type test_fe_type;
     typedef typename FormContextType::trial_fe_type trial_fe_type;
 
@@ -116,7 +116,7 @@ template<uint16_type Type, typename FormContextType>
 struct FEContextUpdate
 {
     // 0 : test, 1 : trial
-    static const uint16_type type = Type;
+    static inline const uint16_type type = Type;
 
     //typedef typename FormContextType::test_geometric_mapping_context_ptrtype geometric_mapping_context_ptrtype;
     //typedef typename FormContextType::map_test_geometric_mapping_context_type map_geometric_mapping_context_type;

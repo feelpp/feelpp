@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@math.unistra.fr>
    \date 2012-09-26
  */
-#include <boost/foreach.hpp>
+
 
 #include <feel/feel.hpp>
 
@@ -223,7 +223,7 @@ PeriodicStokes<Dim, Order>::run()
     auto b = form1( _test=Xh, _vector=F );
 
     std::list<int> bdys = {1,3};
-    BOOST_FOREACH( auto bdy, bdys )
+    for( auto bdy : bdys )
     {
         a += integrate( _range=markedfaces( mesh, bdy ),
                         _expr=( trans(+idt(p)*N()-gradt( u )*N())*id( v )

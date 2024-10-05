@@ -82,14 +82,14 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
         // mesh
         typedef ConvexType convex_type;
-        static const uint16_type nDim = convex_type::nDim;
-        static const uint16_type nOrderGeo = convex_type::nOrder;
-        static const uint16_type nRealDim = convex_type::nRealDim;
+        static inline const uint16_type nDim = convex_type::nDim;
+        static inline const uint16_type nOrderGeo = convex_type::nOrder;
+        static inline const uint16_type nRealDim = convex_type::nRealDim;
         typedef Mesh<convex_type> mesh_type;
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
-        static const uint16_type nOrderTemperature = BasisTemperatureType::nOrder;
-        static const uint16_type nOrderPoly = nOrderTemperature;
+        static inline const uint16_type nOrderTemperature = BasisTemperatureType::nOrder;
+        static inline const uint16_type nOrderPoly = nOrderTemperature;
         typedef BasisTemperatureType basis_temperature_type;
         // function space temperature
         typedef FunctionSpace<mesh_type, bases<basis_temperature_type> > space_temperature_type;
@@ -141,7 +141,7 @@ class Heat : public ModelNumerical,
         // mesh, space, element temperature
         mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
         void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-        elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+        Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
         void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
 
@@ -227,7 +227,7 @@ class Heat : public ModelNumerical,
         auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
             {
                 using _expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().convection().expr( se ) )>;
-                std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
+                std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprVelocityConvection;
 
                 for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
                 {
@@ -275,7 +275,8 @@ class Heat : public ModelNumerical,
         template <typename TemperatureFieldType>
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
-                return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
+                return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ),
+                                                      this->template modelFieldsMeshes<mesh_type>( prefix ) );
             }
 
         auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -292,10 +293,11 @@ class Heat : public ModelNumerical,
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            auto seMeshes = this->template symbolsExprMeshes<mesh_type>();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
         }
         auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -465,7 +467,7 @@ class Heat : public ModelNumerical,
 
     protected :
 
-        elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+        Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
         bool M_useExtendedDoftable = false;

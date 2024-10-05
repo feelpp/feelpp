@@ -89,7 +89,7 @@ class ModelPhysic : public JournalWatcher
 public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
-    inline static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
     using physic_id_type = std::pair<std::string,std::string>;
 
     //ModelPhysic() = default;
@@ -859,7 +859,7 @@ class ModelPhysics : virtual public ModelBase
 public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
-    inline static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
     using physic_id_type = std::pair<std::string,std::string>; // (type, name)
 
     using model_physic_type = ModelPhysic<nDim>;

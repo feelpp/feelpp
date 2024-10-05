@@ -97,16 +97,16 @@ public:
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
     // basis
-    static const uint16_type nOrder = BasisDisplacementType::nOrder;
-    static const uint16_type nOrderDisplacement = nOrder;
-    static const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
+    static inline const uint16_type nOrder = BasisDisplacementType::nOrder;
+    static inline const uint16_type nOrderDisplacement = nOrder;
+    static inline const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
     typedef BasisDisplacementType basis_u_type;
     typedef Lagrange<nOrderPressure, Scalar,Continuous,PointSetFekete> basis_l_type;
     typedef Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
@@ -178,7 +178,7 @@ public:
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     //___________________________________________________________________________________//
     // trace mesh
-    typedef typename mesh_type::trace_mesh_type trace_mesh_type;
+    using trace_mesh_type = trace_mesh_t<mesh_type>;
     typedef std::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
     typedef Lagrange<nOrderGeo, Vectorial,Continuous> basis_tracemesh_disp_type;
     typedef FunctionSpace<trace_mesh_type, bases<basis_tracemesh_disp_type> > space_tracemesh_disp_type;
@@ -203,8 +203,8 @@ public:
     typedef std::shared_ptr<element_vectorial_visu_ho_type> element_vectorial_visu_ho_ptrtype;
 
 
-    typedef elements_reference_wrapper_t<mesh_visu_ho_type> range_visu_ho_type;
-    typedef faces_reference_wrapper_t<mesh_visu_ho_type> range_visu_boundaryfaces_ho_type;
+    typedef Range<mesh_visu_ho_type,ElementsType::MESH_ELEMENTS> range_visu_ho_type;
+    typedef Range<mesh_visu_ho_type,ElementsType::MESH_FACES> range_visu_boundaryfaces_ho_type;
 
     typedef OperatorInterpolation<space_displacement_type,
                                   space_vectorial_visu_ho_type,
@@ -250,7 +250,7 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
-    typedef faces_reference_wrapper_t<mesh_type> range_face_type;
+    typedef Range<mesh_type,MESH_FACES> range_face_type;
     typedef OperatorInterpolation<typename solid_1dreduced_type::space_displacement_type/* space_vect_1dreduced_type*/, space_displacement_type, range_face_type> op_interpolation1dTo2d_disp_type;
     typedef std::shared_ptr<op_interpolation1dTo2d_disp_type> op_interpolation1dTo2d_disp_ptrtype;
 
@@ -412,9 +412,9 @@ public :
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_tresca_type = std::decay_t<decltype( tresca(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
-            std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVonMisses;
-            std::map<std::string,std::vector<std::tuple< _expr_tresca_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTresca;
-            std::map<std::string,std::vector<std::tuple< _expr_princial_stress_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprPrincipalStress;
+            std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprVonMisses;
+            std::map<std::string,std::vector<std::tuple< _expr_tresca_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprTresca;
+            std::map<std::string,std::vector<std::tuple< _expr_princial_stress_type, Range<mesh_type,MESH_ELEMENTS>, std::string > > > mapExprPrincipalStress;
             if ( this->hasSolidEquationStandard() )
             {
                 auto const& u = this->fieldDisplacement();
@@ -479,7 +479,7 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_displacement_ptrtype const& functionSpace() const { return this->functionSpaceDisplacement(); }
     space_displacement_ptrtype const& functionSpaceDisplacement() const { return M_XhDisplacement; }
@@ -555,7 +555,7 @@ public :
             //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
             auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", field_p, "p", this->keyword() );
 
-            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
+            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure, this->template modelFieldsMeshes<mesh_type>( prefix ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
@@ -575,9 +575,11 @@ public :
 #if 1
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->template symbolsExprMeshes<mesh_type,false>();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysics( this->physics() );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMeshes, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
 #endif
@@ -708,7 +710,7 @@ public :
     //-----------------------------------------------------------------------------------//
 
     double computeExtremumValue( std::string const& field, std::set<std::string> const& markers, std::string const& type ) const;
-    double computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const;
+    double computeVolumeVariation( Range<mesh_type,MESH_ELEMENTS> const& rangeElt ) const;
 
 
     //-----------------------------------------------------------------------------------//
@@ -754,9 +756,9 @@ private :
     // standard model
     //-------------------------------------------//
     // mesh
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
     MeshMover<mesh_type> M_meshMover;
-    MeshMover<typename mesh_type::trace_mesh_type> M_meshMoverTrace;
+    MeshMover<trace_mesh_t<mesh_type>> M_meshMoverTrace;
     // function space
     space_displacement_ptrtype M_XhDisplacement;
     element_displacement_ptrtype M_fieldDisplacement, M_fieldVelocity, M_fieldAcceleration;
@@ -872,7 +874,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
     {
         std::string const& vvname = ppvv.first;
         auto const& vvmarkers = ppvv.second;
-        elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
+        Range<mesh_type,MESH_ELEMENTS> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
             M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
         double volVar = this->computeVolumeVariation( vvrange );
         this->postProcessMeasures().setValue( vvname, volVar );

@@ -55,26 +55,53 @@ Scalar and vectorial expressions are built using `|` as a separator to defined
 
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We support that you have either {feelpp} available via Debian/Ubuntu packages or via Docker/Apptainer images.
+
+Debian/Ubuntu packages:: We support that you have installed the `feelpp` packages on your system, see the xref:user:install:index.adoc[{feelpp} Installation] for more information.
+
+Docker/Apptainer images:: We are now using the `ghcr.io/feelpp/feelpp:jammy` docker image to demonstrate {manmanual} usage.
 We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.
++
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
 ----
-docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+docker run --rm -ti -v $HOME/feel:/feel ghcr.io/feelpp/feelpp:jammy
 ----
 
+In the following examples, we use the `tetrahedron.geo` mesh file in GitHub repository `feelpp/feelpp/` to display the mesh and the fields.
+
 .Example of a command line to export a mesh and some fields to visualise
+[source,shell]
 ----
-./feelpp_mesh_exporter
-  --scalar_expr="g1|sin(2*pi*x)*sin(2*pi*y)*cos(2*pi*z):x:y:z|nodal" <1>
-  --scalar_expr="g2|sin(3*pi*x)*sin(4*pi*y)*cos(5*pi*z):x:y:z|nodal" <2>
-  --gmsh.hsize 0.2 <3>
-  --gmsh.filename="github:{repo:feelpp,path:feelpp/quickstart/laplacian/tetrahedron/tetrahedron.geo}" <4>
+feelpp_mesh_exporter \
+  --scalar_expr="g1|sin(2*pi*x)*sin(2*pi*y)*cos(2*pi*z):x:y:z|nodal" \
+  --scalar_expr="g2|sin(3*pi*x)*sin(4*pi*y)*cos(5*pi*z):x:y:z|nodal" \
+  --gmsh.hsize 0.2 \
+  --gmsh.filename="github:{repo:feelpp,path:feelpp/quickstart/laplacian/tetrahedron/tetrahedron.geo}"
 ----
-<1> scalar expression to be visualised with nodal representation
-<2> scalar expression to be visualised with nodal representation
-<3> mesh characteristic size
-<4> mesh filename
+
+Using `--scalar-expr`, you can accumulate as many scalar expressions as you want, the format is as follows:
+[source,shell]
+----
+--scalar_expr="name|expression:x:y:z|nodal"
+--scalar_expr="name|expression:x:y:z|element"
+----
+The first one creates a field with the name `name` and the expression `expression` on the nodal representation.
+The second one creates a field with the name `name` and the expression `expression` on the element representation.
+
+Using `--vectorial-expr`, you can accumulate as many vectorial expressions as you want, the format is as follows:
+[source,shell]
+----
+--vectorial_expr="name|expression:x:y:z|nodal"
+--vectorial_expr="name|expression:x:y:z|element"
+----
+
+The first one creates a field with the name `name` and the expression `expression` on the nodal representation.
+The second one creates a field with the name `name` and the expression `expression` on the element representation.
+
+The `--gmsh.hsize` option is used to set the mesh size, the `--gmsh.filename` option is used to set the mesh file to be used.
+
+NOTE: we have use here the remote data download feature {feelpp} application to download data either from GitHub or Girder.
 
 == SEE ALSO
 
@@ -82,5 +109,5 @@ docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
 
 == COPYING
 
-Copyright \(C) 2017-2019 {feelpp} Consortium. +
+Copyright \(C) 2017-2024 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.

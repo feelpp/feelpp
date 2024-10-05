@@ -45,7 +45,7 @@ struct pointWrapper: public std::reference_wrapper< MatrixType >
     typedef std::reference_wrapper< MatrixType > super_type;
     typedef std::remove_cv_t<std::remove_reference_t<MatrixType>> matrix_type;
     typedef typename matrix_type::value_type value_type;
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
 
     // Inherit constructors
     using super_type::reference_wrapper;
@@ -72,7 +72,7 @@ struct segmentWrapper: public std::reference_wrapper< MatrixType >
     typedef std::reference_wrapper< MatrixType > super_type;
     typedef std::remove_cv_t<std::remove_reference_t<MatrixType>> matrix_type;
     typedef typename matrix_type::value_type value_type;
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
 
     // Inherit constructors
     using super_type::reference_wrapper;
@@ -99,7 +99,7 @@ struct ringWrapper: public std::reference_wrapper< MatrixType >
     typedef std::reference_wrapper< MatrixType > super_type;
     typedef std::remove_cv_t<std::remove_reference_t<MatrixType>> matrix_type;
     typedef typename matrix_type::value_type value_type;
-    static const uint16_type nDim = Dim;
+    static inline const uint16_type nDim = Dim;
 
     // Inherit constructors
     using super_type::reference_wrapper;

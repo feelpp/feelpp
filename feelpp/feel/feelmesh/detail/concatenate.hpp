@@ -36,57 +36,42 @@ namespace detail
 /**
  * implementation for faces
  */
-template<typename ContainerType, typename IteratorType>
+template<typename RangeResult, typename RangeType>
 void
-concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, IteratorType it )
+concatenate_entities( RangeResult& elts, std::unordered_set<size_type> & idsIn, RangeType&& it )
 {
-    using face_t = filter_entity_t<IteratorType>;
-    auto append = [&elts,&idsIn]( face_t const& e )
+    auto append = [&elts,&idsIn]( element_t<RangeType> const& e )
         {
             size_type eid = e.id();
             if ( idsIn.find( eid ) == idsIn.end() )
             {
-                elts->push_back( boost::cref(e) );
+                elts.push_back( e );
                 idsIn.insert( eid );
             }
         };
-    std::for_each( begin( it ), end( it ), append );
+    std::for_each( std::forward<RangeType>(it).begin(), std::forward<RangeType>(it).end(), append );
 }
 
-template<typename ContainerType, typename IteratorType, typename ...Args>
+template<typename RangeResult, typename RangeType, typename ...Args>
 void
-concatenate_entities( std::shared_ptr<ContainerType>& elts, std::unordered_set<size_type> & idsIn, IteratorType it, Args... args )
+concatenate_entities( RangeResult& elts, std::unordered_set<size_type> & idsIn, RangeType&& it, Args&&... args )
 {
-    using face_t = filter_entity_t<IteratorType>;
-    auto append = [&elts,&idsIn]( face_t const& e )
-        {
-            size_type eid = e.id();
-            if ( idsIn.find( eid ) == idsIn.end() )
-            {
-                elts->push_back( boost::cref(e) );
-                idsIn.insert( eid );
-            }
-        };
-    std::for_each( begin( it ), end( it ), append );
-    concatenate_entities( elts, idsIn, args... );
+    concatenate_entities( elts, idsIn, std::forward<RangeType>(it) );
+    concatenate_entities( elts, idsIn, std::forward<Args>(args)... );
 }
 
 
-template<typename IteratorType, typename ...Args>
-ext_entities_from_iterator_t<IteratorType>
-concatenate_impl( IteratorType it, Args... args )
+template<typename RangeType, typename ...Args>
+auto
+concatenate_impl( RangeType&& it, Args&&... args )
 {
-    using face_t = filter_entity_t<IteratorType>;
-    typedef std::vector<boost::reference_wrapper<face_t const> > cont_range_type;
-    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    decay_type<RangeType> myelts{ std::forward<RangeType>(it).mesh() };
     std::unordered_set<size_type> idsIn;
-    auto append = [&myelts,&idsIn]( face_t const& e ) { myelts->push_back( boost::cref(e) ); idsIn.insert( e.id() ); };
+    auto append = [&myelts,&idsIn]( element_t<RangeType> const& e ) { myelts.push_back( e ); idsIn.insert( e.id() ); };
     std::for_each( begin( it ), end( it ), append );
-    concatenate_entities( myelts, idsIn, args... );
-    return boost::make_tuple( filter_enum_t<IteratorType>(),
-                              myelts->begin(),
-                              myelts->end(),
-                              myelts );
+
+    concatenate_entities( myelts, idsIn, std::forward<Args>(args)... );
+    return myelts;
 }
 
 } // detail

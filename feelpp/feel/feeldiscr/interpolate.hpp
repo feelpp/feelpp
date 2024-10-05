@@ -164,7 +164,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     // if same mesh but not same function space (different order)
     if ( f.functionSpace()->mesh()->isSameMesh( space->mesh() ) )
     {
-        elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
+        Range<typename FunctionType::functionspace_type::mesh_type,MESH_ELEMENTS> rangeElt( space->mesh() );
         bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
         bool hasMeshSupportPartialImage = space->dof()->hasMeshSupport() && space->dof()->meshSupport()->isPartialSupport();
         if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
@@ -335,7 +335,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         array_type fvalues( f.idExtents( *fectx ) );
 
         using index_type = typename domain_mesh_type::index_type;
-        typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
+        MeshInverse<domain_mesh_type> meshinv( f.functionSpace()->mesh() );
 
         /* initialisation of the mesh::inverse data structure */
         typename SpaceType::dof_type::dof_points_const_iterator it_dofpt = space->dof()->dofPointBegin();

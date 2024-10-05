@@ -47,8 +47,8 @@ class LevelSetRedistanciationFM :
         typedef FunctionSpaceType functionspace_type;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
         typedef typename functionspace_type::template Basis<0>::type basis_type;
-        static const uint16_type functionSpaceOrder = functionspace_type::fe_type::nOrder;
-        static const uint16_type nOrder = functionspace_type::fe_type::nOrder;
+        static inline const uint16_type functionSpaceOrder = functionspace_type::fe_type::nOrder;
+        static inline const uint16_type nOrder = functionspace_type::fe_type::nOrder;
         static constexpr uint16_type nDim = functionspace_type::nDim;
         using size_type = typename functionspace_type::size_type;
         typedef typename functionspace_type::value_type value_type;
@@ -89,7 +89,7 @@ class LevelSetRedistanciationFM :
         typedef std::shared_ptr<functionspace_P0d_type> functionspace_P0d_ptrtype;
 
         // Gradient discontinuous space
-        static const uint16_type functionSpaceDiscontinuousOrder = ( functionSpaceOrder == 1 ) ? 0 : functionSpaceOrder;
+        static inline const uint16_type functionSpaceDiscontinuousOrder = ( functionSpaceOrder == 1 ) ? 0 : functionSpaceOrder;
         typedef typename FeelModels::detail::ChangeBasisContinuity<Discontinuous, typename FeelModels::detail::ChangeBasisOrder<functionSpaceDiscontinuousOrder, basis_type>::type>::type basis_discontinuous_type;
         //typedef Lagrange<nOrder, Scalar, Discontinuous> basis_discontinuous_type;
         typedef FunctionSpace<
@@ -115,7 +115,7 @@ class LevelSetRedistanciationFM :
         typedef std::shared_ptr< fastmarching_type > fastmarching_ptrtype;
 
         // Range
-        typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+        typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
 
         // Initialisation method
         enum class FastMarchingInitialisationMethod { 

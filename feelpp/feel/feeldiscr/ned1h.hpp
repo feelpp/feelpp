@@ -35,12 +35,12 @@
 namespace Feel {
 
 namespace meta {
-template<typename MeshType,int Order>
+template<typename MeshType,int Order,typename T = double>
 struct Ned1h
 {
     typedef FunctionSpace<MeshType,
                           bases<Nedelec<Order,NedelecKind::NED1>>,
-                          double,
+                          T,
                           Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
@@ -48,27 +48,41 @@ struct Ned1h
 
 } // meta
 
-template<typename MeshType,int Order>
-using Ned1h_type = typename meta::Ned1h<MeshType,Order>::type;
+template<typename MeshType,int Order,typename T = double>
+using Ned1h_type = typename meta::Ned1h<MeshType,Order,T>::type;
 
-template<typename MeshType,int Order>
-using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order>::ptrtype;
+template<typename MeshType,int Order, typename T = double>
+using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order,T>::ptrtype;
 
 /**
  * \fn Ned1h<k,MeshType>
  *
  */
-template<int Order,typename MeshType>
+template<int Order,typename MeshType,typename T=double>
 inline
-typename meta::Ned1h<MeshType,Order>::ptrtype
-Ned1h( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+typename meta::Ned1h<MeshType,Order,T>::ptrtype
+Ned1h( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 {
-    typedef typename meta::Ned1h<MeshType,Order>::type space_type;
+    typedef typename meta::Ned1h<MeshType,Order,T>::type space_type;
     return space_type::New( _mesh=mesh,
                             _worldscomm=makeWorldsComm( 1, mesh->worldCommPtr() ),
                             _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
+/**
+ * \fn Ned1h<k,MeshType>
+ *
+ */
+template<int Order,typename MeshType, typename RangeType, typename T = double>
+inline
+typename meta::Ned1h<MeshType,Order,T>::ptrtype
+Ned1h( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false )
+{
+    typedef typename meta::Ned1h<MeshType,Order,T>::type space_type;
+    return space_type::New( _mesh=mesh,
+                            _range=std::forward<RangeType>(rangeElt),
+                            _extended_doftable=buildExtendedDofTable );
+}
 
 } // Feel
 

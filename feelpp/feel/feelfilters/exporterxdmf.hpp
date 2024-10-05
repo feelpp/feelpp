@@ -34,7 +34,6 @@
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
 
 template <typename MeshType, int N>
 class ExporterXDMF
@@ -79,7 +78,7 @@ protected :
 
     private :
         /*!
-         * \brief Fonction used in almost all constructor to initialize the element's type
+         * \brief Function used in almost all constructor to initialize the element's type
          */
         void init();
 
@@ -104,7 +103,7 @@ protected :
         void saveMesh(mesh_ptrtype mesh, std::string const& geofilename ) const;
 
         /*!
-         * \brief write informations of the mesh in .h5 file (unused for now)
+         * \brief write information of the mesh in .h5 file (unused for now)
          */
     //void writeStats() const;
     void saveFields( typename timeset_type::step_ptrtype __step, std::string const& fieldsfilename ) const;

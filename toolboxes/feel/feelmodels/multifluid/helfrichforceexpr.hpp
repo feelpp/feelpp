@@ -447,24 +447,24 @@ public:
     // expression desc
     typedef typename functionspace_normal_type::geoelement_type geoelement_type;
     typedef typename functionspace_normal_type::value_type value_type;
-    static const uint16_type nDim = fe_normal_type::nDim;
-    static const uint16_type nRealDim = fe_normal_type::nRealDim;
-    static const uint16_type rank = fe_normal_type::rank;
-    static const uint16_type nComponents1 = fe_normal_type::nComponents1;
-    static const uint16_type nComponents2 = fe_normal_type::nComponents2;
+    static inline const uint16_type nDim = fe_normal_type::nDim;
+    static inline const uint16_type nRealDim = fe_normal_type::nRealDim;
+    static inline const uint16_type rank = fe_normal_type::rank;
+    static inline const uint16_type nComponents1 = fe_normal_type::nComponents1;
+    static inline const uint16_type nComponents2 = fe_normal_type::nComponents2;
     static const bool is_terminal = false;
 
-    static const uint16_type ordernormal = functionspace_normal_type::basis_type::nOrder;
-    static const uint16_type ordercurvature = functionspace_curvature_type::basis_type::nOrder;
+    static inline const uint16_type ordernormal = functionspace_normal_type::basis_type::nOrder;
+    static inline const uint16_type ordercurvature = functionspace_curvature_type::basis_type::nOrder;
 
     // imorder
-    static const uint16_type imorder_K2N = 2*ordercurvature + ordernormal;
-    static const uint16_type imorder_gradK = ordercurvature - 1;
-    static const uint16_type imorder_NdotGradKN = 2*ordernormal + imorder_gradK;
-    static const uint16_type imorderAuto = mpl::max< 
+    static inline const uint16_type imorder_K2N = 2*ordercurvature + ordernormal;
+    static inline const uint16_type imorder_gradK = ordercurvature - 1;
+    static inline const uint16_type imorder_NdotGradKN = 2*ordernormal + imorder_gradK;
+    static inline const uint16_type imorderAuto = mpl::max< 
         mpl::int_<imorder_K2N>, mpl::int_<imorder_NdotGradKN>
         >::type::value;
-    static const uint16_type imorder = (IMOrder >= 0) ? IMOrder : imorderAuto;
+    static inline const uint16_type imorder = (IMOrder >= 0) ? IMOrder : imorderAuto;
 
     static const bool imIsPoly = true;
 

@@ -33,10 +33,14 @@
 #include <cmath>
 
 #include <boost/function.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#pragma GCC diagnostic pop
 
 #if 0
 #include <Eigen/Core>
@@ -730,7 +734,7 @@ roots( JacobiP const& p, Vector& xr )
         for ( int k = 0; k < N; ++k )
         {
             value_type pi = 4.0*math::atan( value_type( 1.0 ) );
-            // use k-th checbychev point to  initiliaze newton
+            // use k-th checbychev point to  initialize newton
             r = -math::cos( ( 2.0*value_type( k ) + 1.0 ) * pi / ( 2.0 * value_type( N ) ) );
 
             // use average of r and xr[k-1] as starting point (see KS)

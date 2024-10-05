@@ -23,7 +23,6 @@
 #ifndef FEELPP_ThermalBlockFree_HPP
 #define FEELPP_ThermalBlockFree_HPP 1
 
-#include <boost/timer.hpp>
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -484,7 +483,7 @@ ThermalBlockFree::initModel()
     auto functionalfree00 = functionalLinearFree( _space=Xh , _expr=expr_f00  );
     M_Fq_free[0][0]=functionalfree00;
 
-    BOOST_FOREACH( auto marker, southMarkers )
+    for( auto marker : southMarkers )
     {
         subdomain_index = subdomainId( marker );
         south_subdomain_index.push_back( subdomain_index );
@@ -587,7 +586,7 @@ ThermalBlockFree::initModel()
     form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, "north_domain-8" ),gamma_dir*idt( u )*id( v )/h() );
     form2( _test=Xh, _trial=Xh, _matrix=M ) += integrate( markedfaces( mmesh, "north_domain-9" ),gamma_dir*idt( u )*id( v )/h() );
 
-    BOOST_FOREACH( auto marker, northMarkers )
+    for( auto marker : northMarkers )
     {
         std::string sid = subdomainFromBoundary( marker );
         subdomain_index = subdomainId( marker );

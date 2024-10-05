@@ -33,11 +33,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels/modelcore/modelphysics.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelcore/options.hpp>
-#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feeldiscr/traits.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -46,6 +42,12 @@
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelts/newmark.hpp>
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+
 
 #include <feel/feelmodels/hdg/enums.hpp>
 #include <feel/feelmodels/hdg/mixedpoissonboundaryconditions.hpp>
@@ -71,17 +73,17 @@ public:
 
     // mesh
     using convex_type = ConvexType;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     using mesh_type = Mesh<convex_type>;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     // face mesh
-    using face_mesh_type = typename mesh_type::trace_mesh_type;
-    using face_mesh_ptrtype = std::shared_ptr<face_mesh_type>;
+    using face_mesh_type = trace_mesh_t<mesh_type>;
+    using face_mesh_ptrtype = trace_mesh_ptr_t<mesh_type>;
 
-    static const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
+    static inline const uint16_type expr_order = (Order+E_Order)*nOrderGeo;
 
     template<uint16_type Dim>
     using polyset_flux_type = PolySetType<Dim>;
@@ -165,8 +167,8 @@ public:
     };
 
 protected:
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
-    faces_reference_wrapper_t<mesh_type> M_gammaMinusIntegral;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
+    Range<mesh_type,MESH_FACES> M_gammaMinusIntegral;
 
     space_flux_ptrtype M_Vh; // flux
     space_potential_ptrtype M_Wh; // potential
@@ -248,7 +250,7 @@ public:
     std::string fluxKey() const { return M_fluxKey; }
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_flux_ptrtype const& spaceFlux() const { return M_Vh; }
     element_flux_ptrtype const& fieldFluxPtr() const { return M_up; }
@@ -272,6 +274,9 @@ public:
 
     std::string const& physic() const { return this->keyword(); }
     std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
+    std::string convectionCoefficientName() const { return prefixvm( this->physic(), "alpha", "_" ); }
+    std::string reactionCoefficientName() const { return prefixvm( this->physic(), "a", "_" ); }
+
     std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
     std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d2", "_" ); }
     std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
@@ -447,7 +452,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::exportResults( double tim
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
-    this->executePostProcessSave( invalid_uint32_type_value, mfields );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfPotential->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

@@ -1,9 +1,9 @@
-###  CMakeLists.txt; coding: utf-8 --- 
+# ##  CMakeLists.txt; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 24 Jan 2017
+# Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# Date: 24 Jan 2017
 #
-#  Copyright (C) 2017 Feel++ Consortium
+# Copyright (C) 2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,16 +22,20 @@
 #
 #
 
-feelpp_add_application( heatfluid SRCS main_heatfluid.cpp
+feelpp_add_application(heatfluid SRCS main_heatfluid.cpp
   LINK_LIBRARIES
-  #feelpp_toolbox_heatfluid_lib
+
+  # feelpp_toolbox_heatfluid_lib
   feelpp_toolbox_heatfluid_lib_2dP1G1_2dP2P1G1
+  feelpp_toolbox_heatfluid_lib_2dP2G1_2dP2P1G1
   feelpp_toolbox_heatfluid_lib_2dP1G1_2dP1P1G1
+
   feelpp_toolbox_heatfluid_lib_3dP1G1_3dP2P1G1
+  feelpp_toolbox_heatfluid_lib_3dP2G1_3dP2P1G1
   feelpp_toolbox_heatfluid_lib_3dP1G1_3dP1P1G1
   INSTALL TESTS
   MAN heatfluid
-  )
+)
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_heatfluid CATEGORY toolboxes/heatfluid)
 

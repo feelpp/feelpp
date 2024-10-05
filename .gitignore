@@ -61,6 +61,7 @@ __pycache__
 *.sw?
 \#*
 \.\#*
+np_*/
 /applications/crb/GeoHeatDiffusion/geoheatdiffusionapp.cpp
 /applications/crb/heatshield/heatshieldminimalversion1.cfg
 /applications/crb/heatshield/heatshieldminimalversion1.xml.in
@@ -177,6 +178,8 @@ mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
 gmsh-config.err
 python/pyfeelpp/feelpp/__init__.py
+*.msh
+**/.ipynb_checkpoints/**
 mor/examples/linearelasticity3d/linearelasticity3dapp.cpp
 mor/examples/heat3d/heat3dapp.cpp
 **/crbdb
@@ -187,3 +190,6 @@ mor/examples/heat3d/heat3dapp.cpp
 **/doc.rb
 **/crbdb
 **/feelppdb
+conftest.o
+python/notebooks/feelpp-python/
+install/

@@ -243,7 +243,7 @@ public:
             bool transpose ) override;
 
     /**
-     * @retun the Krylov SubsPace  data structure
+     * @return the Krylov SubsPace  data structure
      */
     KSP ksp()
         {

@@ -74,41 +74,26 @@ SYMMETRIC = 1 << 3
 ///! \cond detail
 namespace detail
 {
-template<typename T>
-FEELPP_EXPORT std::shared_ptr<DataMap<>> datamap( T const& t, mpl::true_ )
-{
-    return t->mapPtr();
-}
-template<typename T>
-FEELPP_EXPORT std::shared_ptr<DataMap<>> datamap( T const& t, mpl::false_ )
-{
-    return t.mapPtr();
-}
+
 template<typename T>
 FEELPP_EXPORT std::shared_ptr<DataMap<>> datamap( T const& t )
 {
-    return datamap( t, Feel::detail::is_shared_ptr<T>() );
+    if constexpr  ( is_shared_ptr_v<T> )
+        return t->mapPtr();
+    else
+        return t.mapPtr();
 }
 
 template<typename T>
-#if BOOST_VERSION >= 105300
-FEELPP_EXPORT typename boost::detail::sp_dereference< typename T::element_type >::type
-#else
-FEELPP_EXPORT typename T::reference
-#endif
-ref( T t, mpl::true_ )
+FEELPP_EXPORT auto& ref( T& t )
 {
-    return *t;
-}
-template<typename T>
-FEELPP_EXPORT T& ref( T& t, mpl::false_ )
-{
-    return t;
-}
-template<typename T>
-FEELPP_EXPORT auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
-{
-    return ref( t, Feel::detail::is_shared_ptr<T>() );
+    if constexpr ( is_shared_ptr_v<T> )
+    {
+        using ret_t = typename boost::detail::sp_dereference< typename T::element_type >::type;
+        return (ret_t&)*t.get();
+    }
+    else
+        return (T&)t;
 }
 
 
@@ -1130,7 +1115,7 @@ public:
             needToCopySolution = true;
         }
         vector_ptrtype _rhs( this->toBackendVectorPtr( rhs ) );
-        CHECK( _rhs ) << "converstion to backend vector of rhs fails";
+        CHECK( _rhs ) << "conversion to backend vector of rhs fails";
 
         this->setTranspose( transpose );
         solve_return_type ret;

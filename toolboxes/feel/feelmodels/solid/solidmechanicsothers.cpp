@@ -641,7 +641,7 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
 {
     auto compSpace = uTensor2.compSpace();
     auto uComp = compSpace->elementPtr();
-    static const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
+    static inline const uint16_type nComponents2 = ElementTensor2Type::functionspace_type::nComponents2;
     auto dofTensor2 = uTensor2.functionSpace()->dof();
     auto dofComp = compSpace->dof();
     int nLocDofPerComp = dofTensor2->nLocalDof( true );
@@ -681,7 +681,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     {
         std::string const& vvname = ppvv.first;
         auto const& vvmarkers = ppvv.second;
-        elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
+        Range<mesh_type,MESH_ELEMENTS> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
             M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
         double volVar = this->computeVolumeVariation( vvrange );
         this->postProcessMeasuresIO().setMeasure( vvname, volVar );
@@ -1399,7 +1399,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& fie
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( Range<mesh_type,MESH_ELEMENTS> const& rangeElt ) const
 {
     //using namespace Feel::vf;
     if(!this->hasSolidEquationStandard()) return 0.;

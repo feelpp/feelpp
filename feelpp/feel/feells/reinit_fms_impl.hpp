@@ -119,7 +119,7 @@ createPeriodicCorrespondanceTable()
     idCoord_type idsTag1;
     std::set< size_type > dofTag1Done;
     auto rg1 = markedfaces( M_functionspace->mesh(), M_periodicity.tag1() );
-    for ( auto it = rg1.template get<1>(), en = rg1.template get<2>(); it!=en; ++it)
+    for ( auto it = rg1.begin(), en = rg1.end(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
                 const size_type index = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
@@ -162,7 +162,7 @@ createPeriodicCorrespondanceTable()
     std::set< size_type > dofTag2Done;
 
     auto rg2 = markedfaces( M_functionspace->mesh(), M_periodicity.tag2() );
-    for (auto it = rg2.template get<1>(), en=rg2.template get<2>(); it!=en; ++it)
+    for (auto it = rg2.begin(), en=rg2.end(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
                 const size_type indexTag2 = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
@@ -196,7 +196,7 @@ createPeriodicCorrespondanceTable()
 
     dofTag2Done.clear();
 
-    // only one proc gather all the informations in a bi-map
+    // only one proc gather all the information in a bi-map
     std::vector< idstag1tag2_type > all_idsTag1_idsTag2;
     mpi::gather( Environment::worldComm().globalComm(),
                  idsTag1_idsTag2,
@@ -213,7 +213,7 @@ createPeriodicCorrespondanceTable()
                     0 );
 
     CHECK( M_idTag1_idTag2.left.size() == M_nbDofTag1 ) <<"problem in periodicity table of fast marching\n"
-                                                              <<"all nodes tagged 1 should have a conter part in tag2\n"
+                                                              <<"all nodes tagged 1 should have a counter part in tag2\n"
                                                               <<"M_idTag1_idTag2.left.size() = "<< M_idTag1_idTag2.left.size() <<"\n"
                                                               <<"nbDofTag1 = "<< M_nbDofTag1 <<"\n";
 
@@ -238,7 +238,7 @@ reduceDonePoints(element_type const& __v, element_type& status, std::set<size_ty
   checkStatus->zero();
 
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
-      checkStatus->add(k, status(k) == DONE ? 1 : 0);
+      checkStatus->add(k, status(k) == value_type(DONE) ? 1 : 0);
 
   // communications are done here. The sum of the real values and ghost values is done
   // thus if a dof has been set to DONE, even on a ghost value, checkStatus is 1
@@ -273,7 +273,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
   valueAtClose->zero();
 
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
-    if ( status(k) == CLOSE )
+    if ( status(k) == value_type(CLOSE) )
       {
         checkStatus->add(k, 1);
         valueAtClose->add(k, theHeap.valueAtIndex( k ) );
@@ -289,7 +289,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
     {
 
       // if a dof has been marked as CLOSE on an other processor, mark it as CLOSE and take its value
-      if ( ((*checkStatus)(k) == 1) && (status(k) != CLOSE) )
+      if ( ((*checkStatus)(k) == 1) && (status(k) != value_type(CLOSE)) )
         {
           status(k) = CLOSE;
           heap_entry_type newEntry = { (*valueAtClose)(k), k };
@@ -297,7 +297,7 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
         }
 
       // if a point is marked as CLOSE from at least two different processors, store its value of phi in order to be compared with the others
-      else if ( ( (*checkStatus)(k) > 1 ) && (status(k) == CLOSE) )
+      else if ( ( (*checkStatus)(k) > 1 ) && (status(k) == value_type(CLOSE)) )
         phiValueAtGlobalId[ processorToCluster( k ) ] = theHeap.valueAtIndex( k );
     }
 
@@ -357,8 +357,8 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     std::set<size_type> done;
     auto status = vf::project( _space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=vf::cst(FAR) );
 
-    auto it_marked = boost::get<1>(rangeInitialElts);
-    auto en_marked = boost::get<2>(rangeInitialElts);
+    auto it_marked = rangeInitialElts.begin();
+    auto en_marked = rangeInitialElts.end();
 
     for ( ; it_marked!=en_marked ; ++it_marked )
     {
@@ -500,7 +500,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     auto it = mesh->beginOrderedElement();
     auto en = mesh->endOrderedElement();
 
-    elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
+    Range<mesh_type, MESH_ELEMENTS> rangeInterfaceElts( mesh );
 
     for ( ; it!=en ; it++ )
     {
@@ -534,16 +534,8 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
             }
         }
         if( mark_elt )
-            interfaceElts->push_back( boost::cref(elt) );
+            rangeInterfaceElts.push_back( elt );
     }
-
-    range_elements_type rangeInterfaceElts = boost::make_tuple( 
-            mpl::size_t<MESH_ELEMENTS>(),
-            interfaceElts->begin(),
-            interfaceElts->end(),
-            interfaceElts
-            );
-
     return this->operator()( phi, rangeInterfaceElts );
 } // operator()
 
@@ -561,9 +553,9 @@ fmsHeapUpdate( size_type idDone,
     std::vector<size_type> ids( 1, idDone );
     for ( auto n0it = nbrs.begin(); n0it != nbrs.end(); ++n0it )
         {
-            if ( status[*n0it] == FAR )
+            if ( status[*n0it] == value_type(FAR) )
                 status[*n0it] = CLOSE;
-            if ( status[*n0it] == CLOSE )
+            if ( status[*n0it] == value_type(CLOSE) )
                 {
 
                   /* to give a reference, compute phi with only one DONE neighbours
@@ -611,7 +603,7 @@ fmsDistRec( std::vector<size_type> & ids,
         {
 
           // if the next neighbors is not a DONE neighbors
-            if ( status[*nit] != DONE )
+            if ( status[*nit] != value_type(DONE) )
                 continue;
 
             // if this node has already been accepted, stop

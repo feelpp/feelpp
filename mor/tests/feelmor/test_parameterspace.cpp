@@ -162,6 +162,17 @@ BOOST_AUTO_TEST_CASE( testSampling )
     // write sampling in json file
     mysampling->saveJson("mysampling.json");
 
+    // write sampling in text file
+    auto mysampling_bis = muspace->sampling();
+    mysampling_bis->equidistribute( 100 );
+    mysampling_bis->writeOnFile("mysampling.sample");
+    auto mysampling_read = muspace->sampling();
+    int n_read = mysampling_read->readFromFile("mysampling.sample");
+    BOOST_CHECK( n_read == mysampling_bis->size() );
+    for (int i=0; i<n_read; ++i)
+        for ( uint16_type d=0;d<muspace->dimension();++d)
+            BOOST_CHECK_CLOSE( (*mysampling_bis)[i](d), (*mysampling_read)[i](d), 1e-9 );
+
     // create another sampling
     mysampling->equidistribute( 1249 );
     auto mysampling2 = muspace->sampling();
@@ -246,8 +257,7 @@ BOOST_AUTO_TEST_CASE( test_loadParameterSpace )
     std::istringstream istr( json );
     nl::json p;
     istr >> p;
-    //pt::ptree p;
-    //pt::read_json(istr, p);
+    BOOST_TEST_MESSAGE( fmt::format("json = {}", p.dump(4) ) );
     auto parameters = CRBModelParameters();
     parameters.setPTree(p);
     auto Dmu = parameterspace_type::New(parameters);

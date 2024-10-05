@@ -80,7 +80,7 @@ using namespace Feel;
 
 namespace py = boost::parameter::python;
 
-//definition of all methods we need for the wrapping and wich are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments
+//definition of all methods we need for the wrapping and which are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments
  
     template<typename MeshType, int N>
 void expo_w ( std::shared_ptr<MeshType> m)

@@ -52,13 +52,15 @@ public:
 
     using deim_function_type = std::function<vector_ptrtype(parameter_type const&)>;
     using mdeim_function_type = std::function<sparse_matrix_ptrtype(parameter_type const&)>;
+    using deim_nl_function_type = std::function<vector_ptrtype(parameter_type const&, element_type const&)>;
 
     void setAssembleDEIM( deim_function_type const& fct ) { M_assembleForDEIM = fct; }
     void setAssembleMDEIM( mdeim_function_type const& fct ) { M_assembleForMDEIM = fct; }
+    void setAssembleDEIMnl( deim_nl_function_type const& fct ) { M_assembleForDEIMnl = fct; }
 
     sparse_matrix_ptrtype assembleForMDEIM( parameter_type const& mu, int const& tag ) { return M_assembleForMDEIM(mu); }
     vector_ptrtype assembleForDEIM( parameter_type const& mu, int const& tag ) { return M_assembleForDEIM(mu); }
-    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) { return {}; }
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) { return M_assembleForDEIMnl(mu,u); }
     sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) { return {}; }
 
 
@@ -66,6 +68,7 @@ private:
     space_ptrtype M_functionSpace;
     deim_function_type M_assembleForDEIM;
     mdeim_function_type M_assembleForMDEIM;
+    deim_nl_function_type M_assembleForDEIMnl;
 };
 
 /**

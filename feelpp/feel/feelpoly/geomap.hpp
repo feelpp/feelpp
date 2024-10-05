@@ -83,7 +83,7 @@ template <typename RangeType>
 GeomapStrategyType
 geomapStrategy( RangeType const& /**/, GeomapStrategyType gs )
 {
-    static const uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
+    constexpr uint16_type geoOrder = entity_range_t<RangeType>::nOrder;
     if ( geoOrder == 1 )
         return GeomapStrategyType::GEOMAP_HO;
     else
@@ -132,7 +132,7 @@ class GeoMap
 
     //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
-    static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
+    static inline const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<RealDim>>,
                                                         mpl::int_<RealDim>,
                                                         mpl::int_<Dim>>::type::value;
 
@@ -375,51 +375,57 @@ class GeoMap
     }
 
     /**
- *  apply the geometric mapping to the point \c pt given the real
- *  geometric nodes stored in a NxNg matrix \c G
- */
-    node_t_type transform( const node_t_type& __ref_p,
-                           matrix_node_t_type const& __G ) const
+     *  apply the geometric mapping to the point \c pt given the real
+     *  geometric nodes stored in a NxNg matrix \c G
+     */
+    node_t_type transform(const node_t_type& ref_p,
+                          const matrix_node_t_type& G) const
     {
-        namespace lambda = boost::lambda;
+        // Create a real_p node of the appropriate size and clear it
+        typename node<value_type>::type real_p(G.size1());
+        real_p.clear();
 
-        typename node<value_type>::type __real_p( __G.size1() );
-        __real_p.clear();
-
-        for ( uint16_type __i = 0; __i < nNodes; ++__i )
+        // Loop over all nodes
+        for (uint16_type i = 0; i < nNodes; ++i)
         {
-            //value_type __phi_at_pt = super::phi( __i, __ref_p );
-            value_type __phi_at_pt = super::evaluate( __i, __ref_p )( 0 );
-            __real_p.plus_assign( __phi_at_pt * ublas::column( __G, __i ) );
+            // Evaluate phi at the current point and assign it to phi_at_pt
+            value_type phi_at_pt = super::evaluate(i, ref_p)(0);
+
+            // Perform the transformation by accumulating the product of phi_at_pt and the i-th column of G
+            real_p.plus_assign(phi_at_pt * ublas::column(G, i));
         }
 
-        return __real_p;
+        return real_p;
     }
 
     /**
- * apply the geometric mapping to the point index \c id_pt given the real
- * geometric nodes stored in a NxNg matrix \c G
- */
-    node_t_type transform( uint16_type __idref,
-                           matrix_node_t_type const& __G,
-                           precompute_type const* __pc ) const
+     * apply the geometric mapping to the point index \c id_pt given the real
+     * geometric nodes stored in a NxNg matrix \c G
+     */
+    node_t_type transform( uint16_type id_ref,
+                           const matrix_node_t_type& G,
+                           const precompute_type* pc) const
     {
-        node_t_type __real_p( __G.size1() );
-        __real_p.clear();
+        // Initialize the real_p node with the appropriate size and clear it
+        node_t_type real_p(G.size1());
+        real_p.clear();
 
-        for ( uint16_type __i = 0; __i < nNodes; ++__i )
+        // Loop over all nodes
+        for (uint16_type i = 0; i < nNodes; ++i)
         {
-            // evaluate transformation at point pt
-            value_type __phi_at_pt = __pc->phi( __idref, __i );
-            __real_p.plus_assign( __phi_at_pt * ublas::column( __G, __i ) );
+            // Evaluate the transformation at the given point
+            value_type phi_at_pt = pc->phi(id_ref, i);
+
+            // Accumulate the result of phi_at_pt multiplied by the i-th column of G
+            real_p.plus_assign(phi_at_pt * ublas::column(G, i));
         }
 
-        return __real_p;
-    }
+        return real_p;
+}
 
     /**
- * compute real coordinates from a matrix of ref coordinates
- */
+     * compute real coordinates from a matrix of ref coordinates
+     */
     void transform( matrix_node_t_type const& G,
                     precompute_type const* pc,
                     matrix_type& x ) const
@@ -432,18 +438,16 @@ class GeoMap
     }
 
     /**
- *  compute the gradient of the transformation in the reference
- *  element
- *
- *  Compute the gradient at node \c x, pc is resized to
- *  [nbNodes() x dim()] if the transformation is linear, \c x is
- *  not used at all
- */
+     *  compute the gradient of the transformation in the reference
+     *  element
+     *
+     *  Compute the gradient at node \c x, pc is resized to
+     *  [nbNodes() x dim()] if the transformation is linear, \c x is
+     *  not used at all
+     */
     void gradient( const node_t_type& __pt,
                    matrix_type& __g ) const
         {
-            namespace lambda = boost::lambda;
-
             if ( trans == fem::LINEAR )
             {
                 __g = M_g_linear;
@@ -772,10 +776,10 @@ class GeoMap
         static const int subEntityCoDim = SubEntityCoDim;
         static const int subEntityCoDimFix = SubEntityCoDim > 0 ? SubEntityCoDim : 1;
         // reference space dimension
-        static const uint16_type PDim = ElementType::nDim;
+        static inline const uint16_type PDim = ElementType::nDim;
         // real space dimension
         static constexpr uint16_type NDim = ElementType::nRealDim;
-        static const uint16_type nDim = NDim;
+        static inline const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
         static const bool is_linear = ( trans == fem::LINEAR );
@@ -1104,14 +1108,14 @@ class GeoMap
             }
 
         //!
-        //! @return true if geomap assocated to a face, false otherwise
+        //! @return true if geomap associated to a face, false otherwise
         //!
         bool isOnFace() const
             {
                 return (subEntityCoDim == 1) && (M_face_id != invalid_uint16_type_value);
             }
         //!
-        //! @return true if geomap assocated to a face, edge or point, false otherwise
+        //! @return true if geomap associated to a face, edge or point, false otherwise
         //!
         bool isOnSubEntity() const
             {
@@ -3365,10 +3369,10 @@ struct GT_QK
     struct BOOST_PP_CAT( GT_, GEOM )<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), ENTITY, T>     \
         : public GeoMap<FEELPP_GT_DIM( LDIMS ), LORDER, FEELPP_GT_REALDIM( LDIMS ), T, ENTITY, GEOM>            \
     {                                                                                                           \
-        static const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
-        static const uint16_type order = LORDER;                                                                \
-        static const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
-        static const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
+        static inline const uint16_type nDim = FEELPP_GT_DIM( LDIMS );                                                 \
+        static inline const uint16_type order = LORDER;                                                                \
+        static inline const uint16_type nRealDim = FEELPP_GT_REALDIM( LDIMS );                                         \
+        static inline const uint16_type nRealDimCheck2d = mpl::if_<mpl::less_equal<mpl::int_<2>, mpl::int_<nRealDim>>, \
                                                             mpl::int_<nRealDim>,                                \
                                                             mpl::int_<nDim>>::type::value;                      \
                                                                                                                 \
@@ -3386,8 +3390,8 @@ struct GT_QK
         typedef GeoMap<nDim, LORDER, nRealDim, T, ENTITY, GEOM> super;                                          \
         typedef BOOST_PP_CAT( GT_, GEOM )<nDim - 1, LORDER, nRealDim, ENTITY, T> face_geo_type;                 \
                                                                                                                 \
-        static const uint16_type nDof = super::nDof;                                                            \
-        static const uint16_type nNodes = super::nNodes;                                                        \
+        static inline const uint16_type nDof = super::nDof;                                                            \
+        static inline const uint16_type nNodes = super::nNodes;                                                        \
         typedef typename mpl::at<geomap_elements_t, mpl::int_<nDim>>::type element_gm_type;                     \
         typedef typename mpl::at<geomap_faces_t, mpl::int_<nDim>>::type face_gm_type;                           \
         template <int N>                                                                                        \
@@ -3435,8 +3439,8 @@ template <typename Elem, template <uint16_type, uint16_type, uint16_type> class 
 class RealToReference
 {
   public:
-    static const uint16_type nDim = Elem::nDim;
-    static const uint16_type nRealDim = Elem::nRealDim;
+    static inline const uint16_type nDim = Elem::nDim;
+    static inline const uint16_type nRealDim = Elem::nRealDim;
 
     typedef T value_type;
     typedef typename matrix_node<T>::type points_type;

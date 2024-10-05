@@ -16,7 +16,7 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>;
 
 == DESCRIPTION
 
-{manmanual} is a simple application which prints some informations about {feelpp} installation
+{manmanual} is a simple application which prints some informations about {feelpp} installation
 
 
 === Options
@@ -37,6 +37,6 @@ feelpp_info
 
 == COPYING
 
-Copyright \(C) 2022 {feelpp} Consortium. +
+Copyright \(C) 2022-2024 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
 

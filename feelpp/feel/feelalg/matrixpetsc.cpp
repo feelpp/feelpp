@@ -260,7 +260,7 @@ void MatrixPetsc<T>::init ( const size_type m,
     {
         // Create matrix.  Revisit later to do preallocation and make more efficient
         ierr = MatCreateSeqAIJ ( this->comm(), m_global, n_global,
-                                 n_nz, PETSC_NULL, &M_mat );
+                                 n_nz, PETSC_IGNORE, &M_mat );
         CHKERRABORT( this->comm(),ierr );
 
 
@@ -271,13 +271,13 @@ void MatrixPetsc<T>::init ( const size_type m,
     {
 #if PETSC_VERSION_LESS_THAN(3,3,0)
         ierr = MatCreateMPIAIJ ( this->comm(), m_local, n_local, m_global, n_global,
-                                 PETSC_DECIDE, PETSC_NULL, PETSC_DECIDE, PETSC_NULL, &M_mat );
+                                 PETSC_DECIDE, PETSC_IGNORE, PETSC_DECIDE, PETSC_IGNORE, &M_mat );
 #else
         ierr = MatCreateAIJ ( this->comm(), m_local, n_local, m_global, n_global,
-                                 PETSC_DECIDE, PETSC_NULL, PETSC_DECIDE, PETSC_NULL, &M_mat );
+                                 PETSC_DECIDE, PETSC_IGNORE, PETSC_DECIDE, PETSC_IGNORE, &M_mat );
 #endif
         //ierr = MatCreateMPIAIJ (this->comm(), m_local, n_local, m_global, n_global,
-        ///n_nz, PETSC_NULL, n_oz, PETSC_NULL, &M_mat);
+        ///n_nz, PETSC_IGNORE, n_oz, PETSC_IGNORE, &M_mat);
         //MatCreate(this->comm(),m_local,n_local,m_global,n_global, &M_mat);
         //MatCreate(this->comm(),PETSC_DECIDE,PETSC_DECIDE,m_global,n_global, &M_mat);
         //MatSetSizes(M_mat,m_local,n_local,m_global,n_global);
@@ -598,7 +598,7 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
         for ( uint i = 0 ; i < M_petscIS.size(); ++i )
         {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-            ierr=PCFieldSplitSetIS( pc,PETSC_NULL,M_petscIS[i] );
+            ierr=PCFieldSplitSetIS( pc,PETSC_IGNORE,M_petscIS[i] );
 #else
             ierr=PCFieldSplitSetIS( pc,M_petscIS[i] );
 #endif
@@ -1785,8 +1785,15 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
     {
         LOG(INFO) << "MatrixPETSc:: zeroRows seq elimination";
         rhs.setIsClosed( false );
-        VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
+
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
+        CHECK( pvalues ) << "values must be a VectorPetsc";
+
+        VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
+        CHECK( prhs ) << "rhs must be a VectorPetsc";
+        
+     
+
 
         int start, stop;
         int ierr = MatGetOwnershipRange( M_mat, &start, &stop );
@@ -1824,9 +1831,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
         }
         else // non symmetric case
         {
-            LOG(INFO) << "MatrixPETSc:: zeroRows seq unsymmetric";
+            LOG(INFO) << fmt::format("MatrixPETSc:: zeroRows seq unsymmetric number of rows : {} value on diagonal : {}", rows.size(), value_on_diagonal );
+
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal,PETSC_NULL,PETSC_NULL );
+            //MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal,PETSC_IGNORE,PETSC_IGNORE );
+            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
 #else
             MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
 #endif
@@ -1841,19 +1850,6 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
                         rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
-                }
-            }
-            else
-            {
-                for ( size_type i = 0; i < rows.size(); ++i )
-                {
-                    // eliminate column
-
-                    // warning: a row index may belong to another
-                    // processor, so make sure that we access only the
-                    // rows that belong to this processor
-                    if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(rows[i]) );
                 }
             }
         }
@@ -1927,6 +1923,10 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
     {
         if ( Atrans->isInitialized() )
         {
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 18 )
+            ierr = MatTransposeSetPrecursor( M_mat, Atrans->M_mat );
+            CHKERRABORT( this->comm(), ierr );
+#endif
             ierr = MatTranspose( M_mat, MAT_REUSE_MATRIX,&Atrans->M_mat );
             CHKERRABORT( this->comm(),ierr );
         }
@@ -2617,13 +2617,13 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
                dnzOffProc );
 
     if ( n_dnzOffProc==0 )
-        dnzOffProc = PETSC_NULL;
+        dnzOffProc = PETSC_IGNORE;
 
 #if PETSC_VERSION_LESS_THAN(3,3,0)
     ierr = MatCreateMPIAIJ ( this->comm(),
                              m_local, n_local,
                              m_global, n_global,
-                             /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
+                             /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_IGNORE*/dnz,
                              /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
                              //&M_matttt);
                              &this->M_mat);
@@ -2632,7 +2632,7 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
     ierr = MatCreateAIJ ( this->comm(),
                           m_local, n_local,
                           m_global, n_global,
-                          /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
+                          /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_IGNORE*/dnz,
                           /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
                           //&M_matttt);
                           &this->M_mat);
@@ -3025,7 +3025,7 @@ MatrixPetscMPI<T>::zero()
                 if ( ( int )it->second.template get<0>() == this->comm().globalRank() || this->mapRow().mapGlobalClusterToGlobalProcess().size()==0 )
                 {
 
-                    // Work in progress (but normaly this part is useless because we use the CSR prealocation)
+                    // Work in progress (but normally this part is useless because we use the CSR prealocation)
 #if 0
                     std::vector<PetscInt> cols(  it->second.template get<2>().size(), 0 );
                     //PetscInt row = it->second.template get<1>();
@@ -3036,7 +3036,7 @@ MatrixPetscMPI<T>::zero()
                     else
                         row=it->first;//this->mapRow().mapGlobalClusterToGlobalProcess()[it->first-this->mapRow().firstDofGlobalCluster()];
 
-                    //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+                    //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_IGNORE, PETSC_IGNORE);
 
                     //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
                     auto it2=it->second.template get<2>().begin();
@@ -3079,7 +3079,7 @@ MatrixPetscMPI<T>::zero()
                     else
                         row=it->first;//this->mapRow().mapGlobalClusterToGlobalProcess()[it->first-this->mapRow().firstDofGlobalCluster()];
 
-                    //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+                    //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_IGNORE, PETSC_IGNORE);
 
                     //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
                     auto it2=it->second.template get<2>().begin();
@@ -3177,7 +3177,7 @@ MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*
                     PetscInt row =  it->first;
 
 
-                    //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL);
+                    //MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_IGNORE, PETSC_IGNORE);
 
                     //this->mapRow()->firstDofGlobalCluster( this->comm().rank() );
                     auto it2=it->second.template get<2>().begin();

@@ -149,7 +149,7 @@ function(get_linux_lsb_release_information)
       execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --id OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
       execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --release OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
       execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --codename OUTPUT_VARIABLE LSB_RELEASE_CODENAME_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
-  
+
       set(LSB_RELEASE_ID_SHORT "${LSB_RELEASE_ID_SHORT}" PARENT_SCOPE)
       set(LSB_RELEASE_VERSION_SHORT "${LSB_RELEASE_VERSION_SHORT}" PARENT_SCOPE)
       set(LSB_RELEASE_CODENAME_SHORT "${LSB_RELEASE_CODENAME_SHORT}" PARENT_SCOPE)
@@ -231,8 +231,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
-
-
+# Disable searching for MPI-2 C++ bindings
+set(MPI_CXX_SKIP_MPICXX TRUE)
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
@@ -413,71 +413,116 @@ if ( FEELPP_ENABLE_MKL )
 #       FIND_PACKAGE(LAPACK)
 #     endif (APPLE)
 #     SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
-   endif(MKL_FOUND) 
+   endif(MKL_FOUND)
 endif(FEELPP_ENABLE_MKL)
 
 # HDF5
 # On debian,
 # - do not install hdf5-helpers, otherwise it will pick the serial version by default
 # - install only the libhdf5-openmpi-dev package
+set(CHECK_H5_PARALLEL_CODE "
+#include <hdf5.h>
+int main() {
+#ifdef H5_HAVE_PARALLEL
+return 0; // Parallel support enabled
+#else
+return 1; // Parallel support not enabled
+#endif
+}")
+function(CheckHDF5Parallel _result_var)
+  # Write the check code to a file
+  file(WRITE "${CMAKE_BINARY_DIR}/check_h5_parallel.c" "${CHECK_H5_PARALLEL_CODE}")
+  #message(STATUS "-DINCLUDE_DIRECTORIES=${HDF5_INCLUDE_DIRS};${MPI_INCLUDE_PATH}")
+  #message(STATUS "LINK_LIBRARIES ${HDF5_LINK_LIBRARIES}")
+  # Attempt to compile the test code
+  try_compile(HDF5_PARALLEL
+    "${CMAKE_BINARY_DIR}"
+    "${CMAKE_BINARY_DIR}/check_h5_parallel.c"
+    CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${HDF5_INCLUDE_DIRS};${MPI_INCLUDE_PATH}"
+    LINK_LIBRARIES ${HDF5_LINK_LIBRARIES}
+    OUTPUT_VARIABLE COMPILE_OUTPUT
+    )
+  # message(STATUS "COMPILE_OUTPUT=${COMPILE_OUTPUT}")
+  # Set the result variable to TRUE if the code compiled successfully (indicating parallel support)
+  if(HDF5_PARALLEL)
+    set(${_result_var} TRUE PARENT_SCOPE)
+  else()
+    set(${_result_var} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
 
 option( FEELPP_ENABLE_HDF5 "Enable HDF5 Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_HDF5 )
+
   set(HDF5_PREFER_PARALLEL TRUE)
   find_package(HDF5 COMPONENTS C)
+  if( NOT HDF5_FOUND )
+    pkg_check_modules(HDF5 hdf5 IMPORTED_TARGET)
+    if ( HDF5_FOUND )
+      # message(STATUS "[feelpp] (pkgconfig) HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
+      # message(STATUS "[feelpp] (pkgconfig) HDF5 - Libraries ${HDF5_LIBRARIES}" )
+      # message(STATUS "[feelpp] (pkgconfig) HDF5 - Link Libraries ${HDF5_LINK_LIBRARIES}")
+      # set(FEELPP_HAS_HDF5 1)
+      # set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
+      set(HDF5_PKGCONFIG TRUE)
+    endif()
+  endif()
+
   if( HDF5_FOUND )
-    if( HDF5_IS_PARALLEL )
-        message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
-        message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
-        #INCLUDE_DIRECTORIES( ${HDF5_INCLUDE_DIRS} )
-        set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
-        set(FEELPP_HAS_HDF5 1)
-        # check HDF5 version
-        if(NOT HDF5_VERSION)
-          set( HDF5_VERSION "" )
-          foreach( _dir IN LISTS HDF5_INCLUDE_DIRS )
-            foreach(_hdr "${_dir}/H5pubconf.h" "${_dir}/H5pubconf-64.h" "${_dir}/H5pubconf-32.h")
-              if( EXISTS "${_hdr}" )
-    	        #MESSAGE(STATUS "_hdr=${_hdr}")
-                file( STRINGS "${_hdr}"
-                  HDF5_VERSION_DEFINE
-                  REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+" )
-	            #MESSAGE(STATUS "HDF5_VERSION_DEFINE=${HDF5_VERSION_DEFINE}")
-                if( "${HDF5_VERSION_DEFINE}" MATCHES
-                    "H5_VERSION[ \t]+\"([0-9]+\\.[0-9]+\\.[0-9]+)(-patch([0-9]+))?\"" )
-	              set( HDF5_VERSION "${CMAKE_MATCH_1}" )
-                  if( CMAKE_MATCH_3 )
-                    set( HDF5_VERSION ${HDF5_VERSION}.${CMAKE_MATCH_3})
-                  endif()
-                endif()
-	            #MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
-                unset(HDF5_VERSION_DEFINE)
+
+    if( NOT HDF5_IS_PARALLEL )
+      CheckHDF5Parallel(HDF5_IS_PARALLEL)
+    endif()
+    if(HDF5_IS_PARALLEL)
+      message(STATUS "[feelpp] HDF5 compiled with parallel support.")
+    else()
+      MESSAGE(FATAL_ERROR "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
+    endif()
+
+    message(STATUS "[feelpp] HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
+    message(STATUS "[feelpp] HDF5 - Libraries ${HDF5_LIBRARIES}" )
+    set(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
+    set(FEELPP_HAS_HDF5 1)
+    # check HDF5 version
+    if(NOT HDF5_VERSION)
+      set( HDF5_VERSION "" )
+      foreach( _dir IN LISTS HDF5_INCLUDE_DIRS )
+        foreach(_hdr "${_dir}/H5pubconf.h" "${_dir}/H5pubconf-64.h" "${_dir}/H5pubconf-32.h")
+          if( EXISTS "${_hdr}" )
+            #MESSAGE(STATUS "_hdr=${_hdr}")
+            file( STRINGS "${_hdr}"
+              HDF5_VERSION_DEFINE
+              REGEX "^[ \t]*#[ \t]*define[ \t]+H5_VERSION[ \t]+" )
+            #MESSAGE(STATUS "HDF5_VERSION_DEFINE=${HDF5_VERSION_DEFINE}")
+            if( "${HDF5_VERSION_DEFINE}" MATCHES
+                "H5_VERSION[ \t]+\"([0-9]+\\.[0-9]+\\.[0-9]+)(-patch([0-9]+))?\"" )
+              set( HDF5_VERSION "${CMAKE_MATCH_1}" )
+              if( CMAKE_MATCH_3 )
+                set( HDF5_VERSION ${HDF5_VERSION}.${CMAKE_MATCH_3})
               endif()
-            endforeach()
-          endforeach()
-        endif(NOT HDF5_VERSION)
+            endif()
+            #MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+            unset(HDF5_VERSION_DEFINE)
+          endif()
+        endforeach()
+      endforeach()
+    endif(NOT HDF5_VERSION)
 
-        STRING (REGEX MATCHALL "[0-9]+" _versionComponents "${HDF5_VERSION}")
-        MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
-        LIST(GET _versionComponents 0 HDF_VERSION_MAJOR_REF)
-        LIST(GET _versionComponents 1 HDF_VERSION_MINOR_REF)
-        LIST(GET _versionComponents 2 HDF_VERSION_RELEASE_REF)
-        SET(HDF_VERSION_REF "${HDF5_VERSION}")
+    STRING (REGEX MATCHALL "[0-9]+" _versionComponents "${HDF5_VERSION}")
+    #MESSAGE(STATUS "HDF5_VERSION=${HDF5_VERSION}")
+    LIST(GET _versionComponents 0 HDF_VERSION_MAJOR_REF)
+    LIST(GET _versionComponents 1 HDF_VERSION_MINOR_REF)
+    LIST(GET _versionComponents 2 HDF_VERSION_RELEASE_REF)
+    SET(HDF_VERSION_REF "${HDF5_VERSION}")
 
-        IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
-          MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
-        ENDIF()
-        set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5/${HDF_VERSION_REF}" )
-
-
-      else(HDF5_IS_PARALLEL)
-        MESSAGE(FATAL_ERROR "[feelpp] HDF5 has been found but is not parallel, HDF5 is not enabled in Feel++")
-      endif( HDF5_IS_PARALLEL)
+    # IF (NOT HDF_VERSION_MAJOR_REF EQUAL 1 OR NOT HDF_VERSION_MINOR_REF EQUAL 8)
+    MESSAGE(STATUS "[feelpp] HDF5 version is ${HDF_VERSION_REF}")
+    # ENDIF()
+    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5/${HDF_VERSION_REF}" )
 
   else(HDF5_FOUND)
     MESSAGE(FATAL_ERROR "[feelpp] no HDF5 found")
   endif( HDF5_FOUND)
-
 endif(FEELPP_ENABLE_HDF5)
 
 
@@ -528,7 +573,7 @@ if(FEELPP_ENABLE_PYTHON)
     SET(FEELPP_LIBRARIES ${Python3_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PythonLibs/${Python3_VERSION}" )
     set( FEELPP_HAS_PYTHON 1 )
-    
+
     # Check that sympy is available
     include(FindPythonModules)
     find_python_module(sympy 1.1 FEELPP_SYMPY_FOUND)
@@ -555,7 +600,7 @@ if(FEELPP_ENABLE_PYTHON)
     else()
       message(STATUS "[feelpp] petsc4py python wrapper will not be enabled")
     endif()
-      
+
     find_program(FEELPP_MO2FMU mo2fmu HINTS "$ENV{HOME}/.local/bin" PATHS "$ENV{HOME}/.local/bin")
     if ( NOT FEELPP_MO2FMU-NOTFOUND )
       set(FEELPP_HAS_MO2FMU 1)
@@ -571,7 +616,7 @@ if(FEELPP_ENABLE_PYTHON)
                       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
                       RESULT_VARIABLE _PYTHON_pythonlib_result
                       OUTPUT_STRIP_TRAILING_WHITESPACE)
-      
+
     if (_PYTHON_pythonlib_result)
       message (SEND_ERROR "Could not run ${Python3_EXECUTABLE}")
     endif ()
@@ -609,7 +654,7 @@ if ( NOT Boost_ARCHITECTURE )
   set(Boost_ARCHITECTURE "-x64")
 endif()
 set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70" "1.71")
-set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams ) 
+set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
 FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
@@ -834,7 +879,7 @@ if(FEELPP_ENABLE_LIBXML2)
   find_package(LibXml2 2.6.27)
   if ( LIBXML2_FOUND )
     message(STATUS "[feelpp] LibXml2: ${LIBXML2_INCLUDE_DIR} ${LIBXML2_LIBRARIES}")
-    #SET(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")    
+    #SET(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
     #INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
     SET(FEELPP_LIBRARIES ${LIBXML2_LIBRARIES} ${FEELPP_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} LibXml2" )
@@ -1481,4 +1526,3 @@ foreach( varname ${varstoclean})
 endforeach()
 
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)
-

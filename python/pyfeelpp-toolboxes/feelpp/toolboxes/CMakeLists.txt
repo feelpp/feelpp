@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 
 add_custom_target(pyfeelpptoolboxes)
 if ( TARGET pyfeelpp )
@@ -65,3 +65,8 @@ if ( TARGET  Feelpp::feelpp_toolbox_hdg_lib )
   add_subdirectory( hdg )
   add_dependencies(pyfeelpptoolboxes _hdg)
 endif()
+
+# if ( TARGET  Feelpp::feelpp_toolbox_fsi_lib )
+#   add_subdirectory( fsi )
+#   add_dependencies(pyfeelpptoolboxes _fsi)
+# endif()

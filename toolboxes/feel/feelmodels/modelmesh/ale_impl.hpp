@@ -70,12 +70,12 @@ public :
      */
     typedef Convex convex_type;
 
-    static const uint16_type Dim = convex_type::nDim;
-    static const uint16_type Order_low = convex_type::nOrder;
+    static inline const uint16_type Dim = convex_type::nDim;
+    static inline const uint16_type Order_low = convex_type::nOrder;
     using size_type = typename super_type::size_type;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
 
     static const bool isEqualOrderAndOrderLow = boost::is_same<mpl::int_<Order>,mpl::int_<Order_low> >::type::value;
 

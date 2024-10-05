@@ -48,7 +48,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feelcore/feel.hpp>
-
+#include <fmt/chrono.h>
 #ifdef FEELPP_HAS_PETSC_H
 
 #include <feel/feelalg/solverlinearpetsc.hpp>
@@ -65,13 +65,14 @@ extern "C"
     typedef int PetscErrorCode;
     typedef int PetscInt;
 #endif
-
     PetscErrorCode __feel_petsc_monitor(KSP ksp,PetscInt it,PetscReal rnorm,void* ctx)
     {
         SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
         if ( !s ) return 1;
         if ( s->worldComm().isMasterRank() )
-            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
+            std::cout << fmt::format( "[{:%Y-%m-%d %H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), s->prefix(), it, rnorm ) << std::endl;
+//        if ( s->worldComm().isMasterRank() )
+//            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
     }
 #if PETSC_VERSION_LESS_THAN(3,0,1)
@@ -345,7 +346,7 @@ void SolverLinearPetsc<T>::init ()
         // behavior is for PETSc to allocate (internally) an array
         // of size 1000 to hold the residual norm history.
         ierr = KSPSetResidualHistory( M_ksp,
-                                      PETSC_NULL,   // pointer to the array which holds the history
+                                      PETSC_IGNORE,   // pointer to the array which holds the history
                                       PETSC_DECIDE, // size of the array holding the history
                                       PETSC_TRUE ); // Whether or not to reset the history for each solve.
         CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -409,8 +410,8 @@ void SolverLinearPetsc<T>::init ()
 
         if ( this->M_showKSPMonitor )
         {
-            //KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
-            KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
+            //KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_IGNORE,PETSC_IGNORE );
+            KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_IGNORE );
         }
 
         // The value can be checked with --(prefix.)ksp-view=1
@@ -769,7 +770,7 @@ SolverLinearPetsc<T>::setPetscConstantNullSpace()
         std::cout << "use nullspace in petsc\n";
         MatNullSpace nullsp;
 
-        ierr = MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
+        ierr = MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_IGNORE, &nullsp );
         CHKERRABORT( this->worldComm().globalComm(), ierr );
 #if PETSC_VERSION_LESS_THAN( 3,5,4 )
         ierr = KSPSetNullSpace( M_ksp, nullsp );
@@ -812,7 +813,7 @@ SolverLinearPetsc<T>::updateNullSpace( Mat A, Vec rhs )
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
     MatNullSpace nullsp;
-    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_IGNORE*/, &nullsp );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     //ierr = MatNullSpaceView( nullsp, PETSC_VIEWER_STDOUT_WORLD );
     //CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -849,7 +850,7 @@ SolverLinearPetsc<T>::updateNearNullSpace( Mat A )
     for ( int k = 0 ; k<dimNullSpace ; ++k )
         petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
     MatNullSpace nullsp;
-    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
+    ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_IGNORE*/, &nullsp );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
     ierr = MatSetNearNullSpace( A, nullsp);
     CHKERRABORT( this->worldComm().globalComm(),ierr );

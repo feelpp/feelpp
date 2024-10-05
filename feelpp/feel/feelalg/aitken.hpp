@@ -65,7 +65,7 @@ namespace Feel
  * {
  *
  *     u_old = u_new;
- *     commpute u_new;
+ *     compute u_new;
  *     residual = u_new-u_old;
  *     u_new = aitken.apply(residual, u_new);
  *     aitken.printInfo();
@@ -158,7 +158,7 @@ public:
     ~Aitken() {}
 
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      */
     template <typename ... Ts>
     void initialize( Ts && ... v )
@@ -339,7 +339,7 @@ public:
 
 private:
     /**
-     * initiliaze the aitken algorithm
+     * initialize the aitken algorithm
      */
     void initializeimpl( element_type const& residual, element_type const& elem );
 
@@ -571,11 +571,11 @@ Aitken<fs_type>::saveConvergenceHistory( std::string const& fname ) const
     if ( ofs )
     {
         ofs.setf( std::ios::scientific );
-        BOOST_FOREACH( auto cit, M_convergence )
+        for( auto cit : M_convergence )
         {
             // iteration
             ofs << std::setw( 6 ) << cit.first << " ";
-            BOOST_FOREACH( auto it, cit.second )
+            for( auto it : cit.second )
             {
                 ofs << std::setw( 20 ) << std::setprecision( 16 ) << it.second << " ";
             }

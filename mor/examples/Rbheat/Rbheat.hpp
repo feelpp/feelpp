@@ -29,7 +29,6 @@
 #ifndef __RBHEAT_H
 #define __RBHEAT_H 1
 
-#include <boost/timer.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <feel/options.hpp>

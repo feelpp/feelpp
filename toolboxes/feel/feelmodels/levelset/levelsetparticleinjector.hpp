@@ -47,14 +47,14 @@ public:
     typedef typename levelset_type::value_type value_type;
     //--------------------------------------------------------------------//
     // Mesh
-    static const uint16_type nDim = levelset_type::nDim;
+    static inline const uint16_type nDim = levelset_type::nDim;
     typedef typename levelset_type::mesh_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // Range types
     typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
     // Levelset element
     typedef typename levelset_type::space_levelset_type functionspace_type;
     typedef typename levelset_type::space_levelset_ptrtype functionspace_ptrtype;

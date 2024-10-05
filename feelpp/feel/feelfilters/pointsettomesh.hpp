@@ -96,7 +96,7 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Convex::nDim;
+    static inline const uint16_type nDim = Convex::nDim;
 
     //@}
 
@@ -369,7 +369,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
     vtkPolyData* outMesh = delaunay2D->GetOutput( );
 
-    /** General informations about vtkPolyData **/
+    /** General information about vtkPolyData **/
 
     outMesh->BuildLinks();
 

@@ -51,7 +51,7 @@ class PreconditionerBlockMS : public Preconditioner<typename space_type::value_t
 {
     typedef Preconditioner<typename space_type::value_type,typename space_type::size_type> super;
 public:
-    static const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type Dim = space_type::nDim;
     typedef typename space_type::value_type value_type;
     typedef typename space_type::size_type size_type;
 
@@ -182,7 +182,7 @@ private:
     std::vector<size_type> M_Vh_indices;
     std::vector<size_type> M_Qh_indices;
 
-    // The two blocks: rhs and unknows
+    // The two blocks: rhs and unknowns
     mutable vector_ptrtype M_uin;
     mutable vector_ptrtype M_uout;
     mutable vector_ptrtype M_pin;

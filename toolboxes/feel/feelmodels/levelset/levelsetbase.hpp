@@ -79,16 +79,16 @@ public:
     typedef LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
-    static const uint16_type Order = BasisType::nOrder;
+    static inline const uint16_type Order = BasisType::nOrder;
     using size_type = typename super_type::size_type;
     using value_type = typename super_type::value_type;
 
     //--------------------------------------------------------------------//
     // Mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mymesh_type;
@@ -160,12 +160,12 @@ public:
     typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
     typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
-    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elements_type;
 
     typedef typename MeshTraits<mesh_type>::face_reference_wrapper_const_iterator face_reference_wrapper_const_iterator;
     typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_type faces_reference_wrapper_type;
     typedef typename MeshTraits<mesh_type>::faces_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
-    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+    typedef Range<mesh_type,MESH_FACES> range_faces_type;
 
     //--------------------------------------------------------------------//
     // Stretch and shear types

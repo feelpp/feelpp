@@ -327,7 +327,13 @@ void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, function
         if ( M_solverPtAP_prec )
             M_solverPtAP_prec->attachOperatorPCD( key, opPCD );
     }
-
+    void
+    ModelAlgebraicFactory::attachOperatorPMM( std::string const& key, typename preconditioner_type::operator_pmmbase_ptrtype const& opPMM )
+    {
+        M_PrecondManage->attachOperatorPMM( key, opPMM );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachOperatorPMM( key, opPMM );
+    }
 
     void
     ModelAlgebraicFactory::addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key )

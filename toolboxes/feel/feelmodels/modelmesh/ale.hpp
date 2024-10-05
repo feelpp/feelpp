@@ -47,11 +47,11 @@ public :
     typedef std::shared_ptr<self_type> self_ptrtype;
 
     typedef Convex convex_type;
-    static const uint16_type Dim = convex_type::nDim;
-    static const uint16_type Order_low = convex_type::nOrder;
+    static inline const uint16_type Dim = convex_type::nDim;
+    static inline const uint16_type Order_low = convex_type::nOrder;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-    using range_elements_type = elements_reference_wrapper_t<mesh_type>;
+    using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
     using size_type = typename mesh_type::size_type;
     using bc_to_markers_type = std::map< std::string, std::set<std::string> >;
 

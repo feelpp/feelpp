@@ -37,7 +37,7 @@
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/bimap.hpp>
 #include <boost/bimap/support/lambda.hpp>
 #include <boost/archive/text_oarchive.hpp>

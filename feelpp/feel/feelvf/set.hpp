@@ -30,7 +30,7 @@
 #define FEELPP_ELEMENTON_HPP 1
 
 #include <boost/timer.hpp>
-#include <boost/foreach.hpp>
+
 
 #include <feel/feelalg/enums.hpp>
 
@@ -78,7 +78,7 @@ public:
         static const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
     };
 
-    static const uint16_type nComponents = element_type::nComponents;
+    static inline const uint16_type nComponents = element_type::nComponents;
 
     //@}
 

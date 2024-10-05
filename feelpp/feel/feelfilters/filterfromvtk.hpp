@@ -65,7 +65,7 @@ public Visitor<MeshType>
 
 public:
 
-    static const uint16_type nDim = MeshType::nDim;
+    static inline const uint16_type nDim = MeshType::nDim;
     BOOST_STATIC_ASSERT( nDim == 2 || nDim == 3 );
 
     /** @name Typedefs
@@ -159,7 +159,7 @@ public Visitor<MeshType>
 
 public:
 
-    static const uint16_type nDim = MeshType::nDim;
+    static inline const uint16_type nDim = MeshType::nDim;
     BOOST_STATIC_ASSERT( nDim == 2 || nDim == 3 );
 
     /** @name Typedefs

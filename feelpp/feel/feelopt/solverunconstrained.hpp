@@ -32,8 +32,6 @@
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/if.hpp>
 
 #include <clapack.h>
 
@@ -602,22 +600,23 @@ SolverUnconstrained<Data,Problem>::tau( vector_type const& _s,
     return ( -b + sqrt( b*b - 4.0*a*c ) ) / ( 2.0*a );
 }
 
-template<typename Data,template<class> class Problem>
-typename SolverUnconstrained<Data,Problem>::value_type
-SolverUnconstrained<Data,Problem>::xi( vector_type const& __s,
-                                       vector_type const& __d,
-                                       value_type const& _xi1 )
+template <typename Data, template <class> class Problem>
+typename SolverUnconstrained<Data, Problem>::value_type
+SolverUnconstrained<Data, Problem>::xi( const vector_type& s,
+                                        const vector_type& d,
+                                        const value_type& xi1 )
 {
+    vector_type frac = -element_div( s, d );
 
-    vector_type __frac = - element_div ( __s, __d );
+    value_type xi = xi1;
+    std::for_each( frac.begin(), frac.end(), [&xi]( const value_type& val )
+                   {
+                        if (val > 0 && val < xi) {
+                            xi = val;
+                        } 
+                    } );
 
-    namespace lambda = boost::lambda;
-
-    value_type __xi =  _xi1;
-    std::for_each( __frac.begin(), __frac.end(),
-                   lambda::if_then( lambda::_1 > 0 && lambda::_1 < lambda::var( __xi ),
-                                    lambda::var( __xi ) = lambda::_1 ) );
-    return __xi;
+    return xi;
 }
 
 template<typename Data,template<class> class Problem>
@@ -977,7 +976,7 @@ SolverUnconstrained<Data,Problem>::Stats::show() const
 
     iter = norm_Tgrad_fx_hstr.size();
     std::cerr << "\n\nScaled Trust-Region Method Statistics:\n";
-    std::cerr << "\nNumber of outter iterations: " << iter-1 << "\n";
+    std::cerr << "\nNumber of outer iterations: " << iter-1 << "\n";
 
     std::cerr << "\n";
     std::cerr << "  k  CGiters restarts indefs crosses trustEx   ||g_til||   Delta^k   ared_til^k  phi_til^k     rho^k \n";

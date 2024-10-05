@@ -134,4 +134,4 @@ toPETScPairPtr( Vector<double> const& vec, bool allowCopy );
 
 } // namespace detail
 
-}// namesapce Feel
+}// namespace Feel

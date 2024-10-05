@@ -33,7 +33,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <boost/foreach.hpp>
+
 #include <boost/multi_array.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/shared_ptr.hpp>
@@ -84,8 +84,8 @@ class Mesh3D
     BOOST_STATIC_ASSERT( Shape::nDim == 3 );
 
   public:
-    static const uint16_type nDim = 3;
-    static const uint16_type nRealDim = 3;
+    static inline const uint16_type nDim = 3;
+    static inline const uint16_type nRealDim = 3;
 
     /** @name Typedefs
      */

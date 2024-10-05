@@ -65,15 +65,15 @@ public:
 
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // function space magnetic-potential
     // typedef BasisPotentialType basis_magneticpotential_type;
     using basis_magneticpotential_type = Nedelec<0, NedelecKind::NED1>;
-    static const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
+    static inline const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_magneticpotential_type> > space_magneticpotential_type;
     typedef std::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
     typedef typename space_magneticpotential_type::element_type element_magneticpotential_type;
@@ -158,7 +158,7 @@ public :
 
     mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+    Range<mesh_type,MESH_ELEMENTS> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     space_magneticpotential_ptrtype const& spaceMagneticPotential() const { return M_XhMagneticPotential; }
     element_magneticpotential_ptrtype const& fieldMagneticPotentialPtr() const { return M_fieldMagneticPotential; }
@@ -198,7 +198,7 @@ public :
 private :
     //bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     space_magneticpotential_ptrtype M_XhMagneticPotential;
     element_magneticpotential_ptrtype M_fieldMagneticPotential;

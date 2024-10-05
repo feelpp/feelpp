@@ -79,8 +79,8 @@ public:
     typedef std::shared_ptr<op_type> op_ptrtype;
 
 
-    static const uint16_type Dim = space_type::nDim;
-    static const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
+    static inline const uint16_type Dim = space_type::nDim;
+    static inline const uint16_type pOrder = pressure_space_type::basis_type::nOrder;
 
     OperatorPCD( space_ptrtype Qh,
                  backend_ptrtype b,
@@ -472,9 +472,9 @@ public:
     typedef OperatorBase<value_type> op_type;
     typedef std::shared_ptr<op_type> op_ptrtype;
 
-    static const uint16_type Dim = space_velocity_type::nDim;
+    static inline const uint16_type Dim = space_velocity_type::nDim;
 
-    typedef faces_reference_wrapper_t<mesh_type> range_faces_type;
+    typedef Range<mesh_type,MESH_FACES> range_faces_type;
 
     OperatorPCD( space_velocity_ptrtype Vh,
                  space_pressure_ptrtype Ph,
@@ -496,11 +496,11 @@ public:
 
     void updateStart();
     template < typename ExprMu, typename ExprConvection >
-    void updateFpDiffusionConvection( elements_reference_wrapper_t<mesh_type> rangeElt,
+    void updateFpDiffusionConvection( Range<mesh_type,MESH_ELEMENTS> const& rangeElt,
                                       ExprMu const& expr_mu,
                                       ExprConvection const& expr_b, bool hasConvection );
     template < typename ExprAlpha >
-    void updateFpMass( elements_reference_wrapper_t<mesh_type> rangeElt,
+    void updateFpMass( Range<mesh_type,MESH_ELEMENTS> const& rangeElt,
                        ExprAlpha const& expr_alpha );
     template < typename ExprRho, typename ExprDirichletBC >
     void updateFpBoundaryConditionWithDirichlet( ExprRho const& expr_rho, std::string const& name, ExprDirichletBC const& expr_bc );
@@ -607,7 +607,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateStart()
 template<typename SpaceVelocityType,typename SpacePressureType>
 template < typename ExprMu, typename ExprConvection >
 void
-OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpDiffusionConvection( elements_reference_wrapper_t<mesh_type> rangeElt,
+OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpDiffusionConvection( Range<mesh_type,MESH_ELEMENTS> const& rangeElt,
                                                                                ExprMu const& expr_mu,
                                                                                ExprConvection const& expr_b,
                                                                                bool hasConvection )
@@ -628,7 +628,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpDiffusionConvection( e
 template<typename SpaceVelocityType,typename SpacePressureType>
 template < typename ExprAlpha >
 void
-OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpMass( elements_reference_wrapper_t<mesh_type> rangeElt,
+OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpMass( Range<mesh_type,MESH_ELEMENTS> const& rangeElt,
                                                                 ExprAlpha const& expr_alpha )
 {
     auto form2_conv = form2( _test=M_Ph, _trial=M_Ph, _matrix=M_conv );

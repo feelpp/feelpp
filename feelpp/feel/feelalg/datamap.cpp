@@ -75,7 +75,7 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
     if ( this->worldComm().size() > 1 )
     {
 #ifdef FEELPP_HAS_MPI
-        CHECK( false ) << "Not imlemented!";
+        CHECK( false ) << "Not implemented!";
 #else
         CHECK( false ) << "MPI is required";
 #endif
@@ -484,7 +484,7 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     // init data used in mpi comm
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
 
-    // up data used in mpi comm : send ghost dofs to correponding active dofs
+    // up data used in mpi comm : send ghost dofs to corresponding active dofs
     for ( auto const& id : indexSet )
     {
         if ( this->dofGlobalProcessIsGhost(id) )
@@ -499,13 +499,15 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     // prepare mpi com
     int nbRequest=2*this->neighborSubdomains().size();
     mpi::request * reqs = new mpi::request[nbRequest];
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     int cptRequest=0;
 
     // get size of data to transfer
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -515,13 +517,13 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     cptRequest=0;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -553,7 +555,8 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     cptRequest=0;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -565,13 +568,13 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
         dataToRecv[p].clear();
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -625,13 +628,15 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
     // prepare mpi com
     int nbRequest = 2*this->neighborSubdomains().size();
     mpi::request * reqs = new mpi::request[nbRequest];
-    std::map<rank_type,size_type> sizeRecv;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
     int cptRequest=0;
 
     // get size of data to transfer
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
         reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
     // wait all requests
@@ -641,13 +646,13 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
     cptRequest=0;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        int nSendData = dataToSend[neighborRank].size();
+        std::size_t nSendData = dataToSend[neighborRank].size();
         if ( nSendData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
-        int nRecvData = sizeRecv[neighborRank];
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
         dataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
-            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -1080,20 +1085,20 @@ IndexSplit::parseFieldsDef( std::string s )
     while ( index < s.size() )
     {
         bool findArrow=false;
-        int indexLenght=0;
+        int indexLength=0;
         int fieldId=0;
 
         while (!findArrow && index < s.size())
         {
             if ( s.substr(index,2) == "->" )
             {
-                fieldId=boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
+                fieldId=boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );
                 findArrow=true;
                 index+=2;
             }
             else
             {
-                ++indexLenght;
+                ++indexLength;
                 ++index;
             }
         }
@@ -1104,31 +1109,96 @@ IndexSplit::parseFieldsDef( std::string s )
         {
             ++index;
             bool find=false;
-            std::vector<int> allIndexLenght;
-            /*int*/ indexLenght=0;
+            std::vector<int> allindexLength;
+            /*int*/ indexLength=0;
             int nSplit=0;
             while (!find && index < s.size() )
             {
                 if ( s.substr(index,1) == ")" )
                 {
                     ++nSplit;
-                    int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
-                    res[fieldId].insert( splitId );
-                    find=true;
-                    index+=indexLenght+1;
+                    int splitId;
+
+                    // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
+                    // or as in 2:12:3 -> {2,5,8,11}
+                    if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
+                    {
+                        // Split the string using ":"
+                        std::string interval_string = s.substr(index-indexLength,indexLength);
+                        std::vector<std::string> interval_list;
+                        boost::split(interval_list, interval_string, boost::is_any_of(":"));
+
+                        if( interval_list.size() == 2 ) // insert all integers between the extrema
+                        {
+                            int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                            int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                            for(int i=left_extremum; i<right_extremum; i++)
+                                res[fieldId].insert( i );
+                        }
+                        else if( interval_list.size() == 3 ) // insert integers separated by "step"
+                        {
+                            int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                            int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                            int step = boost::lexical_cast<int>( interval_list[2].c_str() );
+                            for(int i=left_extremum; i<right_extremum; i += step )
+                                res[fieldId].insert( i );
+                        }
+
+                        find=true;
+                        index += 2;
+                    }
+                    else // no colon in the string, hence it's only an integer
+                    {
+                        splitId = boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );
+                        res[fieldId].insert( splitId );
+                        find=true;
+                        index+=2;
+                    }
                 }
                 else
                 {
                     if ( s.substr(index,1) == "," )
                     {
                         ++nSplit;
-                        int splitId = boost::lexical_cast<int>( s.substr(index-indexLenght,indexLenght).c_str() );
-                        res[fieldId].insert( splitId );
-                        indexLenght=0;
+                        int splitId;
+
+                        // One can specify an interval of integers using ":" as in 2:6 -> {2,3,4,5}
+                        // or as in 2:12:3 -> {2,5,8,11}
+                        if(s.substr(index-indexLength,indexLength).find(":") != std::string::npos )
+                        {
+                            // Split the string using ":"
+                            std::string interval_string = s.substr(index-indexLength,indexLength);
+                            std::vector<std::string> interval_list;
+                            boost::split(interval_list, interval_string, boost::is_any_of(":"));
+
+                            if( interval_list.size() == 2 ) // insert all integers between the extrema
+                            {
+                                int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                                int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                                for(int i=left_extremum; i<right_extremum; i++)
+                                    res[fieldId].insert( i );
+                            }
+                            else if( interval_list.size() == 3 ) // insert integers separated by "step"
+                            {
+                                int left_extremum = boost::lexical_cast<int>( interval_list[0].c_str() );
+                                int right_extremum = boost::lexical_cast<int>( interval_list[1].c_str() );
+                                int step = boost::lexical_cast<int>( interval_list[2].c_str() );
+                                for(int i=left_extremum; i<right_extremum; i += step )
+                                    res[fieldId].insert( i );
+                            }
+
+                            indexLength=0;
+                        }
+                        else // no colon in the string, hence it's only an integer
+                        {
+                            splitId = boost::lexical_cast<int>( s.substr(index-indexLength,indexLength).c_str() );
+                            res[fieldId].insert( splitId );
+                            indexLength=0;
+                        }
                     }
                     else
                     {
-                        ++indexLenght;
+                        ++indexLength;
                     }
                     ++index;
                 }
@@ -1176,7 +1246,7 @@ IndexSplit::addSplit( size_type startSplit, self_ptrtype const& addedIndexSplit 
     }
 
     // second pass : add new index splits
-    int fixIndexShift = 0; // only usefull when component splits are present
+    int fixIndexShift = 0; // only useful when component splits are present
     size_type startIS = startSplit;
     for ( int k = 0 ; k < newSize ; ++k )
     {

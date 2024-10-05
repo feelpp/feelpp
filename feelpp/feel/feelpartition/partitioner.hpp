@@ -49,10 +49,10 @@ public:
     using partitioner_type = Partitioner<mesh_type>;
     using clone_ptrtype = std::unique_ptr<partitioner_type>;
 
-    using element_type = typename mesh_type::element_type;
+    using element_type = element_t<mesh_type>;
     using face_type = typename mesh_type::face_type;
     using point_type = typename mesh_type::point_type;
-    using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using range_element_type = Range<mesh_type,MESH_ELEMENTS>;
     /**
      * Constructor.
      */
@@ -68,16 +68,18 @@ public:
           M_agg( (j.contains("partitioner") && j["partitioner"].contains("aggregates"))?j["partitioner"]["aggregates"]:json() )
     {}
     
-    struct Aggregate : public std::tuple<std::string, std::vector<std::string>>
+    struct Aggregate : public std::tuple<std::string, std::string, std::vector<std::string>>
     {
-        using super = std::tuple<std::string, std::vector<std::string>>;
+        using super = std::tuple<std::string, std::string, std::vector<std::string>>;
 
-        Aggregate( std::string const& name, json const& j ) : super( name, j["markers"].get<std::vector<std::string>>() )
+        Aggregate( std::string const& name, json const& j )
+            : super( name, j["type"].get<std::string>(), j["markers"].get<std::vector<std::string>>() )
         {
 
         }
         std::string const& name() const { return std::get<0>(*this); }
-        std::vector<std::string> const& markers() const { return std::get<1>(*this); }
+        std::string const& type() const { return std::get<1>(*this); }
+        std::vector<std::string> const& markers() const { return std::get<2>(*this); }
     };
 
     /**
@@ -136,7 +138,7 @@ public:
     
     /**
      * Repartitions the \p Mesh into \p n parts.  This
-     * is required since some partitoning algorithms can repartition
+     * is required since some partitioning algorithms can repartition
      * more efficiently than computing a new partitioning from scratch.
      * The default behavior is to simply call this->partition(mesh,n)
      */
@@ -144,7 +146,7 @@ public:
 
     /**
      * Repartitions the \p Mesh into \p Environment::numberOfProcessors() parts.
-     * This is required since some partitoning algorithms can repartition more
+     * This is required since some partitioning algorithms can repartition more
      * efficiently than computing a new partitioning from scratch.
      */
     void repartition (mesh_ptrtype mesh);
@@ -172,7 +174,7 @@ protected:
     /**
      * Trivially "partitions" the mesh for one processor.
      * Simply loops through the elements and assigns all of them
-     * to processor 0.  Is is provided as a separate function
+     * to processor 0.  It is provided as a separate function
      * so that derived classes may use it without reimplementing it.
      */
     void singlePartition (mesh_ptrtype mesh);

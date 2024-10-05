@@ -84,10 +84,10 @@ public:
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
 
-    typedef typename boost::tuples::template element<0, IteratorRange>::type idim_type;
-    typedef typename boost::tuples::template element<1, IteratorRange>::type iterator_type;
-    typedef typename boost::unwrap_reference<typename iterator_type::value_type>::type mesh_element_fromiterator_type;
-    typedef typename boost::remove_const< typename boost::remove_reference< mesh_element_fromiterator_type >::type >::type mesh_element_type;
+    using idim_type = typename IteratorRange::idim_t;
+    using iterator_type = typename IteratorRange::iterator_t;
+    using mesh_element_fromiterator_type = typename IteratorRange::element_t;
+    using mesh_element_type = std::remove_const_t<std::remove_reference_t< mesh_element_fromiterator_type >>;
     using index_type = typename mesh_element_type::index_type;
     typedef IteratorRange range_iterator;
     typedef typename mpl::if_<mpl::bool_<mesh_element_type::is_simplex>,
@@ -245,8 +245,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_ELEMENTS> )
     typedef typename t_expr_type::shape shape;
 
 
-    auto it = boost::get<1>( M_range );
-    auto en = boost::get<2>( M_range );
+    auto it = M_range.begin();
+    auto en = M_range.end();
 
     int npoints = M_pset.points().size2();
     element_type __v( std::distance( it, en ), npoints, shape::M, shape::N );
@@ -402,9 +402,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
     if ( nFaceUsed == 0 )
         return eval_element_type( __v, __p );
 
-    auto __face_it = boost::get<1>( M_range );
-    //auto __face_en = boost::get<2>( M_range );
-    auto const& faceInit = boost::unwrap_ref( *__face_it );
+    auto const& faceInit = M_range.front();
     gm_ptrtype __gm = faceInit.element( 0 ).gm();
     gm1_ptrtype __gm1 = faceInit.element( 0 ).gm1();
 
@@ -563,8 +561,8 @@ struct evaluate
     typedef details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type> > eval_t;
     typedef typename eval_t::mesh_element_type mesh_element_type;
     typedef typename eval_t::eval_element_type element_type;
-    static const uint16_type nDim = mesh_element_type::nDim;
-    static const uint16_type nRealDim = mesh_element_type::nRealDim;
+    static inline const uint16_type nDim = mesh_element_type::nDim;
+    static inline const uint16_type nRealDim = mesh_element_type::nRealDim;
 };
 }
 /// \endcond

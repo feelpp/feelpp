@@ -8,6 +8,7 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 //#include <feel/feelvf/inv.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feelpde/operatorpmm.hpp>
 #include <feel/feells/reinit_fms.hpp>
 
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
@@ -799,7 +800,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // init stabilization
     if ( M_stabilizationGLS )
     {
-        //static const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
+        //static inline const uint16_type nStabGlsOrderPoly = (nOrderVelocity>1)? nOrderVelocity : 2;
         typedef StabilizationGLSParameter<mesh_type, nOrderVelocity> stab_gls_parameter_velocity_impl_type;
         typedef StabilizationGLSParameter<mesh_type, nOrderPressure> stab_gls_parameter_pressure_impl_type;
         M_stabilizationGLSParameterConvectionDiffusion.reset( new stab_gls_parameter_velocity_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
@@ -1196,6 +1197,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     if ( this->hasOperatorPCD() )
         this->algebraicFactory()->attachOperatorPCD("pcd", this->operatorPCD());
+    if ( this->hasOperatorPMM() )
+        this->algebraicFactory()->attachOperatorPMM("pmm", this->operatorPMM());
 
     if ( this->timeStepping() == "Theta" )
     {
@@ -1778,6 +1781,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
         opPCD->initialize();
         M_operatorPCD = opPCD;
+    }
+    if ( M_preconditionerAttachPMM )
+    {
+        using op_pmm_type = Feel::Alternatives::OperatorPMM<space_pressure_type>;
+        auto opPMM = std::make_shared<op_pmm_type>( this->functionSpacePressure(),
+                                                    this->backend(), this->prefix(), true);
+
+        opPMM->initialize();
+        M_operatorPMM = opPMM;
     }
 }
 
@@ -2781,7 +2793,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::initElasticBehavior()
             smd = M_mesh->subMeshData();
             M_mesh->setSubMeshData( typename trace_mesh_type::smd_ptrtype{} );
 #endif
-            M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh(),_range=elements( M_body->mesh(), this->rangeMarkedFacesOnFluid()/*, ElementsType::MESH_FACES*/ ) );
+            M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh(),_range=elements( M_body->mesh(), elements(M_body->mesh()), this->rangeMarkedFacesOnFluid()/*, ElementsType::MESH_FACES*/ ) );
             //M_spaceElasticVelocityTouchingBodyInterface = space_velocity_type::New( _mesh=M_body->mesh() );
             M_fieldElasticVelocityTouchingBodyInterface = M_spaceElasticVelocityTouchingBodyInterface->elementPtr();
             auto opInterpolationElasticVelocity_tmp1 = opInterpolation(_domainSpace=this->body().fieldElasticVelocity().functionSpace(),

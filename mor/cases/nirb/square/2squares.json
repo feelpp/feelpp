@@ -1,0 +1,96 @@
+{
+    "Name": "2 Squares",
+    "ShortName": "2sqr",
+
+    "CRBParameters":
+    {
+        "k_2":
+        {
+            "min": "1",
+            "max": "20"
+        }/*,
+        "Bi":
+        {
+            "min": "0.01",
+            "max": "1"
+        }*/
+    },
+
+    "Parameters":
+    {
+        "k_1":"1",
+        "k_2":"5",
+        "Bi":"0.1"
+    },
+
+    "Meshes":
+    {
+        "heat":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/2squares.geo",
+                "hsize": 0.1
+            }
+        }
+    },
+
+    "Materials":
+    {
+        "Omega_1":
+        {
+            "k":"k_1:k_1",
+            "Cp":"1.4e6",
+            "rho":"1"
+        },
+        "Omega_2":
+        {
+            "k":"k_2:k_2",
+            "Cp":"1.4e6",
+            "rho":"1"
+        }
+    },
+
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "flux":
+            {
+                "Tflux": { "expr": "1" }
+            },
+            "convective_heat_flux":
+            {
+                "Tfourier":
+                {
+                    "h":"Bi:Bi",
+                    "Text":"0"
+                }
+            }
+        }
+    },
+
+    "PostProcess":
+    {
+        "heat":{
+            "Exports":
+            {
+                "fields":["temperature","pid"]
+            }
+        }
+    },
+
+    "nirb":
+    {
+        "H": 0.1,
+        "h": "H**2:H",
+        "dim": 2,
+        "order": 1,
+        "toolboxType": "heat",
+        "finemesh_path": "$cfgdir/2squares.geo",
+        "model_path": "$cfgdir/2squares.json",
+        "doRectification": true,
+        "doBiorthogonalization": false,
+        "nbSnapshots": 10
+    }
+}

@@ -64,10 +64,10 @@ template<uint16_type Dim,
          template<class> class StoragePolicy = StorageUBlas>
 struct DubinerTraits
 {
-    static const uint16_type nDim = Dim;
-    static const uint16_type nRealDim = RealDim;
-    static const uint16_type nOrder = Degree;
-    static const uint16_type nConvexOrderDiff = nDim+nOrder+1;
+    static inline const uint16_type nDim = Dim;
+    static inline const uint16_type nRealDim = RealDim;
+    static inline const uint16_type nOrder = Degree;
+    static inline const uint16_type nConvexOrderDiff = nDim+nOrder+1;
     static const bool is_normalized = NormalizationPolicy::is_normalized;
 
     /** @name Typedefs
@@ -171,10 +171,10 @@ class Dubiner
 public:
     typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
 
-    static const uint16_type nDim = traits_type::nDim;
-    static const uint16_type nRealDim = traits_type::nRealDim;
-    static const uint16_type nOrder = traits_type::nOrder;
-    static const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
+    static inline const uint16_type nDim = traits_type::nDim;
+    static inline const uint16_type nRealDim = traits_type::nRealDim;
+    static inline const uint16_type nOrder = traits_type::nOrder;
+    static inline const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
     static const bool is_normalized = traits_type::is_normalized;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = false;

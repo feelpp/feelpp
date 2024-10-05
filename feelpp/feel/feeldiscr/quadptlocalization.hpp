@@ -49,7 +49,7 @@ class QuadPtLocalization
 {
 public :
 
-    static const Feel::size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+    static const Feel::size_type iDim = IteratorRange::entities();
 
     static const int coDimFromRange = iDim == MESH_FACES? 1 : 0;
 
@@ -63,12 +63,9 @@ public :
 
     typedef IteratorRange range_iterator;
 
-
-    typedef typename boost::tuples::template element<1, IteratorRange>::type element_iterator_type;
-    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type::GeoShape GeoShape;
-    //typedef Mesh<GeoShape> mesh_type;
-
-    typedef typename boost::unwrap_reference<typename element_iterator_type::value_type>::type range_elt_type;
+    using element_iterator_type = typename IteratorRange::iterator_t;
+    using GeoShape = typename IteratorRange::element_t::GeoShape;
+    using range_elt_type = typename IteratorRange::element_t;
     typedef typename boost::remove_reference<range_elt_type>::type const_t;
     typedef typename boost::remove_const<const_t>::type the_face_element_type;
     typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
@@ -188,7 +185,7 @@ public :
      */
     element_iterator_type beginElement() const
     {
-        return M_listRange.front().template get<1>();// M_eltbegin;
+        return M_listRange.front().begin();
     }
 #if 0
     /**
@@ -196,7 +193,7 @@ public :
      */
     element_iterator_type endElement() const
     {
-        return M_listRange.front().template get<2>();//M_eltend;
+        return M_listRange.front().end();
     }
 #endif
     /**
@@ -252,8 +249,8 @@ public :
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             const size_type distRange = std::distance(elt_it, elt_en);
             if ( (ide+distRange-1) < theIdElt) { ide+=distRange; continue; }
 
@@ -265,7 +262,7 @@ public :
         auto elt_it = this->beginElement();
         for ( size_type i=0; i<theIdElt; ++i ) ++elt_it;
 #endif
-        // get only usefull quad point and reoder
+        // get only useful quad point and reoder
         uint16_type nContextPt = indexLocalToQuad.size();
         matrix_node_type const& quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef( quadPtsRef.size1() , nContextPt );
@@ -296,8 +293,8 @@ public :
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             const size_type distRange = std::distance(elt_it, elt_en);
             if ( (ide+distRange-1) < theIdElt) { ide+=distRange; continue; }
 
@@ -311,7 +308,7 @@ public :
 #endif
         auto const& faceCur = boost::unwrap_ref( *elt_it );
 
-        // get only usefull quad point and reoder
+        // get only useful quad point and reoder
         const uint16_type nContextPt = indexLocalToQuad.size();
         const uint16_type __face_id_in_elt_0 = faceCur.pos_first();
         DCHECK( __face_id_in_elt_0 != invalid_uint16_type_value ) << "Invalid face id fooor element " << faceCur.id() << " from element " << faceCur.element( 0 ).id();
@@ -496,8 +493,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& faceCur = boost::unwrap_ref( *elt_it );
@@ -563,8 +560,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& eltCur = boost::unwrap_ref( *elt_it );
@@ -663,8 +660,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& faceCur = boost::unwrap_ref( *elt_it );
@@ -799,8 +796,8 @@ public :
         auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
-            elt_it = boost::get<1>( *itListRange );
-            elt_en = boost::get<2>( *itListRange );
+            elt_it = itListRange->begin();
+            elt_en = itListRange->end();
             for ( ; elt_it != elt_en; ++elt_it, ++ide )
             {
                 auto const& eltCur = boost::unwrap_ref( *elt_it );
@@ -929,7 +926,7 @@ public :
         std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > testEltToPtsQuad( nEltTest );
         this->localization( mpl::int_<iDim>(),meshTest,testEltToPtsQuad );
 
-        //build a efficent container : M_resLinear
+        //build a efficient container : M_resLinear
         size_type theIdEltTest = 0;
         auto eltTest_it = testEltToPtsQuad.begin();
         auto eltTest_en = testEltToPtsQuad.end();
@@ -984,7 +981,7 @@ public :
                             trialEltToPtsQuad,
                             EltCoupled );
 
-        //build a efficent container : M_resBilinear
+        //build a efficient container : M_resBilinear
         auto eltCoupled_it = EltCoupled.begin();
         auto eltCoupled_en = EltCoupled.end();
         size_type theIdEltTest = 0;

@@ -1,4 +1,4 @@
-import feelpp
+import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 
 has_hf = False
@@ -19,7 +19,7 @@ except ImportError as e:
     pass  # module doesn't exist, deal with it.
 
 
-def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, worldComm=None, keyword="heatfluid", subprefix="", modelRep=None):
+def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, worldComm=None, keyword="heatfluid", prefix="heat-fluid", subprefix="", modelRep=None):
     """create a heatfluid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -27,9 +27,12 @@ def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, world
     orderVelocity -- the polynomial order for the velocity (default: 1)
     orderPressure -- the polynomial order for the pressure (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    keyword -- the json keyword for the toolbox (default: "heatfluid")
+    prefix -- the prefix for the toolbox for the command line and .cfg options (default: "heat-fluid")
+    subprefix -- the subprefix for the toolbox for the command line and .cfg options (default: "")
     """
     if worldComm is None:
-        worldComm = feelpp.Environment.worldCommPtr()
+        worldComm = fppc.Environment.worldCommPtr()
     key=f'heatfluid({dim},{orderTemperature},{orderVelocity},{orderPressure})'
     if worldComm.isMasterRank():
         print(f"heatfluid:: key:{key}, has_hf:{has_hf}")
@@ -37,4 +40,4 @@ def heatfluid(dim=2, orderTemperature=1, orderVelocity=1, orderPressure=1, world
         raise RuntimeError('heatfluid solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _heatfluids[key](prefix="heat-fluid", keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
+    return _heatfluids[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)

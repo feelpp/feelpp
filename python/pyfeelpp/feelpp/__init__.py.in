@@ -1,5 +1,6 @@
 import sys
 import os
+import json, re
 petsc_dir = '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc'
 petsc_dir = os.path.join(os.getenv('PETSC_DIR')
                          or petsc_dir, 'lib/python3/dist-packages')
@@ -10,6 +11,7 @@ from ._feelpp import  *
 from ._core import *
 from ._alg import *
 from ._mesh import *
+from ._plot import *
 from ._discr import *
 from ._exporter import  *
 from ._ls import *
@@ -17,7 +19,9 @@ from ._ts import  *
 from ._vf import  *
 from ._models import *
 
-def readcfg(filename):
+__version__ = '@FEELPP_VERSION_STRING@'
+
+def readCfg(filename):
     """read a Feel++ config file and get a ConfigParser to manipulate the options
 
     Args:
@@ -27,14 +31,25 @@ def readcfg(filename):
         ConfigParser: a ConfigParser data structure containing the properties
 
     Yields:
-        ConfigParser: 
-    """    
-    from configparser import ConfigParser
-    config = ConfigParser()
-    # use this function to add a 
+        ConfigParser:
+    """
+    from collections import OrderedDict
+    from configparser import ConfigParser, RawConfigParser
+    # use this function to add a
     def FeelppHead(fp):
         yield '[feelpp]\n'
         yield from fp
+    class MultiOrderedDict(OrderedDict):
+        def __setitem__(self, key, value):
+            if key in self:
+                if isinstance(value, list):
+                    self[key].extend(value)
+                    return
+                elif isinstance(value,str):
+                    return # ignore conversion list to string (line 554)
+            super(MultiOrderedDict, self).__setitem__(key, value)
+
+    config = RawConfigParser(dict_type=MultiOrderedDict, strict=False)
     config.read_file(FeelppHead(open(filename)))
     return config
 
@@ -64,7 +79,7 @@ _meshes={
 }
 
 def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
-    """create a mesh 
+    """create a mesh
     The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
     The mesh is configured with a WorldComm which provides the parallel process layout.
     Keyword arguments:
@@ -81,7 +96,7 @@ def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
     return _meshes[key]( worldComm )
 
 def meshstructured( dim=2, geo=1, realdim=2, worldComm=None ):
-    """create a structured mesh 
+    """create a structured mesh
     The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
     The mesh is configured with a WorldComm which provides the parallel process layout.
     Keyword arguments:
@@ -115,7 +130,7 @@ _spaces={
     'Pch(2,1,2)':Pch_2D_P1_G2,
     'Pch(2,2,2)':Pch_2D_P2_G2,
     'Pch(2,3,2)':Pch_2D_P3_G2,
-    
+
     'Pch(3,1,1)':Pch_3D_P1_G1,
     'Pch(3,2,1)':Pch_3D_P2_G1,
     'Pch(3,3,1)':Pch_3D_P3_G1,
@@ -190,7 +205,7 @@ def expr(e,row=1, col=1,filename=None,worldComm=None,directory=None):
 
     Returns:
         Expression: an expression
-    """    
+    """
     if filename is None:
         filename=""
     if directory is None:
@@ -230,11 +245,12 @@ def create_rectangle(filename="rectangle"):
 
     Returns:
         _type_: file name, dimension, length of Gamma_1, length of Gamma_2, total surface, total length
-    """    
+    """
     mshname = None
     if Environment.isMasterRank():
         import gmsh
         gmsh.initialize()
+        gmsh.option.setNumber('General.Verbosity', 1)
         gmsh.model.add("rectangle")
         gmsh.logger.start()
         rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
@@ -257,7 +273,7 @@ def create_box(filename="box"):
 
     Returns:
         _type_: file name, dimension, measure of Gamma_1, measure of Gamma_2
-    """    
+    """
     mshname = None
     if Environment.isMasterRank():
         import gmsh
@@ -276,3 +292,24 @@ def create_box(filename="box"):
         gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
     mshname = gmshGenerate(3, filename)
     return mshname, 3, 1, 1.5, 1.5, 7
+
+
+
+def readJson(path):
+    """read a json file with comments in it, using json package
+
+    Args:
+        path (str): path of the json file
+
+    Returns:
+        dict: loaded model, as a dictionary
+    """
+    file = open(path, 'r')
+    data =  file.read()
+    file.close()
+
+    clear_data = re.sub('//.*', '', data)
+    clear_data = re.sub(r'/\*([\s\S]*?)\*/', '', clear_data)
+
+    j = json.loads(clear_data)
+    return j

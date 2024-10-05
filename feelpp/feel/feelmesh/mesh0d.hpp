@@ -38,7 +38,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/multi_array.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
@@ -86,8 +86,8 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Shape::nRealDim;
-    static const uint16_type nRealDim = Shape::nRealDim;
+    static inline const uint16_type nDim = Shape::nRealDim;
+    static inline const uint16_type nRealDim = Shape::nRealDim;
 
     typedef typename VisitableBase<>::return_type return_type;
 

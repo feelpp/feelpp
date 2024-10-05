@@ -22,8 +22,9 @@
 #
 #
 
-mor_add_library( heat2d SRCS heat2d.cpp EXEC CRB_LIB_HEAT2D)
-install(FILES heat2d.hpp DESTINATION include/feelpp/crb/heat2d COMPONENT Devel)
+mor_add_library( heat2d SRCS heat2d.cpp EXEC CRB_LIB_HEAT2D PLUGIN)
+target_compile_definitions(${CRB_LIB_HEAT2D} PRIVATE FEELPP_MOR_PLUGIN_NAME=heat2d FEELPP_MOR_PLUGIN_LIBNAME=${CRB_LIB_HEAT2D})
+install(FILES heat2d.hpp DESTINATION include/feelpp/mor/heat2d COMPONENT Devel)
 set(FEELPP_CRB_HEAT2D_LIBRARIES ${CRB_LIB_HEAT2D} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_HEAT2D_LIBRARIES PARENT_SCOPE)
 

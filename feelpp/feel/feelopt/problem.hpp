@@ -67,7 +67,7 @@ public:
         _E_n  = Data::_E_n, //!< number of control variables
         _E_f  = 1, //!< number of objective functions
         _E_g  = Data::_E_g, //!< number of inequalities
-        _E_ng = Data::_E_g + 2*_E_n, //!< size of informations stored for inequalities
+        _E_ng = Data::_E_g + 2*_E_n, //!< size of information stored for inequalities
         _E_h  = Data::_E_h, //!< number of equalities
         _E_nA = Data::_E_n + ( _E_n )*( _E_n-1 )/2 //!< number of entries in the matrix
     };

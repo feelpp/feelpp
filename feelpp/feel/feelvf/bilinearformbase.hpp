@@ -61,10 +61,7 @@ public:
 
     using size_type =  typename matrix_type::size_type;
     
-    typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
-                              mpl::identity<ublas::row_major>,
-                              mpl::identity<ublas::column_major> >::type::type layout_type;
-
+    using layout_type = mp11::mp_if_c<is_row_major, ublas::row_major,ublas::column_major>;
 
     BilinearFormBase() = default;
     
@@ -105,7 +102,7 @@ public:
     BilinearFormBase&
     operator=( BilinearFormBase const& form );
 
-    BilinearFormBase& operator+=( BilinearFormBase& a )
+    BilinearFormBase& operator+=( BilinearFormBase const& a )
         {
             if ( this == &a )
             {
@@ -116,12 +113,51 @@ public:
             return *this;
         }
 
-    BilinearFormBase& add( double alpha, BilinearFormBase&  a )
+    BilinearFormBase& add( double alpha, BilinearFormBase const&  a )
         {
             M_matrix->addMatrix( alpha, a.M_matrix );
             return *this;
         }
     
+    BilinearFormBase& operator-=( BilinearFormBase const& a )
+        {
+            if ( this == &a )
+            {
+                M_matrix->zero();
+                return *this;
+            }
+            M_matrix->addMatrix( -1.0, a.M_matrix );
+            return *this;
+        }
+    /**
+     * @brief operator *=
+     * 
+     * @param __a bilinear form
+     * @return Bilinear& 
+     */
+    BilinearFormBase& operator*=( value_type const& alpha )
+        {
+            M_matrix->scale( alpha );
+            return *this;
+        }
+    /**
+     * @brief operator/= by a scalar
+     * 
+     * @param __a scalar to divide by
+     * @return BilinearForm& 
+     */
+    BilinearFormBase& operator/=( value_type const& alpha )
+        {
+            M_matrix->scale( 1.0/alpha );
+            return *this;
+        }
+    //! scale the form
+    BilinearFormBase& scale( double alpha )
+        {
+            M_matrix->scale( alpha );
+            return *this;
+        }
+
     virtual void push_back( std::future<void>&& f ) { M_fut_assign.push_back( std::forward<std::future<void>>( f ) ); }
     virtual void get()
         {

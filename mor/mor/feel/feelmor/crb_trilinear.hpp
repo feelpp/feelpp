@@ -35,7 +35,7 @@
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
+
 #include <boost/bimap.hpp>
 #include <boost/bimap/support/lambda.hpp>
 #include <boost/archive/text_oarchive.hpp>
@@ -328,10 +328,10 @@ public:
     bool loadDB() override;
 
     //!
-    //! 
+    //!
     //!
     void loadDB( std::string const& filename, crb::load l ) override { super_crb::loadDB( filename, l ); }
-    
+
     //@}
 
 
@@ -396,9 +396,9 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) << "[CRBTrilinear::offline] compute random sampling\n";
 
         int total_proc = this->worldComm().globalSize();
-        std::string sampling_mode = soption(_prefix=this->M_prefix,"crb.sampling-mode");
-        bool all_proc_same_sampling=boption(_prefix=this->M_prefix,"crb.all-procs-have-same-sampling");
-        int sampling_size = ioption(_prefix=this->M_prefix,"crb.sampling-size");
+        std::string sampling_mode = soption(_prefix=this->M_prefix,_name = "crb.sampling-mode");
+        bool all_proc_same_sampling=boption(_prefix=this->M_prefix,_name = "crb.all-procs-have-same-sampling");
+        int sampling_size = ioption(_prefix=this->M_prefix,_name = "crb.sampling-size");
         std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
         if( all_proc_same_sampling )
             file_name+="-all-proc-have-same-sampling";
@@ -524,7 +524,7 @@ CRBTrilinear<TruthModelType>::offline()
     bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
     int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
     int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
-    int N_random = ioption(_prefix=this->M_prefix, "crb.use-random-WNmu" );
+    int N_random = ioption(_prefix=this->M_prefix, _name = "crb.use-random-WNmu" );
 
     /*    if( N_log_equi > 0 || N_equi > 0 )
      use_predefined_WNmu = true;*/
@@ -725,7 +725,7 @@ CRBTrilinear<TruthModelType>::offline()
                 //pick randomly an element
                 mu = this->M_Dmu->element();
                 //make sure that the new mu is not already is M_WNmu
-                BOOST_FOREACH( auto _mu, *this->M_WNmu )
+                for( auto _mu : *this->M_WNmu )
                 {
                     if( mu == _mu )
                         already_exist=true;
@@ -1016,7 +1016,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = -M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    if( boption(_prefix=this->M_prefix,"crb.enable-convection-terms")  )
+    if( boption(_prefix=this->M_prefix,_name = "crb.enable-convection-terms")  )
     {
         int qatri = this->M_model->QaTri();
         for ( size_type q = 0; q < qatri; ++q )
@@ -1032,7 +1032,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
     }
 
-    if ( boption(_prefix=this->M_prefix,"crb.compute-error-on-reduced-residual-jacobian") )
+    if ( boption(_prefix=this->M_prefix, _name = "crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
         auto expansionX = this->expansion( map_X , N  );
@@ -1162,7 +1162,7 @@ template<typename TruthModelType>
 void
 CRBTrilinear<TruthModelType>::saveDB()
 {
-    fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+    std::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
 
     if ( ofs )
     {
@@ -1189,7 +1189,7 @@ CRBTrilinear<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    fs::ifstream ifs(db );
+    std::ifstream ifs(db );
 
     if ( ifs )
     {

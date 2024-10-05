@@ -127,7 +127,7 @@ public:
     typedef typename dual_image_space_type::fe_type image_fe_type;
 
     /**
-     * type which instances will hold the correspondance between the
+     * type which instances will hold the correspondence between the
      * mesh elements associated to the domain space and the ones
      * associated to the image space
      */
@@ -475,7 +475,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     typedef typename image_mesh_type::face_type face_type;
 
     // inherit the table of markersName
-    BOOST_FOREACH( auto itMark, this->domainSpace()->mesh()->markerNames() )
+    for( auto itMark : this->domainSpace( )->mesh()->markerNames() )
     {
         M_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }

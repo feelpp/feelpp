@@ -1,5 +1,5 @@
 import sys,os
-import feelpp
+import feelpp.core as fppc
 import pytest
 from pathlib import Path
 from feelpp.toolboxes.core import *
@@ -16,7 +16,7 @@ heat_cases = [
 
 @pytest.mark.parametrize("casefile,dim,order", heat_cases)
 def test_heat(casefile,dim,order):
-    feelpp.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(casefile)
     f = heat(dim=dim, order=order)
     if not f.isStationary():
         f.setTimeFinal(10*f.timeStep())
@@ -38,13 +38,13 @@ parts = [2,3,6]
 @pytest.mark.skip(reason="no way of currently testing this")
 @pytest.mark.parametrize("nparts", parts)
 def test_heat_ensemble(nparts):
-    c=feelpp.readcfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    
-    feelpp.Environment.setConfigFile(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')
+    c=fppc.readCfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    
+    fppc.Environment.setConfigFile(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')
     dim = int(c['feelpp']['case.dimension'])
     order = [int(s) for s in c['feelpp']['case.discretization'].split("P") if s.isdigit()][0]
-    if feelpp.Environment.numberOfProcessors() > 1 and feelpp.Environment.numberOfProcessors() % nparts == 0:
-        color, w, wglob = feelpp.Environment.worldCommPtr().split(nparts)
-        feelpp.Environment.changeRepository(c['feelpp']['directory']+"/{}_{}".format(nparts,color))
+    if fppc.Environment.numberOfProcessors() > 1 and fppc.Environment.numberOfProcessors() % nparts == 0:
+        color, w, wglob = fppc.Environment.worldCommPtr().split(nparts)
+        fppc.Environment.changeRepository(c['feelpp']['directory']+"/{}_{}".format(nparts,color))
         f = heat(dim=dim, order=order, worldComm=w)
         if not f.isStationary():
             f.setTimeFinal(10*f.timeStep())
@@ -60,7 +60,7 @@ def test_heat_ensemble(nparts):
         # return not f.checkResults()
 
 def test_heat_alg():
-    feelpp.Environment.setConfigFile(
+    fppc.Environment.setConfigFile(
         'heat/Building/ThermalBridgesENISO10211/case2.cfg')
     f = heat(dim=2, order=1)
     f.init()

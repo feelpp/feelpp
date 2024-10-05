@@ -33,9 +33,9 @@ public :
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
+    static inline const uint16_type nDim = convex_type::nDim;
+    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -45,7 +45,7 @@ public :
 
     // basis
     using basis_displacement_type = BasisDisplacementType;
-    static const uint16_type nOrderDisplacement = basis_displacement_type::nOrder;
+    static inline const uint16_type nOrderDisplacement = basis_displacement_type::nOrder;
     // function space displacement
     typedef FunctionSpace<mesh_type, bases<basis_displacement_type> > space_displacement_type;
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
@@ -67,7 +67,7 @@ public :
 
 
 #if 0
-    typedef elements_reference_wrapper_t<mesh_type> range_elt_type;
+    typedef Range<mesh_type,MESH_ELEMENTS> range_elt_type;
     typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt_type> op_interpolation2dTo1d_normalstress_type;
     typedef std::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 #endif
@@ -204,7 +204,7 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // mesh
-    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
+    Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
     // function space
     space_displacement_component_ptrtype M_spaceDisp;

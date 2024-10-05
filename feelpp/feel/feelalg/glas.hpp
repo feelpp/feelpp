@@ -6,7 +6,7 @@
        Date: 2005-08-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2011-2024 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -45,11 +45,8 @@
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/algorithm.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/if.hpp>
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
@@ -57,6 +54,7 @@
 #include <boost/numeric/ublas/operation.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#pragma GCC diagnostic pop
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/debug.hpp>
@@ -257,14 +255,23 @@ using d_tensor_eigen_ublas_type = Eigen::TensorMap<Eigen::Tensor<const double,2>
 template<int Dim,typename T=double>
 using eigen_vector_type = Eigen::Matrix<T,Dim,1>;
 
+template <typename T = double>
+using eigen_vector_x_col_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+
+template <int Dim, typename T = double>
+using eigen_vector_x_row_type = Eigen::Matrix<T, 1, Eigen::Dynamic>;
+
 template<int Dim,typename T=double>
 using vector_eigen_vector_type = std::vector<eigen_vector_type<Dim,T>,Eigen::aligned_allocator<eigen_vector_type<Dim,T>>>;
 
 template<int N = Eigen::Dynamic, int P = Eigen::Dynamic, typename T=double>
 using eigen_matrix_type = Eigen::Matrix<T,N,P>;
 
-template<typename T=double>
-using eigen_matrix_xx_col_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor>;
+template <typename T = double>
+using eigen_matrix_xx_type = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+template <typename T = double>
+using eigen_matrix_xx_col_type = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 
 template<int N, int P,typename T=double>
 using vector_eigen_matrix_type = std::vector<eigen_matrix_type<N,P,T>,Eigen::aligned_allocator<eigen_matrix_type<N,P,T>>>;

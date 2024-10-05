@@ -1,19 +1,22 @@
-import feelpp
-import sys
+import feelpp.core as fppc
+import sys,os
 import pytest
-from feelpp.timing import tic,toc
+from feelpp.core.timing import tic,toc
+
+cases = [
+         (2,'feelpp2d',os.path.dirname(__file__)+'/cases/feelpp2d/feelpp2d.geo'),
+         (3,'feelpp3d',os.path.dirname(__file__)+'/cases/feelpp3d/feelpp3d.geo')
+        ]
+
 
 #@pytest.mark.mpi
-def test_timing(init_feelpp):
-    geo={
-        '2':feelpp.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/cases/feelpp2d/feelpp2d.geo}", worldComm=feelpp.Environment.worldCommPtr() )[0],
-        '3':feelpp.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/cases/feelpp3d/feelpp3d.geo}", worldComm=feelpp.Environment.worldCommPtr() )[0]
-    }
-    feelpp.Environment.changeRepository(
-        directory="pyfeelpp-tests/timing/")
+@pytest.mark.parametrize("dim,prefix,geo_path", cases)
+def test_timing(init_feelpp,dim,prefix,geo_path):
+    fppc.Environment.changeRepository(
+        directory=f"pyfeelpp-tests/timing/{prefix}")
     tic()
-    g=geo['2']
-    toc("geo 2D")
-    tic()
-    g=geo['3']
-    toc("geo 3D")
+    print(f"geo {dim}D, file: {geo_path}")
+    assert os.path.exists(geo_path)
+    m = fppc.load(fppc.mesh(dim=dim,realdim=dim), geo_path, 0.1)
+    toc(f"geo {dim}D")
+    fppc.Environment.saveTimers(display=True)

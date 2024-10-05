@@ -23,17 +23,33 @@
 #
 cmake_minimum_required (VERSION 3.13.0)
 
-if ( FEELPP_COMPONENT STREQUAL "toolboxes" OR 
-      FEELPP_COMPONENT STREQUAL "mor" OR
-      FEELPP_COMPONENT STREQUAL "testsuite" OR
-      FEELPP_COMPONENT STREQUAL "benchmarks" OR
-      FEELPP_COMPONENT STREQUAL "python" )
-
-      project(feelpp-${FEELPP_COMPONENT})
-      message(STATUS "[component] ${FEELPP_COMPONENT}")
+if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
+  FEELPP_COMPONENT STREQUAL "mor" OR
+  FEELPP_COMPONENT STREQUAL "testsuite" OR
+  FEELPP_COMPONENT STREQUAL "benchmarks" OR
+  FEELPP_COMPONENT STREQUAL "python" OR
+  FEELPP_COMPONENT STREQUAL "mor;python"
+)
+      
+      string(REPLACE ";" "_" THENAME_ "${FEELPP_COMPONENT}")
+      project(feelpp-${THENAME_})
+      message(STATUS "[component] ${PROJECT_NAME} -- components: ${FEELPP_COMPONENT}")
       include(CTest)
       enable_testing()
-      add_subdirectory(${FEELPP_COMPONENT})
+      list(LENGTH FEELPP_COMPONENT FEELPP_COMPONENT_LENGTH)
+      message(STATUS "[component] FEELPP_COMPONENT_LENGTH: ${FEELPP_COMPONENT_LENGTH}")
+      list(GET FEELPP_COMPONENT 0 FIRST_COMPONENT)
+      message(STATUS "[component] FIRST_COMPONENT: ${FIRST_COMPONENT}")
+      list(GET FEELPP_COMPONENT -1 LAST_COMPONENT)
+      message(STATUS "[component] LAST_COMPONENT: ${LAST_COMPONENT}")
+      list(FIND FEELPP_COMPONENT mor MOR_COMPONENT)
+      message(STATUS "[component] MOR_COMPONENT: ${MOR_COMPONENT}")
+      list(FIND FEELPP_COMPONENT "python" PYTHON_COMPONENT)
+      message(STATUS "[component] PYTHON_COMPONENT: ${PYTHON_COMPONENT}")
+      foreach(component IN LISTS FEELPP_COMPONENT)
+        message(STATUS "[component] ${component}")
+        add_subdirectory(${component})
+      endforeach()
       if ( NOT FEELPP_VERSION_MAJOR )
         include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
       endif()
@@ -281,6 +297,7 @@ endforeach(OPT)
 ################################################################################
 # Installation procedure
 ################################################################################
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include(feelpp.install)
 
 ################################################################################

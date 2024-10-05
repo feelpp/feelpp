@@ -34,14 +34,6 @@
 #include <sstream>
 #include <algorithm>
 
-//#include <boost/shared_array.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/utility.hpp>
-
-#include <boost/foreach.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -63,7 +55,6 @@
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
-namespace fs = boost::filesystem;
 
 
 /**
@@ -343,7 +334,7 @@ Newmark<SpaceType>::init()
                 if( M_rankProcInNameOfFiles )
                     ostrUnknown << procsufix;
                 DVLOG(2) << "[Newmark::init()] load file: " << ostrUnknown.str() << "\n";
-                fs::ifstream ifsUnknown;
+                std::ifstream ifsUnknown;
                 ifsUnknown.open( dirPath/ostrUnknown.str() );
                 // load data from archive
                 boost::archive::binary_iarchive iaUnknown( ifsUnknown );
@@ -354,7 +345,7 @@ Newmark<SpaceType>::init()
                 if( M_rankProcInNameOfFiles )
                     ostrVel << procsufix;
                 DVLOG(2) << "[Newmark::init()] load file: " << ostrVel.str() << "\n";
-                fs::ifstream ifsVel;
+                std::ifstream ifsVel;
                 ifsVel.open( dirPath/ostrVel.str() );
                 // load data from archive
                 boost::archive::binary_iarchive iaVel( ifsVel );
@@ -365,7 +356,7 @@ Newmark<SpaceType>::init()
                 if( M_rankProcInNameOfFiles )
                     ostrAcc << procsufix;
                 DVLOG(2) << "[Newmark::init()] load file: " << ostrAcc.str() << "\n";
-                fs::ifstream ifsAcc;
+                std::ifstream ifsAcc;
                 ifsAcc.open( dirPath/ostrAcc.str() );
                 // load data from archive
                 boost::archive::binary_iarchive iaAcc( ifsAcc );
@@ -399,7 +390,8 @@ Newmark<SpaceType>::initialize( element_type const& u0 )
 
     M_time_values_map.push_back( M_Ti );
 
-    std::for_each( M_previousUnknown.begin(), M_previousUnknown.end(), *boost::lambda::_1 = u0 );
+    std::for_each( M_previousUnknown.begin(), M_previousUnknown.end(),
+                   [u0]( auto& element ) { *element = u0; } );
 
     // compute first derivative poly of rhs
     this->computePolyFirstDeriv();
@@ -558,7 +550,7 @@ Newmark<SpaceType>::saveCurrent()
         ostrUnknown << M_name << "-unknown-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrUnknown << procsufix;
-        fs::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
+        std::ofstream ofsUnknown( M_path_save / ostrUnknown.str() );
         // save data in archive
         boost::archive::binary_oarchive oaUnknown( ofsUnknown );
         oaUnknown << *(M_previousUnknown[0]);
@@ -567,7 +559,7 @@ Newmark<SpaceType>::saveCurrent()
         ostrVel << M_name << "-velocity-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrVel << procsufix;
-        fs::ofstream ofsVel( M_path_save / ostrVel.str() );
+        std::ofstream ofsVel( M_path_save / ostrVel.str() );
         // save data in archive
         boost::archive::binary_oarchive oaVel( ofsVel );
         oaVel << *(M_previousVel[0]);
@@ -576,7 +568,7 @@ Newmark<SpaceType>::saveCurrent()
         ostrAcc << M_name << "-acceleration-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrAcc << procsufix;
-        fs::ofstream ofsAcc( M_path_save / ostrAcc.str() );
+        std::ofstream ofsAcc( M_path_save / ostrAcc.str() );
         // save data in archive
         boost::archive::binary_oarchive oaAcc( ofsAcc );
         oaAcc << *(M_previousAcc[0]);
@@ -605,7 +597,7 @@ Newmark<SpaceType>::loadCurrent()
         ostrUnknown << M_name << "-unknown-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrUnknown << procsufix;
-        fs::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
+        std::ifstream ifsUnknown( M_path_save / ostrUnknown.str() );
         // load data from archive
         boost::archive::binary_iarchive iaUnknown( ifsUnknown );
         iaUnknown >> *(M_previousUnknown[0]);
@@ -614,7 +606,7 @@ Newmark<SpaceType>::loadCurrent()
         ostrVel << M_name << "-velocity-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrVel << procsufix;
-        fs::ifstream ifsVel( M_path_save / ostrVel.str() );
+        std::ifstream ifsVel( M_path_save / ostrVel.str() );
         // load data from archive
         boost::archive::binary_iarchive iaVel( ifsVel );
         iaVel >> *(M_previousVel[0]);
@@ -623,7 +615,7 @@ Newmark<SpaceType>::loadCurrent()
         ostrAcc << M_name << "-acceleration-" << M_iteration;
         if( M_rankProcInNameOfFiles )
             ostrAcc << procsufix;
-        fs::ifstream ifsAcc( M_path_save / ostrAcc.str() );
+        std::ifstream ifsAcc( M_path_save / ostrAcc.str() );
         // load data from archive
         boost::archive::binary_iarchive iaAcc( ifsAcc );
         iaAcc >> *(M_previousAcc[0]);
@@ -633,36 +625,41 @@ Newmark<SpaceType>::loadCurrent()
 template <typename SpaceType>
 template<typename container_type>
 void
-Newmark<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> const& __new_unk )
+Newmark<SpaceType>::shiftRight(typename space_type::template Element<value_type, container_type> const& new_unk)
 {
     DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
 
-    // shift all previously stored bdf data
-    using namespace boost::lambda;
-    typename std::vector<element_ptrtype>::reverse_iterator __itDisp = boost::next( M_previousUnknown.rbegin() );
-    std::for_each( M_previousUnknown.rbegin(), boost::prior( M_previousUnknown.rend() ),
-                   ( *lambda::_1 = *( *lambda::var( __itDisp ) ), ++lambda::var( __itDisp ) ) );
-    typename std::vector<element_ptrtype>::reverse_iterator __itVel = boost::next( M_previousVel.rbegin() );
-    std::for_each( M_previousVel.rbegin(), boost::prior( M_previousVel.rend() ),
-                   ( *lambda::_1 = *( *lambda::var( __itVel ) ), ++lambda::var( __itVel ) ) );
-    typename std::vector<element_ptrtype>::reverse_iterator __itAcc = boost::next( M_previousAcc.rbegin() );
-    std::for_each( M_previousAcc.rbegin(), boost::prior( M_previousAcc.rend() ),
-                   ( *lambda::_1 = *( *lambda::var( __itAcc ) ), ++lambda::var( __itAcc ) ) );
+    // Shift all previously stored BDF data for displacements
+    auto itDisp = std::next(M_previousUnknown.rbegin());
+    std::for_each(M_previousUnknown.rbegin(), std::prev(M_previousUnknown.rend()), 
+                  [&itDisp](auto& element) { *element = *(*itDisp); ++itDisp; });
 
-    // shift all previously stored  data
-    *M_previousUnknown[0] = __new_unk;
-    // update M_currentVelocity and M_currentAcceleration with new disp and define as previous vel/acc
-    this->updateFromDisp(__new_unk,1);
+    // Shift all previously stored BDF data for velocities
+    auto itVel = std::next(M_previousVel.rbegin());
+    std::for_each(M_previousVel.rbegin(), std::prev(M_previousVel.rend()), 
+                  [&itVel](auto& element) { *element = *(*itVel);++itVel; });
+
+    // Shift all previously stored BDF data for accelerations
+    auto itAcc = std::next(M_previousAcc.rbegin());
+    std::for_each(M_previousAcc.rbegin(), std::prev(M_previousAcc.rend()), 
+                  [&itAcc](auto& element) { *element = *(*itAcc); ++itAcc; });
+
+    // Shift all previously stored data
+    *M_previousUnknown[0] = new_unk;
+
+    // Update M_currentVelocity and M_currentAcceleration with new displacement and define them as previous velocity/acceleration
+    this->updateFromDisp(new_unk, 1);
     *(M_previousVel[0]) = *M_currentVel;
     *(M_previousAcc[0]) = *M_currentAcc;
 
-    // save newly stored data
+    // Save newly stored data
     this->saveCurrent();
 
-    // compute first derivative poly of rhs
+    // Compute first derivative polynomial of rhs
     this->computePolyFirstDeriv();
-    // compute second derivative poly of rhs
+
+    // Compute second derivative polynomial of rhs
     this->computePolySecondDeriv();
 }
 

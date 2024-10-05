@@ -7,4 +7,4 @@ tetrahedron-{x,y,-2*z} --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/tetrahed
 
 # Ethier-Steinmann
 ethiersteinmann-nosc --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/ethiersteinmann/ethiersteinmann.cfg  --directory=qs_stokes/ethiersteinmann --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.2 
-ethiersteinmann-nosc-o2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/ethiersteinmann/ethiersteinmann.cfg  --directory=qs_stokes/ethiersteinmann --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.2 --order=2
+ethiersteinmann-nosc-o2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/stokes/ethiersteinmann/ethiersteinmann.cfg  --directory=qs_stokes/ethiersteinmann --sc.condense=0 --checker.tolerance.exact=1e-11  --gmsh.hsize=0.6 --order=2
