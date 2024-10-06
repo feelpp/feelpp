@@ -177,7 +177,7 @@ public:
 
         /**
          * @brief return the list of all parameter names
-         * 
+         *
          */
         std::vector<std::string> const& parameterNames() const
         {
@@ -187,7 +187,7 @@ public:
 
         /**
          * @brief Accesses an element by its parameter name.
-         * 
+         *
          * @param name The name of the parameter to access.
          * @return Reference to the value of the specified parameter.
          * @throws std::invalid_argument If the parameter name is not found.
@@ -200,7 +200,7 @@ public:
 
         /**
          * @brief Accesses an element by its parameter name (modifiable version).
-         * 
+         *
          * @param name The name of the parameter to access.
          * @return Reference to the value of the specified parameter.
          * @throws std::invalid_argument If the parameter name is not found.
@@ -267,7 +267,7 @@ public:
                     this->operator()(i) = values[i];
                 else
                 {
-                    LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter number {}", values[i], min(i), max(i), i) << std::endl; 
+                    LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter number {}", values[i], min(i), max(i), i) << std::endl;
                     throw std::invalid_argument("Parameter out of range");
                 }
             }
@@ -276,7 +276,7 @@ public:
 
         /**
          * @brief Set the Parameters object
-         * 
+         *
          * @param values map of parameter values
          */
         void setParameters( const std::map<std::string, double> &values )
@@ -287,9 +287,9 @@ public:
 
         /**
          * @brief Set the parameters to the map of values
-         * 
-         * @param values map of values 
-         * @return Element& 
+         *
+         * @param values map of values
+         * @return Element&
          */
         Element& set( const std::map<std::string, double> &values )
         {
@@ -300,9 +300,9 @@ public:
 
         /**
          * @brief Set the parameters to the vector of values
-         * 
+         *
          * @param values vector of values ordered by parameter index
-         * @return Element& 
+         * @return Element&
          */
         Element& set( const std::vector<double> &values )
         {
@@ -765,11 +765,13 @@ public:
 
                 this->clear();
 
+                if ( M_space->dimension() == 0 )
+                    return;
+
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
                 if( M_space->worldComm().isMasterRank() /*&& generate_the_file*/ )
                 {
-
                     bool already_exist;
                     // first element
                     auto mu = ( apply_log )?parameterspace_type::logRandom( M_space , false ) : parameterspace_type::random( M_space, false );
@@ -781,7 +783,7 @@ public:
                         //we pick an other parameter
                         do
                         {
-                            already_exist=false;
+                            already_exist = false;
                             if( apply_log )
                             {
                                 mu = parameterspace_type::logRandom( M_space, false );
@@ -794,7 +796,7 @@ public:
                             for( auto const& _mu : *this )
                             {
                                 if( mu == _mu )
-                                    already_exist=true;
+                                    already_exist = true;
                             }
 
                         }
@@ -1626,11 +1628,16 @@ public:
         M_max()
         // M_mubar()
         {
-            M_min.resize( M_nDim,1 );
+            M_min.resize( M_nDim, 1 );
             M_min.setZero();
-            M_max.resize( M_nDim,1 );
+            M_max.resize( M_nDim, 1 );
             M_max.setOnes();
             this->updateDefaultParameterNames();
+            if ( M_nDim == 0 )
+            {
+                Feel::cout << "[ParameterSpace::ParameterSpace] WARNING: the parameter space has a dimension 0" << std::endl;
+                LOG(WARNING) << "the parameter space has a dimension 0";
+            }
         }
     //! copy constructor
     ParameterSpace( ParameterSpace const & o ) = default;
@@ -1678,7 +1685,7 @@ public:
         }
     static parameterspace_ptrtype New( uint16_type dim = 0, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr())
         {
-            return std::make_shared<parameterspace_type>( dim,worldComm );
+            return std::make_shared<parameterspace_type>( dim, worldComm );
         }
 
     static parameterspace_ptrtype New( std::string const& filename, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
@@ -1829,6 +1836,11 @@ public:
      */
     void setDimension( uint16_type d )
         {
+            if ( d == 0 )
+            {
+                Feel::cerr << "[ParameterSpace::setDimension] WARNING: dimension is 0" << std::endl;
+                LOG(WARNING) << "[ParameterSpace::setDimension] dimension is 0";
+            }
             if ( M_nDim == d )
                 return;
             if ( Dimension == invalid_uint16_type_value )
@@ -1954,6 +1966,11 @@ public:
                 }
                 this->setMin( mumin );
                 this->setMax( mumax );
+            }
+            else
+            {
+                Feel::cerr << "[ParameterSpace::setup] WARNING: dimension is 0" << std::endl;
+                LOG(WARNING) << "[ParameterSpace::setup] dimension is 0";
             }
         }
 

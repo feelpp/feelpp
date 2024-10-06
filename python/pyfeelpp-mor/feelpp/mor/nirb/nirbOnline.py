@@ -1,14 +1,12 @@
 from time import time
 import feelpp.core as fppc
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment
-import sys
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, merge_JsonFiles
 import pandas as pd
-from pathlib import Path
-import os 
+import os
 from feelpp.mor.nirb.nirb_perf import *
 import argparse
-
+from feelpp.core.timing import tic, toc
 
 if __name__ == "__main__":
 
@@ -25,14 +23,14 @@ if __name__ == "__main__":
     outdir = args.outdir
 
     cfg = fppc.readCfg(config_file)
-    toolboxType = cfg['nirb']['toolboxType']
+    toolboxType = cfg['nirb']['toolboxType'][0]
     e = init_feelpp_environment(toolboxType, config_file)
 
-    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'])
+    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'][0])
     config_nirb = fppc.readJson(nirb_file)['nirb']
 
 
-    greedy = args.greedy 
+    greedy = args.greedy
     expo = args.exporter
     conv = args.convergence
 
@@ -45,7 +43,7 @@ if __name__ == "__main__":
         nbSnap = config_nirb['nbSnapshots']
 
     config_nirb['greedy-generation'] = bo[greedy]
-    
+
     doGreedy = config_nirb['greedy-generation']
     doRectification = config_nirb['doRectification']
     rectPath = ["noRect", "Rect"][doRectification]
@@ -57,41 +55,56 @@ if __name__ == "__main__":
         RESPATH = outdir
 
     nirb_on = nirbOnline(**config_nirb)
-    nirb_on.initModel()
+    full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
+    nirb_on.initModel(model=full_model)
 
-    start= time()
+    start = time()
 
-    mu = nirb_on.Dmu.mumin()
+    mu = nirb_on.Dmu.element()
+    if fppc.Environment.isMasterRank(): print(mu.parameterNames())
+    mu.setParameters([0.01, 0.1, 0.1, 0.1, 0.1])
     err = nirb_on.loadData(path=RESPATH, nbSnap=nbSnap)
     assert err == 0, "Error while loading data"
-    uHh = nirb_on.getOnlineSol(mu)
+    tic()
+    uHh_r = nirb_on.getOnlineSol(mu, doRectification=True)
+    toc("NIRB w/ rectification")
+    tic()
+    uHh = nirb_on.getOnlineSol(mu, doRectification=False)
+    toc("NIRB w/o rectification")
     finish = time()
 
     uh = nirb_on.getToolboxSolution(nirb_on.tbFine, mu)
+    error_r = nirb_on.normMat(uHh_r - uh)
     error = nirb_on.normMat(uHh - uh)
-    print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
 
-    if exporter:    
+    if nirb_on.worldcomm.isMasterRank():
+        print(f"[NIRB] L2 norm between nirb online rectified and toolbox sol = {error_r}")
+        print(f"[NIRB] L2 norm between nirb online and toolbox sol = {error}")
+
+    if exporter:
+        if nirb_on.worldcomm.isMasterRank():
+            print(f"[NIRB] Exporting nirb sol for vizualisation")
         dirname = "nirbSol"
         nirb_on.initExporter(dirname, toolbox="fine")
-        fieldname = 'T'
-        nirb_on.exportField(uHh,fieldname)
+        nirb_on.exportField(uh, "uh")
+        nirb_on.exportField(uHh_r, "uNirb_r")
+        nirb_on.exportField(uHh, "uNirb")
         nirb_on.saveExporter()
 
- 
-    
+
+
     perf = []
     perf.append(nirb_on.N)
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
-    else :
-        file=RESPATH+f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
+        file = RESPATH + f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}_rectif.dat'
+    else:
+        file = RESPATH + f'/nirbOnline_time_exec_np{nirb_on.worldcomm.globalSize()}.dat'
     WriteVecAppend(file,perf)
 
-    
-    if convergence :
+
+    if convergence:
         Nsample = 50
         errorN = ComputeErrorSampling(nirb_on, Nsample=Nsample, h1=True)
         # errorN = ComputeErrors(nirb_on, mu, h1=True)
@@ -99,9 +112,9 @@ if __name__ == "__main__":
         df = pd.DataFrame(errorN)
         df['N'] = nirb_on.N
 
-        file =RESPATH +f"/errors{Nsample}Params.csv"
+        file = RESPATH + f"/errors{Nsample}Params.csv"
 
-        header = not os.path.isfile(file)   
+        header = not os.path.isfile(file)
         df.to_csv(file, mode='a', index=False, header=header)
 
         if nirb_on.worldcomm.isMasterRank():
@@ -116,8 +129,10 @@ if __name__ == "__main__":
             data_max = df.max(axis=0)
             print("[NIRB online] Max of errors ")
             print(data_max)
-       
 
 
-    print(f"[NIRB] Online Elapsed time =", finish-start)
-    print(f"[NIRB] Online part Done !!")
+    if nirb_on.worldcomm.isMasterRank():
+        print(f"[NIRB] Online Elapsed time =", finish-start)
+        print(f"[NIRB] Online part Done !!")
+
+    fppc.Environment.saveTimers(display=True)

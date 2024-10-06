@@ -10,7 +10,7 @@ import feelpp.toolboxes.core as core
 from petsc4py import PETSc
 from slepc4py import SLEPc
 import numpy as np
-from mpi4py import MPI 
+from mpi4py import MPI
 
 
 ############################################################################################################
@@ -88,18 +88,18 @@ def generatedAndSaveSampling(Dmu, size, path="./sampling.sample", samplingMode="
     s.sample(size, samplingMode)
     if fppc.Environment.isMasterRank():
         s.writeOnFile(path)
-        print("Sampling saved in ", path)
+        print("Sampling saved in", path)
 
     return s.getVector()
 
 
 
 def samplingEqui(model_path,Ns,type='equidistribute'):
-    """ Get an equidistribute sampling of parameter 
+    """ Get an equidistribute sampling of parameter
 
     Args:
-        model_path (str): model path 
-        Ns (int): number of snapshot 
+        model_path (str): model path
+        Ns (int): number of snapshot
         type (str, optional): type of the equidistribution. Defaults to 'equidistribute'.
     """
     model = fppc.readJson(model_path)
@@ -111,13 +111,13 @@ def samplingEqui(model_path,Ns,type='equidistribute'):
     key = crb.keys()
     mus = []
     dic = {}
-    for i in range(Ns): 
+    for i in range(Ns):
         for k in key:
             dic[k] = crb[k]['min'] + i*(crb[k]['max'] - crb[k]['min'])/float(Ns)
         mu.setParameters(dic)
         mus.append(mu)
-    
-    return mus 
+
+    return mus
 
 
 ############################################################################################################
@@ -152,7 +152,7 @@ def SavePetscArrayBin(filename, PetscAray):
     outputfile = os.path.join(filename)
 
     viewer = PETSc.Viewer().createBinary(outputfile, 'w')
-    
+
     # print(help(viewer.pushFormat))
     # print(help(viewer.Format))
 
@@ -164,7 +164,7 @@ def SavePetscArrayBin(filename, PetscAray):
 def SlepcEigenV(matrix, epsilon = 1.e-8):
     """
     Computes eigenpairs of a symetric definite
-    matrix in petsc.mat format. The basis vectors returned are orthonormalized 
+    matrix in petsc.mat format. The basis vectors returned are orthonormalized
 
     Parameters
     ----------
@@ -177,26 +177,26 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
     eigenvectors (list) : kept eigenvectors associated to kept eigenvalues in format PETSc.Vec
     """
 
-    # Get eigenpairs of the matrix 
-    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver  
-    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential 
+    # Get eigenpairs of the matrix
+    E = SLEPc.EPS() # SVD for singular value decomposition or EPS for Eigen Problem Solver
+    E.create(comm=MPI.COMM_SELF)  # create the solver in sequential
 
     E.setOperators(matrix)
     E.setFromOptions()
     E.setWhichEigenpairs(E.Which.LARGEST_MAGNITUDE)
     E.setDimensions(matrix.size[1]) # set the number of eigen val to compute
-    E.setTolerances(epsilon) # set the tolerance used for the convergence 
+    E.setTolerances(epsilon) # set the tolerance used for the convergence
 
     E.solve()
-    nbmaxEv = E.getConverged() # number of eigenpairs 
- 
+    nbmaxEv = E.getConverged() # number of eigenpairs
+
     eigenValues = []
-    eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues 
+    eigenVectors = E.getInvariantSubspace() # Get orthonormal basis associated to eigenvalues
 
     for i in range(nbmaxEv):
         eigenValues.append(float(E.getEigenvalue(i).real))
-    
-    E.destroy() # destroy the solver object 
+
+    E.destroy() # destroy the solver object
 
     eigenValues = np.array(eigenValues)
     idx = eigenValues.argsort()[::-1]
@@ -204,7 +204,7 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 
     eigenVectors = [eigenVectors[i] for i in idx]
 
-    
+
     return eigenValues, eigenVectors
 
 ############################################################################################################
@@ -213,8 +213,28 @@ def SlepcEigenV(matrix, epsilon = 1.e-8):
 #                                                                                                          #
 ############################################################################################################
 def WriteVecAppend(filename, array):
-    """ Write an array or list in filename with append mode 
-            the vector value will be writen horizontally 
+    """ Write an array or list in filename with append mode
+            the vector value will be writen horizontally
     """
     with open(filename, 'a+') as file:
         file.write(' '.join(str(i) for i in list(array))+"\n")
+
+
+def expand_model_files(cfg, toolboxType):
+    for key in ["json.filename", "filename"]:
+        if key in cfg[toolboxType]:
+            for i, k in enumerate(cfg[toolboxType][key]):
+                cfg[toolboxType][key][i] = fppc.Environment.expand(k)
+    return cfg
+
+
+def merge_JsonFiles(filename):
+    d = {}
+    for name in filename:
+        json_tmp = fppc.readJson(fppc.Environment.expand(name))
+        for key in json_tmp:
+            if key in d:
+                d[key].update(json_tmp[key])
+            else:
+                d[key] = json_tmp[key]
+    return d

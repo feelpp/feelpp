@@ -13,10 +13,11 @@ import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.core.interpolation as fppci
 from tqdm import tqdm
-import random 
+import random
 import math
 import pathlib
 from scipy.linalg import eigh
+from feelpp.core.timing import tic, toc
 
 
 import os
@@ -58,13 +59,13 @@ class ToolboxModel():
 
         if pathlib.Path(self.finemesh_path).suffix==".geo" :
             self.coarsemesh_path = self.finemesh_path
-        else :
-            self.coarsemesh_path = coarsemesh_path
+        else:
+            self.coarsemesh_path = fppc.Environment.expand(coarsemesh_path)
 
         assert self.coarsemesh_path != None, f"Set coarse mesh path"
 
-        self.tbCoarse  = None
-        self.tbFine    = None
+        self.tbCoarse = None
+        self.tbFine   = None
 
         self.Xh = None          # fine function space
 
@@ -74,10 +75,13 @@ class ToolboxModel():
             print(f"[NIRB] ToolboxModel created, but the objects have not yet been initialized. Please call initModel() or setModel() to initialize the objects.")
 
 
-    def initModel(self):
+    def initModel(self, model=None, **kwargs):
         """Initialize the model
         """
-        self.model = fppc.readJson(self.model_path)
+        if model is not None:
+            self.model = model
+        else:
+            self.model = fppc.readJson(self.model_path)
         self.tbFine = self.setToolbox(self.h)
         self.Xh = fppc.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
         self.Dmu = loadParameterSpace(self.model_path)
@@ -86,6 +90,7 @@ class ToolboxModel():
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
             print(f"[NIRB] Number of nodes on the fine mesh : {self.tbFine.mesh().numGlobalPoints()}")
+            print(f"[NIRB] Number of degrees of freedom : {self.Ndofs}")
 
     def setModel(self, tb):
         """Set model from a ToolboxModel object already initialized
@@ -128,10 +133,14 @@ class ToolboxModel():
                 raise ValueError("Unknown toolbox")
 
 
-    def initCoarseToolbox(self):
+    def initCoarseToolbox(self, model=None):
         """Initialize the rectification problem
         """
-        self.tbCoarse = self.setToolbox(self.H,mesh_path=self.coarsemesh_path)
+        if model is not None:
+            self.model = model
+        else:
+            self.model = fppc.readJson(self.model_path)
+        self.tbCoarse = self.setToolbox(self.H, mesh_path=self.coarsemesh_path)
         self.XH = fppc.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
@@ -151,7 +160,7 @@ class ToolboxModel():
         if mesh_path == None: mesh_path=self.finemesh_path
         # load meshes
         mesh_ = fppc.mesh(dim=self.dimension, realdim=self.dimension)
-        mesh = fppc.load(mesh_, mesh_path, hsize)
+        mesh = fppc.load(mesh_, mesh_path, hsize, prefix=self.toolboxType)
 
         # set mesh and model properties
         if self.toolboxType == "heat":
@@ -288,15 +297,15 @@ class nirbOffline(ToolboxModel):
         if self.worldcomm.isMasterRank():
             print(f"[NIRB Offline] Initialization done")
 
-    def initModel(self):
+    def initModel(self, **kwargs):
         """Initialize the model
         """
-        super().initModel()
+        super().initModel(**kwargs)
 
         if self.doRectification or self.initCoarse:
-            super().initCoarseToolbox()
+            super().initCoarseToolbox(**kwargs)
 
-    def setModel(self, tb):
+    def setModel(self, tb, **kwargs):
         """Set the model from a ToolboxModel object already initialized
 
         Args:
@@ -306,7 +315,7 @@ class nirbOffline(ToolboxModel):
 
         super().setModel(tb)
         if self.doRectification or self.initCoarse:
-            super().initCoarseToolbox()
+            super().initCoarseToolbox(**kwargs)
 
 
 
@@ -319,9 +328,9 @@ class nirbOffline(ToolboxModel):
         info = self.getToolboxInfos()
         info["doRectification"] = self.doRectification
         info["doBiorthonormal"] = self.doBiorthonormal
-        info["doGreedy"] = self.doGreedy 
+        info["doGreedy"] = self.doGreedy
         info["numberOfBasis"] = self.N
-        info["outdir"] = self.outdir 
+        info["outdir"] = self.outdir
         return info
 
     def BiOrthonormalization(self):
@@ -356,7 +365,7 @@ class nirbOffline(ToolboxModel):
                 vec.add(float(eigenVectors[j,i]), oldbasis[j])
 
             # vec = vec*(1./math.sqrt(abs(self.l2ScalarProductMatrix.energy(vec,vec))))
-            
+
             self.reducedBasis.append(vec)
 
 
@@ -366,7 +375,7 @@ class nirbOffline(ToolboxModel):
         Args:
         -----
             numberOfInitSnapshots (int): number of snapshots to use for the initialization
-            Xi_train (list of ParameteœrSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
+            Xi_train (list of ParameterSpaceElement, optional): Train set for algorithm. If None is given, a set of size Ntrain is generated. Defaults to None.
             samplingMode (str, optional): sampling mode in the parameter space.(random, log-random, log-equidistribute, equidistribute) Defaults to "log-random".
             computeCoarse (bool, optional): compute snapshots for coarse toolbox, used for rectification. Defaults to False.
 
@@ -390,7 +399,7 @@ class nirbOffline(ToolboxModel):
                 indice_mu = np.array(indice_mu, dtype='i')
             else :
                 indice_mu = np.empty(numberOfInitSnapshots, dtype='i')
-            
+
             self.worldcomm.globalComm().Bcast(indice_mu, root=0)
             vector_mu = [Xi_train[i] for i in list(indice_mu)]
 
@@ -398,43 +407,53 @@ class nirbOffline(ToolboxModel):
             assert self.tbCoarse is not None, f"Coarse toolbox needed for computing coarse Snapshot. set doRectification->True"
             for mu in vector_mu:
                 if self.worldcomm.isMasterRank():
-                    print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
-                self.coarseSnapShotList.append(self.getToolboxSolution(self.tbCoarse, mu))
+                    print(f"[NIRB] Running simulation with mu = {mu}")
+                tic()
+                fineSnapshot = self.getToolboxSolution(self.tbFine, mu)
+                toc(f"NIRB: compute fine snapshot", display=False)
+                self.fineSnapShotList.append(fineSnapshot)
+                tic()
+                coarseSnapshot = self.getToolboxSolution(self.tbCoarse, mu)
+                toc(f"NIRB: compute coarse snapshot", display=False)
+                self.coarseSnapShotList.append(coarseSnapshot)
 
         else:
             for mu in vector_mu:
                 if self.worldcomm.isMasterRank():
                     print(f"Running simulation with mu = {mu}")
-                self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu))
+                tic()
+                fineSnapshot = self.getToolboxSolution(self.tbFine, mu)
+                toc(f"NIRB: compute fine snapshot", display=False)
+                self.fineSnapShotList.append(fineSnapshot)
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {len(self.fineSnapShotList)}" )
 
         return vector_mu
 
-    def getReducedSolution(self, coarseSolutions, mu, N):
+    def getReducedSolution(self, coarseSol, N):
         """Computed the reduced solution for a given parameter and a size of basis
 
         Args:
         -----
-            coarseSolutions (dict of Feel++ solutions): list of coarse solution
-            mu (parameterSpaceElement): parameter
+            coarseSol (solution on XH): coarse solution
             N (int): size of the sub-basis
 
         Returns:
         --------
             numpy.array: reduced solution u_H^N
         """
-        coarseSol = coarseSolutions[mu]
-        uHN = np.zeros(N)
+        onlineSol = self.XH.element()
+        onlineSol.setZero()
 
         for i in range(N):
-            uHN[i] = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
-        return uHN
+            uHN_i = self.l2ScalarProductMatrixCoarse.energy( self.coarseSnapShotList[i], coarseSol )
+            onlineSol.add(uHN_i, self.coarseSnapShotList[i])
+
+        return onlineSol
 
 
-    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random", computeCoarse=False):
+    def initProblemGreedy(self, Ntrain, eps, Xi_train=None, Nmax=50, samplingMode="log-random"):
         """Initialize the problem, using a greedy loop
 
         Args:
@@ -470,50 +489,54 @@ class nirbOffline(ToolboxModel):
         S = []
         self.fineSnapShotList = []
         self.coarseSnapShotList = []
-        self.coarseSnapShotListGreedy = []
         N = 0
 
         # Computation of coarse solutions
         coarseSolutions = {}
-        for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing coarse solutions", ncols=120):
+        for mu in Xi_train_copy:
+        # for mu in tqdm(Xi_train_copy, desc="[NIRB] Computing coarse solutions", ncols=120):
             coarseSolutions[mu] = self.getToolboxSolution(self.tbCoarse, mu)
 
         for i in range(2):
             mu0 = self.Dmu.element()
             S.append(mu0)
-            self.fineSnapShotList.append(   self.getToolboxSolution(self.tbFine  , mu0) )
+            self.fineSnapShotList.append(self.getToolboxSolution(self.tbFine, mu0))
             uH = self.getToolboxSolution(self.tbCoarse, mu0)
             self.coarseSnapShotList.append(uH)
-            self.coarseSnapShotListGreedy.append(uH)
             N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
-        Delta_0 = np.abs(self.getReducedSolution(coarseSolutions, Xi_train_copy[0], 2).mean()
-                         - self.getReducedSolution(coarseSolutions, Xi_train_copy[1], 1).mean())
 
         while Delta_star > eps and N < Nmax:
+
             M = N - 1
 
             Delta_star = -float('inf')
 
-            for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
-                uHN = self.getReducedSolution(coarseSolutions, mu, N)
-                uHM = self.getReducedSolution(coarseSolutions, mu, M)
+            # for i, mu in enumerate(tqdm(Xi_train_copy,desc=f"[NIRB] Greedy selection", ascii=False, ncols=120)):
+            tic()
+            for i, mu in enumerate(Xi_train_copy,):
+                uHN = self.getReducedSolution(coarseSolutions[mu], N)
+                uHM = self.getReducedSolution(coarseSolutions[mu], M)
 
-                Delta = np.abs( uHN.mean() - uHM.mean() ) / Delta_0
+                diff = uHN - uHM
+                Delta = self.l2ScalarProductMatrixCoarse.energy( diff, diff )
 
                 if Delta > Delta_star:
                     Delta_star = Delta
                     mu_star = mu
                     idx = i
+            toc("NIRB: Greedy selection")
 
             S.append(mu_star)
             del Xi_train_copy[idx]
-            self.fineSnapShotList.append(  self.getToolboxSolution(self.tbFine  , mu_star))
-            uH = self.getToolboxSolution(self.tbCoarse, mu_star)
-            self.coarseSnapShotList.append(uH)
-            self.coarseSnapShotListGreedy.append(uH)
+            tic()
+            fineSnapshot = self.getToolboxSolution(self.tbFine, mu_star)
+            toc(f"NIRB: compute fine snapshot", display=False)
+            self.fineSnapShotList.append(fineSnapshot)
+            tic()
+            coarseSnapshot = self.getToolboxSolution(self.tbCoarse, mu_star)
+            toc(f"NIRB: compute coarse snapshot", display=False)
+            self.coarseSnapShotList.append(coarseSnapshot)
             N += 1
-            self.orthonormalizeMatL2(self.coarseSnapShotListGreedy)
 
             Deltas_conv.append(Delta_star)
             if self.worldcomm.isMasterRank():
@@ -522,8 +545,7 @@ class nirbOffline(ToolboxModel):
 
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of snapshot computed : {N}")
-
-        print(Deltas_conv)
+            print("Delta_max", Deltas_conv)
 
         return S, Xi_train, Deltas_conv
 
@@ -544,7 +566,7 @@ class nirbOffline(ToolboxModel):
             self.l2ScalarProductMatrixCoarse.to_petsc().close()
             self.h1ScalarProductMatrixCoarse.to_petsc().close()
 
-    def generateReducedBasis(self, tolerance=1.e-12, regulParam=1.e-10):
+    def generateReducedBasis(self, tolerance=1.e-12):
         """Generate the reduced basis, and store it in the list self.reducedBasis
 
         Args:
@@ -552,7 +574,7 @@ class nirbOffline(ToolboxModel):
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
             regulParam(float), optional : the regularization parameter for rectification
         """
-        self.reducedBasis, RIC= self.PODReducedBasis(tolerance=tolerance)
+        self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.N = len(self.reducedBasis)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of modes : {self.N}")
@@ -564,7 +586,7 @@ class nirbOffline(ToolboxModel):
             self.BiOrthonormalization()
         if self.doRectification:
             self.coeffCoarse, self.coeffFine = self.coeffRectification()
-        return RIC 
+        return RIC
 
     def addFunctionToBasis(self, snapshot, tolerance=1e-6):
         """Add function to the reduced basis, previously generated
@@ -613,18 +635,20 @@ class nirbOffline(ToolboxModel):
 
         Parameters
         ----------
-            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance) 
+            tolerance (float) : tolerance to stop selection of basis (if (1 - RIC)<=tolerance)
 
         Returns
         -------
         ReducedBasis (list) : the reduced basis, of size numberOfModes
-        RIC (list) : Relative innformation content 
+        RIC (list) : Relative innformation content
         """
+
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Compute reduced basis using POD algorithm")
 
         Nsnap = len(self.fineSnapShotList)
 
         if self.correlationMatrix == None :
-            self.correlationMatrix = np.zeros((Nsnap, Nsnap))            
+            self.correlationMatrix = np.zeros((Nsnap, Nsnap))
             for i, snap1 in enumerate(self.fineSnapShotList):
                 for j, snap2 in enumerate(self.fineSnapShotList):
                     if i > j:
@@ -642,12 +666,14 @@ class nirbOffline(ToolboxModel):
             self.correlationMatrix = np.vstack((self.correlationMatrix, lastCol[:-1]))
             self.correlationMatrix = np.column_stack((self.correlationMatrix, lastCol))
 
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Correlation matrices computed")
+
         eigenValues, eigenVectors = eigh(self.correlationMatrix)
         # get ordred eigenvalues
         idx = eigenValues.argsort()[::-1]
         eigenValues = eigenValues[idx]
         eigenVectors = eigenVectors[:, idx]
-        
+
         Nmode = len(eigenValues)
 
         for i in range(Nmode):
@@ -658,7 +684,9 @@ class nirbOffline(ToolboxModel):
         sum_eigenValues = eigenValues.sum()
         RIC = []
 
-        for i in range(Nmode):              
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Compute reduced basis")
+
+        for i in range(Nmode):
             vec = self.Xh.element()
             vec.setZero()
             for j in range(Nsnap):
@@ -666,16 +694,18 @@ class nirbOffline(ToolboxModel):
 
             reducedBasis.append(vec)
             RIC.append(eigenValues[:i].sum() / sum_eigenValues)
-            # if abs(1. - RIC[i])<= tolerance :
+            # if abs(1. - RIC[i])<= tolerance:
             #     break
+
+        if self.worldcomm.isMasterRank(): print(f"[NIRB] Reduced basis computed")
 
         return reducedBasis, RIC
 
 
     def coeffRectification(self):
         """ Compute the two matrixes used to get rectification matrix R given by :
-                B_h[i,j] = <U_h(s_i), phi_j >
-                B_H[i,j] = <U_H(s_i), phi_j >
+                B_h[i,j] = <U_h(mu_i), phi_j >
+                B_H[i,j] = <U_H(mu_i), phi_j >
 
         Returns:
         --------
@@ -693,15 +723,15 @@ class nirbOffline(ToolboxModel):
 
         for i in range(self.N):
             for j in range(self.N):
-                coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i],self.reducedBasis[j])
-                coeffFine[i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i],self.reducedBasis[j])
+                coeffCoarse[i,j] = self.l2ScalarProductMatrix.energy(InterpCoarseSnaps[i], self.reducedBasis[j])
+                coeffFine[i,j] = self.l2ScalarProductMatrix.energy(self.fineSnapShotList[i], self.reducedBasis[j])
 
         return coeffCoarse, coeffFine
 
     """
     Check convergence
     """
-    def checkConvergence(self,Ns=10, Xi_test=None, regulParam=1.e-10):
+    def checkConvergence(self, nirb_on, Ns=10, Xi_test=None):
         """
             check convergence of the offline step
         """
@@ -728,48 +758,37 @@ class nirbOffline(ToolboxModel):
             uH = self.getToolboxSolution(self.tbCoarse, mu)
             soltest.append(interpolationOperator.interpolate(uH))
 
-        tabcoef = np.zeros((Ntest, self.N))
         tabcoefuh = np.zeros((Ntest, self.N))
 
         for j in range(Ntest):
             for k in range(self.N):
-                tabcoef[j,k] = self.l2ScalarProductMatrix.energy(soltest[j],self.reducedBasis[k])
-                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j],self.reducedBasis[k])
+                tabcoefuh[j,k] = self.l2ScalarProductMatrix.energy(soltestFine[j], self.reducedBasis[k])
 
-        Unirb = self.Xh.element()
-        UnirbRect = self.Xh.element()
         Uhn = self.Xh.element()
 
         Error = {'N':[], 'l2(uh-uHn)':[], 'l2(uh-uHn)rec':[], 'l2(uh-uhn)' : [], 'l2(uh-uH)':[]}
 
         nb = 0
-        pas = 1 if (self.N < 50) else 5
+        pas = 1 if (self.N < 50) else 2
         for i in tqdm(range(1, self.N+1, pas), desc=f"[NIRB] Compute convergence error:", ascii=False, ncols=100):
             nb = i
-            # Get rectification matrix
-            BH = self.coeffCoarse[:nb, :nb]
-            Bh = self.coeffFine[:nb, :nb]
-            R = np.linalg.solve(BH.transpose() @ BH + regulParam * np.eye(nb), BH.transpose() @ Bh).T
 
             for j in range(Ntest):
-                Unirb.setZero()
-                UnirbRect.setZero()
-                Uhn.setZero()
-                tabRect = R @ tabcoef[j,:nb]
 
+                Unirb = nirb_on.getOnlineSol(vector_mu[j], Nb=nb, doRectification=False)
+                UnirbRect = nirb_on.getOnlineSol(vector_mu[j], Nb=nb, doRectification=True)
+                Uhn.setZero()
                 for k in range(nb): # get reduced sol in a basis function space
-                    Unirb.add(float(tabcoef[j,k]),self.reducedBasis[k])
-                    UnirbRect.add(float(tabRect[k]), self.reducedBasis[k])
-                    Uhn.add(float(tabcoefuh[j,k]),self.reducedBasis[k])
+                    Uhn.add(float(tabcoefuh[j,k]), self.reducedBasis[k])
 
                 Unirb.add(-1, soltestFine[j])
                 UnirbRect.add(-1, soltestFine[j])
                 Uhn.add(-1, soltestFine[j])
                 Uhint = soltestFine[j] - soltest[j]
-                err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb,Unirb)))
-                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect,UnirbRect)))
-                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn,Uhn)))
-                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint,Uhint)))
+                err1 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Unirb, Unirb)))
+                err2 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(UnirbRect, UnirbRect)))
+                err3 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhn, Uhn)))
+                err4 = np.sqrt(abs(self.l2ScalarProductMatrix.energy(Uhint, Uhint)))
 
                 Error['l2(uh-uHn)'].append(err1)
                 Error['l2(uh-uHn)rec'].append(err2)
@@ -877,11 +896,13 @@ class nirbOffline(ToolboxModel):
                 matH1[i,j] = self.h1ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matH1[i, j] - 1) > tol:
-                        print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j]-1.)} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j]-1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matH1[i, j]) > tol :
-                        print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j])} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not H1 ortho : pos = [{i}, {j}] val = {abs(matH1[i,j])} tol = {tol}")
                         return False
         return True
 
@@ -902,11 +923,13 @@ class nirbOffline(ToolboxModel):
                 matL2[i,j] = self.l2ScalarProductMatrix.energy(self.reducedBasis[i], self.reducedBasis[j])
                 if i == j:
                     if abs(matL2[i, j] - 1) > tol:
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j] - 1.)} tol = {tol}")
                         return False
                 else:
                     if abs(matL2[i, j]) > tol :
-                        print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
+                        if self.worldcomm.isMasterRank():
+                            print(f"[NIRB] not L2 ortho : pos = [{i} , {j}] val = {abs(matL2[i,j])} tol = {tol}")
                         return False
         return True
 
@@ -922,7 +945,7 @@ class nirbOffline(ToolboxModel):
         reducedPath = os.path.join(path, 'reducedBasis')
         reducedFilename = 'reducedBasis'
 
-        l2productPath = os.path.join(path,  'l2productBasis')
+        l2productPath = os.path.join(path, 'l2productBasis')
         l2productFilename = 'l2productBasis'
 
         if self.worldcomm.isMasterRank():
@@ -945,8 +968,8 @@ class nirbOffline(ToolboxModel):
             vec = self.Xh.element(self.l2ProductBasis[i])
             vec.save(l2productPath, l2productFilename, suffix=str(i))
 
-        coeffCoarseFile = os.path.join(path, f"coeffcoarse")
-        coeffFineFile = os.path.join(path, f"coefffine")
+        coeffCoarseFile = os.path.join(path, "coeffcoarse")
+        coeffFineFile = os.path.join(path, "coefffine")
         if self.doRectification:
             if self.worldcomm.isMasterRank():
                 np.save(coeffCoarseFile, self.coeffCoarse)
@@ -997,11 +1020,11 @@ class nirbOnline(ToolboxModel):
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Initialization done")
 
-    def initModel(self):
+    def initModel(self, **kwargs):
         """Initialize the model
         """
-        super().initModel()
-        super().initCoarseToolbox()
+        super().initModel(**kwargs)
+        super().initCoarseToolbox(**kwargs)
         self.interpolationOperator = self.createInterpolator(self.tbCoarse, self.tbFine)
 
     def setModel(self, tb):
@@ -1035,7 +1058,7 @@ class nirbOnline(ToolboxModel):
 
         if solution is None:
             sol = self.getInterpSol(mu)
-        else :
+        else:
             sol = solution
 
         compressedSol = np.zeros(Nb)
@@ -1059,13 +1082,13 @@ class nirbOnline(ToolboxModel):
         interpSol = self.solveOnline(mu)[1]
         return interpSol
 
-    def getOnlineSol(self, mu, Nb=None):
+    def getOnlineSol(self, mu, doRectification=None, Nb=None, verbose=False):
         """Get the Online nirb approximate solution
 
         Parameters
         ----------
         mu : ParameterSpaceElement
-            parameter 
+            parameter
         Nb : int, optional
             Size of the basis, by default None. If None, the whole basis is used
 
@@ -1081,14 +1104,17 @@ class nirbOnline(ToolboxModel):
 
         compressedSol = self.getCompressedSol(mu=mu, Nb=Nb)
 
-        if self.doRectification:
+        if doRectification is None:
+            doRectification = self.doRectification
+
+        if doRectification:
             if Nb not in self.RectificationMat:
                 self.RectificationMat[Nb] = self.getRectification(self.coeffCoarse, self.coeffFine, lambd=1.e-10, Nb=Nb)
             coef = self.RectificationMat[Nb] @ compressedSol
             for i in range(Nb):
                 onlineSol.add(float(coef[i]), self.reducedBasis[i])
 
-            if self.worldcomm.isMasterRank():
+            if verbose and self.worldcomm.isMasterRank():
                 print("[NIRB] Solution computed with Rectification post-process ")
         else:
             for i in range(Nb):
@@ -1115,19 +1141,22 @@ class nirbOnline(ToolboxModel):
         """
         if Nb is None: Nb = self.N
 
-        BH = coeffCoarse[:Nb, :Nb]
-        Bh = coeffFine[:Nb, :Nb]
+        CH = coeffCoarse[:Nb, :Nb]
+        Ch = coeffFine[:Nb, :Nb]
 
         #Thikonov regularization (AT @ A + lambda I_d)^-1 @ (AT @ B)
-        R = np.linalg.solve(BH.transpose() @ BH + lambd * np.eye(Nb), BH.transpose() @ Bh)
-        
-        if False:
-            R_old = np.zeros((Nb, Nb))
-            for i in range(Nb):
-                R_old[i,:] = np.linalg.inv(BH.transpose() @ BH + lambd*np.eye(Nb)) @ BH.transpose() @ Bh[:,i]
+        R = np.linalg.solve(CH.transpose() @ CH + lambd * np.eye(Nb), (CH.transpose() @ Ch)).transpose()
 
-            print("Condition number of matrix", np.linalg.cond(BH.transpose() @ BH + lambd*np.eye(Nb)))
-            print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_old))
+        # if fppc.Environment.worldCommPtr().isMasterRank():
+            # print("Condition number of matrix", np.linalg.cond(CH.transpose() @ CH + lambd*np.eye(Nb)))
+        if False:
+            R_2 = np.zeros((Nb, Nb))
+            for i in range(Nb):
+                R_2[i,:] = np.linalg.solve(CH.transpose() @ CH + lambd*np.eye(Nb), CH.transpose() @ Ch[:,i])
+
+            print("Norm of difference between two rectification matrix", np.linalg.norm(R - R_2))
+            # print(f"R = {R}")
+            # print(f"R_2 = {R_2}")
 
         return R
 
@@ -1203,8 +1232,8 @@ class nirbOnline(ToolboxModel):
             vec.load(l2productPath, l2productFilename, suffix=str(i))
             self.l2ProductBasis.append(vec)
 
-        coeffCoarseFile = os.path.join(path,'coeffcoarse.npy')
-        coeffFineFile = os.path.join(path,'coefffine.npy')
+        coeffCoarseFile = os.path.join(path, 'coeffcoarse.npy')
+        coeffFineFile = os.path.join(path, 'coefffine.npy')
         if self.doRectification:
             self.coeffCoarse = np.load(coeffCoarseFile)
             self.coeffFine = np.load(coeffFineFile)
@@ -1218,8 +1247,8 @@ class nirbOnline(ToolboxModel):
 
     def normMat(self, u, Mat=None):
         """ Compute the norm associated to matrix Mat in the fine mesh
-                ¶u¶ = sqrt(uT*Mat*u)
-            if Mat is not specified, L2 matrix will be computed 
+                ||u|| = sqrt(uT*Mat*u)
+            if Mat is not specified, L2 matrix will be computed
         Args:
         -----
             Mat (fppc.__alg.SparseMatrix): the matrix. Defaults to None.

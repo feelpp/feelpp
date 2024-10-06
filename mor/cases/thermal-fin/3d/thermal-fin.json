@@ -88,14 +88,14 @@
     },
     "InitialConditions":
     {
-        "temperature": 
+        "temperature":
         {
-            "Expression": 
+            "Expression":
             {
-                "init": 
+                "init":
                 {
-                    "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"], 
-                    "expr":"0" 
+                    "markers":["Fin_1", "Fin_2", "Fin_3", "Fin_4", "Post"],
+                    "expr":"0"
                 }
             }
         }
@@ -124,7 +124,7 @@
         {
             "Exports":
             {
-                "fields":["temperature","pid"]
+                "fields":["temperature", "pid"]
             }
         }
     },
