@@ -201,8 +201,8 @@ void test3DWithHybrid( RangeType const& range )
     std::vector<bvh_ray_type> rays;
 
     rays.push_back( bvh_ray_type(origin1,direction_perp_1) );
-    rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
-    rays.push_back( bvh_ray_type(origin3,direction_perp_3) );
+    //rays.push_back( bvh_ray_type(origin2,direction_perp_2) );
+    //rays.push_back( bvh_ray_type(origin3,direction_perp_3) );
 
     BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
 
@@ -324,6 +324,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
     t_end_raytracing_cpu                       = std::chrono::steady_clock::now();
 
+
     std::vector<double> distance_CPU_mode;
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
     {
@@ -367,32 +368,53 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
             isError = true;
         }
     }
-    if (!isError) {  std::cout << "[INFO]: No error. \n";  } 
+    if (!isError) {  std::cout << "[INFO]: No error (same distance). \n";  } 
     // Nota : T-Test ? ...
 
-    // Time laps comparison
-    std::cout << "[INFO]: Build BVH\n";
+    // Save all informations
+    std::string filename= "results.txt";
+    std::ofstream myfile (filename);
 
-    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
-    std::cout << "[INFO]: Elapsed microseconds inside BVH CPU : "<<t_laps<< " us\n";
+    if (myfile.is_open())
+    {
+        std::cout << "[INFO]: Nb Rays : "<<rays.size()<<"\n";
+        myfile <<  "Nb Rays,"<<rays.size()<< "\n";
 
-    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
-    std::cout << "[INFO]: Elapsed microseconds inside BVH GPU : "<<t_laps<< " us\n";
+        // Time laps comparison
+        std::cout << "[INFO]: Build BVH\n";
 
-    std::cout << "[INFO]: Ray Tracing\n";
-    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_cpu  - t_begin_raytracing_cpu).count();
-    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
+        std::cout << "[INFO]: Elapsed microseconds inside BVH CPU : "<<t_laps<< " us\n";
+        myfile <<  "Elapsed microseconds inside BVH CPU,"<<t_laps<< "\n";
 
-    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_gpu  - t_begin_raytracing_gpu).count();
-    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us\n";
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
+        std::cout << "[INFO]: Elapsed microseconds inside BVH GPU : "<<t_laps<< " us (+load mesh in GPU)\n";
+        myfile <<  "Elapsed microseconds inside BVH GPU, "<<t_laps<< "\n";
 
-    std::cout << "[INFO]: Elapse all\n";
+        std::cout << "[INFO]: Ray Tracing\n";
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_cpu  - t_begin_raytracing_cpu).count();
+        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+        myfile << "Elapsed microseconds inside Ray Tracing CPU," <<t_laps<< "\n";
 
-    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
-    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_gpu  - t_begin_raytracing_gpu).count();
+        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us (+load rays data in GPU)\n";
+        myfile <<  "Elapsed microseconds inside Ray Tracing GPU,"<<t_laps<< "\n";
 
-    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_gpu - t_begin_gpu).count();
-    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us\n";
+        std::cout << "[INFO]: Elapse all\n";
+
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
+        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+        myfile <<  "Elapsed microseconds inside Ray Tracing CPU,"<<t_laps<< "\n";
+
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_gpu - t_begin_gpu).count();
+        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us\n";
+        myfile <<  "Elapsed microseconds inside Ray Tracing GPU,"<<t_laps<< "\n";
+
+        myfile.close();
+    }
+    else std::cout << "Unable to open file";
+    
+
 
 }
 
@@ -448,7 +470,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
 
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     test3DWithHybrid( rangeFaces );
-
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     test3DInsideObjectWithHybrid( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"\n";

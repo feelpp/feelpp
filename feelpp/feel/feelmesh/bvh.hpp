@@ -188,6 +188,13 @@ struct BVHNode {
    
 };
 
+
+__device__ float3 make_float3_device(float x, float y, float z)
+{
+    return make_float3(x, y, z);
+}
+
+
 // Function to make a dot
 __host__ __device__
 float dot(const float3& a, const float3& b) {
@@ -1452,6 +1459,7 @@ private:
                                                                      });
             //! sort all intersection from the distance (closer to far)
             std::sort( res.begin(), res.end(), [](auto const& res0,auto const& res1){ return res0.distance() < res1.distance(); } );
+
             return res;
         }
 
@@ -1870,6 +1878,8 @@ private:
     //using rayintersection_result_type = BVHRayIntersectionResult;
     std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
     {
+                bool isModeDirectInDevice=false;
+                isModeDirectInDevice=true;
                 //static constexpr bool isAnyHit = false;
                 int numRays=rayons.size();
                 bool isView=false;
@@ -1879,31 +1889,49 @@ private:
                 //resALL.reserve(numRays);
                 std::vector<rayintersection_result_type> res;
                 //res.reserve(numRays);
-                
+
+                //thrust::device_vector<bvhhip::F3Ray>  deviceRays(numRays);
+                //thrust::device_vector<float3> deviceIntersectionPoint(numRays); 
+
+                thrust::device_vector<bvhhip::F3Ray>  deviceRays;
+				thrust::device_vector<float3> deviceIntersectionPoint; 
                 thrust::host_vector<float3> hostIntersectionPoint(numRays);
-				thrust::host_vector<bvhhip::F3Ray>  hostRays(numRays);
+                thrust::host_vector<bvhhip::F3Ray>  hostRays(numRays);
+
                 if (isView) std::cout<<"[BEGIN::LIST RAYs]"<<"\n";
-                for (int k = 0; k < numRays; ++k) {
-                    if (isView) 
-                    {
-                        std::cout<<" Origin=<"<<rayons[k].origin()[0]<<","<<rayons[k].origin()[1]<<","<<rayons[k].origin()[2]<<">\n";
-                        std::cout<<" Direction=<"<<rayons[k].dir()[0]<<","<<rayons[k].dir()[1]<<","<<rayons[k].dir()[2]<<">\n";
-                        std::cout<<" Distance Min="<<rayons[k].distanceMin()<<"\n";
-                        std::cout<<" Distance Max="<<rayons[k].distanceMax()<<"\n";
+                if (!isModeDirectInDevice) {
+                    for (int k = 0; k < numRays; ++k) {
+                        if (isView) 
+                        {
+                            std::cout<<" Origin=<"<<rayons[k].origin()[0]<<","<<rayons[k].origin()[1]<<","<<rayons[k].origin()[2]<<">\n";
+                            std::cout<<" Direction=<"<<rayons[k].dir()[0]<<","<<rayons[k].dir()[1]<<","<<rayons[k].dir()[2]<<">\n";
+                            std::cout<<" Distance Min="<<rayons[k].distanceMin()<<"\n";
+                            std::cout<<" Distance Max="<<rayons[k].distanceMax()<<"\n";
+                        }
+                        hostRays[k].origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
+                        hostRays[k].direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
+                        hostRays[k].direction = bvhhip::normalize(hostRays[k].direction);
+                        hostIntersectionPoint[k]=make_float3(INFINITY, INFINITY, INFINITY);
                     }
-
-                    hostRays[k].origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
-                    hostRays[k].direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
-                    hostRays[k].direction = bvhhip::normalize(hostRays[k].direction);
-					hostIntersectionPoint[k]=make_float3(INFINITY, INFINITY, INFINITY);
+                    deviceRays = hostRays;
+				    deviceIntersectionPoint = hostIntersectionPoint;
+                } 
+                else
+                {
+                    for (int k = 0; k < numRays; ++k) {
+                        bvhhip::F3Ray r;
+                        r.origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
+                        r.direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
+                        r.direction = bvhhip::normalize(r.direction);
+                        deviceRays.push_back(r);
+                        float3 v=make_float3(INFINITY, INFINITY, INFINITY);
+                        deviceIntersectionPoint.push_back(v);
+                    }
                 }
-
                 if (isView) std::cout<<"[END::LIST RAYs]"<<"\n";
 
+                              
                 if (isView) std::cout<<"[BEGIN::RAYS TRACING]"<<"\n";
-                thrust::device_vector<bvhhip::F3Ray>  deviceRays      = hostRays;
-				thrust::device_vector<float3> deviceIntersectionPoint = hostIntersectionPoint;
-
                 // Allocate memory for the results
 				thrust::device_vector<int>   deviceHitResults(numRays);
 				thrust::device_vector<float> deviceDistanceResults(numRays);
@@ -1955,17 +1983,16 @@ private:
 
                         res.push_back( rayintersection_result_type(this->worldComm().rank(),IdResults[i], M_distance)); //(rank,idPrimitiv,distance)
                         res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
-                        //res.back().setCoordinates( this->CartesianCoordinates(hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z));
                         res.resize(1);
                         resALL.push_back( std::move( res ) );
 					}
                     else
                     {
                         // TODO: Define what is returned, if there is no intersection point.
-                        res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
-                        res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
-                        //res.back().setCoordinates( this->CartesianCoordinates(M_distance,M_distance,M_distance));
-                        res.resize(1);
+                        //res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
+                        //res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
+                        //res.resize(1);
+                        //
                         resALL.push_back( std::move( res ) );
                     }
                     
@@ -1975,8 +2002,9 @@ private:
                 // Memory cleaning
                 if (isView) std::cout<<"[BEGIN::MEMORY CLEANING]"<<"\n";   
 
-                if (1==0)
+                if (1==1)
                 {
+                    if (isView) std::cout<<"[END::MEMORY CLEANING]"<<"\n";   
                     deviceHitResults.clear();
                     deviceDistanceResults.clear();
                     deviceIntersectionPoint.clear();
@@ -1988,7 +2016,6 @@ private:
                     hostHitResults.clear();
                     hostDistanceResults.clear();
                     hostRays.clear();
-                    std::cout<<"[END::MEMORY CLEANING]"<<"\n";   
                 }     
                 
         return(resALL);
@@ -2479,7 +2506,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     else if ( kind == "thrid-party-plus" )
     {
         if constexpr ( mesh_entity_type::nRealDim != 3 )
-            throw std::invalid_argument("gpu-party only implement with triangle in 3D");
+            throw std::invalid_argument("third-party-plus debuging only implement with triangle in 3D");
         auto bvhThirdPartyPlus = std::make_unique<BVH_ThirdPartyPlus<mesh_entity_type>>( quality, worldcomm );
         bvhThirdPartyPlus->updateForUse(range);
         bvh = std::move( bvhThirdPartyPlus );
