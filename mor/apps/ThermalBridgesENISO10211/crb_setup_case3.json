@@ -79,22 +79,28 @@
             "type": "point",
             "coord": [1.2, 1.2, 1.2],
             "expr": "crb_u:crb_u"
+        },
+        "Normal_Heat_Flux_alpha":
+        {
+            "type": "integrate",
+            "topodim": 2,
+            "markers": "alpha",
+            "expr": "crb_dn_u:crb_dn_u"
+        },
+        "Normal_Heat_Flux_beta":
+        {
+            "type": "integrate",
+            "topodim": 2,
+            "markers": "alpha",
+            "expr": "crb_dn_u:crb_dn_u"
+        },
+        "Normal_Heat_Flux_gamma":
+        {
+            "type": "integrate",
+            "topodim": 2,
+            "markers": "alpha",
+            "expr": "crb_dn_u:crb_dn_u"
         }//,
-        // "Normal_Heat_Flux_alpha":
-        // {
-        //     "type": "integrate"
-        //     // TODO
-        // },
-        // "Normal_Heat_Flux_beta":
-        // {
-        //     "type": "integrate"
-        //     // TODO
-        // },
-        // "Normal_Heat_Flux_gamma":
-        // {
-        //     "type": "integrate"
-        //     // TODO
-        // }
         // "Statistics_temperature_alpha_min":
         // {
         //     "type": "min",

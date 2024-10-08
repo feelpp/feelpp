@@ -1,90 +1,4 @@
-// -*- mode: javascript -*-
 {
-    "Name": "ISO 10211:2007 Thermal bridges in building construction : Case 3",
-    "ShortName":"ThermalBridges : Case3",
-    "Parameters":
-    {
-        "h_alpha":"1.0/0.2",
-        "h_beta":"1.0/0.2",
-        "h_gamma":"1.0/0.05",
-        "T0_alpha":20,
-        "T0_beta":15,
-        "T0_gamma":0,
-        "k_internal_wall":"0.7",
-        "k_external_wall":"1",
-        "k_insulation":"0.04",
-        "k_horizontal_structure":"2.5",
-        "k_floor":"1"
-    },
-    "Meshes":
-    {
-        "heat":
-        {
-            "Import":
-            {
-                "filename":"/data/home/saigre/develop/mor/apps/ThermalBridgesENISO10211/mesh/M1/case3_p32.json",
-                "hsize":0.02
-            }
-        }
-    },
-    "Materials":
-    {
-        "Internal_wall":
-        {
-            "markers":["Internal_wall_upper","Internal_wall_lower"],
-            "k":"k_internal_wall:k_internal_wall",//[ W/(m*K) ]
-            "Cp":"800", //[ J/(kg*K) ]
-            "rho":"1700" //[ kg/(m^3) ]
-        },
-        "External_wall":
-        {
-            "k":"k_external_wall:k_external_wall",//[ W/(m*K) ]
-            "Cp":"1000", //[ J/(kg*K) ]
-            "rho":"2000" //[ kg/(m^3) ]
-        },
-        "Insulation":
-        {
-            "k":"k_insulation:k_insulation",//[ W/(m*K) ]
-            "Cp":"1000", //[ J/(kg*K) ]
-            "rho":"200" //[ kg/(m^3) ]
-        },
-        "Horizontal_structure":
-        {
-            "k":"k_horizontal_structure:k_horizontal_structure",//[ W/(m*K) ]
-            "Cp":"600", //[ J/(kg*K) ]
-            "rho":"5000" //[ kg/(m^3) ]
-        },
-        "Floor":
-        {
-            "k":"k_floor:k_floor",//[ W/(m*K) ]
-            "Cp":"800", //[ J/(kg*K) ]
-            "rho":"1000" //[ kg/(m^3) ]
-        }
-    },
-    "BoundaryConditions":
-    {
-        "heat":
-        {
-            "convective_heat_flux":
-            {
-                "alpha":
-                {
-                    "h":"h_alpha:h_alpha",// h coeff
-                    "Text":"T0_alpha:T0_alpha"// temperature exterior
-                },
-                "beta":
-                {
-                    "h":"h_beta:h_beta",// h coeff
-                    "Text":"T0_beta:T0_beta"// temperature exterior
-                },
-                "gamma":
-                {
-                    "h":"h_gamma:h_gamma",// h coeff
-                    "Text":"T0_gamma:T0_gamma"// temperature exterior
-                }
-            }
-        }
-    }/*,
     "PostProcess":
     {
         "heat":
@@ -169,5 +83,5 @@
                 }
             }
         }
-    }*/
+    }
 }
