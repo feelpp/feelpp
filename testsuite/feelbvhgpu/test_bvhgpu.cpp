@@ -248,7 +248,7 @@ std::vector<double> getAllDistanceRayIntersections( BvhType const& bvh, std::vec
     {
         if ( rir.processId() == bvh->worldComm().rank() )
         {
-            std::cout << " --  Distance: " << rir.distance()<< "\n";     
+            //std::cout << " --  Distance: " << rir.distance()<< "\n";     
             distance.push_back(rir.distance());     
         }
         bvh->worldComm().barrier();
@@ -270,7 +270,13 @@ Eigen::Vector3d sphericalToCartesian(double r, double theta, double alpha) {
 template <typename RangeType>
 void test3DInsideObjectWithHybrid( RangeType const& range )
 {
-    std::chrono::steady_clock::time_point t_begin_cpu,t_begin_gpu,t_end_cpu,t_end_gpu;
+    std::chrono::steady_clock::time_point t_begin_cpu,t_begin_gpu;
+    std::chrono::steady_clock::time_point t_end_cpu,t_end_gpu;
+
+    std::chrono::steady_clock::time_point t_begin_raytracing_cpu,t_begin_raytracing_gpu;
+    std::chrono::steady_clock::time_point t_end_raytracing_cpu,t_end_raytracing_gpu;
+    std::chrono::steady_clock::time_point t_end_bvh_cpu,t_end_bvh_gpu;
+
     long int t_laps;
 
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
@@ -281,8 +287,8 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     double thetaEnd   = M_PI;       
     double alphaStart = 0.0f;        
     double alphaEnd   = 2.0f * M_PI;   
-    double thetaStep  = M_PI / 18.0f; 
-    double alphaStep  = M_PI / 18.0f; 
+    double thetaStep  = M_PI / (18.0f*0.5f); 
+    double alphaStep  = M_PI / (18.0f*0.5f); 
     bool   isViewInfo = false;
 
     std::vector<bvh_ray_type> rays;
@@ -309,9 +315,15 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
 
     // In normal CPU mode
     std::cout<<"[INFO]: In normal CPU mode\n";
+
     t_begin_cpu                                = std::chrono::steady_clock::now();
     auto bvhThirdPartyLow                      = boundingVolumeHierarchy(_range=range,_kind="third-party");
+    t_end_bvh_cpu                              = std::chrono::steady_clock::now();
+
+    t_begin_raytracing_cpu                     = std::chrono::steady_clock::now();
     auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
+    t_end_raytracing_cpu                       = std::chrono::steady_clock::now();
+
     std::vector<double> distance_CPU_mode;
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
     {
@@ -323,9 +335,15 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
 
     // In GPU mode with AMD HIP
     std::cout<<"[INFO]: In GPU mode with AMD HIP\n";
+
     t_begin_gpu                                   = std::chrono::steady_clock::now();
     auto bvhHIPParty                              = boundingVolumeHierarchy(_range=range,_kind="hip-party");   
+    t_end_bvh_gpu                                 = std::chrono::steady_clock::now();
+
+    t_begin_raytracing_gpu                        = std::chrono::steady_clock::now();
     auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
+    t_end_raytracing_gpu                          = std::chrono::steady_clock::now();
+
     std::vector<double> distance_GPU_mode;
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
     {
@@ -338,14 +356,38 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     // Distance comparison
     double deltaError = 0.00001f;
     double sumErrors  = 0.0f;
+    bool   isError = false;
     for ( int k; k<distance_GPU_mode.size(); ++k)
     {
         double e=fabs(distance_GPU_mode[k]-distance_CPU_mode[k]);
         sumErrors = sumErrors + e;
+        if (e>deltaError) 
+        { 
+            std::cout << "[INFO]: ERROR "<<k<<" Distance CPU="<<distance_GPU_mode[k]<<" Dist GPU="<<distance_CPU_mode[k]<<" e="<<e<<"\n"; 
+            isError = true;
+        }
     }
+    if (!isError) {  std::cout << "[INFO]: No error. \n";  } 
     // Nota : T-Test ? ...
 
     // Time laps comparison
+    std::cout << "[INFO]: Build BVH\n";
+
+    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
+    std::cout << "[INFO]: Elapsed microseconds inside BVH CPU : "<<t_laps<< " us\n";
+
+    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
+    std::cout << "[INFO]: Elapsed microseconds inside BVH GPU : "<<t_laps<< " us\n";
+
+    std::cout << "[INFO]: Ray Tracing\n";
+    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_cpu  - t_begin_raytracing_cpu).count();
+    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+
+    t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_gpu  - t_begin_raytracing_gpu).count();
+    std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us\n";
+
+    std::cout << "[INFO]: Elapse all\n";
+
     t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
     std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
 
@@ -407,7 +449,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     test3DWithHybrid( rangeFaces );
 
-    //test3DInsideObjectWithHybrid( rangeFaces );
+    test3DInsideObjectWithHybrid( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     std::cout<<"\n";
 }

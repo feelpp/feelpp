@@ -400,6 +400,48 @@ void buildBVHWithTriangleVersion1(thrust::device_vector<F3Triangle>& triangles, 
 }
 
 
+void buildBVHWithTriangleVersion2(thrust::device_vector<F3Triangle>& triangles, thrust::device_vector<BVHNode>& nodes)
+{
+    int numTriangles = triangles.size();
+    nodes.resize(2 * numTriangles - 1);
+
+    // Initialize the leaves in parallel
+    thrust::for_each(thrust::device, 
+                     thrust::make_counting_iterator(0),
+                     thrust::make_counting_iterator(numTriangles),
+                     [triangles = thrust::raw_pointer_cast(triangles.data()),
+                      nodes = thrust::raw_pointer_cast(nodes.data()),
+                      numTriangles] __device__ (int i) {
+        BVHNode& node = nodes[numTriangles - 1 + i];
+        calculateBoundingBox(triangles[i], node.min, node.max);
+        node.triangleIndex = i;
+        node.leftChild = node.rightChild = -1;
+    });
+
+    for (int i = numTriangles - 2; i >= 0; --i) {
+        BVHNode* raw_ptr = thrust::raw_pointer_cast(nodes.data());
+        BVHNode& node = raw_ptr[i];
+        int leftChild = 2 * i + 1;
+        int rightChild = 2 * i + 2;
+
+        node.leftChild = leftChild;
+        node.rightChild = rightChild;
+        node.triangleIndex = -1;
+
+        const BVHNode& leftNode = raw_ptr[leftChild];
+        const BVHNode& rightNode = raw_ptr[rightChild];
+
+        node.min = make_float3(fminf(leftNode.min.x, rightNode.min.x),
+                               fminf(leftNode.min.y, rightNode.min.y),
+                               fminf(leftNode.min.z, rightNode.min.z));
+
+        node.max = make_float3(fmaxf(leftNode.max.x, rightNode.max.x),
+                               fmaxf(leftNode.max.y, rightNode.max.y),
+                               fmaxf(leftNode.max.z, rightNode.max.z));
+    }
+}
+
+
 
 __device__ bool rayTriangleIntersect(const F3Ray& ray, const F3Triangle& triangle, float& t, float3& intersectionPoint) {
     float3 edge1 = triangle.v1 - triangle.v0;
@@ -1721,19 +1763,19 @@ public:
     template <typename RangeType>
     void
     updateForUse( RangeType const& range )
-        {
+    {
+            bool isView=false;
             // up primitiveinfos
             super_type::updateForUse( range );
             // init bvh backend
-            std::cout << "[INFO]: Size primitiveInfo="<<this->M_primitiveInfo.size()<< "\n";
-
+            if (isView) std::cout << "[INFO]: Size primitiveInfo="<<this->M_primitiveInfo.size()<< "\n";
             //...
 
             //hip device used
             hipSetDevice(numDevice); 
             int numDeviceActivated; 
             hipGetDevice(&numDeviceActivated);
-            std::cout << "[INFO]: Num Device Activated="<<numDeviceActivated<<"\n";
+            if (isView) std::cout << "[INFO]: Num Device Activated="<<numDeviceActivated<<"\n";
 
             std::vector<bvhhip::F3Triangle> hostTriangles;
             // Definition of operating modes
@@ -1806,7 +1848,7 @@ public:
                 hostTriangles.clear();
             }
             // Building the BVH
-            bvhhip::buildBVHWithTriangleVersion1(deviceTriangles, deviceNodes);
+            bvhhip::buildBVHWithTriangleVersion2(deviceTriangles, deviceNodes);
         }
 
 private:
@@ -1830,6 +1872,7 @@ private:
     {
                 //static constexpr bool isAnyHit = false;
                 int numRays=rayons.size();
+                bool isView=false;
                 
 
                 std::vector<std::vector<rayintersection_result_type>> resALL;
@@ -1837,26 +1880,27 @@ private:
                 std::vector<rayintersection_result_type> res;
                 //res.reserve(numRays);
                 
-
-
                 thrust::host_vector<float3> hostIntersectionPoint(numRays);
 				thrust::host_vector<bvhhip::F3Ray>  hostRays(numRays);
-                
-                std::cout<<"[BEGIN::LIST RAYs]"<<"\n";
+                if (isView) std::cout<<"[BEGIN::LIST RAYs]"<<"\n";
                 for (int k = 0; k < numRays; ++k) {
-                    std::cout<<" Origin=<"<<rayons[k].origin()[0]<<","<<rayons[k].origin()[1]<<","<<rayons[k].origin()[2]<<">\n";
-                    std::cout<<" Direction=<"<<rayons[k].dir()[0]<<","<<rayons[k].dir()[1]<<","<<rayons[k].dir()[2]<<">\n";
-                    std::cout<<" Distance Min="<<rayons[k].distanceMin()<<"\n";
-                    std::cout<<" Distance Max="<<rayons[k].distanceMax()<<"\n";
+                    if (isView) 
+                    {
+                        std::cout<<" Origin=<"<<rayons[k].origin()[0]<<","<<rayons[k].origin()[1]<<","<<rayons[k].origin()[2]<<">\n";
+                        std::cout<<" Direction=<"<<rayons[k].dir()[0]<<","<<rayons[k].dir()[1]<<","<<rayons[k].dir()[2]<<">\n";
+                        std::cout<<" Distance Min="<<rayons[k].distanceMin()<<"\n";
+                        std::cout<<" Distance Max="<<rayons[k].distanceMax()<<"\n";
+                    }
 
                     hostRays[k].origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
                     hostRays[k].direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
                     hostRays[k].direction = bvhhip::normalize(hostRays[k].direction);
 					hostIntersectionPoint[k]=make_float3(INFINITY, INFINITY, INFINITY);
                 }
-                std::cout<<"[END::LIST RAYs]"<<"\n";
 
-                std::cout<<"[BEGIN::RAYS TRACING]"<<"\n";
+                if (isView) std::cout<<"[END::LIST RAYs]"<<"\n";
+
+                if (isView) std::cout<<"[BEGIN::RAYS TRACING]"<<"\n";
                 thrust::device_vector<bvhhip::F3Ray>  deviceRays      = hostRays;
 				thrust::device_vector<float3> deviceIntersectionPoint = hostIntersectionPoint;
 
@@ -1864,7 +1908,8 @@ private:
 				thrust::device_vector<int>   deviceHitResults(numRays);
 				thrust::device_vector<float> deviceDistanceResults(numRays);
                 thrust::device_vector<int>   deviceIdResults(numRays);
-				int threadsPerBlock = 256;
+				//int threadsPerBlock = 256;
+                int threadsPerBlock = 512;
 				int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
                 bvhhip::rayTracingKernel<<<blocksPerGrid, threadsPerBlock>>>(
                         thrust::raw_pointer_cast(deviceNodes.data()),
@@ -1883,11 +1928,11 @@ private:
                 thrust::host_vector<int>   IdResults = deviceIdResults;
 
 
-                std::cout<<"[END::RAYS TRACING]"<<"\n";
-                std::cout<<"[BEGIN::DEBRIFING COLLISION]"<<"\n";
+                if (isView) std::cout<<"[END::RAYS TRACING]"<<"\n";
+                if (isView) std::cout<<"[BEGIN::DEBRIFING COLLISION]"<<"\n";
 				// Count intersections
 				int hitCount = thrust::count_if(hostHitResults.begin(), hostHitResults.end(),thrust::placeholders::_1 != -1);
-				std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
+				if (isView) std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
 
                 // Reading the results and transmitting the information that will be used later
 				for (int i=0;i<numRays;++i)
@@ -1897,11 +1942,15 @@ private:
 
 					if (hostHitResults[i]!=-1)
 					{
-						std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostRays[i].origin.x<<","<<hostRays[i].origin.y<<","<<hostRays[i].origin.z<<"> ";
-						std::cout<<" dir= <"<<hostRays[i].direction.x<<","<<hostRays[i].direction.y<<","<<hostRays[i].direction.z<<"> ";
-						std::cout<<" dist (min)="<<hostDistanceResults[i];
-						std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> ";
-                        std::cout<<" IdObject= "<<IdResults[i]<<"\n";
+                        if (isView) 
+                        {
+                            std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostRays[i].origin.x<<","<<hostRays[i].origin.y<<","<<hostRays[i].origin.z<<"> ";
+                            std::cout<<" dir= <"<<hostRays[i].direction.x<<","<<hostRays[i].direction.y<<","<<hostRays[i].direction.z<<"> ";
+                            std::cout<<" dist (min)="<<hostDistanceResults[i];
+                            std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> ";
+                            std::cout<<" IdObject= "<<IdResults[i]<<"\n";
+                        }
+
                         M_distance=double(hostDistanceResults[i]);
 
                         res.push_back( rayintersection_result_type(this->worldComm().rank(),IdResults[i], M_distance)); //(rank,idPrimitiv,distance)
@@ -1921,22 +1970,26 @@ private:
                     }
                     
 				}
-                std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";       
+                if (isView) std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";       
 
                 // Memory cleaning
-                std::cout<<"[BEGIN::MEMORY CLEANING]"<<"\n";   
-                deviceHitResults.clear();
-                deviceDistanceResults.clear();
-                deviceIntersectionPoint.clear();
-                deviceIdResults.clear();
-                deviceRays.clear();
+                if (isView) std::cout<<"[BEGIN::MEMORY CLEANING]"<<"\n";   
 
-                hostIntersectionPoint.clear();
-                hostIntersectionPoint.clear();
-                hostHitResults.clear();
-                hostDistanceResults.clear();
-                hostRays.clear();
-                std::cout<<"[END::MEMORY CLEANING]"<<"\n";        
+                if (1==0)
+                {
+                    deviceHitResults.clear();
+                    deviceDistanceResults.clear();
+                    deviceIntersectionPoint.clear();
+                    deviceIdResults.clear();
+                    deviceRays.clear();
+
+                    hostIntersectionPoint.clear();
+                    hostIntersectionPoint.clear();
+                    hostHitResults.clear();
+                    hostDistanceResults.clear();
+                    hostRays.clear();
+                    std::cout<<"[END::MEMORY CLEANING]"<<"\n";   
+                }     
                 
         return(resALL);
     }
