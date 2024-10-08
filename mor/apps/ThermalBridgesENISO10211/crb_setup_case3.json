@@ -1,0 +1,109 @@
+{
+    "CRBParameters":
+    {
+        "T0_alpha":
+        {
+            "min":"15",
+            "max":"20"
+        },
+        "T0_beta":
+        {
+            "min":"15",
+            "max":"20"
+        },
+        "T0_gamma":
+        {
+            "min":"-15",
+            "max":"20"
+        },
+        "k_insulation":
+        {
+            "min":"0.013",
+            "max":"0.065",
+            "source": "https://doi.org/10.1016/j.jobe.2021.102604"
+        },
+        "k_internal_wall":
+        {
+            "min":"0.16",
+            "max":"2.5",
+            "source": "TBD"
+        },
+        "k_external_wall":
+        {
+            "min":"0.03",
+            "max":"2.5",
+            "source": "TBD"
+        },
+        "k_floor":
+        {
+            "min":"0.03",
+            "max":"2.5",
+            "source": "TBD"
+        },
+        "k_horizontal_structure":
+        {
+            "min":"0.03",
+            "max":"2.5",
+            "source": "TBD"
+        }
+    },
+    "CRBOutputs":
+    {
+        "mean_field_temperature":
+        {
+            "type": "mean",
+            "markers": ["Floor", "Horizontal_structure", "Internal_wall_upper","Internal_wall_lower", "External_wall", "Insulation"],
+            "topodim": 3,
+            "expr": "crb_u:crb_u"
+        },
+        "Points_alpha_min_field_temperature":
+        {
+            "type": "point",
+            "coord": [0.2, 0.2, 1],
+            "expr": "crb_u:crb_u"
+        },
+        "Points_alpha_max_field_temperature":
+        {
+            "type": "point",
+            "coord": [1.2, 1.2, 1],
+            "expr": "crb_u:crb_u"
+        },
+        "Points_beta_min_field_temperature":
+        {
+            "type": "point",
+            "coord": [0.2, 0.2, 1.2],
+            "expr": "crb_u:crb_u"
+        },
+        "Points_beta_max_field_temperature":
+        {
+            "type": "point",
+            "coord": [1.2, 1.2, 1.2],
+            "expr": "crb_u:crb_u"
+        }//,
+        // "Normal_Heat_Flux_alpha":
+        // {
+        //     "type": "integrate"
+        //     // TODO
+        // },
+        // "Normal_Heat_Flux_beta":
+        // {
+        //     "type": "integrate"
+        //     // TODO
+        // },
+        // "Normal_Heat_Flux_gamma":
+        // {
+        //     "type": "integrate"
+        //     // TODO
+        // }
+        // "Statistics_temperature_alpha_min":
+        // {
+        //     "type": "min",
+        //     // TODO
+        // },
+        // "Statistics_temperature_beta_min":
+        // {
+        //     "type": "min",
+        //     // TODO
+        // }
+    }
+}
