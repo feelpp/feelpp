@@ -367,6 +367,7 @@ void calculateBoundingBox(const F3Triangle& triangle, float3& min, float3& max)
 
 
 // Function to build a simple BVH (medium construction method)
+// Nota : The problem is that it takes a lot of time and this version cannot be used for HPC.
 void buildBVHWithTriangleVersion1(thrust::device_vector<F3Triangle>& triangles, thrust::device_vector<BVHNode>& nodes)
 {
     int numTriangles = triangles.size();
@@ -406,7 +407,8 @@ void buildBVHWithTriangleVersion1(thrust::device_vector<F3Triangle>& triangles, 
     }
 }
 
-
+// Function to build a BVH
+// Nota : It is faster, I use GPU parallelism
 void buildBVHWithTriangleVersion2(thrust::device_vector<F3Triangle>& triangles, thrust::device_vector<BVHNode>& nodes)
 {
     int numTriangles = triangles.size();
@@ -447,6 +449,102 @@ void buildBVHWithTriangleVersion2(thrust::device_vector<F3Triangle>& triangles, 
                                fmaxf(leftNode.max.z, rightNode.max.z));
     }
 }
+
+
+
+// Function to calculate the height of the tree
+int calculateTreeHeight(int numTriangles) {
+    return static_cast<int>(std::ceil(std::log2(numTriangles)));
+}
+
+// Function to get the start index for a given level
+int getStartIndexForLevel(int level, int numTriangles) {
+    return std::max(0, (1 << level) - 1);
+}
+
+// Function to get the end index for a given level
+int getEndIndexForLevel(int level, int numTriangles) {
+    return std::min((1 << (level + 1)) - 1, numTriangles - 1);
+}
+
+// Construction of internal nodes
+struct BuildInternalNodesFunctor {
+    BVHNode* nodes;
+    int numTriangles;
+
+    __host__ __device__
+    BuildInternalNodesFunctor(BVHNode* _nodes, int _numTriangles) 
+        : nodes(_nodes), numTriangles(_numTriangles) {}
+
+    __host__ __device__
+    void operator()(int i) const {
+        if (i >= numTriangles - 1) return;  
+
+        BVHNode& node = nodes[i];
+        int leftChild = 2 * i + 1;
+        int rightChild = 2 * i + 2;
+
+        node.leftChild = leftChild;
+        node.rightChild = rightChild;
+        node.triangleIndex = -1;
+
+        const BVHNode& leftNode = nodes[leftChild];
+        const BVHNode& rightNode = nodes[rightChild];
+
+        node.min = make_float3(fminf(leftNode.min.x, rightNode.min.x),
+                               fminf(leftNode.min.y, rightNode.min.y),
+                               fminf(leftNode.min.z, rightNode.min.z));
+
+        node.max = make_float3(fmaxf(leftNode.max.x, rightNode.max.x),
+                               fmaxf(leftNode.max.y, rightNode.max.y),
+                               fmaxf(leftNode.max.z, rightNode.max.z));
+    }
+};
+
+
+// Function to build a BVH
+// Nota : Even faster and more optimized
+void buildBVHWithTriangleVersion5(thrust::device_vector<F3Triangle>& triangles, thrust::device_vector<BVHNode>& nodes)
+{
+    int numTriangles = triangles.size();
+    nodes.resize(2 * numTriangles - 1);
+
+    // Initialize the leaves in parallel
+    thrust::for_each(thrust::device, 
+                     thrust::make_counting_iterator(0),
+                     thrust::make_counting_iterator(numTriangles),
+                     [triangles = thrust::raw_pointer_cast(triangles.data()),
+                      nodes = thrust::raw_pointer_cast(nodes.data()),
+                      numTriangles] __device__ (int i) {
+        BVHNode& node = nodes[numTriangles - 1 + i];
+        calculateBoundingBox(triangles[i], node.min, node.max);
+        node.triangleIndex = i;
+        node.leftChild = node.rightChild = -1;
+    });
+
+    // Synchronize to ensure all leaves are initialized. Very important !!!
+    hipDeviceSynchronize();
+
+    // Build the internal nodes level by level
+    int treeHeight = calculateTreeHeight(numTriangles);
+    BVHNode* raw_ptr = thrust::raw_pointer_cast(nodes.data());
+
+    for (int level = treeHeight - 1; level >= 0; --level) {
+        int startIdx = getStartIndexForLevel(level, numTriangles);
+        int endIdx = getEndIndexForLevel(level, numTriangles);
+
+        thrust::for_each(
+            thrust::device,
+            thrust::make_counting_iterator(startIdx),
+            thrust::make_counting_iterator(endIdx + 1),
+            BuildInternalNodesFunctor(raw_ptr, numTriangles)
+        );
+
+        // Synchronize after each level. Very important !!!
+        hipDeviceSynchronize();
+    }
+}
+
 
 
 
@@ -839,6 +937,8 @@ void buildPicturRayTracingPPM(
     deviceImage.clear(); 
 }
 
+
+// Nota : Code in comment to show the articulation of the program.
 /*
 void testRayTracingPicture005(const std::string& filename)
 {
@@ -846,15 +946,6 @@ void testRayTracingPicture005(const std::string& filename)
     // Just here for understanding and will be deleted later.
     const int width = 1024;
     const int height = 768;
-
-    //const int width = 200;
-    //const int height = 200;
-
-    //const int width = 10;
-    //const int height = 10;
-
-    //const int width = 800;
-    //const int height = 600;
 
     Camera camera;
     camera.position = {-5.0f, 5.0f, 5.0f};
@@ -1856,7 +1947,7 @@ public:
                 hostTriangles.clear();
             }
             // Building the BVH
-            bvhhip::buildBVHWithTriangleVersion2(deviceTriangles, deviceNodes);
+            bvhhip::buildBVHWithTriangleVersion5(deviceTriangles, deviceNodes);
         }
 
 private:
