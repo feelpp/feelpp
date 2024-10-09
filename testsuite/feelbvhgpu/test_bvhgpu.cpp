@@ -45,7 +45,7 @@
 #include "thrust/copy.h"
 #include "thrust/count.h"
 
-
+#include <hwloc.h>
 
 
 using namespace Feel;
@@ -181,6 +181,42 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
     }
 }
  
+// Function that detects if there is GPU in the environment in order to switch the calculations to the GPU.
+bool isThereAnyGPUhere() {
+    hwloc_topology_t topology;
+    hwloc_obj_t obj = nullptr;   
+    bool isGPU      = false;
+    unsigned n, i;  
+
+    if (hwloc_topology_init(&topology) < 0) {
+        std::cerr << "Error Num" << std::endl;
+        return false;
+    }
+
+    hwloc_topology_set_io_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
+
+    if (hwloc_topology_load(topology) < 0) {
+        std::cerr << "Error Num" << std::endl;
+        hwloc_topology_destroy(topology);
+        return false;
+    }
+
+    n = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_OS_DEVICE);
+    std::cout<<"n="<<n<<"\n";
+
+    for (i = 0; i < n ; i++) {
+        obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_OS_DEVICE, i);
+        printf("[INFO]: %s:\n", obj->name);
+        const char *s;
+        s = hwloc_obj_get_info_by_name(obj, "Backend");
+        printf("[INFO]: %s\n",s);
+        if (s && !strcmp(s, "OpenCL")) { isGPU=true; };
+    }
+
+    hwloc_topology_destroy(topology);
+    return isGPU;
+}
+
  
 template <typename RangeType>
 void test3DWithHybrid( RangeType const& range )
@@ -467,7 +503,19 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
         std::cout << "[INFO]: nbdyfaces : " <<nbdyfaces<<"\n";
         std::cout<<"\n";
 
+    std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+    // GPU or not GPU
+    bool isGPUdetected; //put elsewhere
+    isGPUdetected=isThereAnyGPUhere();
 
+    if (isGPUdetected)
+    {
+        std::cout << "[INFO]: GPU detected" << std::endl;
+    }
+    else
+    {
+        std::cout << "[INFO]: No GPU detected" << std::endl;
+    }
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     test3DWithHybrid( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
