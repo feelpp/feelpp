@@ -29,8 +29,6 @@
 #include <random>
 #include <cfloat>
 
-
-
 #include "thrust/device_vector.h"
 #include "thrust/transform.h"
 #include "thrust/functional.h"
@@ -40,6 +38,18 @@
 #include "thrust/sort.h"
 #include "thrust/count.h"
 
+#include "thrust/device_vector.h"
+#include "thrust/sort.h"
+#include "thrust/generate.h"
+#include "thrust/copy.h"
+#include "thrust/extrema.h"
+#include "thrust/iterator/counting_iterator.h"
+#include "thrust/system/hip/vector.h"
+#include "thrust/partition.h"
+
+#include "thrust/reduce.h"
+#include "thrust/device_ptr.h"
+#include "thrust/execution_policy.h"
 
 #include <limits>
 #include <climits>
@@ -47,8 +57,7 @@
 #include <cstring>
 #include <cmath>
 #include <atomic>
-
-
+#include <stack>
 
 namespace bvhhip
 {
@@ -172,6 +181,8 @@ struct Rectangle {
 struct F3Ray {
     float3 origin;
     float3 direction;
+    float tMin;
+    float tMax;
 };
 
 struct Ray {
@@ -186,6 +197,21 @@ struct BVHNode {
     int splitAxis; //add
     int boxIndex; //add
    
+};
+
+// Function to calculate the AABB of a triangle
+struct AABB {
+    float3 min, max;
+};
+
+
+// Structure to represent a BVH node AABB
+struct BVHNodeAABB {
+    AABB bounds;
+    int leftChild;
+    int rightChild;
+    int firstTriangle;
+    int triangleCount;
 };
 
 
@@ -582,7 +608,19 @@ __device__ bool rayTriangleIntersect(const F3Ray& ray, const F3Triangle& triangl
     return (t > 1e-6);
 }
 
-__global__ void rayTracingKernel(BVHNode* nodes, F3Triangle* triangles, F3Ray* rays, int* hitResults, float* distance,float3* intersectionPoint,int* hitId, int numRays) {
+
+__global__ void rayTracingKernel(
+    BVHNode* nodes, 
+    F3Triangle* triangles, 
+    F3Ray* rays, 
+    int* hitResults, 
+    float* distance,
+    float3* intersectionPoint,
+    int* hitId, 
+    int numRays
+) 
+
+{
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numRays) return;
 
@@ -936,6 +974,369 @@ void buildPicturRayTracingPPM(
     deviceIdResults.clear(); 
     deviceImage.clear(); 
 }
+
+
+// Function to calculate the AABB of a triangle
+__device__ AABB calculateAABB(const F3Triangle& triangle) {
+    AABB aabb;
+    aabb.min = make_float3(
+        fminf(fminf(triangle.v0.x, triangle.v1.x), triangle.v2.x),
+        fminf(fminf(triangle.v0.y, triangle.v1.y), triangle.v2.y),
+        fminf(fminf(triangle.v0.z, triangle.v1.z), triangle.v2.z)
+    );
+    aabb.max = make_float3(
+        fmaxf(fmaxf(triangle.v0.x, triangle.v1.x), triangle.v2.x),
+        fmaxf(fmaxf(triangle.v0.y, triangle.v1.y), triangle.v2.y),
+        fmaxf(fmaxf(triangle.v0.z, triangle.v1.z), triangle.v2.z)
+    );
+    return aabb;
+}
+
+struct CalculateAABB {
+    __host__ __device__
+    AABB operator()(const F3Triangle& triangle) const {
+        AABB aabb;
+        aabb.min = make_float3(
+            fminf(fminf(triangle.v0.x, triangle.v1.x), triangle.v2.x),
+            fminf(fminf(triangle.v0.y, triangle.v1.y), triangle.v2.y),
+            fminf(fminf(triangle.v0.z, triangle.v1.z), triangle.v2.z)
+        );
+        aabb.max = make_float3(
+            fmaxf(fmaxf(triangle.v0.x, triangle.v1.x), triangle.v2.x),
+            fmaxf(fmaxf(triangle.v0.y, triangle.v1.y), triangle.v2.y),
+            fmaxf(fmaxf(triangle.v0.z, triangle.v1.z), triangle.v2.z)
+        );
+    return aabb;
+    }
+};
+
+// Function to merge two AABBs
+__device__ AABB mergeAABB(const AABB& a, const AABB& b) {
+    AABB result;
+    result.min = make_float3(
+        fminf(a.min.x, b.min.x),
+        fminf(a.min.y, b.min.y),
+        fminf(a.min.z, b.min.z)
+    );
+    result.max = make_float3(
+        fmaxf(a.max.x, b.max.x),
+        fmaxf(a.max.y, b.max.y),
+        fmaxf(a.max.z, b.max.z)
+    );
+    return result;
+}
+
+__device__ bool intersectAABB(const F3Ray& ray, const AABB& aabb) {
+    float3 invDir = make_float3(1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z);
+    float3 t0 = make_float3((aabb.min.x - ray.origin.x) * invDir.x,
+                            (aabb.min.y - ray.origin.y) * invDir.y,
+                            (aabb.min.z - ray.origin.z) * invDir.z);
+    float3 t1 = make_float3((aabb.max.x - ray.origin.x) * invDir.x,
+                            (aabb.max.y - ray.origin.y) * invDir.y,
+                            (aabb.max.z - ray.origin.z) * invDir.z);
+    float tmin = fmaxf(fmaxf(fminf(t0.x, t1.x), fminf(t0.y, t1.y)), fminf(t0.z, t1.z));
+    float tmax = fminf(fminf(fmaxf(t0.x, t1.x), fmaxf(t0.y, t1.y)), fmaxf(t0.z, t1.z));
+    return tmax >= tmin && tmin < ray.tMax && tmax > ray.tMin;
+}
+
+
+__device__ bool intersectTriangleVersion2(const F3Ray& ray, const F3Triangle& triangle, float& t, float3& intersectionPoint) {
+        float3 edge1 = triangle.v1 - triangle.v0;
+        float3 edge2 = triangle.v2 - triangle.v0;
+        float3 h = cross(ray.direction, edge2);
+        float a = dot(edge1, h);
+        
+        if (a > -1e-6f && a < 1e-6f) return false;
+        float f = 1.0f / a;
+        float3 s = ray.origin - triangle.v0;
+        float u = f * dot(s, h);
+        
+        if (u < 0.0f || u > 1.0f) return false;
+        
+        float3 q = cross(s, edge1);
+        float v = f * dot(ray.direction, q);
+        
+        if (v < 0.0f || u + v > 1.0f) return false;
+        
+        t = f * dot(edge2, q);
+        
+        if (t > 1e-6f) {
+            intersectionPoint = ray.origin + ray.direction * t;
+        }
+    return t > ray.tMin && t < ray.tMax;
+}
+
+
+__device__ float3 calculateCentroid(const F3Triangle& triangle) {
+    return make_float3(
+        (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3.0f,
+        (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3.0f,
+        (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3.0f
+    );
+}
+
+
+struct MergeAABB {
+    __host__ __device__
+    AABB operator()(const AABB& a, const AABB& b) const {
+        AABB result;
+        result.min.x = fminf(a.min.x, b.min.x);
+        result.min.y = fminf(a.min.y, b.min.y);
+        result.min.z = fminf(a.min.z, b.min.z);
+        result.max.x = fmaxf(a.max.x, b.max.x);
+        result.max.y = fmaxf(a.max.y, b.max.y);
+        result.max.z = fmaxf(a.max.z, b.max.z);
+        return result;
+    }
+
+    __host__ __device__
+    AABB identity() const {
+        AABB result;
+        result.min = make_float3( FLT_MAX,  FLT_MAX,  FLT_MAX);
+        result.max = make_float3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+        return result;
+    }
+};
+
+struct CalculateCentroid {
+    __host__ __device__
+    float3 operator()(const F3Triangle& triangle) const {
+        float3 centroid;
+        centroid.x = (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3.0f;
+        centroid.y = (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3.0f;
+        centroid.z = (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3.0f;
+        return centroid;
+    }
+};
+
+__device__ __host__ inline float getComponent(const float3& vec, int axis) {
+    switch(axis) {
+        case 0: return vec.x;
+        case 1: return vec.y;
+        case 2: return vec.z;
+        default: return 0.0f; // or handle error
+    }
+}
+
+
+// Recursive function to build the BVH
+void buildBVH_AABB_Recursive(thrust::device_vector<F3Triangle>& triangles,
+                       thrust::device_vector<AABB>& aabbs,
+                       thrust::device_vector<float3>& centroids,
+                       thrust::device_vector<BVHNodeAABB>& nodes,
+                       int& nodeIndex,
+                       int start,
+                       int end)
+{
+    BVHNodeAABB* raw_ptr = thrust::raw_pointer_cast(nodes.data());
+    BVHNodeAABB& node = raw_ptr[nodeIndex];
+    node.firstTriangle = start;
+    node.triangleCount = end - start;
+    node.bounds = thrust::reduce(thrust::device, aabbs.begin() + start, aabbs.begin() + end, AABB(), MergeAABB());
+
+    if (node.triangleCount <= 2) {
+        // Leaf node
+        node.leftChild = -1;
+        node.rightChild = -1;
+    } else {
+        // Internal node
+        int axis = 0;
+        //float splitPos = (node.bounds.min[axis] + node.bounds.max[axis]) * 0.5f;
+        float splitPos = 0.5f * (getComponent(node.bounds.min, axis) + getComponent(node.bounds.max, axis));
+
+        // Partition the triangles
+        auto splitIter = thrust::partition(thrust::device,
+            thrust::make_zip_iterator(thrust::make_tuple(triangles.begin() + start, aabbs.begin() + start, centroids.begin() + start)),
+            thrust::make_zip_iterator(thrust::make_tuple(triangles.begin() + end, aabbs.begin() + end, centroids.begin() + end)),
+                [=] __device__ (const thrust::tuple<F3Triangle, AABB, float3>& t) {
+                    return getComponent(thrust::get<2>(t), axis) < splitPos;
+                }
+        );
+        
+        int mid = start + thrust::distance(
+                thrust::make_zip_iterator(thrust::make_tuple(triangles.begin() + start, aabbs.begin() + start, centroids.begin() + start)),
+                splitIter
+            );
+            
+        // Check if the partition actually divided the triangles
+        if (mid == start || mid == end) {
+                // If the partition did not divide the triangles, force a division in the middle
+                mid = start + (end - start) / 2;
+        }
+        
+        //std::cout<<"mid="<<mid<<"\n"; CTRL OK
+
+        // Create the child nodes
+        node.leftChild = ++nodeIndex;
+        buildBVH_AABB_Recursive(triangles, aabbs, centroids, nodes, nodeIndex, start, mid);
+        node.rightChild = ++nodeIndex;
+        buildBVH_AABB_Recursive(triangles, aabbs, centroids, nodes, nodeIndex, mid, end);
+    }
+}
+
+
+struct BVHBuildTask {
+    int nodeIndex;
+    int start;
+    int end;
+    BVHBuildTask(int ni, int s, int e) : nodeIndex(ni), start(s), end(e) {}
+};
+
+
+void buildBVH_AABB_Iterative(thrust::device_vector<F3Triangle>& triangles,
+                       thrust::device_vector<AABB>& aabbs,
+                       thrust::device_vector<float3>& centroids,
+                       thrust::device_vector<BVHNodeAABB>& nodes,
+                       int& nodeIndex,
+                       int start,
+                       int end) {
+                        
+    std::stack<BVHBuildTask> taskStack;
+    taskStack.push(BVHBuildTask(nodeIndex, start, end));
+
+    while (!taskStack.empty()) {
+        BVHBuildTask task = taskStack.top();
+        taskStack.pop();
+
+        int currentNodeIndex = task.nodeIndex;
+        int currentStart = task.start;
+        int currentEnd = task.end;
+
+    
+        BVHNodeAABB* raw_ptr = thrust::raw_pointer_cast(nodes.data());
+        BVHNodeAABB& node = raw_ptr[currentNodeIndex];
+
+        node.firstTriangle = currentStart;
+        node.triangleCount = currentEnd - currentStart;
+
+        //std::cout<<"current nodeIndex="<<currentNodeIndex<<" Start= "<<currentStart<<" End="<<currentEnd <<"\n";
+        //std::cout<<"node.triangleCount="<<node.triangleCount<<"\n";
+        //getchar();
+
+        // Calculates the AABB of the node
+        node.bounds = thrust::reduce(thrust::device, aabbs.begin() + currentStart, aabbs.begin() + currentEnd, AABB(), MergeAABB());
+
+        if (node.triangleCount <= 2) {
+            // Leaf node
+            node.leftChild = -1;
+            node.rightChild = -1;
+        } else {
+            // Internal node
+            int axis = 0; // // separation axis (can be optimized). To be seen later, if ...
+            float splitPos = 0.5f * (getComponent(node.bounds.min, axis) + getComponent(node.bounds.max, axis));
+            // Partition the triangles
+            auto splitIter = thrust::partition(thrust::device,
+                thrust::make_zip_iterator(thrust::make_tuple(triangles.begin() + currentStart, aabbs.begin() + currentStart, centroids.begin() + currentStart)),
+                thrust::make_zip_iterator(thrust::make_tuple(triangles.begin() + currentEnd, aabbs.begin() + currentEnd, centroids.begin() + currentEnd)),
+                [=] __device__ (const thrust::tuple<F3Triangle, AABB, float3>& t) {
+                    return getComponent(thrust::get<2>(t), axis) < splitPos;
+                }
+            );
+
+            int mid = currentStart + thrust::distance(
+                thrust::make_zip_iterator(thrust::make_tuple(triangles.begin() + currentStart, aabbs.begin() + currentStart, centroids.begin() + currentStart)),
+                splitIter
+            );
+
+            // Check if the partition actually divided the triangles
+            if (mid == currentStart || mid == currentEnd) {
+                // If the partition did not divide the triangles, force a division in the middle
+                mid = currentStart + (currentEnd - currentStart) / 2;
+            }
+
+            //std::cout<<"mid="<<mid<<"\n";
+            node.leftChild = ++nodeIndex;
+            node.rightChild = ++nodeIndex;
+
+            taskStack.push(BVHBuildTask(node.rightChild, mid, currentEnd));
+            taskStack.push(BVHBuildTask(node.leftChild, currentStart, mid));
+        }
+    }
+}
+
+
+
+
+void buildBVH_AABB(thrust::device_vector<F3Triangle>& triangles, thrust::device_vector<BVHNodeAABB>& nodes) {
+    int numTriangles = triangles.size();
+    nodes.resize(2 * numTriangles - 1);
+    //Calculate AABBs and centroids for all triangles
+    thrust::device_vector<AABB>   aabbs(numTriangles);
+    thrust::device_vector<float3> centroids(numTriangles);
+
+    thrust::transform(thrust::device, triangles.begin(), triangles.end(), aabbs.begin(), CalculateAABB());
+    thrust::transform(thrust::device, triangles.begin(), triangles.end(), centroids.begin(), CalculateCentroid());
+
+    // Build the BVH recursively or iteratively
+    int rootNodeIndex = 0;
+    buildBVH_AABB_Recursive(triangles, aabbs, centroids, nodes, rootNodeIndex, 0, numTriangles); //Nota: it is a bit faster than compared to the iterative
+    //buildBVH_AABB_Iterative(triangles, aabbs, centroids, nodes, rootNodeIndex, 0, numTriangles);
+}
+
+
+__global__ void intersectBVH_AABB(
+    const BVHNodeAABB* nodes,
+    const F3Triangle* triangles,
+    const F3Ray* rays,
+    int* hitResults,
+    float* hitDistances,
+    float3* intersectionPoint,
+    int* hitId,
+    int numRays
+)
+
+{
+    int rayIdx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (rayIdx >= numRays) return;
+
+    F3Ray ray = rays[rayIdx];
+    int stack[64];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    //float closestHit = ray.tMax;
+    float closestHit = INFINITY;
+    int closestTriangle = -1;
+    int closesIntersectionId = -1;
+    float3 closestIntersectionPoint = make_float3(INFINITY, INFINITY, INFINITY);
+    bool isView=false; //isView=true;
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        const BVHNodeAABB& node = nodes[nodeIdx];
+
+        if (intersectAABB(ray, node.bounds)) {
+            //printf("nodeIdx=%i\n",nodeIdx);
+            if (node.leftChild == -1 && node.rightChild == -1) {
+                // Leaf node
+                for (int i = 0; i < node.triangleCount; ++i) {
+                    const F3Triangle& tri = triangles[node.firstTriangle + i];
+                    float t;
+                    float3 intersectionPointT;
+
+                    if (intersectTriangleVersion2(ray, tri, t,intersectionPointT)) {
+                        if (isView) printf("[%i] %f \n",rayIdx,t);
+                        if (t < closestHit) {
+                            closestHit = t;
+                            closestTriangle = node.firstTriangle + i;
+                            closestIntersectionPoint = intersectionPointT;
+                            closesIntersectionId=triangles[closestTriangle].id;
+                        }
+                    }
+                }
+            } else {
+                if (node.rightChild != -1) stack[stackPtr++] = node.rightChild;
+                if (node.leftChild != -1) stack[stackPtr++] = node.leftChild;
+            }
+        }
+    }
+
+    hitResults[rayIdx]        = closestTriangle;
+    hitDistances[rayIdx]      = closestHit;
+    intersectionPoint[rayIdx] = closestIntersectionPoint;
+    hitId[rayIdx]             = closesIntersectionId;
+}
+
 
 
 // Nota : Code in comment to show the articulation of the program.
