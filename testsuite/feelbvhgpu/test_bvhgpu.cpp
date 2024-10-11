@@ -318,139 +318,174 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
-    Eigen::Vector3d ray_origin={0.0f,0.0f,0.0f};
-    double thetaStart = 0.0f;        
-    double thetaEnd   = M_PI;       
-    double alphaStart = 0.0f;        
-    double alphaEnd   = 2.0f * M_PI;   
-    double thetaStep  = M_PI / (18.0f*0.5f); 
-    double alphaStep  = M_PI / (18.0f*0.5f); 
-    bool   isViewInfo = false;
-
-    std::vector<bvh_ray_type> rays;
-    for (double theta = thetaStart; theta <= thetaEnd; theta += thetaStep) {
-        for (double alpha = alphaStart; alpha <= alphaEnd; alpha += alphaStep) {
-            Eigen::Vector3d ray_direction = sphericalToCartesian(1.0f, theta, alpha);
-
-            if (isViewInfo)
-            {
-                std::cout << "Origin: <" << ray_origin[0] << ", " << ray_origin[1] << ", " << ray_origin[2] << ">" << " ";
-                std::cout << "Direction: <" << ray_direction[0] << ", " << ray_direction[1] << ", " << ray_direction[2] << ">" << std::endl;              
-            }
-            rays.push_back( bvh_ray_type(ray_origin,ray_direction) );
-        }
-    }
-
-    BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
-    for (int k=0;k<rays.size();++k)
-    {
-        raysDistributed.push_back( rays[k] );
-    }
-
-    std::vector<double> dist;
-
-    // In normal CPU mode
-    std::cout<<"[INFO]: In normal CPU mode\n";
-
-    t_begin_cpu                                = std::chrono::steady_clock::now();
-    auto bvhThirdPartyLow                      = boundingVolumeHierarchy(_range=range,_kind="third-party");
-    t_end_bvh_cpu                              = std::chrono::steady_clock::now();
-
-    t_begin_raytracing_cpu                     = std::chrono::steady_clock::now();
-    auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
-    t_end_raytracing_cpu                       = std::chrono::steady_clock::now();
-
-
-    std::vector<double> distance_CPU_mode;
-    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
-    {
-        dist=getAllDistanceRayIntersections(bvhThirdPartyLow,rayIntersectionResult);
-        //printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
-        distance_CPU_mode.insert(distance_CPU_mode.end(), dist.begin(), dist.end());
-    }
-    t_end_cpu = std::chrono::steady_clock::now();
-
-    // In GPU mode with AMD HIP
-    std::cout<<"[INFO]: In GPU mode with AMD HIP\n";
-
-    t_begin_gpu                                   = std::chrono::steady_clock::now();
-    auto bvhHIPParty                              = boundingVolumeHierarchy(_range=range,_kind="hip-party");   
-    t_end_bvh_gpu                                 = std::chrono::steady_clock::now();
-
-    t_begin_raytracing_gpu                        = std::chrono::steady_clock::now();
-    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
-    t_end_raytracing_gpu                          = std::chrono::steady_clock::now();
-
-    std::vector<double> distance_GPU_mode;
-    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
-    {
-        dist=getAllDistanceRayIntersections(bvhHIPParty,rayIntersectionResult);
-        //printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
-        distance_GPU_mode.insert(distance_GPU_mode.end(), dist.begin(), dist.end());
-    }
-    t_end_gpu = std::chrono::steady_clock::now();
-
-    // Distance comparison
-    double deltaError = 0.00001f;
-    double sumErrors  = 0.0f;
-    bool   isError = false;
-    for ( int k; k<distance_GPU_mode.size(); ++k)
-    {
-        double e=fabs(distance_GPU_mode[k]-distance_CPU_mode[k]);
-        sumErrors = sumErrors + e;
-        if (e>deltaError) 
-        { 
-            std::cout << "[INFO]: ERROR "<<k<<" Distance CPU="<<distance_GPU_mode[k]<<" Dist GPU="<<distance_CPU_mode[k]<<" e="<<e<<"\n"; 
-            isError = true;
-        }
-    }
-    if (!isError) {  std::cout << "[INFO]: No error (same distance). \n";  } 
-    // Nota : T-Test ? ...
 
     // Save all informations
     std::string filename= "results.txt";
     std::ofstream myfile (filename);
 
-    if (myfile.is_open())
+    //for (int kkk=1; kkk<=20; kkk++) 
+    for (int kkk=1; kkk<=1; kkk++) 
     {
-        std::cout << "[INFO]: Nb Rays : "<<rays.size()<<"\n";
-        myfile <<  "Nb Rays,"<<rays.size()<< "\n";
 
-        // Time laps comparison
-        std::cout << "[INFO]: Build BVH\n";
+        Eigen::Vector3d ray_origin={0.0f,0.0f,0.0f};
+        double thetaStart = 0.0f;        
+        double thetaEnd   = M_PI;       
+        double alphaStart = 0.0f;        
+        double alphaEnd   = 2.0f * M_PI;   
+        double thetaStep  = M_PI / (18.0f*0.125f*float(kkk)); 
+        double alphaStep  = M_PI / (18.0f*0.125f*float(kkk)); 
+        bool   isViewInfo = false;
 
-        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
-        std::cout << "[INFO]: Elapsed microseconds inside BVH CPU : "<<t_laps<< " us\n";
-        myfile <<  "Elapsed microseconds inside BVH CPU,"<<t_laps<< "\n";
+        std::vector<bvh_ray_type> rays;
+        for (double theta = thetaStart; theta <= thetaEnd; theta += thetaStep) {
+            for (double alpha = alphaStart; alpha <= alphaEnd; alpha += alphaStep) {
+                Eigen::Vector3d ray_direction = sphericalToCartesian(1.0f, theta, alpha);
 
-        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
-        std::cout << "[INFO]: Elapsed microseconds inside BVH GPU : "<<t_laps<< " us (+load mesh in GPU)\n";
-        myfile <<  "Elapsed microseconds inside BVH GPU, "<<t_laps<< "\n";
+                if (isViewInfo)
+                {
+                    std::cout << "Origin: <" << ray_origin[0] << ", " << ray_origin[1] << ", " << ray_origin[2] << ">" << " ";
+                    std::cout << "Direction: <" << ray_direction[0] << ", " << ray_direction[1] << ", " << ray_direction[2] << ">" << std::endl;              
+                }
+                rays.push_back( bvh_ray_type(ray_origin,ray_direction) );
+            }
+        }
 
-        std::cout << "[INFO]: Ray Tracing\n";
-        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_cpu  - t_begin_raytracing_cpu).count();
-        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
-        myfile << "Elapsed microseconds inside Ray Tracing CPU," <<t_laps<< "\n";
+        BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
+        for (int k=0;k<rays.size();++k)
+        {
+            raysDistributed.push_back( rays[k] );
+        }
 
-        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_gpu  - t_begin_raytracing_gpu).count();
-        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us (+load rays data in GPU)\n";
-        myfile <<  "Elapsed microseconds inside Ray Tracing GPU,"<<t_laps<< "\n";
+        std::vector<double> dist;
 
-        std::cout << "[INFO]: Elapse all\n";
 
-        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
-        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
-        myfile <<  "Elapsed microseconds inside Ray Tracing CPU,"<<t_laps<< "\n";
 
-        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_gpu - t_begin_gpu).count();
-        std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us\n";
-        myfile <<  "Elapsed microseconds inside Ray Tracing GPU,"<<t_laps<< "\n";
+        // In normal CPU mode
+        std::cout<<"[INFO]: In normal CPU mode\n";
 
-        myfile.close();
+        t_begin_cpu                                = std::chrono::steady_clock::now();
+        auto bvhThirdPartyLow                      = boundingVolumeHierarchy(_range=range,_kind="third-party");
+        t_end_bvh_cpu                              = std::chrono::steady_clock::now();
+
+        t_begin_raytracing_cpu                     = std::chrono::steady_clock::now();
+        auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
+        t_end_raytracing_cpu                       = std::chrono::steady_clock::now();
+
+
+        std::vector<double> distance_CPU_mode;
+        for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+        {
+            dist=getAllDistanceRayIntersections(bvhThirdPartyLow,rayIntersectionResult);
+            //printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
+            distance_CPU_mode.insert(distance_CPU_mode.end(), dist.begin(), dist.end());
+        }
+        t_end_cpu = std::chrono::steady_clock::now();
+
+
+
+        // In GPU mode with AMD HIP
+        std::cout<<"[INFO]: In GPU mode with AMD HIP\n";
+
+        t_begin_gpu                                   = std::chrono::steady_clock::now();
+        auto bvhHIPParty                              = boundingVolumeHierarchy(_range=range,_kind="hip-party");   
+        t_end_bvh_gpu                                 = std::chrono::steady_clock::now();
+
+        t_begin_raytracing_gpu                        = std::chrono::steady_clock::now();
+        auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
+        t_end_raytracing_gpu                          = std::chrono::steady_clock::now();
+
+        std::vector<double> distance_GPU_mode;
+        for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+        {
+            dist=getAllDistanceRayIntersections(bvhHIPParty,rayIntersectionResult);
+            //printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
+            distance_GPU_mode.insert(distance_GPU_mode.end(), dist.begin(), dist.end());
+        }
+        t_end_gpu = std::chrono::steady_clock::now();
+
+        // Distance comparison
+        double deltaError = 0.00001f;
+        double sumErrors  = 0.0f;
+        bool   isError = false;
+
+
+
+        std::cout<<"[INFO]: Size vector distance CPU="<<distance_CPU_mode.size()<<" GPU="<<distance_GPU_mode.size()<<"\n";
+
+        if (distance_GPU_mode.size()!=distance_CPU_mode.size())
+        {
+            isError = true;
+            std::cout << "[INFO]: Error size vector distance CPU vs GPU\n"; 
+        }
+
+        for ( int k; k<distance_GPU_mode.size(); ++k)
+        {
+            double e=fabs(distance_GPU_mode[k]-distance_CPU_mode[k]);
+            sumErrors = sumErrors + e;
+            if (e>deltaError) 
+            { 
+                std::cout << "[INFO]: ERROR "<<k<<" Distance CPU = "<<distance_CPU_mode[k]<<" Dist GPU = "<<distance_GPU_mode[k]<<" e="<<e<<"\n"; 
+                isError = true;
+            }
+        }
+        if (!isError) {  std::cout << "[INFO]: WELL DONE :-) No error (same distance). \n";  } 
+
+
+        // Save all informations
+        //std::string filename= "results.txt";
+        //std::ofstream myfile (filename);
+
+        if (myfile.is_open())
+        {
+            std::cout << "[INFO]: Nb Rays : "<<rays.size()<<"\n";
+            //myfile <<  "Nb Rays,"<<rays.size()<< "\n";
+
+            // Time laps comparison
+            std::cout << "[INFO]: Build BVH\n";
+
+            if (1==0) {
+                t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
+                std::cout << "[INFO]: Elapsed microseconds inside BVH CPU : "<<t_laps<< " us\n";
+                //myfile <<  "Elapsed microseconds inside BVH CPU,"<<t_laps<< "\n";
+
+                t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
+                std::cout << "[INFO]: Elapsed microseconds inside BVH GPU : "<<t_laps<< " us (+load mesh in GPU)\n";
+                //myfile <<  "Elapsed microseconds inside BVH GPU, "<<t_laps<< "\n";
+
+                std::cout << "[INFO]: Ray Tracing\n";
+                t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_cpu  - t_begin_raytracing_cpu).count();
+                std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing CPU : "<<t_laps<< " us\n";
+                //myfile << "Elapsed microseconds inside Ray Tracing CPU," <<t_laps<< "\n";
+
+                t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_gpu  - t_begin_raytracing_gpu).count();
+                std::cout << "[INFO]: Elapsed microseconds inside Ray Tracing GPU : "<<t_laps<< " us (+load rays data in GPU)\n";
+                //myfile <<  "Elapsed microseconds inside Ray Tracing GPU,"<<t_laps<< "\n";
+            }
+ 
+
+            std::cout << "[INFO]: Elapse all\n";
+
+            t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
+            std::cout << "[INFO]: Elapsed microseconds inside BVH Ray Tracing CPU : "<<t_laps<< " us\n";
+            //myfile <<  "Elapsed microseconds inside  BVH Ray Tracing CPU,"<<t_laps<< "\n";
+
+            t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_gpu - t_begin_gpu).count();
+            std::cout << "[INFO]: Elapsed microseconds inside BVH Ray Tracing GPU : "<<t_laps<< " us\n";
+            //myfile <<  "Elapsed microseconds inside  BVH Ray Tracing GPU,"<<t_laps<< "\n";
+
+            myfile <<  "Nb Rays,"<<rays.size()<< ",";
+            t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_cpu - t_begin_cpu).count();
+            myfile <<t_laps<< ",";
+            t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end_gpu - t_begin_gpu).count();
+            myfile <<t_laps<< "\n";
+
+
+        }
+        else std::cout << "Unable to open file";
+        
     }
-    else std::cout << "Unable to open file";
-    
 
+    myfile.close();
 
 }
 
