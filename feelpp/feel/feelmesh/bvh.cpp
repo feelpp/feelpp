@@ -1,6 +1,12 @@
 
 #include <feel/feelmesh/bvh.hpp>
 
+/*
+__global__ void kernel(float* x,float* y,int n){
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) y[idx] += 1;
+}
+*/
 
 
 namespace bvhhip
@@ -9,7 +15,7 @@ namespace bvhhip
 
 #define SWAP(T, a, b) do { T tmp = a; a = b; b = tmp; } while (0)
     
-/*    
+ 
 struct Vec3 {
     float x, y, z;
 
@@ -67,16 +73,16 @@ struct Vec3 {
         return Vec3(f.x, f.y, f.z);
     }
 };
-*/
 
-/*
+
+
 struct F3Triangle {
     float3 v0, v1, v2;
     int id;
 };
-*/
 
-/*
+
+
 struct F3TriangleInit {
     float3 _v0, _v1, _v2;
     int _id;
@@ -94,59 +100,59 @@ struct F3TriangleInit {
         return t;
     }
 };
-*/
 
-/*
+
+
 struct Triangle {
     Vec3 v0, v1, v2;
     int id;
 };
-*/
 
-/*
+
+
 struct Box {
     Vec3 min;
     Vec3 max;
     int id;
 };
-*/
 
-/*
+
+
 struct BoxCentroid {
     float3 centroid;
     int index;
 };
-*/
 
-/*
+
+
 struct TriangleCentroid {
     float3 centroid;
     int index;
 };
-*/
 
-/**
+
+
 struct Rectangle {
     Vec3 v0, v1, v2, v3;
 };
-*/
 
-/*
+
+
 struct F3Ray {
     float3 origin;
     float3 direction;
     float tMin;
     float tMax;
 };
-*/
 
-/*
+
+
 struct Ray {
     Vec3 origin, direction;
 };
-*/
 
-/*
+
+
 struct BVHNode {
     float3 min, max; // Min and max coordinates of the bounding box
     int leftChild, rightChild; // Indices of child nodes (-1 for leaves)
@@ -155,16 +161,16 @@ struct BVHNode {
     int boxIndex; //add
    
 };
-*/
 
-/*
+
+
 // Function to calculate the AABB of a triangle
 struct AABB {
     float3 min, max;
 };
-*/
 
-/*
+
+
 // Structure to represent a BVH node AABB
 struct BVHNodeAABB {
     AABB bounds;
@@ -173,7 +179,7 @@ struct BVHNodeAABB {
     int firstTriangle;
     int triangleCount;
 };
-*/
+
 
 
 __device__ float3 make_float3_device(float x, float y, float z)
@@ -219,6 +225,14 @@ __host__ __device__
 void print_float3(const float3& v) {
     printf("%f %f %f\n",v.x,v.y,v.z);
 }
+
+
+__device__ __forceinline__ 
+float3 make_float3_fast(float x, float y, float z) {
+    //return make_float3(__float2int_rn(x), __float2int_rn(y), __float2int_rn(z));
+    return make_float3(x,y,z); // A VOIR
+}
+
 
 float3 toFloat3(const Vec3& v) { return {v.x, v.y, v.z}; }
 
@@ -632,8 +646,32 @@ __device__ bool rayTriangleIntersect(const F3Ray& ray, const F3Triangle& triangl
     return (t > 1e-6);
 }
 
+__device__ __forceinline__ bool rayTriangleIntersectVersion2(const F3Ray& ray, const F3Triangle& triangle, float& t, float3& intersectionPoint) {
+ 
+    const float3 v0 = triangle.v0;
+    const float3 edge1 = triangle.v1 - v0;
+    const float3 edge2 = triangle.v2 - v0;
+    const float3 pvec = cross(ray.direction, edge2);
+    const float det = dot(edge1, pvec);
+    if (fabsf(det) < 1e-6f) return false;
+    const float invDet = __frcp_rn(det);
+    const float3 tvec = ray.origin - v0;
+    const float u = dot(tvec, pvec) * invDet;
+    if (u < 0.0f || u > 1.0f) return false;
+    const float3 qvec = cross(tvec, edge1);
+    const float v = dot(ray.direction, qvec) * invDet;
+    if (v < 0.0f || u + v > 1.0f) return false;
+    t = dot(edge2, qvec) * invDet;
+    if (t > 1e-6f) {
+        intersectionPoint = ray.origin + t * ray.direction;
+        return true;
+    }
+    intersectionPoint =make_float3(INFINITY, INFINITY, INFINITY);
+    return false;
+}
 
-__global__ void rayTracingKernel(
+
+__global__ void rayTracingKernelVersion1(
     BVHNode* nodes, 
     F3Triangle* triangles, 
     F3Ray* rays, 
@@ -713,6 +751,93 @@ __global__ void rayTracingKernel(
             stack[stackPtr++] = node.rightChild;
         }
     }
+
+    hitResults[idx]        = closestTriangle;
+    distance[idx]          = closestT;
+    intersectionPoint[idx] = closestIntersectionPoint;
+    hitId[idx]             = closesIntersectionId;
+    //if (closestTriangle!=-1) { printf("t=%f\n",closestT); } OK
+}
+
+
+
+__global__ void rayTracingKernelVersion3(
+    BVHNode* nodes, 
+    F3Triangle* __restrict__ triangles, 
+    F3Ray* rays, 
+    int* __restrict__ hitResults, 
+    float* __restrict__ distance,
+    float3* __restrict__ intersectionPoint,
+    int* __restrict__ hitId, 
+    int numRays
+) 
+
+{
+    __shared__ BVHNode sharedNodes[64]; 
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numRays) return;
+    // On vharge les premiers nœuds BVH dans la mémoire partagée
+    if (threadIdx.x < 64) {
+        sharedNodes[threadIdx.x] = nodes[threadIdx.x];
+    }
+    __syncthreads();
+
+    F3Ray ray = rays[idx];
+    constexpr int MAX_STACK_SIZE = 64;
+    int stack[MAX_STACK_SIZE];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    float closestT = INFINITY;
+    int closestTriangle = -1;
+    int closesIntersectionId = -1;
+    float3 closestIntersectionPoint=make_float3_fast(INFINITY, INFINITY, INFINITY);
+    const float3 invDir = make_float3_fast(__frcp_rn(ray.direction.x), __frcp_rn(ray.direction.y), __frcp_rn(ray.direction.z));
+    bool isView=false; //isView=true;
+
+
+    while (stackPtr > 0) {
+        const int nodeIdx = stack[--stackPtr];
+        const BVHNode& node = nodeIdx < 64 ? sharedNodes[nodeIdx] : nodes[nodeIdx];
+
+        float tmin = fmaxf(fminf((node.min.x - ray.origin.x) * invDir.x, 
+                                 (node.max.x - ray.origin.x) * invDir.x),
+                           fmaxf((node.min.y - ray.origin.y) * invDir.y, 
+                                 (node.max.y - ray.origin.y) * invDir.y));
+        float tmax = fminf(fmaxf((node.min.x - ray.origin.x) * invDir.x, 
+                                 (node.max.x - ray.origin.x) * invDir.x),
+                           fminf((node.min.y - ray.origin.y) * invDir.y, 
+                                 (node.max.y - ray.origin.y) * invDir.y));
+        
+        tmin = fmaxf(tmin, fminf((node.min.z - ray.origin.z) * invDir.z, 
+                                 (node.max.z - ray.origin.z) * invDir.z));
+        tmax = fminf(tmax, fmaxf((node.min.z - ray.origin.z) * invDir.z, 
+                                 (node.max.z - ray.origin.z) * invDir.z));
+
+        if (tmax < 0 || tmin > tmax || tmin > closestT) continue;
+
+        if (node.triangleIndex != -1) {
+            float t;
+            float3 intersectionPointT;
+            if (rayTriangleIntersectVersion2(ray, triangles[node.triangleIndex], t, intersectionPointT)) 
+            {
+                //To view all intersections
+                if (isView) printf("      Node Idx [%i] Num Ray[%i] <%f %f %f>\n",nodeIdx,idx,intersectionPointT.x,intersectionPointT.y,intersectionPointT.z);
+                if (t < closestT) {
+                    closestT = t;
+                    closestTriangle = node.triangleIndex;
+                    closestIntersectionPoint = intersectionPointT;
+                    closestIntersectionId = triangles[node.triangleIndex].id;
+                }
+            }
+        } else if (stackPtr < MAX_STACK_SIZE - 1) {
+            stack[stackPtr++] = node.leftChild;
+            stack[stackPtr++] = node.rightChild;
+        }
+    }
+
+
+ 
 
     hitResults[idx]        = closestTriangle;
     distance[idx]          = closestT;
@@ -1298,7 +1423,7 @@ void buildBVH_AABB(thrust::device_vector<F3Triangle>& triangles, thrust::device_
 }
 
 
-__global__ void intersectBVH_AABB(
+__global__ void rayTracingImgKernel_AABB(
     const BVHNodeAABB* nodes,
     const F3Triangle* triangles,
     const F3Ray* rays,
@@ -1360,78 +1485,6 @@ __global__ void intersectBVH_AABB(
     intersectionPoint[rayIdx] = closestIntersectionPoint;
     hitId[rayIdx]             = closesIntersectionId;
 }
-
-
-
-// Nota : Code in comment to show the articulation of the program.
-/*
-void testRayTracingPicture005(const std::string& filename)
-{
-    // A small basic example to better understand the steps
-    // Just here for understanding and will be deleted later.
-    const int width = 1024;
-    const int height = 768;
-
-    Camera camera;
-    camera.position = {-5.0f, 5.0f, 5.0f};
-    camera.target   = {0.75f, 0.75f, 0.75f};
-    camera.up       = {0.0f, 1.0f, 0.0f};
-    camera.fov      = M_PI / 4;
-    camera.aspect   = static_cast<float>(width) / static_cast<float>(height);
-
-    int idObject=123321;
-    std::vector<F3Triangle> hostTriangles;
-    loadOBJTriangle(filename, hostTriangles,idObject);
-    thrust::device_vector<F3Triangle> deviceTriangles = hostTriangles;
-
-    //BVH
-    thrust::device_vector<BVHNode> deviceNodes;
-    buildBVHWithTriangleVersion1(deviceTriangles, deviceNodes);
-
-    //Ray Tracing
-    const int threadsPerBlock = 256;
-    const int numRays = width * height; // Total number of rays based on image dimensions
-    int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
-    
-    //...
-    thrust::device_vector<unsigned char> deviceImage(width * height * 3);
-    thrust::device_vector<int>           deviceHitResults(numRays);
-    thrust::device_vector<float>         deviceDistanceResults(numRays);
-    thrust::device_vector<float3>        deviceIntersectionPoint(numRays);
-    thrust::device_vector<int>           deviceIdResults(numRays);
-
-    //...
-    rayTracingImgKernel<<<blocksPerGrid, threadsPerBlock>>>(
-        thrust::raw_pointer_cast(deviceImage.data()),
-        width,
-        height,
-        camera,
-        thrust::raw_pointer_cast(deviceNodes.data()),
-        thrust::raw_pointer_cast(deviceTriangles.data()),
-        thrust::raw_pointer_cast(deviceHitResults.data()),
-        thrust::raw_pointer_cast(deviceDistanceResults.data()),
-        thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
-        thrust::raw_pointer_cast(deviceIdResults.data())
-    );
-
-    
-    //...
-    thrust::host_vector<unsigned char> hostImage = deviceImage;
-    savePPM("output_image.ppm", hostImage.data(), width, height);
-    //convertPPMtoBMP("output_image.ppm","output_image.bmp");
-
-    // Memory cleaning
-    deviceNodes.clear();        
-    deviceTriangles.clear();    
-    deviceHitResults.clear(); 
-    deviceDistanceResults.clear(); 
-    deviceIntersectionPoint.clear(); 
-    deviceIdResults.clear(); 
-    deviceImage.clear(); 
-    hostTriangles.clear(); 
-}
-*/
-
 
 
 }

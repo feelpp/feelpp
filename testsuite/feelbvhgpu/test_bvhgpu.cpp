@@ -2,6 +2,9 @@
 
 // NOTA : Objective: Ray tracing from inside a cube using BVH Ray Tracing with a CPU and a GPU method. Compare the performances of the two methods.
 
+
+#define COMPILE_WITH_HIP
+
 #include <feel/feelmesh/ranges.hpp>
 
 #include <feel/feelcore/enumerate.hpp>
@@ -46,6 +49,7 @@
 #include "thrust/count.h"
 
 #include <hwloc.h>
+
 
 
 using namespace Feel;
@@ -246,6 +250,7 @@ void test3DWithHybrid( RangeType const& range )
     {
         raysDistributed.push_back( rays[k] );
     }
+    
 
     std::cout<<"\n";
 

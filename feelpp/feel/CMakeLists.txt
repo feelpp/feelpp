@@ -46,6 +46,9 @@ foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()
 
+
+
+
 # Add target for dynamic library
 #add_library(feelpp-dynamic SHARED $<TARGET_OBJECTS:feelpp-core>)
 #if(FEELPP_ENABLE_BUILD_STATIC)
@@ -283,6 +286,16 @@ if ( OPENTURNS_FOUND )
   target_include_directories( feelpp PUBLIC ${OpenTURNS_INCLUDE_DIRS} )
   target_link_libraries( feelpp PUBLIC ${OpenTURNS_LIBRARIES} )
 endif()
+
+
+#...
+IF (TRUE) #GPU maybe here
+
+
+
+endif()
+#...
+
 
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 message(STATUS "[feelpp]: include_dir ${INC_DIR_LIST}")
