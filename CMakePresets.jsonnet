@@ -7,6 +7,7 @@ local archs = [
 local types = [
   'default',
   'asan',
+  'spack',
 ];
 
 local compilers = [
@@ -18,9 +19,10 @@ local cpps = [
     'cpp20',
     'cpp23',
 ];
-local link_modes = [
-  'static',
-  'dynamic',
+local gpus = [
+  'cpu',
+  'rocm',
+  'cuda',
 ];
 
 local configs = [
@@ -36,57 +38,57 @@ local components = [
     'feelpp-mor',
     'feelpp-python',
 ];
-local cp_generator(component, compiler, cpp, type, config) =
+local cp_generator(component, compiler, cpp, type, gpu, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
-    displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + std.asciiLower(config),
-    inherits: [cpp, compiler, type, config,component],
+    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + gpu + '|' + std.asciiLower(config),
+    inherits: [cpp, compiler, gpu, type, config,component],
   };
 
-local bp_generator(component, compiler, cpp, type, config) =
+local bp_generator(component, compiler, cpp, type, gpu, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
-    displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + std.asciiLower(config),
-    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + gpu + '|' + std.asciiLower(config),
+    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     configuration: config,
     inherits: "default"
   };
 
-local tp_generator(component, compiler, cpp, type, config) =
+local tp_generator(component, compiler, cpp, type, gpu, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
-    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     output: { outputOnFailure: true },
     execution: { noTestsAction: 'error', stopOnFailure: true },
   };
 
-local pp_generator(component, compiler, cpp, type, config) =
+local pp_generator(component, compiler, cpp, type, gpu, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     steps: [
       {
         type: 'configure',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
       },
       {
         type: 'build',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
       },
       {
         type: 'test',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
       },
       {
         type: 'package',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
       },
     ],
   };
 
-local wp_generator(component, compiler, cpp, type, config) =
+local wp_generator(component, compiler, cpp, type, gpu, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
-    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     generators: [
       'TGZ',
     ],
@@ -129,6 +131,27 @@ local wp_generator(component, compiler, cpp, type, config) =
       },
     },
     {
+        name: "spack",
+        hidden: true,
+        displayName: "spack package manager",
+        description: "spack config",
+        inherits: [
+            "default"
+        ],
+        cacheVariables: {
+            CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
+            FEELPP_USE_EXTERNAL_CLN: "ON",
+            FEELPP_USE_EXTERNAL_GFLAGS: "ON",
+            FEELPP_USE_EXTERNAL_GLOG: "ON",
+            FEELPP_ENABLE_VTK: "OFF",
+            USE_VTK: "OFF",
+            FEELPP_ENABLE_OPENTURNS: "OFF"
+        },
+        environment: {
+            VERBOSE: "1"
+        }
+    },
+    {
         name: "cpp17",
         hidden: true,
         description: "Enable compiler C++17",
@@ -167,6 +190,41 @@ local wp_generator(component, compiler, cpp, type, config) =
             CMAKE_C_COMPILER: "clang",
             CMAKE_CXX_COMPILER: "clang++",
         }
+    },
+    {
+        name: 'cpu',
+        hidden: true,
+        cacheVariables: {
+            FEELPP_ENABLE_KOKKOS: 'ON',
+            FEELPP_ENABLE_ROCM: 'OFF',
+            FEELPP_ENABLE_CUDA: 'OFF',
+        /* Additional CPU-specific settings */
+        },
+    },
+    {
+        name: 'rocm',
+        hidden: true,
+        inherits: [
+            'feelpp-core-tests-only',
+        ],
+        cacheVariables: {
+            FEELPP_ENABLE_KOKKOS: 'ON',
+            FEELPP_ENABLE_ROCM: 'ON',
+            FEELPP_ENABLE_CUDA: 'OFF',
+            /* Additional ROCm-specific settings */
+        },
+    },
+    {
+        name: 'cuda',
+        hidden: true,
+        inherits: [
+            'feelpp-core-tests-only',
+        ],
+        cacheVariables: {
+            FEELPP_ENABLE_ROCM: 'OFF',
+            FEELPP_ENABLE_CUDA: 'ON',
+            /* Additional CUDA-specific settings */
+        },
     },
     {
         name: "Release",
@@ -225,6 +283,19 @@ local wp_generator(component, compiler, cpp, type, config) =
             FEELPP_ENABLE_FEELPP_PYTHON: "ON",
             FEELPP_ENABLE_TESTS: "ON",
             FEELPP_ENABLE_FMILIB: "OFF",
+            FEELPP_ENABLE_BENCHMARKS: "OFF",
+        }
+    },
+    {
+        name: "feelpp-core-tests-only",
+        hidden: true,
+        displayName: "feelpp-core only",
+        description: "Build only the Feel++ library Component",
+        cacheVariables: {
+            FEELPP_ENABLE_MOR: "OFF",
+            FEELPP_ENABLE_TOOLBOXES: "OFF",
+            FEELPP_ENABLE_FEELPP_PYTHON: "OFF",
+            FEELPP_ENABLE_TESTS: "ON",
             FEELPP_ENABLE_BENCHMARKS: "OFF",
         }
     },
@@ -299,7 +370,7 @@ local wp_generator(component, compiler, cpp, type, config) =
             FEELPP_COMPONENT: "python"
         }
     },
-  ] + [cp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for config in configs],
+  ] + [cp_generator(component, compiler, cpp, type, gpu, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
 
 buildPresets: [
   {
@@ -337,7 +408,7 @@ buildPresets: [
       configurePreset: "feelpp-python",
       inherits: "default"
   },
-] + [bp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for config in configs],
+] + [bp_generator(component, compiler, cpp, type, gpu, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
 testPresets: [
     {
       name: "default",
@@ -405,7 +476,7 @@ testPresets: [
       configurePreset: "feelpp-testsuite",
       inherits: "feelpp"
   },
-] + [tp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for config in configs],
-//packagePresets: [] + [pp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for config in configs],
-//workflowPresets: [] + [wp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for config in configs],
+] + [tp_generator(component, compiler, cpp, type, gpu, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
+//packagePresets: [] + [pp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
+//workflowPresets: [] + [wp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
 }
