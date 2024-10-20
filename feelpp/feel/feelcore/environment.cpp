@@ -63,6 +63,10 @@ extern "C"
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/table.hpp>
 
+#if defined( FEELPP_HAS_KOKKOS )
+#include <Kokkos_Core.hpp>
+#endif
+
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
 #endif
@@ -131,13 +135,7 @@ public:
     }
 };
 }
-namespace google
-{
-namespace glog_internal_namespace_
-{
-bool IsGoogleLoggingInitialized();
-}
-}
+
 namespace Feel
 {
 namespace pt =  boost::property_tree;
@@ -543,6 +541,11 @@ Environment::Environment( int argc, char** argv,
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
 
+#if defined( FEELPP_HAS_KOKKOS )
+    Kokkos::initialize( argc, argv );
+    printKokkosConfiguration();
+#endif
+
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
@@ -897,6 +900,10 @@ Environment::~Environment()
 #endif // FEELPP_HAS_SLEPC
     }
 #endif // FEELPP_HAS_PETSC_H
+
+#if defined( FEELPP_HAS_KOKKOS )
+    Kokkos::finalize();
+#endif
 
     stopLogging();
 
@@ -2160,6 +2167,131 @@ Environment::masterWorldComm( int n )
 {
     return S_worldcomm->masterWorld( n );
 }
+
+void Environment::printKokkosConfiguration(std::ostream& os)
+{
+    Kokkos::print_configuration(os);
+}
+
+template <typename ExecSpace>
+int Environment::getKokkosDeviceCount()
+{
+    if constexpr (std::is_same_v<ExecSpace, Kokkos::Serial> || std::is_same_v<ExecSpace, Kokkos::Threads> )
+    {
+        // Serial and Threads execution space don't use devices
+        return 1;
+    }
+    else if constexpr ( std::is_same_v<Kokkos::DefaultExecutionSpace, ExecSpace> ) 
+    {
+        try 
+        {
+            int nd =  Kokkos::num_devices();
+        }
+        catch (std::exception& e)
+        {
+            LOG(ERROR) << "Error getting number of devices for Kokkos execution space: " << e.what();
+            return 0;
+        }
+    }
+}
+// Explicit template instantiation for supported execution spaces
+template int Environment::getKokkosDeviceCount<Kokkos::Serial>();
+template int Environment::getKokkosDeviceCount<Kokkos::Threads>();
+#ifdef KOKKOS_ENABLE_HIP
+template int Environment::getKokkosDeviceCount<Kokkos::HIP>();
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+template int Environment::getKokkosDeviceCount<Kokkos::Cuda>();
+#endif
+
+template <typename ExecSpace>
+std::string Environment::getKokkosDeviceInfo(int device_id)
+{
+    std::ostringstream info;
+    if constexpr (std::is_same<ExecSpace, Kokkos::Serial>::value)
+    {
+        info << "Serial Execution Space: No devices used.";
+    }
+    else
+    {
+        int num_devices = getKokkosDeviceCount<ExecSpace>();
+        if (device_id < 0 || device_id >= num_devices)
+        {
+            info << "Invalid device ID: " << device_id;
+            return info.str();
+        }
+#if defined(KOKKOS_ENABLE_HIP)
+        if constexpr ( std::is_same_v<ExecSpace, Kokkos::HIP> )
+        {
+            hipDeviceProp_t prop;
+            hipError_t err = hipGetDeviceProperties(&prop, device_id);
+            if (err != hipSuccess)
+            {
+                info << "Failed to get properties for HIP Device " << device_id << ". Error: " << hipGetErrorString(err);
+                return info.str();
+            }
+            info << "HIP Device " << device_id << ":\n"
+                 << "  Name: " << prop.name << "\n"
+                 << "  Compute Units: " << prop.multiProcessorCount << "\n"
+                 << "  Total Global Memory: " << prop.totalGlobalMem / (1024 * 1024) << " MB\n";
+        }
+#endif
+#if defined(KOKKOS_ENABLE_CUDA)
+        if constexpr (std::is_same<ExecSpace, Kokkos::Cuda>::value)
+        {
+            cudaDeviceProp prop;
+            cudaGetDeviceProperties(&prop, device_id);
+            info << "CUDA Device " << device_id << ":\n"
+                 << "  Name: " << prop.name << "\n"
+                 << "  Compute Units: " << prop.multiProcessorCount << "\n"
+                 << "  Total Global Memory: " << prop.totalGlobalMem / (1024 * 1024) << " MB\n";
+        }
+#endif
+        // Add more execution spaces as needed
+    }
+    return info.str();
+}
+// Explicit template instantiation for supported execution spaces
+template std::string Environment::getKokkosDeviceInfo<Kokkos::Serial>(int);
+template std::string Environment::getKokkosDeviceInfo<Kokkos::Threads>(int);
+#ifdef KOKKOS_ENABLE_HIP
+template std::string Environment::getKokkosDeviceInfo<Kokkos::HIP>(int);
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+template std::string Environment::getKokkosDeviceInfo<Kokkos::Cuda>(int);
+#endif
+
+template <typename ExecSpace>
+bool Environment::isKokkosExecutionSpaceEnabled()
+{
+#if defined(KOKKOS_ENABLE_SERIAL)
+    if constexpr (std::is_same_v<ExecSpace, Kokkos::Serial> )
+        return true;
+#endif
+#if defined(KOKKOS_ENABLE_THREADS)
+    if constexpr (std::is_same_v<ExecSpace, Kokkos::Threads> )
+        return true;
+#endif
+#if defined(KOKKOS_ENABLE_HIP)
+    if constexpr (std::is_same_v<ExecSpace, Kokkos::HIP> )
+        return (Environment::getKokkosDeviceCount<Kokkos::HIP>() == 0)?false:true;
+#endif
+#if defined(KOKKOS_ENABLE_CUDA)
+    if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda> )
+        return (Environment::getKokkosDeviceCount<Kokkos::Cuda>() == 0)?false:true;;
+#endif
+    // Add more execution spaces as needed
+    return false;
+}
+// Explicit template instantiation for supported execution spaces
+template bool Environment::isKokkosExecutionSpaceEnabled<Kokkos::Serial>();
+template bool Environment::isKokkosExecutionSpaceEnabled<Kokkos::Threads>();
+#ifdef KOKKOS_ENABLE_HIP
+template bool Environment::isKokkosExecutionSpaceEnabled<Kokkos::HIP>();
+#endif
+#ifdef KOKKOS_ENABLE_CUDA
+template bool Environment::isKokkosExecutionSpaceEnabled<Kokkos::Cuda>();
+#endif
 
 #if defined(FEELPP_HAS_HARTS)
 
