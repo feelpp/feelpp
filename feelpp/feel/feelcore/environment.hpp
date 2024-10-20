@@ -543,6 +543,49 @@ public:
 
     //@}
 
+    /** @name Kokkos Helper Functions
+    */
+    //@{
+    
+    /**
+     * @brief Print the current Kokkos configuration to the provided output stream.
+     *
+     * This includes information about enabled execution spaces and device properties.
+     *
+     * @param os Output stream to print the configuration.
+     */
+    static void printKokkosConfiguration(std::ostream& os = std::cout);
+
+    /**
+     * @brief Get the number of available Kokkos devices for a specific execution space.
+     *
+     * @tparam ExecSpace Kokkos execution space type (e.g., Kokkos::Serial, Kokkos::Threads, Kokkos::HIP).
+     * @return int Number of available devices. Returns 1 for Serial execution space.
+     */
+    template <typename ExecSpace>
+    static int getKokkosDeviceCount();
+
+    /**
+     * @brief Retrieve detailed information about a specific Kokkos device.
+     *
+     * @tparam ExecSpace Kokkos execution space type.
+     * @param device_id ID of the device to query.
+     * @return std::string Information string about the device.
+     */
+    template <typename ExecSpace>
+    static std::string getKokkosDeviceInfo(int device_id);
+
+    /**
+     * @brief Check if a specific Kokkos execution space is enabled.
+     *
+     * @tparam ExecSpace Kokkos execution space type.
+     * @return bool True if the execution space is enabled; otherwise, false.
+     */
+    template <typename ExecSpace>
+    static bool isKokkosExecutionSpaceEnabled();
+
+    //@}
+
     /** @name  Mutators
      */
     //@{

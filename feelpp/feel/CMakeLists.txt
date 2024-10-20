@@ -109,6 +109,11 @@ if ( MPI_FOUND )
   set_property( TARGET feelpp PROPERTY MPIEXEC_POSTFLAGS ${MPIEXEC_POSTFLAGS} )
 endif()
 
+if ( Kokkos_FOUND)
+  target_link_libraries( feelpp PUBLIC Kokkos::kokkos )
+  target_compile_definitions( feelpp PUBLIC FEELPP_HAS_KOKKOS )
+endif()
+
 message(CHECK_START "[feelpp] configuring python3 development")
 if(Python3_Development_FOUND)
 

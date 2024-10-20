@@ -32,3 +32,5 @@ feelpp_add_application( fsi_3d_g2 SRCS main_fsi.cpp
   )
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_fsi CATEGORY toolboxes/fsi)
+
+add_dependencies(toolboxes feelpp_toolbox_fsi_2d feelpp_toolbox_fsi_3d feelpp_toolbox_fsi_2d_g2 feelpp_toolbox_fsi_3d_g2) 

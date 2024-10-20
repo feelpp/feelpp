@@ -26,6 +26,8 @@ image="feelpp-${component}"
 if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
     image="feelpp"
+elif [ "${component}" = "feelpp-core" ] ; then
+    image="feelpp"    
 fi
 if [ "${component}" = "feelpp-python" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
@@ -36,6 +38,8 @@ echo "--- Building ${image}:${tag}"
 
 if [ "${component}" = "feelpp" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp
+elif [ "${component}" = "feelpp-core" ] ; then
+    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp    
 elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then

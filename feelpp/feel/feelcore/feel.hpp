@@ -468,7 +468,7 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 #else
 #define DVLOG_IF(verboselevel,condition)                                \
     (true || ( !VLOG_IS_ON(verboselevel) && !(condition))) ?            \
-    (void) 0 : google::LogMessageVoidify() & LOG(INFO)
+    (void) 0 : google::logging::internal::LogMessageVoidify() & LOG(INFO)
 #endif // NDEBUG
 
 #endif // DVLOG_IF

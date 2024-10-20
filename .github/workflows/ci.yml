@@ -84,7 +84,7 @@ jobs:
             include:
               - { target: "ubuntu:24.04", continue-on-error: true }
               - { target: "ubuntu:22.04", continue-on-error: false }
-              - { target: "ubuntu:20.04", continue-on-error: true }
+              - { target: "spack:openmpi", continue-on-error: true }
               - { target: "debian:12", continue-on-error: false }
     steps:
       - name: Checkout code
@@ -97,11 +97,11 @@ jobs:
         with:
             submodules: recursive
 
-      - name: Build and Test Feelpp
+      - name: Build and Test Feelpp Core
         id: build-feelpp
         run: |
           echo "Building Feelpp for branch ${{ env.BRANCH }}"
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-core
         env:
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}

@@ -40,3 +40,4 @@ feelpp_add_application(heatfluid SRCS main_heatfluid.cpp
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_heatfluid CATEGORY toolboxes/heatfluid)
 
 
+add_dependencies(toolboxes feelpp_toolbox_heatfluid)

@@ -217,7 +217,7 @@ Application::Application( int argc,
 #endif
 {
     //M_desc.add( Feel::feel_options() );
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    if ( !google::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
@@ -278,7 +278,7 @@ Application::Application( int argc,
 #endif
 
 {
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    if ( !google::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
@@ -343,7 +343,7 @@ Application::Application( AboutData const& ad,
 #endif
 
 {
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    if ( !google::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
@@ -421,7 +421,7 @@ Application::Application( AboutData const& ad )
 #endif
 
 {
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    if ( !google::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
