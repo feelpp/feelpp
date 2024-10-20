@@ -293,6 +293,10 @@ fs::path scratchdir()
 }
 
 
+DEFINE_bool(disable_log, false,"disable logging.");
+DEFINE_int32(log_level_process, 1, "log level: 2 enable logging for all processes, 1 enable only for master 0 disable for all processes");
+DEFINE_int32(no_log, 1, "disable logging. 0 enable logging for all processes, 1 enable only for master 2 disable for all processes");
+
 
 //! Default constructor.
 Environment::Environment()
@@ -2096,7 +2100,7 @@ Environment::startLogging( std::string decorate )
 
 
     // Initialize Google's logging library.
-    if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    if ( !google::IsGoogleLoggingInitialized() )
     {
         if ( FLAGS_no_log )
         {
@@ -2111,7 +2115,7 @@ Environment::startLogging( std::string decorate )
 void
 Environment::stopLogging( bool remove )
 {
-    if ( google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
+    if ( google::IsGoogleLoggingInitialized() )
     {
         google::ShutdownGoogleLogging();
         if ( (remove || Environment::vm().count( "rmlogs" ))  &&
