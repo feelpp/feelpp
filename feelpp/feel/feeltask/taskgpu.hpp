@@ -85,166 +85,266 @@ struct VectorBuffer
 //================================================================================================================================
 
 #ifdef UseHIP
-template <typename ptrtype>
-struct bufferGraphHIP
-{
-    unsigned int size;
-    ptrtype* data;
-    ptrtype* deviceBuffer;
+// Structure to manage a buffer for HIP (Heterogeneous-compute Interface for Portability)
+	template <typename ptrtype>
+	struct bufferGraphHIP
+	{
+		unsigned int size;          // Size of the buffer
+		ptrtype* data;             // Pointer to host memory
+		ptrtype* deviceBuffer;     // Pointer to device memory (GPU)
 
-    void memoryInit( int dim )
-    {
-        size = dim;
-        data = (ptrtype*)malloc( sizeof( ptrtype ) * size );
-    }
+		// Initializes the buffer size and allocates host memory
+		void memoryInit(int dim)
+		{
+			size = dim;  // Set the size of the buffer
+			data = (ptrtype*)malloc(sizeof(ptrtype) * size); // Allocate host memory
+		}
 
-    void memmovHostToDevice()
-    {
-        hipMalloc( (void**)&deviceBuffer, sizeof( ptrtype ) * size );
-        hipMemcpy( deviceBuffer, data, sizeof( ptrtype ) * size, hipMemcpyHostToDevice );
-    }
+		// Transfers data from host to device memory
+		void memmovHostToDevice()
+		{
+			hipMalloc((void**)&deviceBuffer, sizeof(ptrtype) * size); // Allocate device memory
+			hipMemcpy(deviceBuffer, data, sizeof(ptrtype) * size, hipMemcpyHostToDevice); // Copy data from host to device
+		}
 
-    void memmovDeviceToHost()
-    {
-        hipMemcpy( data, deviceBuffer, sizeof( ptrtype ) * size, hipMemcpyDeviceToHost );
-        hipFree( deviceBuffer );
-    }
-};
+		// Transfers data from device to host memory and frees device memory
+		void memmovDeviceToHost()
+		{
+			hipMemcpy(data, deviceBuffer, sizeof(ptrtype) * size, hipMemcpyDeviceToHost); // Copy data from device to host
+			hipFree(deviceBuffer); // Free the allocated device memory
+		}
+	};
 #endif
 
 #ifdef UseCUDA
-template <typename ptrtype>
-struct bufferGraphCUDA
-{
-    unsigned int size;
-    ptrtype* data;
-    ptrtype* deviceBuffer;
+	// Structure to manage a buffer for CUDA (Compute Unified Device Architecture)
+	template <typename ptrtype>
+	struct bufferGraphCUDA
+	{
+		unsigned int size;          // Size of the buffer
+		ptrtype* data;             // Pointer to host memory
+		ptrtype* deviceBuffer;     // Pointer to device memory (GPU)
 
-    void memoryInit( int dim )
-    {
-        size = dim;
-        data = (ptrtype*)malloc( sizeof( ptrtype ) * size );
-    }
+		// Initializes the buffer size and allocates host memory
+		void memoryInit(int dim)
+		{
+			size = dim;  // Set the size of the buffer
+			data = (ptrtype*)malloc(sizeof(ptrtype) * size); // Allocate host memory
+		}
 
-    void memmovHostToDevice()
-    {
-        cudaMalloc( (void**)&deviceBuffer, sizeof( ptrtype ) * size );
-        cudaMemcpy( deviceBuffer, data, sizeof( ptrtype ) * size, cudaMemcpyHostToDevice );
-    }
+		// Transfers data from host to device memory
+		void memmovHostToDevice()
+		{
+			cudaMalloc((void**)&deviceBuffer, sizeof(ptrtype) * size); // Allocate device memory
+			cudaMemcpy(deviceBuffer, data, sizeof(ptrtype) * size, cudaMemcpyHostToDevice); // Copy data from host to device
+		}
 
-    void memmovDeviceToHost()
-    {
-        cudaMemcpy( data, deviceBuffer, sizeof( ptrtype ) * size, cudaMemcpyDeviceToHost );
-        cudaFree( deviceBuffer );
-    }
-};
+		// Transfers data from device to host memory and frees device memory
+		void memmovDeviceToHost()
+		{
+			cudaMemcpy(data, deviceBuffer, sizeof(ptrtype) * size, cudaMemcpyDeviceToHost); // Copy data from device to host
+			cudaFree(deviceBuffer); // Free the allocated device memory
+		}
+	};
 #endif
 
 #ifdef UseHIP
-template <typename ptrtype>
-struct bufferGraphUnifiedHIP
-{
-    unsigned int size;
-    ptrtype* data;
+	// Structure to manage a unified buffer for HIP using managed memory (accessible from both host and device)
+	template <typename ptrtype>
+	struct bufferGraphUnifiedHIP
+	{
+		unsigned int size;          // Size of the unified buffer
+		ptrtype* data;             // Pointer to managed memory
 
-    void memoryInit( int dim )
-    {
-        size = dim;
-        hipMallocManaged( &data, sizeof( ptrtype ) * size );
-    }
+		// Initializes the unified buffer with specified dimensions using managed memory allocation
+		void memoryInit(int dim)
+		{
+			size = dim;  // Set the size of the buffer
+			hipMallocManaged(&data, sizeof(ptrtype) * size); // Allocate unified managed memory
+		}
 
-    void memoryInit( int dim, ptrtype v )
-    {
-        size = dim;
-        hipMallocManaged( &data, sizeof( ptrtype ) * size );
-        for ( long int i = 0; i < dim; i++ )
-        {
-            data[i] = v;
-        }
-    }
-};
+		// Initializes the unified buffer with specified dimensions and fills it with a given value using managed memory allocation
+		void memoryInit(int dim, ptrtype v)
+		{
+			size = dim;  // Set the size of the buffer
+			hipMallocManaged(&data, sizeof(ptrtype) * size); // Allocate unified managed memory
+
+			// Fill the allocated buffer with the specified value 
+			for (long int i = 0; i < dim; i++)
+			{
+				data[i] = v;
+			}
+		}
+	};
 #endif
 
 #ifdef UseCUDA
-template <typename ptrtype>
-struct bufferGraphUnifiedCUDA
-{
-    unsigned int size;
-    ptrtype* data;
+	// Structure to manage a unified buffer for CUDA using managed memory (accessible from both host and device)
+	template <typename ptrtype>
+	struct bufferGraphUnifiedCUDA
+	{
+		unsigned int size;          // Size of the unified buffer
+		ptrtype* data;             // Pointer to managed memory
 
-    void memoryInit( int dim )
-    {
-        size = dim;
-        cudaMallocManaged( &data, sizeof( ptrtype ) * size );
-    }
+		// Initializes the unified buffer with specified dimensions using managed memory allocation 
+		void memoryInit(int dim)
+		{
+			size = dim;  // Set the size of the buffer 
+			cudaMallocManaged(&data, sizeof(ptrtype) * size); // Allocate unified managed memory 
+		}
 
-    void memoryInit( int dim, ptrtype v )
-    {
-        size = dim;
-        cudaMallocManaged( &data, sizeof( ptrtype ) * size );
-        for ( long int i = 0; i < dim; i++ )
-        {
-            data[i] = v;
-        }
-    }
-};
+		// Initializes the unified buffer with specified dimensions and fills it with a given value using managed memory allocation 
+		void memoryInit(int dim, ptrtype v)
+		{
+			size = dim;  // Set the size of the buffer 
+			cudaMallocManaged(&data, sizeof(ptrtype) * size); // Allocate unified managed memory 
+
+			// Fill the allocated buffer with the specified value 
+			for (long int i = 0; i < dim; i++)
+			{
+				data[i] = v;
+			}
+		}
+	};
 #endif
+
+
 
 // GPU KERNEL FUNCTIONS
 
 #if defined( UseHIP ) || defined( UseCUDA )
-template <typename Kernel, typename Input, typename Output>
-__global__ void OP_IN_KERNEL_GPU_1D( const Kernel kernel_function, int n, Input* in, Output* out )
-{
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    if ( i < n )
-    {
-        kernel_function( i, in, out );
-    }
-}
 
-template <typename Kernel, typename Input>
-__global__ void OP_IN_KERNEL_LAMBDA_GPU_1D( Kernel op, Input* A, int nb )
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( idx < nb )
-        op( idx, A );
-    //__syncthreads();
-}
+/**
+ * @brief A generic 1D GPU kernel function that applies a kernel operation on input data.
+ *
+ * @tparam Kernel The type of the kernel function to be executed.
+ * @tparam Input The type of input data.
+ * @tparam Output The type of output data.
+ * @param kernel_function The function to apply to each element.
+ * @param n The total number of elements to process.
+ * @param in Pointer to the input data array.
+ * @param out Pointer to the output data array.
+ */
+	template <typename Kernel, typename Input, typename Output>
+	__global__ void OP_IN_KERNEL_GPU_1D(const Kernel kernel_function, int n, Input* in, Output* out)
+	{
+		// Calculate the global thread index
+		int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-template <typename Kernel, typename Input>
-__global__ void OP_IN_KERNEL_LAMBDA_GPU_1D_3I( Kernel op, Input* R, Input* A, Input* B, int nb )
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( idx < nb )
-        op( idx, R, A, B );
-    //__syncthreads();
-}
+		// Check if the index is within bounds
+		if (i < n)
+		{
+			// Execute the kernel function for the current index
+			kernel_function(i, in, out);
+		}
+	}
 
-template <typename Kernel, typename Input>
-__global__ void OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D( Kernel op, Input* A, int iBegin, int iEnd )
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( ( idx >= iBegin ) && ( idx < iEnd ) )
-        op( idx, A );
-    //__syncthreads();
-}
+	/**
+	 * @brief A 1D GPU kernel that applies a lambda operation on an input array.
+	 *
+	 * @tparam Kernel The type of the lambda operation.
+	 * @tparam Input The type of input data.
+	 * @param op The lambda operation to apply.
+	 * @param A Pointer to the input data array.
+	 * @param nb The number of elements to process.
+	 */
+	template <typename Kernel, typename Input>
+	__global__ void OP_IN_KERNEL_LAMBDA_GPU_1D(Kernel op, Input* A, int nb)
+	{
+		// Calculate the global thread index
+		int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-template <typename Kernel, typename Input>
-__global__ void OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D( Kernel op, Input* A, int offset )
-{
-    int idx = offset + blockIdx.x * blockDim.x + threadIdx.x;
-    op( idx, A );
-    //__syncthreads();
-}
+		// Check if the index is within bounds
+		if (idx < nb)
+			op(idx, A); // Apply the lambda operation
+		//__syncthreads(); // Uncomment for synchronization if needed
+	}
 
-template <typename Kernel, typename Input>
-__global__ void OP_IN_KERNEL_LAMBDA_STREAM_GPU_1D_3I( Kernel op, Input* R, Input* A, Input* B, int offset )
-{
-    int idx = offset + blockIdx.x * blockDim.x + threadIdx.x;
-    op( idx, R, A, B );
-}
-#endif
+	/**
+	 * @brief A 1D GPU kernel that applies a lambda operation on three input arrays.
+	 *
+	 * @tparam Kernel The type of the lambda operation.
+	 * @tparam Input The type of input data.
+	 * @param op The lambda operation to apply.
+	 * @param R Pointer to the first input data array (result).
+	 * @param A Pointer to the second input data array.
+	 * @param B Pointer to the third input data array.
+	 * @param nb The number of elements to process.
+	 */
+	template <typename Kernel, typename Input>
+	__global__ void OP_IN_KERNEL_LAMBDA_GPU_1D_3I(Kernel op, Input* R, Input* A, Input* B, int nb)
+	{
+		// Calculate the global thread index
+		int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+		// Check if the index is within bounds
+		if (idx < nb)
+			op(idx, R, A, B); // Apply the lambda operation with three inputs
+		//__syncthreads(); // Uncomment for synchronization if needed
+	}
+
+	/**
+	 * @brief A 1D GPU kernel that applies a lambda operation on an input array within specified bounds.
+	 *
+	 * @tparam Kernel The type of the lambda operation.
+	 * @tparam Input The type of input data.
+	 * @param op The lambda operation to apply.
+	 * @param A Pointer to the input data array.
+	 * @param iBegin Starting index for processing.
+	 * @param iEnd Ending index for processing (exclusive).
+	 */
+	template <typename Kernel, typename Input>
+	__global__ void OP_IN_KERNEL_GRAPH_LAMBDA_GPU_1D(Kernel op, Input* A, int iBegin, int iEnd)
+	{
+		// Calculate the global thread index
+		int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+		// Check if the index is within specified bounds
+		if ((idx >= iBegin) && (idx < iEnd))
+			op(idx, A); // Apply the lambda operation within bounds
+		//__syncthreads(); // Uncomment for synchronization if needed
+	}
+
+	/**
+	 * @brief A 1D GPU kernel that applies a lambda operation on an input array with an offset for indexing.
+	 *
+	 * @tparam Kernel The type of the lambda operation.
+	 * @tparam Input The type of input data.
+	 * @param op The lambda operation to apply.
+	 * @param A Pointer to the input data array.
+	 * @param offset Offset added to calculate global indices for processing elements.
+	 */
+	template <typename Kernel, typename Input>
+	__global__ void OP_IN_KERNEL_GRAPH_LAMBDA_STREAM_GPU_1D(Kernel op, Input* A, int offset)
+	{
+		// Calculate global thread index with an offset
+		int idx = offset + blockIdx.x * blockDim.x + threadIdx.x;
+
+		op(idx, A); // Apply the lambda operation at calculated index
+		//__syncthreads(); // Uncomment for synchronization if needed
+	}
+
+	/**
+	 * @brief A 1D GPU kernel that applies a lambda operation on three input arrays with an offset for indexing.
+	 *
+	 * @tparam Kernel The type of the lambda operation.
+	 * @tparam Input The type of input data.
+	 * @param op The lambda operation to apply.
+	 * @param R Pointer to the first input data array (result).
+	 * @param A Pointer to the second input data array.
+	 * @param B Pointer to the third input data array.
+	 * @param offset Offset added to calculate global indices for processing elements.
+	 */
+	template <typename Kernel, typename Input>
+	__global__ void OP_IN_KERNEL_LAMBDA_STREAM_GPU_1D_3I(Kernel op, Input* R, Input* A, Input* B, int offset)
+	{
+		// Calculate global thread index with an offset
+		int idx = offset + blockIdx.x * blockDim.x + threadIdx.x;
+
+		op(idx, R, A, B); // Apply the lambda operation at calculated index with three inputs
+	}
+
+#endif // End of HIP or CUDA check
 
 // CLASS Task: Provide to manipulate graph Hip/Cuda hybrid system Explicit and Implicit
 // GRAPH EXPLICIT
@@ -254,124 +354,223 @@ namespace Taskgpu
 
 class SingleTask
 {
-  private:
-    std::string M_FileName;
-    bool M_qSave;
-    int M_numType; // 1:HIP 2:CUDA
-    int M_nbStreams;
-    bool M_qViewInfo;
-    int M_block_size;
-    int M_numModel; // 1:Serial 2:Stream
-    bool M_qUsedUnifiedMemory;
-    int M_solveLevel; // will be used in the future
-    long int M_time_laps;
-    int M_nbGPUused;
+    private:
+			// File name for saving task-related data
+			std::string M_FileName;
 
-    std::chrono::steady_clock::time_point M_t_begin, M_t_end;
+			// Flag indicating whether to save task results
+			bool M_qSave;
 
-    template <typename Kernel, typename Input>
-    void serial_hip( const Kernel& kernel_function,
-                     int numElems, Input* buffer );
+			// Type of processing: 1 for HIP, 2 for CUDA
+			int M_numType;
 
-    template <typename Kernel, typename Input>
-    void serial_cuda( const Kernel& kernel_function,
-                      int numElems, Input* buffer );
+			// Number of streams to be used for concurrent execution
+			int M_nbStreams;
 
-    template <typename Kernel, typename Input>
-    void stream_hip( const Kernel& kernel_function,
-                     int numElems, Input* buffer );
+			// Flag for viewing information about the task (for debugging)
+			bool M_qViewInfo;
 
-    template <typename Kernel, typename Input>
-    void stream_cuda( const Kernel& kernel_function,
-                      int numElems, Input* buffer );
+			// Size of each block in GPU execution
+			int M_block_size;
 
-    template <typename Kernel, typename Input>
-    void serial_hip_3I( const Kernel& kernel_function,
-                        int numElems,
-                        Input* bufferR, Input* bufferA, Input* bufferB );
+			// Model type for execution: 1 for Serial, 2 for Stream
+			int M_numModel;
 
-    template <typename Kernel, typename Input>
-    void serial_cuda_3I( const Kernel& kernel_function,
-                         int numElems,
-                         Input* bufferR, Input* bufferA, Input* bufferB );
+			// Flag indicating whether unified memory is being used
+			bool M_qUsedUnifiedMemory;
 
-    template <typename Kernel, typename Input>
-    void stream_hip_3I( const Kernel& kernel_function,
-                        int numElems,
-                        Input* bufferR, Input* bufferA, Input* bufferB );
+			// Level of solving complexity (to be used in future implementations)
+			int M_solveLevel;
 
-    template <typename Kernel, typename Input>
-    void stream_cuda_3I( const Kernel& kernel_function,
-                         int numElems,
-                         Input* bufferR, Input* bufferA, Input* bufferB );
+			// Variable to track elapsed time in long format
+			long int M_time_laps;
 
-    template <typename Kernel, typename Input>
-    void serial_hip_multi_GPU( const Kernel& kernel_function,
-                               int numElems,
-                               Input* buffer );
+			// Number of GPUs used for execution
+			int M_nbGPUused;
 
-    template <typename Kernel, typename Input>
-    void serial_cuda_multi_GPU( const Kernel& kernel_function,
-                                int numElems,
-                                Input* buffer );
+			// Time points for measuring execution duration
+			std::chrono::steady_clock::time_point M_t_begin, M_t_end;
 
-    template <typename Kernel, typename Input>
-    void serial_hip_3I_multi_GPU( const Kernel& kernel_function,
-                                  int numElems,
-                                  Input* bufferR, Input* bufferA, Input* bufferB );
+			// Private method to execute a kernel function serially using HIP
+			template <typename Kernel, typename Input>
+			void serial_hip(const Kernel& kernel_function,
+				int numElems, Input* buffer);
 
-    template <typename Kernel, typename Input>
-    void serial_cuda_3I_multi_GPU( const Kernel& kernel_function,
-                                   int numElems,
-                                   Input* bufferR, Input* bufferA, Input* bufferB );
+			// Private method to execute a kernel function serially using CUDA
+			template <typename Kernel, typename Input>
+			void serial_cuda(const Kernel& kernel_function,
+				int numElems, Input* buffer);
 
-    template <typename Kernel, typename Input>
-    void serial_hip_multi_GPU_Vers2( const Kernel& kernel_function,
-                                     int numElems,
-                                     Input* buffer );
+			// Private method to execute a kernel function using streams with HIP
+			template <typename Kernel, typename Input>
+			void stream_hip(const Kernel& kernel_function,
+				int numElems, Input* buffer);
 
-    template <typename Kernel, typename Input>
-    void serial_cuda_multi_GPU_Vers2( const Kernel& kernel_function,
-                                      int numElems,
-                                      Input* buffer );
+			// Private method to execute a kernel function using streams with CUDA
+			template <typename Kernel, typename Input>
+			void stream_cuda(const Kernel& kernel_function,
+				int numElems, Input* buffer);
 
-  public:
-    void setNumType( int v ) { M_numType = v; }
-    void setNumModel( int v ) { M_numModel = v; }
-    void setNbStreams( int v ) { M_nbStreams = v; }
-    void setViewInfo( bool b ) { M_qViewInfo = b; }
-    void setFileName( std::string s ) { M_FileName = s; }
-    void setSave( bool b ) { M_qSave = b; }
-    void setNbBlock( int v ) { M_block_size = v; }
-    void setDevice( int v );
-    void setUnifiedMemory( bool b ) { M_qUsedUnifiedMemory = b; }
-    void setSolveLevel( int v ) { M_solveLevel = v; }
-    void setNbGPUused( int v ) { M_nbGPUused = v; }
+			// Private method for executing a kernel with three inputs serially using HIP
+			template <typename Kernel, typename Input>
+			void serial_hip_3I(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR, Input* bufferA, Input* bufferB);
 
-    int getNumType() const { return ( M_numType ); }
-    int getNumModel() const { return ( M_numModel ); }
-    int getNbStreams() const { return ( M_nbStreams ); }
-    int getSolveLevel() const { return ( M_solveLevel ); }
-    int getNbGPUused() const { return ( M_nbGPUused ); }
-    bool isSave() const { return ( M_qSave ); }
-    bool isUnifiedMemory() const { return ( M_qUsedUnifiedMemory ); }
+			// Private method for executing a kernel with three inputs serially using CUDA
+			template <typename Kernel, typename Input>
+			void serial_cuda_3I(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR, Input* bufferA, Input* bufferB);
 
-    long int getTimeLaps() const { return ( M_time_laps ); }
+			// Private method for executing a kernel with three inputs using streams with HIP
+			template <typename Kernel, typename Input>
+			void stream_hip_3I(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR, Input* bufferA, Input* bufferB);
 
-    SingleTask();
-    ~SingleTask();
+			// Private method for executing a kernel with three inputs using streams with CUDA
+			template <typename Kernel, typename Input>
+			void stream_cuda_3I(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR, Input* bufferA, Input* bufferB);
 
-    template <typename Kernel, typename Input>
-    void run( const Kernel& kernel_function,
-              int numElems,
-              Input* buffer );
+			// Private method for executing a kernel serially on multiple GPUs using HIP 
+			template <typename Kernel, typename Input>
+			void serial_hip_multi_GPU(const Kernel& kernel_function,
+				int numElems,
+				Input* buffer);
 
-    template <typename Kernel, typename Input>
-    void run( const Kernel& kernel_function,
-              int numElems,
-              Input* bufferR, Input* bufferA, Input* bufferB );
-    void debriefing();
-    void close();
+			// Private method for executing a kernel serially on multiple GPUs using CUDA 
+			template <typename Kernel, typename Input>
+			void serial_cuda_multi_GPU(const Kernel& kernel_function,
+				int numElems,
+				Input* buffer);
+
+			// Private method for executing a kernel with three inputs on multiple GPUs using HIP 
+			template <typename Kernel, typename Input>
+			void serial_hip_3I_multi_GPU(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR, Input* bufferA, Input* bufferB);
+
+			// Private method for executing a kernel with three inputs on multiple GPUs using CUDA 
+			template <typename Kernel, typename Input>
+			void serial_cuda_3I_multi_GPU(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR, Input* bufferA, Input* bufferB);
+
+			// Private method for executing a multi-GPU version 2 kernel function using HIP 
+			template <typename Kernel, typename Input>
+			void serial_hip_multi_GPU_Vers2(const Kernel& kernel_function,
+				int numElems,
+				Input* buffer);
+
+			// Private method for executing a multi-GPU version 2 kernel function using CUDA 
+			template <typename Kernel, typename Input>
+			void serial_cuda_multi_GPU_Vers2(const Kernel& kernel_function,
+				int numElems,
+				Input* buffer);
+
+		public:
+
+			// Sets the processing type (HIP or CUDA)
+			void setNumType(int v) { M_numType = v; }
+
+			// Sets the model type (Serial or Stream)
+			void setNumModel(int v) { M_numModel = v; }
+
+			// Sets the number of streams to be used 
+			void setNbStreams(int v) { M_nbStreams = v; }
+
+			// Sets the flag to view information about the task (for debugging)
+			void setViewInfo(bool b) { M_qViewInfo = b; }
+
+			// Sets the file name for saving task-related data 
+			void setFileName(std::string s) { M_FileName = s; }
+
+			// Sets the flag to save task results 
+			void setSave(bool b) { M_qSave = b; }
+
+			// Sets the block size for GPU execution 
+			void setNbBlock(int v) { M_block_size = v; }
+
+			// Sets the device identifier (HIP or CUDA)
+			void setDevice(int v);
+
+			// Sets the flag indicating whether unified memory is being used 
+			void setUnifiedMemory(bool b) { M_qUsedUnifiedMemory = b; }
+
+			// Sets the level of solving complexity (to be used in future implementations)
+			void setSolveLevel(int v) { M_solveLevel = v; }
+
+			// Sets the number of GPUs used for execution 
+			void setNbGPUused(int v) { M_nbGPUused = v; }
+
+			// Returns the processing type (HIP or CUDA)
+			int getNumType() const { return (M_numType); }
+
+			// Returns the model type (Serial or Stream)
+			int getNumModel() const { return (M_numModel); }
+
+			// Returns the number of streams currently set for execution 
+			int getNbStreams() const { return (M_nbStreams); }
+
+			// Returns the level of solving complexity 
+			int getSolveLevel() const { return (M_solveLevel); }
+
+			// Returns the number of GPUs currently being used 
+			int getNbGPUused() const { return (M_nbGPUused); }
+
+			// Checks if the save flag is set 
+			bool isSave() const { return (M_qSave); }
+
+			// Checks if unified memory is being used 
+			bool isUnifiedMemory() const { return (M_qUsedUnifiedMemory); }
+
+			// Returns elapsed time in long format since task started or last reset 
+			long int getTimeLaps() const { return (M_time_laps); }
+
+			// Constructor: Initializes a SingleTask object with default values
+			SingleTask();
+
+			// Destructor: Cleans up resources when a SingleTask object is destroyed
+			~SingleTask();
+
+			/**
+			   * Runs a specified kernel function on data in a single input buffer.
+			   * @tparam Kernel The type of the kernel function.
+			   * @tparam Input The type of input data.
+			   * @param kernel_function The function to run as a GPU kernel.
+			   * @param numElems The number of elements to process.
+			   * @param buffer Pointer to input data.
+			   */
+			template <typename Kernel, typename Input>
+			void run(const Kernel& kernel_function,
+				int numElems,
+				Input* buffer);
+
+			/**
+			   * Runs a specified kernel function on data in three input buffers.
+			   * @tparam Kernel The type of the kernel function.
+			   * @tparam Input The type of input data.
+			   * @param kernel_function The function to run as a GPU kernel.
+			   * @param numElems The number of elements to process.
+			   * @param bufferR Pointer to first input data.
+			   * @param bufferA Pointer to second input data.
+			   * @param bufferB Pointer to third input data.
+			   */
+			template <typename Kernel, typename Input>
+			void run(const Kernel& kernel_function,
+				int numElems,
+				Input* bufferR,
+				Input* bufferA,
+				Input* bufferB);
+
+			// Outputs debugging information about task execution 
+			void debriefing();
+
+			// Closes the task and releases resources 
+			void close();
 };
 
 SingleTask::SingleTask()
@@ -1402,98 +1601,152 @@ void SingleTask::stream_cuda_3I( const Kernel& kernel_function,
 
 class Task
 {
-  private:
-    std::string M_FileName;
-    int M_nbTh;
-    int M_numBlocksGPU;
-    int M_nThPerBckGPU;
-    bool M_q_graph;
-    bool M_qViewInfo;
-    bool M_qSave;
-    long int M_time_laps;
-    bool M_qDeviceReset;
-    int M_numType;
+    private:
+  		// File name for saving task-related data
+		std::string M_FileName;
 
-    std::vector<int> M_ListGraphDependencies;
-    std::chrono::steady_clock::time_point M_t_begin, M_t_end;
+		// Number of threads to be used in the task
+		int M_nbTh;
 
-//#if defined(COMPILE_WITH_HIP) && defined(UseHIP)
-#ifdef UseHIP
-    hipGraph_t hip_graph;
-    hipGraphExec_t hip_graphExec;
-    hipStream_t hip_graphStream;
-    hipKernelNodeParams hip_nodeParams;
-    std::vector<hipGraphNode_t> M_hipGraphNode_t;
+		// Number of blocks to be used on the GPU
+		int M_numBlocksGPU;
+
+		// Number of threads per block on the GPU
+		int M_nThPerBckGPU;
+
+		// Flag indicating whether a graph has been created
+		bool M_q_graph;
+
+		// Flag for viewing information about the task (for debugging)
+		bool M_qViewInfo;
+
+		// Flag indicating whether to save task results
+		bool M_qSave;
+
+		// Variable to track elapsed time in long format
+		long int M_time_laps;
+
+		// Flag indicating if the device needs to be reset
+		bool M_qDeviceReset;
+
+		// Type identifier for the task (e.g., different processing types)
+		int M_numType;
+
+		// List of graph dependencies for managing execution order
+		std::vector<int> M_ListGraphDependencies;
+
+		// Time points for measuring execution duration
+		std::chrono::steady_clock::time_point M_t_begin, M_t_end;
+
+#if defined(COMPILE_WITH_HIP) && defined(UseHIP)
+		// HIP-specific graph and execution objects
+		hipGraph_t hip_graph;                // Graph representation for HIP operations
+		hipGraphExec_t hip_graphExec;        // Executable graph representation for HIP operations
+		hipStream_t hip_graphStream;         // Stream for executing HIP graphs
+		hipKernelNodeParams hip_nodeParams;   // Parameters for kernel nodes in HIP graphs
+		std::vector<hipGraphNode_t> M_hipGraphNode_t; // Vector to store HIP graph nodes
 #endif
 
 #ifdef UseCUDA
-    cudaGraph_t cuda_graph;
-    cudaGraphExec_t cuda_graphExec;
-    cudaStream_t cuda_graphStream;
-    cudaKernelNodeParams cuda_nodeParams;
-    std::vector<cudaGraphNode_t> M_cudaGraphNode_t;
+		// CUDA-specific graph and execution objects
+		cudaGraph_t cuda_graph;              // Graph representation for CUDA operations
+		cudaGraphExec_t cuda_graphExec;      // Executable graph representation for CUDA operations
+		cudaStream_t cuda_graphStream;       // Stream for executing CUDA graphs
+		cudaKernelNodeParams cuda_nodeParams; // Parameters for kernel nodes in CUDA graphs
+		std::vector<cudaGraphNode_t> M_cudaGraphNode_t; // Vector to store CUDA graph nodes
 #endif
 
-  public:
-    Task();
-    ~Task();
+	public:
+		// Constructor: Initializes a Task object with default values
+		Task();
 
-    void setSave( bool b )
-    {
-        M_qSave = b;
-    }
-    void setViewInfo( bool b )
-    {
-        M_qViewInfo = b;
-    }
-    void setDeviceReset( bool b )
-    {
-        M_qDeviceReset = b;
-    }
-    void setNumType( int v )
-    {
-        M_numType = v;
-    }
+		// Destructor: Cleans up resources when a Task object is destroyed
+		~Task();
 
-    void setDeviceHIP( int v );
-    void setDeviceCUDA( int v );
-    void setFileName( std::string s )
-    {
-        M_FileName = s;
-    }
-    int getNumType() const
-    {
-        return ( M_numType );
-    }
-    bool isSave() const
-    {
-        return ( M_qSave );
-    }
-    bool isDeviceReset() const
-    {
-        return ( M_qDeviceReset );
-    }
+		// Sets the flag to save task results 
+		void setSave(bool b)
+		{
+			M_qSave = b;
+		}
 
-    void open( int nbBlock, int NbTh );
+		// Sets the flag to view information about the task (for debugging)
+		void setViewInfo(bool b)
+		{
+			M_qViewInfo = b;
+		}
 
-    template <typename Kernel, typename Input, typename Output>
-    void add_hip( const Kernel& kernel_function,
-                  int numElems,
-                  int iBegin, int iEnd,
-                  Input* buffer,
-                  Output* hostbuffer,
-                  std::vector<int> links );
+		// Sets the device reset flag (to control device state)
+		void setDeviceReset(bool b)
+		{
+			M_qDeviceReset = b;
+		}
 
-    template <typename Kernel, typename Input, typename Output>
-    void add_cuda( const Kernel& kernel_function,
-                   int numElems,
-                   int iBegin, int iEnd,
-                   Input* buffer,
-                   Output* hostbuffer,
-                   std::vector<int> links );
-    void run();
-    void close();
-    void debriefing();
+		// Sets the type identifier for this task 
+		void setNumType(int v)
+		{
+			M_numType = v;
+		}
+
+		// Sets the device identifier for HIP processing 
+		void setDeviceHIP(int v);
+
+		// Sets the device identifier for CUDA processing 
+		void setDeviceCUDA(int v);
+
+		// Sets the file name for saving task-related data 
+		void setFileName(std::string s)
+		{
+			M_FileName = s;
+		}
+
+		// Returns the type identifier for this task 
+		int getNumType() const
+		{
+			return (M_numType);
+		}
+
+		// Checks if the save flag is set 
+		bool isSave() const
+		{
+			return (M_qSave);
+		}
+
+		// Checks if the device reset flag is set 
+		bool isDeviceReset() const
+		{
+			return (M_qDeviceReset);
+		}
+
+		// Opens a task with specified number of blocks and threads 
+		void open(int nbBlock, int NbTh);
+
+		// Adds a HIP kernel function to the task with specified parameters 
+		template <typename Kernel, typename Input, typename Output>
+		void add_hip(const Kernel& kernel_function,
+			int numElems,
+			int iBegin, int iEnd,
+			Input* buffer,
+			Output* hostbuffer,
+			std::vector<int> links);
+
+		// Adds a CUDA kernel function to the task with specified parameters 
+		template <typename Kernel, typename Input, typename Output>
+		void add_cuda(const Kernel& kernel_function,
+			int numElems,
+			int iBegin, int iEnd,
+			Input* buffer,
+			Output* hostbuffer,
+			std::vector<int> links);
+
+		// Executes the added tasks or kernels 
+		void run();
+
+		// Closes the task and releases resources 
+		void close();
+
+		// Outputs debugging information about task execution 
+		void debriefing();
+
 };
 
 Task::Task()
@@ -2055,30 +2308,57 @@ namespace Taskgpui
 
 struct Task
 {
-    enum class state_t
-    {
-        capture,
-        update
-    };
-    void add_kernel_node( size_t key, hipKernelNodeParams params, hipStream_t s );
-    void update_kernel_node( size_t key, hipKernelNodeParams params );
-    state_t state() { return M_state; }
-    ~Task();
+		// Enumeration to represent the state of the task (capturing or updating)
+		enum class state_t
+		{
+			capture, // State when capturing a new graph
+			update   // State when updating an existing graph
+		};
 
-  private:
-    std::unordered_map<size_t, hipGraphNode_t> _node_map;
-    state_t M_state;
-    hipGraph_t M_graph;
-    hipGraphExec_t M_graph_exec;
-    bool M_qInstantiated = false;
-    static void begin_capture( hipStream_t stream );
-    void end_capture( hipStream_t stream );
-    void launch_graph( hipStream_t stream );
+		// Adds a kernel node to the graph with specified parameters and stream
+		void add_kernel_node(size_t key, hipKernelNodeParams params, hipStream_t s);
 
-  public:
-    bool _always_recapture = false;
-    template <class Obj>
-    void wrap( Obj& o, hipStream_t stream );
+		// Updates an existing kernel node with new parameters
+		void update_kernel_node(size_t key, hipKernelNodeParams params);
+
+		// Returns the current state of the task
+		state_t state() { return M_state; }
+
+		// Destructor: Cleans up resources when a Task object is destroyed
+		~Task();
+
+	private:
+		// Map to store kernel nodes with their associated keys
+		std::unordered_map<size_t, hipGraphNode_t> _node_map;
+
+		// Current state of the task (capture or update)
+		state_t M_state;
+
+		// Graph representation for HIP operations
+		hipGraph_t M_graph;
+
+		// Executable graph representation for HIP operations
+		hipGraphExec_t M_graph_exec;
+
+		// Flag indicating if the graph has been instantiated
+		bool M_qInstantiated = false;
+
+		// Begins capturing commands into a graph on the specified stream
+		static void begin_capture(hipStream_t stream);
+
+		// Ends capturing commands and finalizes the graph on the specified stream
+		void end_capture(hipStream_t stream);
+
+		// Launches the instantiated graph on the specified stream
+		void launch_graph(hipStream_t stream);
+
+	public:
+		// Flag to control whether to always recapture the graph
+		bool _always_recapture = false;
+
+		// Wraps an object and captures or updates the task based on its state
+		template <class Obj>
+		void wrap(Obj& o, hipStream_t stream);
 };
 
 Task::~Task()
@@ -2199,81 +2479,136 @@ namespace Taskgpuu
 
 template <typename T>
 class Task
-{
-  private:
-    int M_numBlocksGPU;
-    int M_nbThGPU;
-    bool M_isFree;
-    bool M_qViewInfo;
-    bool M_qDeviceReset;
-    long int M_time_laps;
-    float hip_milliseconds;
-    float cuda_milliseconds;
-    int M_nbStreams;
-    int M_numModel;
-    int M_numType;
-    std::chrono::steady_clock::time_point M_t_begin, M_t_end;
+	{
+	private:
+		// Number of blocks to be used on the GPU
+		int M_numBlocksGPU;
 
-    template <typename Kernel>
-    void serial( const Kernel& kernel_function );
+		// Number of threads per block on the GPU
+		int M_nbThGPU;
 
-    template <typename Kernel>
-    void stream( const Kernel& kernel_function );
+		// Flag indicating if resources are free for reuse
+		bool M_isFree;
 
-  public:
+		// Flag for viewing information about the task
+		bool M_qViewInfo;
+
+		// Flag indicating if the device needs to be reset
+		bool M_qDeviceReset;
+
+		// Variable to track elapsed time in long format
+		long int M_time_laps;
+
+		// Variables to store elapsed time in milliseconds for HIP and CUDA
+		float hip_milliseconds;
+		float cuda_milliseconds;
+
+		// Number of streams for concurrent execution
+		int M_nbStreams;
+
+		// Number of models being processed
+		int M_numModel;
+
+		// Type identifier for the task (e.g., different processing types)
+		int M_numType;
+
+		// Time points for measuring execution duration
+		std::chrono::steady_clock::time_point M_t_begin, M_t_end;
+
+		// Private method for executing kernels serially
+		template <typename Kernel>
+		void serial(const Kernel& kernel_function);
+
+		// Private method for executing kernels using streams for concurrency
+		template <typename Kernel>
+		void stream(const Kernel& kernel_function);
+
+	public:
 #ifdef UseHIP
-    bufferGraphUnifiedHIP<T> BUFFER_HIP;
+		// Buffer for Unified Memory management on HIP devices
+		bufferGraphUnifiedHIP<T> BUFFER_HIP;
 #endif
+
 #ifdef UseCUDA
-    bufferGraphUnifiedHIP<T> BUFFER_CUDA;
+		// Buffer for Unified Memory management on CUDA devices
+		bufferGraphUnifiedHIP<T> BUFFER_CUDA;
 #endif
 
-    Task();
-    ~Task();
+		// Constructor: Initializes a Task object
+		Task();
 
-    void open( int nbBlock, int NbTh );
-    void close();
-    void setViewInfo( bool b )
-    {
-        M_qViewInfo = b;
-    }
-    void setDeviceReset( bool b )
-    {
-        M_qDeviceReset = b;
-    }
-    void setNbStreams( int v )
-    {
-        M_nbStreams = v;
-    }
-    void setDeviceHIP( int v );
-    void setDeviceCUDA( int v );
-    void setNumType( int v )
-    {
-        M_numType = v;
-    }
-    int getNbStreams() const
-    {
-        return ( M_nbStreams );
-    }
-    bool isDeviceReset() const
-    {
-        return ( M_qDeviceReset );
-    }
-    int getNumType() const
-    {
-        return ( M_numType );
-    }
+		// Destructor: Cleans up resources when a Task object is destroyed
+		~Task();
 
-    long int getTimeLaps() const
-    {
-        return ( M_time_laps );
-    }
+		// Opens a task with specified number of blocks and threads
+		void open(int nbBlock, int NbTh);
 
-    template <typename Kernel>
-    void run( const Kernel& kernel_function );
+		// Closes the task and releases resources
+		void close();
 
-    void debriefing();
+		// Sets the view information flag (for debugging or logging)
+		void setViewInfo(bool b)
+		{
+			M_qViewInfo = b;
+		}
+
+		// Sets the device reset flag (to control device state)
+		void setDeviceReset(bool b)
+		{
+			M_qDeviceReset = b;
+		}
+
+		// Sets the number of streams for concurrent execution
+		void setNbStreams(int v)
+		{
+			M_nbStreams = v;
+		}
+
+		// Sets the device identifier for HIP processing
+		void setDeviceHIP(int v);
+
+		// Sets the device identifier for CUDA processing
+		void setDeviceCUDA(int v);
+
+		// Sets the type identifier for this task
+		void setNumType(int v)
+		{
+			M_numType = v;
+		}
+
+		// Returns the number of streams currently set for execution
+		int getNbStreams() const
+		{
+			return (M_nbStreams);
+		}
+
+		// Checks if the device reset flag is set
+		bool isDeviceReset() const
+		{
+			return (M_qDeviceReset);
+		}
+
+		// Returns the type identifier for this task
+		int getNumType() const
+		{
+			return (M_numType);
+		}
+
+		// Returns elapsed time in long format since task started or last reset 
+		long int getTimeLaps() const
+		{
+			return (M_time_laps);
+		}
+
+		// Runs a kernel function on the GPU using either serial or stream execution 
+		template <typename Kernel>
+		void run(const Kernel& kernel_function);
+
+		// Outputs debugging information about task execution 
+		void debriefing();
 };
+
+
 
 template <typename T>
 Task<T>::~Task()

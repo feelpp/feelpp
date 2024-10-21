@@ -54,7 +54,7 @@ if(TRUE)
 endif()
 
 
-
+### REM:  Check for HIP language support
 include(CheckLanguage)
 check_language(HIP)
 if(CMAKE_HIP_COMPILER)
@@ -62,6 +62,7 @@ if(CMAKE_HIP_COMPILER)
 endif()
 
 
+### REM:  HWLOC configuration
 if (TRUE)
     MESSAGE("{BEGIN::BUILD LINK WITH HWLOC}")
     #find_package(hwloc REQUIRED)
@@ -89,11 +90,24 @@ if (TRUE)
     MESSAGE("")
 endif()
 
-
+### REM: Find required packages
 find_package(hip)
-feelpp_add_test(bvhgpu SRCS test_bvhgpu.cpp CFG test_bvhgpu.cfg GEO cubic.geo 
-  LINK_LIBRARIES ${GPU_HIP_LIBRARIES} Feelpp::feelpp  hip::device hip::host hipblas roc::rocthrust ${HWLOC_LINK_LIBRARIES})
-  set_source_files_properties( test_bvhgpu.cpp 
-  PROPERTIES LANGUAGE ${GPU_RUNTIME})
+
+feelpp_add_test(
+  bvhgpu 
+  SRCS test_bvhgpu.cpp 
+  CFG test_bvhgpu.cfg 
+  GEO cubic.geo 
+  LINK_LIBRARIES 
+      ${GPU_HIP_LIBRARIES} 
+      Feelpp::feelpp  
+      hip::device hip::host 
+      hipblas roc::rocthrust 
+      ${HWLOC_LINK_LIBRARIES}
+  )
+
+  ### REM: Set source file properties
+  set_source_files_properties( test_bvhgpu.cpp PROPERTIES LANGUAGE ${GPU_RUNTIME})
+ 
 
 

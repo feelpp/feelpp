@@ -154,12 +154,16 @@ auto parameters( Ts&&... ts )
 namespace Task
 {
 
-void* workerNumCPU( void* arg )
+void* workerNumCPU(void* arg)
 {
-    // Function used to run a task on a given CPU number.
-    std::function<void()>* func = (std::function<void()>*)arg;
-    ( *func )();
-    pthread_exit( NULL );
+	// Cast the argument from void* to a pointer to std::function<void()>
+	std::function<void()>* func = (std::function<void()>*)arg;
+
+	// Execute the function pointed to by func
+	(*func)();
+
+	// Exit the thread cleanly
+	pthread_exit(NULL);
 }
 
 // CLASS Task: Provide a family of multithreaded functions...
@@ -195,36 +199,36 @@ class Task
     std::mutex M_mymtx;                // Mutex
     std::chrono::steady_clock::time_point M_t_begin, M_t_end;
 
-    // Indicator variables used by the set and get functions. See descriptions below.
-    long int M_t_laps;
-    bool M_qFirstTask;
-    int M_idk;
-    int M_numLevelAction;
-    int M_nbThreadDetach;
-    bool M_qReady;
+    // Indicator variables used by set and get functions. See descriptions below.
+			long int M_t_laps;                 // Variable to track elapsed time
+			bool M_qFirstTask;                 // Flag indicating if this is the first task being processed
+			int M_idk;                         // Identifier variable (purpose may vary)
+			int M_numLevelAction;              // Level of action (purpose may vary)
+			int M_nbThreadDetach;              // Number of detached threads
+			bool M_qReady;                     // Flag indicating readiness state
 
-    bool M_qCUDA;
-    bool M_qHIP;
+			bool M_qCUDA;                      // Flag indicating if CUDA is enabled
+			bool M_qHIP;                       // Flag indicating if HIP is enabled
 
-    int M_nbTh;
-    int M_numTypeTh;
+			int M_nbTh;                        // Number of threads to be used in execution
+			int M_numTypeTh;                  // Type identifier for thread management
 
-    bool M_qDetach;
-    bool M_qYield;
-    bool M_qDeferred;
-    bool M_qUseIndex;
+			bool M_qDetach;                    // Flag indicating if tasks should be detached
+			bool M_qYield;                     // Flag indicating if tasks should yield execution
+			bool M_qDeferred;                  // Flag indicating if tasks should be deferred (used only for std::async)
+			bool M_qUseIndex;                  // Flag indicating if indexing should be used
 
-    bool M_qViewChrono;
-    bool M_qInfo;
-    bool M_qSave;
+			bool M_qViewChrono;                // Flag indicating if time measurement information should be displayed
+			bool M_qInfo;                      // Flag indicating if progress information should be displayed during execution
+			bool M_qSave;                      // Flag indicating if debriefing data should be saved
 
-    // BEGIN::GPU part
-    int M_numBlocksGPU;
-    int M_nThPerBckGPU;
-    int M_numOpGPU;
-    // END::GPU part
+	// BEGIN::GPU part - Variables specific to GPU operations
+			int M_numBlocksGPU;                // Number of blocks in GPU execution
+			int M_nThPerBckGPU;                // Number of threads per block in GPU execution
+			int M_numOpGPU;                    // Number of operations on GPU
+	// END::GPU part
 
-    template <typename... Ts>
+    template <typename... Ts> // Common function template for handling multiple parameters
     auto common( Ts&&... ts );
 
     void init(); // Function that initializes all variables we need
