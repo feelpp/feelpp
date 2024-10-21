@@ -748,7 +748,7 @@ void buildPicturRayTracingPPM(
 	thrust::device_vector<F3Triangle>& triangles, 
 	thrust::device_vector<BVHNode>& nodes,
 	Camera camera,
-	int width,
+    int width,
     int height,
 	const std::string& filename)
 {
@@ -785,11 +785,11 @@ void buildPicturRayTracingPPM(
     savePPM(filename, hostImage.data(), width, height);
 
 	// Memory cleaning
-    deviceHitResults.clear(); //
-    deviceDistanceResults.clear(); //
-    deviceIntersectionPoint.clear(); //
-    deviceIdResults.clear(); //
-	deviceImage.clear(); //
+    deviceHitResults.clear(); 
+    deviceDistanceResults.clear(); 
+    deviceIntersectionPoint.clear(); 
+    deviceIdResults.clear(); 
+    deviceImage.clear(); 
 }
 
 /*
@@ -864,7 +864,7 @@ void testRayTracingPicture005(const std::string& filename)
     deviceDistanceResults.clear(); 
     deviceIntersectionPoint.clear(); 
     deviceIdResults.clear(); 
-	deviceImage.clear(); 
+    deviceImage.clear(); 
     hostTriangles.clear(); 
 }
 */

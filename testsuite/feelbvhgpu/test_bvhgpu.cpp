@@ -186,7 +186,7 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
 }
  
 // Function that detects if there is GPU in the environment in order to switch the calculations to the GPU.
-bool isThereAnyGPUhere() {
+bool isThereAnyGPUhere(bool isViewInfo) {
     hwloc_topology_t topology;
     hwloc_obj_t obj = nullptr;   
     bool isGPU      = false;
@@ -206,14 +206,14 @@ bool isThereAnyGPUhere() {
     }
 
     n = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_OS_DEVICE);
-    std::cout<<"n="<<n<<"\n";
+    if (isViewInfo) std::cout<<"n="<<n<<"\n";
 
     for (i = 0; i < n ; i++) {
         obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_OS_DEVICE, i);
-        printf("[INFO]: %s:\n", obj->name);
+        if (isViewInfo) printf("[INFO]: %s:\n", obj->name);
         const char *s;
         s = hwloc_obj_get_info_by_name(obj, "Backend");
-        printf("[INFO]: %s\n",s);
+        if (isViewInfo) printf("[INFO]: %s\n",s);
         if (s && !strcmp(s, "OpenCL")) { isGPU=true; };
     }
 
@@ -363,8 +363,6 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
 
         std::vector<double> dist;
 
-
-
         // In normal CPU mode
         std::cout<<"[INFO]: In normal CPU mode\n";
 
@@ -408,12 +406,13 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
         }
         t_end_gpu = std::chrono::steady_clock::now();
 
+
+
+
         // Distance comparison
         double deltaError = 0.00001f;
         double sumErrors  = 0.0f;
         bool   isError = false;
-
-
 
         std::cout<<"[INFO]: Size vector distance CPU="<<distance_CPU_mode.size()<<" GPU="<<distance_GPU_mode.size()<<"\n";
 
@@ -496,6 +495,95 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
 
 
 
+template <typename RangeType>
+void test3D_AutoDecisionCPUorGPU( RangeType const& range)
+{
+    std::chrono::steady_clock::time_point t_begin;
+    std::chrono::steady_clock::time_point t_end;
+
+    std::chrono::steady_clock::time_point t_begin_raytracing;
+    std::chrono::steady_clock::time_point t_end_raytracing;
+    std::chrono::steady_clock::time_point t_end_bvh;
+
+    long int t_laps;
+
+    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
+    using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
+
+    bool isModeGPU=isThereAnyGPUhere(false);
+
+    int kkk=1;
+    
+        Eigen::Vector3d ray_origin={0.0f,0.0f,0.0f};
+        double thetaStart = 0.0f;        
+        double thetaEnd   = M_PI;       
+        double alphaStart = 0.0f;        
+        double alphaEnd   = 2.0f * M_PI;   
+        double thetaStep  = M_PI / (18.0f*0.125f*float(kkk)); 
+        double alphaStep  = M_PI / (18.0f*0.125f*float(kkk)); 
+        bool   isViewInfo = false;
+
+        std::vector<bvh_ray_type> rays;
+        for (double theta = thetaStart; theta <= thetaEnd; theta += thetaStep) {
+            for (double alpha = alphaStart; alpha <= alphaEnd; alpha += alphaStep) {
+                Eigen::Vector3d ray_direction = sphericalToCartesian(1.0f, theta, alpha);
+
+                if (isViewInfo)
+                {
+                    std::cout << "Origin: <" << ray_origin[0] << ", " << ray_origin[1] << ", " << ray_origin[2] << ">" << " ";
+                    std::cout << "Direction: <" << ray_direction[0] << ", " << ray_direction[1] << ", " << ray_direction[2] << ">" << std::endl;              
+                }
+                rays.push_back( bvh_ray_type(ray_origin,ray_direction) );
+            }
+        }
+
+        BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
+        for (int k=0;k<rays.size();++k)
+        {
+            raysDistributed.push_back( rays[k] );
+        }
+
+        std::vector<double> dist;
+
+        t_begin = std::chrono::steady_clock::now();
+
+        if (!isModeGPU) {
+            std::cout<<"[INFO]: Run in normal CPU mode\n";
+            auto bvhThirdPartyLow                      = boundingVolumeHierarchy(_range=range,_kind="third-party");
+            auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect(_ray=raysDistributed);
+
+            std::vector<double> distance_CPU_mode;
+            for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+            {
+                dist=getAllDistanceRayIntersections(bvhThirdPartyLow,rayIntersectionResult);
+                //printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
+                distance_CPU_mode.insert(distance_CPU_mode.end(), dist.begin(), dist.end());
+            }
+        }
+
+        if (isModeGPU) {
+            // In GPU mode with AMD HIP
+            std::cout<<"[INFO]: Run in GPU mode with AMD HIP\n";
+            auto bvhHIPParty                              = boundingVolumeHierarchy(_range=range,_kind="hip-party");   
+            auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray=raysDistributed);
+    
+
+            std::vector<double> distance_GPU_mode;
+            for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+            {
+                dist=getAllDistanceRayIntersections(bvhHIPParty,rayIntersectionResult);
+                //printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
+                distance_GPU_mode.insert(distance_GPU_mode.end(), dist.begin(), dist.end());
+            }
+        }
+        t_end = std::chrono::steady_clock::now();
+
+        t_laps= std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_begin).count();
+        std::cout << "[INFO]: Elapsed microseconds inside BVH Ray Tracing GPU : "<<t_laps<< " us\n";
+}
+
+
+
 
 BOOST_AUTO_TEST_SUITE( bvh_intersection_gpu_tests )
 
@@ -546,7 +634,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     // GPU or not GPU
     bool isGPUdetected; //put elsewhere
-    isGPUdetected=isThereAnyGPUhere();
+    isGPUdetected=isThereAnyGPUhere(false);
 
     if (isGPUdetected)
     {
@@ -561,6 +649,8 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     test3DInsideObjectWithHybrid( rangeFaces );
     std::cout<<"+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
+    //test3D_AutoDecisionCPUorGPU( rangeFaces);
+
     std::cout<<"\n";
 }
 
