@@ -320,7 +320,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         //-----------------------------------------------------------//
 
         // inherit the table of markersName
-        BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
+        for( auto itMark : M_mesh->markerNames( ) )
         {
             newMesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
         }
@@ -496,7 +496,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> )
         //-----------------------------------------------------------//
         DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] extraction mesh faces" << "\n";
         // inherit the table of markersName
-        BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
+        for( auto itMark : M_mesh->markerNames( ) )
         {
             if ( itMark.second[1] > mesh_facets_type::nDim ) continue;
             DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] adding marker " << itMark.first <<"\n";
@@ -725,7 +725,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
         //-----------------------------------------------------------//
         DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] extraction mesh edges" << "\n";
         // inherit the table of markersName
-        BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
+        for( auto itMark : M_mesh->markerNames( ) )
         {
             if ( itMark.second[1] > mesh_edges_type::nDim ) continue;
             DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] adding marker " << itMark.first <<"\n";

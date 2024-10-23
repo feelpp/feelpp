@@ -35,12 +35,8 @@
 #include <sstream>
 #include <algorithm>
 
-//#include <boost/shared_array.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/utility.hpp>
 
-#include <boost/foreach.hpp>
+
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -709,7 +705,8 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0 );
     M_time_values_map.push_back( M_Ti );
-    std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = u0 );
+    std::for_each(M_unknowns.begin(), M_unknowns.end(), 
+                  [u0](auto& element) { *element = u0; });
     this->computePolyAndPolyDeriv();
     this->saveCurrent();
 }
@@ -730,9 +727,14 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
     M_time_values_map.push_back( M_Ti );
 
     if ( uv0.size() == 1 )
-        std::for_each( M_unknowns.begin(), M_unknowns.end(), *boost::lambda::_1 = *uv0[0] );
+    {
+        std::for_each( M_unknowns.begin(), M_unknowns.end(), 
+                       [value = *uv0[0]]( auto& element ) { *element = value; } );
+    }
     else if ( uv0.size() > 1 )
+    {
         std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
+    }
 
     this->computePolyAndPolyDeriv();
     this->saveCurrent();
@@ -913,31 +915,31 @@ Bdf<SpaceType>::loadCurrent()
 }
 
 template <typename SpaceType>
-template<typename container_type>
-void
-Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> const& __new_unk )
+template <typename container_type>
+void Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> const& new_unk )
 {
-    DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
+    DVLOG( 2 ) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
 
-    // shift all previously stored bdf data
-    using namespace boost::lambda;
-    typename unknowns_type::reverse_iterator __it = boost::next( M_unknowns.rbegin() );
-    std::for_each( M_unknowns.rbegin(), boost::prior( M_unknowns.rend() ),
-                   ( *lambda::_1 = *( *lambda::var( __it ) ), ++lambda::var( __it ) ) );
+    // Shift all previously stored BDF data
+    auto it = std::next( M_unknowns.rbegin() );
+    std::for_each( M_unknowns.rbegin(), std::prev( M_unknowns.rend() ), 
+                   [&it]( auto& element ) { *element = *(*it); ++it; } );
+
     // u(t^{n}) coefficient is in M_unknowns[0]
-    *M_unknowns[0] = __new_unk;
+    *M_unknowns[0] = new_unk;
+
+    // Log the l2 norm for each unknown
     int i = 0;
-    BOOST_FOREACH( std::shared_ptr<element_type>& t, M_unknowns  )
+    for ( const auto& t : M_unknowns )
     {
-        DVLOG(2) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
+        DVLOG( 2 ) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
         ++i;
     }
 
-    // save newly stored bdf data
+    // Save newly stored BDF data
     this->saveCurrent();
 }
-
 
 template <typename SpaceType>
 typename Bdf<SpaceType>::element_type const&

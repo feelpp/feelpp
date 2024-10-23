@@ -185,13 +185,13 @@ ddmethod<Dim>::localProblem( element_type& u,
     form2( _test=Xh, _trial=Xh, _matrix=A ) =
         integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
     A->close();
-    BOOST_FOREACH( int marker, dirichletFlags )
+    for( int marker : dirichletFlags )
     {
         // std::cout << "apply strong dirichlet on   " << marker << std::endl;
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
             on( _range=markedfaces( mesh, marker ), _element=u, _rhs=B, _expr=gD );
     }
-    BOOST_FOREACH( int marker, interfaceFlags )
+    for( int marker : interfaceFlags )
     {
         // std::cout << "apply interface condition on   " << marker << std::endl;
         form2( _test=Xh, _trial=Xh, _matrix=A ) +=
