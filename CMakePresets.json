@@ -4608,6 +4608,7 @@
       {
          "cacheVariables": {
             "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "ON",
+            "FEELPP_ENABLE_ANN": "OFF",
             "FEELPP_ENABLE_OPENTURNS": "OFF",
             "FEELPP_ENABLE_VTK": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON",

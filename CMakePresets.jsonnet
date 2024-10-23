@@ -140,6 +140,7 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
         ],
         cacheVariables: {
             CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
+            FEELPP_ENABLE_ANN: "OFF",
             FEELPP_USE_EXTERNAL_CLN: "ON",
             FEELPP_USE_EXTERNAL_GFLAGS: "ON",
             FEELPP_USE_EXTERNAL_GLOG: "ON",
