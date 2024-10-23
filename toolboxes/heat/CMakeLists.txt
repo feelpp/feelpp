@@ -10,3 +10,4 @@ feelpp_add_application( heat SRCS main_ht.cpp
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_heat CATEGORY toolboxes/heat)
 
+add_dependencies(toolboxes feelpp_toolbox_heat)

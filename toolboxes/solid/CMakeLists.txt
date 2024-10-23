@@ -33,3 +33,4 @@ endif()
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_solid CATEGORY toolboxes/solid)
 
+add_dependencies(toolboxes feelpp_toolbox_solid)

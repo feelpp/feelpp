@@ -100,53 +100,74 @@ endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
-set( FEELPP_HAS_GFLAGS 1 )
-set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
-set( GFLAGS_IS_SUBPROJECT TRUE )
-add_subdirectory(gflags)
-if ( FEELPP_HAS_GFLAGS )
-  set(GFLAGS_IS_SUBPROJECT TRUE)
-  set(GFLAGS_NAMESPACE "google;gflags")
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gflags)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_gflags)
+option( FEELPP_USE_EXTERNAL_GFLAGS "Feel++ uses external GFlags" OFF )
+if ( FEELPP_USE_EXTERNAL_GFLAGS )
+  message(STATUS "[feelpp] Using external GFlags")
+  find_package(gflags 2.2.2 REQUIRED)
+  if ( gflags_FOUND )
+    message(STATUS "[feelpp] external GFlags found")
+    target_link_libraries(feelpp_contrib INTERFACE gflags )
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GFLAGS )
+  endif()
+else( FEELPP_USE_EXTERNAL_GFLAGS)
+  set( FEELPP_HAS_GFLAGS 1 )
+  set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
+  set( GFLAGS_IS_SUBPROJECT TRUE )
+  add_subdirectory(gflags)
+  if ( FEELPP_HAS_GFLAGS )
+    set(GFLAGS_IS_SUBPROJECT TRUE)
+    set(GFLAGS_NAMESPACE "google;gflags")
+    #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gflags)
+    list(INSERT FEELPP_LIBRARIES 0 feelpp_gflags)
 
-  #add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
-  #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/gflags/include ${CMAKE_CURRENT_BINARY_DIR}/gflags/include/gflags)
+    #add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
+    #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/gflags/include ${CMAKE_CURRENT_BINARY_DIR}/gflags/include/gflags)
 
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GFLAGS )
-  target_include_directories(feelpp_contrib
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/feelpp/contrib/gflags/include>
-    $<INSTALL_INTERFACE:include/feelpp>
-    )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GFLAGS )
+    target_include_directories(feelpp_contrib
+      INTERFACE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/feelpp/contrib/gflags/include>
+      $<INSTALL_INTERFACE:include/feelpp>
+      )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
 
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
 
-  # for GLog
-  set(gflags_LIBRARIES feelpp_gflags)
-  set(gflags_FOUND 1)
-endif()
+    # for GLog
+    set(gflags_LIBRARIES feelpp_gflags)
+    set(gflags_FOUND 1)
+  endif()
+endif( FEELPP_USE_EXTERNAL_GFLAGS )
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GLog")
-set( FEELPP_HAS_GLOG 1 )
-set( FEELPP_HAS_GLOG 1 PARENT_SCOPE )
-add_subdirectory(glog)
-if ( FEELPP_HAS_GLOG )
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GLOG )
-  target_include_directories(feelpp_contrib INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/feelpp/contrib/glog/>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/glog/src>
-    $<INSTALL_INTERFACE:include/feelpp>
-    )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_glog)
-    #     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/glog/ ${CMAKE_CURRENT_SOURCE_DIR}/glog/src)
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glog)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_glog)
-  #add_dependencies(contrib feelpp_glog)
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
-endif()
+option( FEELPP_USE_EXTERNAL_GLOG "Feel++ uses external GLog" OFF )
+if ( FEELPP_USE_EXTERNAL_GLOG )
+  message(STATUS "[feelpp] Using external GLog")
+  find_package(glog 0.7.1 REQUIRED)
+  if ( glog_FOUND )
+    target_link_libraries(feelpp_contrib INTERFACE glog::glog )
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GLOG )
+  endif()
+else( FEELPP_USE_EXTERNAL_GLOG )
+  set( FEELPP_HAS_GLOG 1 )
+  set( FEELPP_HAS_GLOG 1 PARENT_SCOPE )
+  add_subdirectory(glog)
+  if ( FEELPP_HAS_GLOG )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GLOG )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/feelpp/contrib/glog/>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/glog/src>
+      $<INSTALL_INTERFACE:include/feelpp>
+      )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_glog)
+      #     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/glog/ ${CMAKE_CURRENT_SOURCE_DIR}/glog/src)
+    #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glog)
+    list(INSERT FEELPP_LIBRARIES 0 feelpp_glog)
+    #add_dependencies(contrib feelpp_glog)
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
+  endif()
+endif( FEELPP_USE_EXTERNAL_GLOG )
 
 # # cln
 message(STATUS "------------------------------------------------------------")
@@ -730,6 +751,7 @@ message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Mmg")
 feelppContribPrepare( mmg )
 if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  set(USE_VTK OFF)
   set(MMG_CI OFF)
   set(MMG2D_CI OFF)
   set(MMG3D_CI OFF)
