@@ -141,7 +141,7 @@ struct F3TriangleInit {
     float3 _v0, _v1, _v2;
     int _id;
     
-    F3TriangleInit(float3 v0, float3 v1,float3 v2,int id) 
+    F3TriangleInit(float3 v0, float3 v1,float3 v2,int id)
         : _v0(v0), _v1(v1), _v2(v2),_id(id) {}
 
     __host__ __device__
@@ -281,27 +281,27 @@ void print_float3(const float3& v) {
 }
 
 
-__device__ __forceinline__ 
+__device__ __forceinline__
 float3 make_float3_fast(float x, float y, float z) {
     //return make_float3(__float2int_rn(x), __float2int_rn(y), __float2int_rn(z));
     return make_float3(x,y,z); // A VOIR
 }
 
 __host__ __device__ Vec3 min(const Vec3& a, const Vec3& b) {
-	return Vec3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z));
+    return Vec3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z));
 }
 
 __host__ __device__ Vec3 max(const Vec3& a, const Vec3& b) {
-	return Vec3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z));
+    return Vec3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z));
 }
 
 
 __host__ __device__ Vec3 cross(const Vec3& a, const Vec3& b) {
-	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+    return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
 __host__ __device__ float dot(const Vec3& a, const Vec3& b) {
-	return a.x * b.x + a.y * b.y + a.z * b.z;
+    return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 
@@ -487,7 +487,7 @@ void buildBVHWithTriangleVersion2(thrust::device_vector<F3Triangle>& triangles, 
     nodes.resize(2 * numTriangles - 1);
 
     // Initialize the leaves in parallel
-    thrust::for_each(thrust::device, 
+    thrust::for_each(thrust::device,
                      thrust::make_counting_iterator(0),
                      thrust::make_counting_iterator(numTriangles),
                      [triangles = thrust::raw_pointer_cast(triangles.data()),
@@ -542,7 +542,7 @@ __global__ void initializeLeaves3(F3Triangle* triangles, BVHNode* nodes, int num
 __global__ void buildInternalNodes3(BVHNode* nodes, int numTriangles) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx <= numTriangles - 2) 
+    if (idx <= numTriangles - 2)
     {
         int nodeIdx = numTriangles - 2 - idx;
         //int nodeIdx = idx;
@@ -566,7 +566,7 @@ __global__ void buildInternalNodes3(BVHNode* nodes, int numTriangles) {
 
         node.max = make_float3(fmaxf(leftNode.max.x, rightNode.max.x),
                                fmaxf(leftNode.max.y, rightNode.max.y),
-                               fmaxf(leftNode.max.z, rightNode.max.z)); 
+                               fmaxf(leftNode.max.z, rightNode.max.z));
     }
     __syncthreads();
 }
@@ -608,12 +608,12 @@ struct BuildInternalNodesFunctor {
     int numTriangles;
 
     __host__ __device__
-    BuildInternalNodesFunctor(BVHNode* _nodes, int _numTriangles) 
+    BuildInternalNodesFunctor(BVHNode* _nodes, int _numTriangles)
         : nodes(_nodes), numTriangles(_numTriangles) {}
 
     __host__ __device__
     void operator()(int i) const {
-        if (i >= numTriangles - 1) return;  
+        if (i >= numTriangles - 1) return;
 
         BVHNode& node = nodes[i];
         int leftChild = 2 * i + 1;
@@ -645,7 +645,7 @@ void buildBVHWithTriangleVersion5(thrust::device_vector<F3Triangle>& triangles, 
     nodes.resize(2 * numTriangles - 1);
 
     // Initialize the leaves in parallel
-    thrust::for_each(thrust::device, 
+    thrust::for_each(thrust::device,
                      thrust::make_counting_iterator(0),
                      thrust::make_counting_iterator(numTriangles),
                      [triangles = thrust::raw_pointer_cast(triangles.data()),
@@ -743,15 +743,15 @@ __device__ __forceinline__ bool rayTriangleIntersectVersion2(const F3Ray& ray, c
 
 
 __global__ void rayTracingKernelVersion1(
-    BVHNode* nodes, 
-    F3Triangle* triangles, 
-    F3Ray* rays, 
-    int* hitResults, 
+    BVHNode* nodes,
+    F3Triangle* triangles,
+    F3Ray* rays,
+    int* hitResults,
     float* distance,
     float3* intersectionPoint,
-    int* hitId, 
+    int* hitId,
     int numRays
-) 
+)
 
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -831,15 +831,15 @@ __global__ void rayTracingKernelVersion1(
 }
 
 __global__ void rayTracingKernelVersion2(
-    BVHNode* nodes, 
-    F3Triangle* triangles, 
-    F3Ray* rays, 
-    int* hitResults, 
+    BVHNode* nodes,
+    F3Triangle* triangles,
+    F3Ray* rays,
+    int* hitResults,
     float* distance,
     float3* intersectionPoint,
-    int* hitId, 
+    int* hitId,
     int numRays
-) 
+)
 
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -922,18 +922,18 @@ __global__ void rayTracingKernelVersion2(
 
 
 __global__ void rayTracingKernelVersion3(
-    BVHNode* nodes, 
-    F3Triangle* __restrict__ triangles, 
-    F3Ray* rays, 
-    int* __restrict__ hitResults, 
+    BVHNode* nodes,
+    F3Triangle* __restrict__ triangles,
+    F3Ray* rays,
+    int* __restrict__ hitResults,
     float* __restrict__ distance,
     float3* __restrict__ intersectionPoint,
-    int* __restrict__ hitId, 
+    int* __restrict__ hitId,
     int numRays
-) 
+)
 
 {
-    __shared__ BVHNode sharedNodes[64]; 
+    __shared__ BVHNode sharedNodes[64];
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= numRays) return;
     // On vharge les premiers nœuds BVH dans la mémoire partagée
@@ -960,18 +960,18 @@ __global__ void rayTracingKernelVersion3(
         const int nodeIdx = stack[--stackPtr];
         const BVHNode& node = nodeIdx < 64 ? sharedNodes[nodeIdx] : nodes[nodeIdx];
 
-        float tmin = fmaxf(fminf((node.min.x - ray.origin.x) * invDir.x, 
+        float tmin = fmaxf(fminf((node.min.x - ray.origin.x) * invDir.x,
                                  (node.max.x - ray.origin.x) * invDir.x),
-                           fmaxf((node.min.y - ray.origin.y) * invDir.y, 
+                           fmaxf((node.min.y - ray.origin.y) * invDir.y,
                                  (node.max.y - ray.origin.y) * invDir.y));
-        float tmax = fminf(fmaxf((node.min.x - ray.origin.x) * invDir.x, 
+        float tmax = fminf(fmaxf((node.min.x - ray.origin.x) * invDir.x,
                                  (node.max.x - ray.origin.x) * invDir.x),
-                           fminf((node.min.y - ray.origin.y) * invDir.y, 
+                           fminf((node.min.y - ray.origin.y) * invDir.y,
                                  (node.max.y - ray.origin.y) * invDir.y));
         
-        tmin = fmaxf(tmin, fminf((node.min.z - ray.origin.z) * invDir.z, 
+        tmin = fmaxf(tmin, fminf((node.min.z - ray.origin.z) * invDir.z,
                                  (node.max.z - ray.origin.z) * invDir.z));
-        tmax = fminf(tmax, fmaxf((node.min.z - ray.origin.z) * invDir.z, 
+        tmax = fminf(tmax, fmaxf((node.min.z - ray.origin.z) * invDir.z,
                                  (node.max.z - ray.origin.z) * invDir.z));
 
         if (tmax < 0 || tmin > tmax || tmin > closestT) continue;
@@ -979,7 +979,7 @@ __global__ void rayTracingKernelVersion3(
         if (node.triangleIndex != -1) {
             float t;
             float3 intersectionPointT;
-            if (rayTriangleIntersectVersion2(ray, triangles[node.triangleIndex], t, intersectionPointT)) 
+            if (rayTriangleIntersectVersion2(ray, triangles[node.triangleIndex], t, intersectionPointT))
             {
                 //To view all intersections
                 if (isView) printf("      Node Idx [%i] Num Ray[%i] <%f %f %f>\n",nodeIdx,idx,intersectionPointT.x,intersectionPointT.y,intersectionPointT.z);
@@ -1049,7 +1049,7 @@ void loadBVH(const std::string& filename, thrust::device_vector<BVHNode>& nodes)
         inFile.read(reinterpret_cast<char*>(&node.leftChild), sizeof(int));
         inFile.read(reinterpret_cast<char*>(&node.rightChild), sizeof(int));
         inFile.read(reinterpret_cast<char*>(&node.triangleIndex), sizeof(int));
-        inFile.read(reinterpret_cast<char*>(&node.boxIndex), sizeof(int)); 
+        inFile.read(reinterpret_cast<char*>(&node.boxIndex), sizeof(int));
     }
 
     inFile.close();
@@ -1076,7 +1076,7 @@ void saveBVH(const std::string& filename, const thrust::device_vector<BVHNode>& 
         outFile.write(reinterpret_cast<const char*>(&node.leftChild), sizeof(int));
         outFile.write(reinterpret_cast<const char*>(&node.rightChild), sizeof(int));
         outFile.write(reinterpret_cast<const char*>(&node.triangleIndex), sizeof(int));
-        outFile.write(reinterpret_cast<const char*>(&node.boxIndex), sizeof(int)); 
+        outFile.write(reinterpret_cast<const char*>(&node.boxIndex), sizeof(int));
     }
 
     outFile.close();
@@ -1121,12 +1121,12 @@ __global__ void rayTracingImgKernel(
     int width,
     int height,
     Camera camera,
-    BVHNode* nodes, 
-    F3Triangle* triangles, 
-    int* hitResults, 
+    BVHNode* nodes,
+    F3Triangle* triangles,
+    int* hitResults,
     float* distance,
     float3* intersectionPoint,
-    int* hitId 
+    int* hitId
 )
  
 {
@@ -1237,15 +1237,15 @@ void savePPM(const std::string& filename, unsigned char* data, int width, int he
 }
 
 void buildPicturRayTracingPPM(
-	thrust::device_vector<F3Triangle>& triangles, 
-	thrust::device_vector<BVHNode>& nodes,
-	Camera camera,
+    thrust::device_vector<F3Triangle>& triangles,
+    thrust::device_vector<BVHNode>& nodes,
+    Camera camera,
     int width,
     int height,
-	const std::string& filename)
+    const std::string& filename)
 {
     // Before using this function, the BVH must already be calculated and the triangles must be in the device.
-	// Ray Tracing
+    // Ray Tracing
     const int threadsPerBlock = 512;
     const int numRays = width * height; // Total number of rays based on image dimensions
     int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
@@ -1276,12 +1276,12 @@ void buildPicturRayTracingPPM(
     thrust::host_vector<unsigned char> hostImage = deviceImage;
     savePPM(filename, hostImage.data(), width, height);
 
-	// Memory cleaning
-    deviceHitResults.clear(); 
-    deviceDistanceResults.clear(); 
-    deviceIntersectionPoint.clear(); 
-    deviceIdResults.clear(); 
-    deviceImage.clear(); 
+    // Memory cleaning
+    deviceHitResults.clear();
+    deviceDistanceResults.clear();
+    deviceIntersectionPoint.clear();
+    deviceIdResults.clear();
+    deviceImage.clear();
 }
 
 
@@ -1654,198 +1654,193 @@ namespace bvhHip
 {
 
 struct Vec3 {
-	float x, y, z;
-	__host__ __device__ Vec3() : x(0), y(0), z(0) {}
-	__host__ __device__ Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+    float x, y, z;
+    __host__ __device__ Vec3() : x(0), y(0), z(0) {}
+    __host__ __device__ Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
 
-	__host__ __device__ Vec3 operator+(const Vec3& v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
-	__host__ __device__ Vec3 operator-(const Vec3& v) const { return Vec3(x - v.x, y - v.y, z - v.z); }
-	__host__ __device__ Vec3 operator*(float f) const { return Vec3(x * f, y * f, z * f); }
+    __host__ __device__ Vec3 operator+(const Vec3& v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
+    __host__ __device__ Vec3 operator-(const Vec3& v) const { return Vec3(x - v.x, y - v.y, z - v.z); }
+    __host__ __device__ Vec3 operator*(float f) const { return Vec3(x * f, y * f, z * f); }
 
-	__host__ __device__ Vec3 operator*(const Vec3& v) const { return Vec3(x * v.x, y * v.y, z * v.z); }
+    __host__ __device__ Vec3 operator*(const Vec3& v) const { return Vec3(x * v.x, y * v.y, z * v.z); }
 
-	__host__ __device__ Vec3 operator/(const Vec3& other) const { return Vec3(x / other.x, y / other.y, z / other.z); }
-	__host__ __device__ Vec3 operator/(float scalar) const { return Vec3(x / scalar, y / scalar, z / scalar); }
+    __host__ __device__ Vec3 operator/(const Vec3& other) const { return Vec3(x / other.x, y / other.y, z / other.z); }
+    __host__ __device__ Vec3 operator/(float scalar) const { return Vec3(x / scalar, y / scalar, z / scalar); }
 
-	__host__ __device__ float& operator[](int i) { return (&x)[i]; }
-	__host__ __device__ const float& operator[](int i) const { return (&x)[i]; }
+    __host__ __device__ float& operator[](int i) { return (&x)[i]; }
+    __host__ __device__ const float& operator[](int i) const { return (&x)[i]; }
 };
 
 
 __host__ __device__ Vec3 min(const Vec3& a, const Vec3& b) {
-	return Vec3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z));
+    return Vec3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z));
 }
 
 __host__ __device__ Vec3 max(const Vec3& a, const Vec3& b) {
-	return Vec3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z));
+    return Vec3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z));
 }
 
 __host__ __device__ Vec3 cross(const Vec3& a, const Vec3& b) {
-	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+    return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
 __host__ __device__ float dot(const Vec3& a, const Vec3& b) {
-	return a.x * b.x + a.y * b.y + a.z * b.z;
+    return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 struct Ray {
-	Vec3 origin, direction;
+    Vec3 origin, direction;
 };
 
 struct Triangle {
-	Vec3 v0, v1, v2;
-	int id;
+    Vec3 v0, v1, v2;
+    int id;
 };
 
 struct AABB {
-	Vec3 min, max;
+    Vec3 min, max;
 };
 
 struct BVHNode {
-	AABB bounds;
-	int leftChild;
-	int rightChild;
-	int firstTriangleIndex;
-	int triangleCount;
+    AABB bounds;
+    int leftChild;
+    int rightChild;
+    int firstTriangleIndex;
+    int triangleCount;
 
-	int firstPrimitive;
-	int primitiveCount;
+    int firstPrimitive;
+    int primitiveCount;
 
-	int triangleIndex;
+    int triangleIndex;
 };
 
 
 struct Intersection {
-	bool hit;
-	float t;
-	int triangleIndex;
+    bool hit;
+    float t;
+    int triangleIndex;
 };
 
 
 // BEGIN::RAY TRACING
 __device__ bool rayTriangleIntersect(const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint) {
-	Vec3 edge1 = tri.v1 - tri.v0;
-	Vec3 edge2 = tri.v2 - tri.v0;
-	Vec3 h = cross(ray.direction, edge2);
-	float a = dot(edge1, h);
+    Vec3 edge1 = tri.v1 - tri.v0;
+    Vec3 edge2 = tri.v2 - tri.v0;
+    Vec3 h = cross(ray.direction, edge2);
+    float a = dot(edge1, h);
 
-	if (a > -1e-6f && a < 1e-6f) return false;
+    if (a > -1e-6f && a < 1e-6f) return false;
 
-	float f = 1.0f / a;
-	Vec3 s = ray.origin - tri.v0;
-	float u = f * dot(s, h);
+    float f = 1.0f / a;
+    Vec3 s = ray.origin - tri.v0;
+    float u = f * dot(s, h);
 
-	if (u < 0.0f || u > 1.0f) return false;
+    if (u < 0.0f || u > 1.0f) return false;
 
-	Vec3 q = cross(s, edge1);
-	float v = f * dot(ray.direction, q);
+    Vec3 q = cross(s, edge1);
+    float v = f * dot(ray.direction, q);
 
-	if (v < 0.0f || u + v > 1.0f) return false;
+    if (v < 0.0f || u + v > 1.0f) return false;
 
-	t = f * dot(edge2, q);
+    t = f * dot(edge2, q);
 
-	if (t > 1e-6) {
-		intersectionPoint.x = ray.origin.x + t * ray.direction.x;
-		intersectionPoint.y = ray.origin.y + t * ray.direction.y;
-		intersectionPoint.z = ray.origin.z + t * ray.direction.z;
-	}
-	else
-	{
-		intersectionPoint.x = INFINITY;
-		intersectionPoint.y = INFINITY;
-		intersectionPoint.z = INFINITY;
-	}
-	return (t > 1e-6f);
+    if (t > 1e-6) {
+        intersectionPoint.x = ray.origin.x + t * ray.direction.x;
+        intersectionPoint.y = ray.origin.y + t * ray.direction.y;
+        intersectionPoint.z = ray.origin.z + t * ray.direction.z;
+    }
+    else
+    {
+        intersectionPoint.x = INFINITY;
+        intersectionPoint.y = INFINITY;
+        intersectionPoint.z = INFINITY;
+    }
+    return (t > 1e-6f);
 }
 
 __device__ bool rayAABBIntersect(const Ray& ray, const AABB& aabb) {
-	Vec3 invDir = Vec3(1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z);
-	Vec3 tMin = (aabb.min - ray.origin) * invDir;
-	Vec3 tMax = (aabb.max - ray.origin) * invDir;
-	Vec3 t1 = Vec3(fminf(tMin.x, tMax.x), fminf(tMin.y, tMax.y), fminf(tMin.z, tMax.z));
-	Vec3 t2 = Vec3(fmaxf(tMin.x, tMax.x), fmaxf(tMin.y, tMax.y), fmaxf(tMin.z, tMax.z));
-	float tNear = fmaxf(fmaxf(t1.x, t1.y), t1.z);
-	float tFar = fminf(fminf(t2.x, t2.y), t2.z);
-	return tNear <= tFar;
+    Vec3 invDir = Vec3(1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z);
+    Vec3 tMin = (aabb.min - ray.origin) * invDir;
+    Vec3 tMax = (aabb.max - ray.origin) * invDir;
+    Vec3 t1 = Vec3(fminf(tMin.x, tMax.x), fminf(tMin.y, tMax.y), fminf(tMin.z, tMax.z));
+    Vec3 t2 = Vec3(fmaxf(tMin.x, tMax.x), fmaxf(tMin.y, tMax.y), fmaxf(tMin.z, tMax.z));
+    float tNear = fmaxf(fmaxf(t1.x, t1.y), t1.z);
+    float tFar = fminf(fminf(t2.x, t2.y), t2.z);
+    return tNear <= tFar;
 }
 
 
 __global__ void raytraceKernel(
-	Ray* rays,
-	int numRays,
-	BVHNode* bvhNodes,
-	Triangle* triangles,
-	int* hitTriangles,
-	float* distance,
-	Vec3* intersectionPoint,
-	int* hitId
+    Ray* rays,
+    int numRays,
+    BVHNode* bvhNodes,
+    Triangle* triangles,
+    int* hitTriangles,
+    float* distance,
+    Vec3* intersectionPoint,
+    int* hitId
 )
 
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx >= numRays) return;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numRays) return;
 
-	Ray ray = rays[idx];
-	int stack[64];
-	int stackPtr = 0;
-	stack[stackPtr++] = 0;
-	//stack[stackPtr++] = 13;
+    Ray ray = rays[idx];
+    int stack[64];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
 
-	float closestT = INFINITY;
-	int closestTriangle = -1;
-	int closesIntersectionId = -1;
+    float closestT = INFINITY;
+    int closestTriangle = -1;
+    int closesIntersectionId = -1;
 
-	Vec3 intersectionPointT;
-	intersectionPointT.x = INFINITY;
-	intersectionPointT.y = INFINITY;
-	intersectionPointT.z = INFINITY;
-	Vec3 closestIntersectionPoint;
-	closestIntersectionPoint.x = INFINITY;
-	closestIntersectionPoint.y = INFINITY;
-	closestIntersectionPoint.z = INFINITY;
+    Vec3 intersectionPointT;
+    intersectionPointT.x = INFINITY;
+    intersectionPointT.y = INFINITY;
+    intersectionPointT.z = INFINITY;
+    Vec3 closestIntersectionPoint;
+    closestIntersectionPoint.x = INFINITY;
+    closestIntersectionPoint.y = INFINITY;
+    closestIntersectionPoint.z = INFINITY;
 
-	bool isView = false; //isView = true;
+    bool isView = false; //isView = true;
 
-	while (stackPtr > 0) {
-		int nodeIdx = stack[--stackPtr];
-		BVHNode& node = bvhNodes[nodeIdx];
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BVHNode& node = bvhNodes[nodeIdx];
 
-		//printf("node[%i]\n",nodeIdx);
+        if (!rayAABBIntersect(ray, node.bounds)) continue;
 
-		//if (nodeIdx>0) printf("node[%i] %i %i\n",nodeIdx,node.triangleCount,node.firstTriangleIndex);
+        if (node.triangleCount > 0) {
+            for (int i = 0; i < node.triangleCount; ++i) {
+                Triangle& tri = triangles[node.firstTriangleIndex + i];
+                float t;
+                if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
 
-		if (!rayAABBIntersect(ray, node.bounds)) continue;
+                    if (isView) printf("      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
+                    if (t < closestT) {
+                        closestT = t;
+                        closestTriangle = node.firstTriangleIndex + i;
+                        closestIntersectionPoint = intersectionPointT;
+                        closesIntersectionId = triangles[closestTriangle].id;
+                    }
+                }
+            }
+        }
+        else {
+            stack[stackPtr++] = node.leftChild;
+            stack[stackPtr++] = node.rightChild;
+        }
+    }
 
-		if (node.triangleCount > 0) {
-			for (int i = 0; i < node.triangleCount; ++i) {
-				Triangle& tri = triangles[node.firstTriangleIndex + i];
-				float t;
-				if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
+    //if (closesIntersectionId>0) printf("      Num Ray[%i] dist=%f <%f %f %f>\n", idx, closestT,intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
 
-					if (isView) printf("      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
-					if (t < closestT) {
-						closestT = t;
-						closestTriangle = node.firstTriangleIndex + i;
-						closestIntersectionPoint = intersectionPointT;
-						closesIntersectionId = triangles[closestTriangle].id;
-					}
-				}
-			}
-		}
-		else {
-			stack[stackPtr++] = node.leftChild;
-			stack[stackPtr++] = node.rightChild;
-		}
-	}
+    if (closesIntersectionId > 0) printf("      Num Ray[%i] dist=%f\n", idx, closestT);
 
-	//if (closesIntersectionId>0) printf("      Num Ray[%i] dist=%f <%f %f %f>\n", idx, closestT,intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
-
-	if (closesIntersectionId > 0) printf("      Num Ray[%i] dist=%f\n", idx, closestT);
-
-	hitTriangles[idx] = closestTriangle;
-	distance[idx] = closestT;
-	intersectionPoint[idx] = closestIntersectionPoint;
-	hitId[idx] = closesIntersectionId;
+    hitTriangles[idx] = closestTriangle;
+    distance[idx] = closestT;
+    intersectionPoint[idx] = closestIntersectionPoint;
+    hitId[idx] = closesIntersectionId;
 }
 
 // END::RAY TRACING
@@ -1853,167 +1848,195 @@ __global__ void raytraceKernel(
 // BEGIN::BVH CPU
 
 void buildBVHRecursive(std::vector<Triangle>& triangles, std::vector<BVHNode>& bvhNodes, int start, int end, int depth) {
-	BVHNode node;
-	node.firstTriangleIndex = start;
-	node.triangleCount = end - start;
-	node.leftChild = node.rightChild = -1;
+    BVHNode node;
+    node.firstTriangleIndex = start;
+    node.triangleCount = end - start;
+    node.leftChild = node.rightChild = -1;
 
-	node.bounds.min = node.bounds.max = triangles[start].v0;
-	for (int i = start; i < end; i++) {
-		const auto& tri = triangles[i];
-		node.bounds.min = min(node.bounds.min, min(tri.v0, min(tri.v1, tri.v2)));
-		node.bounds.max = max(node.bounds.max, max(tri.v0, max(tri.v1, tri.v2)));
-	}
+    node.bounds.min = node.bounds.max = triangles[start].v0;
+    for (int i = start; i < end; i++) {
+        const auto& tri = triangles[i];
+        node.bounds.min = min(node.bounds.min, min(tri.v0, min(tri.v1, tri.v2)));
+        node.bounds.max = max(node.bounds.max, max(tri.v0, max(tri.v1, tri.v2)));
+    }
 
-	if (node.triangleCount <= 4 || depth > 20) {
-		bvhNodes.push_back(node);
-		return;
-	}
+    if (node.triangleCount <= 4 || depth > 20) {
+        bvhNodes.push_back(node);
+        return;
+    }
 
-	Vec3 extent = node.bounds.max - node.bounds.min;
-	int axis = 0;
-	if (extent.y > extent.x) axis = 1;
-	if (extent.z > extent[axis]) axis = 2;
+    Vec3 extent = node.bounds.max - node.bounds.min;
+    int axis = 0;
+    if (extent.y > extent.x) axis = 1;
+    if (extent.z > extent[axis]) axis = 2;
 
-	int mid = (start + end) / 2;
-	std::nth_element(triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end,
-		[axis](const Triangle& a, const Triangle& b) {
-			return (a.v0[axis] + a.v1[axis] + a.v2[axis]) < (b.v0[axis] + b.v1[axis] + b.v2[axis]);
-		});
+    int mid = (start + end) / 2;
+    std::nth_element(triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end,
+        [axis](const Triangle& a, const Triangle& b) {
+            return (a.v0[axis] + a.v1[axis] + a.v2[axis]) < (b.v0[axis] + b.v1[axis] + b.v2[axis]);
+        });
 
 
-	int currentIndex = bvhNodes.size();
-	bvhNodes.push_back(node);
+    int currentIndex = bvhNodes.size();
+    bvhNodes.push_back(node);
 
-	buildBVHRecursive(triangles, bvhNodes, start, mid, depth + 1);
-	bvhNodes[currentIndex].leftChild = bvhNodes.size() - 1;
+    buildBVHRecursive(triangles, bvhNodes, start, mid, depth + 1);
+    bvhNodes[currentIndex].leftChild = bvhNodes.size() - 1;
 
-	buildBVHRecursive(triangles, bvhNodes, mid, end, depth + 1);
-	bvhNodes[currentIndex].rightChild = bvhNodes.size() - 1;
+    buildBVHRecursive(triangles, bvhNodes, mid, end, depth + 1);
+    bvhNodes[currentIndex].rightChild = bvhNodes.size() - 1;
 }
 
 void buildBVH_CPU_Recursive(std::vector<Triangle>& triangles, std::vector<BVHNode>& bvhNodes) {
-	bvhNodes.clear();
-	buildBVHRecursive(triangles, bvhNodes, 0, triangles.size(), 0);
+    bvhNodes.clear();
+    buildBVHRecursive(triangles, bvhNodes, 0, triangles.size(), 0);
 }
 
 void buildBVH_CPU_Iterative(
-	std::vector<Triangle>& triangles,
-	std::vector<BVHNode>& bvhNodes
+    std::vector<Triangle>& triangles,
+    std::vector<BVHNode>& bvhNodes
 )
 {
-	bvhNodes.clear();
+    bvhNodes.clear();
 
-	struct StackEntry {
-		int start, end, depth;
-		int parentIndex;
-		bool isLeftChild;
-	};
+    struct StackEntry {
+        int start, end, depth;
+        int parentIndex;
+        bool isLeftChild;
+    };
 
-	std::stack<StackEntry> stack;
-	stack.push({ 0, static_cast<int>(triangles.size()), 0, -1, false });
+    std::stack<StackEntry> stack;
+    stack.push({ 0, static_cast<int>(triangles.size()), 0, -1, false });
 
-	while (!stack.empty()) {
-		auto [start, end, depth, parentIndex, isLeftChild] = stack.top();
-		stack.pop();
+    while (!stack.empty()) {
+        auto [start, end, depth, parentIndex, isLeftChild] = stack.top();
+        stack.pop();
 
-		BVHNode node;
-		node.firstTriangleIndex = start;
-		node.triangleCount = end - start;
-		node.leftChild = node.rightChild = -1;
+        BVHNode node;
+        node.firstTriangleIndex = start;
+        node.triangleCount = end - start;
+        node.leftChild = node.rightChild = -1;
 
-		// Calculer les limites du nœud
-		node.bounds.min = node.bounds.max = triangles[start].v0;
-		for (int i = start; i < end; i++) {
-			const auto& tri = triangles[i];
-			node.bounds.min = min(node.bounds.min, min(tri.v0, min(tri.v1, tri.v2)));
-			node.bounds.max = max(node.bounds.max, max(tri.v0, max(tri.v1, tri.v2)));
-		}
+        // Calculer les limites du nœud
+        node.bounds.min = node.bounds.max = triangles[start].v0;
+        for (int i = start; i < end; i++) {
+            const auto& tri = triangles[i];
+            node.bounds.min = min(node.bounds.min, min(tri.v0, min(tri.v1, tri.v2)));
+            node.bounds.max = max(node.bounds.max, max(tri.v0, max(tri.v1, tri.v2)));
+        }
 
-		int currentIndex = bvhNodes.size();
-		bvhNodes.push_back(node);
+        int currentIndex = bvhNodes.size();
+        bvhNodes.push_back(node);
 
-		if (parentIndex != -1) {
-			if (isLeftChild) {
-				bvhNodes[parentIndex].leftChild = currentIndex;
-			}
-			else {
-				bvhNodes[parentIndex].rightChild = currentIndex;
-			}
-		}
+        if (parentIndex != -1) {
+            if (isLeftChild) {
+                bvhNodes[parentIndex].leftChild = currentIndex;
+            }
+            else {
+                bvhNodes[parentIndex].rightChild = currentIndex;
+            }
+        }
 
-		// Si le nœud contient peu de triangles ou si nous sommes trop profonds, passer au suivant
-		if (node.triangleCount <= 4 || depth > 20) {
-			continue;
-		}
+        // Si le nœud contient peu de triangles ou si nous sommes trop profonds, passer au suivant
+        if (node.triangleCount <= 4 || depth > 20) {
+            continue;
+        }
 
-		// Trouver l'axe le plus long pour diviser
-		Vec3 extent = node.bounds.max - node.bounds.min;
-		int axis = 0;
-		if (extent.y > extent.x) axis = 1;
-		if (extent.z > extent[axis]) axis = 2;
+        // Trouver l'axe le plus long pour diviser
+        Vec3 extent = node.bounds.max - node.bounds.min;
+        int axis = 0;
+        if (extent.y > extent.x) axis = 1;
+        if (extent.z > extent[axis]) axis = 2;
 
-		// Trier les triangles selon l'axe choisi
-		int mid = (start + end) / 2;
-		std::nth_element(triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end,
-			[axis](const Triangle& a, const Triangle& b) {
-				return (a.v0[axis] + a.v1[axis] + a.v2[axis]) < (b.v0[axis] + b.v1[axis] + b.v2[axis]);
-			});
+        // Trier les triangles selon l'axe choisi
+        int mid = (start + end) / 2;
+        std::nth_element(triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end,
+            [axis](const Triangle& a, const Triangle& b) {
+                return (a.v0[axis] + a.v1[axis] + a.v2[axis]) < (b.v0[axis] + b.v1[axis] + b.v2[axis]);
+            });
 
-		// Ajouter les enfants à la pile
-		stack.push({ mid, end, depth + 1, currentIndex, false });
-		stack.push({ start, mid, depth + 1, currentIndex, true });
-	}
+        // Ajouter les enfants à la pile
+        stack.push({ mid, end, depth + 1, currentIndex, false });
+        stack.push({ start, mid, depth + 1, currentIndex, true });
+    }
 }
 
 // BEGIN::BVH GPU
 __host__ __device__
 void calculateBoundingBox(const Triangle& triangle, Vec3& min_values, Vec3& max_values)
 {
-	min_values = min(triangle.v0, min(triangle.v1, triangle.v2));
-	max_values = max(triangle.v0, max(triangle.v1, triangle.v2));
+    min_values = min(triangle.v0, min(triangle.v1, triangle.v2));
+    max_values = max(triangle.v0, max(triangle.v1, triangle.v2));
 }
 
 
 __global__ void initializeLeaves(Triangle* triangles, BVHNode* nodes, int numTriangles)
 {
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx < numTriangles) {
-		BVHNode& node = nodes[numTriangles - 1 + idx];
-		calculateBoundingBox(triangles[idx], node.bounds.min, node.bounds.max);
-		node.triangleIndex = idx;
-		node.leftChild = node.rightChild = -1;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numTriangles) {
+        BVHNode& node = nodes[numTriangles - 1 + idx];
+        calculateBoundingBox(triangles[idx], node.bounds.min, node.bounds.max);
+        node.triangleIndex = idx;
+        node.leftChild = node.rightChild = -1;
         node.firstTriangleIndex = idx;
         node.triangleCount = 1;
-	}
+    }
 }
 
 void buildBVH_GPU_Version2(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles)
 {
     int totalNodes = 2 * numTriangles - 1;
-	int blockSize = 256;
-	int numBlocks = (numTriangles + blockSize - 1) / blockSize;
-	hipLaunchKernelGGL(initializeLeaves, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_nodes, numTriangles);
-	// Construire les nœuds internes sur le CPU
-	BVHNode* h_nodes = new BVHNode[2 * numTriangles - 1];
-	hipMemcpy(h_nodes, d_nodes, (2 * numTriangles - 1) * sizeof(BVHNode), hipMemcpyDeviceToHost);
+    int blockSize = 256;
+    int numBlocks = (numTriangles + blockSize - 1) / blockSize;
+    hipLaunchKernelGGL(initializeLeaves, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_nodes, numTriangles);
 
+    BVHNode* h_nodes = new BVHNode[2 * numTriangles - 1];
+    hipMemcpy(h_nodes, d_nodes, (2 * numTriangles - 1) * sizeof(BVHNode), hipMemcpyDeviceToHost);
+
+    for (int i = numTriangles - 2; i >= 0; --i) {
+        BVHNode& node = h_nodes[i];
+        int leftChild    = 2 * i + 1;
+        int rightChild   = 2 * i + 2;
+        node.leftChild   = leftChild;
+        node.rightChild  = rightChild;
+        node.triangleIndex = -1;
+        
+
+        BVHNode& leftNode = h_nodes[leftChild];
+        BVHNode& rightNode = h_nodes[rightChild];
+        node.bounds.min = min(leftNode.bounds.min, rightNode.bounds.min);
+        node.bounds.max = max(leftNode.bounds.max, rightNode.bounds.max);
+    }
+    hipMemcpy(d_nodes, h_nodes, (2 * numTriangles - 1) * sizeof(BVHNode), hipMemcpyHostToDevice);
+    delete[] h_nodes;
+}
+
+__global__ void buildEvaluationNodes(BVHNode* nodes, int numTriangles)
+{
 	for (int i = numTriangles - 2; i >= 0; --i) {
-		BVHNode& node = h_nodes[i];
+		BVHNode& node = nodes[i];
 		int leftChild    = 2 * i + 1;
 		int rightChild   = 2 * i + 2;
 		node.leftChild   = leftChild;
 		node.rightChild  = rightChild;
 		node.triangleIndex = -1;
-        
-
-		BVHNode& leftNode = h_nodes[leftChild];
-		BVHNode& rightNode = h_nodes[rightChild];
+		BVHNode& leftNode = nodes[leftChild];
+		BVHNode& rightNode = nodes[rightChild];
 		node.bounds.min = min(leftNode.bounds.min, rightNode.bounds.min);
 		node.bounds.max = max(leftNode.bounds.max, rightNode.bounds.max);
 	}
-	hipMemcpy(d_nodes, h_nodes, (2 * numTriangles - 1) * sizeof(BVHNode), hipMemcpyHostToDevice);
-	delete[] h_nodes;
+    //__syncthreads();
+}
+
+
+void buildBVH_GPU_Version3(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles)
+{
+    int blockSize = 256;
+    int numBlocks = (numTriangles + blockSize - 1) / blockSize;
+    hipLaunchKernelGGL(initializeLeaves, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_nodes, numTriangles);
+    hipDeviceSynchronize();
+    hipLaunchKernelGGL(buildEvaluationNodes, dim3(1), dim3(1), 0, 0, d_nodes, numTriangles);
+    hipDeviceSynchronize();
 }
 // END::GPU
 
@@ -2283,7 +2306,7 @@ public:
                 std::vector<std::vector<rayintersection_result_type>> resSeq;
                 resSeq.reserve( ray.size() );
 
-                //std::cout<<"Value isGPU="<<this->isGPUHip()<<"\n";        
+                //std::cout<<"Value isGPU="<<this->isGPUHip()<<"\n";
                 if ( !(this->isGPUHip()))
                 {
                     for ( auto const& currentRay : ray )
@@ -2296,9 +2319,9 @@ public:
                 }
                 else
                 {
-                    resSeq= this->intersectAllRaysWithGPU(ray); 
+                    resSeq= this->intersectAllRaysWithGPU(ray);
                 }
-				
+                
                 if ( !parallel )
                     return resSeq;
 
@@ -2345,7 +2368,7 @@ public:
                 }
                 else
                 {
-                    resSeq= this->intersectAllRaysWithGPU(ray); 
+                    resSeq= this->intersectAllRaysWithGPU(ray);
 
                 }
                 
@@ -2874,13 +2897,20 @@ public:
     thrust::device_vector<bvhRocThrust::BVHNodeAABB> deviceNodes_AABB;
     thrust::device_vector<bvhRocThrust::F3Triangle> deviceTriangles;
 
+    bvhHip::BVHNode* devicebvhHipNodes;
+    bvhHip::Triangle* deviceHipTriangles;
+
     int numDevice;
     int numVersion;
+    int modeGPU; // 1 - HIP  2 - rocThrust
+	bool isUnifiedMemory;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm ) : super_type( quality,worldComm )
-    { 
+    {
         numDevice=0;
         numVersion=1;
+        modeGPU=2;
+		isUnifiedMemory = false;
     }
 
     BVH_HIP_Party( BVH_HIP_Party && ) = default;
@@ -2898,92 +2928,154 @@ public:
             //...
 
             //hip device used
-            hipSetDevice(numDevice); 
-            int numDeviceActivated; 
+            hipSetDevice(numDevice);
+            int numDeviceActivated;
             hipGetDevice(&numDeviceActivated);
             if (isView) std::cout << "[INFO]: Num Device Activated="<<numDeviceActivated<<"\n";
 
             std::vector<bvhRocThrust::F3Triangle> hostTriangles;
             // Definition of operating modes
-			bool isModeBox=true;               isModeBox=false;
-			bool isModeDirectInDevice=false;   isModeDirectInDevice=true; //Todo CTRL in infinity and size max of HIP GPU
+            bool isModeBox=true;               isModeBox=false;
+            bool isModeDirectInDevice=false;   isModeDirectInDevice=true; //Todo CTRL in infinity and size max of HIP GPU
 
-            // Memory cleaning before start...
-            deviceNodes.clear(); deviceTriangles.clear();
 
-			// ...
-			if (isModeBox)
-			{
-                // Method using the box calculated before by feelpp
-				for (int k=0; k< this->M_primitiveInfo.size();++k)
+            if (modeGPU==2) //mode rocThrust
+            {
+                // Memory cleaning before start...
+                deviceNodes.clear(); deviceTriangles.clear();
+
+                // ...
+                if (isModeBox)
+                {
+                    // Method using the box calculated before by feelpp
+                    for (int k=0; k< this->M_primitiveInfo.size();++k)
+                    {
+                            // Converting bounding box to triangle for a lego scene
+                            int id = this->M_primitiveInfo[k].meshEntity().id();
+                            bvhRocThrust::Box mbox;
+                            mbox.min=bvhRocThrust::Vec3(this->M_primitiveInfo[k].boundMin()[0],this->M_primitiveInfo[k].boundMin()[1],this->M_primitiveInfo[k].boundMin()[2]);
+                            mbox.max=bvhRocThrust::Vec3(this->M_primitiveInfo[k].boundMax()[0],this->M_primitiveInfo[k].boundMax()[1],this->M_primitiveInfo[k].boundMax()[2]);
+                            std::vector<bvhRocThrust::F3Triangle>  ltri;
+                            ltri=bvhRocThrust::boxToTriangles(mbox,id);
+                            
+                            // Adding triangles in the device or in the host
+                            if (isModeDirectInDevice) {
+                                deviceTriangles.insert(deviceTriangles.end(),ltri.begin(),ltri.end());
+                            }
+                            else
+                            {
+                                hostTriangles.insert(hostTriangles.end(),ltri.begin(),ltri.end());
+                            }
+                            ltri.clear();
+                    }
+                }
+                else
+                {
+                    // Method using feelpp mesh
+                    for (int k=0; k< this->M_primitiveInfo.size();++k)
+                    {
+                            int id = this->M_primitiveInfo[k].meshEntity().id();
+                            auto const& primInfo = this->M_primitiveInfo[k];
+                            auto const& meshEntity = primInfo.meshEntity();
+                            auto const& pt0 = meshEntity.point(0);
+                            auto const& pt1 = meshEntity.point(1);
+                            auto const& pt2 = meshEntity.point(2);
+                            bvhRocThrust::F3Triangle  ltri;
+                            ltri.v0=make_float3(pt0[0],pt0[1],pt0[2]);
+                            ltri.v1=make_float3(pt1[0],pt1[1],pt1[2]);
+                            ltri.v2=make_float3(pt2[0],pt2[1],pt2[2]);
+                            ltri.id = id;
+                            
+                            // Adding triangles in device or in host
+                            if (isModeDirectInDevice) {
+                                deviceTriangles.push_back(ltri);
+                            }
+                            else
+                            {
+                                hostTriangles.push_back(ltri);
+                            }
+                        
+                    }
+                }
+    
+                //...
+                
+                if (!isModeDirectInDevice) {
+                    // Transfer triangles to GPU
+                    deviceTriangles = hostTriangles;
+                    // Memory cleaning
+                    hostTriangles.clear();
+                }
+                // Building the BVH
+                if (numVersion==1) {
+                    bvhRocThrust::buildBVHWithTriangleVersion5(deviceTriangles, deviceNodes);
+                }
+                if (numVersion==3) {
+                    bvhRocThrust::buildBVHWithTriangleVersion3(deviceTriangles, deviceNodes);
+                }
+                if (numVersion==10) {
+                    bvhRocThrust::buildBVH_AABB(deviceTriangles, deviceNodes_AABB);
+                }
+            } //END modeGPU==2
+    
+
+
+            if (modeGPU==1)
+            {
+				if (!isUnifiedMemory)
 				{
-                        // Converting bounding box to triangle for a lego scene
-						int id = this->M_primitiveInfo[k].meshEntity().id();
-						bvhRocThrust::Box mbox;
-						mbox.min=bvhRocThrust::Vec3(this->M_primitiveInfo[k].boundMin()[0],this->M_primitiveInfo[k].boundMin()[1],this->M_primitiveInfo[k].boundMin()[2]);
-						mbox.max=bvhRocThrust::Vec3(this->M_primitiveInfo[k].boundMax()[0],this->M_primitiveInfo[k].boundMax()[1],this->M_primitiveInfo[k].boundMax()[2]);
-						std::vector<bvhRocThrust::F3Triangle>  ltri;
-						ltri=bvhRocThrust::boxToTriangles(mbox,id);
-						
-                        // Adding triangles in the device or in the host
-						if (isModeDirectInDevice) {
-							deviceTriangles.insert(deviceTriangles.end(),ltri.begin(),ltri.end());
-						}
-						else
-						{
-							hostTriangles.insert(hostTriangles.end(),ltri.begin(),ltri.end());
-						}
-						ltri.clear();
-				}
-			}
-			else
-			{
-                // Method using feelpp mesh
-				for (int k=0; k< this->M_primitiveInfo.size();++k)
-				{
-						int id = this->M_primitiveInfo[k].meshEntity().id();
-						auto const& primInfo = this->M_primitiveInfo[k];
-						auto const& meshEntity = primInfo.meshEntity();
-						auto const& pt0 = meshEntity.point(0);
-						auto const& pt1 = meshEntity.point(1);
-						auto const& pt2 = meshEntity.point(2);
-						bvhRocThrust::F3Triangle  ltri;
-						ltri.v0=make_float3(pt0[0],pt0[1],pt0[2]);
-						ltri.v1=make_float3(pt1[0],pt1[1],pt1[2]);
-						ltri.v2=make_float3(pt2[0],pt2[1],pt2[2]);
-						ltri.id = id;
-						
-                        // Adding triangles in device or in host
-						if (isModeDirectInDevice) {
-							deviceTriangles.push_back(ltri);
-						}
-						else
-						{
-							hostTriangles.push_back(ltri);						
-						}
+					std::vector<bvhHip::Triangle> HostHipTriangles;
 					
-				}	
-			}
- 
-            //...
-            
-            if (!isModeDirectInDevice) { 
-                // Transfer triangles to GPU
-                deviceTriangles = hostTriangles; 
-                // Memory cleaning
-                hostTriangles.clear();
-            }
-            // Building the BVH
-            if (numVersion==1) {
-                bvhRocThrust::buildBVHWithTriangleVersion5(deviceTriangles, deviceNodes);
-            }
-            if (numVersion==3) {
-                bvhRocThrust::buildBVHWithTriangleVersion3(deviceTriangles, deviceNodes);
-            }
-            if (numVersion==10) {
-                bvhRocThrust::buildBVH_AABB(deviceTriangles, deviceNodes_AABB);
-            }
+					// Load Mesh  in host
+					for (int k=0; k< this->M_primitiveInfo.size();++k)
+					{
+							int id = this->M_primitiveInfo[k].meshEntity().id();
+							auto const& primInfo = this->M_primitiveInfo[k];
+							auto const& meshEntity = primInfo.meshEntity();
+							auto const& pt0 = meshEntity.point(0);
+							auto const& pt1 = meshEntity.point(1);
+							auto const& pt2 = meshEntity.point(2);
+							bvhHip::Triangle ltri;
+							ltri.v0=bvhHip::Vec3(pt0[0],pt0[1],pt0[2]);
+							ltri.v1=bvhHip::Vec3(pt1[0],pt1[1],pt1[2]);
+							ltri.v2=bvhHip::Vec3(pt2[0],pt2[1],pt2[2]);
+							ltri.id = id;
+							HostHipTriangles.push_back(ltri);
+					}
 
+					int numTriangles=HostHipTriangles.size();
+
+					hipMalloc(&deviceHipTriangles, numTriangles * sizeof(bvhHip::Triangle));
+					hipMemcpy(deviceHipTriangles, HostHipTriangles.data(), numTriangles * sizeof(bvhHip::Triangle), hipMemcpyHostToDevice);
+
+					hipMalloc(&devicebvhHipNodes, (2 * numTriangles - 1) * sizeof(bvhHip::BVHNode));
+					bvhHip::buildBVH_GPU_Version2(deviceHipTriangles, devicebvhHipNodes, numTriangles);
+				}
+				else
+				{
+					int numTriangles=this->M_primitiveInfo.size();
+					hipMallocManaged(&deviceHipTriangles, numTriangles * sizeof(bvhHip::Triangle));
+					hipMallocManaged(&devicebvhHipNodes, (2 * numTriangles - 1) * sizeof(bvhHip::BVHNode));
+					// Load Mesh  in host-device
+					
+					for (int k=0; k< this->M_primitiveInfo.size();++k)
+					{
+							int id = this->M_primitiveInfo[k].meshEntity().id();
+							auto const& primInfo = this->M_primitiveInfo[k];
+							auto const& meshEntity = primInfo.meshEntity();
+							auto const& pt0 = meshEntity.point(0);
+							auto const& pt1 = meshEntity.point(1);
+							auto const& pt2 = meshEntity.point(2);
+							deviceHipTriangles[k].v0=bvhHip::Vec3(pt0[0],pt0[1],pt0[2]);
+							deviceHipTriangles[k].v1=bvhHip::Vec3(pt1[0],pt1[1],pt1[2]);
+							deviceHipTriangles[k].v2=bvhHip::Vec3(pt2[0],pt2[1],pt2[2]);
+							deviceHipTriangles[k].id = id;
+					}
+					
+					bvhHip::buildBVH_GPU_Version2(deviceHipTriangles, devicebvhHipNodes, numTriangles);
+				}
+
+            } //END modeGPU==1
         }
 
 private:
@@ -3017,160 +3109,288 @@ private:
                 std::vector<rayintersection_result_type> res;
                 //res.reserve(numRays);
 
-                //thrust::device_vector<bvhRocThrust::F3Ray>  deviceRays(numRays);
-                //thrust::device_vector<float3> deviceIntersectionPoint(numRays); 
 
-                thrust::device_vector<bvhRocThrust::F3Ray>  deviceRays;
-				thrust::device_vector<float3> deviceIntersectionPoint; 
-                thrust::host_vector<float3> hostIntersectionPoint(numRays);
-                thrust::host_vector<bvhRocThrust::F3Ray>  hostRays(numRays);
-
-                if (isView) std::cout<<"[BEGIN::LIST RAYs]"<<"\n";
-                if (!isModeDirectInDevice) {
-                    for (int k = 0; k < numRays; ++k) {
-                        if (isView) 
-                        {
-                            std::cout<<" Origin=<"<<rayons[k].origin()[0]<<","<<rayons[k].origin()[1]<<","<<rayons[k].origin()[2]<<">\n";
-                            std::cout<<" Direction=<"<<rayons[k].dir()[0]<<","<<rayons[k].dir()[1]<<","<<rayons[k].dir()[2]<<">\n";
-                            std::cout<<" Distance Min="<<rayons[k].distanceMin()<<"\n";
-                            std::cout<<" Distance Max="<<rayons[k].distanceMax()<<"\n";
-                        }
-                        hostRays[k].origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
-                        hostRays[k].direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
-                        hostRays[k].direction = bvhRocThrust::normalize(hostRays[k].direction);
-
-                        hostRays[k].tMin=-INFINITY;
-                        hostRays[k].tMax=INFINITY;
-
-                        hostIntersectionPoint[k]=make_float3(INFINITY, INFINITY, INFINITY);
-                    }
-                    deviceRays = hostRays;
-				    deviceIntersectionPoint = hostIntersectionPoint;
-                } 
-                else
-                {
-                    for (int k = 0; k < numRays; ++k) {
-                        bvhRocThrust::F3Ray r;
-                        r.origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
-                        r.direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
-                        r.direction = bvhRocThrust::normalize(r.direction);
-                        r.tMin=-INFINITY;
-                        r.tMax=INFINITY;
-                        deviceRays.push_back(r);
-                        float3 v=make_float3(INFINITY, INFINITY, INFINITY);
-                        deviceIntersectionPoint.push_back(v);
-                    }
-                }
-                if (isView) std::cout<<"[END::LIST RAYs]"<<"\n";
-
-                              
-                if (isView) std::cout<<"[BEGIN::RAYS TRACING]"<<"\n";
-                // Allocate memory for the results
-				thrust::device_vector<int>   deviceHitResults(numRays,-1);
-				thrust::device_vector<float> deviceDistanceResults(numRays,std::numeric_limits<float>::max());
-                thrust::device_vector<int>   deviceIdResults(numRays);
-				//int threadsPerBlock = 256;
-                int threadsPerBlock = 512;
-				int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
-                
-               
-                if ((numVersion==1) || (numVersion==3)){
-                    bvhRocThrust::rayTracingKernelVersion2<<<blocksPerGrid, threadsPerBlock>>>(
-                    //bvhRocThrust::rayTracingKernelVersion3<<<blocksPerGrid, threadsPerBlock>>>(
-                            thrust::raw_pointer_cast(deviceNodes.data()),
-                            thrust::raw_pointer_cast(deviceTriangles.data()),
-                            thrust::raw_pointer_cast(deviceRays.data()),
-                            thrust::raw_pointer_cast(deviceHitResults.data()),
-                            thrust::raw_pointer_cast(deviceDistanceResults.data()),
-                            thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
-                            thrust::raw_pointer_cast(deviceIdResults.data()),
-                            numRays
-                    );
-                }
-
-                if (numVersion==10) {
-                    bvhRocThrust::rayTracingImgKernel_AABB<<<blocksPerGrid, threadsPerBlock>>>(
-                            thrust::raw_pointer_cast(deviceNodes_AABB.data()),
-                            thrust::raw_pointer_cast(deviceTriangles.data()),
-                            thrust::raw_pointer_cast(deviceRays.data()),
-                            thrust::raw_pointer_cast(deviceHitResults.data()),
-                            thrust::raw_pointer_cast(deviceDistanceResults.data()),
-                            thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
-                            thrust::raw_pointer_cast(deviceIdResults.data()),
-                            numRays
-                    );
-                }
-
-                //hipDeviceSynchronize();
-                
-
-				thrust::host_vector<int>   hostHitResults = deviceHitResults;
-				thrust::host_vector<float> hostDistanceResults = deviceDistanceResults;
-				hostIntersectionPoint=deviceIntersectionPoint;
-                thrust::host_vector<int>   IdResults = deviceIdResults;
-
-
-                if (isView) std::cout<<"[END::RAYS TRACING]"<<"\n";
-                if (isView) std::cout<<"[BEGIN::DEBRIFING COLLISION]"<<"\n";
-				// Count intersections
-				int hitCount = thrust::count_if(hostHitResults.begin(), hostHitResults.end(),thrust::placeholders::_1 != -1);
-				if (isView) std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
-
-                // Reading the results and transmitting the information that will be used later
-				for (int i=0;i<numRays;++i)
+				if (modeGPU==2) //mode rocThrust
 				{
-                    double M_distance = std::numeric_limits<double>::max();
-                    int numId=-1; 
+					thrust::device_vector<bvhRocThrust::F3Ray>  deviceRays;
+					thrust::device_vector<float3> deviceIntersectionPoint;
+					thrust::host_vector<float3> hostIntersectionPoint(numRays);
+					thrust::host_vector<bvhRocThrust::F3Ray>  hostRays(numRays);
 
-					if (hostHitResults[i]!=-1)
-					{
-                        if (isView) 
-                        {
-                            std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostRays[i].origin.x<<","<<hostRays[i].origin.y<<","<<hostRays[i].origin.z<<"> ";
-                            std::cout<<" dir= <"<<hostRays[i].direction.x<<","<<hostRays[i].direction.y<<","<<hostRays[i].direction.z<<"> ";
-                            std::cout<<" dist (min)="<<hostDistanceResults[i];
-                            std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> ";
-                            std::cout<<" IdObject= "<<IdResults[i]<<"\n";
-                        }
+					if (isView) std::cout<<"[BEGIN::LIST RAYs]"<<"\n";
+					if (!isModeDirectInDevice) {
+						for (int k = 0; k < numRays; ++k) {
+							if (isView)
+							{
+								std::cout<<" Origin=<"<<rayons[k].origin()[0]<<","<<rayons[k].origin()[1]<<","<<rayons[k].origin()[2]<<">\n";
+								std::cout<<" Direction=<"<<rayons[k].dir()[0]<<","<<rayons[k].dir()[1]<<","<<rayons[k].dir()[2]<<">\n";
+								std::cout<<" Distance Min="<<rayons[k].distanceMin()<<"\n";
+								std::cout<<" Distance Max="<<rayons[k].distanceMax()<<"\n";
+							}
+							hostRays[k].origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
+							hostRays[k].direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
+							hostRays[k].direction = bvhRocThrust::normalize(hostRays[k].direction);
 
-                        M_distance=double(hostDistanceResults[i]);
+							hostRays[k].tMin=-INFINITY;
+							hostRays[k].tMax=INFINITY;
 
-                        res.push_back( rayintersection_result_type(this->worldComm().rank(),IdResults[i], M_distance)); //(rank,idPrimitiv,distance)
-                        res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
-                        res.resize(1);
-                        resALL.push_back( std::move( res ) );
+							hostIntersectionPoint[k]=make_float3(INFINITY, INFINITY, INFINITY);
+						}
+						deviceRays = hostRays;
+						deviceIntersectionPoint = hostIntersectionPoint;
 					}
-                    else
-                    {
-                        // TODO: Define what is returned, if there is no intersection point.
-                        //res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
-                        //res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
-                        //res.resize(1);
-                        //
-                        resALL.push_back( std::move( res ) );
-                    }
-                    
+					else
+					{
+						for (int k = 0; k < numRays; ++k) {
+							bvhRocThrust::F3Ray r;
+							r.origin = make_float3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
+							r.direction = make_float3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
+							r.direction = bvhRocThrust::normalize(r.direction);
+							r.tMin=-INFINITY;
+							r.tMax=INFINITY;
+							deviceRays.push_back(r);
+							float3 v=make_float3(INFINITY, INFINITY, INFINITY);
+							deviceIntersectionPoint.push_back(v);
+						}
+					}
+					if (isView) std::cout<<"[END::LIST RAYs]"<<"\n";
+
+								  
+					if (isView) std::cout<<"[BEGIN::RAYS TRACING]"<<"\n";
+					// Allocate memory for the results
+					thrust::device_vector<int>   deviceHitResults(numRays,-1);
+					thrust::device_vector<float> deviceDistanceResults(numRays,std::numeric_limits<float>::max());
+					thrust::device_vector<int>   deviceIdResults(numRays);
+					//int threadsPerBlock = 256;
+					int threadsPerBlock = 512;
+					int blocksPerGrid = (numRays + threadsPerBlock - 1) / threadsPerBlock;
+					
+				   
+					if ((numVersion==1) || (numVersion==3)){
+						bvhRocThrust::rayTracingKernelVersion2<<<blocksPerGrid, threadsPerBlock>>>(
+						//bvhRocThrust::rayTracingKernelVersion3<<<blocksPerGrid, threadsPerBlock>>>(
+								thrust::raw_pointer_cast(deviceNodes.data()),
+								thrust::raw_pointer_cast(deviceTriangles.data()),
+								thrust::raw_pointer_cast(deviceRays.data()),
+								thrust::raw_pointer_cast(deviceHitResults.data()),
+								thrust::raw_pointer_cast(deviceDistanceResults.data()),
+								thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
+								thrust::raw_pointer_cast(deviceIdResults.data()),
+								numRays
+						);
+					}
+
+					if (numVersion==10) {
+						bvhRocThrust::rayTracingImgKernel_AABB<<<blocksPerGrid, threadsPerBlock>>>(
+								thrust::raw_pointer_cast(deviceNodes_AABB.data()),
+								thrust::raw_pointer_cast(deviceTriangles.data()),
+								thrust::raw_pointer_cast(deviceRays.data()),
+								thrust::raw_pointer_cast(deviceHitResults.data()),
+								thrust::raw_pointer_cast(deviceDistanceResults.data()),
+								thrust::raw_pointer_cast(deviceIntersectionPoint.data()),
+								thrust::raw_pointer_cast(deviceIdResults.data()),
+								numRays
+						);
+					}
+
+					//hipDeviceSynchronize();
+					
+
+					thrust::host_vector<int>   hostHitResults = deviceHitResults;
+					thrust::host_vector<float> hostDistanceResults = deviceDistanceResults;
+					hostIntersectionPoint=deviceIntersectionPoint;
+					thrust::host_vector<int>   IdResults = deviceIdResults;
+					
+					if (isView) std::cout<<"[END::RAYS TRACING]"<<"\n";
+					if (isView) std::cout<<"[BEGIN::DEBRIFING COLLISION]"<<"\n";
+					// Count intersections
+					int hitCount = thrust::count_if(hostHitResults.begin(), hostHitResults.end(),thrust::placeholders::_1 != -1);
+					if (isView) std::cout<<"[INFO]: Number of rays that intersected the mesh : " << hitCount << " / " << numRays << std::endl;
+
+					// Reading the results and transmitting the information that will be used later
+					for (int i=0;i<numRays;++i)
+					{
+						double M_distance = std::numeric_limits<double>::max();
+						int numId=-1;
+
+						if (hostHitResults[i]!=-1)
+						{
+							if (isView)
+							{
+								std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostRays[i].origin.x<<","<<hostRays[i].origin.y<<","<<hostRays[i].origin.z<<"> ";
+								std::cout<<" dir= <"<<hostRays[i].direction.x<<","<<hostRays[i].direction.y<<","<<hostRays[i].direction.z<<"> ";
+								std::cout<<" dist (min)="<<hostDistanceResults[i];
+								std::cout<<" IntersectionPoint= <"<<hostIntersectionPoint[i].x<<","<<hostIntersectionPoint[i].y<<","<<hostIntersectionPoint[i].z<<"> ";
+								std::cout<<" IdObject= "<<IdResults[i]<<"\n";
+							}
+
+							M_distance=double(hostDistanceResults[i]);
+
+							res.push_back( rayintersection_result_type(this->worldComm().rank(),IdResults[i], M_distance)); //(rank,idPrimitiv,distance)
+							res.back().setCoordinates(vector_realdim_type{{hostIntersectionPoint[i].x,hostIntersectionPoint[i].y,hostIntersectionPoint[i].z}});
+							res.resize(1);
+							resALL.push_back( std::move( res ) );
+						}
+						else
+						{
+							// TODO: Define what is returned, if there is no intersection point.
+							//res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
+							//res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
+							//res.resize(1);
+							//
+							resALL.push_back( std::move( res ) );
+						}
+						
+					}
+					if (isView) std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";
+
+					// Memory cleaning
+					if (1==1)
+					{
+						if (isView) std::cout<<"[END::MEMORY CLEANING]"<<"\n";
+						deviceHitResults.clear();
+						deviceDistanceResults.clear();
+						deviceIntersectionPoint.clear();
+						deviceIdResults.clear();
+						deviceRays.clear();
+
+						hostIntersectionPoint.clear();
+						hostIntersectionPoint.clear();
+						hostHitResults.clear();
+						hostDistanceResults.clear();
+						hostRays.clear();
+					}
 				}
-                if (isView) std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";       
+				
+				if (modeGPU==1) //mode hip
+				{
+					if (isView) std::cout<<"[BEGIN::LIST RAYs]"<<"\n";
+					
+					bvhHip::Ray* deviceHipRays;		
 
-                // Memory cleaning
-                if (isView) std::cout<<"[BEGIN::MEMORY CLEANING]"<<"\n";   
+					if (!isUnifiedMemory) { 					
+						std::vector<bvhHip::Ray> hostHipRays;
+						// Load Ray
+						for (int k = 0; k < numRays; ++k) {
+							bvhHip::Ray ray;
+							ray.origin    = bvhHip::Vec3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
+							ray.direction = bvhHip::Vec3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
+							hostHipRays.push_back(ray);
+						}
+						hipMalloc(&deviceHipRays, hostHipRays.size() * sizeof(bvhHip::Ray));
+						hipMemcpy(deviceHipRays, hostHipRays.data(), hostHipRays.size() * sizeof(bvhHip::Ray), hipMemcpyHostToDevice);
+					}
+					else
+					{
+						hipMallocManaged(&deviceHipRays, numRays * sizeof(bvhHip::Ray));
+						for (int k = 0; k < numRays; ++k) {
+							deviceHipRays[k].origin    = bvhHip::Vec3(rayons[k].origin()[0],rayons[k].origin()[1],rayons[k].origin()[2]);
+							deviceHipRays[k].direction = bvhHip::Vec3(rayons[k].dir()[0],rayons[k].dir()[1],rayons[k].dir()[2]);
+						}
+					}
+					
+					
+					if (isView) std::cout<<"[END::LIST RAYs]"<<"\n";
+					
+					
+					if (isView) std::cout<<"[BEGIN::RAYS TRACING]"<<"\n";
+					int* deviceHipHitTriangles;
+					bvhHip::Vec3* deviceHipIntersectionPoint;
+					float* deviceHipDistanceResults;
+					int* deviceHipIdResults;
+					
+					hipMalloc(&deviceHipHitTriangles, numRays * sizeof(int));
+					hipMalloc(&deviceHipIntersectionPoint, numRays * sizeof(bvhHip::Vec3));
+					hipMalloc(&deviceHipDistanceResults, numRays * sizeof(float));
+					hipMalloc(&deviceHipIdResults, numRays * sizeof(int));
+					
+					int blockSize = 512;
+					int numBlocks = (numRays + blockSize - 1) / blockSize;
+					bvhHip:hipLaunchKernelGGL(bvhHip::raytraceKernel, dim3(numBlocks), dim3(blockSize), 0, 0,
+						deviceHipRays,
+						numRays,
+						devicebvhHipNodes,
+						deviceHipTriangles,
+						deviceHipHitTriangles,
+						deviceHipDistanceResults,
+						deviceHipIntersectionPoint,
+						deviceHipHitTriangles
+					);
+					
+					std::vector<int> hostHipHitTriangles(numRays);
+					hipMemcpy(hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof(int), hipMemcpyDeviceToHost);
+					
+					std::vector<bvhHip::Vec3> hostHipIntersectionPoint(numRays);
+					hipMemcpy(hostHipIntersectionPoint.data(), deviceHipIntersectionPoint, numRays* sizeof(bvhHip::Vec3), hipMemcpyDeviceToHost);
+					
+					std::vector<int> hostHipDistanceResults(numRays);
+					hipMemcpy(hostHipDistanceResults.data(), deviceHipDistanceResults, numRays * sizeof(float), hipMemcpyDeviceToHost);
+					
+					std::vector<int> hostHipIdResults(numRays);
+					hipMemcpy(hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof(int), hipMemcpyDeviceToHost);
+					
+					if (isView) std::cout<<"[END::RAYS TRACING]"<<"\n";
+					
+					
+					if (isView) std::cout<<"[BEGIN::DEBRIFING COLLISION]"<<"\n";
+					
+					// Reading the results and transmitting the information that will be used later
+					for (int i=0;i<numRays;++i)
+					{
+						double M_distance = std::numeric_limits<double>::max();
+						int numId=-1;
 
-                if (1==1)
-                {
-                    if (isView) std::cout<<"[END::MEMORY CLEANING]"<<"\n";   
-                    deviceHitResults.clear();
-                    deviceDistanceResults.clear();
-                    deviceIntersectionPoint.clear();
-                    deviceIdResults.clear();
-                    deviceRays.clear();
+						//if (hostHipHitResults[i]!=-1)
+                        if (hostHipHitTriangles[i]!=-1)
+						{
+							if (isView)
+							{
+								//std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostHipRays[i].origin.x<<","<<hostHipRays[i].origin.y<<","<<hostHipRays[i].origin.z<<"> ";
+								//std::cout<<" dir= <"<<hostHipRays[i].direction.x<<","<<hostHipRays[i].direction.y<<","<<hostHipRays[i].direction.z<<"> ";
+								std::cout<<" dist (min)="<<hostHipDistanceResults[i];
+								std::cout<<" IntersectionPoint= <"<<hostHipIntersectionPoint[i].x<<","<<hostHipIntersectionPoint[i].y<<","<<hostHipIntersectionPoint[i].z<<"> ";
+								std::cout<<" IdObject= "<<hostHipIdResults[i]<<"\n";
+							}
 
-                    hostIntersectionPoint.clear();
-                    hostIntersectionPoint.clear();
-                    hostHitResults.clear();
-                    hostDistanceResults.clear();
-                    hostRays.clear();
-                }     
+							M_distance=double(hostHipDistanceResults[i]);
+
+							res.push_back( rayintersection_result_type(this->worldComm().rank(),hostHipIdResults[i], M_distance)); //(rank,idPrimitiv,distance)
+							res.back().setCoordinates(vector_realdim_type{{hostHipIntersectionPoint[i].x,hostHipIntersectionPoint[i].y,hostHipIntersectionPoint[i].z}});
+							res.resize(1);
+							resALL.push_back( std::move( res ) );
+						}
+						else
+						{
+							// TODO: Define what is returned, if there is no intersection point.
+							//res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
+							//res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
+							//res.resize(1);
+							//
+							resALL.push_back( std::move( res ) );
+						}
+						
+					}
+					
+					if (isView) std::cout<<"[END::DEBRIFING COLLISION]"<<"\n";
+					
+					
+					// Memory cleaning
+					if (isView) std::cout<<"[END::MEMORY CLEANING]"<<"\n";
+					hipFree(deviceHipHitTriangles);
+					hipFree(deviceHipDistanceResults);
+					hipFree(deviceHipIntersectionPoint);
+					hipFree(deviceHipHitTriangles);
+					
+					hostHipHitTriangles.clear();
+					hostHipIntersectionPoint.clear();
+					hostHipDistanceResults.clear();
+					hostHipIdResults.clear();
+
+					
+				}
+
+
+                
 
                 
         return(resALL);
@@ -3665,7 +3885,7 @@ auto boundingVolumeHierarchy( Ts && ... v )
     }
     
     #ifdef COMPILE_WITH_HIP
-            else 
+            else
             if ( kind == "hip-party" )
             {
                 if constexpr ( mesh_entity_type::nRealDim != 3 )
@@ -3685,4 +3905,5 @@ auto boundingVolumeHierarchy( Ts && ... v )
 
 
 }
+
 
