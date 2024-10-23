@@ -56,7 +56,7 @@ feelpp_add_application( hdg_thermoelectric
 #   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
 #   INSTALL
 #   )
-
+add_dependencies(toolboxes feelpp_toolbox_hdg_poisson feelpp_toolbox_hdg_elasticity feelpp_toolbox_hdg_thermoelectric)  
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
 
 if ( FEELPP_HAS_FMI4CPP )
@@ -85,6 +85,5 @@ if ( FEELPP_HAS_FMI4CPP )
   #                     --ts.time-final 0.25
   #                     --hdg.poisson.json.patch "{ \"op\": \"replace\", \"path\": \"/BoundaryConditions/poisson/CouplingODEs/buffer/circuit\", \"value\": \"${CMAKE_CURRENT_SOURCE_DIR}/cases/coupledpoisson/1-linear/test3d0d.fmu\" }" )
 endif()
-
 
 

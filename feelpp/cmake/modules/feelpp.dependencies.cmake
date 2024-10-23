@@ -887,8 +887,15 @@ if(FEELPP_ENABLE_LIBXML2)
   endif()
 endif()
 
+#
+# GPU support
+#
+include(feelpp.module.gpu)
 
-
+#
+# Kokkos
+#
+include(feelpp.module.kokkos)
 #
 # Petsc
 #

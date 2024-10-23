@@ -9,3 +9,4 @@ feelpp_add_application( electric SRCS main_electric.cpp
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_electric CATEGORY toolboxes/electric)
 
+add_dependencies(toolboxes feelpp_toolbox_electric)

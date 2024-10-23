@@ -11,3 +11,4 @@ feelpp_add_application( coefficientformpdes SRCS main.cpp
 
 feelpp_add_testcase(cases PREFIX feelpp_toolbox_cfpdes CATEGORY toolboxes/coefficientformpdes)
 
+add_dependencies(toolboxes feelpp_toolbox_coefficientformpdes)
