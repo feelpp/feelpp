@@ -123,7 +123,10 @@ public:
         {
             precomputeParamIndices();
         }
-
+        Element( int rows, int cols )
+            : super( rows, cols ), M_space(), param_indices_()
+        {
+        }
         // This constructor allows you to construct Element from Eigen expressions
         template<typename OtherDerived>
         Element(const Eigen::MatrixBase<OtherDerived>& other)
