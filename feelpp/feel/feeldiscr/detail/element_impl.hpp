@@ -453,7 +453,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
                                                                              pc );
         DCHECK( ublas::norm_2( __x-__c->xReal(0) ) < 1e-6 ) << "Point " << __x <<  " was not properly found, got " << __c->xReal(0);
         DVLOG(2) << "Point x=" << __x << " and c->xreal = " << __c->xReal(0);
-        
+
         found_pt[ rank ] = 1;
 
 #if defined(FEELPP_HAS_MPI)
@@ -1108,7 +1108,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
                                                                          __pc );
-    
+
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -1841,7 +1841,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
                                                                          __c,
                                                                          __pc );
-    
+
     for ( ; it!=it_end; ++it )
     {
         nbPtsElt = it->second.size();
@@ -2157,7 +2157,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
         //update precompute of basis functions
         __pc->update( pts );
         __ctx->update( __c, __pc );
-        
+
         //evaluate element for these points
         laplacian_type __lap( this->laplacian( *__ctx ) );
 
@@ -2600,7 +2600,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     constexpr size_type context = (is_hdiv_conforming || is_hcurl_conforming)?ExprType::context|vm::POINT|vm::JACOBIAN:ExprType::context|vm::POINT;
 
     auto gmcRange = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
-    auto expr_evaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
+    auto gmcRangeConnection1 = gmRange->template context<context,1>( eltConnectedToFirstFace, geopcRange, fid_in_element, ex.dynamicContext() );
+    auto exprOneSideEvaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange) );
+    auto exprTwoSideEvaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange,gmcRangeConnection1) );
 
     // geomap context on fe (allow to get relation between geomap context on face range )
     size_type eltIdRelatedToFace = meshFe->meshToSubMesh( firstFace.id() );
@@ -2616,16 +2618,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; __face_it != __face_en; ++__face_it )
     {
         auto const& curFace = boost::unwrap_ref(*__face_it);
-        fid_in_element = curFace.pos_first();
-        uint16_type faceConnectionId = 0;
-        gmcRange->template update<context>( curFace.element( faceConnectionId ), fid_in_element );
-        expr_evaluator.update( vf::mapgmc( gmcRange ) );
-
         // get dof relation between fe and face in range
         eltIdRelatedToFace = meshFe->meshToSubMesh( curFace.id() );
         auto const& curEltRelatedToFace =  meshFe->element( eltIdRelatedToFace );
         gmcFe->template update<vm::POINT>( curEltRelatedToFace );
         double dofPtCompareTol = std::max(1e-15,curEltRelatedToFace.hMin()*1e-5);
+
+        bool useTwoConnections = curFace.isConnectedTo1();
+        uint16_type faceConnection0Id = 0, faceConnection1Id = 1;
+        gmcRange->template update<context>( curFace.element( faceConnection0Id ), faceConnection0Id == 0 ? curFace.pos_first() : curFace.pos_second() );
+        if ( useTwoConnections)
+        {
+            gmcRangeConnection1->template update<context>( curFace.element( faceConnection1Id ), faceConnection1Id == 0 ? curFace.pos_first() : curFace.pos_second() );
+            exprTwoSideEvaluator.update( vf::mapgmc( gmcRange,gmcRangeConnection1 ) );
+        }
+        else
+        {
+            exprOneSideEvaluator.update( vf::mapgmc( gmcRange ) );
+        }
+
+        // compute points mapping between fe and face range
         for ( int q = 0 ; q < nPointsGmc ; ++q )
         {
             mapBetweenGmc[q] = invalid_uint16_type_value;
@@ -2649,10 +2661,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             CHECK( mapBetweenGmc[q] != invalid_uint16_type_value ) << "not found dof relation";
         }
 
-        // given permutation to tensor expression
-        expr_evaluator.setPermutation( mapBetweenGmc );
-        // get interpolated value by using the permtutations
-        fe->interpolate( expr_evaluator, IhLoc );
+        if ( useTwoConnections)
+        {
+            // given permutation to tensor expression
+            exprTwoSideEvaluator.setPermutation( mapBetweenGmc );
+            // get interpolated value by using the permtutations
+            fe->interpolate( exprTwoSideEvaluator, IhLoc );
+        }
+        else
+        {
+            // given permutation to tensor expression
+            exprOneSideEvaluator.setPermutation( mapBetweenGmc );
+            // get interpolated value by using the permtutations
+            fe->interpolate( exprOneSideEvaluator, IhLoc );
+        }
 
         // assign value at dofs
         if ( accumulate )
