@@ -333,7 +333,7 @@ public:
     /**
      * @brief Body base  class
      * @ingroup Fluid
-     * 
+     *
      */
     class Body //: public ModelPhysics<nDim>,
     //  public std::enable_shared_from_this<Body>
@@ -716,7 +716,7 @@ public:
     };
 
     /**
-     * @brief Body Articulation 
+     * @brief Body Articulation
      * @ingroup Fluid
      */
     class BodyArticulation
@@ -1420,7 +1420,7 @@ public:
     /**
      * @brief boundary conditions for a set of bodies
      * @ingroup Fluid
-     * 
+     *
      */
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
@@ -2176,12 +2176,19 @@ public :
 
             auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
+            // set connection markers if has partial mesh support (i.e. physics not in whole mesh)
+            std::set<std::string> requiresMarkersConnection;
+            auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+            if ( !mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
+                requiresMarkersConnection = mom->markers( this->physicsAvailableFromCurrentType() );
 
-            using _expr_normalstresstensor_type = std::decay_t<decltype(sigmaExpr*N())>;
-            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, Range<mesh_type,MESH_FACES>, std::string > > > mapExprNormalStressTensor;
-            mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( sigmaExpr*N(), rangeTrace, "element" ) );
+            auto normalStressExprOriginal = sigmaExpr*N();
+            auto normalStressExpr = evalOnFaces( std::move(normalStressExprOriginal),requiresMarkersConnection );
+            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(normalStressExpr)>, Range<mesh_type,MESH_FACES>, std::string > > > mapExprNormalStressTensor;
+            mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( normalStressExpr, rangeTrace, "element" ) );
 
-            auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            auto wssExprOriginal = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            auto wssExpr = evalOnFaces( std::move(wssExprOriginal),requiresMarkersConnection );
             std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , Range<mesh_type,MESH_FACES>, std::string > > > mapExprWallShearStress;
             mapExprWallShearStress[prefixvm(prefix,"trace.wall-shear-stress")].push_back( std::make_tuple( wssExpr, rangeTrace, "element" ) );
 
@@ -3046,5 +3053,3 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
 #include <feel/feelmodels/fluid/fluidmechanicsothers.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
-
-
