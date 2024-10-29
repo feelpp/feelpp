@@ -26,6 +26,7 @@ void runModel( const nl::json& specs )
     int rigidmotion = specs["/Models/LinearElasticity/rigidMotion"_json_pointer];
     bool steady = specs["/TimeStepping/LinearElasticity/steady"_json_pointer];
     std::string method = specs["/Collision/LinearElasticity/method"_json_pointer];
+    int rotation = specs["/Models/LinearElasticity/rotation"_json_pointer];
 
     
     if (method.compare("lagrange") == 0)
@@ -63,11 +64,13 @@ void runModel( const nl::json& specs )
                     ContactDynamic<2, 1,1> model( specs );
                     model.run();
                 }
+                /*
                 else if (orderGeo == 2) 
                 {
                     ContactDynamic<2, 2, 2> model(specs);
                     model.run();
                 }
+                */
             }
         }
         else if (dimension == 3)
@@ -84,11 +87,13 @@ void runModel( const nl::json& specs )
                     ContactDynamic<3, 1,1> model( specs );
                     model.run();
                 }
+                /*
                 else if (orderGeo == 2) 
                 {
                     ContactDynamic<3, 2, 2> model(specs);
                     model.run();
                 }
+                */
             }
         }
     }
@@ -96,12 +101,30 @@ void runModel( const nl::json& specs )
     {
         if (dimension == 2)
         {
+            if (rotation == 1 )
+            {
+                ElasticRigid<2, 1> model( specs );
+                model.rotation();
+            }
+        }
+        else if (dimension == 3)
+        {
+            if (rotation == 1 )
+            {
+                std::cout << "Rotation" << std::endl;
+                ElasticRigid<3, 1> model( specs );
+                model.rotationNeumann();
+            }
+        }
+            /*
             if ( orderGeo == 1 )
             {
                 ElasticRigid<2, 1> model( specs );
                 model.run();
             }
-        }
+            */
+    }
+        /*
         else if (dimension == 3)
         {
             if ( orderGeo == 1 )
@@ -110,7 +133,8 @@ void runModel( const nl::json& specs )
                 model.run();
             }
         }
-    }
+        */
+    
     else
     {
         throw std::runtime_error( fmt::format( "Invalid dimension {} specified in the input file", dimension ) );

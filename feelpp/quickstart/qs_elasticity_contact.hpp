@@ -22,6 +22,8 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelts/newmark.hpp>
+#include <feel/feelts/bdf.hpp>
+#include "nullspace-rigidbody.hpp"
 
 namespace Feel
 {

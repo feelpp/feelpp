@@ -251,6 +251,7 @@ void ContactStatic<Dim, Order>::processContactNitsche(form1_type& l, form2_type&
 template <int Dim, int Order>
 void ContactStatic<Dim, Order>::processBoundaryConditions(form1_type& l, form2_type& a)
 {
+
     // Boundary Condition Dirichlet
     if ( specs_["/BoundaryConditions/LinearElasticity"_json_pointer].contains("Dirichlet") )
     {
@@ -260,9 +261,25 @@ void ContactStatic<Dim, Order>::processBoundaryConditions(form1_type& l, form2_t
             std::string e = fmt::format("/BoundaryConditions/LinearElasticity/Dirichlet/{}/g/expr",key);
             auto bc_dir = specs_[nl::json::json_pointer( e )].get<std::string>();
             LOG(INFO) << "BoundaryCondition Dirichlet : " << bc_dir << std::endl;
-            a+=on(_range=markedfaces(mesh_,key), _rhs=l, _element=u_, _expr=expr<Dim,1>( bc_dir ) );
+            a+=on(_range=markedfaces(support(Xhv_),key), _rhs=l, _element=u_, _expr=expr<Dim,1>( bc_dir ) );
+            a+=on(_range=markedpoints(mesh_,key), _rhs=l, _element=u_, _expr=expr<Dim,1>( bc_dir ) );
+
         }
     }
+
+    // Boundary Condition Neumann
+    if ( specs_["/BoundaryConditions/LinearElasticity"_json_pointer].contains("Neumann") )
+    {
+        for ( auto [key, bc] : specs_["/BoundaryConditions/LinearElasticity/Neumann"_json_pointer].items() )
+        {
+            LOG( INFO ) << fmt::format( "Neumann conditions found: {}", key );
+            std::string e = fmt::format("/BoundaryConditions/LinearElasticity/Neumann/{}/h/expr",key);
+            auto bc_neu = specs_[nl::json::json_pointer( e )].get<std::string>();
+            LOG(INFO) << "BoundaryCondition Neumann : " << bc_neu << std::endl;
+            l += integrate( _range = markedfaces(support(Xhv_),key), _expr = trans(expr<Dim,1>( bc_neu ))*id(u_));
+        }
+    }
+
 }
 
 // Run method
@@ -470,6 +487,29 @@ ContactStatic<Dim, Order>::exportResults()
         nbr++;
     }
     */
+
+    int nbr = 1;
+    std::ofstream ofs("outputs.csv");
+    ofs << fmt::format("x, y, pressure") << std::endl;
+        
+    for (auto &bfaceC : markedfaces(mesh_,"contact"))
+    {
+        auto & faceC = boost::unwrap_ref( bfaceC );
+
+        auto ctx = Xh_->context();
+        node_type t1(Dim);
+        t1(0)=faceC.point(0).node()[0]; t1(1)=faceC.point(0).node()[1];
+        ctx.add( t1 );
+
+        auto evaluateStresstmp = evaluateFromContext( _context=ctx, _expr = idv(contactPressure_) );
+
+        if (evaluateStresstmp(0,0)!=0)
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}", faceC.point(0).node()[0], faceC.point(0).node()[1], evaluateStresstmp(0,0)) << std::endl;
+    
+        nbr++;
+    }
+
+    ofs.close();
 }
 
 }

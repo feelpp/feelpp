@@ -783,10 +783,6 @@ auto newmark( Ts && ... v )
     thenewmark->setfileFormat( format );
     thenewmark->setRankProcInNameOfFiles( rank_proc_in_files_name );
 
-    // Check 
-    std::cout << "Gamma : " << thenewmark->gamma() << std::endl;
-    std::cout << "Beta : " << thenewmark->beta() << std::endl;
-
     return thenewmark;
 }
 

@@ -355,6 +355,9 @@ public:
     //! update field \u with derivative at previous time indexed by \i (i.e. curent_time - i - 1)
     void updateDerivative( element_type & u, int i = 0 ) const;
 
+    //! compute derivative du from solution from previous time steps usinf bdf formula
+    void updateDerivative( element_type const& u, element_type & du ) const;
+
     element_type const& prior() const { return *M_unknowns[0]; }
 
     element_type& prior() { return *M_unknowns[0]; }
@@ -977,11 +980,24 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::updateDerivative( element_type & u, int i ) const
 {
+    std::cout << "Size : " << M_unknowns.size() << std::endl;
+    std::cout << "Time Order : " << (this->timeOrder()) << std::endl;
+    
     CHECK( M_unknowns.size() >= (this->timeOrder()+1+i) );
     u.zero();
     u.add( this->polyDerivCoefficient( 0 ), *M_unknowns[i] );
     for ( uint8_type k = 0; k < this->timeOrder(); ++k )
         u.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[i+k+1] );
+}
+
+template <typename SpaceType>
+void
+Bdf<SpaceType>::updateDerivative( element_type const& u, element_type & du ) const
+{
+    du.zero();
+    du.add( this->polyDerivCoefficient( 0 ), u );
+    for ( uint8_type k = 0; k < this->timeOrder(); ++k )
+        du.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[k] );
 }
 
 template <typename ... Ts>

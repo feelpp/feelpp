@@ -9,7 +9,6 @@ class ContactDynamic
 {
 public:
     using mesh_t = Mesh<Simplex<Dim,OrderGeo>>;
-    using mesh_tP1 = Mesh<Simplex<Dim>>;
     using spacev_t = Pchv_type<mesh_t, Order>;
     using space_t = Pch_type<mesh_t, Order>;
     using spacev_ptr_t = Pchv_ptrtype<mesh_t, Order>; 
@@ -19,7 +18,7 @@ public:
     using form2_type = form2_t<spacev_t,spacev_t>; 
     using form1_type = form1_t<spacev_t>; 
     using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
-    using exporter_ptrtype = std::shared_ptr<Exporter<mesh_tP1>>; 
+    using exporter_ptrtype = std::shared_ptr<Exporter<mesh_t>>; 
 
     // Constructors
     ContactDynamic() = default;
@@ -47,7 +46,6 @@ public:
     void processBoundaryConditions(form1_type& l, form2_type& a);
     void processContactPenalty(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
     void processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
-    void processContactPersistency(form1_type& l, form2_type& a, Range<mesh_t,MESH_FACES> const& elts, elementv_t const& u);
     void run();
     Range<mesh_t, MESH_FACES> getContactRegion( elementv_t const& u );
     void timeLoop();
@@ -59,7 +57,6 @@ public:
 private:
     nl::json specs_;
     std::shared_ptr<mesh_t> mesh_;
-    std::shared_ptr<mesh_tP1> meshP1;
     spacev_ptr_t Xhv_;
     space_ptr_t Xh_;
 
@@ -99,10 +96,13 @@ template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::initialize()
 {
     // Get mesh size
+    tic();
     H_ = specs_["/Meshes/LinearElasticity/Import/h"_json_pointer].get<double>();
     // Load mesh
     mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
+    toc("mesh");
     // Define Xhv
+    tic();
     Xhv_ = Pchv<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );; 
 
     // Get elastic structure parameters
@@ -135,9 +135,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::initialize()
     }
 
     // Initialize exporter
-
-    meshP1 = loadMesh( _mesh = new mesh_tP1, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
-    e_ = Feel::exporter(_mesh = meshP1, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
+    e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
     
 
     // Initialize Newmark scheme
@@ -164,12 +162,14 @@ void ContactDynamic<Dim, Order, OrderGeo>::initialize()
     ts_->initialize( u0_ );
     u_ = u0_;
     
+    ts_->updateFromDisp(u_);
+    toc("init");
 
     LOG(INFO) << "The step is  " << ts_->timeStep() << "\n"
               << "The initial time is " << ts_->timeInitial() << "\n"
               << "The final time is " << ts_->timeFinal() << "\n";
 
-    ts_->updateFromDisp(u_);
+    
 }
 
 // Initialization of the contact terms
@@ -177,6 +177,7 @@ template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::initializeContact()
 {
     // Define Xh
+    tic();
     Xh_ = Pch<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );
 
     // Initialize contact field
@@ -223,6 +224,7 @@ void ContactDynamic<Dim, Order, OrderGeo>::initializeContact()
 
     std::string matnbrObs = fmt::format( "/Collision/LinearElasticity/nbrObs");
     nbrObs_ = specs_[nl::json::json_pointer( matnbrObs )].get<int>();
+    toc("init");
 }
 
 // Process loading
@@ -252,14 +254,6 @@ void ContactDynamic<Dim, Order, OrderGeo>::processContactPenalty(form1_type& l, 
     l += integrate (_range=elts,_expr= cst(1.)/cst(epsilon_) * inner(idv(g_), trans(expr<Dim,1>(direction_))*id(u)));     
 }
 
-
-// Process persistency conditions
-template <int Dim, int Order, int OrderGeo>
-void ContactDynamic<Dim, Order, OrderGeo>::processContactPersistency(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts, elementv_t const& u)
-{
-    a += integrate (_range=elts,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*(ts_->polyFirstDerivCoefficient()*idt(u_)-idv(ts_->polyFirstDeriv())),trans(expr<Dim,1>(direction_))*id(u)));
-}
-
 // Process contact conditions Nitsche method
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::processContactNitsche(form1_type& l, form2_type& a, Range<mesh_t, MESH_FACES> const& elts , elementv_t const& u )
@@ -285,14 +279,30 @@ void ContactDynamic<Dim, Order, OrderGeo>::processBoundaryConditions(form1_type&
     {
         for ( auto [key, bc] : specs_["/BoundaryConditions/LinearElasticity/Dirichlet"_json_pointer].items() )
         {
-            std::cout << "Add Dirichlet conditions" << std::endl;
             LOG( INFO ) << fmt::format( "Dirichlet conditions found: {}", key );
             std::string e = fmt::format("/BoundaryConditions/LinearElasticity/Dirichlet/{}/g/expr",key);
             auto bc_dir = specs_[nl::json::json_pointer( e )].get<std::string>();
             LOG(INFO) << "BoundaryCondition Dirichlet : " << bc_dir << std::endl;
             a+=on(_range=markedfaces(support(Xhv_),key), _rhs=l, _element=u_, _expr=expr<Dim,1>( bc_dir ) );
+            a+=on(_range=markedpoints(mesh_,key), _rhs=l, _element=u_, _expr=expr<Dim,1>( bc_dir ) );
+
         }
     }
+
+    // Boundary Condition Neumann
+    if ( specs_["/BoundaryConditions/LinearElasticity"_json_pointer].contains("Neumann") )
+    {
+        for ( auto [key, bc] : specs_["/BoundaryConditions/LinearElasticity/Neumann"_json_pointer].items() )
+        {
+            LOG( INFO ) << fmt::format( "Neumann conditions found: {}", key );
+            std::string e = fmt::format("/BoundaryConditions/LinearElasticity/Neumann/{}/h/expr",key);
+            auto bc_neu = specs_[nl::json::json_pointer( e )].get<std::string>();
+            LOG(INFO) << "BoundaryCondition Neumann : " << bc_neu << std::endl;
+            l += integrate( _range = markedfaces(support(Xhv_),key), _expr = trans(expr<Dim,1>( bc_neu ))*id(u_));
+        }
+    }
+
+
 }
 
 
@@ -311,16 +321,20 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoop()
     l_.zero();
     lt_.zero();
 
-    std::cout << "***** Process loading *****" << std::endl;
+
+    if (Environment::isMasterRank())
+        std::cout << "***** Process loading *****" << std::endl;
     processLoading(l_);
 
-    std::cout << "***** Process materials *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Process materials *****" << std::endl;
     processMaterials(a_);
 
-    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
+    if (Environment::isMasterRank())
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
                                 fmt::localtime(std::time(nullptr)), ts_->timeInitial(),ts_->timeFinal(), ts_->timeStep()) << std::endl;
     
-
+    
     for ( ts_->start(); ts_->isFinished()==false; ts_->next(u_) )
     {
         if (Environment::isMasterRank())
@@ -336,40 +350,46 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoop()
         for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
             lt_ +=  integrate( _range=elements( support(Xhv_)), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( u_ ) ));
         
-        std::cout << "***** Process contact *****" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "***** Process contact *****" << std::endl;
         myelts_ = getContactRegion(u_);
-        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         
-        std::cout << "Add contact terms" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+        
+        
         if (method_.compare("penalty") == 0)
             processContactPenalty(lt_, at_, myelts_, u_);
-        else if (method_.compare("persistency") == 0)
-            processContactPersistency(lt_, at_, myelts_, u_);
         else if (method_.compare("nitsche") == 0)
             processContactNitsche(lt_, at_, myelts_, u_);
         
-        std::cout << "***** Process boundary conditions *****" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "***** Process boundary conditions *****" << std::endl;
         processBoundaryConditions(lt_, at_);
 
-        std::cout << "***** Solve *****" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "***** Solve *****" << std::endl;
         at_.solve( _rhs = lt_, _solution = u_ );
 
-        std::cout << "***** Export *****" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "***** Export *****" << std::endl;
         ts_->updateFromDisp(u_);
         
-        //this->exportResults(ts_->time());
+        this->exportResults(ts_->time());
 
         // Reset
         at_.zero();
         lt_.zero();
 
-    }    
+    } 
+       
 }
 
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
 {
     // Initialize linear and bilinear forms
+    tic();
     auto a_ = form2( _test = Xhv_, _trial = Xhv_ );
     auto at_ = form2( _test = Xhv_, _trial = Xhv_ );
     auto at_tmp =  form2( _test = Xhv_, _trial = Xhv_ );
@@ -385,15 +405,25 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
     l_.zero();
     lt_.zero();
     lt_tmp.zero();
+    toc("init");
 
-    std::cout << "***** Process loading *****" << std::endl;
+    /*
+    if (Environment::isMasterRank())
+        std::cout << "***** Process loading *****" << std::endl;
+    */
+   tic();
     processLoading(l_);
 
-    std::cout << "***** Process materials *****" << std::endl;
+    /*
+    if (Environment::isMasterRank())
+        std::cout << "***** Process materials *****" << std::endl;
+    */
     processMaterials(a_);
+    toc("assSta");
 
-
-    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
+    
+    if (Environment::isMasterRank())
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
                                 fmt::localtime(std::time(nullptr)), ts_->timeInitial(),ts_->timeFinal(), ts_->timeStep()) << std::endl;
     
     for ( ts_->start(); ts_->isFinished()==false; ts_->next(u_) )
@@ -404,74 +434,86 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
         ////////////////////////////////////////////////////
         //          Newmark beta-model for dttun          //
         ////////////////////////////////////////////////////
+        tic();
         lt_ = l_;
         at_ = a_;
 
         for ( auto [key, material] : specs_["/Models/LinearElasticity/Materials"_json_pointer].items() )
             lt_ +=  integrate( _range=markedelements( support(Xhv_), material.get<std::string>() ), _expr= cst(rho_)*inner( idv(ts_->polyDeriv()),id( u_ ) ));
-        
+        toc("assInSta");
+
+        tic();
         auto u_tmp =  Xhv_->element();
         u_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_));
 
         auto u_tmpNew = Xhv_->element();
-        u_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_)); 
+        u_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_));
+        
 
         int fixedPointIteration = 0;
         double fixedPointerror = 0.;
+        toc("init"); 
 
         while ((fixedPointerror > fixedPointtol_) || (fixedPointIteration < 1))
         {
-
+            tic();
             lt_tmp = lt_;
             at_tmp = at_;
 
             u_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_tmpNew)); ;
 
-            std::cout << "***** Process contact *****" << std::endl;
+            /*
+            if (Environment::isMasterRank())
+                std::cout << "***** Process contact *****" << std::endl;
+            */
             myelts_ = getContactRegion(u_tmp);
-            std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+            
+            /*
+            if (Environment::isMasterRank())
+                std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
 
-            if ((nbrFaces_ > 0))
+
+            if (Environment::isMasterRank())
             {
                 std::cout << "Fixed point iteration : " << fixedPointIteration << std::endl;
                 std::cout << "Faces in contact : " << nbrFaces_ << std::endl;
                 std::cout << "Error : " << fixedPointerror << std::endl;
-
-                if (method_.compare("penalty") == 0)
-                    processContactPenalty(lt_tmp, at_tmp, myelts_, u_tmp);
-                else if (method_.compare("persistency") == 0)
-                    processContactPersistency(lt_tmp, at_tmp, myelts_, u_tmp);
-                else if (method_.compare("nitsche") == 0)
-                    processContactNitsche(lt_tmp, at_tmp, myelts_, u_tmp);
-                
-                std::cout << "***** Process boundary conditions *****" << std::endl;
-                processBoundaryConditions(lt_tmp, at_tmp);
-                
-                at_tmp.solve(_rhs = lt_tmp, _solution = u_tmpNew);
-
-                fixedPointerror = integrate(_range=elements(support(Xhv_)), _expr = norm2( idv(u_tmp)-idv(u_tmpNew))).evaluate()(0,0) / integrate(_range=elements(support(Xhv_)),_expr=norm2(idv(u_))).evaluate()(0,0); 
-                fixedPointIteration++;
             }
-            else if ((fixedPointIteration == 0) || (nbrFaces_ == 0))
-                break;
+            */
+
+            if (method_.compare("penalty") == 0)
+                processContactPenalty(lt_tmp, at_tmp, myelts_, u_tmp);
+            else if (method_.compare("nitsche") == 0)
+                processContactNitsche(lt_tmp, at_tmp, myelts_, u_tmp);
             
-                
+            /*
+            if (Environment::isMasterRank())
+                std::cout << "***** Process boundary conditions *****" << std::endl;
+            */
+            processBoundaryConditions(lt_tmp, at_tmp);
+            toc("AssP");
+
+            tic();
+            at_tmp.solve(_rhs = lt_tmp, _solution = u_tmpNew);
+            toc("solve");
+
+            tic();
+            fixedPointerror = integrate(_range=elements(support(Xhv_)), _expr = norm2( idv(u_tmp)-idv(u_tmpNew))).evaluate()(0,0) / integrate(_range=elements(support(Xhv_)),_expr=norm2(idv(u_))).evaluate()(0,0); 
+            fixedPointIteration++;
             
-            if (fixedPointIteration == 10)
+            if (fixedPointIteration == 5)
                 break;
             
             
             lt_tmp.zero();
             at_tmp.zero();
+            toc("init");
         }
         
         myelts_ = getContactRegion(u_tmpNew);
-        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         
         if (method_.compare("penalty") == 0)
             processContactPenalty(lt_, at_, myelts_, u_tmpNew);
-        else if (method_.compare("persistency") == 0)
-            processContactPersistency(lt_, at_, myelts_, u_tmpNew);
         else if (method_.compare("nitsche") == 0)
             processContactNitsche(lt_, at_, myelts_, u_tmpNew);
                 
@@ -479,12 +521,18 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
 
         at_.solve( _rhs = lt_, _solution = u_ );
         
+        tic();
         ts_->updateFromDisp(u_);
-        this->exportResults(ts_->time());
-
         // Reset
         at_.zero();
         lt_.zero();
+        toc("init");
+
+        tic();
+        this->exportResults(ts_->time());
+        toc("export");
+
+        
     }
 }
 
@@ -492,25 +540,42 @@ void ContactDynamic<Dim, Order, OrderGeo>::timeLoopFixedPoint()
 template <int Dim, int Order, int OrderGeo>
 void ContactDynamic<Dim, Order, OrderGeo>::run()
 {
-    std::cout << "***** Run dynamic elasticity with unilateral contact *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Run dynamic elasticity with unilateral contact *****" << std::endl;
 
-    std::cout << "***** Initialize elasticity parameters *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Initialize elasticity parameters *****" << std::endl;
     initialize();
 
-    std::cout << "***** Initialize contact parameters *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Initialize contact parameters *****" << std::endl;
     initializeContact();
 
-    std::cout <<  "***** Initialize distance g *****" << std::endl;
-    
-    std::cout << "Compute distance" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout <<  "***** Initialize distance g *****" << std::endl;
+    tic();
     initG();
+    toc("Raytracing");
 
-    std::cout <<  "***** Start time loop *****" << std::endl;
+    tic();
+    if (Environment::isMasterRank())
+        std::cout << "Init preconditioner" << std::endl;
+    if constexpr(Dim == 3)
+    {
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Xhv_,mpl::int_<Dim>())) );
+        backend()->attachNearNullSpace( myNullSpace );
+    }
+    toc("prec");
+
+    if (Environment::isMasterRank())
+        std::cout <<  "***** Start time loop *****" << std::endl;
     
     if ((method_.compare("penalty") == 0) || (method_.compare("nitsche") == 0) || (method_.compare("persistency") == 0) )
     {
-        //this->exportResults(0);
-         std::cout << "Start time loop" << std::endl;
+        tic();
+        this->exportResults(0);
+        toc("export");
+        
         if (fixedPoint_ == 1)
 
             timeLoopFixedPoint();
@@ -601,6 +666,7 @@ ContactDynamic<Dim, Order, OrderGeo>::initG()
 {
     // Init the distance fields
     g_ = Xh_->element();
+    g_.on(_range=elements(support(Xh_)), _expr=cst(100000.));
 
     // Raytracing to compute distance
     using bvh_ray_type = BVHRay<Dim>;
@@ -673,244 +739,45 @@ ContactDynamic<Dim, Order, OrderGeo>::initG()
         }
     }
 
-    auto e = Feel::exporter(_mesh = mesh_, _name = "InitialDistance" );
-    e->addRegions();
-    e->add( "g", g_ );
-    e->save();
-
 }
-
-
-/*
-template <int Dim, int Order, int OrderGeo>
-void 
-ContactDynamic<Dim, Order, OrderGeo>::initG()
-{   
-    // Init the distance fields 
-    g_ = Xh_->element();
-
-    // Load and export rigid obstacles
-    auto wall = loadMesh(_mesh=new mesh_t, _filename = "$cfgdir/wall.geo",_h = 0.4);
-
-    auto expWall = Feel::exporter(_mesh = wall, _name = fmt::format("Wall"));
-    expWall->addRegions();
-    expWall->save();
-    
-    // Raytracing to compute distance
-    using bvh_ray_type = BVHRay<Dim>;
-    Eigen::VectorXd origin(Dim);
-    Eigen::VectorXd dir(Dim);
-    
-    if constexpr(Dim == 2)
-        dir << ddirection_[0], ddirection_[1];
-    else if constexpr(Dim == 3)
-        dir << ddirection_[0], ddirection_[1], ddirection_[2];
-    
-    for (auto const& theface : boundaryfaces(mesh_) )
-    {                
-        auto & face = boost::unwrap_ref( theface );
-
-        auto &point = face.point(0);
-        if (point.isOnBoundary())
-        {    
-
-            if constexpr(Dim == 2)
-                origin << point.node()[0], point.node()[1];
-            else if constexpr(Dim == 3)
-                origin << point.node()[0], point.node()[1], point.node()[2];
-
-            bvh_ray_type ray(origin,dir);
-            auto bvh = boundingVolumeHierarchy(_range=boundaryfaces(wall));
-            auto rayIntersection = bvh->intersect(_ray=ray) ;
-
-            if (!rayIntersection.empty()) 
-            {
-                for ( auto const& rir : rayIntersection )
-                {
-                    for (auto const& ldof  : Xh_->dof()->faceLocalDof( face.id() ))
-                        g_[ldof.index()] = rir.distance() - tolDistance_;
-                }
-            } 
-        }    
-    }
-}
-*/
-
 
 // Export results
 template <int Dim, int Order, int OrderGeo>
 void 
 ContactDynamic<Dim, Order, OrderGeo>::exportResults(double t)
 {
-    /*
-    if (OrderGeo == 1)
-    {
-        // Define exports
-        e_->step(t)->addRegions();
-        e_->step(t)->add( "displacement", u_ );
-        e_->step(t)->add( "velocity", ts_->currentVelocity() );
-
-        // Compute new contact region 
-        myelts_ = getContactRegion(u_);
-        std::cout << "Nbr faces for export : " << nbrFaces_ << std::endl;
     
-        auto realcontactRegion = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_));  
-        e_->step(t)->add( "realcontactRegion", realcontactRegion) ;
-
-        auto myfaces = boost::make_tuple( mpl::size_t<MESH_FACES>(), myelts_->begin(), myelts_->end(), myelts_ );
-        auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(mesh_ ), _update=0 );
-        auto XhCFaces = Pdh<0>(face_mesh);
-        auto contactFaces = project(_space=XhCFaces, _range=myfaces, _expr = cst(1.));
-
-        auto const Id = eye<Dim,Dim>();
-        auto defv = sym(gradv(u_));
-        auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
-   
-        contactRegion_ =  project(_space=Xh_, _range=boundaryfaces(mesh_), _expr = idv(contactFaces));
-        contactPressure_ =  project(_space=Xh_, _range=boundaryfaces(mesh_), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
-        contactDisplacement_ = project(_space=Xh_, _range=elements(mesh_), _expr = (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_))*idv(contactFaces));
-
-        auto expression = Xh_->element();
-        if (method_.compare("penalty") == 0)
-            expression = project(_space=Xh_, _range=elements(mesh_), _expr =  (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_))*idv(contactFaces)  );
-        else if (method_.compare("nitsche") == 0)
-            expression = project(_space=Xh_, _range=boundaryfaces(mesh_), _expr = (cst(gamma_)*(trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_)) - trans(expr<Dim,1>(direction_))*sigmav)*idv(contactFaces)  );
-        
-        e_->step(t)->add( "contactRegion", contactRegion_) ;
-        e_->step(t)->add( "contactPressure", contactPressure_);
-        e_->step(t)->add( "contactDisplacement", contactDisplacement_ );
-        e_->step(t)->add( "expression", expression);
-        e_->step(t)->add("g", g_);
-        e_->save();
-
-        // Save values in json file
-        meas_["time"].push_back(ts_->time());
-
-        auto sig = lambda_*trace(defv)*Id + 2*mu_*defv;
-        auto J = det(Id + gradv(u_));
-
-
-        double E1 = 0.5*rho_*normL2Squared(_range=elements(mesh_),_expr=idv(ts_->currentVelocity()));
-        double E2 = 0.5*integrate( _range= elements( mesh_ ), _expr= inner(sig,defv) ).evaluate()( 0,0 );
-        
-        meas_["Eh1"].push_back(E1);
-        meas_["Eh2"].push_back(E2);
-        meas_["Eh"].push_back(E1 + E2);
-
-        double disp = integrate( _range= boundaryfaces(mesh_), _expr= (trans(expr<Dim,1>(direction_))*idv(u_)  - idv(g_)) * idv(contactFaces )).evaluate()( 0,0 );
-        meas_["disp"].push_back(disp);
-
-        double Lv = integrate( _range=elements(mesh_),_expr=  cst(rho_)*abs(trans(expr<Dim,1>( externalforce_ )))*idv(u_)).evaluate()( 0,0 );
-        meas_["Lv"].push_back(Lv);
-
-        double volume = integrate(_range=elements(mesh_), _expr = det(Id + gradv(u_))).evaluate()( 0, 0 );
-        meas_["volume"].push_back(volume);
-
-
-        auto ctx = Xh_->context();
-        node_type t1(Dim);
-       
-        if (Dim == 2)
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
-        }
-        else 
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
-        }    
-                
-        ctx.add( t1 );
-
-        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure_) ); 
-        auto evaluateDispExpr = project(_space=Xh_, _range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
-        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
-            
-        meas_["evaluateStress"].push_back(evaluateStress(0,0));
-        meas_["evaluateDisp"].push_back(evaluateDisp(0,0));
-    
-        if (method_.compare("penalty") == 0)
-            meas_["E"].push_back(E1 + E2 + Lv);
-        else if (method_.compare("nitsche") == 0)
-        {
-            double R1 = normL2Squared(_range= boundaryfaces(mesh_), _expr= sqrt(cst(gamma0_)/cst(gamma_)) * trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
-            double R2 = normL2Squared( _range= boundaryfaces(mesh_), _expr= sqrt(cst(gamma0_)/cst(gamma_)) * ( cst(gamma_) * ( trans(expr<Dim,1>(direction_)) *idv(u_)  - idv(g_) ) - trans(expr<Dim,1>(direction_))*sigmav ) * idv(contactFaces));
-
-            meas_["R1"].push_back(R1);
-            meas_["R2"].push_back(R2);
-            meas_["R"].push_back((R1 - R2)/(2.*gamma0_));
-
-            double Es = (E1 + E2) - theta_*(R1 - R2)/(2.*gamma0_);
-            meas_["Es"].push_back(Es);      
-
-            meas_["E"].push_back(Es + Lv);
-        }
-    
-        this->writeResultsToFile("measures.json");
-    }
-    */
     // Interpolation
     e_->step(t)->addRegions();
-        
-    auto Xhv_P1 = Pchv<Order>(meshP1,markedelements( meshP1, "Caoutchouc" ) ); 
-    auto uinter =  Xhv_P1->element(); 
+    myelts_ = getContactRegion(u_);
 
-    auto op_inter = opInterpolation(_domainSpace =  Xhv_, _imageSpace = Xhv_P1 );
-    op_inter->apply(u_, uinter);
+    if (t == 0)
+    {
+        if (Environment::isMasterRank())
+            std::cout << "Export g" << std::endl;
+        e_->step(t)->add( "g", g_ );
+    }
 
-
-    e_->step(t)->add( "displacement", uinter );
+    e_->step(t)->add( "displacement", u_ );
     
     auto const Id = eye<Dim,Dim>();
-    auto defvinter = sym(gradv(uinter));
-    auto sigmavinter = (lambda_*trace(defvinter)*Id + 2*mu_*defvinter)*N();
-   
-    auto contactPressureinter =  Pch<Order>(meshP1,markedelements( meshP1, "Caoutchouc" ) )->element();
-    contactPressureinter.on( _range=boundaryfaces(support(Xhv_P1)), _expr = trans(expr<Dim,1>(direction_))*sigmavinter);
-
-    auto contactDisplacementinter = Pch<Order>(meshP1,markedelements( meshP1, "Caoutchouc" ) )->element();
-    contactDisplacementinter.on( _range=elements(support(Xhv_P1)), _expr = (trans(expr<Dim,1>(direction_))*idv(uinter) - idv(g_)));
-
-    e_->step(t)->add( "contactPressure", contactPressureinter);
-    e_->step(t)->add( "contactDisplacement", contactDisplacementinter );
-    e_->save();
-
-    myelts_ = getContactRegion(u_);
-    std::cout << "Nbr faces for export : " << nbrFaces_ << std::endl;
-    
-    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_)), _update=0 );
-    auto XhCFaces = Pdh<0>(face_mesh);
-    auto contactFaces =XhCFaces->element();
-    contactFaces.on(_range=myelts_, _expr = cst(1.));
-
     auto defv = sym(gradv(u_));
     auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
+   
+    contactPressure_ =  project(_space=Xh_, _range=elements(support(Xh_)), _expr = cst(0.));
+    contactPressure_.on(_range=myelts_, _expr = trans(expr<Dim,1>(direction_))*sigmav);
+    
+    auto contactDisplacement= Xh_->element();
+    contactDisplacement.on( _range=elements(support(Xhv_)), _expr = (trans(expr<Dim,1>(direction_))*idv(u_) - idv(g_)));
 
-    contactPressure_.on(_range=boundaryfaces(support(Xhv_)), _expr = trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
+    e_->step(t)->add( "contactPressure", contactPressure_);
+    e_->step(t)->add( "contactDisplacement", contactDisplacement );
+    e_->save();
 
-
+    
+    
     // Save values in json file
     meas_["time"].push_back(ts_->time());
-
-    auto sig = lambda_*trace(defv)*Id + 2*mu_*defv;
-    auto J = det(Id + gradv(u_));
-
-    double E1 = 0.5*rho_*normL2Squared(_range=elements(support(Xhv_)),_expr=idv(ts_->currentVelocity()));
-    double E2 = 0.5*integrate( _range= elements( support(Xhv_) ), _expr= inner(sig,defv)).evaluate()( 0,0 );
-        
-    meas_["Eh1"].push_back(E1);
-    meas_["Eh2"].push_back(E2);
-    meas_["Eh"].push_back(E1 + E2);
-
-    double disp = integrate( _range= boundaryfaces(support(Xhv_)), _expr= (trans(expr<Dim,1>(direction_))*idv(u_)  - idv(g_)) * idv(contactFaces )).evaluate()( 0,0 );
-    meas_["disp"].push_back(disp);
-
-    
-    double Lv = integrate( _range=elements(support(Xhv_)),_expr=  cst(rho_)*abs(trans(expr<Dim,1>( externalforce_ )))*idv(u_)).evaluate()( 0,0 );
-    meas_["Lv"].push_back(Lv);
-
-    
-    double volume = integrate(_range=elements(support(Xhv_)), _expr = det(Id + gradv(u_))).evaluate()( 0, 0 );
-    meas_["volume"].push_back(volume);
 
     auto ctx = Xh_->context();
     node_type t1(Dim);
@@ -922,24 +789,92 @@ ContactDynamic<Dim, Order, OrderGeo>::exportResults(double t)
     else 
     {
         t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
-    }    
-                
+    }         
     ctx.add( t1 );
 
     auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure_) ); 
-    auto evaluateDispExpr = Xh_->element();
-    evaluateDispExpr.on(_range=elements(support(Xhv_)), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
-    auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
+    auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(contactDisplacement) );     
             
     meas_["evaluateStress"].push_back(evaluateStress(0,0));
     meas_["evaluateDisp"].push_back(evaluateDisp(0,0));
+
+    this->writeResultsToFile("measures.json");
+
+    /*
+    int nbr = 1;
+    std::ofstream ofs("outputs.csv");
+    ofs << fmt::format("x, y, pressure") << std::endl;
+
+    std::vector<double> press;
+    double max;
+        
+    for (auto &bfaceC : markedfaces(mesh_,"Wall"))
+    {
+        auto & faceC = boost::unwrap_ref( bfaceC );
+
+        auto ctx = Xh_->context();
+        node_type t1(Dim);
+        t1(0)=faceC.point(0).node()[0]; t1(1)=faceC.point(0).node()[1];
+        ctx.add( t1 );
+
+        auto evaluateStresstmp = evaluateFromContext( _context=ctx, _expr = idv(contactPressure_) );
+
+
+        if (evaluateStresstmp(0,0)!=0)
+        {
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}", faceC.point(0).node()[0], faceC.point(0).node()[1], evaluateStresstmp(0,0)) << std::endl;
+            press.push_back(evaluateStresstmp(0,0));
+        }
+
     
+        nbr++;
+    }
+
+    if (press.size() != 0)
+    {
+        max = *min_element(press.begin(), press.end());
+        std::cout << "Max : " << max << std::endl;
+    }
+    
+    ofs.close();
+    */
+      
+    
+
+    
+    
+    
+
+    /*
+    auto sig = lambda_*trace(defv)*Id + 2*mu_*defv;
+    auto J = det(Id + gradv(u_));
+
+    double E1 = 0.5*rho_*normL2Squared(_range=elements(support(Xhv_)),_expr=idv(ts_->currentVelocity()));
+    double E2 = 0.5*integrate( _range= elements( support(Xhv_) ), _expr= inner(sig,defv)).evaluate()( 0,0 );
+        
+    meas_["Eh1"].push_back(E1);
+    meas_["Eh2"].push_back(E2);
+    meas_["Eh"].push_back(E1 + E2);
+
+    double disp = integrate( _range= myelts_, _expr= (trans(expr<Dim,1>(direction_))*idv(u_)  - idv(g_)) ).evaluate()( 0,0 );
+    meas_["disp"].push_back(disp);
+
+    
+    double Lv = integrate( _range=elements(support(Xhv_)),_expr=  cst(rho_)*abs(trans(expr<Dim,1>( externalforce_ )))*idv(u_)).evaluate()( 0,0 );
+    meas_["Lv"].push_back(Lv);
+
+    
+    double volume = integrate(_range=elements(support(Xhv_)), _expr = det(Id + gradv(u_))).evaluate()( 0, 0 );
+    meas_["volume"].push_back(volume);
+    */
+    
+    /*
     if ((method_.compare("penalty") == 0) || (method_.compare("persistency") == 0))
         meas_["E"].push_back(E1 + E2 + Lv);
     else if (method_.compare("nitsche") == 0)
     {
-        double R1 = normL2Squared(_range= boundaryfaces(support(Xhv_)), _expr= sqrt(cst(gamma0_)/cst(gamma_)) * trans(expr<Dim,1>(direction_))*sigmav*idv(contactFaces));
-        double R2 = normL2Squared( _range= boundaryfaces(support(Xhv_)), _expr= sqrt(cst(gamma0_)/cst(gamma_)) * ( cst(gamma_) * ( trans(expr<Dim,1>(direction_)) *idv(u_)  - idv(g_) ) - trans(expr<Dim,1>(direction_))*sigmav ) * idv(contactFaces));
+        double R1 = normL2Squared(_range= myelts_, _expr= sqrt(cst(gamma0_)/cst(gamma_)) * trans(expr<Dim,1>(direction_))*sigmav);
+        double R2 = normL2Squared( _range= myelts_, _expr= sqrt(cst(gamma0_)/cst(gamma_)) * ( cst(gamma_) * ( trans(expr<Dim,1>(direction_)) *idv(u_)  - idv(g_) ) - trans(expr<Dim,1>(direction_))*sigmav ));
 
         meas_["R1"].push_back(R1);
         meas_["R2"].push_back(R2);
@@ -950,8 +885,8 @@ ContactDynamic<Dim, Order, OrderGeo>::exportResults(double t)
 
         meas_["E"].push_back(Es + Lv);
     }
+    */
     
-    this->writeResultsToFile("measures.json");
 }
 
 

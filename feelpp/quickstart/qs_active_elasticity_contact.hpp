@@ -88,6 +88,7 @@ private:
     double epsilon_, tolContactRegion_, tolDistance_, gamma0_, gamma_;
     std::string direction_, method_;
     std::vector<double> ddirection_;
+    std::string disp_;
 };
 
 // Constructor
@@ -138,8 +139,7 @@ void ActiveContact<Dim, Order>::initialize()
             }
         }
     }
-    std::cout << "External force : " << externalforce_ << std::endl;
-
+    
     // Exporter
     e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
     
@@ -191,6 +191,9 @@ void ActiveContact<Dim, Order>::initialize()
 
     std::string matMethod = fmt::format( "/Collision/HyperElasticity/method");
     method_ = specs_[nl::json::json_pointer( matMethod )].get<std::string>();
+
+    std::string matDisp = fmt::format( "/BoundaryConditions/HyperElasticity/displacement/expr");
+    disp_ = specs_[nl::json::json_pointer( matDisp )].get<std::string>();
     
 }
 
@@ -199,6 +202,7 @@ void ActiveContact<Dim, Order>::initG()
 {
     // Init the distance fields
     g_ = Xh_->element();
+    g_.on(_range=elements(support(Xh_)), _expr=cst(100000.));
 
     // Raytracing to compute distance
     using bvh_ray_type = BVHRay<Dim>;
@@ -213,6 +217,8 @@ void ActiveContact<Dim, Order>::initG()
     std::string kind = (Dim==2)?"in-house":"third-party";
 
     auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_, "Obs1"), _kind=kind);
+
+    std::vector<std::size_t> faceIDs;
 
     BVHRaysDistributed<Dim> allrays;
 
@@ -230,36 +236,44 @@ void ActiveContact<Dim, Order>::initG()
                 origin << point.node()[0], point.node()[1], point.node()[2];
 
             bvh_ray_type ray(origin,dir);
-            //allrays.push_back(ray);
-#if 1            
-            auto rayIntersection = bvh->intersect( _ray = ray );
-            if (!rayIntersection.empty())
+ 
+            
+            if constexpr(Dim == 2)
             {
-                for ( auto const& rir : rayIntersection )
+                auto rayIntersection = bvh->intersect( _ray = ray );
+                if (!rayIntersection.empty())
                 {
-                    for (auto const& ldof  : Xh_->dof()->faceLocalDof( face.id() ))
-                        g_[ldof.index()] = rir.distance() - tolDistance_;
+                    for ( auto const& rir : rayIntersection )
+                    {
+                        for (auto const& ldof  : Xh_->dof()->faceLocalDof( face.id() ))
+                            g_[ldof.index()] = rir.distance() - tolDistance_;
+                    }
                 }
             }
-#endif            
+            else 
+            {
+                allrays.push_back(std::move(ray));
+                faceIDs.push_back(face.id());
+            }            
+
         }
         
     }
-#if 0    
-    // compute intersections for allrays
-    auto multiRayIntersectionResult = bvh->intersect(_ray=allrays);//,_parallel=false);
-    for (auto const& rir : multiRayIntersectionResult)
+    if constexpr(Dim == 3)
     {
-        for (auto const& ldof : Xh_->dof()->faceLocalDof(rir.face().id()))
-            g_[ldof.index()] = rir.distance() - tolDistance_;
+            // compute intersections for allrays
+        auto multiRayIntersectionResult = bvh->intersect(_ray=allrays);//,_parallel=false);
+    
+        for (auto const& [fid,rirs] : enumerate(multiRayIntersectionResult))
+        {
+            for (auto const& [rid,rir] : enumerate(rirs))
+            {
+                for (auto const& ldof : Xh_->dof()->faceLocalDof(faceIDs[fid]))
+                    g_[ldof.index()] = rir.distance() - tolDistance_;
+            }
+            
+        }
     }
-#endif    
-
-
-    auto e = Feel::exporter(_mesh = mesh_, _name = "InitialDistance" );
-    e->addRegions();
-    e->add( "g", g_ );
-    e->save();
 
 }
 
@@ -364,7 +378,8 @@ void ActiveContact<Dim, Order>::timeLoopActive()
     auto Jac = backend()->newMatrix( _test=Xhv_, _trial=Xhv_ );
     auto Id = eye<Dim,Dim>();
 
-    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
+    if (Environment::isMasterRank())
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
                                 fmt::localtime(std::time(nullptr)), ts_->timeInitial(),ts_->timeFinal(), ts_->timeStep()) << std::endl;
     
 
@@ -373,9 +388,13 @@ void ActiveContact<Dim, Order>::timeLoopActive()
         if (Environment::isMasterRank())
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_->time(),ts_->timeFinal()) << std::endl;
 
-        std::cout << "***** Process contact *****" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "***** Process contact *****" << std::endl;
+        
         myelts_ = getContactRegion(u_);
-        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+        
+        if (Environment::isMasterRank())
+            std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         
         auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
@@ -414,47 +433,37 @@ void ActiveContact<Dim, Order>::timeLoopActive()
             
             if (nbrFaces_ > 0)
             {
-                std::cout << "Add contact terms to Jacobian" << std::endl;
-                auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-                auto XhCFaces = Pdh<0>(face_mesh);
-                auto contactFaces = XhCFaces->element();
-                contactFaces.on( _range=myelts_, _expr = cst(1.));
 
                 if (method_.compare("penalty") == 0)
                 {
-                    a += integrate(_range=boundaryfaces(support(Xhv_) ), _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate(_range=myelts_, _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) );
                 }    
                 else if (method_.compare("nitsche") == 0)
                 {
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_)  * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate (_range=myelts_,_expr= cst(1.)/cst(gamma_)  * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
+                    a += integrate (_range=myelts_,_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
+                    a += integrate (_range=myelts_,_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
                 
                     
                     if (type_.compare("bending") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
-                        a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        a += integrate (_range=myelts_,_expr= cst(1.)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
                     }    
                     else if (type_.compare("flapping") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*(Py() - va_*ts_->time()));
-                        a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        a += integrate (_range=myelts_,_expr= cst(1.)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*dF*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
                     }
                     
                 }
             }
 
             auto RR = backend()->newVector( Xhv_ );
-
-            a += on( _range=markedpoints(mesh_,"dirichlet"),
-                     _element=u, _rhs=RR,
-                     _expr=zero<Dim,1>() );
-            
-            
+                        
             a += on( _range=markedfaces(mesh_,"dirichlet"),
                      _element=u, _rhs=RR,
-                     _expr=zero<Dim,1>() );
+                     _expr=cst(0)*expr<Dim,1>(disp_) );
         };
     
         auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
@@ -492,36 +501,28 @@ void ActiveContact<Dim, Order>::timeLoopActive()
 
             if (nbrFaces_ > 0)
             {
-                std::cout << "Add contact terms to Residual" << std::endl;
-                auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-                auto XhCFaces = Pdh<0>(face_mesh);
-                auto contactFaces = XhCFaces->element();
-                contactFaces.on( _range=myelts_, _expr = cst(1.));
-
-
+                
                 if (method_.compare("penalty") == 0)
                 {
-                    std::cout << "Penalty method" << std::endl;
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) );
                 }    
                 else if (method_.compare("nitsche") == 0)
                 {
-                    std::cout << "Nitsche method" << std::endl;
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(gamma_)  *  inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idv(u),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(cst(gamma_) * idv(g_),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=myelts_,_expr= cst(1.)/cst(gamma_)  *  inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idv(u),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(gamma_)  * inner(cst(gamma_) * idv(g_),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
                     
                     
                     if (type_.compare("bending") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_->time());
-                        r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr=  cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        r += integrate (_range=myelts_,_expr=  cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
                     }    
                     else if (type_.compare("flapping") == 0)
                     {
                         auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*(Py() - va_*ts_->time()));
-                        r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr=  cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                        r += integrate (_range=myelts_,_expr=  cst(1.)/cst(gamma_)  * inner(trans(expr<Dim,1>(direction_))*val(Fv)*sigma_a*Px()*eaea*N(),cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u)) );
                     }
                     
                 }
@@ -530,13 +531,12 @@ void ActiveContact<Dim, Order>::timeLoopActive()
             R->close();
             auto temp = Xhv_->element();
             temp = *R;
-            temp.on( _range=markedfaces(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
-            temp.on( _range=markedpoints(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
+            temp.on( _range=markedfaces(mesh_,"dirichlet"),_expr=cst(0)*expr<Dim,1>(disp_) );
+            
             *R = temp;
         };
 
-        u_.on(_range=markedpoints(mesh_,"dirichlet"), _expr=zero<Dim,1>());
-        u_.on( _range=markedfaces(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
+        u_.on( _range=markedfaces(mesh_,"dirichlet"),_expr=expr<Dim,1>(disp_) );
         backend()->nlSolver()->residual = Residual;
         backend()->nlSolver()->jacobian = Jacobian;
         backend()->nlSolve( _solution=u_,_jacobian=Jac,_residual=Res );
@@ -557,7 +557,8 @@ void ActiveContact<Dim, Order>::timeLoopHyper()
     auto Jac = backend()->newMatrix( _test=Xhv_, _trial=Xhv_ );
     auto Id = eye<Dim,Dim>();
 
-    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
+    if (Environment::isMasterRank())
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
                                 fmt::localtime(std::time(nullptr)), ts_->timeInitial(),ts_->timeFinal(), ts_->timeStep()) << std::endl;
     
 
@@ -567,9 +568,12 @@ void ActiveContact<Dim, Order>::timeLoopHyper()
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_->time(),ts_->timeFinal()) << std::endl;
 
         
-        std::cout << "***** Process contact *****" << std::endl;
+        if (Environment::isMasterRank())
+            std::cout << "***** Process contact *****" << std::endl;
         myelts_ = getContactRegion(u_);
-        std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+        
+        if (Environment::isMasterRank())
+            std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
         
         auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
@@ -593,33 +597,24 @@ void ActiveContact<Dim, Order>::timeLoopHyper()
 
             if (nbrFaces_ > 0)
             {
-                std::cout << "Add contact terms to Jacobian" << std::endl;
-                auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-                auto XhCFaces = Pdh<0>(face_mesh);
-                auto contactFaces = XhCFaces->element();
-                contactFaces.on( _range=myelts_, _expr = cst(1.));
                 
                 if (method_.compare("penalty") == 0)
                 {
-                    a += integrate(_range=boundaryfaces(support(Xhv_) ), _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate(_range=myelts_, _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
                 }    
                 else if (method_.compare("nitsche") == 0)
                 {
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    a += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    a += integrate (_range=myelts_,_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)));
+                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),trans(expr<Dim,1>(direction_))*id(u)));
                 }
             }
 
             auto RR = backend()->newVector( Xhv_ );
-
-            a += on( _range=markedpoints(mesh_,"dirichlet"),
-                     _element=u, _rhs=RR,
-                     _expr=zero<Dim,1>() );
             
             a += on( _range=markedfaces(mesh_,"dirichlet"),
                      _element=u, _rhs=RR,
-                     _expr=zero<Dim,1>() );
+                     _expr=cst(0)*expr<Dim,1>(disp_) );
         };
     
         auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
@@ -641,38 +636,29 @@ void ActiveContact<Dim, Order>::timeLoopHyper()
             
             if (nbrFaces_ > 0)
             {
-                std::cout << "Add contact terms to Residual" << std::endl;
-                auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-                auto XhCFaces = Pdh<0>(face_mesh);
-                auto contactFaces = XhCFaces->element();
-                contactFaces.on( _range=myelts_, _expr = cst(1.));
-
+                
                 if (method_.compare("penalty") == 0)
                 {
-                    std::cout << "Penalty method" << std::endl;
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) );
                 }    
                 else if (method_.compare("nitsche") == 0)
                 {
-                    std::cout << "Nitsche method" << std::endl;
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - cst(gamma_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
-                    r += integrate (_range=boundaryfaces(support(Xhv_) ),_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) * idv(contactFaces));
+                    r += integrate (_range=myelts_,_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(gamma_) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) );
                 }
             }
 
             R->close();
             auto temp = Xhv_->element();
             temp = *R;
-            temp.on( _range=markedfaces(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
-            temp.on( _range=markedpoints(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
+            temp.on( _range=markedfaces(mesh_,"dirichlet"),_expr=cst(0)*expr<Dim,1>(disp_)  );
             
             *R = temp;
         };
 
-        u_.on( _range=markedfaces(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
-        u_.on( _range=markedpoints(mesh_,"dirichlet"),_expr=zero<Dim,1>() );
+        u_.on( _range=markedfaces(mesh_,"dirichlet"),_expr=expr<Dim,1>(disp_)   );
         
         backend()->nlSolver()->residual = Residual;
         backend()->nlSolver()->jacobian = Jacobian;
@@ -689,15 +675,19 @@ void ActiveContact<Dim, Order>::timeLoopHyper()
 template <int Dim, int Order>
 void ActiveContact<Dim, Order>::run()
 {
-    std::cout << "***** Run active elasticity with contact *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Run active elasticity with contact *****" << std::endl;
 
-    std::cout << "***** Initialize elasticity parameters *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Initialize elasticity parameters *****" << std::endl;
     this->initialize();
 
-    std::cout << "***** Fix initial distance *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout << "***** Fix initial distance *****" << std::endl;
     this->initG();
 
-    std::cout <<  "***** Start time loop *****" << std::endl;
+    if (Environment::isMasterRank())
+        std::cout <<  "***** Start time loop *****" << std::endl;
     this->exportResults(0);
 
     if (active_ == 1)
@@ -717,11 +707,10 @@ ActiveContact<Dim, Order>::exportResults(double t)
     e_->step(t)->add( "displacement", u_ );
     e_->step(t)->add( "velocity", ts_->currentVelocity() );
 
-    auto face_mesh = createSubmesh( _mesh=mesh_, _range=boundaryfaces(support(Xhv_) ), _update=0 );
-    auto XhCFaces = Pdh<0>(face_mesh);
-    auto contactFaces = XhCFaces->element();
-    contactFaces.on( _range=myelts_, _expr = cst(1.));
-    auto region = project(_space=Xh_,_range=boundaryfaces(support(Xhv_)), _expr = cst(1)*idv(contactFaces));
+    if (t == 0)
+        e_->step(t)->add( "g", g_ );
+    
+    auto region = project(_space=Xh_,_range=myelts_, _expr = cst(1));
 
     e_->step(t)->add("contactFaces",region);
 
