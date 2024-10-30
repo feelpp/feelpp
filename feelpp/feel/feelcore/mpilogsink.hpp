@@ -24,8 +24,9 @@ public:
      * @param log_option Option to control logging behavior ("master" for rank 0, "all" for all ranks)
      * @param output_option Option to control console output ("stdout", "stderr", or "none")
      * @param log_dir Directory to store log files (default is current working directory)
+     * @param log_memory Flag to enable logging memory usage (default is false)
      */
-    MpiLogSink(int rank, const std::string& log_option, const std::string& output_option, const std::string& log_dir = "");
+    MpiLogSink(int rank, const std::string& log_option, const std::string& output_option, const std::string& log_dir = "", bool log_memory = false);
 
     /**
      * @brief Destructor for MpiLogSink
@@ -54,6 +55,7 @@ private:
     LogOption log_option_;        ///< Logging option: "master" or "all"
     OutputOption output_option_;     ///< Console output option: "stdout", "stderr", or "none"
     std::ofstream log_file_;        ///< File stream for log output
+    bool log_memory_;               ///< Flag to enable logging memory usage
 
     // Helper functions for converting strings to enum values
     static LogOption logOptionFromString(const std::string& option);

@@ -15,10 +15,11 @@ namespace Feel
 {
 
 
-MpiLogSink::MpiLogSink(int rank, const std::string& log_option, const std::string& output_option, const std::string& log_dir )
+MpiLogSink::MpiLogSink(int rank, const std::string& log_option, const std::string& output_option, const std::string& log_dir, bool log_memory)
     : rank_(rank),
       log_option_(logOptionFromString(log_option)),
-      output_option_(outputOptionFromString(output_option)) 
+      output_option_(outputOptionFromString(output_option)),
+      log_memory_(log_memory)
 {
     if ((log_option_ == LogOption::Master && rank_ == 0) || log_option_ == LogOption::All) 
     {
@@ -37,6 +38,23 @@ MpiLogSink::~MpiLogSink()
     if (log_file_.is_open()) {
         log_file_.close();
     }
+}
+
+double getMemoryUsageInGB() 
+{
+    std::ifstream file("/proc/self/status");
+    std::string line;
+    double memory_kb = 0.0;
+
+    while (std::getline(file, line)) {
+        if (line.find("VmRSS:") == 0) {  // Resident Set Size (physical memory)
+            std::istringstream iss(line);
+            std::string key, unit;
+            iss >> key >> memory_kb >> unit;
+            break;
+        }
+    }
+    return memory_kb / (1024 * 1024);  // Convert from KB to GB
 }
 
 std::string formatForConsole(google::LogSeverity severity, const std::string& message) 
@@ -66,14 +84,16 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
 
     //std::string severity_name = fmt::format("{:<7}", google::GetLogSeverityName(severity));
 
-    
+    std::string memory_usage = log_memory_ ? fmt::format(" [Mem: {:.2f} GB] ", getMemoryUsageInGB()) : " ";
+
     const bool do_log =( log_option_ == LogOption::All ) || ( log_option_ == LogOption::Master && rank_ == 0 );
     if (do_log)
     {
-        std::string log_message = fmt::format("[{}]: [{}] [{:%Y-%m-%d %H:%M:%S}.{:03}] [{}:{}]: {}\n",
+        std::string log_message = fmt::format("[{}]: [{}] [{:%Y-%m-%d %H:%M:%S}.{:03}]{}[{}:{}]: {}\n",
                                               rank_, //thread_id_str, 
                                               google::GetLogSeverityName(severity)[0], 
                                               *tm_time, now_ms, 
+                                              memory_usage,
                                               base_filename, line,
                                               std::string(message, message_len));
         log_file_ << log_message;
@@ -82,15 +102,34 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
 
     if (output_option_ != OutputOption::None || severity == google::ERROR || severity == google::FATAL)  
     {
-        std::string log_message = fmt::format("{}: {} [{:%Y-%m-%d %H:%M:%S}.{:03}] [{}]: {}\n",
-                                              fmt::styled(fmt::format("[{}]",rank_),fmt::fg(fmt::color::blue) | fmt::emphasis::bold),
-                                              fmt::styled(fmt::format("[{}]", google::GetLogSeverityName(severity)[0]), 
-                                                          fmt::fg(fmt::color::green) | fmt::emphasis::bold),
-                                              *tm_time, now_ms, 
-                                              
-                                              //thread_id_str, 
-                                              fmt::styled(fmt::format("{}:{}",base_filename, line), fmt::emphasis::underline),
-                                              std::string(message, message_len));
+        // Determine color based on severity
+        fmt::text_style severity_style;
+        switch (severity) {
+            case google::INFO:
+                severity_style = fmt::fg(fmt::color::green) | fmt::emphasis::bold;
+                break;
+            case google::WARNING:
+                severity_style = fmt::fg(fmt::color::yellow) | fmt::emphasis::bold;
+                break;
+            case google::ERROR:
+                severity_style = fmt::fg(fmt::color::red) | fmt::emphasis::bold;
+                break;
+            case google::FATAL:
+                severity_style = fmt::fg(fmt::color::magenta) | fmt::emphasis::bold;
+                break;
+            default:
+                severity_style = fmt::fg(fmt::color::white);
+                break;
+        }
+
+        // Create log message with severity-specific styling
+        std::string log_message = fmt::format("{}: {} [{:%Y-%m-%d %H:%M:%S}.{:03}]{}[{}]: {}\n",
+                                      fmt::styled(fmt::format("[{}]", rank_), fmt::fg(fmt::color::blue) | fmt::emphasis::bold),
+                                      fmt::styled(fmt::format("[{}]", google::GetLogSeverityName(severity)[0]), severity_style),
+                                      *tm_time, now_ms,
+                                      memory_usage,
+                                      fmt::styled(fmt::format("{}:{}", base_filename, line), fmt::emphasis::underline),
+                                      std::string(message, message_len));
 
         std::string console_message = formatForConsole(severity, log_message);
         if (output_option_ == OutputOption::Stdout && do_log )

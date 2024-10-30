@@ -2114,7 +2114,7 @@ Environment::startLogging( std::string decorate )
         FLAGS_alsologtostderr = false;
         google::InitGoogleLogging( S_argv[0] );
     }
-    S_mpilogsink = std::make_unique<MpiLogSink>(S_worldcomm->rank(), soption("log-mpi"), soption("log-output"), (a0 / S_about.appName()).string() );
+    S_mpilogsink = std::make_unique<MpiLogSink>(S_worldcomm->rank(), soption("log-mpi"), soption("log-output"), (a0 / S_about.appName()).string(), boption("log-mem") );
     google::AddLogSink(S_mpilogsink.get());    
     google::InstallFailureSignalHandler();
 }
