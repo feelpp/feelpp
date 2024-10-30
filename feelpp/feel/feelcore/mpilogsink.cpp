@@ -67,8 +67,8 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
     //std::string severity_name = fmt::format("{:<7}", google::GetLogSeverityName(severity));
 
     
-
-    if ((log_option_ == LogOption::Master && rank_ == 0) || log_option_ == LogOption::All) 
+    const bool do_log =( log_option_ == LogOption::All ) || ( log_option_ == LogOption::Master && rank_ == 0 );
+    if (do_log)
     {
         std::string log_message = fmt::format("[{}]: [{}] [{:%Y-%m-%d %H:%M:%S}.{:03}] [{}:{}]: {}\n",
                                               rank_, //thread_id_str, 
@@ -80,7 +80,7 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
         log_file_.flush();
     }
 
-    if (output_option_ != OutputOption::None) 
+    if (output_option_ != OutputOption::None || severity == google::ERROR || severity == google::FATAL)  
     {
         std::string log_message = fmt::format("{}: {} [{:%Y-%m-%d %H:%M:%S}.{:03}] [{}]: {}\n",
                                               fmt::styled(fmt::format("[{}]",rank_),fmt::fg(fmt::color::blue) | fmt::emphasis::bold),
@@ -93,12 +93,21 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
                                               std::string(message, message_len));
 
         std::string console_message = formatForConsole(severity, log_message);
-        if (output_option_ == OutputOption::Stdout) 
+        if (output_option_ == OutputOption::Stdout && do_log )
         {
             std::cout << console_message;
-        } else if (output_option_ == OutputOption::Stderr) 
+        } 
+        else if ( (output_option_ == OutputOption::Stderr) && do_log && ( severity != google::ERROR ) && ( severity != google::FATAL ) )
         {
             std::cerr << console_message;
+        }
+        if ( severity == google::ERROR || severity == google::FATAL) 
+        {
+            std::cerr << console_message;
+        }
+        if (severity == google::FATAL) 
+        {
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
 }
