@@ -61,6 +61,7 @@
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcore/repository.hpp>
+#include <feel/feelcore/mpilogsink.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -976,6 +977,7 @@ private:
 
     static uuids::random_generator S_generator;
 
+    static std::unique_ptr<MpiLogSink> S_mpilogsink;
     /**
      * Stores the absolute path and executable name
      */
