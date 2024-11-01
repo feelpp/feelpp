@@ -21,9 +21,11 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
 message(STATUS "============================================================")
 message(STATUS "Contrib libraries")
 include(FetchContent)
+
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
 
@@ -48,61 +50,75 @@ install(TARGETS napp EXPORT feelpp-contrib-export-targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 add_custom_target(uninstall)
+
+
+option( FEELPP_USE_EXTERNAL_NANOFLANN "USE_EXTERNAL_NANOFLANN" OFF )
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring NANOFLANN")
-set(MASTER_PROJECT_HAS_TARGET_UNINSTALL TRUE)
-set(FETCHCONTENT_SOURCE_DIR_NANOFLANN ${CMAKE_CURRENT_SOURCE_DIR}/nanoflann)
-FetchContent_Declare(nanoflann GIT_REPOSITORY https://github.com/feelpp/nanoflann.git GIT_TAG 2b7e88659217da279b86f21d088ce48ebce26942)
-set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-FetchContent_MakeAvailable(nanoflann)
-target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NANOFLANN)
-target_include_directories(nanoflann INTERFACE
-  $<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include/>
-  $<INSTALL_INTERFACE:include/feelpp>)
-target_link_libraries(feelpp_contrib INTERFACE nanoflann)
-install(TARGETS nanoflann EXPORT feelpp-contrib-export-targets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring FMT")
-
-
-option( FEELPP_USE_EXTERNAL_FMT "USE_EXTERNAL_FMT" OFF )
-if ( FEELPP_USE_EXTERNAL_FMT )
-  find_package(FMT REQUIRED)
-  message(STATUS "[feelpp] FMT Includes: ${FMT_INCLUDE_DIRS}")
-  message(STATUS "[feelpp] FMT Libraries: ${FMT_LIBRARIES}")
-  target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
+if ( FEELPP_USE_EXTERNAL_NANOFLANN )
+  message(STATUS "Using external NANOFLANN")
+  find_package(NANOFLANN REQUIRED)
+  message(STATUS "[feelpp] NANOFLANN Includes: ${NANOFLANN_INCLUDE_DIRS}")
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NANOFLANN)
+  target_link_libraries(feelpp_contrib INTERFACE nanoflann::nanoflann)
 else()
-set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9)
-
-set(FMT_INSTALL ON)
-set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-FetchContent_MakeAvailable(fmt)
-set_target_properties(fmt PROPERTIES OUTPUT_NAME "feelpp_fmt")
-target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMT )
-target_include_directories(fmt INTERFACE
-    $<BUILD_INTERFACE:${fmt_SOURCE_DIR}/include/>
-    $<INSTALL_INTERFACE:include/feelpp> )
-target_link_libraries( feelpp_contrib INTERFACE fmt )
-install(TARGETS fmt EXPORT feelpp-contrib-export-targets
+  set(MASTER_PROJECT_HAS_TARGET_UNINSTALL TRUE)
+  set(FETCHCONTENT_SOURCE_DIR_NANOFLANN ${CMAKE_CURRENT_SOURCE_DIR}/nanoflann)
+  FetchContent_Declare(nanoflann GIT_REPOSITORY https://github.com/feelpp/nanoflann.git GIT_TAG 2b7e88659217da279b86f21d088ce48ebce26942)
+  set(NAPP_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_MakeAvailable(nanoflann)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NANOFLANN)
+  target_include_directories(nanoflann INTERFACE
+    $<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include/>
+    $<INSTALL_INTERFACE:include/feelpp>)
+  target_link_libraries(feelpp_contrib INTERFACE nanoflann)
+  install(TARGETS nanoflann EXPORT feelpp-contrib-export-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
+  )
 endif()
 
+
+
+option( FEELPP_USE_EXTERNAL_FMT "USE_EXTERNAL_FMT" OFF )
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring FMT")
+if ( FEELPP_USE_EXTERNAL_FMT )
+  message(STATUS "Using external FMT")
+  find_package(FMT REQUIRED)
+  message(STATUS "[feelpp] FMT Includes: ${FMT_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] FMT Libraries: ${FMT_LIBRARIES}")
+  target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMT )
+else()
+  set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+  FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9)
+
+  set(FMT_INSTALL ON)
+  set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+  FetchContent_MakeAvailable(fmt)
+  set_target_properties(fmt PROPERTIES OUTPUT_NAME "feelpp_fmt")
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMT )
+  target_include_directories(fmt INTERFACE
+      $<BUILD_INTERFACE:${fmt_SOURCE_DIR}/include/>
+      $<INSTALL_INTERFACE:include/feelpp> )
+  target_link_libraries( feelpp_contrib INTERFACE fmt )
+  install(TARGETS fmt EXPORT feelpp-contrib-export-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+endif()
+
+
+option( FEELPP_USE_EXTERNAL_GFLAGS "Feel++ uses external GFlags" OFF )
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
-option( FEELPP_USE_EXTERNAL_GFLAGS "Feel++ uses external GFlags" OFF )
 if ( FEELPP_USE_EXTERNAL_GFLAGS )
-  message(STATUS "[feelpp] Using external GFlags")
+  message(STATUS "Using external GFlags")
   find_package(gflags 2.2.2 REQUIRED)
   if ( gflags_FOUND )
     message(STATUS "[feelpp] external GFlags found")
@@ -143,7 +159,7 @@ message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GLog")
 option( FEELPP_USE_EXTERNAL_GLOG "Feel++ uses external GLog" OFF )
 if ( FEELPP_USE_EXTERNAL_GLOG )
-  message(STATUS "[feelpp] Using external GLog")
+  message(STATUS "Using external GLog")
   find_package(glog 0.7.1 REQUIRED)
   if ( glog_FOUND )
     target_link_libraries(feelpp_contrib INTERFACE glog::glog )
@@ -170,11 +186,12 @@ else( FEELPP_USE_EXTERNAL_GLOG )
 endif( FEELPP_USE_EXTERNAL_GLOG )
 
 # # cln
+
+option( FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring CLN")
-option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
-
 if(FEELPP_USE_EXTERNAL_CLN)
+  message(STATUS "Using external CLN")
   pkg_search_module(CLN REQUIRED IMPORTED_TARGET "cln>=1.3.6")
   message(STATUS "[feelpp] External CLN Includes: ${CLN_INCLUDE_DIRS}")
   message(STATUS "[feelpp] External CLN Libraries: ${CLN_LIBRARIES}, ${CLN_LINK_LIBRARIES}")
@@ -240,11 +257,10 @@ target_include_directories( feelpp_contrib BEFORE
 set(DL_LIBS ${CMAKE_DL_LIBS})
 target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 
-
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring MKL")
 option( FEELPP_ENABLE_MKL "Enable MKL Support" ON )
 if ( FEELPP_ENABLE_MKL )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring MKL")
   find_package(MKL)
   target_include_directories( feelpp_contrib BEFORE INTERFACE ${MKL_INCLUDE_DIRS})
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
@@ -253,48 +269,42 @@ endif()
 
 # Eigen
 #
-
-
-include(FetchContent)
-
 option( FEELPP_USE_EXTERNAL_EIGEN3 "USE_EXTERNAL_EIGEN3" OFF )
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Eigen3")
 if ( FEELPP_USE_EXTERNAL_EIGEN3 )
+  message(STATUS "Using external Eigen3")
   FIND_PACKAGE(Eigen3 REQUIRED)
   add_library(Eigen3::Eigen ALIAS eigen)
 else()
+  set(EIGEN_BUILD_DOC OFF)
+  set(BUILD_TESTING OFF)
+  set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
+  set(EIGEN_TEST_NOQT 1)
+  set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
+  set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
 
-set(EIGEN_BUILD_DOC OFF)
-set(BUILD_TESTING OFF)
-set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
-set(EIGEN_TEST_NOQT 1)
-set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
-set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+  FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
+  FetchContent_MakeAvailable(eigen)
+  target_include_directories( feelpp_contrib BEFORE
+        INTERFACE
+        $<BUILD_INTERFACE:${eigen_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${eigen_SOURCE_DIR}/unsupported>
+        $<INSTALL_INTERFACE:include/feelpp/eigen>
+        $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
+        )
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
-FetchContent_MakeAvailable(eigen)
-target_include_directories( feelpp_contrib BEFORE
-      INTERFACE
-      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}>
-      $<BUILD_INTERFACE:${eigen_SOURCE_DIR}/unsupported>
-      $<INSTALL_INTERFACE:include/feelpp/eigen>
-      $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
-      )
-
-# there is an issue with eigen+mkl
-if ( MKL_FOUND )
-  target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
-  target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
-  target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
-  #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
-  #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  # there is an issue with eigen+mkl
+  if ( MKL_FOUND )
+    target_include_directories( eigen  INTERFACE ${MKL_INCLUDE_DIRS})
+    target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
+    target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
+    #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
+    #target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  endif()
 endif()
-endif()
-
 target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE Eigen3::Eigen )
-
-SET(FEELPP_HAS_EIGEN3 1)
-SET(FEELPP_HAS_EIGEN3 1 PARENT_SCOPE)
 
 if ( FEELPP_HAS_EIGEN3 )
   #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/contrib/eigen)
@@ -302,30 +312,28 @@ if ( FEELPP_HAS_EIGEN3 )
   unset(CMAKEPACKAGE_INSTALL_DIR CACHE)
   unset(PKGCONFIG_INSTALL_DIR CACHE)
 endif()
-message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
-
-#FIND_PACKAGE(Eigen2 REQUIRED)
-#INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
-#add_subdirectory(contrib/eigen)
-#INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR}/contrib/eigen )
-#add_definitions( -DEIGEN_NO_STATIC_ASSERT )
 
 #
 # METIS
 #
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring Feelpp Metis")
 option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-option( FEELPP_USE_SYSTEM_METIS "Use Metis from system" ON )
+option( FEELPP_USE_EXTERNAL_METIS "Use Metis from system" ON )
 if(FEELPP_ENABLE_METIS)
-  if ( FEELPP_USE_SYSTEM_METIS )
-    find_package( METIS )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring Feelpp Metis")
+  if ( FEELPP_USE_EXTERNAL_METIS )
+    message(STATUS "Using external Metis")
+    find_package( METIS REQUIRED )
     if ( METIS_FOUND )
-      target_include_directories(feelpp_contrib INTERFACE ${METIS_INCLUDE_DIRS} )
-      target_link_libraries(feelpp_contrib INTERFACE ${METIS_LIBRARIES} )
+      if ( NOT TARGET metis::metis )
+        add_library(metis::metis INTERFACE IMPORTED)
+        set_target_properties(metis::metis PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${METIS_INCLUDE_DIRS}"
+          INTERFACE_LINK_LIBRARIES "${METIS_LIBRARIES}"
+          )
+      endif()
+      target_link_libraries(feelpp_contrib INTERFACE metis::metis )
       target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_METIS )
-      SET(FEELPP_HAS_METIS 1)
-      SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
     endif()
   else()
     if(NOT PETSC_HAVE_METIS)
@@ -339,8 +347,6 @@ if(FEELPP_ENABLE_METIS)
       SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Metis/Contrib" )
     endif()
     target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_METIS )
-    SET(FEELPP_HAS_METIS 1)
-    SET(FEELPP_HAS_METIS 1 PARENT_SCOPE)
   endif()
 endif( FEELPP_ENABLE_METIS )
 
@@ -366,72 +372,97 @@ endif()
 
 
 
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring NLopt")
+
 option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_USE_EXTERNAL_NLOPT "Use NLOPT from system" OFF )
 
 if ( FEELPP_ENABLE_NLOPT )
-  feelppContribPrepare( nlopt )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring NLopt")
+  if ( FEELPP_USE_EXTERNAL_NLOPT )
+    message(STATUS "Using external NLopt")
+    find_package(NLOPT REQUIRED)
+    if ( NLOPT_FOUND )
+      target_link_libraries(feelpp_contrib INTERFACE nlopt::nlopt )
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NLOPT )
+    endif()
+  else(FEELPP_USE_EXTERNAL_NLOPT)
+    feelppContribPrepare( nlopt )
+    if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      option(NLOPT_CXX "enable cxx routines" ON)
+      option(NLOPT_FORTRAN "enable fortran tests" OFF)
+      option(BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
+      option(NLOPT_PYTHON "build python bindings" ON)
+      option(NLOPT_OCTAVE "build octave bindings" OFF)
+      option(NLOPT_MATLAB "build matlab bindings" OFF)
+      option(NLOPT_GUILE "build guile bindings" OFF)
+      option(NLOPT_SWIG "use SWIG to build bindings" ON)
+      option(NLOPT_TESTS "build unit tests" OFF)
 
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    option(NLOPT_CXX "enable cxx routines" ON)
-    option(NLOPT_FORTRAN "enable fortran tests" OFF)
-    option(BUILD_SHARED_LIBS "Build NLopt as a shared library" ON)
-    option(NLOPT_PYTHON "build python bindings" ON)
-    option(NLOPT_OCTAVE "build octave bindings" OFF)
-    option(NLOPT_MATLAB "build matlab bindings" OFF)
-    option(NLOPT_GUILE "build guile bindings" OFF)
-    option(NLOPT_SWIG "use SWIG to build bindings" ON)
-    option(NLOPT_TESTS "build unit tests" OFF)
+      set(INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR}/nlopt/ CACHE PATH "Installation directory for header files")
+      set(INSTALL_DATA_DIR ${CMAKE_INSTALL_DATADIR}/nlopt CACHE PATH "Installation directory for data files")
+      set(INSTALL_MAN_DIR ${CMAKE_INSTALL_DATADIR}/man CACHE PATH "Installation directory for man documentation")
+      set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/nlopt/cmake CACHE PATH "Installation directory for cmake config files")
 
-    set(INSTALL_INCLUDE_DIR ${CMAKE_INSTALL_INCLUDEDIR}/nlopt/ CACHE PATH "Installation directory for header files")
-    set(INSTALL_DATA_DIR ${CMAKE_INSTALL_DATADIR}/nlopt CACHE PATH "Installation directory for data files")
-    set(INSTALL_MAN_DIR ${CMAKE_INSTALL_DATADIR}/man CACHE PATH "Installation directory for man documentation")
-    set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/nlopt/cmake CACHE PATH "Installation directory for cmake config files")
+      add_subdirectory( nlopt )
 
-    add_subdirectory( nlopt )
-
-    add_library(feelpp_nlopt INTERFACE)
-    set_target_properties(nlopt PROPERTIES OUTPUT_NAME "feelpp_nlopt")
-    target_link_libraries(feelpp_nlopt INTERFACE nlopt)
-    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NLOPT)
-    add_library(Feelpp::feelpp_nlopt ALIAS feelpp_nlopt)
-    target_include_directories(feelpp_nlopt INTERFACE
-      $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
-      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
-      $<INSTALL_INTERFACE:include/feelpp>
-      $<INSTALL_INTERFACE:include/feelpp/nlopt>)
-    install(TARGETS feelpp_nlopt nlopt EXPORT feelpp-contrib-export-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-    target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt)
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} nlopt/contrib")
-  endif( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      add_library(feelpp_nlopt INTERFACE)
+      set_target_properties(nlopt PROPERTIES OUTPUT_NAME "feelpp_nlopt")
+      target_link_libraries(feelpp_nlopt INTERFACE nlopt)
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_NLOPT)
+      add_library(Feelpp::feelpp_nlopt ALIAS feelpp_nlopt)
+      target_include_directories(feelpp_nlopt INTERFACE
+        $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/nlopt/api>
+        $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/contrib/nlopt/api>
+        $<INSTALL_INTERFACE:include/feelpp>
+        $<INSTALL_INTERFACE:include/feelpp/nlopt>)
+      install(TARGETS feelpp_nlopt nlopt EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+      target_link_libraries(feelpp_contrib INTERFACE feelpp_nlopt)
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} nlopt/contrib")
+    endif( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  endif(FEELPP_USE_EXTERNAL_NLOPT)
 endif( FEELPP_ENABLE_NLOPT )
 
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring IPopt")
-if( FEELPP_HAS_IPOPT )
-  add_subdirectory(ipopt)
+
+
+option( FEELPP_ENABLE_IPOPT "Enable IPOPT (Interior Point Optimisation Library)" OFF ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_USE_EXTERNAL_IPOPT "Use IPOPT from system" OFF )
+if( FEELPP_ENABLE_IPOPT )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring IPopt")
+  if ( FEELPP_USE_EXTERNAL_IPOPT )
+    message(STATUS "Using external IPOPT")
+    find_package(IPOPT REQUIRED)
+    if ( IPOPT_FOUND )
+      target_link_libraries(feelpp_contrib INTERFACE ipopt::ipopt )
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_IPOPT )
+    endif()
+  else()
+    add_subdirectory(ipopt)
+  endif()
 endif()
 
 
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring PYBind11")
+
 ## No cmake support for HPDDM!
 #if( FEELPP_HAS_HPDDM )
 #  add_subdirectory(hpddm)
 #endif()
 option( FEELPP_ENABLE_PYBIND11 "Enable PYBIND11" ON )
-option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
-
+option( FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring PYBind11")
 if(FEELPP_USE_EXTERNAL_PYBIND11)
-  find_package(pybind11 CONFIG REQUIRED)
+  message(STATUS "Using external PyBind11")
+  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
+  find_package(pybind11 REQUIRED)
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
-  target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
+  target_link_libraries(feelpp_contrib INTERFACE pybind11::module pybind11::headers)
 else()
   set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
   if ( FEELPP_ENABLE_PYBIND11 )
@@ -452,40 +483,50 @@ else()
 endif()
 
 # MongoCXX
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring Mongo")
 option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" OFF ) #${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_USE_EXTERNAL_MONGOCXX "Use Mongocxx from system" OFF )
 if ( FEELPP_ENABLE_MONGOCXX )
-  feelppContribPrepare( mongocxx )
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/mongocxx/cmake)
-    set(LIBBSON_REQUIRED_VERSION 1.5.0)
-    set(LIBMONGOC_REQUIRED_VERSION 1.5.0)
-    find_package(LibBSON ${LIBBSON_REQUIRED_VERSION})
-    find_package(LibMongoC ${LIBMONGOC_REQUIRED_VERSION} )
-    if ( LIBBSON_FOUND AND LIBMONGOC_FOUND )
-      message(STATUS "[feelpp] found LibBSON and LibMongoC")
-      add_subdirectory(mongocxx)
-      target_link_libraries(feelpp_contrib INTERFACE feelpp_mongocxx)
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring Mongo")
+  if ( FEELPP_USE_EXTERNAL_MONGOCXX )
+    message(STATUS "Using external Mongocxx")
+    find_package(mongocxx REQUIRED)
+    if ( mongocxx_FOUND )
+      target_link_libraries(feelpp_contrib INTERFACE mongocxx::mongocxx )
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MONGOCXX )
+    endif()
+  else()
+    feelppContribPrepare( mongocxx )
+    if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/mongocxx/cmake)
+      set(LIBBSON_REQUIRED_VERSION 1.5.0)
+      set(LIBMONGOC_REQUIRED_VERSION 1.5.0)
+      find_package(LibBSON ${LIBBSON_REQUIRED_VERSION})
+      find_package(LibMongoC ${LIBMONGOC_REQUIRED_VERSION} )
+      if ( LIBBSON_FOUND AND LIBMONGOC_FOUND )
+        message(STATUS "[feelpp] found LibBSON and LibMongoC")
+        add_subdirectory(mongocxx)
+        target_link_libraries(feelpp_contrib INTERFACE feelpp_mongocxx)
 
-      if ( 0 )
-      set(MONGOCXX_LIBRARIES "mongocxx_static ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES}")
-      set(MONGOCXX_INCLUDE_DIRS "${LIBBSON_INCLUDE_DIRS} ${LIBMONGOC_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src     ${CMAKE_CURRENT_BINARY_DIR}/src")
+        if ( 0 )
+        set(MONGOCXX_LIBRARIES "mongocxx_static ${LIBMONGOC_LIBRARIES} ${LIBBSON_LIBRARIES}")
+        set(MONGOCXX_INCLUDE_DIRS "${LIBBSON_INCLUDE_DIRS} ${LIBMONGOC_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/src     ${CMAKE_CURRENT_BINARY_DIR}/src")
+        endif()
+        target_include_directories(feelpp_contrib INTERFACE
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mongocxx/src>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mongocxx/src>
+          $<INSTALL_INTERFACE:include/feelpp>
+          )
+        target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_BSONCXX FEELPP_HAS_MONGOCXX )
+      else()
+          if( NOT LIBBSON_FOUND )
+              message(STATUS "[feelpp] BSON library was not found on your system!")
+          endif()
+          if( NOT LIBBSON_FOUND )
+              message(STATUS "[feelpp] MONGODB library was not found on your system!")
+          endif()
+          message(STATUS "[feelpp] MONGOCXX dependencies missing. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF for suppress this message.")
       endif()
-      target_include_directories(feelpp_contrib INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mongocxx/src>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/mongocxx/src>
-        $<INSTALL_INTERFACE:include/feelpp>
-        )
-      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_BSONCXX FEELPP_HAS_MONGOCXX )
-    else()
-        if( NOT LIBBSON_FOUND )
-            message(STATUS "[feelpp] BSON library was not found on your system!")
-        endif()
-        if( NOT LIBBSON_FOUND )
-            message(STATUS "[feelpp] MONGODB library was not found on your system!")
-        endif()
-        message(STATUS "[feelpp] MONGOCXX dependencies missing. Either install it or set FEELPP_ENABLE_MONGOCXX to OFF for suppress this message.")
     endif()
   endif()
 endif()
@@ -493,6 +534,7 @@ endif()
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring KWsys")
 option( FEELPP_ENABLE_KWSYS "Enable KWSys" ON )
+
 # Kwsys configure
 set(KWSYS_NAMESPACE feelpp_kwsys CACHE INTERNAL "")
 #  # Enable all components.
@@ -535,42 +577,50 @@ if ( FEELPP_ENABLE_KWSYS )
   endif()
 endif()
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring FMI4CPP")
 option( FEELPP_ENABLE_FMI4CPP "Enable FMI4CPP" ON )
+option( FEELPP_USE_EXTERNAL_FMI4CPP "USE_EXTERNAL_FMI4CPP" OFF )
 if ( FEELPP_ENABLE_FMI4CPP )
-  message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring FMI4CPP")
-  set( USE_SYSTEM_CURL ON )
-  set( BUILD_FMI4CPP_TESTS ON )
-  if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
-    set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
-  endif()
-  set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
-  set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
-  set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
-  set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
-  # patch includes fix for 18.04 compilation
-  FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18)
+  if ( FEELPP_USE_EXTERNAL_FMI4CPP )
+    message(STATUS "Using external FMI4CPP")
+    find_package(fmi4cpp REQUIRED)
+    target_link_libraries(feelpp_contrib INTERFACE fmi4cpp::fmi4cpp )
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
+  else()
+    set( USE_SYSTEM_CURL ON )
+    set( BUILD_FMI4CPP_TESTS ON )
+    if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
+      set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
+    endif()
+    set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
+    set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
+    set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
+    set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
+    # patch includes fix for 18.04 compilation
+    FetchContent_Declare(fmi4cpp GIT_REPOSITORY https://github.com/feelpp/fmi4cpp.git GIT_TAG 645b6a35b1c166ace666c5d387d5a88b074ace18)
 
-  FetchContent_MakeAvailable(fmi4cpp)
-  add_library(feelpp_fmi4cpp INTERFACE)
-  set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
-  if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
-    target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
+    FetchContent_MakeAvailable(fmi4cpp)
+    add_library(feelpp_fmi4cpp INTERFACE)
+    set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+    if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
+      target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
+    endif()
+    target_link_libraries(feelpp_fmi4cpp INTERFACE fmi4cpp)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
+    add_library(Feelpp::feelpp_fmi4cpp ALIAS feelpp_fmi4cpp)
+    target_include_directories(feelpp_fmi4cpp INTERFACE
+        $<BUILD_INTERFACE:${FMI4CPP_SOURCE_DIR}/include/>
+        $<INSTALL_INTERFACE:include/feelpp> )
+    install(TARGETS feelpp_fmi4cpp fmi4cpp EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+    target_link_libraries( feelpp_contrib INTERFACE feelpp_fmi4cpp )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} fmi4cpp/Contrib")
   endif()
-  target_link_libraries(feelpp_fmi4cpp INTERFACE fmi4cpp)
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMI4CPP )
-  add_library(Feelpp::feelpp_fmi4cpp ALIAS feelpp_fmi4cpp)
-  target_include_directories(feelpp_fmi4cpp INTERFACE
-      $<BUILD_INTERFACE:${FMI4CPP_SOURCE_DIR}/include/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_fmi4cpp fmi4cpp EXPORT feelpp-contrib-export-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_fmi4cpp )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} fmi4cpp/Contrib")
 endif()
 
 message(STATUS "------------------------------------------------------------")
@@ -654,101 +704,132 @@ add_subdirectory( boost )
 #include(feelpp.module.paralution)
 #include(feelpp.module.jsonlab)
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Simple Web Server")
 option( FEELPP_ENABLE_SIMPLE_WEB_SERVER "Enable Simple Web Server" ON )
+option( FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER "USE_EXTERNAL_SIMPLE_WEB_SERVER" OFF )
 if ( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
-  message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring Simplee Web Server")
-  feelppContribPrepare( simple-web-server )
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    set(BUILD_TESTING OFF)
-    add_subdirectory( simple-web-server )
-    add_library(feelpp_sws INTERFACE)
-    set_target_properties(simple-web-server PROPERTIES OUTPUT_NAME "feelpp_sws")
-    target_link_libraries(feelpp_sws INTERFACE simple-web-server)
+  if ( FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER )
+    message(STATUS "Using external Simple Web Server")
+    find_package(SimpleWebServer REQUIRED)
+    if ( SimpleWebServer_FOUND )
+      target_link_libraries(feelpp_contrib INTERFACE SimpleWebServer::simple-web-server )
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
+    endif()
+  else(FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER)
+    feelppContribPrepare( simple-web-server )
+    if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      set(BUILD_TESTING OFF)
+      add_subdirectory( simple-web-server )
+      add_library(feelpp_sws INTERFACE)
+      set_target_properties(simple-web-server PROPERTIES OUTPUT_NAME "feelpp_sws")
+      target_link_libraries(feelpp_sws INTERFACE simple-web-server)
 
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
+      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SIMPLE_WEB_SERVER )
 
-    target_include_directories(feelpp_sws INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/simple-web-server/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SimpleWebServer/Contrib")
-  endif()
+      target_include_directories(feelpp_sws INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/simple-web-server/>
+        $<INSTALL_INTERFACE:include/feelpp> )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} SimpleWebServer/Contrib")
+    endif()
+  endif(FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER)
 endif( FEELPP_ENABLE_SIMPLE_WEB_SERVER )
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Range V3")
 option( FEELPP_ENABLE_RANGE_V3 "Enable Range V3" ON )
+option( FEELPP_USE_EXTERNAL_RANGE_V3 "USE_EXTERNAL_RANGE_V3" OFF )
 if ( FEELPP_ENABLE_RANGE_V3 )
-  message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring Range V3")
-  feelppContribPrepare( range-v3 )
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    set(RANGE_V3_INSTALL ON FORCE)
-    if ( FEELPP_STD_CPP STREQUAL "17" )
-      set( RANGES_CXX_STD "17" )
+  if ( FEELPP_USE_EXTERNAL_RANGE_V3 )
+    message(STATUS "Using external Range V3")
+    find_package(range-v3 REQUIRED)
+    if ( range-v3_FOUND )
+      target_link_libraries(feelpp_contrib INTERFACE range-v3 )
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_RANGE_V3 )
     endif()
-    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
-      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  else(FEELPP_USE_EXTERNAL_RANGE_V3)
+    feelppContribPrepare( range-v3 )
+    if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      set(RANGE_V3_INSTALL ON FORCE)
+      if ( FEELPP_STD_CPP STREQUAL "17" )
+        set( RANGES_CXX_STD "17" )
+      endif()
+      if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+        set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+      endif()
+      message( STATUS "range-v3 CMAKE_INSTALL°INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+      add_subdirectory( range-v3 )
+
+      add_library(feelpp_range-v3 INTERFACE)
+      set_target_properties(range-v3 PROPERTIES OUTPUT_NAME "feelpp_range-v3")
+      target_link_libraries(feelpp_range-v3 INTERFACE range-v3)
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_RANGE_V3)
+      add_library(Feelpp::feelpp_range-v3 ALIAS feelpp_range-v3)
+      target_include_directories(feelpp_range-v3 INTERFACE
+        $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/range-v3/>
+        $<INSTALL_INTERFACE:include/feelpp>)
+
+      install(TARGETS feelpp_range-v3 range-v3 range-v3-concepts range-v3-meta EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+      )
+
+      target_link_libraries(feelpp_contrib INTERFACE feelpp_range-v3)
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} range-v3/contrib")
     endif()
-    message( STATUS "range-v3 CMAKE_INSTALL°INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
-    add_subdirectory( range-v3 )
-
-    add_library(feelpp_range-v3 INTERFACE)
-    set_target_properties(range-v3 PROPERTIES OUTPUT_NAME "feelpp_range-v3")
-    target_link_libraries(feelpp_range-v3 INTERFACE range-v3)
-    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_RANGE_V3)
-    add_library(Feelpp::feelpp_range-v3 ALIAS feelpp_range-v3)
-    target_include_directories(feelpp_range-v3 INTERFACE
-      $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/range-v3/>
-      $<INSTALL_INTERFACE:include/feelpp>)
-
-    install(TARGETS feelpp_range-v3 range-v3 range-v3-concepts range-v3-meta EXPORT feelpp-contrib-export-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-
-    target_link_libraries(feelpp_contrib INTERFACE feelpp_range-v3)
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} range-v3/contrib")
-  endif()
+  endif(FEELPP_USE_EXTERNAL_RANGE_V3)
 endif( FEELPP_ENABLE_RANGE_V3 )
 
+
 option( FEELPP_ENABLE_MATPLOT "Enable MatPlot++" OFF )
+option( FEELPP_USE_EXTERNAL_MATPLOT "USE_EXTERNAL_MATPLOT" OFF )
 if ( FEELPP_ENABLE_MATPLOT )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring MatPlot++")
-  feelppContribPrepare( matplot )
-  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
-    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
-      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  if ( FEELPP_USE_EXTERNAL_MATPLOT )
+    message(STATUS "Using external MatPlot++")
+    find_package(Matplot++ REQUIRED)
+    if ( Matplot++_FOUND )
+      target_link_libraries(feelpp_contrib INTERFACE Matplot++::matplot )
+      target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
     endif()
-    message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
-    set( BUILD_SHARED_LIBS ON )
-    set( BUILD_INSTALLER ON )
-    set(OPTIMIZATION_FLAG_IS_SET ON)
-    add_subdirectory( matplot )
-    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
-    set_target_properties(matplot PROPERTIES OUTPUT_NAME "feelpp_matplot")
-    target_link_libraries( feelpp_contrib INTERFACE matplot )
-    install(TARGETS matplot EXPORT feelpp-contrib-export-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      )
-#    target_link_libraries(feelpp_contrib INTERFACE matplot )
-    target_include_directories(feelpp_contrib INTERFACE
-      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/matplot/source/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} MatPPlot++/Contrib")
-  endif()
+  else(FEELPP_USE_EXTERNAL_MATPLOT)
+    feelppContribPrepare( matplot )
+    if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+      if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+        set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+      endif()
+      message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
+      set( BUILD_SHARED_LIBS ON )
+      set( BUILD_INSTALLER ON )
+      set(OPTIMIZATION_FLAG_IS_SET ON)
+      add_subdirectory( matplot )
+      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
+      set_target_properties(matplot PROPERTIES OUTPUT_NAME "feelpp_matplot")
+      target_link_libraries( feelpp_contrib INTERFACE matplot )
+      install(TARGETS matplot EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+  #    target_link_libraries(feelpp_contrib INTERFACE matplot )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/matplot/source/>
+        $<INSTALL_INTERFACE:include/feelpp> )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} MatPPlot++/Contrib")
+    endif()
+  endif(FEELPP_USE_EXTERNAL_MATPLOT)
 endif( FEELPP_ENABLE_MATPLOT )
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Mmg")
 option( FEELPP_PARMMG_DOWNLOAD_METIS "Download Metis for PARMMG" OFF )
 option( FEELPP_ENABLE_MMG "Enable MMG/PARMMG" ON )
 option( FEELPP_PARMMG_DOWNLOAD_METIS "Disable metis dowload" OFF )
 if ( FEELPP_ENABLE_MMG )
-message(STATUS "------------------------------------------------------------")
-message(STATUS "Configuring Mmg")
 feelppContribPrepare( mmg )
 if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   set(USE_VTK OFF)
@@ -790,36 +871,46 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
 
   endif()
 endif(FEELPP_CONTRIB_PREPARE_SUCCEED)
+else()
+  message(STATUS "MMG/PARMMG are disabled")
 endif(FEELPP_ENABLE_MMG)
 
 option( FEELPP_ENABLE_CPR "Enable CPR" ON )
+option( FEELPP_USE_EXTERNAL_CPR "USE_EXTERNAL_CPR" OFF )
 if ( FEELPP_ENABLE_CPR )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring CPR")
-  set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
-  # patch includes fix for 18.04 compilation
-  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4)
-  set( USE_SYSTEM_CURL ON )
-  set( BUILD_CPR_TESTS OFF )
-  if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
-      set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+  IF ( FEELPP_USE_EXTERNAL_CPR )
+    message(STATUS "Using external CPR")
+    find_package(cpr REQUIRED)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+    target_link_libraries(feelpp_contrib INTERFACE cpr::cpr )
+  ELSE()
+    set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
+    # patch includes fix for 18.04 compilation
+    FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4)
+    set( USE_SYSTEM_CURL ON )
+    set( BUILD_CPR_TESTS OFF )
+    if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
+        set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
+    endif()
+    FetchContent_MakeAvailable(cpr)
+    add_library(feelpp_cpr INTERFACE)
+    set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
+    target_link_libraries(feelpp_cpr INTERFACE cpr)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
+    add_library(Feelpp::feelpp_cpr ALIAS feelpp_cpr)
+    target_include_directories(feelpp_cpr INTERFACE
+        $<BUILD_INTERFACE:${cpr_SOURCE_DIR}/include/>
+        $<INSTALL_INTERFACE:include/feelpp> )
+    install(TARGETS feelpp_cpr cpr EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+    target_link_libraries( feelpp_contrib INTERFACE feelpp_cpr )
   endif()
-  FetchContent_MakeAvailable(cpr)
-  add_library(feelpp_cpr INTERFACE)
-  set_target_properties(cpr PROPERTIES OUTPUT_NAME "feelpp_cpr")
-  target_link_libraries(feelpp_cpr INTERFACE cpr)
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_CPR )
-  add_library(Feelpp::feelpp_cpr ALIAS feelpp_cpr)
-  target_include_directories(feelpp_cpr INTERFACE
-      $<BUILD_INTERFACE:${cpr_SOURCE_DIR}/include/>
-      $<INSTALL_INTERFACE:include/feelpp> )
-  install(TARGETS feelpp_cpr cpr EXPORT feelpp-contrib-export-targets
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_cpr )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} CPR/Contrib")
 endif()
 
@@ -858,75 +949,88 @@ endif()
 # endif(FEELPP_ENABLE_SPDLOG)
 #
 option( FEELPP_ENABLE_SPECX "Enable specx" ON )
+option( FEELPP_USE_EXTERNAL_SPECX "USE_EXTERNAL_SPECX" OFF )
 if ( FEELPP_ENABLE_SPECX )
   message(STATUS "------------------------------------------------------------")
   message(STATUS "Configuring specx")
+  if ( FEELPP_USE_EXTERNAL_SPECX )
+    message(STATUS "Using external SPECX")
+    find_package(specx REQUIRED)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SPECX )
+    target_link_libraries(feelpp_contrib INTERFACE specx::specx )
+  else()
+    # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
+    # patch includes fix for 18.04 compilation
+    set(SPECX_JUST_LIB ON)
+    set(SPECX_DO_INSTALL ON)
+    set(SPECX_COMPILE_WITH_MPI OFF)
+    set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/specx)
+    FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG eaf74013246099470404ae5b8fd8c7c5b6ad1c5e)
 
-  # set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/SPECX)
-  # patch includes fix for 18.04 compilation
-  set(SPECX_JUST_LIB ON)
-  set(SPECX_DO_INSTALL ON)
-  set(SPECX_COMPILE_WITH_MPI OFF)
-  set(FETCHCONTENT_SOURCE_DIR_SPECX ${CMAKE_CURRENT_SOURCE_DIR}/specx)
-  FetchContent_Declare(SPECX GIT_REPOSITORY https://github.com/feelpp/specx.git GIT_TAG eaf74013246099470404ae5b8fd8c7c5b6ad1c5e)
+    set(SPECX_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+    message(STATUS "[feelpp-specx] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
+    FetchContent_MakeAvailable(specx)
+    add_library(feelpp_specx INTERFACE)
 
-  set(SPECX_INSTALL_CMAKE_DIR  "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  message(STATUS "[feelpp-specx] cmake dir: ${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
-  FetchContent_MakeAvailable(specx)
-  add_library(feelpp_specx INTERFACE)
+    set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
+    target_link_libraries(feelpp_specx INTERFACE specx )
+    add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
+    target_include_directories(feelpp_specx INTERFACE
+      $<BUILD_INTERFACE:${specx_BINARY_DIR}/>
+      $<BUILD_INTERFACE:${specx_BINARY_DIR}/Src>
+      $<BUILD_INTERFACE:${specx_SOURCE_DIR}/>
+      $<BUILD_INTERFACE:${specx_SOURCE_DIR}/Src>
+      $<INSTALL_INTERFACE:include/feelpp>
+      $<INSTALL_INTERFACE:include/feelpp/specx>)
+    install(TARGETS feelpp_specx specx EXPORT feelpp-contrib-export-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+    target_link_libraries( feelpp_contrib INTERFACE feelpp_specx )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} specx")
+  endif()
+endif()
 
-  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
-  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
-  target_link_libraries(feelpp_specx INTERFACE specx )
-  add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
-  target_include_directories(feelpp_specx INTERFACE
-    $<BUILD_INTERFACE:${specx_BINARY_DIR}/>
-    $<BUILD_INTERFACE:${specx_BINARY_DIR}/Src>
-    $<BUILD_INTERFACE:${specx_SOURCE_DIR}/>
-    $<BUILD_INTERFACE:${specx_SOURCE_DIR}/Src>
-    $<INSTALL_INTERFACE:include/feelpp>
-    $<INSTALL_INTERFACE:include/feelpp/specx>)
-  install(TARGETS feelpp_specx specx EXPORT feelpp-contrib-export-targets
+option(FEELPP_ENABLE_EIGENRAND "Enable EigenRand" ON)
+option( FEELPP_USE_EXTERNAL_EIGENRAND "USE_EXTERNAL_EIGENRAND" OFF)
+if(FEELPP_ENABLE_EIGENRAND)
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring EigenRand")
+  if ( FEELPP_USE_EXTERNAL_EIGENRAND )
+    message(STATUS "Using external EigenRand")
+    find_package(eigenrand REQUIRED)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_EIGENRAND )
+    target_link_libraries(feelpp_contrib INTERFACE eigenrand::eigenrand )
+  else()
+    # set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/EIGENRAND)
+    # patch includes fix for 18.04 compilation
+    set(EIGENRAND_BUILD_TEST OFF)
+    set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
+    FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
+
+    FetchContent_MakeAvailable(eigenrand)
+    add_library(feelpp_eigenrand INTERFACE)
+
+    # set_target_properties(eigenrand PROPERTIES OUTPUT_NAME "feelpp_eigenrand")
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGENRAND)
+    target_link_libraries(feelpp_eigenrand INTERFACE eigenrand)
+    add_library(Feelpp::feelpp_eigenrand ALIAS feelpp_eigenrand)
+    target_include_directories(feelpp_eigenrand INTERFACE
+      $<BUILD_INTERFACE:${eigenrand_BINARY_DIR}/>
+      $<BUILD_INTERFACE:${eigenrand_SOURCE_DIR}/>
+      $<INSTALL_INTERFACE:include/feelpp>)
+    install(TARGETS feelpp_eigenrand eigenrand EXPORT feelpp-contrib-export-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      )
-  target_link_libraries( feelpp_contrib INTERFACE feelpp_specx )
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} specx")
-endif()
-
-option(FEELPP_ENABLE_EIGENRAND "Enable EigenRand" ON)
-
-if(FEELPP_ENABLE_EIGENRAND)
-  message(STATUS "------------------------------------------------------------")
-  message(STATUS "Configuring EigenRand")
-
-  # set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/EIGENRAND)
-  # patch includes fix for 18.04 compilation
-  set(EIGENRAND_BUILD_TEST OFF)
-  set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
-  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
-
-  FetchContent_MakeAvailable(eigenrand)
-  add_library(feelpp_eigenrand INTERFACE)
-
-  # set_target_properties(eigenrand PROPERTIES OUTPUT_NAME "feelpp_eigenrand")
-  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGENRAND)
-  target_link_libraries(feelpp_eigenrand INTERFACE eigenrand)
-  add_library(Feelpp::feelpp_eigenrand ALIAS feelpp_eigenrand)
-  target_include_directories(feelpp_eigenrand INTERFACE
-    $<BUILD_INTERFACE:${eigenrand_BINARY_DIR}/>
-    $<BUILD_INTERFACE:${eigenrand_SOURCE_DIR}/>
-    $<INSTALL_INTERFACE:include/feelpp>)
-  install(TARGETS feelpp_eigenrand eigenrand EXPORT feelpp-contrib-export-targets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_eigenrand)
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} eigenrand")
+    )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_eigenrand)
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} eigenrand")
+  endif()
 endif()
 
 
