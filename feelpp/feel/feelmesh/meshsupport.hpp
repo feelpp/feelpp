@@ -116,11 +116,11 @@ public :
     //!
     //! return the set of elements of marker type marker_t with marker flag
     //!
-    range_elements_type rangeMarkedElements( uint16_type marker_t, boost::any flag );
+    range_elements_type rangeMarkedElements( uint16_type marker_t, boost::any flag, entity_process_t ept = entity_process_t::LOCAL_ONLY );
     //!
     //! return the set of faces of marker type marker_t with marker flag
     //!
-    range_faces_type rangeMarkedFaces( uint16_type marker_t, boost::any flag );
+    range_faces_type rangeMarkedFaces( uint16_type marker_t, boost::any flag, entity_process_t ept = entity_process_t::LOCAL_ONLY );
 
     //!
     //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
@@ -488,13 +488,13 @@ MeshSupport<MeshType>::rangeElements( EntityProcessType entity ) const
 
 template<typename MeshType>
 typename MeshSupport<MeshType>::range_elements_type
-MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any flag )
+MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any flag, entity_process_t ept )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
     flag_type m = *markerFlagSet.begin();
     if ( M_isFullSupport )
     {
-        return markedelementsByType( M_mesh, marker_t, flag );
+        return markedelementsByType( M_mesh, marker_t, flag, ept );
     }
 
     Range<mesh_type,MESH_ELEMENTS> myelements(M_mesh);
@@ -521,13 +521,13 @@ MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any fla
 
 template<typename MeshType>
 typename MeshSupport<MeshType>::range_faces_type
-MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
+MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag, entity_process_t ept )
 {
     std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
     flag_type m = *markerFlagSet.begin();
     if ( M_isFullSupport )
     {
-        return markedfacesByType( M_mesh, marker_t, flag );
+        return markedfacesByType( M_mesh, marker_t, flag, ept );
     }
 
     Range<mesh_type,MESH_FACES> myfaces( M_mesh );

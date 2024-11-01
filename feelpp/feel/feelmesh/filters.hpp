@@ -442,15 +442,15 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& m
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 auto
-marked2elements( MeshType const& mesh, boost::any const& markersFlag )
+marked2elements( MeshType const& mesh, boost::any const& markersFlag, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return markedelementsByType( mesh, 2, markersFlag );
+    return markedelementsByType( mesh, 2, markersFlag, ept );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 auto
-marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
+marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return markedelementsByType( mesh, 2, markersFlag );
+    return markedelementsByType( mesh, 2, markersFlag, ept );
 }
 /**
  *
@@ -460,15 +460,15 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  */
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 auto
-marked3elements( MeshType const& mesh, boost::any const& markersFlag )
+marked3elements( MeshType const& mesh, boost::any const& markersFlag, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return markedelementsByType( mesh, 3, markersFlag );
+    return markedelementsByType( mesh, 3, markersFlag, ept );
 }
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 auto
-marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
+marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return markedelementsByType( mesh, 3, markersFlag );
+    return markedelementsByType( mesh, 3, markersFlag, ept );
 }
 
 
@@ -671,7 +671,7 @@ boundaryfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
         for ( auto it = eltfaces.first, en = eltfaces.second; it != en; ++it )
         {
             auto const& face = *it;
-            if ( face.isOnBoundary )
+            if ( face->isOnBoundary() )
                 ret.push_back( *face );
         }
     }
