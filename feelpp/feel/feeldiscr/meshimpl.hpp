@@ -230,6 +230,14 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             auto const enghost = std::get<1>( rangeGhostElement );
             for ( ; itghost != enghost; ++itghost )
                 this->addNeighborSubdomain( boost::unwrap_ref( *itghost ).processId() );
+            // look also over all elements with idInOthersPartitions mapping
+            boost::tie( iv, en ) = this->elementsRange();
+            for ( ; iv != en; ++iv )
+            {
+                auto const& elt = iv->second;
+                for ( auto const& [partitionId,eltIdInPartition] : elt.idInOthersPartitions() )
+                    this->addNeighborSubdomain( partitionId );
+            }
 
             // update mesh entities with parallel data
             if ( false )
