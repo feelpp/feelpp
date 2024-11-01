@@ -58,9 +58,13 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-elements( MeshType const& mesh, rank_type pid )
+elements( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeElements = Feel::unwrap_ptr( mesh ).elementsWithProcessId( pid );
+    auto rangeElements = ept == entity_process_t::LOCAL_ONLY ?
+        Feel::unwrap_ptr( mesh ).template elementsWithProcessId<entity_process_t::LOCAL_ONLY>( pid ) :
+        ( ept == entity_process_t::GHOST_ONLY ?
+          Feel::unwrap_ptr( mesh ).template elementsWithProcessId<entity_process_t::GHOST_ONLY>( pid ) :
+          Feel::unwrap_ptr( mesh ).template elementsWithProcessId<entity_process_t::ALL>( pid ) );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               std::get<0>( rangeElements ),
                               std::get<1>( rangeElements ),
@@ -100,9 +104,13 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-markedelements( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid  )
+markedelements( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, entity_process_t ept )
 {
-    auto rangeElementsWithMarker = Feel::unwrap_ptr( mesh ).elementsWithMarkerByType( markerType, markersFlag, pid );
+    auto rangeElementsWithMarker = ept == entity_process_t::LOCAL_ONLY ?
+        Feel::unwrap_ptr( mesh ).template elementsWithMarkerByType<entity_process_t::LOCAL_ONLY>( markerType, markersFlag, pid ) :
+        ( ept == entity_process_t::GHOST_ONLY ?
+          Feel::unwrap_ptr( mesh ).template elementsWithMarkerByType<entity_process_t::GHOST_ONLY>( markerType, markersFlag, pid ) :
+          Feel::unwrap_ptr( mesh ).template elementsWithMarkerByType<entity_process_t::ALL>( markerType, markersFlag, pid ) );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               std::get<0>( rangeElementsWithMarker ),
                               std::get<1>( rangeElementsWithMarker ),
@@ -113,9 +121,13 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid  )
+markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangeElementsWithMarker = Feel::unwrap_ptr( mesh ).elementsWithMarkerByType( markerType, pid );
+    auto rangeElementsWithMarker = ept == entity_process_t::LOCAL_ONLY ?
+        Feel::unwrap_ptr( mesh ).template elementsWithMarkerByType<entity_process_t::LOCAL_ONLY>( markerType, pid ) :
+        ( ept == entity_process_t::GHOST_ONLY ?
+          Feel::unwrap_ptr( mesh ).template elementsWithMarkerByType<entity_process_t::GHOST_ONLY>( markerType, pid ) :
+          Feel::unwrap_ptr( mesh ).template elementsWithMarkerByType<entity_process_t::ALL>( markerType, pid ) );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               std::get<0>( rangeElementsWithMarker ),
                               std::get<1>( rangeElementsWithMarker ),
@@ -175,13 +187,13 @@ collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMa
 }
 #else
 template<int TheType, typename MeshType>
-using CollectionOfMarkedElementsResultType 
-                = std::conditional_t<TheType == 0 || TheType == 1, 
-                                     std::map<int, Range<MeshType,ElementsType::MESH_ELEMENTS>>, 
+using CollectionOfMarkedElementsResultType
+                = std::conditional_t<TheType == 0 || TheType == 1,
+                                     std::map<int, Range<MeshType,ElementsType::MESH_ELEMENTS>>,
                                      std::map<int, std::tuple<Range<MeshType,ElementsType::MESH_ELEMENTS>, Range<MeshType,ElementsType::MESH_ELEMENTS>>>>;
 
 template<typename MeshType,typename TupleRange>
-Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshType> const& mesh, TupleRange && r ) 
+Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshType> const& mesh, TupleRange && r )
 {
     auto&& meshRange = std::forward<TupleRange>(r);
     wc( mesh )->print( fmt::format( "makeResultRange: mesh count={}", mesh.use_count() ), FLAGS_v > 0, FLAGS_v > 0, FLAGS_v > 0 );
@@ -197,16 +209,16 @@ Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshT
 
 template<int TheType, typename MeshType>
 CollectionOfMarkedElementsResultType<TheType, MeshType>
-collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMarkersFlag) 
+collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMarkersFlag)
 {
     std::map<int, std::set<flag_type>> collectionOfMarkerFlagSet;
 
-    if (auto argCasted = std::any_cast<std::map<int, int>>(&collectionOfMarkersFlag)) 
+    if (auto argCasted = std::any_cast<std::map<int, int>>(&collectionOfMarkersFlag))
     {
         for (auto const& [part, markersFlag] : *argCasted)
             collectionOfMarkerFlagSet[part] = { Feel::unwrap_ptr(mesh).markerId(markersFlag) };
     }
-    else if (auto argCasted = std::any_cast<std::map<int, std::set<std::string>>>(&collectionOfMarkersFlag)) 
+    else if (auto argCasted = std::any_cast<std::map<int, std::set<std::string>>>(&collectionOfMarkersFlag))
     {
         for (auto const& [part, markerNames] : *argCasted)
             collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr(mesh).markersId(markerNames);
@@ -219,13 +231,13 @@ collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMar
     auto collectionOfRangeElement = Feel::unwrap_ptr(mesh).template collectionOfElementsWithMarkerByType<TheType>(1, collectionOfMarkerFlagSet, rank(mesh));
 
     CollectionOfMarkedElementsResultType<TheType, MeshType> res;
-    for (auto const& [part, rangeElementsWithMarker] : collectionOfRangeElement) 
+    for (auto const& [part, rangeElementsWithMarker] : collectionOfRangeElement)
     {
-        if constexpr (TheType == 0 || TheType == 1) 
+        if constexpr (TheType == 0 || TheType == 1)
         {
             res[part] = makeResultRange(mesh,rangeElementsWithMarker);
-        } 
-        else 
+        }
+        else
         {
             auto const& [rangeActive, rangeGhost] = rangeElementsWithMarker;
             res[part] = std::make_tuple( makeResultRange( mesh, rangeActive ), makeResultRange(mesh,rangeGhost) );
@@ -234,7 +246,7 @@ collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMar
             CHECK( std::get<0>(res[part]).mesh() == std::get<1>(res[part]).mesh() );
         }
     }
-    
+
     return res;
 }
 #endif
@@ -288,9 +300,13 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-markedfaces( MeshType const& mesh, uint16_type markerType, rank_type pid )
+markedfaces( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangeMarkedFaces = Feel::unwrap_ptr( mesh ).facesWithMarkerByType( markerType, pid );
+    auto rangeMarkedFaces = ept == entity_process_t::LOCAL_ONLY ?
+        Feel::unwrap_ptr( mesh ).template facesWithMarkerByType<entity_process_t::LOCAL_ONLY>( markerType, pid ) :
+        ( ept == entity_process_t::GHOST_ONLY ?
+          Feel::unwrap_ptr( mesh ).template facesWithMarkerByType<entity_process_t::GHOST_ONLY>( markerType, pid ) :
+          Feel::unwrap_ptr( mesh ).template facesWithMarkerByType<entity_process_t::ALL>( markerType, pid ) );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               std::get<0>( rangeMarkedFaces ),
                               std::get<1>( rangeMarkedFaces ),
@@ -303,9 +319,13 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
+markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, entity_process_t ept )
 {
-    auto rangeMarkedFaces = Feel::unwrap_ptr( mesh ).facesWithMarkerByType( markerType, markersFlag, pid );
+    auto rangeMarkedFaces = ept == entity_process_t::LOCAL_ONLY ?
+        Feel::unwrap_ptr( mesh ).template facesWithMarkerByType<entity_process_t::LOCAL_ONLY>( markerType, markersFlag, pid ) :
+        ( ept == entity_process_t::GHOST_ONLY ?
+          Feel::unwrap_ptr( mesh ).template facesWithMarkerByType<entity_process_t::GHOST_ONLY>( markerType, markersFlag, pid ) :
+          Feel::unwrap_ptr( mesh ).template facesWithMarkerByType<entity_process_t::ALL>( markerType, markersFlag, pid ) );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               std::get<0>( rangeMarkedFaces ),
                               std::get<1>( rangeMarkedFaces ),
@@ -317,9 +337,13 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-boundaryfaces( MeshType const& mesh, rank_type __pid  )
+boundaryfaces( MeshType const& mesh, rank_type __pid, entity_process_t ept )
 {
-    auto rangeBoundaryFaces = Feel::unwrap_ptr( mesh ).facesOnBoundary( __pid );
+    auto rangeBoundaryFaces = ept == entity_process_t::LOCAL_ONLY ?
+        Feel::unwrap_ptr( mesh ).template facesOnBoundary<entity_process_t::LOCAL_ONLY>( __pid ) :
+        ( ept == entity_process_t::GHOST_ONLY ?
+          Feel::unwrap_ptr( mesh ).template facesOnBoundary<entity_process_t::GHOST_ONLY>( __pid ) :
+          Feel::unwrap_ptr( mesh ).template facesOnBoundary<entity_process_t::ALL>( __pid ) );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               std::get<0>( rangeBoundaryFaces ),
                               std::get<1>( rangeBoundaryFaces ),
