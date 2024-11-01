@@ -1,4 +1,5 @@
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <pybind11/embed.h>
-#pragma clang diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on

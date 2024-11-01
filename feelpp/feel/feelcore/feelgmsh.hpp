@@ -45,14 +45,8 @@
 
 #else
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
-#endif
-#if defined(HAVE_DLOPEN)
-#define HAVE_DLOPEN_WAS_DEFINED 1
-#undef HAVE_DLOPEN
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <Gmsh.h>
 #include <GmshVersion.h>
 #if !defined( HAVE_DLOPEN )
@@ -61,9 +55,8 @@
 #undef HAVE_DLOPEN_WAS_DEFINED
 #endif
 #endif
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #define GMSH_VERSION_LESS_THAN(major,minor,subminor)                   \
     ((GMSH_MAJOR_VERSION < (major) ||                                  \

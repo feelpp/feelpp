@@ -29,15 +29,12 @@
 #ifndef __GmshEnums_H
 #define __GmshEnums_H 1
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wredeclared-class-member"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/bimap.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 #include <boost/assign/list_of.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 namespace Feel
 {
 enum GMSH_PARTITIONER

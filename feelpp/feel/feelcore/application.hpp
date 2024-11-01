@@ -30,20 +30,22 @@
 #ifndef __application_H
 #define __application_H 1
 
-#include <boost/optional.hpp>
-#include <boost/format.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-#include <boost/ptr_container/ptr_list.hpp>
+#include <iostream>
+
+
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/simget.hpp>
 
-#include <iostream>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
+
+#include <boost/ptr_container/ptr_list.hpp>
+
+#include <boost/optional.hpp>
+#include <boost/format.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -53,6 +55,9 @@
 #include <boost/serialization/string.hpp> // Needed to send/receive strings!
 
 #include <boost/mpi.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 #if defined(FEELPP_HAS_MPI_H)
 #include <mpi.h>
 #endif /* FEELPP_HAS_MPI_H */
@@ -505,7 +510,4 @@ private:
 
 };
 }
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 #endif /* __Application_H */

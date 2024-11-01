@@ -34,14 +34,12 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/signals2/signal.hpp>
 
-#if defined( __clang__ )
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdivision-by-zero"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/archive/text_oarchive.hpp>
-#if defined( __clang__ )
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>

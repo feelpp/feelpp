@@ -94,15 +94,11 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdivision-by-zero"
-#pragma clang diagnostic ignored "-Wexpansion-to-defined"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/mpi.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/program_options.hpp>
 
@@ -124,29 +120,12 @@
 #include <limits>
 #include <iosfwd>
 
-#if defined(__INTEL_COMPILER)
-#pragma warning push
-#pragma warning(disable:780)
-#endif
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-W#warnings"
-#endif
-#if defined(__GNUC__) && !(defined(__clang__))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcpp"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
-#if defined(__GNUC__) && !(defined(__clang__))
-#pragma GCC diagnostic pop
-#endif
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-#if defined(__INTEL_COMPILER)
-#pragma warning pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelconfig.h>
 //#include <feel/feelcore/info.hpp>
