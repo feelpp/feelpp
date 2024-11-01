@@ -33,7 +33,6 @@
 #include <memory>
 
 #include <fmt/core.h>
-#include <fmt/format.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
@@ -773,7 +772,7 @@ public:
         auto opt = fmt::memory_buffer();
 
         if ( !prefix.empty() )
-            fmt::format_to( opt, "{}.",prefix);
+            fmt::format_to( std::back_inserter( opt ), "{}.",prefix);
         if ( !sub.empty() )
             fmt::format_to( std::back_inserter( opt ), "{}-",sub);
         fmt::format_to( std::back_inserter( opt ), "{}",name);

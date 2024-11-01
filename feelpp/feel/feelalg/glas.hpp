@@ -60,6 +60,8 @@
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelcore/traits.hpp>
 
+#include <feel/feelalg/fmt.hpp>
+
 namespace Feel
 {
 const double Pi = 3.14159265358979323846264338328;
@@ -587,5 +589,4 @@ randomize( T& t )
 //
 } // namespace glas
 } // namespace Feel
-
 #endif /* __FEELPP_GLAS_HPP */

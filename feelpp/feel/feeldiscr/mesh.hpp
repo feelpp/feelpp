@@ -44,6 +44,9 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/mpi/operations.hpp>
+
+#include <fmt/ranges.h>
+
 #include <feel/feelcore/disablewarnings.hpp>
 #include <feel/feelcore/reenablewarnings.hpp>
 

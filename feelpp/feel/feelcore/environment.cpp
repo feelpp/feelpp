@@ -257,8 +257,8 @@ fs::path scratchdir()
 
         if ( env != NULL && env[0] != '\0' )
         {
-            std::string value = ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str();
-            setenv( "FEELPP_SCRATCHDIR", ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str().c_str(),0 );
+            std::string value = fmt::format("{}/{}/feelpp/", env, ::detail::Env::getUserName());
+            setenv("FEELPP_SCRATCHDIR", value.c_str(), 0);
         }
 
         else
@@ -267,13 +267,13 @@ fs::path scratchdir()
 
             if ( env != NULL && env[0] != '\0' )
             {
-                std::string value = ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str();
-                setenv( "FEELPP_SCRATCHDIR", ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str().c_str(),0 );
+                std::string value = fmt::format("{}/{}/feelpp/", env, ::detail::Env::getUserName());
+                setenv( "FEELPP_SCRATCHDIR", fmt::format("{}/{}/feelpp/", env, ::detail::Env::getUserName()).c_str(), 0 );
             }
 
             else
             {
-                std::string value = ( boost::format( "/tmp/%1%/feelpp/" ) % ::detail::Env::getUserName() ).str();
+                std::string value = fmt::format("/tmp/{}/feelpp/", ::detail::Env::getUserName());
                 setenv( "FEELPP_SCRATCHDIR", value.c_str(),0 );
             }
         }
@@ -286,15 +286,14 @@ fs::path scratchdir()
         return fs::path( env );
     }
 
-    std::string value = ( boost::format( "/tmp/%1%/feelpp/" ) % ::detail::Env::getUserName() ).str();
-    return fs::path( value );
+    std::string value = fmt::format("/tmp/{}/feelpp/", ::detail::Env::getUserName());
+    return fs::path(value);
 }
 
 
 DEFINE_bool(disable_log, false,"disable logging.");
 DEFINE_int32(log_level_process, 1, "log level: 2 enable logging for all processes, 1 enable only for master 0 disable for all processes");
 DEFINE_int32(no_log, 1, "disable logging. 0 enable logging for all processes, 1 enable only for master 2 disable for all processes");
-
 
 //! Default constructor.
 Environment::Environment()

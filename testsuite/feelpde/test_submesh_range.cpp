@@ -1,7 +1,9 @@
 #define BOOST_TEST_MODULE test_laplacian
 #include <feel/feelcore/testsuite.hpp>
-
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelalg/fmt.hpp>
+#include <feel/feelalg/glas.hpp>
+
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -21,7 +23,7 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault( "test_laplacian" ), mak
 
 BOOST_AUTO_TEST_SUITE( test_laplacian )
 
-typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+using dim_types = mp11::mp_list<mp11::mp_int<2>, mp11::mp_int<3>>;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_scalar, T, dim_types )
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<T::value>>, _filename=T::value==2?"bidomain_square.geo":"bidomain_cube.geo");
@@ -42,7 +44,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_scalar, T, dim_types )
     auto u = Vh->element();
     u.on( _range=elements( support(Vh) ), _expr=constant(1.) );
     auto I = integrate( _range=elements( support(Vh) ), _expr=idv(u) ).evaluate();
+     
     std::cout << fmt::format( "meas Omega1 = {}", I ) << std::endl;
+   
     BOOST_CHECK_CLOSE( I.norm(), I2, 1.e-10 );
     I = integrate( _range=boundaryfaces( support(Vh) ), _expr=idv(u) ).evaluate();
     std::cout << fmt::format( "meas boundary Omega1 = {}", I ) << std::endl;
@@ -57,9 +61,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_scalar, T, dim_types )
     I = integrate( _range=boundaryfaces( support(Xh) ), _expr=idv(v) ).evaluate();
     std::cout << fmt::format( "measure boundary Omega2 = {}", I ) << std::endl;
     BOOST_CHECK_CLOSE( I.norm(), I3, 1.e-10 );
+
 }
 
-using dim_types = boost::mpl::list< boost::mpl::int_<2>, boost::mpl::int_<3> >;
+using dim_types = mp11::mp_list<mp11::mp_int<2>, mp11::mp_int<3>>;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_vectorial, T, dim_types )
 {
     auto mesh = loadMesh( _mesh = new Mesh<Simplex<T::value>>, _filename = T::value == 2 ? "bidomain_square.geo" : "bidomain_cube.geo" );
@@ -112,4 +117,5 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_vectorial, T, dim_types )
     BOOST_CHECK_CLOSE( I.norm(), 1-I2, 1.e-10 );
 
 }
+
 BOOST_AUTO_TEST_SUITE_END()

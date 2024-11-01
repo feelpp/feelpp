@@ -194,7 +194,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
     {
         VLOG(1) <<"invalid code: " << table;
-        throw std::invalid_argument( fmt::format( "invalid code: ", table ) );
+        throw std::invalid_argument( fmt::format( "invalid code: {}", table ) );
     }
     ex e; // = reader(str);
     try

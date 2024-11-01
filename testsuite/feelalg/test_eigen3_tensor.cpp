@@ -25,6 +25,7 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <Eigen/CXX11/Tensor>
+#include <feel/feelalg/fmt.hpp>
 
 using namespace Feel;
 
@@ -51,7 +52,7 @@ BOOST_AUTO_TEST_CASE( tensor1 )
     Eigen::array<DimPair, 1> dims3 = {{DimPair(2, 0)}};
     mat4 = mat1.contract(mat2, dims3);
 
-    std::cout << "mat1=" << mat1 << "\n";
+    std::cout << fmt::format("mat1={}", mat1) << "\n";
     std::cout << "mat2=" << mat2 << "\n";
     std::cout << "mat4=" << mat4 << "\n";
     BOOST_CHECK_CLOSE(mat4(0,0,0), mat1(0,0,0)*mat2(0,0) +mat1(0,0,1)*mat2(1,0), 1e-13 );
