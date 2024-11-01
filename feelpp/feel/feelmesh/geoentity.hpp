@@ -7,7 +7,7 @@
 
   Copyright (C) 2011-2020 Feel++ Consortium
   Copyright (C) 2005,2006 EPFL
-  
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -560,7 +560,7 @@ public:
             M_idInOtherPartitions = iop;
         }
 
-    
+
     /**
      * set (partition,id) in other partitions of the entity
      */
@@ -574,7 +574,7 @@ public:
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() ) 
+        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOtherPartitions.find( pid )->second;
     }
@@ -980,6 +980,35 @@ typedef GeoEntity<Hypercube<2, 1> > LinearQuad;
 typedef GeoEntity<Hypercube<3, 1> > LinearHexa;
 typedef GeoEntity<Hypercube<2, 2> > QuadraticQuad;
 typedef GeoEntity<Hypercube<3, 2> > QuadraticHexa;
+
+
+namespace detail
+{
+//! return true if the entity satisfy the predicate partitions defined by EPT and part
+template <entity_process_t EPT, typename EntityType>
+bool checkPartitionPredicate( EntityType const& entity, rank_type part )
+{
+    // WARNING: a tmp fix for faces and part not really take into account
+    if constexpr ( is_topological_face<EntityType>::value )
+    {
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
+            return !entity.isGhostFace( /*part*/ );
+        else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
+            return entity.isGhostFace( /*part*/ );
+        else
+            return true;
+    }
+    else
+    {
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
+            return entity.processId() == part;
+        else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
+            return entity.processId() != part;
+        else
+            return true;
+    }
+}
+}
 
 } // Feel
 
