@@ -2561,11 +2561,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto meshFe = this->functionSpace()->mesh();
     auto gmFe = this->functionSpace()->mesh()->gm();
 
-    auto const& firstFace = boost::unwrap_ref(*__face_it);
 
-    const bool feMeshIsSubmesh = meshFe->isSubMeshFrom( firstFace.mesh() );
+    const bool feMeshIsSubmesh = meshFe->isSubMeshFrom( unwrap_ref(*__face_it).mesh() );
     CHECK ( feMeshIsSubmesh ) << "only implemented for ; fe is submesh";
 
+    size_type eltIdRelatedToFace = meshFe->meshToSubMesh( unwrap_ref(*__face_it).id() );
+    while ( eltIdRelatedToFace == invalid_v<size_type> )
+    {
+        ++__face_it;
+        if ( __face_it == __face_en )
+            break;
+        eltIdRelatedToFace = meshFe->meshToSubMesh( unwrap_ref( *__face_it ).id() );
+    }
+    if ( eltIdRelatedToFace == invalid_v<size_type> )
+        return;
+
+    auto const& firstFace = boost::unwrap_ref(*__face_it);
     auto const& eltConnectedToFirstFace = firstFace.element( 0 );
     uint16_type fid_in_element = firstFace.pos_first();
 
@@ -2605,7 +2616,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto exprTwoSideEvaluator = ex.evaluatorWithPermutation( vf::mapgmc(gmcRange,gmcRangeConnection1) );
 
     // geomap context on fe (allow to get relation between geomap context on face range )
-    size_type eltIdRelatedToFace = meshFe->meshToSubMesh( firstFace.id() );
     auto const& firstEltRelatedToFace =  this->mesh()->element( eltIdRelatedToFace );
     auto geopcFe = gmFe->preCompute( fe->points() );
     auto gmcFe = gmFe->template context<vm::POINT>( firstEltRelatedToFace, geopcFe );
