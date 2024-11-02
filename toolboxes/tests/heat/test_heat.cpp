@@ -1,5 +1,6 @@
 #define BOOST_TEST_MODULE heat testsuite
 #include <feel/feelcore/testsuite.hpp>
+#include <feel/feelcore/fmt.hpp>
 #include <feel/feelmodels/execute.hpp>
 #include <feel/feelmodels/heat/heat.hpp>
 

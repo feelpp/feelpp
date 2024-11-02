@@ -237,7 +237,7 @@ public:
                 this->coeff( index ) = value;
             else
             {
-                LOG( WARNING ) << fmt::format( "{} value not in range [{}, {}] for parameter named {}", value, M_space->min( index ), M_space->max( index ) ) << std::endl;
+                LOG( WARNING ) << fmt::format( "{} value not in range [{}, {}] for parameter named {}", value, M_space->min( index ), M_space->max( index ), name ) << std::endl;
                 throw std::invalid_argument( fmt::format( "Parameter named = {} with index = {} is out of range, cannot set to value = {}", name, index, value ) );
             }
         }
@@ -249,7 +249,7 @@ public:
                 this->operator()(i) = value;
             else
             {
-                LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter number {}", value, min(i), max(i), i) << std::endl;
+                LOG( WARNING ) << fmt::format("{} value not in range [{}, {}] for parameter index {}", value, min(i), max(i), i) << std::endl;
                 throw std::invalid_argument(fmt::format("Parameter with index = {} is out of range, cannot set to value = {}", i, value ) );
             }
         }

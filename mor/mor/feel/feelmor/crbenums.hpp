@@ -30,6 +30,7 @@
 #define FEELPP_MOR_CRBENUMS_HPP 1
 
 #include <fmt/core.h>
+
 namespace Feel {
 
 namespace crb {
@@ -58,7 +59,7 @@ inline std::string stageToString( stage s )
     case stage::online:
         return "online";
     }
-    LOG( WARNING ) << fmt::format( "unknown stage {} return offline", s );
+    LOG( ERROR ) << fmt::format( "unknown stage {} return offline", static_cast<int>(s) );
     return "offline";
 }
 
@@ -76,7 +77,7 @@ inline stage stringToStage( std::string const& s )
         return stage::online;
     else
     {
-        LOG(WARNING) << fmt::format("unknown stage {} return offline", s );
+        LOG(ERROR) << fmt::format("unknown stage {} return offline", s );
         return stage::offline;
     }
 }
@@ -110,7 +111,7 @@ inline std::string loadToString( crb::load l )
     case crb::load::all:
         return "all";
     default:
-        LOG(WARNING) << fmt::format("unknown load enum {} returning rb", static_cast<int>( l ) );
+        LOG(ERROR) << fmt::format("unknown load enum {} returning rb", static_cast<int>( l ) );
         return "rb";
     }
 }
@@ -131,7 +132,7 @@ inline crb::load loadFromString( std::string const& s )
         return crb::load::all;
     else
     {
-        LOG(WARNING) << fmt::format("unknown load string {} returning rb", s );
+        LOG(ERROR) << fmt::format("unknown load string {} returning rb", s );
         return crb::load::rb;
     }
 }
@@ -159,7 +160,7 @@ inline std::string lastToString( crb::last l )
     case crb::last::modified:
         return "modified";
     default:
-        LOG(WARNING) << fmt::format("unknown last enum {} returning modified", static_cast<int>( l ) );
+        LOG(ERROR) << fmt::format("unknown last enum {} returning modified", static_cast<int>( l ) );
         return "modified";
     }
 }
