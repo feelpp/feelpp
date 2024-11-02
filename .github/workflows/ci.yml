@@ -68,183 +68,25 @@ jobs:
           echo "SKIP_PYTHON=false"
         fi
 
-
-
   feelpp:
     needs: [check_skip]
-    runs-on: self-docker
-    if: |
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_feelpp == 'false'
-    continue-on-error: ${{ matrix.continue-on-error }}
-    timeout-minutes: 600
-    strategy:
-          fail-fast: false
-          matrix:
-            include:
-              - { target: "ubuntu:24.04", continue-on-error: true }
-              - { target: "ubuntu:22.04", continue-on-error: false }
-              - { target: "spack:openmpi", continue-on-error: true }
-              - { target: "debian:12", continue-on-error: false }
+    runs-on: self-spack
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Workaround checkout Needed single revision issue
-        run: |
-          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
-      - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
-      - name: Build and Test Feelpp Core
-        id: build-feelpp
+      - name: Configure Feelpp 
+        id: configure-feelpp
         run: |
-          echo "Building Feelpp for branch ${{ env.BRANCH }}"
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-core
-        env:
-          TARGET: ${{ matrix.target }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
-
-  testsuite:
-    needs: [check_skip,feelpp]
-    runs-on: self-docker
-    if: |
-      always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_tests == 'false'
-    continue-on-error: true
-    timeout-minutes: 600
-    strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-            submodules: recursive
-
-      - name: Run Feelpp Testsuite
-        id: test-feelsuite
+          source /data/cemosis/spack/share/spack/setup-env.sh
+          spack env activate feelpp-openmpi4
+          cmake --preset feelpp-clang-cpp20-spack-cpu-release
+      - name: Build Feelpp
         run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
-        env:
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
-
-  toolboxes:
-    needs: [check_skip,feelpp]
-    runs-on: self-docker
-    if: |
-      always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_toolboxes == 'false'
-    continue-on-error: false
-    timeout-minutes: 600
-    strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-            submodules: recursive
-
-      - name: Build Feelpp Toolboxes
-        id: build-feeltoolboxes
+          cmake --build --preset -j60 feelpp-clang-cpp20-spack-cpu-release
+      - name: Test Feelpp
         run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
-        env:
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
+          ctest --preset feelpp-clang-cpp20-spack-cpu-release -j4
 
-  mor:
-    needs: [check_skip,toolboxes]
-    runs-on: self-docker
-    if: |
-      always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_mor == 'false'
-    continue-on-error: false
-    timeout-minutes: 600
-    strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-            submodules: recursive
-
-      - name: Build Feelpp MOR
-        id: build-feelmor
-        run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh mor
-        env:
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
-
-  python:
-    needs: [check_skip,feelpp,toolboxes,mor]
-    runs-on: self-docker
-    if: |
-      always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_python == 'false'
-    continue-on-error: false
-    timeout-minutes: 600
-    strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-            submodules: recursive
-
-      - name: Build Feelpp Python
-        id: build-feelpython
-        run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
-        env:
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
