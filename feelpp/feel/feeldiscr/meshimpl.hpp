@@ -2372,7 +2372,7 @@ void updateEntitiesCoDimensionTwoGhostCell_step2( MeshType& mesh, typename MeshT
 }
 
 } // namespace detail
-
+#if 0
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 {
@@ -2677,6 +2677,421 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
 
     DVLOG( 1 ) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << MeshBase<IndexT>::worldComm().localRank() << "\n";
 }
+
+
+#else
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+void
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
+{
+
+    using container_elements_type = std::vector<std::tuple<size_type,size_type>>; // (id of ghost elt, id of active element)
+    using container_faces_type = std::map<size_type,std::tuple<std::tuple<size_type,uint16_type>,
+                                                               std::map<uint16_type, typename face_type::marker_type>,
+                                                               bool >>;// (id of face -> ( (id of element,face id in element), markers, isOnboundary )
+    using container_edges_type = std::map<size_type,std::tuple<std::tuple<size_type,uint16_type>,
+                                                               std::map<uint16_type, typename edge_type::marker_type> >>;// (id of edge -> ((id of element,edge id in element), markers )
+    using container_points_type = std::map<size_type,std::tuple<std::tuple<size_type,uint16_type>,
+                                                                std::map<uint16_type, typename point_type::marker_type> >>;// (id of point -> ( (id of element,point id in element0), markers )
+
+    std::map<rank_type, std::tuple<container_elements_type,
+                                   container_faces_type,
+                                   container_edges_type,
+                                   container_points_type>> dataToSend, dataToRecv;
+    static constexpr int tuple_id_info_elements = 0;
+    static constexpr int tuple_id_info_faces = 1;
+    static constexpr int tuple_id_info_edges = 2;
+    static constexpr int tuple_id_info_points = 3;
+
+    typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
+    typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
+
+    auto iv = this->beginOrderedElement();
+    auto const en = this->endOrderedElement();
+    for ( ; iv != en; ++iv )
+    {
+        auto& ghostelt = boost::unwrap_ref( *iv );
+        if ( !ghostelt.isGhostCell() )
+            continue;
+        const rank_type ghosteltPid = ghostelt.processId();
+        // update info for parallelism
+        elementGhostConnectPointToElement( ghostelt );
+        if constexpr ( nDim == 3 )
+            elementGhostConnectEdgeToElement( ghostelt );
+
+        // elements
+        const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
+        std::get<tuple_id_info_elements>( dataToSend[ghosteltPid] ).push_back( std::make_tuple( ghostelt.id(), idEltInOtherPartition ) );
+
+        // faces
+        auto & dataToSendFaces = std::get<tuple_id_info_faces>( dataToSend[ghosteltPid] );
+        for ( uint16_type j = 0; j < ghostelt.nTopologicalFaces(); j++ )
+        {
+            if ( !ghostelt.facePtr( j ) )
+                continue;
+            auto const& theface = ghostelt.face( j );
+            // do nothing if already updated
+            auto itFindFace = dataToSendFaces.find(theface.id());
+            if ( itFindFace != dataToSendFaces.end() )
+                continue;
+            // update face data
+            std::tie( itFindFace, std::ignore ) = dataToSendFaces.emplace( theface.id(), typename container_faces_type::mapped_type{} );
+            std::get<0>( itFindFace->second ) = std::make_tuple(idEltInOtherPartition, j );
+            std::get<1>( itFindFace->second ) = theface.markers();
+            std::get<2>( itFindFace->second ) = theface.isOnBoundary();
+        }
+
+        // edges
+        if constexpr ( nDim == 3 )
+        {
+            auto & dataToSendEdges = std::get<tuple_id_info_edges>( dataToSend[ghosteltPid] );
+            for ( size_type j = 0; j < ghostelt.nEdges(); j++ )
+            {
+                if ( !ghostelt.edgePtr( j ) )
+                    continue;
+                auto const& edge = ghostelt.edge( j );
+                // do nothing if already updated
+                auto itFindEdge = dataToSendEdges.find( edge.id() );
+                if ( itFindEdge != dataToSendEdges.end() )
+                    continue;
+                // update edge data
+                std::tie( itFindEdge, std::ignore ) = dataToSendEdges.emplace( edge.id(), typename container_edges_type::mapped_type{} );
+                std::get<0>( itFindEdge->second ) = std::make_tuple(idEltInOtherPartition, j );
+                std::get<1>( itFindEdge->second ) = edge.markers();
+            }
+        }
+
+        // points
+        if constexpr ( nDim > 1 )
+        {
+            auto & dataToSendPoints = std::get<tuple_id_info_points>( dataToSend[ghosteltPid] );
+            for ( size_type j = 0; j < ghostelt.nPoints(); j++ )
+            {
+                auto const& point =  ghostelt.point( j );
+                // do nothing if already updated
+                auto itFindPoint = dataToSendPoints.find(point.id());
+                if ( itFindPoint != dataToSendPoints.end() )
+                    continue;
+                // update point data
+                std::tie( itFindPoint, std::ignore ) = dataToSendPoints.emplace( point.id(), typename container_points_type::mapped_type{} );
+                std::get<0>( itFindPoint->second ) = std::make_tuple(idEltInOtherPartition, j );
+                std::get<1>( itFindPoint->second ) = point.markers();
+            }
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------//
+    int neighborSubdomains = this->neighborSubdomains().size();
+    int nbMaxRequest = (nDim+1)*2*neighborSubdomains;
+
+    std::vector<mpi::request> reqs( nbMaxRequest );
+    int countRequest = 0;
+
+    //3D -> 4 2D -> 3 -> 1D ->2
+    // get size of data to transfer
+    std::map<rank_type,std::array<std::size_t,nDim+1>> sizeRecv, sizeSended;
+    //std::map<rank_type,std::array<std::size_t,nDim+1>> sizeSended;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        sizeSended[neighborRank][0] = std::get<0>( dataToSend[neighborRank] ).size();
+        sizeSended[neighborRank][1] = std::get<1>( dataToSend[neighborRank] ).size();
+        if constexpr ( nDim == 3 )
+            sizeSended[neighborRank][2] = std::get<2>( dataToSend[neighborRank] ).size();
+        if constexpr ( nDim > 2 )
+            sizeSended[neighborRank][nDim] = std::get<3>( dataToSend[neighborRank] ).size();
+        reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, sizeSended[neighborRank] );
+        reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        std::size_t nRecvDataElement = sizeRecv[neighborRank][0];
+        std::get<0>( dataToRecv[neighborRank] ).resize( nRecvDataElement );
+        if ( nRecvDataElement > 0 )
+            reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, tuple_id_info_elements, std::get<tuple_id_info_elements>( dataToRecv[neighborRank] ).data(), nRecvDataElement );
+        std::size_t nSendDataElement = sizeSended[neighborRank][0];
+        if ( nSendDataElement > 0 )
+            reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, tuple_id_info_elements, std::get<tuple_id_info_elements>( dataToSend[neighborRank] ).data(), nSendDataElement );
+
+        std::size_t nRecvDataFaces = sizeRecv[neighborRank][1];
+        if ( nRecvDataFaces > 0 )
+            reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, tuple_id_info_faces, std::get<tuple_id_info_faces>( dataToRecv[neighborRank] ) );
+        std::size_t nSendDataFaces = sizeSended[neighborRank][1];
+        if ( nSendDataFaces > 0 )
+            reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, tuple_id_info_faces, std::get<tuple_id_info_faces>( dataToSend[neighborRank] ) );
+
+        if constexpr ( nDim == 3 )
+        {
+            std::size_t nRecvDataEdges = sizeRecv[neighborRank][2];
+            if ( nRecvDataEdges > 0 )
+                reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, tuple_id_info_edges, std::get<tuple_id_info_edges>( dataToRecv[neighborRank] ) );
+            std::size_t nSendDataEdges = sizeSended[neighborRank][2];
+            if ( nSendDataEdges > 0 )
+                reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, tuple_id_info_edges, std::get<tuple_id_info_edges>( dataToSend[neighborRank] ) );
+        }
+
+        if constexpr ( nDim > 2 )
+        {
+            std::size_t nRecvDataPoints = sizeRecv[neighborRank][nDim];
+            if ( nRecvDataPoints > 0 )
+                reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, tuple_id_info_points, std::get<tuple_id_info_points>( dataToRecv[neighborRank] ) );
+            std::size_t nSendDataPoints = sizeSended[neighborRank][nDim];
+            if ( nSendDataPoints > 0 )
+                reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, tuple_id_info_points, std::get<tuple_id_info_points>( dataToSend[neighborRank] ) );
+        }
+
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    //------------------------------------------------------------------------------------------------//
+    // update mesh data (step 1)
+    std::map<size_type,element_type*> eltUpdated;
+    std::map<size_type,face_type*> facesUpdated;
+    std::map<size_type,edge_type*> edgesUpdated;
+    std::map<size_type,point_type*> pointsUpdated;
+    for ( auto const& [rankRecv,dataEntities] : dataToRecv )
+    {
+        // elements
+        for ( auto const& [ eltIdRecv,eltIdCurrent ] : std::get<tuple_id_info_elements>( dataEntities ) )
+        {
+            CHECK( this->hasElement( eltIdCurrent ) ) << "invalid elt id" << eltIdCurrent;
+            auto& theelt = this->elementIterator( eltIdCurrent )->second;
+            theelt.setIdInOtherPartitions( rankRecv, eltIdRecv );
+            eltUpdated.emplace( theelt.id(), &theelt );
+        }
+
+        // faces
+        for ( auto const& [faceIdRecv,dataFace] : std::get<tuple_id_info_faces>( dataEntities ) )
+        {
+            auto const& [eltIdCurrent,faceIdInElt] = std::get<0>( dataFace );
+            auto const& mapMarkers = std::get<1>( dataFace );
+            bool faceIsOnBoundary = std::get<2>( dataFace );
+
+            CHECK( this->hasElement( eltIdCurrent ) ) << "invalid elt id" << eltIdCurrent;
+            auto& theelt = this->elementIterator( eltIdCurrent )->second;
+            if ( !theelt.facePtr( faceIdInElt ) )
+                continue;
+            auto & theface = theelt.face( faceIdInElt );
+            theface.setIdInOtherPartitions( rankRecv, faceIdRecv );
+            for ( auto [markerType,markerValues] : mapMarkers )
+                theface.addMarker( markerType, markerValues );
+            if ( !faceIsOnBoundary )
+                theface.setOnBoundary( false );
+            facesUpdated.emplace( theface.id(), &theface );
+        }
+        if constexpr ( nDim == 3 )
+        {
+            // edges
+            for ( auto const& [edgeIdRecv,dataEdge] : std::get<tuple_id_info_edges>( dataEntities ) )
+            {
+                auto const& [eltIdCurrent,edgeIdInElt] = std::get<0>( dataEdge );
+                auto const& mapMarkers = std::get<1>( dataEdge );
+
+                CHECK( this->hasElement( eltIdCurrent ) ) << "invalid elt id" << eltIdCurrent;
+                auto& theelt = this->elementIterator( eltIdCurrent )->second;
+                if ( !theelt.edgePtr( edgeIdInElt ) )
+                    continue;
+                auto & edge = theelt.edge( edgeIdInElt );
+                edge.setIdInOtherPartitions( rankRecv, edgeIdRecv );
+                for ( auto [markerType,markerValues] : mapMarkers )
+                    edge.addMarker( markerType, markerValues );
+                edgesUpdated.emplace( edge.id(), &edge );
+            }
+        }
+
+        if constexpr ( nDim > 2 )
+        {
+            // points
+            for ( auto const& [pointIdRecv,dataPoint] : std::get<tuple_id_info_points>( dataEntities ) )
+            {
+                auto const& [eltIdCurrent,pointIdInElt] = std::get<0>( dataPoint );
+                auto const& mapMarkers = std::get<1>( dataPoint );
+
+                CHECK( this->hasElement( eltIdCurrent ) ) << "invalid elt id" << eltIdCurrent;
+                auto& theelt = this->elementIterator( eltIdCurrent )->second;
+                if ( !theelt.pointPtr( pointIdInElt ) )
+                    continue;
+                auto & point = theelt.point( pointIdInElt );
+                point.setIdInOtherPartitions( rankRecv, pointIdRecv );
+                for ( auto [markerType,markerValues] : mapMarkers )
+                    point.addMarker( markerType, markerValues );
+                pointsUpdated.emplace( point.id(), &point );
+            }
+        }
+    }
+
+    // prepare data to send (second step)
+    using container_step2_elements_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>> >; // (id of elt, (id in other part mapping))
+    using container_step2_faces_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
+                                                                      std::map<uint16_type, typename face_type::marker_type>,
+                                                                      rank_type,bool> >; // (id of face, (id in other part mapping),markers,processId,isOnBoundary)
+    using container_step2_edges_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
+                                                                      std::map<uint16_type, typename edge_type::marker_type> > >; // (id of edge, (id in other part mapping),markers)
+    using container_step2_points_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
+                                                                       std::map<uint16_type, typename point_type::marker_type> > >; // (id of point, (id in other part mapping),markers)
+    std::map<rank_type, std::tuple<container_step2_elements_type,
+                                   container_step2_faces_type,
+                                   container_step2_edges_type,
+                                   container_step2_points_type>> dataToSendStep2, dataToRecvStep2;
+
+    auto prepareDataToSendStep2 =
+        [&dataToSendStep2]( auto const& mapEntities, auto tupleId ){
+            static constexpr int tuple_id = std::decay_t<decltype(tupleId)>::value;
+            for ( auto & [entityId,entityPtr] : mapEntities )
+            {
+                for ( auto const& [pidGhost,eidGhost] : entityPtr->idInOthersPartitions() )
+                {
+                    auto & dataToSendStep2Elt = std::get<tuple_id>( dataToSendStep2[pidGhost] )[eidGhost];
+                    std::map<rank_type,size_type> tmpIiop;
+                    for ( auto [r,e] : entityPtr->idInOthersPartitions() )
+                        if ( r != pidGhost )
+                            tmpIiop.emplace( r, e );
+                    // NOTE: not need to add current id with element entities (already registered in ghost element)
+                    if constexpr( tuple_id != tuple_id_info_elements )
+                        tmpIiop.emplace( entityPtr->pidInPartition(), entityPtr->id() );
+                    std::get<0>( dataToSendStep2Elt ) = std::move( tmpIiop );
+
+                    if constexpr( tuple_id == tuple_id_info_faces )
+                    {
+                        std::get<1>( dataToSendStep2Elt ) = entityPtr->markers();
+                        std::get<3>( dataToSendStep2Elt ) = entityPtr->isOnBoundary();
+                        // eval process id
+                        rank_type pidEntity = entityPtr->pidInPartition();
+#if 1
+                        entityPtr->setProcessId( entityPtr->pidInPartition() ); // trick to use isInterProcessDomain() correctly (TODO)
+                        if ( entityPtr->isInterProcessDomain() )
+                            pidEntity = std::min( entityPtr->element0().processId(), entityPtr->element1().processId() );
+                        else // intra or on boundary
+                            pidEntity = entityPtr->element0().processId();
+#else
+                        for ( auto const& [pidOther,eidOther] : entityPtr->idInOthersPartitions() )
+                            pidEntity = std::min( pidEntity, pidOther );
+                        // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
+                        entityPtr->setProcessId( pidEntity );
+#endif
+                        // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
+                        entityPtr->setProcessId( pidEntity );
+                        std::get<2>( dataToSendStep2Elt ) = pidEntity;
+                    }
+                    else if constexpr( tuple_id == tuple_id_info_edges || tuple_id == tuple_id_info_points )
+                    {
+                        std::get<1>( dataToSendStep2Elt ) = entityPtr->markers();
+                        // eval process id
+                        rank_type pidEntity = entityPtr->pidInPartition();
+                        for ( auto const& [pidOther,eidOther] : entityPtr->idInOthersPartitions() )
+                            pidEntity = std::min( pidEntity, pidOther );
+                        // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
+                        entityPtr->setProcessId( pidEntity );
+                    }
+                }
+            }
+        };
+    prepareDataToSendStep2( eltUpdated, std::integral_constant<int,tuple_id_info_elements>{} );
+    prepareDataToSendStep2( facesUpdated,std::integral_constant<int,tuple_id_info_faces>{} );
+    if constexpr ( nDim == 3 )
+        prepareDataToSendStep2( edgesUpdated,std::integral_constant<int,tuple_id_info_edges>{} );
+    if constexpr ( nDim > 2 )
+        prepareDataToSendStep2( pointsUpdated,std::integral_constant<int,tuple_id_info_points>{} );
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSendStep2[neighborRank] );
+        reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep2[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    //------------------------------------------------------------------------------------------------//
+    // update mesh data (step 2)
+    for ( auto const& [rankRecv,dataEntities] : dataToRecvStep2 )
+    {
+        // elements
+        for ( auto const& [eltId,dataElt] : std::get<tuple_id_info_elements>( dataEntities ) )
+        {
+            CHECK( this->hasElement( eltId ) ) << "invalid elt id" << eltId;
+            auto& elt = this->elementIterator( eltId )->second;
+            for ( auto [r,e] : std::get<0>( dataElt ) )
+                elt.setIdInOtherPartitions( r, e );
+        }
+        // faces
+        for ( auto const& [faceId,dataFace] : std::get<1>( dataEntities ) )
+        {
+            CHECK( this->hasFace( faceId ) ) << "invalid face id" << faceId;
+            auto& face = this->faceIterator( faceId )->second;
+            for ( auto [r,e] : std::get<0>( dataFace ) )
+                face.setIdInOtherPartitions( r, e );
+            for ( auto const& [markerType,markerValues] : std::get<1>( dataFace ) )
+                face.addMarker( markerType, markerValues );
+            face.setProcessId( std::get<2>( dataFace ) );
+            face.setOnBoundary( std::get<3>( dataFace ) );
+            // // update process id
+            // rank_type pidFace = face.pidInPartition();
+            // for ( auto const& [pidOther,eidOther] : face.idInOthersPartitions() )
+            //     pidFace = std::min( pidFace, pidOther );
+            // face.setProcessId( pidFace );
+        }
+        // edges
+        if constexpr ( nDim == 3 )
+        {
+            for ( auto const& [edgeId,dataEdge] : std::get<tuple_id_info_edges>( dataEntities ) )
+            {
+                CHECK( this->hasEdge( edgeId ) ) << "invalid edge id" << edgeId;
+                auto& edge = this->edgeIterator( edgeId )->second;
+                for ( auto [r,e] : std::get<0>( dataEdge ) )
+                    edge.setIdInOtherPartitions( r, e );
+                for ( auto const& [markerType,markerValues] : std::get<1>( dataEdge ) )
+                    edge.addMarker( markerType, markerValues );
+                // update process id
+                rank_type pidEdge = edge.pidInPartition();
+                for ( auto const& [pidOther,eidOther] : edge.idInOthersPartitions() )
+                    pidEdge = std::min( pidEdge, pidOther );
+                edge.setProcessId( pidEdge );
+            }
+        }
+        // points
+        if constexpr ( nDim > 2 )
+        {
+            for ( auto const& [pointId,dataPoint] : std::get<tuple_id_info_points>( dataEntities ) )
+            {
+                CHECK( this->hasPoint( pointId ) ) << "invalid point id" << pointId;
+                auto& point = this->pointIterator( pointId )->second;
+                for ( auto [r,e] : std::get<0>( dataPoint ) )
+                    point.setIdInOtherPartitions( r, e );
+                for ( auto const& [markerType,markerValues] : std::get<1>( dataPoint ) )
+                    point.addMarker( markerType, markerValues );
+                // update process id
+                rank_type pidPoint = point.pidInPartition();
+                for ( auto const& [pidOther,eidOther] : point.idInOthersPartitions() )
+                    pidPoint = std::min( pidPoint, pidOther );
+                point.setProcessId( pidPoint );
+            }
+        }
+    }
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::check() const

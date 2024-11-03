@@ -99,8 +99,8 @@ struct SubFaceOfBase {};
 /**
  * @brief description of a subface or facet (topological d-1) of an element of topologicql dimension d
  * @ingroup Mesh
- * 
- * @tparam ElementType type of the element 
+ *
+ * @tparam ElementType type of the element
  */
 template<typename ElementType>
 class SubFaceOf : public SubFaceOfBase
@@ -207,6 +207,10 @@ public:
     {
         return boost::get<0>( M_element1 );
     }
+
+    //! return face index in a connected element (0 or 1)
+    uint16_type idInElement( uint16_type e ) const { return e==0? boost::get<1>( M_element0 ) : boost::get<1>( M_element1 ); }
+
     size_type idElement0() const { return this->element0().id(); }
     uint16_type idInElement0() const { return boost::get<1>( M_element0 ); }
     rank_type pidElement0() const { return this->element0().processId(); }
@@ -290,11 +294,11 @@ public:
 
     /**
      * @brief say if the face is a ghost or not for process id @p p
-     * 
+     *
      * a face is a ghost face on process rank @p p if the process id is greater than @p p
-     * 
+     *
      * @param p the rank of the communicator
-     * @return true if the face is a ghost face 
+     * @return true if the face is a ghost face
      * @return false otherwise
      */
     bool
@@ -879,8 +883,8 @@ public:
         {
             //std::cout << "GeoElement1D move ctor\n";
         }
-           
-        
+
+
 
     /**
      * destructor
@@ -1004,7 +1008,7 @@ public:
         return edge_permutation_type();
     }
     //!
-    //! @return true if GeoElement1D is connected to a face 
+    //! @return true if GeoElement1D is connected to a face
     //!
     bool hasFace( uint16_type i ) const
         {
@@ -1854,7 +1858,7 @@ struct is_geoelement<GeoElement3D<Dim,GEOSHAPE,T,IndexT,UseMeasuresStorage>>: st
 
 /**
  * @brief get if a face of an element has the marker @p flag
- * 
+ *
  * @tparam EltType type of mesh element
  * @return true if the element \p e has a face with \p flag, false otherwise
  */
@@ -1879,7 +1883,7 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag,
 
 /**
  * @brief check if a element as faces with any of the string markers
- * 
+ *
  * @tparam EltType element type to be checked
  * @param e element to be checked
  * @param flags vector of strings containing the markers
