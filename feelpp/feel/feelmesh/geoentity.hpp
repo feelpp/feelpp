@@ -543,13 +543,13 @@ public:
     /**
      * set id in a partition pid of the entity
      */
-    FEELPP_DEPRECATED void setIdInOthersPartitions( rank_type pid, size_type id )
-    {
-        M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
-    }
+    // FEELPP_DEPRECATED void setIdInOthersPartitions( rank_type pid, size_type id )
+    // {
+    //     M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
+    // }
     void setIdInOtherPartitions( rank_type pid, size_type id )
     {
-        M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
+        M_idInOtherPartitions[pid] = id;
     }
 
     /**
@@ -989,7 +989,7 @@ template <entity_process_t EPT, typename EntityType>
 bool checkPartitionPredicate( EntityType const& entity, rank_type part )
 {
     // WARNING: a tmp fix for faces and part not really take into account
-    if constexpr ( is_topological_face<EntityType>::value )
+    if constexpr ( false && is_topological_face<EntityType>::value )
     {
         if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
             return !entity.isGhostFace( /*part*/ );
