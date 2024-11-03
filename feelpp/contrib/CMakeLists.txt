@@ -808,7 +808,7 @@ if ( FEELPP_ENABLE_MATPLOT )
       add_subdirectory( matplot )
       target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
       set_target_properties(matplot PROPERTIES OUTPUT_NAME "feelpp_matplot")
-      target_link_libraries( feelpp_contrib INTERFACE matplot )
+      target_link_libraries( feelpp_contrib INTERFACE Matplot++::matplot )
       install(TARGETS matplot EXPORT feelpp-contrib-export-targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
