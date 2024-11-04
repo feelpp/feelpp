@@ -41,16 +41,8 @@
 #include <libxml/tree.h>
 #endif
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-W#warnings"
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
-
-#endif
-#if defined(__GNUC__) && !(defined(__clang__))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 
 #include <vtkSmartPointer.h>
 #include <vtkCellType.h>
@@ -103,12 +95,8 @@
 
 #endif // VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
 
-#if defined(__GNUC__) && !(defined(__clang__))
-#pragma GCC diagnostic pop
-#endif
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 #include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>

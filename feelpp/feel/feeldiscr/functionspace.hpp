@@ -60,27 +60,25 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-// #include <boost/numeric/ublas/vector_serialize.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#pragma GCC diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
 
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
-
-
-
 #include <stdexcept>
 #include <sstream>
 #include <limits>
 
 #include <feel/feelcore/parameter.hpp>
+
 #include <feel/feelpoly/operations.hpp>
 
 #include <feel/feelalg/boundingbox.hpp>
@@ -107,6 +105,8 @@
 #include <feel/feelvf/exprbase.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
+
+#include <feel/feelmesh/fmt.hpp>
 
 namespace Feel
 {

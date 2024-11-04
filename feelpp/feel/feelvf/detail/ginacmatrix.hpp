@@ -26,6 +26,7 @@
 
 #include <fmt/core.h>
 #include <fmt/ranges.h>
+#include <fmt/ostream.h>
 #include <any>
 
 namespace Feel

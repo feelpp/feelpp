@@ -257,8 +257,8 @@ fs::path scratchdir()
 
         if ( env != NULL && env[0] != '\0' )
         {
-            std::string value = ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str();
-            setenv( "FEELPP_SCRATCHDIR", ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str().c_str(),0 );
+            std::string value = fmt::format("{}/{}/feelpp/", env, ::detail::Env::getUserName());
+            setenv("FEELPP_SCRATCHDIR", value.c_str(), 0);
         }
 
         else
@@ -267,13 +267,13 @@ fs::path scratchdir()
 
             if ( env != NULL && env[0] != '\0' )
             {
-                std::string value = ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str();
-                setenv( "FEELPP_SCRATCHDIR", ( boost::format( "%1%/%2%/feelpp/" ) % env % ::detail::Env::getUserName() ).str().c_str(),0 );
+                std::string value = fmt::format("{}/{}/feelpp/", env, ::detail::Env::getUserName());
+                setenv( "FEELPP_SCRATCHDIR", fmt::format("{}/{}/feelpp/", env, ::detail::Env::getUserName()).c_str(), 0 );
             }
 
             else
             {
-                std::string value = ( boost::format( "/tmp/%1%/feelpp/" ) % ::detail::Env::getUserName() ).str();
+                std::string value = fmt::format("/tmp/{}/feelpp/", ::detail::Env::getUserName());
                 setenv( "FEELPP_SCRATCHDIR", value.c_str(),0 );
             }
         }
@@ -286,15 +286,14 @@ fs::path scratchdir()
         return fs::path( env );
     }
 
-    std::string value = ( boost::format( "/tmp/%1%/feelpp/" ) % ::detail::Env::getUserName() ).str();
-    return fs::path( value );
+    std::string value = fmt::format("/tmp/{}/feelpp/", ::detail::Env::getUserName());
+    return fs::path(value);
 }
 
 
 DEFINE_bool(disable_log, false,"disable logging.");
 DEFINE_int32(log_level_process, 1, "log level: 2 enable logging for all processes, 1 enable only for master 0 disable for all processes");
 DEFINE_int32(no_log, 1, "disable logging. 0 enable logging for all processes, 1 enable only for master 2 disable for all processes");
-
 
 //! Default constructor.
 Environment::Environment()
@@ -2109,13 +2108,13 @@ Environment::startLogging( std::string decorate )
     // Initialize Google's logging library.
     if ( !google::IsGoogleLoggingInitialized() )
     {
-        if ( FLAGS_no_log )
-        {
-            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
-                FLAGS_no_log = 0;
-        }
+        FLAGS_logtostderr = false;
+        FLAGS_log_dir = "";
+        FLAGS_alsologtostderr = false;
         google::InitGoogleLogging( S_argv[0] );
     }
+    S_mpilogsink = std::make_unique<MpiLogSink>(S_worldcomm->rank(), soption("log-mpi"), soption("log-output"), (a0 / S_about.appName()).string(), boption("log-mem") );
+    google::AddLogSink(S_mpilogsink.get());    
     google::InstallFailureSignalHandler();
 }
 
@@ -2124,6 +2123,8 @@ Environment::stopLogging( bool remove )
 {
     if ( google::IsGoogleLoggingInitialized() )
     {
+         // Clean up MpiLogSink before shuttingdown
+        google::RemoveLogSink(S_mpilogsink.get());
         google::ShutdownGoogleLogging();
         if ( (remove || Environment::vm().count( "rmlogs" ))  &&
              S_worldcomm->isMasterRank() )
@@ -2728,6 +2729,8 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 std::shared_ptr<WorldComm> Environment::S_worldcomm;
 std::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 boost::uuids::random_generator Environment::S_generator;
+
+std::unique_ptr<MpiLogSink> Environment::S_mpilogsink;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),

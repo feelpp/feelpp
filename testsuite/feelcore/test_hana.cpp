@@ -22,12 +22,10 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 #define BOOST_TEST_MODULE hana testsuite
-#include <fmt/core.h>
-#include <fmt/compile.h>
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/environment.hpp>
-
-
+#include <feel/feelcore/fmt.hpp>
+#include <fmt/compile.h>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 

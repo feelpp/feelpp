@@ -1189,4 +1189,32 @@ expression2( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix
 } // vf
 } // Feel
 
+namespace fmt {
+    // Custom formatter for GiNaC::ex
+    template <>
+    struct formatter<GiNaC::ex> {
+        // No specific format specifications for GiNaC::ex
+        constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+            return ctx.begin();
+        }
+
+        template <typename FormatContext>
+        auto format(const GiNaC::ex& ex, FormatContext& ctx) const -> decltype(ctx.out()) {
+            return format_to(ctx.out(), "{}", str(ex));  // toString or equivalent function
+        }
+    };
+
+    // Custom formatter for std::map<std::string, GiNaC::ex>
+    template <>
+    struct formatter<std::map<std::string, GiNaC::ex>> : fmt::formatter<std::pair<std::string, GiNaC::ex>> {
+        template <typename FormatContext>
+        auto format(const std::map<std::string, GiNaC::ex>& map, FormatContext& ctx) const -> decltype(ctx.out()) {
+            format_to(ctx.out(), "{{ ");
+            for (const auto& item : map) {
+                format_to(ctx.out(), "{}: {}, ", item.first, item.second);
+            }
+            return format_to(ctx.out(), "}}");
+        }
+    };
+}
 #endif /* FEELPP_GINAC_HPP */

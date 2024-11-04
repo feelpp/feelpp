@@ -33,7 +33,6 @@
 #include <memory>
 
 #include <fmt/core.h>
-#include <fmt/format.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/signals2/signal.hpp>
@@ -61,6 +60,7 @@
 #include <feel/feelcore/termcolor.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcore/repository.hpp>
+#include <feel/feelcore/mpilogsink.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
 #include <petscsys.h>
@@ -772,7 +772,7 @@ public:
         auto opt = fmt::memory_buffer();
 
         if ( !prefix.empty() )
-            fmt::format_to( opt, "{}.",prefix);
+            fmt::format_to( std::back_inserter( opt ), "{}.",prefix);
         if ( !sub.empty() )
             fmt::format_to( std::back_inserter( opt ), "{}-",sub);
         fmt::format_to( std::back_inserter( opt ), "{}",name);
@@ -976,6 +976,7 @@ private:
 
     static uuids::random_generator S_generator;
 
+    static std::unique_ptr<MpiLogSink> S_mpilogsink;
     /**
      * Stores the absolute path and executable name
      */

@@ -24,10 +24,7 @@
 #ifndef FEELPP_PYEXPR_HPP
 #define FEELPP_PYEXPR_HPP 1
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#include <pybind11/embed.h>
-#pragma clang diagnostic pop
+#include <feel/feelpython/pybind11/embed.h>
 #include <iostream>
 #include <map>
 #include <vector>

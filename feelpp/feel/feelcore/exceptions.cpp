@@ -38,7 +38,7 @@ printGitReport()
         {
             std::cerr << fmt::format( "WARN: there were uncommitted changes at build-time." ) << std::endl;
         }
-        const char* str = R"({:*^30}
+        constexpr auto str = R"({:*^30}
  - commit {} (HEAD)
  - describe {}
  - Author: {} <{}>
@@ -74,7 +74,7 @@ print_and_trace( std::string const& s, E const& e )
         fmt::print( "{:*^30}\n", " Stack Trace " );
     }
     printGitReport();
-    fmt::print( fmt::emphasis::bold | fg( fmt::color::red ), s );
+    fmt::print( fmt::emphasis::bold | fg( fmt::color::red ), "{}", s );
 }
 void handleExceptions()
 {

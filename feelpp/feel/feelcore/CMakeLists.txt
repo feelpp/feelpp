@@ -22,30 +22,31 @@
 #
 #
 set(SRC
-  info.cpp
-  feel.cpp
-  feelio.cpp
+  about.cpp
   application.cpp
+  checker.cpp
+  debug.cpp
   environment.cpp
   exceptions.cpp
-  repository.cpp
-  simget.cpp
-  xmlparser.hpp
-  about.cpp
-  typeinfo.cpp
-  smartassert.cpp
-  pslogger.cpp
-  worldcomm.cpp
-  debug.cpp
-  utility.cpp
-  ptreetools.cpp
-  checker.cpp
-  remotedata.cpp
+  feel.cpp
+  feelio.cpp
+  info.cpp
   journalmanager.cpp
   journalwatcher.cpp
+  mpilogsink.cpp
+  pslogger.cpp
+  ptreetools.cpp
+  remotedata.cpp
+  repository.cpp
+  simget.cpp
+  smartassert.cpp
   table.cpp
   tabulateinformations.cpp
   terminalproperties.cpp
+  typeinfo.cpp
+  utility.cpp
+  worldcomm.cpp
+  xmlparser.hpp
   )
 
 if(FEELPP_HAS_MONGOCXX)

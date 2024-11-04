@@ -29,6 +29,8 @@
 #include <feel/feelpython/pyexpr.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <fmt/std.h>
 #include <fmt/ostream.h>
 
 namespace Feel {

@@ -29,14 +29,11 @@
 #ifndef __SubMeshData_H
 #define __SubMeshData_H 1
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wredeclared-class-member"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/bimap.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace Feel
 {
