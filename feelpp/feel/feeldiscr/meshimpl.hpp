@@ -2706,6 +2706,9 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
     typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
 
+    bool meshHasUpdateFaces = this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL );
+
+
     auto iv = this->beginOrderedElement();
     auto const en = this->endOrderedElement();
     for ( ; iv != en; ++iv )
@@ -2762,7 +2765,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         }
 
         // points
-        if constexpr ( nDim > 1 )
+        if ( nDim > 1 || !meshHasUpdateFaces )
         {
             auto & dataToSendPoints = std::get<tuple_id_info_points>( dataToSend[ghosteltPid] );
             for ( size_type j = 0; j < ghostelt.nPoints(); j++ )
@@ -2789,16 +2792,18 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
 
     //3D -> 4 2D -> 3 -> 1D ->2
     // get size of data to transfer
-    std::map<rank_type,std::array<std::size_t,nDim+1>> sizeRecv, sizeSended;
+    //std::map<rank_type,std::array<std::size_t,nDim+1>> sizeRecv, sizeSended;
+    std::map<rank_type,std::array<std::size_t,nDim==1?3:nDim+1>> sizeRecv, sizeSended;
+    uint16_type sizeDataPointIndex = nDim==1?2:nDim;
     //std::map<rank_type,std::array<std::size_t,nDim+1>> sizeSended;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        sizeSended[neighborRank][0] = std::get<0>( dataToSend[neighborRank] ).size();
-        sizeSended[neighborRank][1] = std::get<1>( dataToSend[neighborRank] ).size();
+        sizeSended[neighborRank][0] = std::get<tuple_id_info_elements>( dataToSend[neighborRank] ).size();
+        sizeSended[neighborRank][1] = std::get<tuple_id_info_faces>( dataToSend[neighborRank] ).size();
         if constexpr ( nDim == 3 )
-            sizeSended[neighborRank][2] = std::get<2>( dataToSend[neighborRank] ).size();
-        if constexpr ( nDim > 2 )
-            sizeSended[neighborRank][nDim] = std::get<3>( dataToSend[neighborRank] ).size();
+            sizeSended[neighborRank][2] = std::get<tuple_id_info_edges>( dataToSend[neighborRank] ).size();
+        //if constexpr ( nDim > 2  )
+        sizeSended[neighborRank][/*nDim*/sizeDataPointIndex] = std::get<tuple_id_info_points>( dataToSend[neighborRank] ).size();
         reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, sizeSended[neighborRank] );
         reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
@@ -2833,12 +2838,13 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                 reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, tuple_id_info_edges, std::get<tuple_id_info_edges>( dataToSend[neighborRank] ) );
         }
 
-        if constexpr ( nDim > 2 )
+        //if constexpr ( nDim > 2 )
+        if ( nDim > 1 || !meshHasUpdateFaces )
         {
-            std::size_t nRecvDataPoints = sizeRecv[neighborRank][nDim];
+            std::size_t nRecvDataPoints = sizeRecv[neighborRank][sizeDataPointIndex/*nDim*/];
             if ( nRecvDataPoints > 0 )
                 reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, tuple_id_info_points, std::get<tuple_id_info_points>( dataToRecv[neighborRank] ) );
-            std::size_t nSendDataPoints = sizeSended[neighborRank][nDim];
+            std::size_t nSendDataPoints = sizeSended[neighborRank][sizeDataPointIndex/*nDim*/];
             if ( nSendDataPoints > 0 )
                 reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, tuple_id_info_points, std::get<tuple_id_info_points>( dataToSend[neighborRank] ) );
         }
@@ -2904,7 +2910,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             }
         }
 
-        if constexpr ( nDim > 2 )
+        //if constexpr ( nDim > 2 )
+        if ( nDim > 1 || !meshHasUpdateFaces )
         {
             // points
             for ( auto const& [pointIdRecv,dataPoint] : std::get<tuple_id_info_points>( dataEntities ) )
@@ -2995,7 +3002,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     prepareDataToSendStep2( facesUpdated,std::integral_constant<int,tuple_id_info_faces>{} );
     if constexpr ( nDim == 3 )
         prepareDataToSendStep2( edgesUpdated,std::integral_constant<int,tuple_id_info_edges>{} );
-    if constexpr ( nDim > 2 )
+    //if constexpr ( nDim > 2 )
+    if ( nDim > 1 || !meshHasUpdateFaces )
         prepareDataToSendStep2( pointsUpdated,std::integral_constant<int,tuple_id_info_points>{} );
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
@@ -3008,6 +3016,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
 
     //------------------------------------------------------------------------------------------------//
     // update mesh data (step 2)
+    M_neighbor_processors.clear();
     for ( auto const& [rankRecv,dataEntities] : dataToRecvStep2 )
     {
         // elements
@@ -3034,6 +3043,11 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             // for ( auto const& [pidOther,eidOther] : face.idInOthersPartitions() )
             //     pidFace = std::min( pidFace, pidOther );
             // face.setProcessId( pidFace );
+            if constexpr ( nDim == 1 )
+            {
+                for ( auto const& [pidOther,eidOther] : face.idInOthersPartitions() )
+                    this->addNeighborSubdomain( pidOther );
+            }
         }
         // edges
         if constexpr ( nDim == 3 )
@@ -3054,7 +3068,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             }
         }
         // points
-        if constexpr ( nDim > 2 )
+        //if constexpr ( nDim > 2 )
+        if ( nDim > 1 || !meshHasUpdateFaces )
         {
             for ( auto const& [pointId,dataPoint] : std::get<tuple_id_info_points>( dataEntities ) )
             {
@@ -3067,7 +3082,10 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                 // update process id
                 rank_type pidPoint = point.pidInPartition();
                 for ( auto const& [pidOther,eidOther] : point.idInOthersPartitions() )
+                {
                     pidPoint = std::min( pidPoint, pidOther );
+                    this->addNeighborSubdomain( pidOther );
+                }
                 point.setProcessId( pidPoint );
             }
         }
