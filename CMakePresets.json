@@ -4677,6 +4677,8 @@
       },
       {
          "cacheVariables": {
+            "CMAKE_CXX_COMPILER": "amdclang++",
+            "CMAKE_C_COMPILER": "amdclang",
             "FEELPP_ENABLE_CUDA": "OFF",
             "FEELPP_ENABLE_KOKKOS": "ON",
             "FEELPP_ENABLE_ROCM": "ON"
@@ -4845,9 +4847,9 @@
       {
          "displayName": "feelpp |clang|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp"
@@ -4857,9 +4859,9 @@
       {
          "displayName": "feelpp |clang|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp"
@@ -4869,9 +4871,9 @@
       {
          "displayName": "feelpp |clang|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp"
@@ -4881,9 +4883,9 @@
       {
          "displayName": "feelpp |clang|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp"
@@ -4893,9 +4895,9 @@
       {
          "displayName": "feelpp |clang|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp"
@@ -4905,9 +4907,9 @@
       {
          "displayName": "feelpp |clang|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp"
@@ -4917,9 +4919,9 @@
       {
          "displayName": "feelpp |clang|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp"
@@ -4929,9 +4931,9 @@
       {
          "displayName": "feelpp |clang|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp"
@@ -4941,9 +4943,9 @@
       {
          "displayName": "feelpp |clang|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp"
@@ -4953,9 +4955,9 @@
       {
          "displayName": "feelpp |clang|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp"
@@ -4965,9 +4967,9 @@
       {
          "displayName": "feelpp |clang|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp"
@@ -4977,9 +4979,9 @@
       {
          "displayName": "feelpp |clang|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp"
@@ -4989,9 +4991,9 @@
       {
          "displayName": "feelpp |clang|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp"
@@ -5001,9 +5003,9 @@
       {
          "displayName": "feelpp |clang|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp"
@@ -5013,9 +5015,9 @@
       {
          "displayName": "feelpp |clang|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp"
@@ -5025,9 +5027,9 @@
       {
          "displayName": "feelpp |clang|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp"
@@ -5037,9 +5039,9 @@
       {
          "displayName": "feelpp |clang|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp"
@@ -5049,9 +5051,9 @@
       {
          "displayName": "feelpp |clang|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp"
@@ -5061,9 +5063,9 @@
       {
          "displayName": "feelpp |clang|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp"
@@ -5073,9 +5075,9 @@
       {
          "displayName": "feelpp |clang|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp"
@@ -5085,9 +5087,9 @@
       {
          "displayName": "feelpp |clang|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp"
@@ -5097,9 +5099,9 @@
       {
          "displayName": "feelpp |clang|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp"
@@ -5109,9 +5111,9 @@
       {
          "displayName": "feelpp |clang|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp"
@@ -5121,9 +5123,9 @@
       {
          "displayName": "feelpp |clang|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp"
@@ -5133,9 +5135,9 @@
       {
          "displayName": "feelpp |clang|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp"
@@ -5145,9 +5147,9 @@
       {
          "displayName": "feelpp |clang|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp"
@@ -5157,9 +5159,9 @@
       {
          "displayName": "feelpp |clang|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp"
@@ -5169,9 +5171,9 @@
       {
          "displayName": "feelpp |clang|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp"
@@ -5181,9 +5183,9 @@
       {
          "displayName": "feelpp |clang|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp"
@@ -5193,9 +5195,9 @@
       {
          "displayName": "feelpp |clang|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp"
@@ -5205,9 +5207,9 @@
       {
          "displayName": "feelpp |clang|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp"
@@ -5217,9 +5219,9 @@
       {
          "displayName": "feelpp |clang|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp"
@@ -5229,9 +5231,9 @@
       {
          "displayName": "feelpp |clang|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp"
@@ -5241,9 +5243,9 @@
       {
          "displayName": "feelpp |clang|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp"
@@ -5253,9 +5255,9 @@
       {
          "displayName": "feelpp |clang|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp"
@@ -5265,9 +5267,9 @@
       {
          "displayName": "feelpp |clang|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp"
@@ -5277,9 +5279,9 @@
       {
          "displayName": "feelpp |clang|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp"
@@ -5289,9 +5291,9 @@
       {
          "displayName": "feelpp |clang|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp"
@@ -5301,9 +5303,9 @@
       {
          "displayName": "feelpp |clang|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp"
@@ -5313,9 +5315,9 @@
       {
          "displayName": "feelpp |clang|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp"
@@ -5325,9 +5327,9 @@
       {
          "displayName": "feelpp |clang|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp"
@@ -5337,9 +5339,9 @@
       {
          "displayName": "feelpp |clang|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp"
@@ -5349,9 +5351,9 @@
       {
          "displayName": "feelpp |clang|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp"
@@ -5361,9 +5363,9 @@
       {
          "displayName": "feelpp |clang|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp"
@@ -5373,9 +5375,9 @@
       {
          "displayName": "feelpp |clang|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp"
@@ -5385,9 +5387,9 @@
       {
          "displayName": "feelpp |clang|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp"
@@ -5397,9 +5399,9 @@
       {
          "displayName": "feelpp |clang|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp"
@@ -5409,9 +5411,9 @@
       {
          "displayName": "feelpp |clang|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp"
@@ -5421,9 +5423,9 @@
       {
          "displayName": "feelpp |clang|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp"
@@ -5433,9 +5435,9 @@
       {
          "displayName": "feelpp |clang|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp"
@@ -5445,9 +5447,9 @@
       {
          "displayName": "feelpp |clang|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp"
@@ -5457,9 +5459,9 @@
       {
          "displayName": "feelpp |clang|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp"
@@ -5469,9 +5471,9 @@
       {
          "displayName": "feelpp |clang|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp"
@@ -5481,9 +5483,9 @@
       {
          "displayName": "feelpp |clang|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp"
@@ -5493,9 +5495,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp"
@@ -5505,9 +5507,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp"
@@ -5517,9 +5519,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp"
@@ -5529,9 +5531,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp"
@@ -5541,9 +5543,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp"
@@ -5553,9 +5555,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp"
@@ -5565,9 +5567,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp"
@@ -5577,9 +5579,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp"
@@ -5589,9 +5591,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp"
@@ -5601,9 +5603,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp"
@@ -5613,9 +5615,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp"
@@ -5625,9 +5627,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp"
@@ -5637,9 +5639,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp"
@@ -5649,9 +5651,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp"
@@ -5661,9 +5663,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp"
@@ -5673,9 +5675,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp"
@@ -5685,9 +5687,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp"
@@ -5697,9 +5699,9 @@
       {
          "displayName": "feelpp |gcc|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp"
@@ -5709,9 +5711,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp"
@@ -5721,9 +5723,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp"
@@ -5733,9 +5735,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp"
@@ -5745,9 +5747,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp"
@@ -5757,9 +5759,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp"
@@ -5769,9 +5771,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp"
@@ -5781,9 +5783,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp"
@@ -5793,9 +5795,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp"
@@ -5805,9 +5807,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp"
@@ -5817,9 +5819,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp"
@@ -5829,9 +5831,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp"
@@ -5841,9 +5843,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp"
@@ -5853,9 +5855,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp"
@@ -5865,9 +5867,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp"
@@ -5877,9 +5879,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp"
@@ -5889,9 +5891,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp"
@@ -5901,9 +5903,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp"
@@ -5913,9 +5915,9 @@
       {
          "displayName": "feelpp |gcc|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp"
@@ -5925,9 +5927,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp"
@@ -5937,9 +5939,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp"
@@ -5949,9 +5951,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp"
@@ -5961,9 +5963,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp"
@@ -5973,9 +5975,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp"
@@ -5985,9 +5987,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp"
@@ -5997,9 +5999,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp"
@@ -6009,9 +6011,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp"
@@ -6021,9 +6023,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp"
@@ -6033,9 +6035,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp"
@@ -6045,9 +6047,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp"
@@ -6057,9 +6059,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp"
@@ -6069,9 +6071,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp"
@@ -6081,9 +6083,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp"
@@ -6093,9 +6095,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp"
@@ -6105,9 +6107,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp"
@@ -6117,9 +6119,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp"
@@ -6129,9 +6131,9 @@
       {
          "displayName": "feelpp |gcc|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp"
@@ -6141,9 +6143,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-core"
@@ -6153,9 +6155,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-core"
@@ -6165,9 +6167,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-core"
@@ -6177,9 +6179,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-core"
@@ -6189,9 +6191,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-core"
@@ -6201,9 +6203,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-core"
@@ -6213,9 +6215,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6225,9 +6227,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-core"
@@ -6237,9 +6239,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6249,9 +6251,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-core"
@@ -6261,9 +6263,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6273,9 +6275,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-core"
@@ -6285,9 +6287,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6297,9 +6299,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-core"
@@ -6309,9 +6311,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6321,9 +6323,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-core"
@@ -6333,9 +6335,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6345,9 +6347,9 @@
       {
          "displayName": "feelpp-core |clang|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-core"
@@ -6357,9 +6359,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-core"
@@ -6369,9 +6371,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-core"
@@ -6381,9 +6383,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-core"
@@ -6393,9 +6395,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-core"
@@ -6405,9 +6407,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-core"
@@ -6417,9 +6419,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-core"
@@ -6429,9 +6431,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6441,9 +6443,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-core"
@@ -6453,9 +6455,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6465,9 +6467,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-core"
@@ -6477,9 +6479,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6489,9 +6491,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-core"
@@ -6501,9 +6503,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6513,9 +6515,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-core"
@@ -6525,9 +6527,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6537,9 +6539,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-core"
@@ -6549,9 +6551,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6561,9 +6563,9 @@
       {
          "displayName": "feelpp-core |clang|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-core"
@@ -6573,9 +6575,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-core"
@@ -6585,9 +6587,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-core"
@@ -6597,9 +6599,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-core"
@@ -6609,9 +6611,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-core"
@@ -6621,9 +6623,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-core"
@@ -6633,9 +6635,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-core"
@@ -6645,9 +6647,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6657,9 +6659,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-core"
@@ -6669,9 +6671,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6681,9 +6683,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-core"
@@ -6693,9 +6695,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6705,9 +6707,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-core"
@@ -6717,9 +6719,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6729,9 +6731,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-core"
@@ -6741,9 +6743,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6753,9 +6755,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-core"
@@ -6765,9 +6767,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6777,9 +6779,9 @@
       {
          "displayName": "feelpp-core |clang|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-core"
@@ -6789,9 +6791,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-core"
@@ -6801,9 +6803,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-core"
@@ -6813,9 +6815,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-core"
@@ -6825,9 +6827,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-core"
@@ -6837,9 +6839,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-core"
@@ -6849,9 +6851,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-core"
@@ -6861,9 +6863,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6873,9 +6875,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-core"
@@ -6885,9 +6887,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6897,9 +6899,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-core"
@@ -6909,9 +6911,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-core"
@@ -6921,9 +6923,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-core"
@@ -6933,9 +6935,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6945,9 +6947,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-core"
@@ -6957,9 +6959,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6969,9 +6971,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-core"
@@ -6981,9 +6983,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-core"
@@ -6993,9 +6995,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-core"
@@ -7005,9 +7007,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-core"
@@ -7017,9 +7019,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-core"
@@ -7029,9 +7031,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-core"
@@ -7041,9 +7043,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-core"
@@ -7053,9 +7055,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-core"
@@ -7065,9 +7067,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-core"
@@ -7077,9 +7079,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-core"
@@ -7089,9 +7091,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-core"
@@ -7101,9 +7103,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-core"
@@ -7113,9 +7115,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-core"
@@ -7125,9 +7127,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-core"
@@ -7137,9 +7139,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-core"
@@ -7149,9 +7151,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-core"
@@ -7161,9 +7163,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-core"
@@ -7173,9 +7175,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-core"
@@ -7185,9 +7187,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-core"
@@ -7197,9 +7199,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-core"
@@ -7209,9 +7211,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-core"
@@ -7221,9 +7223,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-core"
@@ -7233,9 +7235,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-core"
@@ -7245,9 +7247,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-core"
@@ -7257,9 +7259,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-core"
@@ -7269,9 +7271,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-core"
@@ -7281,9 +7283,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-core"
@@ -7293,9 +7295,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-core"
@@ -7305,9 +7307,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-core"
@@ -7317,9 +7319,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-core"
@@ -7329,9 +7331,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-core"
@@ -7341,9 +7343,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-core"
@@ -7353,9 +7355,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-core"
@@ -7365,9 +7367,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-core"
@@ -7377,9 +7379,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-core"
@@ -7389,9 +7391,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-core"
@@ -7401,9 +7403,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-core"
@@ -7413,9 +7415,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-core"
@@ -7425,9 +7427,9 @@
       {
          "displayName": "feelpp-core |gcc|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-core"
@@ -7437,9 +7439,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7449,9 +7451,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7461,9 +7463,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7473,9 +7475,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7485,9 +7487,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7497,9 +7499,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7509,9 +7511,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7521,9 +7523,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7533,9 +7535,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7545,9 +7547,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7557,9 +7559,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7569,9 +7571,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7581,9 +7583,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -7593,9 +7595,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -7605,9 +7607,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -7617,9 +7619,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -7629,9 +7631,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -7641,9 +7643,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -7653,9 +7655,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7665,9 +7667,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7677,9 +7679,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7689,9 +7691,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7701,9 +7703,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7713,9 +7715,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7725,9 +7727,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7737,9 +7739,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7749,9 +7751,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7761,9 +7763,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7773,9 +7775,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7785,9 +7787,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7797,9 +7799,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -7809,9 +7811,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -7821,9 +7823,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -7833,9 +7835,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -7845,9 +7847,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -7857,9 +7859,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -7869,9 +7871,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7881,9 +7883,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7893,9 +7895,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7905,9 +7907,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7917,9 +7919,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -7929,9 +7931,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -7941,9 +7943,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7953,9 +7955,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7965,9 +7967,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -7977,9 +7979,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -7989,9 +7991,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8001,9 +8003,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8013,9 +8015,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8025,9 +8027,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8037,9 +8039,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8049,9 +8051,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8061,9 +8063,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8073,9 +8075,9 @@
       {
          "displayName": "feelpp-testsuite |clang|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8085,9 +8087,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8097,9 +8099,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8109,9 +8111,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8121,9 +8123,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8133,9 +8135,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8145,9 +8147,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8157,9 +8159,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8169,9 +8171,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8181,9 +8183,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8193,9 +8195,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8205,9 +8207,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8217,9 +8219,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8229,9 +8231,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8241,9 +8243,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8253,9 +8255,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8265,9 +8267,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8277,9 +8279,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8289,9 +8291,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8301,9 +8303,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8313,9 +8315,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8325,9 +8327,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8337,9 +8339,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8349,9 +8351,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8361,9 +8363,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8373,9 +8375,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8385,9 +8387,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8397,9 +8399,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8409,9 +8411,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8421,9 +8423,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8433,9 +8435,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8445,9 +8447,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8457,9 +8459,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8469,9 +8471,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8481,9 +8483,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8493,9 +8495,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8505,9 +8507,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8517,9 +8519,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8529,9 +8531,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8541,9 +8543,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8553,9 +8555,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8565,9 +8567,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-testsuite"
@@ -8577,9 +8579,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-testsuite"
@@ -8589,9 +8591,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8601,9 +8603,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8613,9 +8615,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8625,9 +8627,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8637,9 +8639,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-testsuite"
@@ -8649,9 +8651,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-testsuite"
@@ -8661,9 +8663,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8673,9 +8675,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8685,9 +8687,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8697,9 +8699,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8709,9 +8711,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-testsuite"
@@ -8721,9 +8723,9 @@
       {
          "displayName": "feelpp-testsuite |gcc|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-testsuite"
@@ -8733,9 +8735,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -8745,9 +8747,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -8757,9 +8759,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -8769,9 +8771,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -8781,9 +8783,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -8793,9 +8795,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -8805,9 +8807,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -8817,9 +8819,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -8829,9 +8831,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -8841,9 +8843,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -8853,9 +8855,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -8865,9 +8867,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -8877,9 +8879,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -8889,9 +8891,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -8901,9 +8903,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -8913,9 +8915,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -8925,9 +8927,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -8937,9 +8939,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -8949,9 +8951,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -8961,9 +8963,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -8973,9 +8975,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -8985,9 +8987,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -8997,9 +8999,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9009,9 +9011,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9021,9 +9023,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9033,9 +9035,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9045,9 +9047,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9057,9 +9059,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9069,9 +9071,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9081,9 +9083,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9093,9 +9095,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9105,9 +9107,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9117,9 +9119,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9129,9 +9131,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9141,9 +9143,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9153,9 +9155,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9165,9 +9167,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9177,9 +9179,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9189,9 +9191,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9201,9 +9203,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9213,9 +9215,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9225,9 +9227,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9237,9 +9239,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9249,9 +9251,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9261,9 +9263,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9273,9 +9275,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9285,9 +9287,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9297,9 +9299,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9309,9 +9311,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9321,9 +9323,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9333,9 +9335,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9345,9 +9347,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9357,9 +9359,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9369,9 +9371,9 @@
       {
          "displayName": "feelpp-toolboxes |clang|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9381,9 +9383,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9393,9 +9395,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9405,9 +9407,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9417,9 +9419,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9429,9 +9431,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9441,9 +9443,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9453,9 +9455,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9465,9 +9467,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9477,9 +9479,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9489,9 +9491,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9501,9 +9503,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9513,9 +9515,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9525,9 +9527,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9537,9 +9539,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9549,9 +9551,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9561,9 +9563,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9573,9 +9575,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9585,9 +9587,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9597,9 +9599,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9609,9 +9611,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9621,9 +9623,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9633,9 +9635,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9645,9 +9647,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9657,9 +9659,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9669,9 +9671,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9681,9 +9683,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9693,9 +9695,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9705,9 +9707,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9717,9 +9719,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9729,9 +9731,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9741,9 +9743,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9753,9 +9755,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9765,9 +9767,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9777,9 +9779,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9789,9 +9791,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9801,9 +9803,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9813,9 +9815,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9825,9 +9827,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9837,9 +9839,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9849,9 +9851,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9861,9 +9863,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-toolboxes"
@@ -9873,9 +9875,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-toolboxes"
@@ -9885,9 +9887,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9897,9 +9899,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9909,9 +9911,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9921,9 +9923,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9933,9 +9935,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-toolboxes"
@@ -9945,9 +9947,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-toolboxes"
@@ -9957,9 +9959,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9969,9 +9971,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -9981,9 +9983,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -9993,9 +9995,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -10005,9 +10007,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-toolboxes"
@@ -10017,9 +10019,9 @@
       {
          "displayName": "feelpp-toolboxes |gcc|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-toolboxes"
@@ -10029,9 +10031,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10041,9 +10043,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-mor"
@@ -10053,9 +10055,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10065,9 +10067,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-mor"
@@ -10077,9 +10079,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10089,9 +10091,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-mor"
@@ -10101,9 +10103,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10113,9 +10115,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10125,9 +10127,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10137,9 +10139,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10149,9 +10151,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10161,9 +10163,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10173,9 +10175,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10185,9 +10187,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10197,9 +10199,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10209,9 +10211,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10221,9 +10223,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10233,9 +10235,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10245,9 +10247,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10257,9 +10259,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-mor"
@@ -10269,9 +10271,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10281,9 +10283,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-mor"
@@ -10293,9 +10295,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10305,9 +10307,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-mor"
@@ -10317,9 +10319,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10329,9 +10331,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10341,9 +10343,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10353,9 +10355,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10365,9 +10367,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10377,9 +10379,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10389,9 +10391,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10401,9 +10403,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10413,9 +10415,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10425,9 +10427,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10437,9 +10439,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10449,9 +10451,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10461,9 +10463,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10473,9 +10475,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-mor"
@@ -10485,9 +10487,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10497,9 +10499,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-mor"
@@ -10509,9 +10511,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10521,9 +10523,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-mor"
@@ -10533,9 +10535,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10545,9 +10547,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10557,9 +10559,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10569,9 +10571,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10581,9 +10583,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10593,9 +10595,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10605,9 +10607,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10617,9 +10619,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10629,9 +10631,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10641,9 +10643,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10653,9 +10655,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10665,9 +10667,9 @@
       {
          "displayName": "feelpp-mor |clang|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10677,9 +10679,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10689,9 +10691,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-mor"
@@ -10701,9 +10703,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10713,9 +10715,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-mor"
@@ -10725,9 +10727,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10737,9 +10739,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-mor"
@@ -10749,9 +10751,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10761,9 +10763,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10773,9 +10775,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10785,9 +10787,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10797,9 +10799,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10809,9 +10811,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10821,9 +10823,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10833,9 +10835,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10845,9 +10847,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10857,9 +10859,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10869,9 +10871,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -10881,9 +10883,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-mor"
@@ -10893,9 +10895,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10905,9 +10907,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-mor"
@@ -10917,9 +10919,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10929,9 +10931,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-mor"
@@ -10941,9 +10943,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-mor"
@@ -10953,9 +10955,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-mor"
@@ -10965,9 +10967,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -10977,9 +10979,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-mor"
@@ -10989,9 +10991,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -11001,9 +11003,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-mor"
@@ -11013,9 +11015,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -11025,9 +11027,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-mor"
@@ -11037,9 +11039,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -11049,9 +11051,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-mor"
@@ -11061,9 +11063,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -11073,9 +11075,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-mor"
@@ -11085,9 +11087,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -11097,9 +11099,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-mor"
@@ -11109,9 +11111,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-mor"
@@ -11121,9 +11123,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-mor"
@@ -11133,9 +11135,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-mor"
@@ -11145,9 +11147,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-mor"
@@ -11157,9 +11159,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-mor"
@@ -11169,9 +11171,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-mor"
@@ -11181,9 +11183,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -11193,9 +11195,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-mor"
@@ -11205,9 +11207,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -11217,9 +11219,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-mor"
@@ -11229,9 +11231,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-mor"
@@ -11241,9 +11243,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-mor"
@@ -11253,9 +11255,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -11265,9 +11267,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-mor"
@@ -11277,9 +11279,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -11289,9 +11291,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-mor"
@@ -11301,9 +11303,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-mor"
@@ -11313,9 +11315,9 @@
       {
          "displayName": "feelpp-mor |gcc|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-mor"
@@ -11325,9 +11327,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-python"
@@ -11337,9 +11339,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-python"
@@ -11349,9 +11351,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-python"
@@ -11361,9 +11363,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-python"
@@ -11373,9 +11375,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-python"
@@ -11385,9 +11387,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-python"
@@ -11397,9 +11399,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11409,9 +11411,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-python"
@@ -11421,9 +11423,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11433,9 +11435,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-python"
@@ -11445,9 +11447,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11457,9 +11459,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-python"
@@ -11469,9 +11471,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11481,9 +11483,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-python"
@@ -11493,9 +11495,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11505,9 +11507,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-python"
@@ -11517,9 +11519,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11529,9 +11531,9 @@
       {
          "displayName": "feelpp-python |clang|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-python"
@@ -11541,9 +11543,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-python"
@@ -11553,9 +11555,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-python"
@@ -11565,9 +11567,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-python"
@@ -11577,9 +11579,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-python"
@@ -11589,9 +11591,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-python"
@@ -11601,9 +11603,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-python"
@@ -11613,9 +11615,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11625,9 +11627,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-python"
@@ -11637,9 +11639,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11649,9 +11651,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-python"
@@ -11661,9 +11663,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11673,9 +11675,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-python"
@@ -11685,9 +11687,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11697,9 +11699,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-python"
@@ -11709,9 +11711,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11721,9 +11723,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-python"
@@ -11733,9 +11735,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11745,9 +11747,9 @@
       {
          "displayName": "feelpp-python |clang|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-python"
@@ -11757,9 +11759,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Debug",
             "feelpp-python"
@@ -11769,9 +11771,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "default",
             "Release",
             "feelpp-python"
@@ -11781,9 +11783,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Debug",
             "feelpp-python"
@@ -11793,9 +11795,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "default",
             "Release",
             "feelpp-python"
@@ -11805,9 +11807,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Debug",
             "feelpp-python"
@@ -11817,9 +11819,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "default",
             "Release",
             "feelpp-python"
@@ -11829,9 +11831,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11841,9 +11843,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "asan",
             "Release",
             "feelpp-python"
@@ -11853,9 +11855,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11865,9 +11867,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "asan",
             "Release",
             "feelpp-python"
@@ -11877,9 +11879,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-python"
@@ -11889,9 +11891,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "asan",
             "Release",
             "feelpp-python"
@@ -11901,9 +11903,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11913,9 +11915,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "clang",
-            "cpu",
             "spack",
             "Release",
             "feelpp-python"
@@ -11925,9 +11927,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11937,9 +11939,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "clang",
-            "rocm",
             "spack",
             "Release",
             "feelpp-python"
@@ -11949,9 +11951,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-python"
@@ -11961,9 +11963,9 @@
       {
          "displayName": "feelpp-python |clang|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "clang",
-            "cuda",
             "spack",
             "Release",
             "feelpp-python"
@@ -11973,9 +11975,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-python"
@@ -11985,9 +11987,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-python"
@@ -11997,9 +11999,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-python"
@@ -12009,9 +12011,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-python"
@@ -12021,9 +12023,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-python"
@@ -12033,9 +12035,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-python"
@@ -12045,9 +12047,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12057,9 +12059,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-python"
@@ -12069,9 +12071,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12081,9 +12083,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-python"
@@ -12093,9 +12095,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12105,9 +12107,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-python"
@@ -12117,9 +12119,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12129,9 +12131,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp17",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-python"
@@ -12141,9 +12143,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12153,9 +12155,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp17",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-python"
@@ -12165,9 +12167,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12177,9 +12179,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp17|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp17",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-python"
@@ -12189,9 +12191,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-python"
@@ -12201,9 +12203,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-python"
@@ -12213,9 +12215,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-python"
@@ -12225,9 +12227,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-python"
@@ -12237,9 +12239,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-python"
@@ -12249,9 +12251,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-python"
@@ -12261,9 +12263,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12273,9 +12275,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-python"
@@ -12285,9 +12287,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12297,9 +12299,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-python"
@@ -12309,9 +12311,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12321,9 +12323,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-python"
@@ -12333,9 +12335,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12345,9 +12347,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp20",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-python"
@@ -12357,9 +12359,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12369,9 +12371,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp20",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-python"
@@ -12381,9 +12383,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12393,9 +12395,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp20|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp20",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-python"
@@ -12405,9 +12407,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|default|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Debug",
             "feelpp-python"
@@ -12417,9 +12419,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|default|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "default",
             "Release",
             "feelpp-python"
@@ -12429,9 +12431,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|default|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Debug",
             "feelpp-python"
@@ -12441,9 +12443,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|default|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "default",
             "Release",
             "feelpp-python"
@@ -12453,9 +12455,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|default|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Debug",
             "feelpp-python"
@@ -12465,9 +12467,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|default|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "default",
             "Release",
             "feelpp-python"
@@ -12477,9 +12479,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|asan|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12489,9 +12491,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|asan|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "asan",
             "Release",
             "feelpp-python"
@@ -12501,9 +12503,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|asan|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12513,9 +12515,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|asan|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "asan",
             "Release",
             "feelpp-python"
@@ -12525,9 +12527,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|asan|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Debug",
             "feelpp-python"
@@ -12537,9 +12539,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|asan|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "asan",
             "Release",
             "feelpp-python"
@@ -12549,9 +12551,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|spack|cpu|debug",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12561,9 +12563,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|spack|cpu|release",
          "inherits": [
+            "cpu",
             "cpp23",
             "gcc",
-            "cpu",
             "spack",
             "Release",
             "feelpp-python"
@@ -12573,9 +12575,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|spack|rocm|debug",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12585,9 +12587,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|spack|rocm|release",
          "inherits": [
+            "rocm",
             "cpp23",
             "gcc",
-            "rocm",
             "spack",
             "Release",
             "feelpp-python"
@@ -12597,9 +12599,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|spack|cuda|debug",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Debug",
             "feelpp-python"
@@ -12609,9 +12611,9 @@
       {
          "displayName": "feelpp-python |gcc|cpp23|spack|cuda|release",
          "inherits": [
+            "cuda",
             "cpp23",
             "gcc",
-            "cuda",
             "spack",
             "Release",
             "feelpp-python"

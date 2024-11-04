@@ -42,7 +42,7 @@ local cp_generator(component, compiler, cpp, type, gpu, config) =
   {
     name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + gpu + '|' + std.asciiLower(config),
-    inherits: [cpp, compiler, gpu, type, config,component],
+    inherits: [gpu, cpp, compiler, type, config,component],
   };
 
 local bp_generator(component, compiler, cpp, type, gpu, config) =
@@ -208,6 +208,10 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             'feelpp-core-tests-only',
         ],
         cacheVariables: {
+            CMAKE_CXX_COMPILER: 'amdclang++',
+            CMAKE_C_COMPILER: 'amdclang',
+            /*CMAKE_HIP_COMPILE_OBJECT: 'hipcc',
+            CMAKE_HIP_LINK_EXECUTABLE: 'hipcc',*/
             FEELPP_ENABLE_KOKKOS: 'ON',
             FEELPP_ENABLE_ROCM: 'ON',
             FEELPP_ENABLE_CUDA: 'OFF',
