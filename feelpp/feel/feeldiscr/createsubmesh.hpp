@@ -781,7 +781,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
         std::map<size_type,size_type> new_node_numbers;
         std::map<size_type,size_type> new_element_id;
         std::map<rank_type,std::set<boost::tuple<size_type,size_type> > > ghostCellsFind;
-
+        std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> requireGhostCells;
+#if 0
         bool cleanInputRange = true;
         std::map<size_type, rank_type> edgeIdsInRangeMustBeGhost;
         if ( cleanInputRange && nProc > 1 )
@@ -810,7 +811,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
             this->updateParallelInputRange( newMesh, edgeIdsInRange, edgeIdsToCheck, edgeIdsInRangeMustBeGhost );
         }
-
+#endif
         //-----------------------------------------------------------//
 
         auto itListRange = M_listRange.begin();
@@ -831,7 +832,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                 {
                     if ( oldElem.isGhostCell() )
                         continue;
-
+#if 0
                     auto findEdgeIdGhost = edgeIdsInRangeMustBeGhost.find( oldElem.id() );
                     if ( findEdgeIdGhost != edgeIdsInRangeMustBeGhost.end() )
                     {
@@ -839,8 +840,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                                                                                         oldElem.idInOthersPartitions(findEdgeIdGhost->second)) );
                         continue;
                     }
+#endif
                 }
-
                 // create new active element with a copy of marker
                 typename mesh_edges_type::element_type newElem;
                 newElem.setMarkers( oldElem.markers() );
@@ -871,6 +872,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                         // Add this node to the new mesh
                         newMesh->addPoint( pt );
 
+#if 0
                         // save info necessary for the build of parallel mesh
                         if ( nProc > 1 && oldPoint.numberOfProcGhost() > 0 )
                         {
@@ -910,7 +912,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                                 }
                             }
                         } // if (nProc > 1  && oldPoint.numberOfProcGhost()>0)
-
+#endif
                     }
 
                     newElem.setPoint( n, newMesh->point( newPtId ) );
@@ -924,18 +926,29 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                 CHECK( newElem.facePtr(0) ) << "invalid face 0 in edge";
                 CHECK( newElem.facePtr(1) ) << "invalid face 1 in edge";
     #endif
+                // update neighbor partitions (TODO : not necessary internally, we can just use idInOtherpartitions map)
+                newElem.setNeighborPartitionIds( oldElem.neighborPartitionIds() );
+                // init process connection, indices will be set in updateForUse
+                for ( auto const&[pid,eltIdInPartition] : oldElem.idInOthersPartitions() )
+                    newElem.setIdInOtherPartitions(pid, invalid_v<index_type> );
+
                 // Add an equivalent element type to the new_mesh
                 auto [eit,inserted] = newMesh->addElement( newElem, true );
                 auto const& [eid,e] = *eit;
                 // update mesh relation
                 new_element_id[oldElem.id()]= eid;
                 M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
+
+                // update ghost requirements
+                for ( auto const&[neighborPid,eltIdInPartition] : oldElem.idInOthersPartitions() )
+                    requireGhostCells[neighborPid].push_back( std::make_tuple( eid,eltIdInPartition ) );
             } // end for it
         } // for ( ; itListRange!=enListRange ; ++itListRange)
 
         if ( nProc > 1 )
         {
-            this->updateParallelSubMesh<MESH_EDGES>( newMesh, new_node_numbers, new_element_id, ghostCellsFind, renumberPoint, n_new_nodes );
+            //this->updateParallelSubMesh<MESH_EDGES>( newMesh, new_node_numbers, new_element_id, ghostCellsFind, renumberPoint, n_new_nodes );
+            this->updateParallelSubMeshGhost<MESH_EDGES>( newMesh, new_node_numbers, new_element_id, requireGhostCells, renumberPoint );
         }
 
         // newMesh->setNumVertices( newMesh->numPoints() );
@@ -1421,6 +1434,9 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMeshGhost( st
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
 
+    for ( auto const& [pid,data] : requireGhostCells )
+        CHECK( M_mesh->neighborSubdomains().find( pid ) != M_mesh->neighborSubdomains().end() ) << fmt::format("pid {} not in mesh neighborSubdomains",pid);
+
     // get size of data to transfer
     std::map<rank_type,std::size_t> sizeRecv;
     std::map<rank_type,std::size_t> sizeSend;
@@ -1453,6 +1469,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMeshGhost( st
 
     for ( auto const& [rankRecv,dataToRecvOnProc] : dataToRecv )
     {
+        CHECK( proc_id != rankRecv ) << fmt::format("should be a ghost element : process rank: {} process active: {}",proc_id,rankRecv);
         for ( auto const& [activeEltId,currentEltId] : dataToRecvOnProc )
         {
             auto itFindSubmeshElt = new_element_id.find( currentEltId );
@@ -1545,6 +1562,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMeshGhost( st
             {
                 // update for use
                 auto & newElem = newMesh->elementIterator( itFindSubmeshElt->second )->second;
+                CHECK( newElem.processId() == rankRecv ) << fmt::format("should be a ghost element : process id: {} process active: {}",newElem.processId(),rankRecv);
                 newElem.addNeighborPartitionId( rankRecv );
                 newElem.setIdInOtherPartitions( rankRecv, activeEltId );
             }
