@@ -173,8 +173,8 @@ class Mesh
                             >
                           >,
       public boost::addable<Mesh<GeoShape, T, Tag, IndexT>>,
-      public std::conditional_t<_EnableSharedFromThis, 
-                                std::enable_shared_from_this<Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>>, 
+      public std::conditional_t<_EnableSharedFromThis,
+                                std::enable_shared_from_this<Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>>,
                                 DummySharedFromThis>
 {
     using super = mp11::mp_if_c< is_3d_v<GeoShape>,
@@ -303,19 +303,19 @@ class Mesh
     }
 
     //! return current shared_ptr of type MeshBase
-    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override 
-    { 
+    std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() override
+    {
         if constexpr ( _EnableSharedFromThis )
-            return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );  
+            return std::dynamic_pointer_cast<MeshBase<IndexT>>( this->shared_from_this() );
         else
             return std::shared_ptr<MeshBase<IndexT>>{};
     }
 
     //! return current shared_ptr of type MeshBase
-    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override 
-    { 
+    std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const override
+    {
         if constexpr ( _EnableSharedFromThis )
-            return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );  
+            return std::dynamic_pointer_cast<const MeshBase<IndexT>>( this->shared_from_this() );
         else
             return std::shared_ptr<MeshBase<IndexT>>{};
     }
@@ -1128,7 +1128,7 @@ public:
     trace_mesh_ptr_t<mesh_type,TheTag>
     trace( RangeT && range, mpl::int_<TheTag> ) const
     {
-        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range );
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 
@@ -1155,7 +1155,7 @@ public:
     trace_mesh_ptr_t<mesh_type,Tag>
     trace( RangeT && range ) const
     {
-        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range );
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 
@@ -1170,7 +1170,7 @@ public:
     trace_trace_mesh_ptr_t<mesh_type,TheTag>
     wireBasket( RangeT && range, mpl::int_<TheTag> ) const
     {
-        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range ); 
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range );
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 
@@ -1178,7 +1178,7 @@ public:
     trace_trace_mesh_ptr_t<mesh_type,Tag>
     wireBasket( RangeT && range ) const
     {
-        DVLOG( 2 ) << fmt::format("[wirebasked] extracting range: {}", range ); 
+        DVLOG( 2 ) << fmt::format("[wirebasked] extracting range: {}", range );
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 
@@ -1612,7 +1612,7 @@ public:
     }
 
   public:
-    
+
 
     //!  @name  Signals
     //!
@@ -1974,353 +1974,9 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename RangeType>
 typename Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::P1_mesh_ptrtype
- Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createP1mesh( RangeType const& range, size_type ctxExtraction, size_type ctxMeshUpdate ) const
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createP1mesh( RangeType const& range, size_type ctxExtraction, size_type ctxMeshUpdate ) const
 {
-    if constexpr (false /*nOrder == 1*/ )
-         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=elements(this->shared_from_this()), _context=ctxExtraction, _update=ctxMeshUpdate );
-    else
-    {
-
-    std::shared_ptr<SubMeshData<>> smd;
-    Context c( ctxExtraction );
-    bool keepMeshRelation = c.test( EXTRACTION_KEEP_MESH_RELATION );
-    if ( keepMeshRelation )
-        smd.reset( new SubMeshData<>( this->shared_from_this() ) );
-
-    P1_mesh_ptrtype new_mesh{std::make_shared<P1_mesh_type>( this->worldCommPtr() )};
-
-    //!  How the nodes on this mesh will be renumbered to nodes on the new_mesh.
-    std::unordered_map<size_type, size_type> new_node_numbers;
-    std::unordered_map<size_type, int> new_vertex;
-    std::unordered_map<size_type, size_type> new_element_numbers;
-
-    const int nProc = new_mesh->worldComm().localSize();
-
-    //!  the number of nodes on the new mesh, will be incremented
-    unsigned int n_new_nodes = 0;
-    unsigned int n_new_elem = 0;
-    size_type n_new_faces = 0;
-
-    //!  inherit the table of markersName
-    for( auto const& itMark : this->markerNames() )
-    {
-        new_mesh->addMarkerName( itMark.first, itMark.second[0], itMark.second[1] );
-    }
-
-    //!  data useful for parallism
-    std::map<int, std::set<boost::tuple<size_type, size_type>>> memoryGhostId;
-    //! std::set< int > setOfRecvProc;
-    std::vector<int> nbMsgToRecv( nProc, 0 );
-
-    auto it = this->beginElement();
-    auto const en = this->endElement();
-    for ( ; it != en; ++it )
-    {
-        element_type const& old_elem = it->second;
-
-        //!  create a new element
-        typename P1_mesh_type::element_type new_elem;
-        //!  set id of element
-        new_elem.setId( n_new_elem );
-        new_element_numbers[old_elem.id()] = n_new_elem;
-        // set element markers
-        new_elem.setMarkers( old_elem.markers() );
-        // partitioning update
-        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
-        new_elem.setProcessId( old_elem.processId() );
-        new_elem.setNeighborPartitionIds( old_elem.neighborPartitionIds() );
-
-        //!  Loop over the P1 nodes on this element.
-        for ( uint16_type n = 0; n < element_type::numVertices; n++ )
-        {
-            auto const& old_point = old_elem.point( n );
-
-            //! if ( !new_node_numbers[old_point.id()] )
-            if ( new_node_numbers.find( old_point.id() ) == new_node_numbers.end() )
-            {
-                new_node_numbers[old_point.id()] = n_new_nodes;
-                DVLOG( 2 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_point << "\n";
-                //typename P1_mesh_type::point_type pt( old_point );
-                //pt.setId( n_new_nodes );
-                typename P1_mesh_type::point_type pt( n_new_nodes, old_point, false, false );
-                pt.setProcessId( old_point.processId() );
-                pt.clearElementsGhost();
-
-                //!  Add this node to the new mesh
-                new_mesh->addPoint( pt );
-                DVLOG( 2 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
-                //!  Increment the new node counter
-                n_new_nodes++;
-                FEELPP_ASSERT( !new_vertex[old_point.id()] ).error( "already seen this point?" );
-                new_vertex[old_point.id()] = 1;
-            }
-            //!  Define this element's connectivity on the new mesh
-            //! FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
-            DVLOG( 2 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_point.id()
-                       << ") as point new(" << new_node_numbers[old_point.id()]
-                       << ") in element " << new_elem.id() << "\n";
-            //!  add point in element
-            new_elem.setPoint( n, new_mesh->point( new_node_numbers[old_point.id()] ) );
-        } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
-
-        //!  Add an equivalent element type to the new_mesh
-        auto eit = new_mesh->addElement( new_elem );
-        auto const& e = eit.first->second;
-        if ( keepMeshRelation )
-            smd->bm.insert( typename SubMeshData<>::bm_type::value_type( e.id(), old_elem.id() ) );
-
-        //!  increment the new element counter
-        n_new_elem++;
-
-#if 0
-        //!  Maybe add faces for this element
-        for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
-        {
-            if ( !old_elem.facePtr( s ) ) continue;
-            //!  only add face on the boundary: they have some data
-            //!  (boundary ids) which cannot be retrieved otherwise
-            const size_type global_face_id = old_elem.face( s ).id();
-            if ( this->hasFace( global_face_id ) )
-            {
-                //!  get the corresponding face
-                face_type const& old_face = old_elem.face( s );
-                //! if ( old_face.marker().isOff() ) continue;
-                typename P1_mesh_type::face_type new_face;
-                //!  disconnect from elements of old mesh,
-                //!  the connection will be redone in updateForUse()
-                new_face.disconnect();
-                //!  is on boundary
-                new_face.setOnBoundary( old_face.isOnBoundary() );
-                //!  set id of face
-                new_face.setId( n_new_faces );
-                // set face markers
-                new_face.setMarkers( old_face.markers() );
-                // partitioning update
-                new_face.setProcessIdInPartition( old_face.pidInPartition() );
-                new_face.setProcessId(old_face.processId());
-                new_face.clearIdInOthersPartitions();
-                new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
-                //!  update P1 points info
-                for ( uint16_type p = 0; p < face_type::numVertices; ++p )
-                {
-                    //! new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
-                    new_face.setPoint( p, new_mesh->point( new_node_numbers[ old_face.point(p).id()] ) );
-                }
-                //!  add it to the list of faces
-                new_mesh->addFace( new_face );
-                //!  increment the new face counter
-                ++n_new_faces;
-            } // if ( this->hasFace( global_face_id ) )
-        } // for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
-
-#endif
-        if ( old_elem.isGhostCell() )
-        {
-            DVLOG( 2 ) << "element " << old_elem.id() << " is a ghost cell\n";
-            for ( auto it_pid = old_elem.idInOthersPartitions().begin(), en_pid = old_elem.idInOthersPartitions().end(); it_pid != en_pid; ++it_pid )
-            {
-                DVLOG( 2 ) << " " << it_pid->first << "-" << it_pid->second << "-" << old_elem.pidInPartition() << "-" << new_mesh->worldComm().localRank();
-                const int procToSend = it_pid->first;
-                DCHECK( procToSend != old_elem.pidInPartition() ) << "invalid\n";
-                memoryGhostId[procToSend].insert( boost::make_tuple( new_elem.id(), it_pid->second ) );
-            }
-        }
-        else if ( old_elem.numberOfNeighborPartitions() /*old_elem.numberOfPartitions()*/ > 0 )
-        {
-#if 0
-            setOfRecvProc.insert( old_elem.neighborPartitionIds().begin(), old_elem.neighborPartitionIds().end() );
-#else
-            auto itneighbor = old_elem.neighborPartitionIds().begin();
-            auto const enneighbor = old_elem.neighborPartitionIds().end();
-            for ( ; itneighbor != enneighbor; ++itneighbor )
-                nbMsgToRecv[*itneighbor]++;
-#endif
-        }
-    } // end for it
-
-    //!  add marked faces in P1 mesh
-    auto face_it = this->beginFace();
-    auto face_en = this->endFace();
-    for ( ; face_it != face_en; ++face_it )
-    {
-        auto const& old_face = face_it->second;
-        if ( !old_face.hasMarker() ) continue;
-
-        typename P1_mesh_type::face_type new_face;
-        //!  is on boundary
-        new_face.setOnBoundary( old_face.isOnBoundary() );
-        //!  set id of face
-        new_face.setId( n_new_faces );
-        // set face markers
-        new_face.setMarkers( old_face.markers() );
-        // partitioning update
-        new_face.setProcessIdInPartition( old_face.pidInPartition() );
-        new_face.setProcessId( old_face.processId() );
-        new_face.clearIdInOthersPartitions();
-        new_face.setNeighborPartitionIds( old_face.neighborPartitionIds() );
-        //!  update P1 points info
-        for ( uint16_type p = 0; p < face_type::numVertices; ++p )
-        {
-            //! new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
-            new_face.setPoint( p, new_mesh->point( new_node_numbers[old_face.point( p ).id()] ) );
-        }
-        //!  add it to the list of faces
-        new_mesh->addFace( new_face );
-        //!  increment the new face counter
-        ++n_new_faces;
-    }
-
-#if 0
-    if ( nProc > 1 )
-    {
-        std::map< int, std::vector<size_type> > memoryMpiMsg;
-
-        auto itghostproc = memoryGhostId.begin();
-        auto const enghostproc = memoryGhostId.end();
-        for ( ; itghostproc!=enghostproc ; ++itghostproc )
-        {
-            const int procToSend = itghostproc->first;
-            const int sizeMsgToSend = itghostproc->second.size();
-            std::vector<size_type> dataToSend( sizeMsgToSend );
-            memoryMpiMsg[procToSend].resize( sizeMsgToSend );
-
-            auto itghostelt = itghostproc->second.begin();
-            auto const enghostelt = itghostproc->second.end();
-            for ( int k=0 ; itghostelt!=enghostelt ; ++itghostelt,++k )
-            {
-                dataToSend[k] = itghostelt->template get<1>();
-                memoryMpiMsg[procToSend][k] = itghostelt->template get<0>();
-            }
-            new_mesh->worldComm().localComm().send(procToSend, 0, dataToSend);
-        }
-
-        auto itrecvproc = setOfRecvProc.begin();
-        auto const enrecvproc = setOfRecvProc.end();
-        for ( ; itrecvproc!=enrecvproc ; ++itrecvproc )
-        {
-            const int procToRecv = *itrecvproc;
-            std::vector<size_type> dataToRecv;
-            new_mesh->worldComm().localComm().recv(procToRecv, 0, dataToRecv);
-
-            const int nbDataToTreat = dataToRecv.size();
-            std::vector<size_type> dataToSend( nbDataToTreat );
-            for ( int k=0;k<nbDataToTreat;++k )
-            {
-                CHECK( dataToRecv[k]!=invalid_v<size_type> ) << "invalid id recv \n";
-                dataToSend[k] = new_element_numbers[ dataToRecv[k] ];
-            }
-            new_mesh->worldComm().localComm().send(procToRecv, 1, dataToSend);
-        }
-
-        itghostproc = memoryGhostId.begin();
-        for ( ; itghostproc!=enghostproc ; ++itghostproc )
-        {
-            const int procToRecv = itghostproc->first;
-            std::vector<size_type> dataToRecv;
-            new_mesh->worldComm().localComm().recv(procToRecv, 1, dataToRecv);
-            const int nbDataToTreat = dataToRecv.size();
-            for ( int k=0;k<nbDataToTreat;++k )
-            {
-                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/ );
-                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
-            }
-        }
-
-    } // if ( nProc > 1 )
-#else
-    if ( nProc > 1 )
-    {
-        std::map<int, std::vector<size_type>> memoryMpiMsg;
-        std::vector<int> nbMsgToSend( nProc, 0 );
-
-        auto itghostproc = memoryGhostId.begin();
-        auto const enghostproc = memoryGhostId.end();
-        for ( ; itghostproc != enghostproc; ++itghostproc )
-        {
-            const int procToSend = itghostproc->first;
-            const int sizeMsgToSend = itghostproc->second.size();
-            memoryMpiMsg[procToSend].resize( sizeMsgToSend );
-
-            auto itghostelt = itghostproc->second.begin();
-            auto const enghostelt = itghostproc->second.end();
-            for ( int k = 0; itghostelt != enghostelt; ++itghostelt, ++k )
-            {
-                const size_type idInOtherPart = itghostelt->template get<1>();
-                new_mesh->worldComm().localComm().send( procToSend, nbMsgToSend[procToSend], idInOtherPart );
-                ++nbMsgToSend[procToSend];
-                memoryMpiMsg[procToSend][k] = itghostelt->template get<0>();
-            }
-            //! CHECK( nbMsgToSend[procToSend] == sizeMsgToSend ) << "invalid data to send\n";
-        }
-
-#if !defined( NDEBUG )
-        //!  check nbMsgToRecv computation
-        std::vector<int> nbMsgToRecv2( nProc, 0 );
-        mpi::all_to_all( new_mesh->worldComm().localComm(),
-                         nbMsgToSend,
-                         nbMsgToRecv2 );
-        for ( int proc = 0; proc < nProc; ++proc )
-            CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "partitioning data incorect "
-                                                             << "myrank " << MeshBase<>::worldComm().localRank() << " proc " << proc
-                                                             << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
-                                                             << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
-#endif
-
-        //!  recv dof asked and re-send dof in this proc
-        for ( int procToRecv = 0; procToRecv < nProc; ++procToRecv )
-        {
-            for ( int cpt = 0; cpt < nbMsgToRecv[procToRecv]; ++cpt )
-            {
-                //! recv
-                size_type idEltRecv;
-                new_mesh->worldComm().localComm().recv( procToRecv, cpt, idEltRecv );
-
-                const size_type idEltAsked = new_element_numbers[idEltRecv];
-                DCHECK( idEltAsked != invalid_v<size_type> ) << "invalid elt id\n";
-
-                new_mesh->worldComm().localComm().send( procToRecv, cpt, idEltAsked );
-            }
-        }
-
-        itghostproc = memoryGhostId.begin();
-        for ( ; itghostproc != enghostproc; ++itghostproc )
-        {
-            const int procToRecv = itghostproc->first;
-
-            auto itghostelt = itghostproc->second.begin();
-            auto const enghostelt = itghostproc->second.end();
-            for ( int k = 0; itghostelt != enghostelt; ++itghostelt, ++k )
-            {
-                size_type idEltAsked;
-                new_mesh->worldComm().localComm().recv( procToRecv, k, idEltAsked );
-
-                auto& eltModified = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k] /*e.id()*/ )->second;
-                eltModified.setIdInOtherPartitions( procToRecv, idEltAsked );
-            }
-        }
-
-    } // if ( nProc > 1 )
-#endif
-
-#if 0
-    new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
-                                               []( size_type lhs, std::pair<size_type,int> const& rhs )
-                                               {
-                                                   return lhs+rhs.second;
-                                               } ) );
-#endif
-
-    //!  Prepare the new_mesh for use
-    new_mesh->components().reset();
-    new_mesh->components().set( ctxMeshUpdate ); //MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-    //!  run intensive job
-    new_mesh->updateForUse();
-
-    if ( keepMeshRelation )
-        new_mesh->setSubMeshData( smd );
-
-    return new_mesh;
-    }
+    return Feel::createSubmeshP1(_range=elements(this->shared_from_this()), _context=ctxExtraction, _update=ctxMeshUpdate );
 }
 
 #if defined( FEELPP_HAS_VTK )
@@ -2566,7 +2222,7 @@ public:
 
 
 template <typename MeshType>
-void  
+void
 MeshInverse<MeshType>::distribute( bool extrapolation )
 {
     auto rangeElements = elements(M_mesh);
