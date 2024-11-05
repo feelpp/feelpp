@@ -23,10 +23,6 @@
 #
 project(Feelpp)
 
-
-
-
-
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
 
 include(feelpp.dirs)
@@ -76,149 +72,6 @@ set(CTEST_TIMEOUT "20")
 #else()
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
 #endif()
-
-
-if(TRUE)
-    message("COMPILE_WITH_HIP STEP 0")
-
-    ### REM: HIP Path Configuration
-    if(NOT DEFINED HIP_PATH)
-        if(NOT DEFINED ENV{HIP_PATH})
-            set(HIP_PATH "/opt/rocm-5.7.2/hip" CACHE PATH "Path to HIP installation")
-        else()
-            set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to HIP installation")
-        endif()
-    endif()
-
-    ### REM: HCC Path Configuration
-    if(NOT DEFINED HCC_PATH)
-        if(DEFINED ENV{HCC_PATH})
-            set(HCC_PATH $ENV{HCC_PATH} CACHE PATH "Path to HCC installation")
-        else()
-            set(HCC_PATH "${ROCM_PATH}/hcc" CACHE PATH "Path to HCC installation")
-        endif()
-        set(HCC_HOME "${HCC_PATH}")
-    endif()
-
-    ### REM: HIP Clang Path Configuration
-    if(NOT DEFINED HIP_CLANG_PATH)
-        if(NOT DEFINED ENV{HIP_CLANG_PATH})
-            set(HIP_CLANG_PATH "${ROCM_PATH}/llvm/bin" CACHE PATH "Path to HIP compatible clang binaries")
-        else()
-            set(HIP_CLANG_PATH $ENV{HIP_CLANG_PATH} CACHE PATH "Path to HIP compatible clang binaries")
-        endif()
-    endif()
-
-    ### REM: CMake Configuration
-    set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
-    list(APPEND CMAKE_PREFIX_PATH
-        "${HIP_PATH}/lib/cmake"
-        "${HIP_PATH}/../lib/cmake"
-    )
-
-    ### REM: Include Directories
-    include_directories(
-        ${HIP_PATH}/include
-        /opt/rocm-5.7.2/hip/include
-        /opt/rocm-5.7.2/hipblas/include
-        /opt/rocm-5.7.2/hipblas/lib
-    )
-    list(APPEND CMAKE_PREFIX_PATH /opt/rocm-5.7.2 /opt/rocm-5.7.2)
-
-    ### REM: Find Packages
-    find_package(BLAS)
-    find_package(LAPACK)
-    find_package(hip)
-
-    ### REM: Verbose Output
-    if($ENV{VERBOSE})
-        message(STATUS "GEMM -- BLAS_LIBRARIES: ${BLAS_LIBRARIES}")
-        message(STATUS "GEMM -- BLAS_LINKER_FLAGS: ${BLAS_LINKER_FLAGS}")
-        message(STATUS "GEMM -- LAPACK_LIBRARIES: ${LAPACK_LIBRARIES}")
-        message(STATUS "GEMM -- LAPACK_LINKER_FLAGS: ${LAPACK_LINKER_FLAGS}")
-    endif()
-
-    message("")
-    message("BEGIN::COMPILE_WITH_HIP")
-
-    ### REM: GPU Runtime Configuration
-    set(GPU_RUNTIME "HIP" CACHE STRING "Switches between HIP and CUDA")
-    set(GPU_RUNTIMES "HIP" "CUDA")
-    set_property(CACHE GPU_RUNTIME PROPERTY STRINGS ${GPU_RUNTIMES})
-
-    if(NOT "${GPU_RUNTIME}" IN_LIST GPU_RUNTIMES)
-        message(FATAL_ERROR "GPU_RUNTIME is set to \"${GPU_RUNTIME}\". It must be either HIP or CUDA.")
-    endif()
-
-    enable_language(${GPU_RUNTIME})
-    set(CMAKE_${GPU_RUNTIME}_STANDARD 17)
-    set(CMAKE_${GPU_RUNTIME}_EXTENSIONS OFF)
-    set(CMAKE_${GPU_RUNTIME}_STANDARD_REQUIRED ON)
-
-    ### REM: ROCm Configuration
-    set(ROCM_ROOT "/opt/rocm-5.7.2" CACHE PATH "Root directory of the ROCm installation")
-    list(APPEND CMAKE_PREFIX_PATH "${ROCM_ROOT}")
-
-    add_compile_definitions(__HIP_PLATFORM_AMD__)
-
-    ### REM: rocPRIM Configuration
-    if(TRUE)
-      find_package(hip REQUIRED)
-      find_package(rocprim CONFIG PATHS "/nvme0/lemoinep/soft/rocPRIM")
-      if(rocprim_FOUND)
-          message("rocprim found")
-          set(rocPRIM_INCLUDE_DIR "/nvme0/lemoinep/soft/rocPRIM/include")  
-          list(APPEND CMAKE_PREFIX_PATH ${rocPRIM_INCLUDE_DIR})
-          add_definitions(-D__HIP_CPU_RT__)
-          include_directories(${rocPRIM_INCLUDE_DIR})
-          link_directories(${rocPRIM_INCLUDE_DIR})       
-          # Set GPU targets
-          set(GPU_TARGETS "gfx803;gfx900;gfx906;gfx90a" CACHE STRING "GPU architectures to compile for")
-      else()
-          message(FATAL_ERROR "Could not find rocprim")     
-      endif()
-    endif()
-
-    ### REM: rocThrust Configuration
-    if(TRUE)
-        find_package(hip REQUIRED)
-        find_package(rocthrust REQUIRED CONFIG PATHS "/nvme0/lemoinep/soft/rocThrust")
-        if(rocthrust_FOUND)
-            message("rocthrust found")
-            set(rocTHRUST_INCLUDE_DIR "/nvme0/lemoinep/soft/rocThrust/include")  
-            list(APPEND CMAKE_PREFIX_PATH ${rocTHRUST_INCLUDE_DIR})
-            set(THRUST_DEVICE_SYSTEM "THRUST_DEVICE_SYSTEM_HIP")     
-            add_definitions(-DTHRUST_DEVICE_SYSTEM=${THRUST_DEVICE_SYSTEM})
-            include_directories(${rocTHRUST_INCLUDE_DIR})
-            link_directories(${rocTHRUST_INCLUDE_DIR})
-            # Set GPU targets
-            set(GPU_TARGETS "gfx803;gfx900;gfx906;gfx90a" CACHE STRING "GPU architectures to compile for")
-        else()
-            message(FATAL_ERROR "Could not find rocThrust")     
-        endif()
-    endif()
-
-    ### REM: Libraries and Include Directories
-    list(APPEND GPU_HIP_LIBRARIES hip::device hip::host hipblas PRIVATE roc::rocthrust roc::rocprim)
-    list(APPEND GPU_ROCTHRUST_LIBRARIES roc::rocthrust)
-    list(APPEND GPU_ROCPRIM_LIBRARIES roc::rocprim)
-
-    list(APPEND include_dirs 
-        "/nvme0/lemoinep/soft/rocPRIM/include"
-        "/nvme0/lemoinep/soft/rocThrust/include"
-    )
-
-    if(GPU_RUNTIME STREQUAL "HIP")
-        list(APPEND include_dirs "${ROCM_ROOT}/include")
-        message(${ROCM_ROOT}/include)
-    endif()
-
-    message("END::COMPILE_WITH_HIP")
-    message("")
-endif()
-
-
-
 
 if ( FEELPP_BENCHMARK_FLAGS )
   set(CMAKE_BUILD_TYPE Release )
@@ -337,6 +190,31 @@ if(NOT FEELPP_ENABLE_BUILD_STATIC)
 endif()
 
 option(FEELPP_ENABLE_JSON_DIAGNOSTICS "enable extended json diagnostics" ON)
+
+find_package(hip)
+if (hip_FOUND)
+  enable_language(HIP)
+  find_package(hipblas REQUIRED)
+  find_package(rocthrust REQUIRED)
+  message(STATUS "Hip found: [hipblas rocthrust]")
+else()
+  message(STATUS "HIP/ROCm not found. Building Feel++ without HIP support.")
+endif()
+
+add_library(feelpp_gpu INTERFACE)
+if (hip_FOUND)
+  target_link_libraries(feelpp_gpu INTERFACE hip::device hip::host hipblas roc::rocthrust)
+  target_compile_definitions(feelpp_gpu INTERFACE FEELPP_HAS_HIP)
+  add_library(Feelpp::feelpp_gpu ALIAS feelpp_gpu)
+endif()
+
+find_package(CUDA QUIET)
+if(CUDA_FOUND)
+    target_link_libraries(Feelpp::feelpp_gpu INTERFACE CUDA::CUDA)
+    target_compile_definitions(Feelpp::feelpp_gpu INTERFACE FEELPP_HAS_CUDA)
+else()
+    message(STATUS "CUDA not found.")
+endif()
 
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
