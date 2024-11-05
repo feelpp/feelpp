@@ -2,13 +2,14 @@
 
 // NOTA : Objective: Ray tracing from inside a cube using BVH Ray Tracing with a CPU and a GPU method. Compare the performances of the two methods.
 
-#define COMPILE_WITH_HIP
-
+#include <ranges>
+#include <fmt/chrono.h>
 #include <feel/feelmesh/ranges.hpp>
 
 #include <feel/feelcore/enumerate.hpp>
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/kokkos.hpp>
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -29,23 +30,24 @@
 #include <feel/feelmesh/partitionmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-#include "hip/hip_runtime.h"
-#include "hip/hip_runtime_api.h"
 
-#include "thrust/device_vector.h"
-#include "thrust/execution_policy.h"
-#include "thrust/functional.h"
-#include "thrust/host_vector.h"
-#include "thrust/random.h"
-#include "thrust/sort.h"
-#include "thrust/transform.h"
 
-#include "thrust/copy.h"
-#include "thrust/count.h"
-#include "thrust/generate.h"
-#include "thrust/sort.h"
+#if defined(FEELPP_HAS_HIP)
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
-#include <hwloc.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/random.h>
+#include <thrust/sort.h>
+#include <thrust/transform.h>
+#include <thrust/copy.h>
+#include <thrust/count.h>
+#include <thrust/generate.h>
+#include <thrust/sort.h>
+#endif
 
 using namespace Feel;
 
@@ -174,49 +176,6 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
     }
 }
 
-// Function that detects if there is GPU in the environment in order to switch the calculations to the GPU.
-bool isThereAnyGPUhere( bool isViewInfo )
-{
-    hwloc_topology_t topology;
-    hwloc_obj_t obj = nullptr;
-    bool isGPU = false;
-    unsigned n, i;
-
-    if ( hwloc_topology_init( &topology ) < 0 )
-    {
-        std::cerr << "Error Num" << std::endl;
-        return false;
-    }
-
-    hwloc_topology_set_io_types_filter( topology, HWLOC_TYPE_FILTER_KEEP_IMPORTANT );
-
-    if ( hwloc_topology_load( topology ) < 0 )
-    {
-        std::cerr << "Error Num" << std::endl;
-        hwloc_topology_destroy( topology );
-        return false;
-    }
-
-    n = hwloc_get_nbobjs_by_type( topology, HWLOC_OBJ_OS_DEVICE );
-    if ( isViewInfo ) LOG( INFO ) << "n=" << n << "\n";
-
-    for ( i = 0; i < n; i++ )
-    {
-        obj = hwloc_get_obj_by_type( topology, HWLOC_OBJ_OS_DEVICE, i );
-        if ( isViewInfo ) printf( "%s:\n", obj->name );
-        const char* s;
-        s = hwloc_obj_get_info_by_name( obj, "Backend" );
-        if ( isViewInfo ) printf( "%s\n", s );
-        if ( s && !strcmp( s, "OpenCL" ) )
-        {
-            isGPU = true;
-        };
-    }
-
-    hwloc_topology_destroy( topology );
-    return isGPU;
-}
-
 template <typename RangeType>
 void test3DWithHybrid( RangeType const& range )
 {
@@ -302,7 +261,7 @@ Eigen::Vector3d sphericalToCartesian( double r, double theta, double alpha )
     return position;
 }
 
-template <typename RangeType>
+template <typename ExecSpace, typename RangeType>
 void test3DInsideObjectWithHybrid( RangeType const& range )
 {
     std::chrono::steady_clock::time_point t_begin_cpu, t_begin_gpu;
@@ -321,8 +280,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     std::string filename = "results.txt";
     std::ofstream myfile( filename );
 
-    // for (int kkk=1; kkk<=20; kkk++)
-    for ( int kkk = 1; kkk <= 1; kkk++ )
+    for ( int kkk : std::views::iota(1, 5) )
     {
 
         Eigen::Vector3d ray_origin = { 0.0f, 0.0f, 0.0f };
@@ -359,52 +317,59 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
 
         std::vector<double> dist;
 
-        // In normal CPU mode
-        LOG( INFO ) << "In normal CPU mode\n";
-
-        t_begin_cpu = std::chrono::steady_clock::now();
-        auto bvhThirdPartyLow = boundingVolumeHierarchy( _range = range, _kind = "third-party" );
-        t_end_bvh_cpu = std::chrono::steady_clock::now();
-
-        t_begin_raytracing_cpu = std::chrono::steady_clock::now();
-        auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect( _ray = raysDistributed );
-        t_end_raytracing_cpu = std::chrono::steady_clock::now();
-
-        std::vector<double> distance_CPU_mode;
-        for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+        if constexpr ( std::is_same_v<ExecSpace, Kokkos::Serial> )
         {
-            dist = getAllDistanceRayIntersections( bvhThirdPartyLow, rayIntersectionResult );
-            // printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
-            distance_CPU_mode.insert( distance_CPU_mode.end(), dist.begin(), dist.end() );
+            // In normal CPU mode
+            LOG( INFO ) << "In normal CPU mode\n";
+            Kokkos::Timer timer;
+
+            auto bvhThirdPartyLow = boundingVolumeHierarchy( _range = range, _kind = "third-party" );
+            double time_bvh = timer.seconds();
+
+            auto multiRayDistributedIntersectionResult = bvhThirdPartyLow->intersect( _ray = raysDistributed );
+            double time_raytracing = timer.seconds();
+
+            std::vector<double> distance_CPU_mode;
+            for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionResult )
+            {
+                dist = getAllDistanceRayIntersections( bvhThirdPartyLow, rayIntersectionResult );
+                // printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
+                distance_CPU_mode.insert( distance_CPU_mode.end(), dist.begin(), dist.end() );
+            }
+            double time_end = timer.seconds();
+            LOG( INFO ) << fmt::format("[cpu] bvh : {}s, rt: {}s, total: {}s, distance GPU={}", time_bvh, time_raytracing, time_end, distance_CPU_mode.size() );
         }
-        t_end_cpu = std::chrono::steady_clock::now();
-
-        // In GPU mode with AMD HIP
-        LOG( INFO ) << "In GPU mode with AMD HIP\n";
-
-        t_begin_gpu = std::chrono::steady_clock::now();
-        auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-        t_end_bvh_gpu = std::chrono::steady_clock::now();
-
-        t_begin_raytracing_gpu = std::chrono::steady_clock::now();
-        auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed );
-        t_end_raytracing_gpu = std::chrono::steady_clock::now();
-
-        std::vector<double> distance_GPU_mode;
-        for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+#if defined(FEELPP_HAS_HIP)
+        if constexpr ( std::is_same_v<ExecSpace, Kokkos::HIP> )
         {
-            dist = getAllDistanceRayIntersections( bvhHIPParty, rayIntersectionResult );
-            // printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
-            distance_GPU_mode.insert( distance_GPU_mode.end(), dist.begin(), dist.end() );
-        }
-        t_end_gpu = std::chrono::steady_clock::now();
+            // In GPU mode with AMD HIP
+            LOG( INFO ) << "In GPU mode with AMD HIP\n";
 
+            Kokkos::Timer timer;
+            auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
+            double time_bvh = timer.seconds();timer.reset();
+
+            auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed );
+            double time_raytracing = timer.seconds();timer.reset();
+
+            std::vector<double> distance_GPU_mode;
+            for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+            {
+                dist = getAllDistanceRayIntersections( bvhHIPParty, rayIntersectionResult );
+                // printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
+                distance_GPU_mode.insert( distance_GPU_mode.end(), dist.begin(), dist.end() );
+            }
+            double time_end = timer.seconds();
+
+            LOG( INFO ) << fmt::format("[gpu] bvh : {}s, rt: {}s, total: {}s, distance GPU={}", time_bvh, time_raytracing, time_end, distance_GPU_mode.size() );
+        }
+#endif
+    }
+#if 0
         // Distance comparison
         double deltaError = 0.00001f;
         double sumErrors = 0.0f;
         bool isError = false;
-
-        LOG( INFO ) << "Size vector distance CPU=" << distance_CPU_mode.size() << " GPU=" << distance_GPU_mode.size() << "\n";
 
         if ( distance_GPU_mode.size() != distance_CPU_mode.size() )
         {
@@ -427,59 +392,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
             LOG( INFO ) << "WELL DONE :-) No error (same distance). \n";
         }
 
-        // Save all informations
-        // std::string filename= "results.txt";
-        // std::ofstream myfile (filename);
-
-        if ( myfile.is_open() )
-        {
-            LOG( INFO ) << "Nb Rays : " << rays.size() << "\n";
-            // myfile <<  "Nb Rays,"<<rays.size()<< "\n";
-
-            // Time laps comparison
-            LOG( INFO ) << "Build BVH\n";
-
-            if ( 1 == 0 )
-            {
-                t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_cpu - t_begin_cpu ).count();
-                LOG( INFO ) << "Elapsed microseconds inside BVH CPU : " << t_laps << " us\n";
-                // myfile <<  "Elapsed microseconds inside BVH CPU,"<<t_laps<< "\n";
-
-                t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_gpu - t_begin_gpu ).count();
-                LOG( INFO ) << "Elapsed microseconds inside BVH GPU : " << t_laps << " us (+load mesh in GPU)\n";
-                // myfile <<  "Elapsed microseconds inside BVH GPU, "<<t_laps<< "\n";
-
-                LOG( INFO ) << "Ray Tracing\n";
-                t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_raytracing_cpu - t_begin_raytracing_cpu ).count();
-                LOG( INFO ) << "Elapsed microseconds inside Ray Tracing CPU : " << t_laps << " us\n";
-                // myfile << "Elapsed microseconds inside Ray Tracing CPU," <<t_laps<< "\n";
-
-                t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_raytracing_gpu - t_begin_raytracing_gpu ).count();
-                LOG( INFO ) << "Elapsed microseconds inside Ray Tracing GPU : " << t_laps << " us (+load rays data in GPU)\n";
-                // myfile <<  "Elapsed microseconds inside Ray Tracing GPU,"<<t_laps<< "\n";
-            }
-
-            LOG( INFO ) << "Elapse all\n";
-
-            t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_cpu - t_begin_cpu ).count();
-            LOG( INFO ) << "Elapsed microseconds inside BVH Ray Tracing CPU : " << t_laps << " us\n";
-            // myfile <<  "Elapsed microseconds inside  BVH Ray Tracing CPU,"<<t_laps<< "\n";
-
-            t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_gpu - t_begin_gpu ).count();
-            LOG( INFO ) << "Elapsed microseconds inside BVH Ray Tracing GPU : " << t_laps << " us\n";
-            // myfile <<  "Elapsed microseconds inside  BVH Ray Tracing GPU,"<<t_laps<< "\n";
-
-            myfile << "Nb Rays," << rays.size() << ",";
-            t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_cpu - t_begin_cpu ).count();
-            myfile << t_laps << ",";
-            t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end_gpu - t_begin_gpu ).count();
-            myfile << t_laps << "\n";
-        }
-        else
-            LOG( INFO ) << "Unable to open file";
-    }
-
-    myfile.close();
+#endif         
 }
 
 template <typename RangeType>
@@ -497,7 +410,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
-    bool isModeGPU = isThereAnyGPUhere( false );
+    bool isModeGPU = true;//isThereAnyGPUhere( false );
 
     int kkk = 1;
 
@@ -551,7 +464,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
             distance_CPU_mode.insert( distance_CPU_mode.end(), dist.begin(), dist.end() );
         }
     }
-
+#if defined(FEELPP_HAS_HIP)
     if ( isModeGPU )
     {
         // In GPU mode with AMD HIP
@@ -567,6 +480,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
             distance_GPU_mode.insert( distance_GPU_mode.end(), dist.begin(), dist.end() );
         }
     }
+#endif    
     t_end = std::chrono::steady_clock::now();
 
     t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end - t_begin ).count();
@@ -618,25 +532,18 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     LOG( INFO ) << "nbdyfaces : " << nbdyfaces << "\n";
     LOG( INFO ) << "\n";
 
+    
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    // GPU or not GPU
-    bool isGPUdetected; // put elsewhere
-    isGPUdetected = isThereAnyGPUhere( false );
+    LOG( INFO ) << "Execute on CPU" << std::endl;
+    test3DInsideObjectWithHybrid<Kokkos::Serial>( rangeFaces );
+    LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
 
-    if ( isGPUdetected )
-    {
-        LOG( INFO ) << "GPU detected" << std::endl;
-    }
-    else
-    {
-        LOG( INFO ) << "No GPU detected" << std::endl;
-    }
+#if defined(FEELPP_HAS_HIP)
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    // test3DWithHybrid( rangeFaces );
+    LOG( INFO ) << "Execute on GPU" << std::endl;
+    test3DInsideObjectWithHybrid<Kokkos::HIP>( rangeFaces );
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    test3DInsideObjectWithHybrid( rangeFaces );
-    LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
-    // test3D_AutoDecisionCPUorGPU( rangeFaces);
+#endif
 
     LOG( INFO ) << "\n";
 }

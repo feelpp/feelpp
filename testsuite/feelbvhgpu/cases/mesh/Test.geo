@@ -1,5 +1,6 @@
 //+
 SetFactory("OpenCASCADE");
+h=0.025;
 //+
 Box(1) = {-2, -2, -2, 4, 4, 4};
 //+
@@ -32,3 +33,5 @@ Physical Surface("Back3", 53) = {17};
 Physical Surface("Left3", 54) = {13};
 //+
 Physical Surface("Rigth3", 55) = {14};
+
+Characteristic Length{ PointsOf{ Surface{ : }; } } = h;
