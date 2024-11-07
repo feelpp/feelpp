@@ -542,7 +542,7 @@ public:
     }
 
     //@}
-
+#if defined(FEELPP_HAS_KOKKOS)
     /** @name Kokkos Helper Functions
     */
     //@{
@@ -585,6 +585,7 @@ public:
     static bool isKokkosExecutionSpaceEnabled();
 
     //@}
+#endif // FEELPP_HAS_KOKKOS
 
     /** @name  Mutators
      */

@@ -2170,10 +2170,12 @@ Environment::masterWorldComm( int n )
     return S_worldcomm->masterWorld( n );
 }
 
+#if FEELPP_HAS_KOKKOS
 void Environment::printKokkosConfiguration(std::ostream& os)
 {
     Kokkos::print_configuration(os);
 }
+
 
 template <typename ExecSpace>
 int Environment::getKokkosDeviceCount()
@@ -2196,6 +2198,7 @@ int Environment::getKokkosDeviceCount()
         }
     }
 }
+
 // Explicit template instantiation for supported execution spaces
 template int Environment::getKokkosDeviceCount<Kokkos::Serial>();
 template int Environment::getKokkosDeviceCount<Kokkos::Threads>();
@@ -2294,6 +2297,8 @@ template bool Environment::isKokkosExecutionSpaceEnabled<Kokkos::HIP>();
 #ifdef KOKKOS_ENABLE_CUDA
 template bool Environment::isKokkosExecutionSpaceEnabled<Kokkos::Cuda>();
 #endif
+
+#endif // FEELPP_HAS_KOKKOS
 
 #if defined(FEELPP_HAS_HARTS)
 
