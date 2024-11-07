@@ -23,6 +23,7 @@ local gpus = [
   'cpu',
   'rocm',
   'cuda',
+  'rocm-kokkos',
 ];
 
 local configs = [
@@ -231,6 +232,21 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             CMAKE_CXX_COMPILER: 'amdclang++',
             CMAKE_C_COMPILER: 'amdclang',
             FEELPP_ENABLE_KOKKOS: 'OFF',
+            FEELPP_ENABLE_HIP: 'ON',
+            FEELPP_ENABLE_ROCM: 'ON',
+            FEELPP_ENABLE_CUDA: 'OFF',
+            /* Additional ROCm-specific settings */
+        },
+    },    {
+        name: 'rocm-kokkos',
+        hidden: true,
+        inherits: [
+            'feelpp-core-tests-only',
+        ],
+        cacheVariables: {
+            CMAKE_CXX_COMPILER: 'amdclang++',
+            CMAKE_C_COMPILER: 'amdclang',
+            FEELPP_ENABLE_KOKKOS: 'ON',
             FEELPP_ENABLE_HIP: 'ON',
             FEELPP_ENABLE_ROCM: 'ON',
             FEELPP_ENABLE_CUDA: 'OFF',
