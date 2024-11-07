@@ -463,6 +463,10 @@ Environment::Environment( int argc, char** argv,
         M_env = std::make_unique<boost::mpi::environment>(argc, argv, false);
 #endif
     }
+#if defined( FEELPP_HAS_KOKKOS )
+    Kokkos::initialize( argc, argv );
+    printKokkosConfiguration();
+#endif
     CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
@@ -540,10 +544,7 @@ Environment::Environment( int argc, char** argv,
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
 
-#if defined( FEELPP_HAS_KOKKOS )
-    Kokkos::initialize( argc, argv );
-    printKokkosConfiguration();
-#endif
+
 
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );

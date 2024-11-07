@@ -42,7 +42,7 @@ local cp_generator(component, compiler, cpp, type, gpu, config) =
   {
     name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + gpu + '|' + std.asciiLower(config),
-    inherits: [cpp, compiler, gpu, type, config,component],
+    inherits: [gpu, cpp, compiler, type, config,component],
   };
 
 local bp_generator(component, compiler, cpp, type, gpu, config) =
@@ -215,7 +215,7 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
         name: 'cpu',
         hidden: true,
         cacheVariables: {
-            FEELPP_ENABLE_KOKKOS: 'ON',
+            FEELPP_ENABLE_KOKKOS: 'OFF',
             FEELPP_ENABLE_ROCM: 'OFF',
             FEELPP_ENABLE_CUDA: 'OFF',
         /* Additional CPU-specific settings */
@@ -228,7 +228,10 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             'feelpp-core-tests-only',
         ],
         cacheVariables: {
-            FEELPP_ENABLE_KOKKOS: 'ON',
+            CMAKE_CXX_COMPILER: 'amdclang++',
+            CMAKE_C_COMPILER: 'amdclang',
+            FEELPP_ENABLE_KOKKOS: 'OFF',
+            FEELPP_ENABLE_HIP: 'ON',
             FEELPP_ENABLE_ROCM: 'ON',
             FEELPP_ENABLE_CUDA: 'OFF',
             /* Additional ROCm-specific settings */
