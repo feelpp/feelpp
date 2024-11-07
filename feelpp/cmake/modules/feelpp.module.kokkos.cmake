@@ -1,5 +1,3 @@
-option(FEELPP_ENABLE_KOKKOS "Enable Kokkos" OFF)
-
 if (FEELPP_ENABLE_KOKKOS)
     find_package(Kokkos REQUIRED)
     if ( Kokkos_FOUND )
