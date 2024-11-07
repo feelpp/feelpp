@@ -111,6 +111,72 @@ void test_kokkos(const std::string& label, int N)
     BOOST_CHECK_MESSAGE(success, fmt::format("{} computation failed",label));
 }
 
+template <typename ExecSpace, typename HostMemSpace = Kokkos::HostSpace>
+void test_kokkos_2(const std::string& label, int N)
+{
+    using MemorySpace = typename ExecSpace::memory_space;
+    using namespace Feel;
+    using ValueType = double;
+    constexpr size_t dataSize = 1024 * 1024; // 1 million elements
+
+    int rank = Environment::rank();
+    int size = Environment::numberOfProcessors();
+
+    int num_gpus = 3;
+    //hipGetDeviceCount(&num_gpus);
+    int device_id = rank % num_gpus;
+
+    // Create a Kokkos View on the device
+    Kokkos::View<ValueType*, MemorySpace> d_data("d_data", dataSize);
+
+    // Perform computation on the GPU: Initialize data
+    Kokkos::parallel_for("InitData", Kokkos::RangePolicy<ExecSpace>(0, dataSize),
+        KOKKOS_LAMBDA(const size_t i) {
+            d_data(i) = static_cast<ValueType>(i);
+    });
+
+    // Create a host mirror of the device data
+    auto h_data = Kokkos::create_mirror_view(d_data);
+
+    // Copy data from device to host
+    Kokkos::deep_copy(h_data, d_data);
+
+    // Now use Boost.MPI to communicate the data
+    if (rank == 0) 
+    {
+        // Process 0 sends data to all other processes
+        for (int dest = 1; dest < size; ++dest) 
+        {
+            // Send data using Boost.MPI
+            Environment::worldComm().send(dest, 0, h_data.data(), dataSize);
+        }
+    } 
+    else 
+    {
+        // Other processes receive data from process 0
+        Environment::worldComm().recv(0, 0, h_data.data(), dataSize);
+
+        // Copy data back to device
+        Kokkos::deep_copy(d_data, h_data);
+
+        // Perform further computations on the GPU
+        Kokkos::parallel_for("ProcessData", Kokkos::RangePolicy<ExecSpace>(0, dataSize),
+                            KOKKOS_LAMBDA(const size_t i) 
+                            {
+                                d_data(i) *= 2.0;
+                            });
+
+        // Copy results back to host for verification
+        Kokkos::deep_copy(h_data, d_data);
+
+        // Output some data for verification
+        if (rank == 1) 
+        {
+            std::cout << "Process " << rank << " first element: " << h_data(0) << std::endl;
+        }
+    }
+}
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 
@@ -120,7 +186,7 @@ BOOST_AUTO_TEST_CASE( kokkos_1 )
 {
     using namespace Feel;
     const int N = std::pow<int>(2,ioption(_name="N"));
-    std::cout << "N = " << N << std::endl;
+    LOG(INFO) << "N = " << N << std::endl;
 
     // Run computation in Serial execution space
     test_kokkos<Kokkos::Serial>("Serial", N);
@@ -132,6 +198,18 @@ BOOST_AUTO_TEST_CASE( kokkos_1 )
 #ifdef KOKKOS_ENABLE_HIP
     test_kokkos<Kokkos::HIP>("HIP", N);
 #endif
+}
+
+BOOST_AUTO_TEST_CASE( kokkos_2 )
+{
+    using namespace Feel;
+    const int N = std::pow<int>(2,ioption(_name="N"));
+    LOG(INFO) << "N = " << N << std::endl;
+
+#ifdef KOKKOS_ENABLE_HIP
+    test_kokkos_2<Kokkos::HIP,Kokkos::HIPSpace>("HIP", N);
+#endif
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

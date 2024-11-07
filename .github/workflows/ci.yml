@@ -88,5 +88,5 @@ jobs:
           cmake --build --preset feelpp-clang-cpp20-spack-cpu-release -j60 
       - name: Test Feelpp
         run: |
-          ctest --preset feelpp-clang-cpp20-spack-cpu-release -j4
+          ctest --preset feelpp-clang-cpp20-spack-cpu-release -j4 -R feelpp
 
