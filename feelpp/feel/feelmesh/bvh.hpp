@@ -1,4 +1,6 @@
 
+#pragma clang diagnostic ignored "-Wunused-result"
+
 #include <vector>
 
 #include <bvh/v2/bvh.h>
@@ -12,8 +14,6 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 
-
-
 #include <algorithm>
 #include <assert.h>
 #include <cfloat>
@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <vector>
 
-#if defined(FEELPP_HAS_HIP)
+#if defined( FEELPP_HAS_HIP )
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
@@ -61,6 +61,30 @@
 #include <stack>
 
 #ifdef FEELPP_HAS_HIP
+
+#define HIP_CHECK( command )                                                                \
+    {                                                                                       \
+        hipError_t status = command;                                                        \
+        if ( status != hipSuccess )                                                         \
+        {                                                                                   \
+            std::cerr << "Error: HIP reports " << hipGetErrorString( status ) << std::endl; \
+            std::abort();                                                                   \
+        }                                                                                   \
+    }
+
+// Conditional assertion based on debug mode for HIP operations
+#ifdef NDEBUG
+#define HIP_ASSERT( x ) x // No assertion in release mode
+#else
+#define HIP_ASSERT( x ) ( assert( ( x ) == hipSuccess ) ) // Assert in debug mode
+#endif
+
+#include "lbvh/aabb.cuh"
+#include "lbvh/bvh.cuh"
+#include "lbvh/morton_code.cuh"
+#include "lbvh/predicator.cuh"
+#include "lbvh/query.cuh"
+#include "lbvh/utility.cuh"
 
 namespace bvhRocThrust
 {
@@ -1918,7 +1942,7 @@ __global__ void raytraceKernel(
 
     // if (closesIntersectionId>0) printf("      Num Ray[%i] dist=%f <%f %f %f>\n", idx, closestT,intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
 
-    if ( closesIntersectionId > 0 ) printf( "      Num Ray[%i] dist=%f\n", idx, closestT );
+    // if ( closesIntersectionId > 0 ) printf( "      In hip Num Ray[%i] dist=%f\n", idx, closestT );
 
     hitTriangles[idx] = closestTriangle;
     distance[idx] = closestT;
@@ -2135,6 +2159,794 @@ void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTria
 
 } // namespace bvhHip
 
+namespace bvhLinear
+{
+struct Ray
+{
+    float4 origin;
+    float4 direction;
+};
+
+struct Triangle
+{
+    float4 v1, v2, v3;
+    int id;
+};
+
+struct HitRay
+{
+    float distanceResults;
+    int hitResults;
+    int idResults;
+    float3 intersectionPoint;
+};
+
+struct aabb_getter
+{
+    __device__
+        lbvh::aabb<float>
+        operator()( const Triangle& tri ) const noexcept
+    {
+        lbvh::aabb<float> retval;
+        retval.lower = make_float4(
+            fminf( fminf( tri.v1.x, tri.v2.x ), tri.v3.x ),
+            fminf( fminf( tri.v1.y, tri.v2.y ), tri.v3.y ),
+            fminf( fminf( tri.v1.z, tri.v2.z ), tri.v3.z ),
+            0.0f );
+        retval.upper = make_float4(
+            fmaxf( fmaxf( tri.v1.x, tri.v2.x ), tri.v3.x ),
+            fmaxf( fmaxf( tri.v1.y, tri.v2.y ), tri.v3.y ),
+            fmaxf( fmaxf( tri.v1.z, tri.v2.z ), tri.v3.z ),
+            0.0f );
+        return retval;
+    }
+};
+
+struct distance_calculator
+{
+    __device__ float operator()( const float4 point, const Triangle& tri ) const noexcept
+    {
+        float4 center = make_float4(
+            ( tri.v1.x + tri.v2.x + tri.v3.x ) / 3.0f,
+            ( tri.v1.y + tri.v2.y + tri.v3.y ) / 3.0f,
+            ( tri.v1.z + tri.v2.z + tri.v3.z ) / 3.0f,
+            0.0f );
+        return ( point.x - center.x ) * ( point.x - center.x ) +
+               ( point.y - center.y ) * ( point.y - center.y ) +
+               ( point.z - center.z ) * ( point.z - center.z );
+    }
+};
+
+__device__ float3 cross( float3 a, float3 b )
+{
+    return make_float3( a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x );
+}
+
+__device__ float dot( float3 a, float3 b )
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+
+__host__ __device__
+inline void normalizeRayDirection(Ray& ray) {
+    float len = sqrtf(ray.direction.x * ray.direction.x + 
+                      ray.direction.y * ray.direction.y + 
+                      ray.direction.z * ray.direction.z);
+    if (len > 0) {
+        float invLen = 1.0f / len;
+        ray.direction.x *= invLen;
+        ray.direction.y *= invLen;
+        ray.direction.z *= invLen;
+    }
+}
+
+
+__device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& triangle, float& t )
+{
+    float4 edge1 = triangle.v2 - triangle.v1;
+    float4 edge2 = triangle.v3 - triangle.v1;
+    float4 h = make_float4(
+        ray.direction.y * edge2.z - ray.direction.z * edge2.y,
+        ray.direction.z * edge2.x - ray.direction.x * edge2.z,
+        ray.direction.x * edge2.y - ray.direction.y * edge2.x,
+        0 );
+    float a = edge1.x * h.x + edge1.y * h.y + edge1.z * h.z;
+    if ( a > -1e-6 && a < 1e-6 ) return false;
+    float f = 1.0f / a;
+    float4 s = ray.origin - triangle.v1;
+    float u = f * ( s.x * h.x + s.y * h.y + s.z * h.z );
+    if ( u < 0.0 || u > 1.0 ) return false;
+    float4 q = make_float4(
+        s.y * edge1.z - s.z * edge1.y,
+        s.z * edge1.x - s.x * edge1.z,
+        s.x * edge1.y - s.y * edge1.x,
+        0 );
+    float v = f * ( ray.direction.x * q.x + ray.direction.y * q.y + ray.direction.z * q.z );
+    if ( v < 0.0 || u + v > 1.0 ) return false;
+    t = f * ( edge2.x * q.x + edge2.y * q.y + edge2.z * q.z );
+    return ( t > 1e-6 );
+}
+
+template <typename T, typename U>
+__global__ void rayTracingKernel( lbvh::bvh_device<T, U> bvh_dev, Ray* rays, HitRay* d_HitRays, int numRays )
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if ( idx >= numRays ) return;
+
+    bool isView = true;
+    isView = false;
+
+    Ray ray = rays[idx];
+    const auto calc = distance_calculator();
+
+    normalizeRayDirection(ray);
+    // Point along the ray at a unit distance from the origin
+    float4 pos = ray.origin + ray.direction;
+    // float4 pos = ray.origin;
+
+    // Use query_device to find the closest object
+    const auto nest = lbvh::query_device( bvh_dev, lbvh::nearest( pos ), calc );
+
+    // Initialization of results
+    d_HitRays[idx].hitResults = -1;
+    d_HitRays[idx].distanceResults = INFINITY; // distance
+    d_HitRays[idx].intersectionPoint = make_float3( INFINITY, INFINITY, INFINITY );
+    d_HitRays[idx].idResults = -1;
+
+    if ( nest.first != 0xFFFFFFFF )
+    {
+        // An object has been found
+        const auto& hit_triangle = bvh_dev.objects[nest.first];
+
+        if ( isView )
+        {
+            printf( "Ray %d: Nearest object index: %u\n", idx, nest.first );
+            printf( "Ray %d: Distance to nearest object: %f\n", idx, nest.second );
+            printf( "Ray %d: v1=%f %f %f\n", idx, hit_triangle.v1.x, hit_triangle.v1.y, hit_triangle.v1.z );
+            printf( "Ray %d: v2=%f %f %f\n", idx, hit_triangle.v2.x, hit_triangle.v2.y, hit_triangle.v2.z );
+            printf( "Ray %d: v3=%f %f %f\n", idx, hit_triangle.v3.x, hit_triangle.v3.y, hit_triangle.v3.z );
+        }
+
+        // Calculate the intersection point
+        float t;
+        if ( rayTriangleIntersect( ray, hit_triangle, t ) )
+        {
+            float4 hit_point = ray.origin + ray.direction * t;
+            if ( isView )
+            {
+                printf( "Ray %d hit triangle %d at point (%f, %f, %f)\n", idx, nest.first, hit_point.x, hit_point.y, hit_point.z );
+                printf( "distance:%f\n", t );
+            }
+            d_HitRays[idx].hitResults = nest.first;
+            d_HitRays[idx].distanceResults = t; // distance
+            d_HitRays[idx].intersectionPoint = make_float3( hit_point.x, hit_point.y, hit_point.z );
+            d_HitRays[idx].idResults = hit_triangle.id;
+        }
+        else
+        {
+            if ( isView ) printf( "Ray %d: Nearest object found but not intersected by ray\n", idx );
+        }
+    }
+    else
+    {
+        // No items found
+        if ( isView ) printf( "Ray %d did not hit any triangle\n", idx );
+    }
+}
+
+} // END namespace bvhLinear
+
+namespace bvhOctree
+{
+#define MAX_TRIANGLES_PER_NODE 8
+#define MAX_TRIANGLES_PER_LEAF 8
+#define MAX_DEPTH 100 // Maximum depth of the tree
+#define MAX_STACK_SIZE 2024
+// #define MAX_STACK_SIZE 64
+#define MAX_NODES_PER_LEVEL 100
+
+#define SWAP( T, a, b ) \
+    do                  \
+    {                   \
+        T tmp = a;      \
+        a = b;          \
+        b = tmp;        \
+    } while ( 0 )
+
+// Function to make a dot
+__host__ __device__ float dot( const float3& a, const float3& b );
+
+// Function to make a cross
+__host__ __device__
+    float3
+    cross( const float3& a, const float3& b );
+
+// Function to return a length
+__host__ __device__ float length( const float3& v );
+
+// Function to normalize
+__host__ __device__
+    float3
+    normalize( const float3& v );
+
+__device__ inline float3 elementwise_min( const float3& a, const float3& b )
+{
+    return make_float3( fminf( a.x, b.x ), fminf( a.y, b.y ), fminf( a.z, b.z ) );
+}
+
+__device__ inline float3 elementwise_max( const float3& a, const float3& b )
+{
+    return make_float3( fmaxf( a.x, b.x ), fmaxf( a.y, b.y ), fmaxf( a.z, b.z ) );
+}
+
+// Function to make a dot
+__host__ __device__ float dot( const float3& a, const float3& b )
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// Function to make a cross
+__host__ __device__
+    float3
+    cross( const float3& a, const float3& b )
+{
+    return float3(
+        a.y * b.z - a.z * b.y,
+        a.z * b.x - a.x * b.z,
+        a.x * b.y - a.y * b.x );
+}
+
+// Function to return a length
+__host__ __device__ float length( const float3& v )
+{
+    return std::sqrt( v.x * v.x + v.y * v.y + v.z * v.z );
+}
+
+// Function to normalize
+__host__ __device__
+    float3
+    normalize( const float3& v )
+{
+    float len = length( v );
+    if ( len > 0 )
+    {
+        return float3( v.x / len, v.y / len, v.z / len );
+    }
+    return v;
+}
+
+struct OctreeTriangle
+{
+    float3 vertices[3];
+    int id;
+
+    __device__ float3 getNormal() const
+    {
+        return normalize( cross( vertices[1] - vertices[0], vertices[2] - vertices[0] ) );
+    }
+};
+
+struct OctreeRay
+{
+    float3 origin;
+    float3 direction;
+};
+
+struct HitOctreeRay
+{
+    float distanceResults;
+    int hitResults;
+    int idResults;
+    float3 intersectionPoint;
+};
+
+struct OctreeAABB
+{
+    float3 min;
+    float3 max;
+
+    __device__ bool intersect( const OctreeRay& ray ) const
+    {
+
+        float3 invDir = make_float3( 1.0f, 1.0f, 1.0f ) / ray.direction;
+        float tmin = ( min.x - ray.origin.x ) * invDir.x;
+        float tmax = ( max.x - ray.origin.x ) * invDir.x;
+        if ( invDir.x < 0.0f )
+        {
+            SWAP( float, tmin, tmax );
+        }
+        float tymin = ( min.y - ray.origin.y ) * invDir.y;
+        float tymax = ( max.y - ray.origin.y ) * invDir.y;
+        if ( invDir.y < 0.0f )
+        {
+            SWAP( float, tymin, tymax );
+        }
+        if ( ( tmin > tymax ) || ( tymin > tmax ) )
+        {
+            return false;
+        }
+        if ( tymin > tmin )
+        {
+            tmin = tymin;
+        }
+        if ( tymax < tmax )
+        {
+            tmax = tymax;
+        }
+
+        float tzmin = ( min.z - ray.origin.z ) * invDir.z;
+        float tzmax = ( max.z - ray.origin.z ) * invDir.z;
+
+        if ( invDir.z < 0.0f )
+        {
+            SWAP( float, tzmin, tzmax );
+        }
+
+        if ( ( tmin > tzmax ) || ( tzmin > tmax ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+};
+
+struct OctreeNode
+{
+    OctreeAABB bbox;
+    OctreeNode* children[8];
+    int triangleCount;
+    OctreeTriangle triangles[MAX_TRIANGLES_PER_NODE];
+    bool isLeaf;
+
+    __device__ OctreeNode()
+        : triangleCount( 0 ), isLeaf( false )
+    {
+        for ( int i = 0; i < 8; ++i )
+        {
+            children[i] = nullptr;
+        }
+    }
+
+    __device__ ~OctreeNode()
+    {
+        for ( int i = 0; i < 8; ++i )
+        {
+            if ( children[i] != nullptr )
+            {
+                delete children[i];
+            }
+        }
+    }
+};
+
+__device__ OctreeAABB computeBoundingBox( OctreeTriangle* triangles, int triangleCount )
+{
+    OctreeAABB bbox;
+    bbox.min = make_float3( FLT_MAX, FLT_MAX, FLT_MAX );
+    bbox.max = make_float3( -FLT_MAX, -FLT_MAX, -FLT_MAX );
+
+    for ( int i = 0; i < triangleCount; ++i )
+    {
+        for ( int j = 0; j < 3; ++j )
+        {
+            bbox.min = elementwise_min( bbox.min, triangles[i].vertices[j] );
+            bbox.max = elementwise_max( bbox.max, triangles[i].vertices[j] );
+        }
+    }
+    return bbox;
+}
+
+__device__ int distributeTriangles( const OctreeAABB& bbox, OctreeTriangle* triangles, int triangleCount, OctreeTriangle* childTriangles, int octantIndex )
+{
+    float3 midPoint = 0.5f * ( bbox.min + bbox.max );
+    int childCount = 0;
+
+    for ( int i = 0; i < triangleCount; ++i )
+    {
+        OctreeTriangle& tri = triangles[i];
+        OctreeAABB triBBox = computeBoundingBox( &tri, 1 );
+
+        // Check if the triangle is in the corresponding octant
+        bool inOctant = true;
+        if ( octantIndex & 1 )
+            inOctant &= triBBox.max.x > midPoint.x; // Right
+        else
+            inOctant &= triBBox.min.x < midPoint.x; // Left
+
+        if ( octantIndex & 2 )
+            inOctant &= triBBox.max.y > midPoint.y; // Up
+        else
+            inOctant &= triBBox.min.y < midPoint.y; // Down
+
+        if ( octantIndex & 4 )
+            inOctant &= triBBox.max.z > midPoint.z; // Front
+        else
+            inOctant &= triBBox.min.z < midPoint.z; // Back
+
+        if ( inOctant && childCount < MAX_TRIANGLES_PER_NODE )
+        {
+            childTriangles[childCount++] = tri; // Add the triangle to the octant
+        }
+    }
+
+    return childCount;
+}
+
+__device__ bool rayAABBIntersection( const OctreeRay& ray, const OctreeAABB& aabb )
+{
+    float3 invDir = make_float3( 1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z );
+    float3 tMin = ( aabb.min - ray.origin ) * invDir;
+    float3 tMax = ( aabb.max - ray.origin ) * invDir;
+
+    float3 t1, t2;
+    t1.x = fminf( tMin.x, tMax.x );
+    t1.y = fminf( tMin.y, tMax.y );
+    t1.z = fminf( tMin.z, tMax.z );
+
+    t2.x = fmaxf( tMin.x, tMax.x );
+    t2.y = fmaxf( tMin.y, tMax.y );
+    t2.z = fmaxf( tMin.z, tMax.z );
+
+    float tNear = fmaxf( fmaxf( t1.x, t1.y ), t1.z );
+    float tFar = fminf( fminf( t2.x, t2.y ), t2.z );
+
+    return tNear <= tFar && tFar > 0;
+}
+
+__device__ bool rayTriangleIntersection( const OctreeRay& ray, const OctreeTriangle& triangle, float& t, float3& intersectionPoint )
+{
+    float3 edge1 = triangle.vertices[1] - triangle.vertices[0];
+    float3 edge2 = triangle.vertices[2] - triangle.vertices[0];
+
+    float3 h = cross( ray.direction, edge2 );
+    float a = dot( edge1, h );
+
+    if ( a > -1e-8 && a < 1e-8 )
+    {
+        return false;
+    }
+
+    float f = 1.0f / a;
+    float3 s = ray.origin - triangle.vertices[0];
+    float u = f * dot( s, h );
+
+    if ( u < 0.0f || u > 1.0f )
+    {
+        return false;
+    }
+
+    float3 q = cross( s, edge1 );
+    float v = f * dot( ray.direction, q );
+
+    if ( v < 0.0f || u + v > 1.0f )
+    {
+        return false;
+    }
+
+    t = f * dot( edge2, q );
+
+    if ( t > 1e-6 )
+    {
+        intersectionPoint = ray.origin + t * ray.direction;
+    }
+    else
+    {
+        intersectionPoint = make_float3( INFINITY, INFINITY, INFINITY );
+    }
+
+    return t > 1e-8;
+}
+
+__device__ bool rayAABBIntersection( const OctreeRay& ray, const OctreeAABB& aabb, float& tEntry, float& tExit )
+{
+    float3 invDir = make_float3( 1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z );
+    float3 tMin = ( aabb.min - ray.origin ) * invDir;
+    float3 tMax = ( aabb.max - ray.origin ) * invDir;
+
+    float3 t1, t2;
+    t1.x = fminf( tMin.x, tMax.x );
+    t1.y = fminf( tMin.y, tMax.y );
+    t1.z = fminf( tMin.z, tMax.z );
+
+    t2.x = fmaxf( tMin.x, tMax.x );
+    t2.y = fmaxf( tMin.y, tMax.y );
+    t2.z = fmaxf( tMin.z, tMax.z );
+
+    tEntry = fmaxf( fmaxf( t1.x, t1.y ), t1.z );
+    tExit = fminf( fminf( t2.x, t2.y ), t2.z );
+
+    return tEntry <= tExit && tExit > 0;
+}
+
+__device__ bool rayAABBIntersection( const OctreeRay& ray, const OctreeAABB& aabb, float& tMin )
+{
+    float3 invDir = make_float3( 1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z );
+    float3 t0 = ( aabb.min - ray.origin ) * invDir;
+    float3 t1 = ( aabb.max - ray.origin ) * invDir;
+
+    float3 tmin;
+    tmin.x = fminf( t0.x, t1.x );
+    tmin.y = fminf( t0.y, t1.y );
+    tmin.z = fminf( t0.z, t1.z );
+    float3 tmax;
+    tmax.x = fmaxf( t0.x, t1.x );
+    tmax.y = fmaxf( t0.y, t1.y );
+    tmax.z = fmaxf( t0.z, t1.z );
+
+    float tNear = fmaxf( fmaxf( tmin.x, tmin.y ), tmin.z );
+    float tFar = fminf( fminf( tmax.x, tmax.y ), tmax.z );
+
+    if ( tNear <= tFar && tFar > 0 )
+    {
+        tMin = tNear > 0 ? tNear : tFar;
+        return true;
+    }
+
+    return false;
+}
+
+__device__ bool traverseOctreeIterative( OctreeNode* root, const OctreeRay& ray, float& tMin, OctreeTriangle& hitTriangle, HitOctreeRay& hr )
+{
+
+    bool isView = true;
+    isView = false;
+
+    if ( isView ) printf( "[traverseOctree]\n" );
+
+    // Stack to store nodes to visit
+    struct StackEntry
+    {
+        OctreeNode* node;
+        float tEntry;
+    };
+    StackEntry stack[MAX_STACK_SIZE];
+    int stackSize = 0;
+
+    float rootTEntry;
+    if ( !rayAABBIntersection( ray, root->bbox, rootTEntry ) )
+    {
+        return false; // No intersection with the root
+    }
+    stack[stackSize++] = { root, rootTEntry };
+
+    bool hit = false;
+
+    while ( stackSize > 0 )
+    {
+        StackEntry current = stack[--stackSize];
+        OctreeNode* currentNode = current.node;
+        float nodeEntry = current.tEntry;
+
+        if ( isView ) printf( "Visiting node: isLeaf = %s, triangleCount = %d\n", currentNode->isLeaf ? "true" : "false", currentNode->triangleCount );
+
+        if ( nodeEntry >= tMin )
+        {
+            continue; // No need to check this node or its children
+        }
+
+        if ( currentNode->isLeaf )
+        {
+            // printf("isLeaf\n");
+            for ( int i = 0; i < currentNode->triangleCount; ++i )
+            {
+                if ( isView )
+                {
+                    printf( "in leaf %i %f\n", currentNode->triangleCount, tMin );
+                    printf( "Triangle %d: (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", i,
+                            currentNode->triangles[i].vertices[0].x, currentNode->triangles[i].vertices[0].y, currentNode->triangles[i].vertices[0].z,
+                            currentNode->triangles[i].vertices[1].x, currentNode->triangles[i].vertices[1].y, currentNode->triangles[i].vertices[1].z,
+                            currentNode->triangles[i].vertices[2].x, currentNode->triangles[i].vertices[2].y, currentNode->triangles[i].vertices[2].z );
+                }
+
+                float t;
+                float3 intersectionPointT;
+                if ( rayTriangleIntersection( ray, currentNode->triangles[i], t, intersectionPointT ) )
+                {
+                    if ( t < tMin )
+                    {
+                        // isView=true;
+                        tMin = t;
+                        hitTriangle = currentNode->triangles[i];
+                        hit = true;
+                        if ( isView ) printf( "Hit triangle at t = %f\n", t );
+                        hr.hitResults = i;
+                        hr.distanceResults = fabs( t );
+                        hr.intersectionPoint = intersectionPointT;
+                        hr.idResults = int( currentNode->triangles[i].id );
+                    }
+                }
+            }
+        }
+        else
+        {
+            for ( int i = 0; i < 8; ++i )
+            {
+                if ( currentNode->children[i] != nullptr )
+                {
+                    float childTEntry;
+                    if ( rayAABBIntersection( ray, currentNode->children[i]->bbox, childTEntry ) &&
+                         childTEntry < tMin )
+                    {
+                        stack[stackSize++] = { currentNode->children[i], childTEntry };
+                    }
+                }
+            }
+
+            // Sort the stack by ascending tEntry
+            for ( int i = stackSize - 1; i > 0; --i )
+            {
+                for ( int j = 0; j < i; ++j )
+                {
+                    if ( stack[j].tEntry > stack[j + 1].tEntry )
+                    {
+                        StackEntry temp = stack[j];
+                        stack[j] = stack[j + 1];
+                        stack[j + 1] = temp;
+                    }
+                }
+            }
+        }
+    }
+
+    return hit;
+}
+
+__device__ OctreeAABB computeChildBBox( const OctreeAABB& parentBBox, int childIndex )
+{
+    OctreeAABB childBBox;
+    float3 center = make_float3(
+        ( parentBBox.min.x + parentBBox.max.x ) * 0.5f,
+        ( parentBBox.min.y + parentBBox.max.y ) * 0.5f,
+        ( parentBBox.min.z + parentBBox.max.z ) * 0.5f );
+
+    childBBox.min = parentBBox.min;
+    childBBox.max = parentBBox.max;
+
+    if ( childIndex & 1 )
+        childBBox.min.x = center.x;
+    else
+        childBBox.max.x = center.x;
+    if ( childIndex & 2 )
+        childBBox.min.y = center.y;
+    else
+        childBBox.max.y = center.y;
+    if ( childIndex & 4 )
+        childBBox.min.z = center.z;
+    else
+        childBBox.max.z = center.z;
+
+    return childBBox;
+}
+
+__device__ void buildOctreeByLevel( OctreeNode* root, OctreeTriangle* triangles, int triangleCount )
+{
+    // Initialize the root
+    root->bbox = computeBoundingBox( triangles, triangleCount );
+    root->triangleCount = triangleCount;
+    root->isLeaf = false;
+
+    bool isView = true;
+    isView = false;
+
+    if ( isView )
+    {
+        printf( "root box min <%f %f %f>\n", root->bbox.min.x, root->bbox.min.y, root->bbox.min.z );
+        printf( "root box max <%f %f %f>\n", root->bbox.max.x, root->bbox.max.y, root->bbox.max.z );
+    }
+
+    // Queues to store nodes to be processed at each level
+    OctreeNode* currentLevelNodes[MAX_NODES_PER_LEVEL];
+    OctreeNode* nextLevelNodes[MAX_NODES_PER_LEVEL];
+    int currentLevelSize = 1;
+    int nextLevelSize = 0;
+
+    currentLevelNodes[0] = root;
+
+    for ( int depth = 0; depth < MAX_DEPTH; depth++ )
+    {
+        if ( isView ) printf( "Processing depth %d with %d nodes\n", depth, currentLevelSize );
+        for ( int i = 0; i < currentLevelSize; i++ )
+        {
+            OctreeNode* node = currentLevelNodes[i];
+            if ( isView ) printf( "Node %d at depth %d: triangleCount = %d\n", i, depth, node->triangleCount );
+
+            if ( node->triangleCount <= MAX_TRIANGLES_PER_LEAF || depth == MAX_DEPTH - 1 )
+            {
+                node->isLeaf = true;
+                // Copy the triangles into the leaf node
+                int copyCount = min( node->triangleCount, MAX_TRIANGLES_PER_NODE );
+                for ( int t = 0; t < copyCount; t++ )
+                {
+                    node->triangles[t] = triangles[t];
+                }
+                node->triangleCount = copyCount;
+                if ( isView ) printf( "Leaf node created with %d triangles\n", node->triangleCount );
+                continue;
+            }
+
+            // Subdivide the node
+            for ( int j = 0; j < 8; j++ )
+            {
+                node->children[j] = new OctreeNode();
+                OctreeTriangle childTriangles[MAX_TRIANGLES_PER_NODE];
+                int childCount = distributeTriangles( node->bbox, triangles, node->triangleCount, childTriangles, j );
+
+                if ( childCount > 0 )
+                {
+                    node->children[j]->triangleCount = childCount;
+                    node->children[j]->bbox = computeChildBBox( node->bbox, j );
+
+                    // Copy triangles to child
+                    int copyCount = min( childCount, MAX_TRIANGLES_PER_NODE );
+                    for ( int t = 0; t < copyCount; t++ )
+                    {
+                        node->children[j]->triangles[t] = childTriangles[t];
+                    }
+                    node->children[j]->triangleCount = copyCount;
+
+                    if ( nextLevelSize < MAX_NODES_PER_LEVEL )
+                    {
+                        nextLevelNodes[nextLevelSize++] = node->children[j];
+                        if ( isView ) printf( "Child %d created with %d triangles\n", j, copyCount );
+                    }
+                    else
+                    {
+                        // Handle queue overflow
+                        if ( isView ) printf( "Warning: Max nodes per level reached. Child %d skipped.\n", j );
+                        delete node->children[j];
+                        node->children[j] = nullptr;
+                    }
+                }
+                else
+                {
+                    delete node->children[j];
+                    node->children[j] = nullptr;
+                }
+            }
+
+            if ( isView )
+            {
+                printf( "Node box min <%f %f %f> max <%f %f %f>\n",
+                        node->bbox.min.x, node->bbox.min.y, node->bbox.min.z,
+                        node->bbox.max.x, node->bbox.max.y, node->bbox.max.z );
+            }
+        }
+
+        // Prepare the next level
+        if ( nextLevelSize == 0 )
+        {
+            if ( isView ) printf( "Construction completed at depth %d\n", depth );
+            break;
+        }
+
+        memcpy( currentLevelNodes, nextLevelNodes, nextLevelSize * sizeof( OctreeNode* ) );
+        currentLevelSize = nextLevelSize;
+        nextLevelSize = 0;
+    }
+}
+
+__global__ void buildOctreeKernel( OctreeNode* node, OctreeTriangle* triangles, int triangleCount )
+{
+    buildOctreeByLevel( node, triangles, triangleCount );
+}
+
+__global__ void raytraceKernel( OctreeNode* d_octree, OctreeRay* d_rays, HitOctreeRay* d_HitRays, int numRays )
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if ( idx >= numRays ) return;
+    d_HitRays[idx].hitResults = -1;
+    d_HitRays[idx].distanceResults = INFINITY; // distance
+    d_HitRays[idx].intersectionPoint = make_float3( INFINITY, INFINITY, INFINITY );
+    d_HitRays[idx].idResults = -1;
+    float tMin = INFINITY;
+    OctreeTriangle hitTriangle;
+    bool hit = traverseOctreeIterative( d_octree, d_rays[idx], tMin, hitTriangle, d_HitRays[idx] );
+}
+
+} // END namespace bvhOctree
+
 #endif
 
 using namespace Feel;
@@ -2149,7 +2961,7 @@ namespace Feel
 // https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
 // https://github.com/scratchapixel/scratchapixel-code/tree/main/ray-tracing-rendering-a-triangle
 
-//
+// https://github.com/ToruNiina/lbvh
 
 template <int RealDim>
 class BVHRay
@@ -2191,10 +3003,10 @@ class BVHRay
     template <class Archive>
     void serialize( Archive& ar, const unsigned int version )
     {
-        ar& M_origin;
-        ar& M_dir;
-        ar& M_distanceMin;
-        ar& M_distanceMax;
+        ar & M_origin;
+        ar & M_dir;
+        ar & M_distanceMin;
+        ar & M_distanceMax;
     }
 
   private:
@@ -2304,9 +3116,9 @@ class BVH : public CommObject
         template <class Archive>
         void serialize( Archive& ar, const unsigned int version )
         {
-            ar& M_processId;
-            ar& M_primitiveId;
-            ar& M_distance;
+            ar & M_processId;
+            ar & M_primitiveId;
+            ar & M_distance;
 
             if constexpr ( Archive::is_saving::value )
             {
@@ -2987,7 +3799,7 @@ class BVH_ThirdPartyPlus : public BVH<MeshEntityType>
 
 //! @brief implementation of BVH tool with an external third party in GPU
 
-#if defined(FEELPP_HAS_HIP)
+#if defined( FEELPP_HAS_HIP )
 
 template <typename MeshEntityType>
 class BVH_HIP_Party : public BVH<MeshEntityType>
@@ -3008,9 +3820,16 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     bvhHip::BVHNode* devicebvhHipNodes;
     bvhHip::Triangle* deviceHipTriangles;
 
+    lbvh::bvh<float, bvhLinear::Triangle, bvhLinear::aabb_getter> bvhl;
+    lbvh::bvh_device<float, bvhLinear::Triangle> bvhl_dev;
+    bvhLinear::Triangle* deviceLBVHTriangles;
+
+    bvhOctree::OctreeNode* deviceOctreeNodes;
+    bvhOctree::OctreeTriangle* deviceOctreeTriangles;
+
     int numDevice;
     int numVersion;
-    int modeGPU; // 1 - HIP  2 - rocThrust
+    int modeGPU; // 1 - HIP  2 - rocThrust 3- OCTREE 4-LBVH
     bool isUnifiedMemory;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
@@ -3018,8 +3837,10 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     {
         numDevice = 0;
         numVersion = 1;
-        modeGPU = 2;
+        modeGPU = 1;
+        // modeGPU = 2;
         isUnifiedMemory = false;
+        // isUnifiedMemory = true;
     }
 
     BVH_HIP_Party( BVH_HIP_Party&& ) = default;
@@ -3159,17 +3980,17 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
                 int numTriangles = HostHipTriangles.size();
 
-                hipMalloc( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) );
-                hipMemcpy( deviceHipTriangles, HostHipTriangles.data(), numTriangles * sizeof( bvhHip::Triangle ), hipMemcpyHostToDevice );
+                HIP_ASSERT( hipMalloc( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
+                HIP_ASSERT( hipMemcpy( deviceHipTriangles, HostHipTriangles.data(), numTriangles * sizeof( bvhHip::Triangle ), hipMemcpyHostToDevice ) );
 
-                hipMalloc( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) );
+                HIP_ASSERT( hipMalloc( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
                 bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
             else
             {
                 int numTriangles = this->M_primitiveInfo.size();
-                hipMallocManaged( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) );
-                hipMallocManaged( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) );
+                HIP_ASSERT( hipMallocManaged( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
+                HIP_ASSERT( hipMallocManaged( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
                 // Load Mesh  in host-device
 
                 for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
@@ -3186,10 +4007,65 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     deviceHipTriangles[k].id = id;
                 }
 
-                bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
 
         } // END modeGPU==1
+
+        if ( modeGPU == 4 ) // LBVH
+        {
+            std::vector<bvhLinear::Triangle> triangles;
+            for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
+            {
+                int id = this->M_primitiveInfo[k].meshEntity().id();
+                auto const& primInfo = this->M_primitiveInfo[k];
+                auto const& meshEntity = primInfo.meshEntity();
+                auto const& pt0 = meshEntity.point( 0 );
+                auto const& pt1 = meshEntity.point( 1 );
+                auto const& pt2 = meshEntity.point( 2 );
+                bvhLinear::Triangle ltri;
+                ltri.v1 = make_float4( pt0[0], pt0[1], pt0[2], 1.0f );
+                ltri.v2 = make_float4( pt1[0], pt1[1], pt1[2], 1.0f );
+                ltri.v3 = make_float4( pt2[0], pt2[1], pt2[2], 1.0f );
+                ltri.id = id;
+                triangles.push_back( ltri );
+            }
+
+            bvhl = lbvh::bvh<float, bvhLinear::Triangle, bvhLinear::aabb_getter>( triangles.begin(), triangles.end(), true );
+            bvhl_dev = bvhl.get_device_repr();
+
+        } // END modeGPU==4
+
+        if ( modeGPU == 3 ) // OCTREE
+        {
+            std::vector<bvhOctree::OctreeTriangle> HostOctreeTriangles;
+
+            // Load Mesh  in host
+            for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
+            {
+                int id = this->M_primitiveInfo[k].meshEntity().id();
+                auto const& primInfo = this->M_primitiveInfo[k];
+                auto const& meshEntity = primInfo.meshEntity();
+                auto const& pt0 = meshEntity.point( 0 );
+                auto const& pt1 = meshEntity.point( 1 );
+                auto const& pt2 = meshEntity.point( 2 );
+                bvhOctree::OctreeTriangle ltri;
+                ltri.vertices[0] = make_float3( pt0[0], pt0[1], pt0[2] );
+                ltri.vertices[1] = make_float3( pt1[0], pt1[1], pt1[2] );
+                ltri.vertices[2] = make_float3( pt2[0], pt2[1], pt2[2] );
+                ltri.id = id;
+                HostOctreeTriangles.push_back( ltri );
+            }
+
+            int numTriangles = HostOctreeTriangles.size();
+            HIP_ASSERT( hipMalloc( &deviceOctreeTriangles, numTriangles * sizeof( bvhOctree::OctreeTriangle ) ) );
+            HIP_ASSERT( hipMemcpy( deviceOctreeTriangles, HostOctreeTriangles.data(), numTriangles * sizeof( bvhOctree::OctreeTriangle ), hipMemcpyHostToDevice ) );
+
+            HIP_ASSERT( hipMalloc( &deviceOctreeNodes, sizeof( bvhOctree::OctreeNode ) ) );
+            bvhOctree::buildOctreeKernel<<<dim3( 1 ), dim3( 1 )>>>( deviceOctreeNodes, deviceOctreeTriangles, numTriangles );
+            hipDeviceSynchronize();
+
+        } // END modeGPU==3
     }
 
   private:
@@ -3401,12 +4277,12 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     ray.direction = bvhHip::Vec3( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2] );
                     hostHipRays.push_back( ray );
                 }
-                hipMalloc( &deviceHipRays, hostHipRays.size() * sizeof( bvhHip::Ray ) );
-                hipMemcpy( deviceHipRays, hostHipRays.data(), hostHipRays.size() * sizeof( bvhHip::Ray ), hipMemcpyHostToDevice );
+                HIP_ASSERT( hipMalloc( &deviceHipRays, hostHipRays.size() * sizeof( bvhHip::Ray ) ) );
+                HIP_ASSERT( hipMemcpy( deviceHipRays, hostHipRays.data(), hostHipRays.size() * sizeof( bvhHip::Ray ), hipMemcpyHostToDevice ) );
             }
             else
             {
-                hipMallocManaged( &deviceHipRays, numRays * sizeof( bvhHip::Ray ) );
+                HIP_ASSERT( hipMallocManaged( &deviceHipRays, numRays * sizeof( bvhHip::Ray ) ) );
                 for ( int k = 0; k < numRays; ++k )
                 {
                     deviceHipRays[k].origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
@@ -3424,14 +4300,14 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             float* deviceHipDistanceResults;
             int* deviceHipIdResults;
 
-            hipMalloc( &deviceHipHitTriangles, numRays * sizeof( int ) );
-            hipMalloc( &deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ) );
-            hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) );
-            hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) );
+            HIP_ASSERT( hipMalloc( &deviceHipHitTriangles, numRays * sizeof( int ) ) );
+            HIP_ASSERT( hipMalloc( &deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ) ) );
+            HIP_ASSERT( hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) ) );
+            HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) ) );
 
             int blockSize = 512;
             int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
-        bvhHip:
+
             hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                 deviceHipRays,
                                 numRays,
@@ -3440,7 +4316,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                                 deviceHipHitTriangles,
                                 deviceHipDistanceResults,
                                 deviceHipIntersectionPoint,
-                                deviceHipHitTriangles );
+                                deviceHipIdResults );
 
             std::vector<int> hostHipHitTriangles( numRays );
             hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( int ), hipMemcpyDeviceToHost );
@@ -3448,7 +4324,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             std::vector<bvhHip::Vec3> hostHipIntersectionPoint( numRays );
             hipMemcpy( hostHipIntersectionPoint.data(), deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ), hipMemcpyDeviceToHost );
 
-            std::vector<int> hostHipDistanceResults( numRays );
+            std::vector<float> hostHipDistanceResults( numRays );
             hipMemcpy( hostHipDistanceResults.data(), deviceHipDistanceResults, numRays * sizeof( float ), hipMemcpyDeviceToHost );
 
             std::vector<int> hostHipIdResults( numRays );
@@ -3467,7 +4343,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 int numId = -1;
 
                 // if (hostHipHitResults[i]!=-1)
-                if ( hostHipHitTriangles[i] != -1 )
+                if ( hostHipIdResults[i] != -1 )
                 {
                     if ( isView )
                     {
@@ -3511,6 +4387,163 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hostHipIntersectionPoint.clear();
             hostHipDistanceResults.clear();
             hostHipIdResults.clear();
+        } // END mode hip
+
+        if ( modeGPU == 4 ) // mode LBVH
+        {
+
+            if ( isView ) std::cout << "[BEGIN::LIST RAYs]" << "\n";
+
+            std::vector<bvhLinear::Ray> hostRays;
+            // Load Ray
+            for ( int k = 0; k < numRays; ++k )
+            {
+                bvhLinear::Ray r;
+                r.origin = make_float4( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2], 1.0f );
+                r.direction = make_float4( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2], 0.0f );
+                hostRays.push_back( r );
+            }
+
+            bvhLinear::Ray* deviceRays;
+            HIP_ASSERT( hipMalloc( &deviceRays, hostRays.size() * sizeof( bvhLinear::Ray ) ) );
+            HIP_ASSERT( hipMemcpy( deviceRays, hostRays.data(), numRays * sizeof( bvhLinear::Ray ), hipMemcpyHostToDevice ) );
+
+            hostRays.clear();
+            if ( isView ) std::cout << "[END::LIST RAYs]" << "\n";
+
+            if ( isView ) std::cout << "[BEGIN::RAYS TRACING]" << "\n";
+            bvhLinear::HitRay* deviceHitRays;
+            HIP_ASSERT( hipMalloc( &deviceHitRays, numRays * sizeof( bvhLinear::HitRay ) ) );
+
+            int threadsPerBlock = 512;
+            int blocksPerGrid = ( numRays + threadsPerBlock - 1 ) / threadsPerBlock;
+
+            bvhLinear::rayTracingKernel<float, bvhLinear::Triangle><<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays );
+            hipDeviceSynchronize();
+            std::vector<bvhLinear::HitRay> hostHitRays( numRays );
+            HIP_ASSERT( hipMemcpy( hostHitRays.data(), deviceHitRays, numRays * sizeof( bvhLinear::HitRay ), hipMemcpyDeviceToHost ) );
+            if ( isView ) std::cout << "[END::RAYS TRACING]" << "\n";
+
+            if ( isView ) std::cout << "[BEGIN::DEBRIFING COLLISION]" << "\n";
+            for ( int i = 0; i < numRays; ++i )
+            {
+                double M_distance = std::numeric_limits<double>::max();
+                int numId = -1;
+
+                if ( hostHitRays[i].idResults != -1 )
+                {
+                    if ( isView )
+                    {
+                        std::cout << " dist (min)=" << hostHitRays[i].distanceResults;
+                        std::cout << " IntersectionPoint= <" << hostHitRays[i].intersectionPoint.x << "," << hostHitRays[i].intersectionPoint.y << "," << hostHitRays[i].intersectionPoint.z << "> ";
+                        std::cout << " IdObject= " << hostHitRays[i].idResults << "\n";
+                    }
+
+                    M_distance = double( hostHitRays[i].distanceResults );
+
+                    res.push_back( rayintersection_result_type( this->worldComm().rank(), hostHitRays[i].idResults, M_distance ) ); //(rank,idPrimitiv,distance)
+                    res.back().setCoordinates( vector_realdim_type{ { hostHitRays[i].intersectionPoint.x, hostHitRays[i].intersectionPoint.y, hostHitRays[i].intersectionPoint.z } } );
+                    res.resize( 1 );
+                    resALL.push_back( std::move( res ) );
+                }
+                else
+                {
+                    // TODO: Define what is returned, if there is no intersection point.
+                    // res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
+                    // res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
+                    // res.resize(1);
+                    //
+                    resALL.push_back( std::move( res ) );
+                }
+            }
+
+            if ( isView ) std::cout << "[END::DEBRIFING COLLISION]" << "\n";
+
+            // Memory cleaning
+            if ( isView ) std::cout << "[END::MEMORY CLEANING]" << "\n";
+            hostHitRays.clear();
+            hipFree( deviceRays );
+            hipFree( deviceHitRays );
+
+        } ////END_LBVH
+
+        if ( modeGPU == 3 ) // Octree
+        {
+            if ( isView ) std::cout << "[BEGIN::LIST RAYs]" << "\n";
+            bvhOctree::OctreeRay* deviceRays;
+
+            std::vector<bvhOctree::OctreeRay> hostRays;
+            // Load Ray
+            for ( int k = 0; k < numRays; ++k )
+            {
+                bvhOctree::OctreeRay ray;
+                ray.origin = make_float3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
+                ray.direction = make_float3( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2] );
+                hostRays.push_back( ray );
+            }
+            HIP_ASSERT( hipMalloc( &deviceRays, numRays * sizeof( bvhOctree::OctreeRay ) ) );
+            HIP_ASSERT( hipMemcpy( deviceRays, hostRays.data(), numRays * sizeof( bvhOctree::OctreeRay ), hipMemcpyHostToDevice ) );
+            hostRays.clear();
+
+            if ( isView ) std::cout << "[END::LIST RAYs]" << "\n";
+            bvhOctree::HitOctreeRay* deviceHitRays;
+            HIP_ASSERT( hipMalloc( &deviceHitRays, numRays * sizeof( bvhOctree::HitOctreeRay ) ) );
+
+            int blockSize = 256;
+            int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
+
+            bvhOctree::raytraceKernel<<<numBlocks, blockSize>>>(
+                deviceOctreeNodes,
+                deviceRays,
+                deviceHitRays,
+                numRays );
+
+            hipDeviceSynchronize();
+
+            std::vector<bvhOctree::HitOctreeRay> hostHitRays( numRays );
+            hipMemcpy( hostHitRays.data(), deviceHitRays, numRays * sizeof( bvhOctree::HitOctreeRay ), hipMemcpyDeviceToHost );
+            if ( isView ) std::cout << "[END::RAYS TRACING]" << "\n";
+
+            if ( isView ) std::cout << "[BEGIN::DEBRIFING COLLISION]" << "\n";
+
+            for ( int i = 0; i < numRays; ++i )
+            {
+                double M_distance = std::numeric_limits<double>::max();
+                int numId = -1;
+                if ( hostHitRays[i].idResults != -1 )
+                {
+                    if ( isView )
+                    {
+                        std::cout << " dist (min)=" << hostHitRays[i].distanceResults;
+                        std::cout << " IntersectionPoint= <" << hostHitRays[i].intersectionPoint.x << "," << hostHitRays[i].intersectionPoint.y << "," << hostHitRays[i].intersectionPoint.z << "> ";
+                        std::cout << " IdObject= " << hostHitRays[i].idResults << "\n";
+                    }
+
+                    M_distance = double( hostHitRays[i].distanceResults );
+
+                    res.push_back( rayintersection_result_type( this->worldComm().rank(), hostHitRays[i].idResults, M_distance ) ); //(rank,idPrimitiv,distance)
+                    res.back().setCoordinates( vector_realdim_type{ { hostHitRays[i].intersectionPoint.x, hostHitRays[i].intersectionPoint.y, hostHitRays[i].intersectionPoint.z } } );
+                    res.resize( 1 );
+                    resALL.push_back( std::move( res ) );
+                }
+                else
+                {
+                    // TODO: Define what is returned, if there is no intersection point.
+                    // res.push_back( rayintersection_result_type(this->worldComm().rank(),0, M_distance)); // No Collision
+                    // res.back().setCoordinates(vector_realdim_type{{M_distance,M_distance,M_distance}});
+                    // res.resize(1);
+                    //
+                    resALL.push_back( std::move( res ) );
+                }
+            }
+
+            if ( isView ) std::cout << "[END::DEBRIFING COLLISION]" << "\n";
+
+            // Memory cleaning
+            if ( isView ) std::cout << "[END::MEMORY CLEANING]" << "\n";
+            hostHitRays.clear();
+            hipFree( deviceRays );
+            hipFree( deviceHitRays );
         }
 
         return ( resALL );

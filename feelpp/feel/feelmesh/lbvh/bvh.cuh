@@ -31,7 +31,33 @@ struct node
     std::uint32_t left_idx;   // index of left  child node
     std::uint32_t right_idx;  // index of right child node
     std::uint32_t object_idx; // == 0xFFFFFFFF if internal node.
+
+    uint32_t data;
+    // Autres membres de la structure node...
+
+    __host__ __device__
+    bool is_leaf() const {
+        // Un nœud est une feuille si object_idx n'est pas égal à 0xFFFFFFFF
+        return object_idx != 0xFFFFFFFF;
+    }
+
+    __host__ __device__
+    uint32_t get_left_idx() const {
+        // Retourne l'index du fils gauche
+        return left_idx;
+    }
+
+    __host__ __device__
+    uint32_t get_right_idx() const {
+        // Retourne l'index du fils droit
+        return right_idx;
+    }
+
 };
+
+
+
+
 
 // a set of pointers to use it on device.
 template<typename Real, typename Object, bool IsConst>
@@ -465,6 +491,20 @@ class bvh
     thrust::device_vector<node_type>     nodes_;
     bool query_host_enabled_;
 };
+
+
+template<typename Real, typename Object>
+void extract_node_info(const bvh_device<Real, Object>& bvh, uint32_t node_index) {
+    const auto& node = bvh.nodes[node_index];
+    
+    std::cout << "Node " << node_index << ":\n";
+    std::cout << "  Is leaf: " << (node.is_leaf() ? "Yes" : "No") << "\n";
+    
+    if (!node.is_leaf()) {
+        std::cout << "  Left child index: " << node.left_idx() << "\n";
+        std::cout << "  Right child index: " << node.right_idx() << "\n";
+    }
+}
 
 } // lbvh
 #endif// LBVH_BVH_CUH
