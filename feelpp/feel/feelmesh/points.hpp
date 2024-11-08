@@ -253,8 +253,9 @@ class Points
     /**
      * \return iterator over marked points
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
-    pointsWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
+    pointsWithAllMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
     {
         const rank_type part = ( p == invalid_rank_type_value ) ? this->worldCommPoints().localRank() : p;
         points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
@@ -263,20 +264,25 @@ class Points
         for ( ; it != en; ++it )
         {
             auto const& point = unwrap_ref( *it );
-            if ( point.processId() != part )
-                continue;
             if ( !point.hasMarkerType( markerType ) )
                 continue;
             if ( point.marker().isOff() )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( point, part, M_interprocessPoints ) )
+                    continue;
+            }
             mypoints->push_back( boost::cref( point ) );
         }
+        mypoints->shrink_to_fit();
         return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
     }
 
     /**
      * \return iterator over marked points
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
     pointsWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
     {
@@ -287,36 +293,42 @@ class Points
         for ( ; it != en; ++it )
         {
             auto const& point = unwrap_ref( *it );
-            if ( point.processId() != part )
-                continue;
             if ( !point.hasMarkerType( markerType ) )
                 continue;
             if ( !point.marker( markerType ).hasOneOf( markerFlags ) )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( point, part, M_interprocessPoints ) )
+                    continue;
+            }
             mypoints->push_back( boost::cref( point ) );
         }
+        mypoints->shrink_to_fit();
         return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
     }
 
     /**
      * \return iterator over marked points
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
     pointsWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
     {
         if ( m == invalid_flag_type_value )
-            return this->pointsWithMarkerByType( markerType, p );
+            return this->pointsWithAllMarkerByType<EPT>( markerType, p );
         else
-            return this->pointsWithMarkerByType( markerType, std::set<flag_type>( {m} ), p );
+            return this->pointsWithMarkerByType<EPT>( markerType, std::set<flag_type>( {m} ), p );
     }
 
     /**
      * \return iterator over marked points
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
     pointsWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
     {
-        return this->pointsWithMarkerByType( 1, m, p );
+        return this->pointsWithMarkerByType<EPT>( 1, m, p );
     }
 
     /**
@@ -325,6 +337,7 @@ class Points
      *
      * @return iterator over internal points
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
     internalPoints( rank_type p = invalid_rank_type_value ) const
     {
@@ -335,12 +348,16 @@ class Points
         for ( ; it != en; ++it )
         {
             auto const& point = unwrap_ref( *it );
-            if ( point.processId() != part )
-                continue;
             if ( !point.isInternal() )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( point, part, M_interprocessPoints ) )
+                    continue;
+            }
             mypoints->push_back( boost::cref( point ) );
         }
+        mypoints->shrink_to_fit();
         return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
     }
     /**
@@ -349,6 +366,7 @@ class Points
      *
      * @return iterator over boundary points
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
     boundaryPoints( rank_type p = invalid_rank_type_value ) const
     {
@@ -359,15 +377,20 @@ class Points
         for ( ; it != en; ++it )
         {
             auto const& point = unwrap_ref( *it );
-            if ( point.processId() != part )
-                continue;
             if ( !point.isOnBoundary() )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( point, part, M_interprocessPoints ) )
+                    continue;
+            }
             mypoints->push_back( boost::cref( point ) );
         }
+        mypoints->shrink_to_fit();
         return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
     }
 
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<point_reference_wrapper_const_iterator, point_reference_wrapper_const_iterator, points_reference_wrapper_ptrtype>
     pointsWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
@@ -378,13 +401,17 @@ class Points
         for ( ; it != en; ++it )
         {
             auto const& point = unwrap_ref( *it );
-            if ( point.processId() == part )
-                mypoints->push_back( boost::cref( point ) );
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( point, part, M_interprocessPoints ) )
+                    continue;
+            }
+            mypoints->push_back( boost::cref( point ) );
         }
-
+        mypoints->shrink_to_fit();
         return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
     }
-
+#if 0
     template <typename SF = SubFace>
     std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
     interProcessPoints( rank_type neighbor_pid = invalid_rank_type_value,
@@ -406,9 +433,40 @@ class Points
                     continue;
                 mypoints->push_back( boost::cref( point ) );
             }
+            mypoints->shrink_to_fit();
             return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
         }
 
+#else
+
+    template <entity_process_t EPT = entity_process_t::ALL>
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    interProcessPoints( rank_type neighbor_pid = invalid_rank_type_value ) const
+        {
+            bool allNeighbor = ( neighbor_pid == invalid_rank_type_value );
+            const rank_type part = this->worldCommPoints().localRank();
+            points_reference_wrapper_ptrtype mypoints( new points_reference_wrapper_type );
+            auto it = this->beginOrderedPoint();
+            auto en = this->endOrderedPoint();
+            for ( ; it!=en;++it )
+            {
+                auto const& point = unwrap_ref( *it );
+                auto itFindIP = M_interprocessPoints.find( point.id() );
+                if ( itFindIP == M_interprocessPoints.end() )
+                    continue;
+                if ( !allNeighbor && itFindIP->second.find( neighbor_pid ) == itFindIP->second.end() )
+                    continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( point, part, M_interprocessPoints ) )
+                        continue;
+                }
+                mypoints->push_back( boost::cref( point ) );
+            }
+            mypoints->shrink_to_fit();
+            return std::make_tuple( mypoints->begin(), mypoints->end(), mypoints );
+        }
+#endif
 
     //@}
 
@@ -514,6 +572,23 @@ class Points
         M_needToOrderPoints = false;
     }
 
+protected:
+
+    //! update interprocess points from mapping ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    void updateInterprocessPoints( std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> const& pointsInterprocessDetection )
+        {
+            M_interprocessPoints.clear();
+            for ( auto const& [pointId,ipData] : pointsInterprocessDetection )
+            {
+                if ( !std::get<0>( ipData ) ) // not on current process
+                    continue;
+                if ( std::get<1>( ipData ).empty() ) // not on neighbor process
+                    continue;
+                //M_interprocessPoints.try_emplace( pointId, std::move( std::get<1>( ipData ) ) );
+                M_interprocessPoints.try_emplace( pointId, std::get<1>( ipData ) );
+            }
+        }
+
   private:
     void buildOrderedPoints()
     {
@@ -561,6 +636,8 @@ class Points
     points_type M_points;
     ordered_points_reference_wrapper_type M_orderedPoints;
     bool M_needToOrderPoints;
+
+    std::unordered_map<index_type,std::set<rank_type>> M_interprocessPoints;
 };
 /// \endcond
 } // namespace Feel

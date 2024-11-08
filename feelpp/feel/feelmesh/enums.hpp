@@ -60,7 +60,7 @@ enum MESH_CHANGES
     MESH_CHANGES_PARTITION          = 2
 };
 
-enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
+enum class EntityProcessType {LOCAL_ONLY,LOCAL_AND_INTERPROCESS_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
 using entity_process_t = EntityProcessType;
 
 }

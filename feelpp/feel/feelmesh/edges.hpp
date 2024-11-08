@@ -45,7 +45,7 @@ namespace Feel
   @see
 */
 template<typename EdgeType,typename FaceType>
-class Edges 
+class Edges
 {
 public:
 
@@ -223,8 +223,9 @@ public:
      * \return the range of iterator \c (begin,end) over the edges
      * with \c Marker1 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
-    edgesWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
+    edgesWithAllMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommEdges().localRank() : p;
             edges_reference_wrapper_ptrtype myedges( new edges_reference_wrapper_type );
@@ -233,20 +234,25 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& edge = unwrap_ref( *it );
-                if ( edge.processId() != part )
-                    continue;
                 if ( !edge.hasMarkerType( markerType ) )
                     continue;
                 if ( edge.marker().isOff() )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                        continue;
+                }
                 myedges->push_back( boost::cref( edge ) );
             }
+            myedges->shrink_to_fit();
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
     /**
      * \return the range of iterator \c (begin,end) over the edges
      * with \c Marker1 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
     edgesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
         {
@@ -257,14 +263,18 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& edge = unwrap_ref( *it );
-                if ( edge.processId() != part )
-                    continue;
                 if ( !edge.hasMarkerType( markerType ) )
                     continue;
                 if ( !edge.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                        continue;
+                }
                 myedges->push_back( boost::cref( edge ) );
             }
+            myedges->shrink_to_fit();
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
 
@@ -272,29 +282,32 @@ public:
      * \return the range of iterator \c (begin,end) over the edges
      * with \c Marker1 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
     edgesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
         {
             if ( m == invalid_flag_type_value )
-                return this->edgesWithMarkerByType( markerType, p );
+                return this->edgesWithAllMarkerByType<EPT>( markerType, p );
             else
-                return this->edgesWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+                return this->edgesWithMarkerByType<EPT>( markerType, std::set<flag_type>( { m } ), p );
         }
 
     /**
      * \return the range of iterator \c (begin,end) over the edges
      * with \c Marker1 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
     edgesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->edgesWithMarkerByType( 1, m, p );
+            return this->edgesWithMarkerByType<EPT>( 1, m, p );
         }
 
     /**
      * \return the range of iterator \c (begin,end) over the boundary
      *  edges on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
     edgesOnBoundary( rank_type p = invalid_rank_type_value ) const
         {
@@ -305,12 +318,16 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& edge = unwrap_ref( *it );
-                if ( edge.processId() != part )
-                    continue;
                 if ( !edge.isOnBoundary() )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                        continue;
+                }
                 myedges->push_back( boost::cref( edge ) );
             }
+            myedges->shrink_to_fit();
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
 
@@ -318,6 +335,7 @@ public:
      * \return the range of iterator \c (begin,end) over the internal edges
      * on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
     internalEdges( rank_type p = invalid_rank_type_value ) const
         {
@@ -328,12 +346,16 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& edge = unwrap_ref( *it );
-                if ( edge.processId() != part )
-                    continue;
                 if ( !edge.isInternal() )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                        continue;
+                }
                 myedges->push_back( boost::cref( edge ) );
             }
+            myedges->shrink_to_fit();
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
 
@@ -341,6 +363,7 @@ public:
      * \return the range of iterator \c (begin,end) over the edges
      * on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
     edgesWithProcessId( rank_type p = invalid_rank_type_value ) const
         {
@@ -351,10 +374,14 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& edge = unwrap_ref( *it );
-                if ( edge.processId() != part )
-                    continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                        continue;
+                }
                 myedges->push_back( boost::cref( edge ) );
             }
+            myedges->shrink_to_fit();
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
         }
 

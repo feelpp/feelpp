@@ -642,6 +642,7 @@ ImporterGmsh<MeshType>::addVertices( mesh_type* mesh, Feel::detail::GMSHElement 
 
         point_type pt( ptid, coords );
         pt.setProcessIdInPartition( this->worldComm().localRank() );
+        pt.setProcessId( this->worldComm().localRank() );
         if ( gmshpt.parametric )
         {
             if ( gmshpt.gdim < 3 )
@@ -1475,6 +1476,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 
             point_type pt( ptid, coords, gmshpt.onbdy );
             pt.setProcessIdInPartition( this->worldComm().localRank() );
+            pt.setProcessId( this->worldComm().localRank() );
             if ( gmshpt.parametric )
             {
                 if ( gmshpt.gdim < 3 )
@@ -2565,7 +2567,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
                         coords[j] = coordsRecv[j];
                     point_type pt( ptId, coords );
-                    pt.setProcessIdInPartition( procId/*this->worldComm().localRank()*/ );
+                    pt.setProcessIdInPartition( procId );
+                    //pt.setProcessId( procId );
                     mesh->addPoint( pt );
                 }
                 for ( auto const& dataRecvGhostElement : dataRecvGhostElements )
