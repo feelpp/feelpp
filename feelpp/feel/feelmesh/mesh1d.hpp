@@ -335,54 +335,56 @@ class Mesh1D
             return this->erasePoint( it );
         }
 
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     internalFaces( rank_type p = invalid_rank_type_value ) const
         {
-            return this->internalPoints( p );
+            return super_points::template internalPoints<EPT>( p );
         }
 
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesOnBoundary( rank_type p = invalid_rank_type_value ) const
         {
-            return this->boundaryPoints( p );
+            return super_points::template boundaryPoints<EPT>( p );
         }
 
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
         {
-            return this->pointsWithMarkerByType( markerType, markerFlags, p );
+            return super_points::template pointsWithMarkerByType<EPT>( markerType, markerFlags, p );
         }
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
         {
-            return this->pointsWithMarkerByType( markerType, m, p );
+            return super_points::template pointsWithMarkerByType<EPT>( markerType, m, p );
         }
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->facesWithMarkerByType<EPT>( 1, m, p );
+            return super_faces::template facesWithMarkerByType<EPT>( 1, m, p );
         }
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarker2( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->facesWithMarkerByType<EPT>( 2, m, p );
+            return super_faces::template facesWithMarkerByType<EPT>( 2, m, p );
         }
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarker3( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->facesWithMarkerByType<EPT>( 3, m, p );
+            return super_faces::template facesWithMarkerByType<EPT>( 3, m, p );
         }
 
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithProcessId( rank_type p = invalid_rank_type_value ) const
         {
-            return this->pointsWithProcessId( p );
+            return super_points::template pointsWithProcessId<EPT>( p );
         }
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     interProcessFaces( rank_type neighbor_pid = invalid_rank_type_value ) const

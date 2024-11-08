@@ -452,7 +452,7 @@ public:
      */
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
-    elementsWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
+    elementsWithAllMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
             elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
@@ -513,7 +513,7 @@ public:
     elementsWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
         {
             if ( m == invalid_flag_type_value )
-                return this->elementsWithMarkerByType<EPT>( markerType, p );
+                return this->elementsWithAllMarkerByType<EPT>( markerType, p );
             else
                 return this->elementsWithMarkerByType<EPT>( markerType, std::set<flag_type>( { m } ), p );
 
@@ -683,6 +683,7 @@ public:
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p which share a subentity of minDim<= dim <= maxDim on boundary
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type p = invalid_rank_type_value  ) const
     {
@@ -693,14 +694,17 @@ public:
         for ( ; it!=en;++it )
         {
             auto const& elt = unwrap_ref( *it );
-            if ( elt.processId() != part )
-                continue;
             if ( !elt.isOnBoundary() )
                 continue;
             if ( elt.boundaryEntityDimension() < entity_min_dim )
                 continue;
             if ( elt.boundaryEntityDimension() > entity_max_dim )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                    continue;
+            }
             myelements->push_back(boost::cref(elt));
         }
         myelements->shrink_to_fit();
@@ -711,17 +715,19 @@ public:
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( rank_type p = invalid_rank_type_value  ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return boundaryElements( 0, 2, part );
+        return this->boundaryElements<EPT>( 0, 2, part );
     }
 
     /**
      * \return the range of iterator \c (begin,end) over the internal
      *  element on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     internalElements( rank_type p = invalid_rank_type_value  ) const
     {
@@ -732,10 +738,13 @@ public:
         for ( ; it!=en;++it )
         {
             auto const& elt = unwrap_ref( *it );
-            if ( elt.processId() != part )
-                continue;
             if ( !elt.isInternal() )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                    continue;
+            }
             myelements->push_back(boost::cref(elt));
         }
         myelements->shrink_to_fit();
@@ -750,6 +759,9 @@ public:
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     ghostElements() const
     {
+#if 0 // TEST VINCENT
+        return this->elementsWithProcessId<entity_process_t::GHOST_ONLY>();
+#else
         elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
         auto it = this->beginOrderedElement();
         auto en = this->endOrderedElement();
@@ -762,6 +774,7 @@ public:
         }
         myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+#endif
     }
 
 

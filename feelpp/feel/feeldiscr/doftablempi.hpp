@@ -1632,6 +1632,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                                                     myActiveEltsTouchInterProcess->begin(),myActiveEltsTouchInterProcess->end(),myActiveEltsTouchInterProcess ),
                                         _mesh=mesh );
 
+#if 0
             typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myelts( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
             auto rangeGhostElement = mesh.ghostElements();
             auto itGhostElt = std::get<0>( rangeGhostElement );
@@ -1664,6 +1665,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
             // generate a range object
             auto myrange = range( _range=boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                                               myelts->begin(),myelts->end(),myelts ), _mesh=mesh );
+#else
+            auto myrange = elements( mesh,entity_process_t::GHOST_ONLY );
+            this->generateDofPoints( elements(mesh) );//TEST
+#endif
             DVLOG(2) << "ghost element in doftable : nelements(myrange) ["<<mesh.worldComm().rank()<<"] : " << nelements(myrange) << "\n";
 
             this->buildGhostDofMapExtended( mesh, myrange, myrangeActive );

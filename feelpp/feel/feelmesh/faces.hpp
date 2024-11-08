@@ -302,7 +302,7 @@ public:
      */
     template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
-    facesWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
+    facesWithAllMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommFaces().localRank() : p;
             faces_reference_wrapper_ptrtype myfaces( new faces_reference_wrapper_type );
@@ -363,7 +363,7 @@ public:
     facesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
         {
             if ( m == invalid_flag_type_value )
-                return this->facesWithMarkerByType<EPT>( markerType, p );
+                return this->facesWithAllMarkerByType<EPT>( markerType, p );
             else
                 return this->facesWithMarkerByType<EPT>( markerType, std::set<flag_type>( { m } ), p );
         }
@@ -490,6 +490,7 @@ public:
      * \return the range of iterator \c (begin,end) over the intra-process domain faces
      * on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     intraProcessFaces( rank_type p = invalid_rank_type_value ) const
         {
@@ -500,10 +501,13 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& face = unwrap_ref( *it );
-                if ( face.processId() != part )
-                    continue;
                 if ( !face.isIntraProcessDomain( part ) )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                        continue;
+                }
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
@@ -514,6 +518,7 @@ public:
      * \return the range of iterator \c (begin,end) over the faces
      * on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithProcessId( rank_type p = invalid_rank_type_value ) const
         {
@@ -524,8 +529,11 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& face = unwrap_ref( *it );
-                if ( face.processId() != part )
-                    continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                        continue;
+                }
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();

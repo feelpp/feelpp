@@ -598,7 +598,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
 
     // add marked faces
     flag_type markerType = 1;
-    auto rangeMarkedFaces = meshDomain->facesWithMarkerByType( markerType );
+    auto rangeMarkedFaces = meshDomain->facesWithAllMarkerByType( markerType );
     auto itMarkedFaces = std::get<0>( rangeMarkedFaces );
     auto enMarkedFaces = std::get<1>( rangeMarkedFaces );
     for ( ; itMarkedFaces != enMarkedFaces ; ++itMarkedFaces )

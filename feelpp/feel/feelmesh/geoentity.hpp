@@ -988,26 +988,29 @@ namespace detail
 template <entity_process_t EPT, typename EntityType>
 bool checkPartitionPredicate( EntityType const& entity, rank_type part )
 {
-    // WARNING: a tmp fix for faces and part not really take into account
-    if constexpr ( false && is_topological_face<EntityType>::value )
-    {
-        if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
-            return !entity.isGhostFace( /*part*/ );
-        else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
-            return entity.isGhostFace( /*part*/ );
-        else
-            return true;
-    }
+    if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
+        return entity.processId() == part;
+    else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
+        return entity.processId() != part;
     else
-    {
-        if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
-            return entity.processId() == part;
-        else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
-            return entity.processId() != part;
-        else
-            return true;
-    }
+        return true;
 }
+
+//! return true if the entity satisfy the predicate partitions defined by EPT and part
+template <entity_process_t EPT, typename EntityType, typename InterprocessMappingType>
+bool checkPartitionPredicate( EntityType const& entity, rank_type part, InterprocessMappingType const& interprocessMapping )
+{
+    if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
+        return entity.processId() == part;
+    else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
+        return entity.processId() != part;
+    else if constexpr ( EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        return entity.processId() == part || interprocessMapping.find( entity.id() ) != interprocessMapping.end();
+    else
+        return true;
+}
+
+
 }
 
 } // Feel

@@ -245,12 +245,15 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             else
                 this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
-            // auto ipfRange = this->interProcessFaces();
-            auto rangeInterProcessFaces = this->interProcessFaces();
-            auto itf = std::get<0>( rangeInterProcessFaces );
-            auto enf = std::get<1>( rangeInterProcessFaces );
-            for ( ; itf != enf; ++itf )
-                this->addFaceNeighborSubdomain( boost::unwrap_ref( *itf ).partition2() );
+            // TODO: check the usefulness of this step
+            if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
+            {
+                auto rangeInterProcessFaces = this->interProcessFaces();
+                auto itf = std::get<0>( rangeInterProcessFaces );
+                auto enf = std::get<1>( rangeInterProcessFaces );
+                for ( ; itf != enf; ++itf )
+                    this->addFaceNeighborSubdomain( boost::unwrap_ref( *itf ).partition2() );
+            }
             toc( "Mesh::updateForUse update ghost data", FLAGS_v > 0 );
         }
 
@@ -2708,7 +2711,6 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
 
     bool meshHasUpdateFaces = this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL );
 
-
     auto iv = this->beginOrderedElement();
     auto const en = this->endOrderedElement();
     for ( ; iv != en; ++iv )
@@ -2790,12 +2792,9 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     std::vector<mpi::request> reqs( nbMaxRequest );
     int countRequest = 0;
 
-    //3D -> 4 2D -> 3 -> 1D ->2
     // get size of data to transfer
-    //std::map<rank_type,std::array<std::size_t,nDim+1>> sizeRecv, sizeSended;
     std::map<rank_type,std::array<std::size_t,nDim==1?3:nDim+1>> sizeRecv, sizeSended;
     uint16_type sizeDataPointIndex = nDim==1?2:nDim;
-    //std::map<rank_type,std::array<std::size_t,nDim+1>> sizeSended;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
         sizeSended[neighborRank][0] = std::get<tuple_id_info_elements>( dataToSend[neighborRank] ).size();
@@ -3090,6 +3089,38 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             }
         }
     }
+
+
+    //------------------------------------------------------------------------------------------------//
+    // update interprocess entties
+    // TODO optimisation if we have interprocessfaces
+
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> pointsInterprocessDetection; // ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    pointsInterprocessDetection.reserve( std::distance( this->beginOrderedPoint(),
+                                                        this->endOrderedPoint() ) );
+    auto itPointIpDetect = pointsInterprocessDetection.begin();
+    auto itoe = this->beginOrderedElement();
+    auto enoe = this->endOrderedElement();
+    for ( ; itoe!=enoe;++itoe )
+    {
+        auto const& elt = unwrap_ref( *itoe );
+        // nothing to do if no neighbor process
+        if ( elt.idInOthersPartitions().empty() )
+            continue;
+        for ( uint16_type n=0; n < elt.nPoints(); n++ )
+        {
+            auto const& point = elt.point( n );
+            std::tie( itPointIpDetect,std::ignore ) = pointsInterprocessDetection.try_emplace( point.id(), false, std::set<rank_type>{} );
+            if ( elt.isGhostCell() )
+                std::get<1>( itPointIpDetect->second ).insert( elt.processId() );
+            else
+                std::get<0>( itPointIpDetect->second ) = true;
+        }
+    }
+
+    //this->updateInterprocessPoints( std::move( pointsInterprocessDetection ) );
+    this->updateInterprocessPoints( pointsInterprocessDetection );
+
 }
 #endif
 
