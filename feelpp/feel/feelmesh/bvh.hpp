@@ -2029,7 +2029,7 @@ void buildBVH_CPU_Iterative(
         node.triangleCount = end - start;
         node.leftChild = node.rightChild = -1;
 
-        // Calculer les limites du nœud
+        // Calculate the node limits
         node.bounds.min = node.bounds.max = triangles[start].v0;
         for ( int i = start; i < end; i++ )
         {
@@ -2053,19 +2053,19 @@ void buildBVH_CPU_Iterative(
             }
         }
 
-        // Si le nœud contient peu de triangles ou si nous sommes trop profonds, passer au suivant
+        // If the node contains few triangles or if we are too deep, move on to the next one
         if ( node.triangleCount <= 4 || depth > 20 )
         {
             continue;
         }
 
-        // Trouver l'axe le plus long pour diviser
+        // Find the longest axis to divide
         Vec3 extent = node.bounds.max - node.bounds.min;
         int axis = 0;
         if ( extent.y > extent.x ) axis = 1;
         if ( extent.z > extent[axis] ) axis = 2;
 
-        // Trier les triangles selon l'axe choisi
+        // Sort the triangles according to the chosen axis
         int mid = ( start + end ) / 2;
         std::nth_element( triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end,
                           [axis]( const Triangle& a, const Triangle& b )
@@ -2073,7 +2073,7 @@ void buildBVH_CPU_Iterative(
                               return ( a.v0[axis] + a.v1[axis] + a.v2[axis] ) < ( b.v0[axis] + b.v1[axis] + b.v2[axis] );
                           } );
 
-        // Ajouter les enfants à la pile
+       // Add children
         stack.push( { mid, end, depth + 1, currentIndex, false } );
         stack.push( { start, mid, depth + 1, currentIndex, true } );
     }
@@ -2103,7 +2103,9 @@ __global__ void initializeLeaves( Triangle* triangles, BVHNode* nodes, int numTr
 void buildBVH_GPU_Version2( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
 {
     int totalNodes = 2 * numTriangles - 1;
-    int blockSize = 256;
+    //int blockSize = 256;
+    //int blockSize = 1024;
+    int blockSize = 512;
     int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
     hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
 
@@ -2148,7 +2150,7 @@ __global__ void buildEvaluationNodes( BVHNode* nodes, int numTriangles )
 
 void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
 {
-    int blockSize = 256;
+    int blockSize = 512;
     int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
     hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
     hipDeviceSynchronize();
@@ -4265,6 +4267,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                                     << "\n";
 
             bvhHip::Ray* deviceHipRays;
+            //isUnifiedMemory=true;
 
             if ( !isUnifiedMemory )
             {
@@ -4305,7 +4308,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             HIP_ASSERT( hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) ) );
 
-            int blockSize = 512;
+            int blockSize = 512; blockSize = 1024;
             int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
             hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
