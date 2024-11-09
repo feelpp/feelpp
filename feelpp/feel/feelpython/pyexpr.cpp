@@ -134,6 +134,8 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::string
             py::dict locals = py::cast( clean_locals( _locals ) );
             // py::print(locals);
             // std::cout << "eval_f = " << Environment::findFile( pyfilename.c_str(), lookups_ ) << std::endl;
+            LOG(INFO) << fmt::format( "python | eval_file: looking for {} via FindFile {} in {}", 
+                           pyfilename.c_str(), Environment::findFile( pyfilename.c_str(), lookups_ ), lookups_ ) << std::endl;
             py::eval_file( Environment::findFile( pyfilename.c_str(), lookups_ ), py::globals(), locals );
 
 #if 0
