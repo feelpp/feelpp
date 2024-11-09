@@ -753,7 +753,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
 
-    
+
 
     if ( M_solverName == "automatic" )
     {
@@ -1502,9 +1502,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
          if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo <= 2  )
         {
 #if 1
+            range_faces_type rangeTrace;
             auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
-            auto rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
-            M_meshTrace = createSubmesh( _mesh=velocityMeshSupport/*this->mesh()*/, _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
+            if ( this->worldComm().localSize() == 1 || !velocityMeshSupport->isPartialSupport() ) // default case
+            {
+                rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
+                M_meshTrace = createSubmesh( _mesh=velocityMeshSupport/*this->mesh()*/, _range=rangeTrace,
+                                             _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
+            }
+            else // temporary fix (case parallel with partial mesh support)
+            {
+                auto rangeSubdomainFull = elements(velocityMeshSupport);
+                auto rangeSubdomain = elements(this->mesh(),rangeSubdomainFull,boundaryfaces( velocityMeshSupport ));
+                //auto rangeSubdomain = markedelements(this->mesh(),"AqueousHumor");
+                M_tmpExporterTraceSubmesh = createSubmesh(_mesh=this->mesh()/*velocityMeshSupport*/,_range=rangeSubdomain,_view=true );
+                //rangeTrace = boundaryfaces( M_tmpFluidSubmesh );
+                M_tmpExporterTraceRangeFaces = migrate( M_tmpExporterTraceSubmesh, boundaryfaces( velocityMeshSupport ) );
+
+                M_meshTrace = createSubmesh( _mesh=M_tmpExporterTraceSubmesh, _range=*M_tmpExporterTraceRangeFaces,
+                                             _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),
+                                             _view=true );
+            }
 #else
             auto rangeTrace = M_bodySetBC.begin()->second.rangeMarkedFacesOnFluid();
             M_meshTrace = M_bodySetBC.begin()->second.mesh();
@@ -1826,7 +1844,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                                                             this->worldCommPtr(), "", this->repository() ) );
 
     bool isSpalartAllmarasTurbulenceModel = this->hasTurbulenceModel( "Spalart-Allmaras" );
-    
+
     std::string eqkeyword;
     if ( isSpalartAllmarasTurbulenceModel )
     {
@@ -3466,7 +3484,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type co
     {
         if ( bbc.articulationTranslationalVelocityExpr().empty() )
             continue;
-        std::string const& bbcName = bbc.articulationTranslationalVelocityExpr().begin()->first; // WARNING : we guess that we have only one body! TODO 
+        std::string const& bbcName = bbc.articulationTranslationalVelocityExpr().begin()->first; // WARNING : we guess that we have only one body! TODO
         auto itFind = this->find( bbcName );
         CHECK( itFind != this->end() ) << "body not found";
 
