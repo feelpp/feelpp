@@ -32,6 +32,20 @@
 #include <feel/feelpython/pyexpr.hpp>
 #include <pybind11/stl.h>
 
+namespace fmt
+{
+template <>
+struct formatter<std::vector<std::string>> : formatter<std::string> 
+{
+    template <typename FormatContext>
+    auto format(const std::vector<std::string>& vec, FormatContext& ctx) const -> decltype(ctx.out()) 
+    {
+        std::string joined = fmt::format("{}", vec);
+        return fmt::formatter<std::string>::format(joined, ctx);
+    }
+};
+}
+
 namespace Feel
 {
 
