@@ -28,5 +28,5 @@ file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp pybind11/*.h)
 feel_append_src(feelpython "${SRC};${HDR}")
 
 install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/sympy2ginac.py   DESTINATION share/feelpp/data/python COMPONENT Bin)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sympy2ginac.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sympy2ginac.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/core)
 endif()

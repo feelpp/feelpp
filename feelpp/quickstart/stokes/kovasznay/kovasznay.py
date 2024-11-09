@@ -1,5 +1,9 @@
-import sympy2ginac
-from sympy2ginac import *
+try :
+    import feelpp.core.sympy2ginac
+    from feelpp.core.sympy2ginac import *
+except ImportError:
+    import sympy2ginac
+    from sympy2ginac import *
 from sympy import *
 import  math
 #parameters={'dim':'2','mu':'1','lambda':'1','velocity':{'exact','Array([x**2,0])'}};

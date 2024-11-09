@@ -1,4 +1,8 @@
-from sympy2ginac import *
+try :
+    from feelpp.core.sympy2ginac import *
+except ImportError:
+    from sympy2ginac import *
+
 from sympy import Matrix
 #parameters={'dim':'2','mu':'1','lambda':'1','displ':{'exact','Array([x**2,0])'}}
 #parameters={'dim':'3','mu':'1','lambda':'1','displ':'Array([x,0,0])'}
