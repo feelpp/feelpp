@@ -59,6 +59,10 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::map<st
             std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
             // std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
             py::module::import( "sys" ).attr( "path" ).cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
+            for ( auto p : py::module::import( "sys" ).attr( "path" ).cast<py::list>() )
+            {
+                LOG(INFO) << fmt::format( "python | sys.path: {}", p.cast<std::string>() ) << std::endl;
+            }
             // py::print(py::module::import("sys").attr("path"));
             py::dict locals = py::cast( _locals );
             // py::print(locals);
@@ -68,7 +72,7 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::map<st
 #if 1
             for ( auto l : _locals )
             {
-                std::cout << "l: " << l.first << std::endl;
+                LOG(INFO) << "local variable: " << l.first << std::endl;
                 for ( auto n : l.second )
                 {
                     std::string v = l.first + "['" + n.first + "']";
@@ -81,7 +85,11 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::map<st
         }
         catch ( const pybind11::error_already_set& ex )
         {
-            std::cerr << fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}", ex.what() ) << std::endl;
+            LOG(ERROR) << fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}", ex.what() ) << std::endl;
+            for ( auto p : py::module::import( "sys" ).attr( "path" ).cast<py::list>() )
+            {
+                LOG(ERROR) << fmt::format( "python | sys.path: {}", p.cast<std::string>() ) << std::endl;
+            }
             throw;
         }
     }
@@ -118,6 +126,10 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string, std::string
             std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
             // std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
             py::module::import( "sys" ).attr( "path" ).cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
+            for ( auto p : py::module::import( "sys" ).attr( "path" ).cast<py::list>() )
+            {
+                LOG(INFO) << fmt::format( "python | sys.path: {}", p.cast<std::string>() ) << std::endl;
+            }
             // py::print(py::module::import("sys").attr("path"));
             py::dict locals = py::cast( clean_locals( _locals ) );
             // py::print(locals);
@@ -162,6 +174,10 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::ma
         try
         {
             py::module::import( "sys" ).attr( "path" ).cast<py::list>().append( Environment::expand( "$top_srcdir/feelpp/feel/feelpython/" ) );
+            for ( auto p : py::module::import( "sys" ).attr( "path" ).cast<py::list>() )
+            {
+                LOG(INFO) << fmt::format( "python | sys.path: {}", p.cast<std::string>() ) << std::endl;
+            }
             py::dict _locals = py::cast( locals );
             py::exec( pycode.c_str(), py::globals(), _locals );
 
