@@ -2111,6 +2111,7 @@ public :
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
             auto const& u = mfields.field( FieldTag::velocity(this), "velocity" );
+            auto const& p = mfields.field( FieldTag::pressure(this), "pressure" );
 
             using _expr_viscosity_type =  std::decay_t<decltype( this->dynamicViscosityExpr(u,std::string{}) )>;
             symbol_expression_t<_expr_viscosity_type> se_viscosity;
@@ -2126,7 +2127,19 @@ public :
             symbol_expression_t<_expr_strain_rate_magnitude_type> se_strainRateMagnitude;
             se_strainRateMagnitude.add( (boost::format("%1%_strain_rate_magnitude")%this->keyword()).str(), sqrt(2*inner(sym(gradv(u)))) );
 
-            return Feel::vf::symbolsExpr( se_viscosity, se_strainRateMagnitude );
+            auto sigmaExpr = this->stressTensorExpr( u,p/*,se*/ );
+
+            auto normalStressExpr = sigmaExpr*N();
+            using _expr_normalstress_type = std::decay_t<decltype( normalStressExpr )>;
+            symbol_expression_t<_expr_normalstress_type> se_normaStress;
+            se_normaStress.add( (boost::format("%1%_normal_stress")%this->keyword()).str(), normalStressExpr, SymbolExprComponentSuffix( nDim,1 ) );
+
+            auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            using _expr_wss_type = std::decay_t<decltype( wssExpr )>;
+            symbol_expression_t<_expr_wss_type> se_wallShearStress;
+            se_wallShearStress.add( (boost::format("%1%_wall_shear_stress")%this->keyword()).str(), wssExpr, SymbolExprComponentSuffix( nDim,1 ) );
+
+            return Feel::vf::symbolsExpr( se_viscosity, se_strainRateMagnitude, se_normaStress, se_wallShearStress );
         }
 
     //___________________________________________________________________________________//
@@ -2174,7 +2187,10 @@ public :
             if ( this->hasMeshMotion() )
                 mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), elements(support(this->meshMotionTool()->displacement()->functionSpace())), "nodal" ) );
 
-            auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
+            //auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
+            //! WARNING use a temporary fix
+            auto rangeTrace = !M_tmpExporterTraceRangeFaces? this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces() : *M_tmpExporterTraceRangeFaces;
+
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
             // set connection markers if has partial mesh support (i.e. physics not in whole mesh)
             std::set<std::string> requiresMarkersConnection;
@@ -2651,6 +2667,8 @@ private :
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterTrace;
+    mesh_ptrtype M_tmpExporterTraceSubmesh;// M_tmpFluidSubmesh;
+    std::optional<range_faces_type> M_tmpExporterTraceRangeFaces;
     export_trace_ptrtype M_exporterFluidOutlet;
     export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
     // exporter fluid ho
