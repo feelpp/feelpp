@@ -1810,7 +1810,7 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
         }
     }
 
-    LOG( INFO ) << "File " << filename << " not found";
+    LOG( ERROR ) << fmt::format("File {} not found", filename);
     return std::string();
 }
 std::vector<std::string>
