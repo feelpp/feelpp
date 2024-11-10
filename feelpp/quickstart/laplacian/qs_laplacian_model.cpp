@@ -89,7 +89,7 @@ int main( int argc, char** argv )
         
         laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
             ( "json_filename", po::value<std::string>()->default_value( "$cfgdir/model.json" ), "json files" )
-            ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
+            ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../../python/laplacian.py" ), "python filename to execute" );
         laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
         laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
         laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
