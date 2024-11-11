@@ -34,6 +34,7 @@
 #include <feel/feelalg/matrix.hpp>
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/geond.hpp>
+#include <feel/feelmesh/traits.hpp>
 
 //#include <feel/feelalg/lu.hpp>
 
@@ -90,11 +91,6 @@ private:
         }
 };
 
-/**
- * @brief Tag base class
- * @ingroup Mesh
- */
-struct SubFaceOfBase {};
 
 /**
  * @brief description of a subface or facet (topological d-1) of an element of topologicql dimension d
@@ -715,6 +711,14 @@ public:
     }
 
     /**
+     * \return \p true if interprocess domain face of partition p , \p false otherwise
+     */
+    bool isInterProcessDomain( rank_type p ) const
+        {
+            return super2::isInterProcessDomain( p );
+        }
+
+    /**
      * \return \c true if on the boundary, \c false otherwise
      */
     bool isOnBoundary() const
@@ -935,6 +939,14 @@ public:
     {
         return super2::isInterProcessDomain( super::processId() );
     }
+
+    /**
+     * \return \p true if interprocess domain face of partition p, \p false otherwise
+     */
+    bool isInterProcessDomain( rank_type p ) const
+        {
+            return super2::isInterProcessDomain( p );
+        }
 
     /**
      * \return \c true if on the boundary, \c false otherwise
@@ -1222,6 +1234,13 @@ public:
     {
         return super2::isInterProcessDomain( super::processId() );
     }
+    /**
+     * \return \p true if interprocess domain face of partition p, \p false otherwise
+     */
+    bool isInterProcessDomain( rank_type p ) const
+        {
+            return super2::isInterProcessDomain( p );
+        }
 
     /**
      * \return \c true if on the boundary, \c false otherwise
@@ -1576,6 +1595,13 @@ public:
     {
         return super2::isInterProcessDomain( super::processId() );
     }
+    /**
+     * \return \p true if interprocess domain face of partition p , \p false otherwise
+     */
+    bool isInterProcessDomain( rank_type p ) const
+        {
+            return super2::isInterProcessDomain( p );
+        }
 
     /**
      * \return \c true if on the boundary, \c false otherwise

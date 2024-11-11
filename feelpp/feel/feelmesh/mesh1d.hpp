@@ -386,6 +386,45 @@ class Mesh1D
         {
             return super_points::template pointsWithProcessId<EPT>( p );
         }
+
+    // TODO move in points
+    template <faces_filter_t FF, entity_process_t EPT, typename ... Ts>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesFilterImpl( Ts&&... ts ) const
+        {
+            if constexpr ( FF == faces_filter_t::PROCESS_ID )
+                return super_points::template pointsWithProcessId<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == faces_filter_t::MARKER )
+                return super_points::template pointsWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == faces_filter_t::ON_BOUNDARY )
+                return super_points::template boundaryPoints<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == faces_filter_t::INTERNAL )
+                return super_points::template internalPoints<EPT>( std::forward<Ts>( ts )... );
+            return {};
+        }
+    template <faces_filter_t FF, typename ... Ts>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesFilter( entity_process_t ept, Ts&&... ts ) const
+        {
+            return std::invoke(
+                [this,&ept](auto&& ... args)
+                    {
+                        switch ( ept )
+                        {
+                        default:
+                        case entity_process_t::LOCAL_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::GHOST_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::ALL:
+                            return this->facesFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                        }
+                    },
+                std::forward<Ts>( ts )... );
+        }
+
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     interProcessFaces( rank_type neighbor_pid = invalid_rank_type_value ) const
         {
