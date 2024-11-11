@@ -315,11 +315,8 @@ public:
                     continue;
                 if ( face.marker( markerType ).isOff() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
-                {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
-                        continue;
-                }
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                    continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
@@ -344,11 +341,8 @@ public:
                     continue;
                 if ( !face.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
-                {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
-                        continue;
-                }
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                    continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
@@ -419,11 +413,8 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( !face.isOnBoundary() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
-                {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
-                        continue;
-                }
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                    continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
@@ -447,11 +438,8 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( !face.isInternal() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
-                {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
-                        continue;
-                }
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                    continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
@@ -503,11 +491,8 @@ public:
                 auto const& face = unwrap_ref( *it );
                 if ( !face.isIntraProcessDomain( part ) )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
-                {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
-                        continue;
-                }
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                    continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
@@ -529,17 +514,50 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& face = unwrap_ref( *it );
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
-                {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
-                        continue;
-                }
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                    continue;
                 myfaces->push_back( boost::cref( face ) );
             }
             myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
+    template <faces_filter_t FF, entity_process_t EPT, typename ... Ts>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesFilterImpl( Ts&&... ts ) const
+        {
+            if constexpr ( FF == faces_filter_t::PROCESS_ID )
+                return this->facesWithProcessId<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == faces_filter_t::MARKER )
+                return this->facesWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == faces_filter_t::ON_BOUNDARY )
+                return this->facesOnBoundary<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == faces_filter_t::INTERNAL )
+                return this->internalFaces<EPT>( std::forward<Ts>( ts )... );
+            return {};
+        }
+    template <faces_filter_t FF, typename ... Ts>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesFilter( entity_process_t ept, Ts&&... ts ) const
+        {
+            return std::invoke(
+                [this,&ept](auto&& ... args)
+                    {
+                        switch ( ept )
+                        {
+                        default:
+                        case entity_process_t::LOCAL_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::GHOST_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::ALL:
+                            return this->facesFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                        }
+                    },
+                std::forward<Ts>( ts )... );
+        }
 
     //@}
 

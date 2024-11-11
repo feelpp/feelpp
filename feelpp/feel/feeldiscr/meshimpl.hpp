@@ -2711,6 +2711,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
 
     bool meshHasUpdateFaces = this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL );
 
+    auto initialNeighborSubdomains = this->neighborSubdomains();
+
     auto iv = this->beginOrderedElement();
     auto const en = this->endOrderedElement();
     for ( ; iv != en; ++iv )
@@ -2786,8 +2788,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     }
 
     //------------------------------------------------------------------------------------------------//
-    int neighborSubdomains = this->neighborSubdomains().size();
-    int nbMaxRequest = (nDim+1)*2*neighborSubdomains;
+    //int neighborSubdomains = this->neighborSubdomains().size();
+    int nbMaxRequest = (nDim+1)*2*initialNeighborSubdomains.size();//neighborSubdomains;
 
     std::vector<mpi::request> reqs( nbMaxRequest );
     int countRequest = 0;
@@ -2795,7 +2797,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     // get size of data to transfer
     std::map<rank_type,std::array<std::size_t,nDim==1?3:nDim+1>> sizeRecv, sizeSended;
     uint16_type sizeDataPointIndex = nDim==1?2:nDim;
-    for ( rank_type neighborRank : this->neighborSubdomains() )
+    for ( rank_type neighborRank : initialNeighborSubdomains )
     {
         sizeSended[neighborRank][0] = std::get<tuple_id_info_elements>( dataToSend[neighborRank] ).size();
         sizeSended[neighborRank][1] = std::get<tuple_id_info_faces>( dataToSend[neighborRank] ).size();
@@ -2810,7 +2812,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
     countRequest = 0;
 
-    for ( rank_type neighborRank : this->neighborSubdomains() )
+    for ( rank_type neighborRank : initialNeighborSubdomains )
     {
         std::size_t nRecvDataElement = sizeRecv[neighborRank][0];
         std::get<0>( dataToRecv[neighborRank] ).resize( nRecvDataElement );
@@ -2854,6 +2856,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     countRequest = 0;
 
     //------------------------------------------------------------------------------------------------//
+    M_neighbor_processors.clear();
     // update mesh data (step 1)
     std::map<size_type,element_type*> eltUpdated;
     std::map<size_type,face_type*> facesUpdated;
@@ -2861,6 +2864,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     std::map<size_type,point_type*> pointsUpdated;
     for ( auto const& [rankRecv,dataEntities] : dataToRecv )
     {
+        this->addNeighborSubdomain( rankRecv );
         // elements
         for ( auto const& [ eltIdRecv,eltIdCurrent ] : std::get<tuple_id_info_elements>( dataEntities ) )
         {
@@ -3004,7 +3008,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     //if constexpr ( nDim > 2 )
     if ( nDim > 1 || !meshHasUpdateFaces )
         prepareDataToSendStep2( pointsUpdated,std::integral_constant<int,tuple_id_info_points>{} );
-    for ( rank_type neighborRank : this->neighborSubdomains() )
+    for ( rank_type neighborRank : initialNeighborSubdomains )
     {
         reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSendStep2[neighborRank] );
         reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep2[neighborRank] );
@@ -3015,7 +3019,6 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
 
     //------------------------------------------------------------------------------------------------//
     // update mesh data (step 2)
-    M_neighbor_processors.clear();
     for ( auto const& [rankRecv,dataEntities] : dataToRecvStep2 )
     {
         // elements

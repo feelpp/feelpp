@@ -992,8 +992,13 @@ bool checkPartitionPredicate( EntityType const& entity, rank_type part )
         return entity.processId() == part;
     else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
         return entity.processId() != part;
-    else
-        return true;
+    else if constexpr ( EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+    {
+        if constexpr ( is_topological_face<EntityType>::value )
+            return entity.processId() == part || entity.isInterProcessDomain( part );
+        else CHECK( false ) << "TODO";
+    }
+    return true;
 }
 
 //! return true if the entity satisfy the predicate partitions defined by EPT and part

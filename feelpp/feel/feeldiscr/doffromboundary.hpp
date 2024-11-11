@@ -130,19 +130,12 @@ public:
 
     void add( face_type const& face )
         {
-            bool useConnection0 = face.processId() == face.proc_first();
-            if ( face.isGhostCell() )
+            // check connection in case of interprocess or ghost face
+            bool useConnection0 = true;
+            if ( face.isInterProcessDomain() || face.isGhostCell() )
             {
-                if ( M_doftable->isElementDone( face.ad_first() ) )
-                {
-                    useConnection0 = true;
-                }
-                else
-                {
-                    CHECK( face.isConnectedTo1() ) << "no connection1";
-                    CHECK( M_doftable->isElementDone( face.ad_second() ) ) << " no dof table define on this elt " << face.ad_second() << "\n";
-                    useConnection0 = false;
-                }
+                if ( !M_doftable->isElementDone( face.ad_first() ) && face.isConnectedTo1() )
+                    useConnection0 = !M_doftable->isElementDone( face.ad_second() );
             }
 
             uint16_type lcVertex = 0;
