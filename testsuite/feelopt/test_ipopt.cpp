@@ -34,9 +34,9 @@
 
 #if defined( FEELPP_HAS_IPOPT )
 
-#include <coin/IpTNLP.hpp>
-#include <coin/IpIpoptApplication.hpp>
-#include <coin/IpSolveStatistics.hpp>
+#include <coin-or/IpTNLP.hpp>
+#include <coin-or/IpIpoptApplication.hpp>
+#include <coin-or/IpSolveStatistics.hpp>
 
 using namespace Ipopt;
 

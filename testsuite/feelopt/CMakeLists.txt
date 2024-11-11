@@ -33,6 +33,6 @@ endif()
 
 if ( FEELPP_HAS_IPOPT )
 
-  feelpp_add_test( ipopt )
+  feelpp_add_test( ipopt NO_MPI_TEST)
 
 endif()
