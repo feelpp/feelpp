@@ -35,11 +35,17 @@ MpiLogSink::MpiLogSink(int rank, const std::string& log_option, const std::strin
 
 MpiLogSink::~MpiLogSink() 
 {
-    if (log_file_.is_open()) {
+    this->close();
+}
+
+void
+MpiLogSink::close()
+{
+    if (log_file_.is_open()) 
+    {
         log_file_.close();
     }
 }
-
 double getMemoryUsageInGB() 
 {
     std::ifstream file("/proc/self/status");
@@ -75,6 +81,7 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
                       const struct ::tm* tm_time, const char* message, size_t message_len) 
 {
 
+
     std::ostringstream oss;
     oss << std::this_thread::get_id();
     std::string thread_id_str = oss.str();
@@ -87,7 +94,7 @@ void MpiLogSink::send(google::LogSeverity severity, const char* full_filename,
     std::string memory_usage = log_memory_ ? fmt::format(" [Mem: {:.2f} GB] ", getMemoryUsageInGB()) : " ";
 
     const bool do_log =( log_option_ == LogOption::All ) || ( log_option_ == LogOption::Master && rank_ == 0 );
-    if (do_log)
+    if (do_log && log_file_.is_open() )
     {
         std::string log_message = fmt::format("[{}]: [{}] [{:%Y-%m-%d %H:%M:%S}.{:03}]{}[{}:{}]: {}\n",
                                               rank_, //thread_id_str, 

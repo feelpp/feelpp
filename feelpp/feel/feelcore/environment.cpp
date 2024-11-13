@@ -2125,7 +2125,9 @@ Environment::stopLogging( bool remove )
     if ( google::IsGoogleLoggingInitialized() )
     {
          // Clean up MpiLogSink before shuttingdown
+        S_mpilogsink->close();
         google::RemoveLogSink(S_mpilogsink.get());
+        S_mpilogsink.reset();
         google::ShutdownGoogleLogging();
         if ( (remove || Environment::vm().count( "rmlogs" ))  &&
              S_worldcomm->isMasterRank() )
