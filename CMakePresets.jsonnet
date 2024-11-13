@@ -59,8 +59,7 @@ local tp_generator(component, compiler, cpp, type, gpu, config) =
   {
     name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
-    output: { outputOnFailure: true },
-    execution: { noTestsAction: 'error', stopOnFailure: true },
+    inherits: "default",
   };
 
 local pp_generator(component, compiler, cpp, type, gpu, config) =
@@ -142,7 +141,8 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
         cacheVariables: {
             CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
             FEELPP_ENABLE_ANN: "OFF",
-            FEELPP_USE_EXTERNAL_NANOFLANN: "OFF",
+            FEELPP_USE_EXTERNAL_NAPP: "ON",
+            FEELPP_USE_EXTERNAL_NANOFLANN: "ON",
             FEELPP_USE_EXTERNAL_FMT: "ON",
             FEELPP_USE_EXTERNAL_GFLAGS: "ON",
             FEELPP_USE_EXTERNAL_GLOG: "ON",            
@@ -471,7 +471,8 @@ testPresets: [
           repeat: {
               mode: "until-pass",
               count: 3
-          }
+          },
+          timeout: 700
       }
   },
   {
