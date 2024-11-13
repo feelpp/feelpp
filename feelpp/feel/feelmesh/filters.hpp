@@ -526,7 +526,7 @@ template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap
 auto
 faces( MeshType const& mesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return range(_range=Feel::detail::faces( mesh, rank( mesh ), ept ), _mesh=mesh, _pid=rank(mesh) );
+    return range(_range=Feel::detail::faces( mesh, rank( mesh ), ept ), _mesh=mesh );
 }
 
 /**
