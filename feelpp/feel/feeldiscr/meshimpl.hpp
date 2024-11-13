@@ -2973,16 +2973,16 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                         // eval process id
                         rank_type pidEntity = entityPtr->pidInPartition();
 #if 1
+                        if ( entityPtr->isInterProcessDomain( entityPtr->element0().processId() ) )
+                            pidEntity = std::min( entityPtr->element0().processId(), entityPtr->element1().processId() );
+                        else // intra or on boundary
+                            pidEntity = entityPtr->element0().processId();
+#else
                         entityPtr->setProcessId( entityPtr->pidInPartition() ); // trick to use isInterProcessDomain() correctly (TODO)
                         if ( entityPtr->isInterProcessDomain() )
                             pidEntity = std::min( entityPtr->element0().processId(), entityPtr->element1().processId() );
                         else // intra or on boundary
                             pidEntity = entityPtr->element0().processId();
-#else
-                        for ( auto const& [pidOther,eidOther] : entityPtr->idInOthersPartitions() )
-                            pidEntity = std::min( pidEntity, pidOther );
-                        // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
-                        entityPtr->setProcessId( pidEntity );
 #endif
                         // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
                         entityPtr->setProcessId( pidEntity );
@@ -3039,7 +3039,10 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             for ( auto const& [markerType,markerValues] : std::get<1>( dataFace ) )
                 face.addMarker( markerType, markerValues );
             face.setProcessId( std::get<2>( dataFace ) );
-            face.setOnBoundary( std::get<3>( dataFace ) );
+
+            //face.setOnBoundary( std::get<3>( dataFace ) );
+            if ( !std::get<3>( dataFace ) )
+                face.setOnBoundary( false );
             // // update process id
             // rank_type pidFace = face.pidInPartition();
             // for ( auto const& [pidOther,eidOther] : face.idInOthersPartitions() )
