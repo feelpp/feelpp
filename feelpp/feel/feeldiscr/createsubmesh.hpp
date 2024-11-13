@@ -159,12 +159,12 @@ private:
     void build( mesh_type & newMesh, range_mesh_type const& meshRange, mpl::int_<MESH_ELEMENTS> /**/ );
     void build( mesh_type & newMesh, range_mesh_type const& meshRange, mpl::int_<MESH_FACES> /**/ );
     void build( mesh_type & newMesh, range_mesh_type const& meshRange, mpl::int_<MESH_EDGES> /**/ );
-
+    using mapping_requireghostcells_type = std::map<rank_type,std::vector<std::tuple<size_type,size_type,std::vector<index_type>>>>;
     template <int RangeType>
     void updateParallelSubMeshGhost( mesh_type & newMesh, range_mesh_type const& meshRange,
                                      std::map<size_type,size_type> & new_node_numbers,
                                      std::map<size_type,size_type> & new_element_id,
-                                     std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> const& requireGhostCells,
+                                     mapping_requireghostcells_type const& requireGhostCells,
                                      bool renumberPoint );
 
     template <int EntityType>
@@ -288,7 +288,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
 
         const rank_type proc_id = this->worldComm().localRank();
         const rank_type nProc = this->worldComm().localSize();
-        std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> requireGhostCells;
+        mapping_requireghostcells_type requireGhostCells;
 
         for (auto& itList : M_listRange)
         {
@@ -393,9 +393,13 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                     this->addMarkedEdgesInSubMesh( oldElem, new_node_numbers, newMesh, oldEdgeIdsDone );
 
                 // update ghost requirements
-                for ( auto const&[neighborPid,eltIdInPartition] : oldElem.idInOthersPartitions() )
-                    requireGhostCells[neighborPid].push_back( std::make_tuple( eid,eltIdInPartition ) );
-
+                if ( !oldElem.idInOthersPartitions().empty() )
+                {
+                    // get elt ordering for ghost cells (identity for ELEMENTS case because ghosts are supposed to be identical)
+                    std::vector<index_type> oldElementOrdering;
+                    for ( auto const&[neighborPid,neighborEltId] : oldElem.idInOthersPartitions() )
+                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid,neighborEltId,std::move(oldElementOrdering) ) );
+                }
             } //  for( ; it != en; ++ it )
         } // for (auto& itList : M_listRange)
 
@@ -432,7 +436,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
 
         const rank_type proc_id = newMesh.worldComm().localRank();
         const rank_type nProc = newMesh.worldComm().localSize();
-        std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> requireGhostCells;
+        mapping_requireghostcells_type requireGhostCells;
 
         //-----------------------------------------------------------//
 
@@ -506,8 +510,18 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                 if constexpr ( range_mesh_type::nDim == 3 )
                     this->addMarkedEdgesInSubMesh( oldElem, new_node_numbers, newMesh, oldEdgeIdsDone );
                 // update ghost requirements
-                for ( auto const&[neighborPid,eltIdInPartition] : oldElem.idInOthersPartitions() )
-                    requireGhostCells[neighborPid].push_back( std::make_tuple( eid,eltIdInPartition ) );
+                if ( !oldElem.idInOthersPartitions().empty() )
+                {
+                    // get elt ordering for ghost cells
+                    std::vector<index_type> oldElementOrdering( oldElem.nPoints(), invalid_v<index_type> );
+                     for ( uint16_type n = 0; n < oldElem.nPoints(); n++ )
+                    {
+                        auto const& oldPoint = oldElem.point( n );
+                        oldElementOrdering[n] = oldPoint.id();
+                    }
+                    for ( auto const&[neighborPid,neighborEltId] : oldElem.idInOthersPartitions() )
+                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid,neighborEltId,std::move(oldElementOrdering) ) );
+                }
             } // end for it
         } // for (auto& itList : M_listRange)
 
@@ -538,7 +552,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
         const int nProc = this->worldComm().localSize();
         std::map<size_type,size_type> new_node_numbers;
         std::map<size_type,size_type> new_element_id;
-        std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> requireGhostCells;
+        mapping_requireghostcells_type requireGhostCells;
         //-----------------------------------------------------------//
 
         auto itListRange = M_listRange.begin();
@@ -607,8 +621,18 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                 M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
 
                 // update ghost requirements
-                for ( auto const&[neighborPid,eltIdInPartition] : oldElem.idInOthersPartitions() )
-                    requireGhostCells[neighborPid].push_back( std::make_tuple( eid,eltIdInPartition ) );
+                if ( !oldElem.idInOthersPartitions().empty() )
+                {
+                    // get elt ordering for ghost cells
+                    std::vector<index_type> oldElementOrdering( oldElem.nPoints(), invalid_v<index_type> );
+                    for ( uint16_type n = 0; n < oldElem.nPoints(); n++ )
+                    {
+                        auto const& oldPoint = oldElem.point( n );
+                        oldElementOrdering[n] = oldPoint.id();
+                    }
+                    for ( auto const&[neighborPid,neighborEltId] : oldElem.idInOthersPartitions() )
+                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid,neighborEltId,std::move(oldElementOrdering) ) );
+                }
             } // end for it
         } // for ( ; itListRange!=enListRange ; ++itListRange)
 
@@ -627,10 +651,10 @@ template <typename MeshType,typename IteratorRange>
 template <int RangeType>
 void
 CreateSubmeshTool<MeshType,IteratorRange>::updateParallelSubMeshGhost( mesh_type & newMesh, range_mesh_type const& meshRange,
-                                                                              std::map<size_type,size_type> & new_node_numbers,
-                                                                              std::map<size_type,size_type> & new_element_id,
-                                                                              std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> const& requireGhostCells,
-                                                                              bool renumberPoint )
+                                                                       std::map<size_type,size_type> & new_node_numbers,
+                                                                       std::map<size_type,size_type> & new_element_id,
+                                                                       mapping_requireghostcells_type const& requireGhostCells,
+                                                                       bool renumberPoint )
 {
     using element_type = typename mesh_type::element_type;
     using point_type = typename mesh_type::point_type;
@@ -642,7 +666,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::updateParallelSubMeshGhost( mesh_type
     //int neighborSubdomains = neighborSubdomains.size();
     int nbRequest=2*neighborSubdomains.size();
 
-    std::map<rank_type,std::vector<std::tuple<size_type,size_type>>> dataToSend, dataToRecv;
+    mapping_requireghostcells_type dataToSend, dataToRecv;
 
     size_type n_new_nodes = new_node_numbers.size();
 
@@ -682,11 +706,10 @@ CreateSubmeshTool<MeshType,IteratorRange>::updateParallelSubMeshGhost( mesh_type
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
 
-
     for ( auto const& [rankRecv,dataToRecvOnProc] : dataToRecv )
     {
         CHECK( proc_id != rankRecv ) << fmt::format("should be a ghost element : process rank: {} process active: {}",proc_id,rankRecv);
-        for ( auto const& [activeEltId,currentEltId] : dataToRecvOnProc )
+        for ( auto const& [activeEltId,currentEltId,currentEltOrdering] : dataToRecvOnProc )
         {
             auto itFindSubmeshElt = new_element_id.find( currentEltId );
             if ( itFindSubmeshElt == new_element_id.end() )
@@ -704,7 +727,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::updateParallelSubMeshGhost( mesh_type
                 // Loop over the nodes on this element.
                 for ( uint16_type n=0; n < newElem.nPoints(); n++ )
                 {
-                    auto const& oldPoint = oldElem.point( n );
+                    auto const& oldPoint = !currentEltOrdering.empty() ? meshRange.point( currentEltOrdering.at(n) ) : oldElem.point( n );
                     size_type oldPointId = oldPoint.id();
                     size_type newPtId = invalid_v<size_type>;
                     auto itFindPoint = new_node_numbers.find( oldPointId );
