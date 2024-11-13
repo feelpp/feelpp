@@ -59,8 +59,7 @@ local tp_generator(component, compiler, cpp, type, gpu, config) =
   {
     name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
     configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
-    output: { outputOnFailure: true },
-    execution: { noTestsAction: 'error', stopOnFailure: true },
+    inherits: "default",
   };
 
 local pp_generator(component, compiler, cpp, type, gpu, config) =
@@ -142,19 +141,23 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
         cacheVariables: {
             CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
             FEELPP_ENABLE_ANN: "OFF",
-            FEELPP_USE_EXTERNAL_NANOFLANN: "OFF",
+            FEELPP_USE_EXTERNAL_NAPP: "ON",
+            FEELPP_USE_EXTERNAL_NANOFLANN: "ON",
             FEELPP_USE_EXTERNAL_FMT: "ON",
             FEELPP_USE_EXTERNAL_GFLAGS: "ON",
             FEELPP_USE_EXTERNAL_GLOG: "ON",            
             FEELPP_USE_EXTERNAL_CLN: "ON",
             FEELPP_USE_EXTERNAL_METIS: "ON",
             FEELPP_USE_EXTERNAL_EIGEN3: "ON",
-            FEELPP_USE_EXTERNAL_NLOPT: "OFF",
-            FEELPP_ENABLE_IPOPT: "OFF",
-            FEELPP_USE_EXTERNAL_IPOPT: "OFF",
+            FEELPP_USE_EXTERNAL_NLOPT: "ON",
+            FEELPP_ENABLE_IPOPT: "ON",
+            FEELPP_USE_EXTERNAL_IPOPT: "ON",
             FEELPP_USE_EXTERNAL_PYBIND11: "ON",
             FEELPP_USE_EXTERNAL_MONGOCXX: "OFF",
-            FEELPP_USE_EXTERNAL_FMI4CPP: "ON",            
+            FEELPP_USE_EXTERNAL_FMI4CPP: "ON",
+            FEELPP_USE_EXTERNAL_TABULATE: "ON",
+            FEELPP_USE_FETCHCONTENT_TABULATE: "ON",
+            FEELPP_USE_EXTERNAL_INDICATORS: "ON",
             FEELPP_ENABLE_SIMPLE_WEB_SERVER: "ON",
             FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER: "OFF",   
             FEELPP_USE_EXTERNAL_RANGE_V3: "OFF",
@@ -163,7 +166,8 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             FEELPP_USE_EXTERNAL_MMG: "ON",
             FEELPP_USE_EXTERNAL_CPR: "ON",
             FEELPP_USE_EXTERNAL_SPECX: "OFF",
-            FEELPP_USE_EXTERNAL_EIGENRAND: "OFF",
+            FEELPP_ENABLE_EIGENRAND: "ON",
+            FEELPP_USE_EXTERNAL_EIGENRAND: "ON",
             FEELPP_ENABLE_VTK: "OFF",
             USE_VTK: "OFF",
             FEELPP_ENABLE_OPENTURNS: "OFF"
@@ -467,7 +471,8 @@ testPresets: [
           repeat: {
               mode: "until-pass",
               count: 3
-          }
+          },
+          timeout: 700
       }
   },
   {

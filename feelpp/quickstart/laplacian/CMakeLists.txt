@@ -28,8 +28,8 @@ if ( NOT TARGET qs_laplacian )
 endif()
 add_subdirectory( python )
 
-feelpp_add_testcase( cases PREFIX qs CATEGORY quickstart )
-
+feelpp_add_testcase( laplacian DIRECTORY cases PREFIX qs CATEGORY quickstart )
+add_dependencies(qs_cases qs_add_testcase_laplacian )
 #
 # Laplacian
 #

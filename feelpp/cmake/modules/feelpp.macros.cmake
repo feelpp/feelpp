@@ -31,11 +31,16 @@ endmacro(feelpp_list_subdirs)
 
 macro(feelpp_add_testcase )
   PARSE_ARGUMENTS(FEELPP_CASE
-    "NAME;PREFIX;DEPS;CATEGORY"
+    "NAME;PREFIX;DEPS;CATEGORY;DIRECTORY"
     ""
     ${ARGN}
     )
   CAR(FEELPP_CASE_NAME ${FEELPP_CASE_DEFAULT_ARGS})
+  if ( FEELPP_CASE_DIRECTORY )
+    set( FEELPP_CASE_DIR ${FEELPP_CASE_DIRECTORY} )
+  else()
+    set( FEELPP_CASE_DIR ${FEELPP_CASE_NAME} )
+  endif()
   if ( FEELPP_CASE_PREFIX )
     set( target ${FEELPP_CASE_PREFIX}_add_testcase_${FEELPP_CASE_NAME})
   else()
@@ -52,9 +57,9 @@ macro(feelpp_add_testcase )
     POST_BUILD
     COMMAND rsync
     ARGS -aLv --exclude='*~'
-    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
+    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/
-    COMMENT "Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}"
+    COMMENT ">>> Syncing testcase ${testcase} in ${CMAKE_CURRENT_BINARY_DIR} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_DIR}"
     )
   #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${testcase} ${CMAKE_CURRENT_BINARY_DIR} )
   #file(COPY ${testcase} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -76,12 +81,22 @@ macro(feelpp_add_testcase )
     # ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
     # ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
     # COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
-      DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
-    if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
-      install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc
+    if ( FEELPP_CASE_DIRECTORY)
+      install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_DIRECTORY}
+        DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY}/${FEELPP_CASE_NAME} COMPONENT testcases)
+      if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc
+          DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY}/${FEELPP_CASE_NAME} COMPONENT testcases)
+      endif()
+    else()
+      install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
         DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
+      if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc
+          DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY}${FEELPP_CASE_NAME} COMPONENT testcases)
+      endif()
     endif()
+    
     #add_dependencies(install-testcase ${target})
   endif()
 endmacro(feelpp_add_testcase)

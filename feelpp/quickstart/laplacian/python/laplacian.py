@@ -1,4 +1,7 @@
-from sympy2ginac import *
+try :
+    from feelpp.core.sympy2ginac import *
+except ImportError:
+    from sympy2ginac import *
 
 if 'compute_pde_coefficients' in locals() and locals()['compute_pde_coefficients']:
     compute_pde_coefficients=locals()['compute_pde_coefficients'];

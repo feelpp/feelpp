@@ -41,7 +41,7 @@ std::map<std::string, nlopt::algorithm> nloptAlgoMap = {
     {"GD_STOGO", nlopt::GD_STOGO },
     {"GD_STOGO_RAND", nlopt::GD_STOGO_RAND },
 
-    {"LD_LBFGS_NOCEDAL", nlopt::LD_LBFGS_NOCEDAL },
+    //{"LD_LBFGS_NOCEDAL", nlopt::LD_LBFGS_NOCEDAL },
 
     {"LD_LBFGS", nlopt::LD_LBFGS },
 

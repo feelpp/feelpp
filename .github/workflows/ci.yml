@@ -85,8 +85,12 @@ jobs:
           cmake --preset feelpp-clang-cpp20-spack-cpu-release
       - name: Build Feelpp
         run: |
+          source /data/cemosis/spack/share/spack/setup-env.sh
+          spack env activate feelpp-openmpi4
           cmake --build --preset feelpp-clang-cpp20-spack-cpu-release -j60 
       - name: Test Feelpp
         run: |
+          source /data/cemosis/spack/share/spack/setup-env.sh
+          spack env activate feelpp-openmpi4
           ctest --preset feelpp-clang-cpp20-spack-cpu-release -j4 -R feelpp
 

@@ -196,7 +196,7 @@ int main( int argc, char** argv )
             ( "un", po::value<std::string>()->default_value( "" ), "Neumann boundary condition" )
             ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin left hand side coefficient" )
             ( "r_2", po::value<std::string>()->default_value( "" ), "Robin right hand side  coefficient" )
-            ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
+            ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../../python/laplacian.py" ), "python filename to execute" );
         laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
         laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
         laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
