@@ -60,6 +60,18 @@
 #include <limits>
 #include <stack>
 
+
+// BEGIN:: FOR INFORMATION
+// Internet sources of inspiration
+//    https://en.wikipedia.org/wiki/Orthant
+//    https://github.com/madmann91/bvh/blob/master/src/bvh/v2/ray.h
+//    https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
+//    https://github.com/scratchapixel/scratchapixel-code/tree/main/ray-tracing-rendering-a-triangle
+//    https://github.com/ToruNiina/lbvh
+// END:: FOR INFORMATION
+
+
+
 #ifdef FEELPP_HAS_HIP
 
 #define HIP_CHECK( command )                                                                \
@@ -350,81 +362,6 @@ void buildBVH_CPU_Recursive( std::vector<Triangle>& triangles, std::vector<BVHNo
     buildBVHRecursive( triangles, bvhNodes, 0, triangles.size(), 0 );
 }
 
-void buildBVH_CPU_Iterative(
-    std::vector<Triangle>& triangles,
-    std::vector<BVHNode>& bvhNodes )
-{
-    bvhNodes.clear();
-
-    struct StackEntry
-    {
-        int start, end, depth;
-        int parentIndex;
-        bool isLeftChild;
-    };
-
-    std::stack<StackEntry> stack;
-    stack.push( { 0, static_cast<int>( triangles.size() ), 0, -1, false } );
-
-    while ( !stack.empty() )
-    {
-        auto [start, end, depth, parentIndex, isLeftChild] = stack.top();
-        stack.pop();
-
-        BVHNode node;
-        node.firstTriangleIndex = start;
-        node.triangleCount = end - start;
-        node.leftChild = node.rightChild = -1;
-
-        // Calculate the node limits
-        node.bounds.min = node.bounds.max = triangles[start].v0;
-        for ( int i = start; i < end; i++ )
-        {
-            const auto& tri = triangles[i];
-            node.bounds.min = min( node.bounds.min, min( tri.v0, min( tri.v1, tri.v2 ) ) );
-            node.bounds.max = max( node.bounds.max, max( tri.v0, max( tri.v1, tri.v2 ) ) );
-        }
-
-        int currentIndex = bvhNodes.size();
-        bvhNodes.push_back( node );
-
-        if ( parentIndex != -1 )
-        {
-            if ( isLeftChild )
-            {
-                bvhNodes[parentIndex].leftChild = currentIndex;
-            }
-            else
-            {
-                bvhNodes[parentIndex].rightChild = currentIndex;
-            }
-        }
-
-        // If the node contains few triangles or if we are too deep, move on to the next one
-        if ( node.triangleCount <= 4 || depth > 20 )
-        {
-            continue;
-        }
-
-        // Find the longest axis to divide
-        Vec3 extent = node.bounds.max - node.bounds.min;
-        int axis = 0;
-        if ( extent.y > extent.x ) axis = 1;
-        if ( extent.z > extent[axis] ) axis = 2;
-
-        // Sort the triangles according to the chosen axis
-        int mid = ( start + end ) / 2;
-        std::nth_element( triangles.begin() + start, triangles.begin() + mid, triangles.begin() + end,
-                          [axis]( const Triangle& a, const Triangle& b )
-                          {
-                              return ( a.v0[axis] + a.v1[axis] + a.v2[axis] ) < ( b.v0[axis] + b.v1[axis] + b.v2[axis] );
-                          } );
-
-       // Add children
-        stack.push( { mid, end, depth + 1, currentIndex, false } );
-        stack.push( { start, mid, depth + 1, currentIndex, true } );
-    }
-}
 
 // BEGIN::BVH GPU
 __host__ __device__ void calculateBoundingBox( const Triangle& triangle, Vec3& min_values, Vec3& max_values )
@@ -695,14 +632,6 @@ using namespace Feel;
 namespace Feel
 {
 
-// Internet sources of inspiration
-// https://en.wikipedia.org/wiki/Orthant
-// https://github.com/madmann91/bvh/blob/master/src/bvh/v2/ray.h
-
-// https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution.html
-// https://github.com/scratchapixel/scratchapixel-code/tree/main/ray-tracing-rendering-a-triangle
-
-// https://github.com/ToruNiina/lbvh
 
 template <int RealDim>
 class BVHRay
@@ -2167,4 +2096,3 @@ auto boundingVolumeHierarchy( Ts&&... v )
 }
 
 } // namespace Feel
-
