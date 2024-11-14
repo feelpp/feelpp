@@ -47,6 +47,11 @@ public:
               const char* base_filename, int line,
               const struct ::tm* tm_time, const char* message, size_t message_len) override;
 
+    /**
+     * @brief close logfile if open
+     */
+    void close();
+
 private:
     enum class LogOption { Master, All, None };
     enum class OutputOption { None, Stdout, Stderr };
