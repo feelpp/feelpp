@@ -1417,8 +1417,9 @@ void PartitionIO<MeshType>::readGhostElements( std::vector<rank_type> const& par
                 auto it = M_meshPartIn->elementIterator( id );
                 auto & eltModified = it->second;
                 eltModified.setProcessId( pid );
-                eltModified.addNeighborPartitionId( partId );
-                //M_meshPartIn->elements().modify( it, Feel::detail::updateIdInOthersPartitions( pid, idInActivePart ) );
+                //eltModified.addNeighborPartitionId( partId );
+                eltModified.addNeighborPartitionId( pid );
+
             }
 
         }

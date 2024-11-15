@@ -221,7 +221,8 @@ struct FEELPP_NO_EXPORT GMSHElement
             // maybe proc id not start to 0
             for ( auto _itghost=ghosts.begin(),_enghost=ghosts.end() ; _itghost!=_enghost ; ++_itghost )
                 *_itghost = ( (*_itghost) % worldcommsize);
-
+            ghosts.erase(std::remove(ghosts.begin(), ghosts.end(), partition ), ghosts.end());
+            numPartitions = ghosts.size() + 1;
 
             if ( worldcommsize == 1 )
             {
@@ -2613,7 +2614,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement con
     if ( false )
         pt.setMarker2( __e.elementary );
     //pt.setProcessId( __e.partition );
-    pt.setNeighborPartitionIds( __e.ghosts );
+    // pt.setNeighborPartitionIds( __e.ghosts );
 
     DVLOG(2) << "update point with id :" << pt.id() << " and marker " << pt.marker()
              << " n1: " << pt.node() << "\n";
@@ -2639,7 +2640,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
-    e.setNeighborPartitionIds( __e.ghosts );
+    if ( !e.isGhostCell() )
+        e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_LINE ||
          __e.type == GMSH_LINE_2 ||
@@ -2675,8 +2677,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
         e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
-    e.setProcessId( __e.partition );
-    e.setNeighborPartitionIds( __e.ghosts );
+    // e.setProcessId( __e.partition );
+    // e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_LINE ||
          __e.type == GMSH_LINE_2 ||
@@ -2715,8 +2717,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         e.setMarker2( __e.elementary );
     // warning : process id is define after (when call mesh->updateForUse()
     // and only for edges which belong to an active 3d element )
-    e.setProcessId( invalid_rank_type_value/*__e.partition*/ );
-    e.setNeighborPartitionIds( __e.ghosts );
+    // e.setProcessId( invalid_rank_type_value/*__e.partition*/ );
+    // e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_LINE ||
          __e.type == GMSH_LINE_2 ||
@@ -2769,7 +2771,9 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
-    e.setNeighborPartitionIds( __e.ghosts );
+    //CHECK(  std::find(__e.ghosts.begin(),__e.ghosts.end(), this->worldComm().localRank() ) != __e.ghosts.end() ) << "haoal ";
+    if ( !e.isGhostCell() )
+        e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 ||
@@ -2804,8 +2808,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
         e.addMarker( __e.physical );
     if ( false )
         e.setMarker2( __e.elementary );
-    e.setProcessId( __e.partition );
-    e.setNeighborPartitionIds( __e.ghosts );
+    // e.setProcessId( __e.partition );
+    // e.setNeighborPartitionIds( __e.ghosts );
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 ||
@@ -2859,7 +2863,8 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     if ( false )
         e.setMarker2( __e.elementary );
     e.setProcessId( __e.partition );
-    e.setNeighborPartitionIds( __e.ghosts );
+    if ( !e.isGhostCell() )
+        e.setNeighborPartitionIds( __e.ghosts );
 
 
     //

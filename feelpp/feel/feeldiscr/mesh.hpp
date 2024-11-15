@@ -1666,7 +1666,6 @@ public:
     /**
      * Update in ghost cells of entities of codimension 1
      */
-    void updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
     void updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
     //!

@@ -638,7 +638,7 @@ public:
         }
         M_boundaryEntityDimension = ent_d;
     }
-
+#if 0
     /**
      * \return the number of partition the element is linked to including the
      * partition to which it belongs
@@ -655,13 +655,20 @@ public:
     {
         M_neighor_pids.resize( nep );
     }
-
+#endif
     /**
      * \return the number of partition the element is linked to
      */
     void setNeighborPartitionIds( std::vector<rank_type> const& npids )
     {
         M_neighor_pids = npids;
+
+        M_idInOtherPartitions.clear();
+        for ( rank_type p : npids)
+        {
+            CHECK( p != pidInPartition() ) << fmt::format("neighor pid {} should not be the current process id",p );
+            M_idInOtherPartitions.emplace( p, invalid_v<index_type> );
+        }
     }
 
     void addNeighborPartitionId( rank_type p )
@@ -670,6 +677,8 @@ public:
         {
             M_neighor_pids.push_back(p);
         }
+        CHECK( p != pidInPartition() ) << fmt::format("neighor pid {} should not be the current process id",p );
+        M_idInOtherPartitions.emplace( p, invalid_v<index_type> );
     }
 
     //@}

@@ -240,10 +240,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             }
 
             // update mesh entities with parallel data
-            if ( false )
-                this->updateEntitiesCoDimensionGhostCellByUsingBlockingComm();
-            else
-                this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
+            this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
 
             // TODO: check the usefulness of this step
             if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
@@ -2003,274 +2000,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeFacesFromBoundary
                    } );
 }
 
-template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingBlockingComm()
-{
-    typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_type;
-
-    VLOG( 2 ) << "[Mesh::updateEntitiesCoDimensionGhostCell] start on god rank " << MeshBase<IndexT>::worldComm().godRank() << "\n";
-
-    std::vector<int> nbMsgToSend( MeshBase<IndexT>::worldComm().localSize(), 0 );
-    std::vector<int> nbMsgToRecv( MeshBase<IndexT>::worldComm().localSize(), 0 );
-    std::vector<std::map<int, int>> mapMsg( MeshBase<IndexT>::worldComm().localSize() );
-
-    typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
-    typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
-    auto rangeGhostElement = this->ghostElements();
-    auto iv = std::get<0>( rangeGhostElement );
-    auto const en = std::get<1>( rangeGhostElement );
-    for ( ; iv != en; ++iv )
-    {
-        element_type const& __element = boost::unwrap_ref( *iv );
-        const int IdProcessOfGhost = __element.processId();
-        const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
-
-        auto& eltModified = this->elementIterator( __element )->second;
-        elementGhostConnectPointToElement( eltModified );
-        if ( nDim == 3 )
-            elementGhostConnectEdgeToElement( eltModified );
-
-        // send
-        MeshBase<IndexT>::worldComm().localComm().send( IdProcessOfGhost, nbMsgToSend[IdProcessOfGhost], idInPartition );
-#if 0
-        std::cout<< "I am the proc" << MeshBase<IndexT>::worldComm().localRank()<<" , I send to proc " << IdProcessOfGhost
-                 <<" with tag "<< nbMsgToSend[IdProcessOfGhost]
-                 << " idSend " << idInPartition
-                 << " it_ghost->G() " << __element.G()
-                 << std::endl;
-#endif
-        // save tag of request
-        mapMsg[IdProcessOfGhost].insert( std::make_pair( nbMsgToSend[IdProcessOfGhost], __element.id() ) );
-        // update nb send
-        ++nbMsgToSend[IdProcessOfGhost];
-    }
-
-    //------------------------------------------------------------------------------------------------//
-
-    auto rangeElements = this->elementsWithProcessId( MeshBase<IndexT>::worldComm().localRank() );
-    auto itEltActif = std::get<0>( rangeElements );
-    auto const enEltActif = std::get<1>( rangeElements );
-    for ( ; itEltActif != enEltActif; ++itEltActif )
-    {
-        auto const& elt = boost::unwrap_ref( *itEltActif );
-        if ( elt.numberOfNeighborPartitions() == 0 ) continue;
-        auto itneighbor = elt.neighborPartitionIds().begin();
-        auto const enneighbor = elt.neighborPartitionIds().end();
-        for ( ; itneighbor != enneighbor; ++itneighbor )
-            nbMsgToRecv[*itneighbor]++;
-    }
-
-    //------------------------------------------------------------------------------------------------//
-
-#if !defined( NDEBUG )
-    // check nbMsgToRecv computation
-    std::vector<int> nbMsgToRecv2;
-    mpi::all_to_all( MeshBase<IndexT>::worldComm().localComm(),
-                     nbMsgToSend,
-                     nbMsgToRecv2 );
-    for ( int proc = 0; proc < MeshBase<IndexT>::worldComm().localSize(); ++proc )
-    {
-        CHECK( nbMsgToRecv[proc] == nbMsgToRecv2[proc] ) << "partitioning data incorect "
-                                                         << "myrank " << MeshBase<IndexT>::worldComm().localRank() << " proc " << proc
-                                                         << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
-                                                         << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
-    }
-#endif
-
-    //------------------------------------------------------------------------------------------------//
-    // recv id asked and re-send set of face id
-    for ( int proc = 0; proc < MeshBase<IndexT>::worldComm().localSize(); ++proc )
-    {
-        for ( int cpt = 0; cpt < nbMsgToRecv[proc]; ++cpt )
-        {
-            //recv
-            size_type idRecv;
-            MeshBase<IndexT>::worldComm().localComm().recv( proc, cpt, idRecv );
-#if 0
-            std::cout<< "I am the proc" << MeshBase<IndexT>::worldComm().localRank()<<" I receive to proc " << proc
-                     <<" with tag "<< cpt << " idRecv " << idRecv
-                     << " it_ghost->G() " << this->element( idRecv ).G()
-                     << std::endl;
-#endif
-            auto const& theelt = this->element( idRecv );
-
-            // get faces id and bary
-            resultghost_type idFacesWithBary( this->numLocalFaces(), boost::make_tuple( 0, std::vector<double>( nRealDim ) ) );
-            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-            {
-                auto const& theface = theelt.face( j );
-                idFacesWithBary[j].template get<0>() = theface.id();
-                //auto const& theGj = theface.G();
-                auto const& theGj = theface.vertices();
-#if 1
-                //compute face barycenter
-                typename Localization<self_type>::matrix_node_type v( theGj.size1(), 1 );
-                ublas::scalar_vector<T> avg( theGj.size2(), T( 1 ) );
-                T n_val = int( theGj.size2() );
-
-                for ( size_type i = 0; i < theGj.size1(); ++i )
-                    v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg ) / n_val;
-
-                auto baryFace = ublas::column( v, 0 );
-#else // doesn't work
-                /*auto GLASbaryFace =*/ //Feel::glas::average(jkj);
-                auto baryFace = ublas::column( glas::average( theface.G() ), 0 );
-#endif
-
-                // save facebarycenter by components
-                for ( uint16_type comp = 0; comp < nRealDim; ++comp )
-                {
-                    idFacesWithBary[j].template get<1>()[comp] = baryFace[comp];
-                }
-            }
-
-            // get points id and nodes
-            resultghost_type idPointsWithNode( element_type::numLocalVertices, boost::make_tuple( 0, std::vector<double>( nRealDim ) ) );
-            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
-            {
-                auto const& thepoint = theelt.point( j );
-                idPointsWithNode[j].template get<0>() = thepoint.id();
-                for ( uint16_type comp = 0; comp < nRealDim; ++comp )
-                {
-                    idPointsWithNode[j].template get<1>()[comp] = thepoint( comp );
-                }
-            }
-
-            std::vector<resultghost_type> theresponse( 2 );
-            theresponse[0] = idPointsWithNode;
-            theresponse[1] = idFacesWithBary;
-            //auto theresponse = boost::make_tuple( idPointsWithNode, idFacesWithBary );
-            // send response
-            //MeshBase<IndexT>::worldComm().localComm().send( proc, cpt, idFacesWithBary );
-            MeshBase<IndexT>::worldComm().localComm().send( proc, cpt, theresponse );
-        }
-    }
-
-    //------------------------------------------------------------------------------------------------//
-    // get response to initial request and update Feel::Mesh::Faces data
-    for ( int proc = 0; proc < MeshBase<IndexT>::worldComm().localSize(); ++proc )
-    {
-        for ( int cpt = 0; cpt < nbMsgToSend[proc]; ++cpt )
-        {
-            //recv
-#if 0
-            std::vector< boost::tuple<size_type, std::vector<double> > > idFacesWithBaryRecv(this->numLocalFaces());
-            MeshBase<IndexT>::worldComm().localComm().recv( proc, cpt, idFacesWithBaryRecv );
-#elif 0
-            typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_face_type;
-            typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_point_type;
-            boost::tuple<resultghost_point_type, resultghost_face_type> requestRecv;
-            MeshBase<IndexT>::worldComm().localComm().recv( proc, cpt, requestRecv );
-            auto const& idPointsWithNodeRecv = requestRecv.template get<0>();
-            auto const& idFacesWithBaryRecv = requestRecv.template get<1>();
-#else
-            std::vector<resultghost_type> requestRecv;
-            MeshBase<IndexT>::worldComm().localComm().recv( proc, cpt, requestRecv );
-            auto const& idPointsWithNodeRecv = requestRecv[0];
-            auto const& idFacesWithBaryRecv = requestRecv[1];
-#endif
 
 #if 0
-            std::cout<< "I am the proc " << MeshBase<IndexT>::worldComm().localRank()<<" I receive to proc " << proc
-                     <<" with tag "<< cpt << std::endl;
-#endif
-            auto const& theelt = this->element( mapMsg[proc][cpt] /*,proc*/ );
-
-            //update faces data
-            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-            {
-                auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
-                auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<1>();
-
-                //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
-                uint16_type jBis = invalid_uint16_type_value;
-                bool hasFind = false;
-                for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
-                {
-
-                    auto const& thefacej2 = theelt.face( j2 );
-                    //auto const& theGj2 = thefacej2.G();
-                    auto const& theGj2 = thefacej2.vertices();
-#if 1
-                    //compute face barycenter
-                    typename Localization<self_type>::matrix_node_type v( theGj2.size1(), 1 );
-                    ublas::scalar_vector<T> avg( theGj2.size2(), T( 1 ) );
-                    T n_val = int( theGj2.size2() );
-
-                    for ( size_type i = 0; i < theGj2.size1(); ++i )
-                        v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg ) / n_val;
-
-                    auto baryFace = ublas::column( v, 0 );
-#else // doesn't compile (I don't now why)
-                    auto const& thefacej2 = theelt.face( j2 );
-                    auto baryFace = ublas::column( glas::average( thefacej2.G() ), 0 );
-#endif
-                    // compare barycenters
-                    bool find2 = true;
-                    for ( uint16_type d = 0; d < nRealDim; ++d )
-                    {
-                        find2 = find2 && ( std::abs( baryFace[d] - baryFaceRecv[d] ) < 1e-9 );
-                    }
-                    if ( find2 )
-                    {
-                        hasFind = true;
-                        jBis = j2;
-                    }
-
-                } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
-
-                CHECK( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
-
-                // get the good face
-                auto face_it = this->faceIterator( theelt.face( jBis ).id() );
-                //update the face
-                face_it->second.setIdInOtherPartitions( proc, idFaceRecv );
-
-            } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-
-            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
-            {
-                auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
-                auto const& nodePointRecv = idPointsWithNodeRecv[j].template get<1>();
-
-                uint16_type jBis = invalid_uint16_type_value;
-                bool hasFind = false;
-                for ( uint16_type j2 = 0; j2 < element_type::numLocalVertices && !hasFind; j2++ )
-                {
-                    auto const& thepointj2 = theelt.point( j2 );
-                    // compare barycenters
-                    bool find2 = true;
-                    for ( uint16_type d = 0; d < nRealDim; ++d )
-                    {
-                        find2 = find2 && ( std::abs( thepointj2( d ) - nodePointRecv[d] ) < 1e-9 );
-                    }
-                    if ( find2 )
-                    {
-                        hasFind = true;
-                        jBis = j2;
-                    }
-                }
-
-                CHECK( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
-                // get the good face
-                auto point_it = this->pointIterator( theelt.point( jBis ).id() );
-                //update the face
-                point_it->second.setIdInOtherPartitions( proc, idPointRecv );
-            } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
-
-            /*for ( size_type j = 0; j < element_type::numLocalEdges; j++ )
-            {
-            }*/
-
-        } // for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
-    }     // for (int proc=0; proc<M_comm.size();++proc)
-
-    //------------------------------------------------------------------------------------------------//
-
-    //std::cout << "[Mesh::updateEntitiesCoDimensionGhostCell] finish" << std::endl;
-
-} // updateEntitiesCoDimensionGhostCell
-
 namespace detail
 {
 template<typename ElementType>
@@ -2375,7 +2106,6 @@ void updateEntitiesCoDimensionTwoGhostCell_step2( MeshType& mesh, typename MeshT
 }
 
 } // namespace detail
-#if 0
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
 {
@@ -2710,8 +2440,69 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
 
     bool meshHasUpdateFaces = this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL );
-
+    bool meshHasUpdateEdges = nDim == 3 && this->components().test( MESH_UPDATE_EDGES );
     auto initialNeighborSubdomains = this->neighborSubdomains();
+    rank_type currentProcessId = MeshBase<IndexT>::worldComm().localRank();
+
+
+    //------------------------------------------------------------------------------------------------//
+    // update interprocess entties
+    // TODO optimisation if we have interprocessfaces
+
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> pointsInterprocessDetection; // ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> edgesInterprocessDetection; // ( edge id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    pointsInterprocessDetection.reserve( std::distance( this->beginOrderedPoint(),
+                                                        this->endOrderedPoint() ) );
+    if constexpr ( nDim == 3 )
+        edgesInterprocessDetection.reserve( std::distance( this->beginOrderedEdge(),
+                                                           this->endOrderedEdge() ) );
+    auto itPointIpDetect = pointsInterprocessDetection.begin();
+    auto itEdgeIpDetect = edgesInterprocessDetection.begin();
+    auto itoe = this->beginOrderedElement();
+    auto enoe = this->endOrderedElement();
+    for ( ; itoe!=enoe;++itoe )
+    {
+        auto const& elt = unwrap_ref( *itoe );
+
+        // nothing to do if no neighbor process
+        if ( elt.idInOthersPartitions().empty() )
+            continue;
+
+        for ( uint16_type n=0; n < elt.nPoints(); n++ )
+        {
+            auto const& point = elt.point( n );
+            std::tie( itPointIpDetect,std::ignore ) = pointsInterprocessDetection.try_emplace( point.id(), false, std::set<rank_type>{} );
+            if ( elt.isGhostCell() )
+                std::get<1>( itPointIpDetect->second ).insert( elt.processId() );
+            else
+                std::get<0>( itPointIpDetect->second ) = true;
+        }
+
+        if constexpr ( nDim == 3 )
+        {
+            for ( size_type j = 0; j < elt.nEdges(); j++ )
+            {
+                if ( !elt.edgePtr( j ) )
+                    continue;
+                auto const& edge = elt.edge( j );
+                std::tie( itEdgeIpDetect,std::ignore ) = edgesInterprocessDetection.try_emplace( edge.id(), false, std::set<rank_type>{} );
+                if ( elt.isGhostCell() )
+                    std::get<1>( itEdgeIpDetect->second ).insert( elt.processId() );
+                else
+                    std::get<0>( itEdgeIpDetect->second ) = true;
+            }
+        }
+    }
+
+    //this->updateInterprocessPoints( std::move( pointsInterprocessDetection ) );
+    this->updateInterprocessPoints( pointsInterprocessDetection );
+    if constexpr ( nDim == 3 )
+    {
+        if ( meshHasUpdateEdges )
+            this->updateInterprocessEdges( edgesInterprocessDetection );
+    }
+    //------------------------------------------------------------------------------------------------//
+    //------------------------------------------------------------------------------------------------//
 
     auto iv = this->beginOrderedElement();
     auto const en = this->endOrderedElement();
@@ -2721,7 +2512,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         if ( !ghostelt.isGhostCell() )
             continue;
         const rank_type ghosteltPid = ghostelt.processId();
-        // update info for parallelism
+        // update info for parallelism (TODO try to remove this data)
         elementGhostConnectPointToElement( ghostelt );
         if constexpr ( nDim == 3 )
             elementGhostConnectEdgeToElement( ghostelt );
@@ -2736,16 +2527,19 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         {
             if ( !ghostelt.facePtr( j ) )
                 continue;
-            auto const& theface = ghostelt.face( j );
+            auto & face = ghostelt.face( j );
             // do nothing if already updated
-            auto itFindFace = dataToSendFaces.find(theface.id());
+            auto itFindFace = dataToSendFaces.find(face.id());
             if ( itFindFace != dataToSendFaces.end() )
                 continue;
+            // set process id at interprocess (use min rank)
+            if ( face.isInterProcessDomain( currentProcessId ) )
+                face.setProcessId( std::min( face.element0().processId(), face.element1().processId() ) );
             // update face data
-            std::tie( itFindFace, std::ignore ) = dataToSendFaces.emplace( theface.id(), typename container_faces_type::mapped_type{} );
+            std::tie( itFindFace, std::ignore ) = dataToSendFaces.emplace( face.id(), typename container_faces_type::mapped_type{} );
             std::get<0>( itFindFace->second ) = std::make_tuple(idEltInOtherPartition, j );
-            std::get<1>( itFindFace->second ) = theface.markers();
-            std::get<2>( itFindFace->second ) = theface.isOnBoundary();
+            std::get<1>( itFindFace->second ) = face.markers();
+            std::get<2>( itFindFace->second ) = face.isOnBoundary();
         }
 
         // edges
@@ -2756,11 +2550,15 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             {
                 if ( !ghostelt.edgePtr( j ) )
                     continue;
-                auto const& edge = ghostelt.edge( j );
+                auto & edge = ghostelt.edge( j );
                 // do nothing if already updated
                 auto itFindEdge = dataToSendEdges.find( edge.id() );
                 if ( itFindEdge != dataToSendEdges.end() )
                     continue;
+                // set process id at interprocess (use min rank)
+                auto [isInterprocess,itInterprocess] = this->findInterprocessEdges( edge.id() );
+                if ( isInterprocess )
+                    edge.setProcessId( std::min( currentProcessId, *itInterprocess->second.begin() ) );
                 // update edge data
                 std::tie( itFindEdge, std::ignore ) = dataToSendEdges.emplace( edge.id(), typename container_edges_type::mapped_type{} );
                 std::get<0>( itFindEdge->second ) = std::make_tuple(idEltInOtherPartition, j );
@@ -2774,11 +2572,15 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             auto & dataToSendPoints = std::get<tuple_id_info_points>( dataToSend[ghosteltPid] );
             for ( size_type j = 0; j < ghostelt.nPoints(); j++ )
             {
-                auto const& point =  ghostelt.point( j );
+                auto & point =  ghostelt.point( j );
                 // do nothing if already updated
                 auto itFindPoint = dataToSendPoints.find(point.id());
                 if ( itFindPoint != dataToSendPoints.end() )
                     continue;
+                // set process id at interprocess (use min rank)
+                auto [isInterprocess,itInterprocess] = this->findInterprocessPoints( point.id() );
+                if ( isInterprocess )
+                    point.setProcessId( std::min( currentProcessId, *itInterprocess->second.begin() ) );
                 // update point data
                 std::tie( itFindPoint, std::ignore ) = dataToSendPoints.emplace( point.id(), typename container_points_type::mapped_type{} );
                 std::get<0>( itFindPoint->second ) = std::make_tuple(idEltInOtherPartition, j );
@@ -2913,7 +2715,6 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             }
         }
 
-        //if constexpr ( nDim > 2 )
         if ( nDim > 1 || !meshHasUpdateFaces )
         {
             // points
@@ -2935,15 +2736,20 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         }
     }
 
+    // Step 2 : active elements and subentity included are properly built, we can send info to ghost elements
+
     // prepare data to send (second step)
-    using container_step2_elements_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>> >; // (id of elt, (id in other part mapping))
+    using container_step2_elements_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
+                                                                         std::vector<uint16_type> > >; // (id of elt, (id in other part mapping), (face permutation in elt (only 3D)))
     using container_step2_faces_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
                                                                       std::map<uint16_type, typename face_type::marker_type>,
                                                                       rank_type,bool> >; // (id of face, (id in other part mapping),markers,processId,isOnBoundary)
     using container_step2_edges_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
-                                                                      std::map<uint16_type, typename edge_type::marker_type> > >; // (id of edge, (id in other part mapping),markers)
+                                                                      std::map<uint16_type, typename edge_type::marker_type>,
+                                                                      rank_type> >; // (id of edge, (id in other part mapping),markers,processId)
     using container_step2_points_type = std::map<size_type, std::tuple<std::map<rank_type,size_type>,
-                                                                       std::map<uint16_type, typename point_type::marker_type> > >; // (id of point, (id in other part mapping),markers)
+                                                                       std::map<uint16_type, typename point_type::marker_type>,
+                                                                       rank_type> >; // (id of point, (id in other part mapping),markers,processId)
     std::map<rank_type, std::tuple<container_step2_elements_type,
                                    container_step2_faces_type,
                                    container_step2_edges_type,
@@ -2957,6 +2763,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                 for ( auto const& [pidGhost,eidGhost] : entityPtr->idInOthersPartitions() )
                 {
                     auto & dataToSendStep2Elt = std::get<tuple_id>( dataToSendStep2[pidGhost] )[eidGhost];
+
+                    // idInOthersPartitions
                     std::map<rank_type,size_type> tmpIiop;
                     for ( auto [r,e] : entityPtr->idInOthersPartitions() )
                         if ( r != pidGhost )
@@ -2966,37 +2774,31 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                         tmpIiop.emplace( entityPtr->pidInPartition(), entityPtr->id() );
                     std::get<0>( dataToSendStep2Elt ) = std::move( tmpIiop );
 
-                    if constexpr( tuple_id == tuple_id_info_faces )
+                    if constexpr( tuple_id == tuple_id_info_elements )
+                    {
+                        if constexpr ( nDim == 3 )
+                        {
+                            std::vector<uint16_type> facePermutations( entityPtr->nTopologicalFaces(), invalid_v<uint16_type> );
+                            for ( size_type j = 0; j < entityPtr->nTopologicalFaces(); j++ )
+                            {
+                                if ( !entityPtr->facePtr( j ) )
+                                    continue;
+                                auto const& face = entityPtr->face( j );
+                                facePermutations[j] = entityPtr->facePermutation( j ).value();
+                            }
+                            std::get<1>( dataToSendStep2Elt ) = std::move( facePermutations );
+                        }
+                    }
+                    else if constexpr( tuple_id == tuple_id_info_faces )
                     {
                         std::get<1>( dataToSendStep2Elt ) = entityPtr->markers();
                         std::get<3>( dataToSendStep2Elt ) = entityPtr->isOnBoundary();
-                        // eval process id
-                        rank_type pidEntity = entityPtr->pidInPartition();
-#if 1
-                        if ( entityPtr->isInterProcessDomain( entityPtr->element0().processId() ) )
-                            pidEntity = std::min( entityPtr->element0().processId(), entityPtr->element1().processId() );
-                        else // intra or on boundary
-                            pidEntity = entityPtr->element0().processId();
-#else
-                        entityPtr->setProcessId( entityPtr->pidInPartition() ); // trick to use isInterProcessDomain() correctly (TODO)
-                        if ( entityPtr->isInterProcessDomain() )
-                            pidEntity = std::min( entityPtr->element0().processId(), entityPtr->element1().processId() );
-                        else // intra or on boundary
-                            pidEntity = entityPtr->element0().processId();
-#endif
-                        // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
-                        entityPtr->setProcessId( pidEntity );
-                        std::get<2>( dataToSendStep2Elt ) = pidEntity;
+                        std::get<2>( dataToSendStep2Elt ) = entityPtr->processId();
                     }
                     else if constexpr( tuple_id == tuple_id_info_edges || tuple_id == tuple_id_info_points )
                     {
                         std::get<1>( dataToSendStep2Elt ) = entityPtr->markers();
-                        // eval process id
-                        rank_type pidEntity = entityPtr->pidInPartition();
-                        for ( auto const& [pidOther,eidOther] : entityPtr->idInOthersPartitions() )
-                            pidEntity = std::min( pidEntity, pidOther );
-                        // WARNING: update process id of entity (should be coherent with all active elements which have subentity)
-                        entityPtr->setProcessId( pidEntity );
+                        std::get<2>( dataToSendStep2Elt ) = entityPtr->processId();
                     }
                 }
             }
@@ -3018,7 +2820,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     countRequest = 0;
 
     //------------------------------------------------------------------------------------------------//
-    // update mesh data (step 2)
+    // update ghost elements and subentities (step 2)
     for ( auto const& [rankRecv,dataEntities] : dataToRecvStep2 )
     {
         // elements
@@ -3028,6 +2830,16 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
             auto& elt = this->elementIterator( eltId )->second;
             for ( auto [r,e] : std::get<0>( dataElt ) )
                 elt.setIdInOtherPartitions( r, e );
+            if constexpr ( nDim == 3 )
+            {
+                for ( uint16_type j = 0; j < elt.nTopologicalFaces(); j++ )
+                {
+                    if ( !elt.facePtr( j ) )
+                        continue;
+                    auto & face = elt.face( j );
+                    elt.setFacePermutation( j, typename element_type::face_permutation_type( std::get<1>( dataElt ).at(j) ) );
+                }
+            }
         }
         // faces
         for ( auto const& [faceId,dataFace] : std::get<1>( dataEntities ) )
@@ -3038,16 +2850,12 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                 face.setIdInOtherPartitions( r, e );
             for ( auto const& [markerType,markerValues] : std::get<1>( dataFace ) )
                 face.addMarker( markerType, markerValues );
+            // // update process id
             face.setProcessId( std::get<2>( dataFace ) );
 
             //face.setOnBoundary( std::get<3>( dataFace ) );
             if ( !std::get<3>( dataFace ) )
                 face.setOnBoundary( false );
-            // // update process id
-            // rank_type pidFace = face.pidInPartition();
-            // for ( auto const& [pidOther,eidOther] : face.idInOthersPartitions() )
-            //     pidFace = std::min( pidFace, pidOther );
-            // face.setProcessId( pidFace );
             if constexpr ( nDim == 1 )
             {
                 for ( auto const& [pidOther,eidOther] : face.idInOthersPartitions() )
@@ -3066,14 +2874,10 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                 for ( auto const& [markerType,markerValues] : std::get<1>( dataEdge ) )
                     edge.addMarker( markerType, markerValues );
                 // update process id
-                rank_type pidEdge = edge.pidInPartition();
-                for ( auto const& [pidOther,eidOther] : edge.idInOthersPartitions() )
-                    pidEdge = std::min( pidEdge, pidOther );
-                edge.setProcessId( pidEdge );
+                edge.setProcessId( std::get<2>( dataEdge ) );
             }
         }
         // points
-        //if constexpr ( nDim > 2 )
         if ( nDim > 1 || !meshHasUpdateFaces )
         {
             for ( auto const& [pointId,dataPoint] : std::get<tuple_id_info_points>( dataEntities ) )
@@ -3085,47 +2889,15 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
                 for ( auto const& [markerType,markerValues] : std::get<1>( dataPoint ) )
                     point.addMarker( markerType, markerValues );
                 // update process id
-                rank_type pidPoint = point.pidInPartition();
+                point.setProcessId( std::get<2>( dataPoint ) );
+                // TODO check interprocess point : process id  should be already good or put invalid_value at the begin for ghost non interprocess
                 for ( auto const& [pidOther,eidOther] : point.idInOthersPartitions() )
-                {
-                    pidPoint = std::min( pidPoint, pidOther );
                     this->addNeighborSubdomain( pidOther );
-                }
-                point.setProcessId( pidPoint );
             }
         }
     }
 
 
-    //------------------------------------------------------------------------------------------------//
-    // update interprocess entties
-    // TODO optimisation if we have interprocessfaces
-
-    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> pointsInterprocessDetection; // ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
-    pointsInterprocessDetection.reserve( std::distance( this->beginOrderedPoint(),
-                                                        this->endOrderedPoint() ) );
-    auto itPointIpDetect = pointsInterprocessDetection.begin();
-    auto itoe = this->beginOrderedElement();
-    auto enoe = this->endOrderedElement();
-    for ( ; itoe!=enoe;++itoe )
-    {
-        auto const& elt = unwrap_ref( *itoe );
-        // nothing to do if no neighbor process
-        if ( elt.idInOthersPartitions().empty() )
-            continue;
-        for ( uint16_type n=0; n < elt.nPoints(); n++ )
-        {
-            auto const& point = elt.point( n );
-            std::tie( itPointIpDetect,std::ignore ) = pointsInterprocessDetection.try_emplace( point.id(), false, std::set<rank_type>{} );
-            if ( elt.isGhostCell() )
-                std::get<1>( itPointIpDetect->second ).insert( elt.processId() );
-            else
-                std::get<0>( itPointIpDetect->second ) = true;
-        }
-    }
-
-    //this->updateInterprocessPoints( std::move( pointsInterprocessDetection ) );
-    this->updateInterprocessPoints( pointsInterprocessDetection );
 
 }
 #endif

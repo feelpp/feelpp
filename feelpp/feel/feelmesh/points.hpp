@@ -69,6 +69,8 @@ class Points
     typedef typename ordered_points_reference_wrapper_type::iterator ordered_point_reference_wrapper_iterator;
     typedef typename ordered_points_reference_wrapper_type::const_iterator ordered_point_reference_wrapper_const_iterator;
 
+    using point_interprocess_map_type = std::unordered_map<index_type,std::set<rank_type>>;
+
     //@}
 
     /** @name Constructors, destructor
@@ -573,7 +575,15 @@ class Points
     }
 
 protected:
-
+    bool isInterprocessPoints( index_type pointId ) const
+        {
+            return this->findInterprocessPoints( pointId ).first;
+        }
+    std::pair<bool,typename point_interprocess_map_type::const_iterator> findInterprocessPoints( index_type pointId ) const
+        {
+            auto itFind = M_interprocessPoints.find( pointId );
+            return std::make_pair( itFind != M_interprocessPoints.end(), itFind );
+        }
     //! update interprocess points from mapping ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
     void updateInterprocessPoints( std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> const& pointsInterprocessDetection )
         {
@@ -636,8 +646,7 @@ protected:
     points_type M_points;
     ordered_points_reference_wrapper_type M_orderedPoints;
     bool M_needToOrderPoints;
-
-    std::unordered_map<index_type,std::set<rank_type>> M_interprocessPoints;
+    point_interprocess_map_type M_interprocessPoints;
 };
 /// \endcond
 } // namespace Feel
