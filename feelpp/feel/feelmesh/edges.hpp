@@ -74,6 +74,7 @@ public:
     typedef typename ordered_edges_reference_wrapper_type::iterator ordered_edge_reference_wrapper_iterator;
     typedef typename ordered_edges_reference_wrapper_type::const_iterator ordered_edge_reference_wrapper_const_iterator;
 
+    using edges_interprocess_map_type = std::unordered_map<index_type,std::set<rank_type>>;
     //@}
 
     /** @name Constructors, destructor
@@ -473,6 +474,31 @@ public:
         }
     //@}
 
+protected:
+    bool isInterprocessEdges( index_type edgeId ) const
+        {
+            return this->findInterprocessEdges( edgeId ).first;
+        }
+    std::pair<bool,typename edges_interprocess_map_type::const_iterator> findInterprocessEdges( index_type edgeId ) const
+        {
+            auto itFind = M_interprocessEdges.find( edgeId );
+            return std::make_pair( itFind != M_interprocessEdges.end(), itFind );
+        }
+    //! update interprocess edges from mapping ( edge id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    void updateInterprocessEdges( std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> const& edgesInterprocessDetection )
+        {
+            M_interprocessEdges.clear();
+            for ( auto const& [edgeId,ipData] : edgesInterprocessDetection )
+            {
+                if ( !std::get<0>( ipData ) ) // not on current process
+                    continue;
+                if ( std::get<1>( ipData ).empty() ) // not on neighbor process
+                    continue;
+                //M_interprocessEdges.try_emplace( edgeId, std::move( std::get<1>( ipData ) ) );
+                M_interprocessEdges.try_emplace( edgeId, std::get<1>( ipData ) );
+            }
+        }
+
 private:
 
     void buildOrderedEdges()
@@ -520,6 +546,7 @@ private:
     edges_type M_edges;
     ordered_edges_reference_wrapper_type M_orderedEdges;
     bool M_needToOrderEdges;
+    edges_interprocess_map_type M_interprocessEdges;
 };
 /// \endcond
 } // Feel

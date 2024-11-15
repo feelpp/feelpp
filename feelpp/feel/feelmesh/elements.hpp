@@ -195,9 +195,11 @@ public:
             for ( uint16_type i = 0; i < e.numPoints; ++i )
             {
                 e.point( i ).addElementGhost( e.processId(),e.id() );
+#if 0
                 // only if point is on interprocess
                 if ( e.point( i ).processId()!=invalid_rank_type_value )
                     e.point( i ).addNeighborPartitionId( e.processId() );
+#endif
             }
         }
     };
