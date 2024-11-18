@@ -71,13 +71,13 @@ enum class EntityProcessType
 using entity_process_t = EntityProcessType;
 
 
-enum class FacesFilterType{
+enum class EntityFilterType{
     PROCESS_ID,
     MARKER,
     ON_BOUNDARY,
     INTERNAL
 };
-using faces_filter_t = FacesFilterType;
+using entity_filter_t = EntityFilterType;
 
 }
 #endif /* __MeshEnums_H */

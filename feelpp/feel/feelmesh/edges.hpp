@@ -239,9 +239,9 @@ public:
                     continue;
                 if ( edge.marker().isOff() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part, M_interprocessEdges ) )
                         continue;
                 }
                 myedges->push_back( boost::cref( edge ) );
@@ -268,9 +268,9 @@ public:
                     continue;
                 if ( !edge.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part, M_interprocessEdges ) )
                         continue;
                 }
                 myedges->push_back( boost::cref( edge ) );
@@ -321,9 +321,9 @@ public:
                 auto const& edge = unwrap_ref( *it );
                 if ( !edge.isOnBoundary() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part, M_interprocessEdges ) )
                         continue;
                 }
                 myedges->push_back( boost::cref( edge ) );
@@ -349,9 +349,9 @@ public:
                 auto const& edge = unwrap_ref( *it );
                 if ( !edge.isInternal() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part, M_interprocessEdges ) )
                         continue;
                 }
                 myedges->push_back( boost::cref( edge ) );
@@ -375,15 +375,52 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& edge = unwrap_ref( *it );
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
-                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part ) )
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( edge, part, M_interprocessEdges ) )
                         continue;
                 }
                 myedges->push_back( boost::cref( edge ) );
             }
             myedges->shrink_to_fit();
             return std::make_tuple( myedges->begin(), myedges->end(), myedges );
+        }
+
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesFilterImpl( Ts&&... ts ) const
+        {
+            if constexpr ( FF == entity_filter_t::PROCESS_ID )
+                return this->edgesWithProcessId<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::MARKER )
+                return this->edgesWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
+                return this->edgesOnBoundary<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::INTERNAL )
+                return this->internalEdges<EPT>( std::forward<Ts>( ts )... );
+            return {};
+        }
+    template <entity_filter_t FF, typename ... Ts>
+    std::tuple<edge_reference_wrapper_const_iterator,edge_reference_wrapper_const_iterator,edges_reference_wrapper_ptrtype>
+    edgesFilter( entity_process_t ept, Ts&&... ts ) const
+        {
+            return std::invoke(
+                [this,&ept](auto&& ... args)
+                    {
+                        switch ( ept )
+                        {
+                        default:
+                        case entity_process_t::LOCAL_ONLY:
+                            return this->edgesFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                            return this->edgesFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::GHOST_ONLY:
+                            return this->edgesFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::ALL:
+                            return this->edgesFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                        }
+                    },
+                std::forward<Ts>( ts )... );
         }
 
     //@}

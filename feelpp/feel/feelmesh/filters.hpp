@@ -180,16 +180,6 @@ struct marked3elements
 } // meta
 #endif
 
-/**
- * \ingroup MeshIterators
- * \return a pair of iterators to iterate over elements with pid \p flag
- */
-template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-auto
-allelements( MeshType const& mesh   )
-{
-    return range( _range=Feel::detail::allelements( mesh ), _mesh = mesh );
-}
 
 /**
  *
@@ -201,6 +191,17 @@ auto
 elements( MeshType const& mesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
     return range( _range=Feel::detail::elements( mesh, rank( mesh ), ept ), _mesh=mesh );
+}
+
+/**
+ * \ingroup MeshIterators
+ * \return a pair of iterators to iterate over elements with pid \p flag
+ */
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
+auto
+allelements( MeshType const& mesh   )
+{
+    return elements( mesh, entity_process_t::ALL );
 }
 
 /**

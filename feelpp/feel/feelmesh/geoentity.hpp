@@ -1005,7 +1005,12 @@ bool checkPartitionPredicate( EntityType const& entity, rank_type part )
     {
         if constexpr ( is_topological_face<EntityType>::value )
             return entity.processId() == part || entity.isInterProcessDomain( part );
-        else CHECK( false ) << "TODO";
+        else
+        {
+            //CHECK( false ) << "TODO";
+            // only for element entity, because INTERPROCESS has no impact (TODO check if entity is a mesh element)
+            return entity.processId() == part;
+        }
     }
     return true;
 }
