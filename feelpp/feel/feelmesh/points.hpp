@@ -470,6 +470,43 @@ class Points
         }
 #endif
 
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsFilterImpl( Ts&&... ts ) const
+        {
+            if constexpr ( FF == entity_filter_t::PROCESS_ID )
+                return this->pointsWithProcessId<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::MARKER )
+                return this->pointsWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
+                return this->boundaryPoints<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::INTERNAL )
+                return this->internalPoints<EPT>( std::forward<Ts>( ts )... );
+            return {};
+        }
+    template <entity_filter_t FF, typename ... Ts>
+    std::tuple<point_reference_wrapper_const_iterator,point_reference_wrapper_const_iterator,points_reference_wrapper_ptrtype>
+    pointsFilter( entity_process_t ept, Ts&&... ts ) const
+        {
+            return std::invoke(
+                [this,&ept](auto&& ... args)
+                    {
+                        switch ( ept )
+                        {
+                        default:
+                        case entity_process_t::LOCAL_ONLY:
+                            return this->pointsFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                            return this->pointsFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::GHOST_ONLY:
+                            return this->pointsFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::ALL:
+                            return this->pointsFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                        }
+                    },
+                std::forward<Ts>( ts )... );
+        }
+
     //@}
 
     /** @name  Mutators

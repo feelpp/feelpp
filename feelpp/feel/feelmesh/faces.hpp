@@ -522,21 +522,21 @@ public:
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
-    template <faces_filter_t FF, entity_process_t EPT, typename ... Ts>
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesFilterImpl( Ts&&... ts ) const
         {
-            if constexpr ( FF == faces_filter_t::PROCESS_ID )
+            if constexpr ( FF == entity_filter_t::PROCESS_ID )
                 return this->facesWithProcessId<EPT>( std::forward<Ts>( ts )... );
-            else if constexpr ( FF == faces_filter_t::MARKER )
+            else if constexpr ( FF == entity_filter_t::MARKER )
                 return this->facesWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
-            else if constexpr ( FF == faces_filter_t::ON_BOUNDARY )
+            else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
                 return this->facesOnBoundary<EPT>( std::forward<Ts>( ts )... );
-            else if constexpr ( FF == faces_filter_t::INTERNAL )
+            else if constexpr ( FF == entity_filter_t::INTERNAL )
                 return this->internalFaces<EPT>( std::forward<Ts>( ts )... );
             return {};
         }
-    template <faces_filter_t FF, typename ... Ts>
+    template <entity_filter_t FF, typename ... Ts>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesFilter( entity_process_t ept, Ts&&... ts ) const
         {
