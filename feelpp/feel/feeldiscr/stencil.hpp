@@ -520,13 +520,13 @@ private:
     testElementIdFromRange( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
     {
         std::set<std::pair<index_type,rank_type> > res;
-        if ( theface.isConnectedTo0() && !theface.element0().isGhostCell() )
+        if ( theface.isConnectedTo0() /*&& !theface.element0().isGhostCell()*/ )
         {
             auto resElt0 = testElementIdFromRange( mpl::size_t<MESH_ELEMENTS>(), theface.element( 0 ) );
             for ( std::pair<index_type,rank_type> const& idElt0 : resElt0 )
                 res.insert( idElt0 );
         }
-        if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+        if ( theface.isConnectedTo1() /*&& !theface.element1().isGhostCell()*/ )
         {
             auto resElt1 = testElementIdFromRange( mpl::size_t<MESH_ELEMENTS>(), theface.element( 1 ) );
             for ( std::pair<index_type,rank_type> const& idElt1 : resElt1 )
@@ -798,7 +798,7 @@ struct compute_stencil_type
 
 }
 
-template<class T, class U> inline bool operator<(std::weak_ptr<T> const & a, std::weak_ptr<U> const & b) 
+template<class T, class U> inline bool operator<(std::weak_ptr<T> const & a, std::weak_ptr<U> const & b)
 {
     return a.owner_before( b );
 }
@@ -1572,6 +1572,7 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
             for ( auto const& [idTestElt,rankTestElt] : infoTestElts )
             {
                 auto const& elem = _M_X1->mesh()->element( idTestElt );
+                //CHECK( _M_X1->dof()->isElementDone( idTestElt ) ) << fmt::format("_M_X1 element id not done: {}",idTestElt);
 
                 auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
                 //const uint16_type  n1_dof_on_element = element_dof1.size();
@@ -1586,6 +1587,8 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
 
                     if ( trial_space_type::dof_type::is_mortar )
                         element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
+
+                    //CHECK( _M_X2->dof()->isElementDone( domain_eid ) ) << fmt::format("_M_X2 element id not done: {}",domain_eid);
 
                     // Get the global indices of the DOFs with support on this element
                     bool is_empty = _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
@@ -1921,7 +1924,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
                 DVLOG(2) << "[Stencil::computeGraphHDG] trial dKi=" << dKi << std::endl;
                 if ( dKi == invalid_v<index_type> )
                     continue;
-                
+
                 // Get the global indices of the DOFs with support on this element
                 _M_X2->dof()->getIndicesSetOnGlobalCluster( dKi, element_dof2 );
 
