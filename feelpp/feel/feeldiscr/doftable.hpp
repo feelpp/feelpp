@@ -1118,7 +1118,7 @@ public:
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostDofMapExtended( mesh_type& mesh );
-    void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange, Range<mesh_type,MESH_ELEMENTS> const& activeEltTouchInterProcessRange );
+    void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange );
     void buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
                                                                            std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend );
