@@ -73,7 +73,7 @@ void run( bool useSMD )
 
     // function space
     auto Xh1 = Pch<2>(mesh1,true);
-    auto Xh2 = Pch<3>(mesh2);
+    auto Xh2 = Pch<3>(mesh2,true);
     auto Xh3 = Pch<2>(mesh3,true);
     auto u1 = Xh1->element(cst(1.));
     auto u2 = Xh2->element(cst(1.));
