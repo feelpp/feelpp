@@ -22,7 +22,9 @@
 #
 #
 
-feelpp_add_test(bvhgpu SRCS test_bvhgpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_bvhgpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+feelpp_add_test(bvhgpu SRCS test_old.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_old_empty.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
 
 

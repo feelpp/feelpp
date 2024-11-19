@@ -191,31 +191,6 @@ endif()
 
 option(FEELPP_ENABLE_JSON_DIAGNOSTICS "enable extended json diagnostics" ON)
 
-find_package(hip)
-if (hip_FOUND)
-  enable_language(HIP)
-  find_package(hipblas REQUIRED)
-  find_package(rocthrust REQUIRED)
-  message(STATUS "Hip found: [hipblas rocthrust]")
-else()
-  message(STATUS "HIP/ROCm not found. Building Feel++ without HIP support.")
-endif()
-
-add_library(feelpp_gpu INTERFACE)
-if (hip_FOUND)
-  target_link_libraries(feelpp_gpu INTERFACE hip::device hip::host hipblas roc::rocthrust)
-  target_compile_definitions(feelpp_gpu INTERFACE FEELPP_HAS_HIP)
-  add_library(Feelpp::feelpp_gpu ALIAS feelpp_gpu)
-endif()
-
-find_package(CUDA QUIET)
-if(CUDA_FOUND)
-    target_link_libraries(Feelpp::feelpp_gpu INTERFACE CUDA::CUDA)
-    target_compile_definitions(Feelpp::feelpp_gpu INTERFACE FEELPP_HAS_CUDA)
-else()
-    message(STATUS "CUDA not found.")
-endif()
-
 # feel++ lib
 ADD_SUBDIRECTORY ( feel )
 
@@ -226,7 +201,7 @@ feelpp_get_environment()
 add_subdirectory(cmake)
 
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
-OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
+  OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
 
 add_subdirectory(tools)
 include(feelpp.module.quickstart)

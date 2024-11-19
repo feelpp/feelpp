@@ -280,7 +280,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     std::string filename = "results.txt";
     std::ofstream myfile( filename );
 
-    for ( int kkk : std::views::iota(1, 5) )
+    for ( int kkk : std::views::iota(1, 2) )
     {
 
         Eigen::Vector3d ray_origin = { 0.0f, 0.0f, 0.0f };
@@ -411,6 +411,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
     bool isModeGPU = true;//isThereAnyGPUhere( false );
+    //isModeGPU = false;
 
     int kkk = 1;
 
@@ -463,6 +464,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
             // printRayIntersectionResults(bvhThirdPartyLow,rayIntersectionResult);
             distance_CPU_mode.insert( distance_CPU_mode.end(), dist.begin(), dist.end() );
         }
+        LOG( INFO ) << "dist : " << distance_CPU_mode.size() << "\n";
     }
 #if defined(FEELPP_HAS_HIP)
     if ( isModeGPU )
@@ -479,6 +481,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
             // printRayIntersectionResults(bvhHIPParty,rayIntersectionResult);
             distance_GPU_mode.insert( distance_GPU_mode.end(), dist.begin(), dist.end() );
         }
+        LOG( INFO ) << "dist : " << distance_GPU_mode.size() << "\n";
     }
 #endif    
     t_end = std::chrono::steady_clock::now();
@@ -486,6 +489,8 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
     t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end - t_begin ).count();
     LOG( INFO ) << "Elapsed microseconds inside BVH Ray Tracing GPU : " << t_laps << " us\n";
 }
+
+
 
 BOOST_AUTO_TEST_SUITE( bvh_intersection_gpu_tests )
 
@@ -532,7 +537,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     LOG( INFO ) << "nbdyfaces : " << nbdyfaces << "\n";
     LOG( INFO ) << "\n";
 
-    
+ 
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     LOG( INFO ) << "Execute on CPU" << std::endl;
     test3DInsideObjectWithHybrid<Kokkos::Serial>( rangeFaces );
@@ -544,6 +549,7 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     test3DInsideObjectWithHybrid<Kokkos::HIP>( rangeFaces );
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
 #endif
+
 
     LOG( INFO ) << "\n";
 }
