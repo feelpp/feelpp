@@ -751,6 +751,33 @@ struct aabb_getter
     }
 };
 
+__host__ __device__ 
+float angleScalar(const float4 v1, const float4 v2) {
+	float p = (v1.x) * (v2.x) + (v1.y) * (v2.y) + (v1.z) * (v2.z);
+	float n1 = sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z);
+	float n2 = sqrt(v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
+	float d = n1 * n2;
+	float res = 0.0f;
+	if (d > 0.0f) {
+		float r = p / d;
+		if (r > 1.0f) r = 1.0f;
+		res = acos(r);
+	}
+	return (res);  // in radian
+}
+
+__host__ __device__ 
+bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
+{   // To be modified soon according to the radius of the triangle object
+	float4 dT; 
+	dT.x = (tri.v1.x + tri.v2.x + tri.v3.x) / 3.0f - ray.origin.x;
+	dT.y = (tri.v1.y + tri.v2.y + tri.v3.y) / 3.0f - ray.origin.y;
+	dT.z = (tri.v1.z + tri.v2.z + tri.v3.z) / 3.0f - ray.origin.z;
+	float angle = angleScalar(dT, ray.direction);
+	return (angle <= angleLim);
+}
+
+
 struct distance_calculator
 {
     __device__ float operator()( const float4 point, const Triangle& tri ) const noexcept
@@ -766,6 +793,27 @@ struct distance_calculator
     }
 };
 
+struct distance_calculator2 {
+  __device__ float operator()(const float4 point, const Triangle &tri) const noexcept {
+    // Function that will be used to resolve the problems of the vertices at the edge of the triangle.
+    float4 edge1 = tri.v2 - tri.v1;
+    float4 edge2 = tri.v3 - tri.v1;
+    float3 normal = make_float3(edge1.y * edge2.z - edge1.z * edge2.y,
+                                edge1.z * edge2.x - edge1.x * edge2.z,
+                                edge1.x * edge2.y - edge1.y * edge2.x);
+    float normLength = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+    if (normLength > 0) {
+      normal.x /= normLength;
+      normal.y /= normLength;
+      normal.z /= normLength;
+    }
+
+    float D = -(normal.x * tri.v1.x + normal.y * tri.v1.y + normal.z * tri.v1.z);
+    float distance = fabs(normal.x * point.x + normal.y * point.y + normal.z * point.z + D);
+    return distance;
+  }
+};
+
 __device__ float3 cross( float3 a, float3 b )
 {
     return make_float3( a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x );
@@ -776,6 +824,29 @@ __device__ float dot( float3 a, float3 b )
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+__device__ float3 float4_to_float3(const float4& v) {
+    return make_float3(v.x, v.y, v.z);
+}
+
+__device__ bool computeBarycentricCoordinates(const float4 &P, const Triangle &tri, float &u, float &v) {
+    float4 v0 = tri.v2 - tri.v1;
+    float4 v1 = tri.v3 - tri.v1;
+    float4 v2 = P - tri.v1;
+
+    float d00 = dot(float4_to_float3(v0), float4_to_float3(v0));
+    float d01 = dot(float4_to_float3(v0), float4_to_float3(v1));
+    float d11 = dot(float4_to_float3(v1), float4_to_float3(v1));
+    float d20 = dot(float4_to_float3(v2), float4_to_float3(v0));
+    float d21 = dot(float4_to_float3(v2), float4_to_float3(v1));
+
+    float denom = d00 * d11 - d01 * d01;
+    if (denom == 0) return false; 
+
+    u = (d11 * d20 - d01 * d21) / denom;
+    v = (d00 * d21 - d01 * d20) / denom;
+
+    return (u >= 0 && v >= 0 && (u + v) <= 1); // Check if the point is inside or on the edge
+}
 
 __host__ __device__
 inline void normalizeRayDirection(Ray& ray) {
@@ -882,6 +953,52 @@ __global__ void rayTracingKernel( lbvh::bvh_device<T, U> bvh_dev, Ray* rays, Hit
     {
         // No items found
         if ( isView ) printf( "Ray %d did not hit any triangle\n", idx );
+    }
+}
+
+template <typename T, typename U>
+__global__ void rayTracingKernelSurfaceEdge(lbvh::bvh_device<T, U> bvh_dev, Ray *rays,
+                                 HitRay *d_HitRays, int numRays) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numRays)
+        return;
+
+    Ray ray = rays[idx];
+    normalizeRayDirection(ray);
+
+    const float epsilon = 0.001f;
+    float4 pos = ray.origin + ray.direction * epsilon;
+    const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), distance_calculator());
+    d_HitRays[idx].hitResults = -1;
+    d_HitRays[idx].distanceResults = INFINITY; // distance
+    d_HitRays[idx].intersectionPoint = make_float3(INFINITY, INFINITY, INFINITY);
+    d_HitRays[idx].idResults = -1;
+
+    if (nest.first != 0xFFFFFFFF) {
+        const auto &hit_triangle = bvh_dev.objects[nest.first];
+
+        float t;
+        if (rayTriangleIntersect(ray, hit_triangle, t)) {
+            float4 hit_point = ray.origin + ray.direction * t;
+
+            float u, v;
+            if (computeBarycentricCoordinates(hit_point, hit_triangle, u, v)) {
+                d_HitRays[idx].hitResults = nest.first;
+                d_HitRays[idx].distanceResults = t; 
+                d_HitRays[idx].intersectionPoint =
+                    make_float3(hit_point.x, hit_point.y, hit_point.z);
+                d_HitRays[idx].idResults = hit_triangle.id;
+
+                printf("Ray %d hit triangle %d at point (%f, %f, %f) Distance:%f\n", idx, nest.first,
+                       hit_point.x, hit_point.y, hit_point.z, t);
+            } else {
+                printf("Ray %d: Intersection at vertex or outside triangle\n", idx);
+            }
+        } else {
+            printf("Ray %d: Nearest object found but not intersected by ray\n", idx);
+        }
+    } else {
+        printf("Ray %d did not hit any triangle\n", idx);
     }
 }
 
