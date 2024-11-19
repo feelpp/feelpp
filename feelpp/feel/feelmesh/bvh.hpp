@@ -181,6 +181,49 @@ struct Intersection
     int triangleIndex;
 };
 
+
+struct TriangleInfo {
+    Vec3 centroid;
+    int index;
+};
+
+
+
+__host__ __device__ 
+float angleScalar(const Vec3 v1, const Vec3 v2) {
+	float p = (v1.x) * (v2.x) + (v1.y) * (v2.y) + (v1.z) * (v2.z);
+	float n1 = sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z);
+	float n2 = sqrt(v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
+	float d = n1 * n2;
+	float res = 0.0f;
+	if (d > 0.0f) {
+		float r = p / d;
+		if (r > 1.0f) r = 1.0f;
+		res = acos(r);
+	}
+	return (res);  // in radian
+}
+
+
+__host__ __device__ 
+bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
+{
+	Vec3 dT; 
+	dT.x = (tri.v0.x + tri.v1.x + tri.v2.x) / 3.0f - ray.origin.x;
+	dT.y = (tri.v0.y + tri.v1.y + tri.v2.y) / 3.0f - ray.origin.y;
+	dT.z = (tri.v0.z + tri.v1.z + tri.v2.z) / 3.0f - ray.origin.z;
+	float angle = angleScalar(dT, ray.direction);
+	return (angle <= angleLim);
+}
+
+
+
+__device__ void swap(float& a, float& b) {
+    float temp = a;
+    a = b;
+    b = temp;
+}
+
 // BEGIN::RAY TRACING
 __device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint )
 {
@@ -277,6 +320,7 @@ __global__ void raytraceKernel(
             for ( int i = 0; i < node.triangleCount; ++i )
             {
                 Triangle& tri = triangles[node.firstTriangleIndex + i];
+                //Triangle& tri = triangles[node.triangleIndex]; vers para
                 float t;
                 if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
                 {
@@ -302,6 +346,83 @@ __global__ void raytraceKernel(
     // here
     // if (closesIntersectionId>0) printf("      Num Ray[%i] dist=%f <%f %f %f>\n", idx, closestT,intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
     // if ( closesIntersectionId > 0 ) printf( "      In hip Num Ray[%i] dist=%f\n", idx, closestT );
+
+    hitTriangles[idx] = closestTriangle;
+    distance[idx] = closestT;
+    intersectionPoint[idx] = closestIntersectionPoint;
+    hitId[idx] = closesIntersectionId;
+}
+
+
+__global__ void raytraceKernel_Parallel(
+    Ray* rays,
+    int numRays,
+    BVHNode* bvhNodes,
+    Triangle* triangles,
+    int* hitTriangles,
+    float* distance,
+    Vec3* intersectionPoint,
+    int* hitId
+)
+
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numRays) return;
+
+    Ray ray = rays[idx];
+    int stack[64];
+    int stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    float closestT = INFINITY;
+    int closestTriangle = -1;
+    int closesIntersectionId = -1;
+
+    Vec3 intersectionPointT;
+    intersectionPointT.x = INFINITY;
+    intersectionPointT.y = INFINITY;
+    intersectionPointT.z = INFINITY;
+    Vec3 closestIntersectionPoint;
+    closestIntersectionPoint.x = INFINITY;
+    closestIntersectionPoint.y = INFINITY;
+    closestIntersectionPoint.z = INFINITY;
+
+    bool isView = false; //isView = true;
+
+	const float angleLim = 1.0f; 
+
+    while (stackPtr > 0) {
+        int nodeIdx = stack[--stackPtr];
+        BVHNode& node = bvhNodes[nodeIdx];
+        if (nodeIdx < 0 || nodeIdx >= numRays) continue;
+        
+        //if (!rayAABBIntersect4(ray, node.bounds)) continue;
+        if (node.triangleCount == 1) {
+				Triangle& tri = triangles[node.triangleIndex];
+				if (sameDirection(tri,ray,angleLim)) 
+				{
+					float t;
+					if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
+
+						if (isView) printf("      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
+						if (t < closestT) {
+							closestT = t;
+							closestTriangle = node.triangleIndex;
+							closestIntersectionPoint = intersectionPointT;
+							closesIntersectionId = triangles[closestTriangle].id;
+						}
+					}
+				}
+        }
+        else {
+            stack[stackPtr++] = node.rightChild;
+            stack[stackPtr++] = node.leftChild;
+        }
+    }
+
+    //if (closesIntersectionId>0) printf("      Num Ray[%i] dist=%f <%f %f %f>\n", idx, closestT,intersectionPointT.x, intersectionPointT.y, intersectionPointT.z);
+
+    //if (closesIntersectionId > 0) printf("      Num Ray[%i] dist=%f\n", idx, closestT);
 
     hitTriangles[idx] = closestTriangle;
     distance[idx] = closestT;
@@ -441,6 +562,91 @@ void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTria
     hipLaunchKernelGGL( buildEvaluationNodes, dim3( 1 ), dim3( 1 ), 0, 0, d_nodes, numTriangles );
     hipDeviceSynchronize();
 }
+
+__device__ bool compareTriangles(const TriangleInfo& a, const TriangleInfo& b, int axis) {
+    return a.centroid[axis] < b.centroid[axis];
+}
+
+
+__global__ void initTriangleInfo(Triangle* triangles, TriangleInfo* triInfo, int numTriangles) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numTriangles) {
+        Triangle& tri = triangles[idx];
+        triInfo[idx].centroid = (tri.v0 + tri.v1 + tri.v2) / 3.0f;
+        triInfo[idx].index = idx;
+    }
+}
+
+
+__global__ void bitonicSort(TriangleInfo* triInfo, int j, int k, int numTriangles, int axis) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int ixj = i ^ j;
+    
+    if ((ixj > i) && (i < numTriangles) && (ixj < numTriangles)) {
+        bool ascending = ((i & k) == 0);
+        if (compareTriangles(triInfo[i], triInfo[ixj], axis) == ascending) {
+            TriangleInfo temp = triInfo[i];
+            triInfo[i] = triInfo[ixj];
+            triInfo[ixj] = temp;
+        }
+    }
+}
+
+
+__global__ void buildBVHNodes(BVHNode* nodes, TriangleInfo* triInfo, Triangle* triangles, int numTriangles) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int totalNodes = 2 * numTriangles - 1;
+    
+    if (idx < totalNodes) {
+        BVHNode& node = nodes[idx];
+        
+        if (idx >= numTriangles - 1) {  // Leaf node
+            int triIdx = triInfo[idx - (numTriangles - 1)].index;
+            node.bounds.min = node.bounds.max = triangles[triIdx].v0;
+            node.bounds.min = min(node.bounds.min, min(triangles[triIdx].v1, triangles[triIdx].v2));
+            node.bounds.max = max(node.bounds.max, max(triangles[triIdx].v1, triangles[triIdx].v2));
+            node.triangleIndex = triIdx;
+            node.triangleCount = 1;
+            node.leftChild = node.rightChild = -1;
+        } else {  // Internal node
+            int leftChild = 2 * idx + 1;
+            int rightChild = 2 * idx + 2;
+            node.leftChild = leftChild;
+            node.rightChild = rightChild;
+            node.triangleIndex = -1;
+            
+            node.bounds.min = min(nodes[leftChild].bounds.min, nodes[rightChild].bounds.min);
+            node.bounds.max = max(nodes[leftChild].bounds.max, nodes[rightChild].bounds.max);
+            node.triangleCount = nodes[leftChild].triangleCount + nodes[rightChild].triangleCount;
+        }
+    }
+}
+
+
+void buildBVH_GPU_Parallel(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles) {
+    int totalNodes = 2 * numTriangles - 1;
+    int blockSize = 512;
+    int numBlocks = (numTriangles + blockSize - 1) / blockSize;
+
+
+    TriangleInfo* d_triInfo;
+    hipMalloc(&d_triInfo, numTriangles * sizeof(TriangleInfo));
+    hipLaunchKernelGGL(initTriangleInfo, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_triInfo, numTriangles);
+
+    // Sort by axis X=0
+    for (int k = 2; k <= numTriangles; k *= 2) {
+        for (int j = k / 2; j > 0; j /= 2) {
+            hipLaunchKernelGGL(bitonicSort, dim3(numBlocks), dim3(blockSize), 0, 0, d_triInfo, j, k, numTriangles, 0);
+        }
+    }
+
+    numBlocks = (totalNodes + blockSize - 1) / blockSize;
+    hipLaunchKernelGGL(buildBVHNodes, dim3(numBlocks), dim3(blockSize), 0, 0, d_nodes, d_triInfo, d_triangles, numTriangles);
+
+    hipFree(d_triInfo);
+}
+
+
 // END::GPU
 
 } // namespace bvhHip
@@ -561,7 +767,7 @@ __global__ void rayTracingKernel( lbvh::bvh_device<T, U> bvh_dev, Ray* rays, Hit
     if ( idx >= numRays ) return;
 
     bool isView = true;
-    isView = false;
+    //isView = false;
 
     Ray ray = rays[idx];
     const auto calc = distance_calculator();
@@ -569,7 +775,7 @@ __global__ void rayTracingKernel( lbvh::bvh_device<T, U> bvh_dev, Ray* rays, Hit
     normalizeRayDirection(ray);
     // Point along the ray at a unit distance from the origin
     float4 pos = ray.origin + ray.direction;
-    // float4 pos = ray.origin;
+
 
     // Use query_device to find the closest object
     const auto nest = lbvh::query_device( bvh_dev, lbvh::nearest( pos ), calc );
@@ -587,11 +793,13 @@ __global__ void rayTracingKernel( lbvh::bvh_device<T, U> bvh_dev, Ray* rays, Hit
 
         if ( isView )
         {
+            /*
             printf( "Ray %d: Nearest object index: %u\n", idx, nest.first );
             printf( "Ray %d: Distance to nearest object: %f\n", idx, nest.second );
             printf( "Ray %d: v1=%f %f %f\n", idx, hit_triangle.v1.x, hit_triangle.v1.y, hit_triangle.v1.z );
             printf( "Ray %d: v2=%f %f %f\n", idx, hit_triangle.v2.x, hit_triangle.v2.y, hit_triangle.v2.z );
             printf( "Ray %d: v3=%f %f %f\n", idx, hit_triangle.v3.x, hit_triangle.v3.y, hit_triangle.v3.z );
+            */
         }
 
         // Calculate the intersection point
@@ -601,8 +809,7 @@ __global__ void rayTracingKernel( lbvh::bvh_device<T, U> bvh_dev, Ray* rays, Hit
             float4 hit_point = ray.origin + ray.direction * t;
             if ( isView )
             {
-                printf( "Ray %d hit triangle %d at point (%f, %f, %f)\n", idx, nest.first, hit_point.x, hit_point.y, hit_point.z );
-                printf( "distance:%f\n", t );
+                printf( "In RayTracing %d hit triangle %d at point (%f, %f, %f)  distance:%f \n", idx, nest.first, hit_point.x, hit_point.y, hit_point.z,t );
             }
             d_HitRays[idx].hitResults = nest.first;
             d_HitRays[idx].distanceResults = t; // distance
@@ -658,6 +865,7 @@ class BVHRay
     vec_t const& dir() const noexcept { return M_dir; }
     double distanceMin() const { return M_distanceMin; }
     double distanceMax() const { return M_distanceMax; }
+    int id;
 
 #if 0
     Orthant orthant() const {
@@ -1240,9 +1448,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         numDevice = 0;
         numVersion = 1;
         modeGPU = 1;
-        // modeGPU = 2;
+        //modeGPU = 4;
         isUnifiedMemory = false;
-        // isUnifiedMemory = true;
+        isUnifiedMemory = true;
     }
 
     BVH_HIP_Party( BVH_HIP_Party&& ) = default;
@@ -1269,7 +1477,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         bool isModeBox = true;
         isModeBox = false;
         bool isModeDirectInDevice = false;
-        isModeDirectInDevice = true; // Todo CTRL in infinity and size max of HIP GPU
+        //isModeDirectInDevice = true; // Todo CTRL in infinity and size max of HIP GPU
 
 
         if ( modeGPU == 1 )
@@ -1302,6 +1510,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
                 HIP_ASSERT( hipMalloc( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
                 bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
             else
             {
@@ -1325,6 +1535,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 }
 
                 bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
 
         } // END modeGPU==1
@@ -1533,6 +1745,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 bvhLinear::Ray r;
                 r.origin = make_float4( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2], 1.0f );
                 r.direction = make_float4( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2], 0.0f );
+
+                normalizeRayDirection(r);
+
                 hostRays.push_back( r );
             }
 
