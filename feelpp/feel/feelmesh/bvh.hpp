@@ -207,7 +207,7 @@ float angleScalar(const Vec3 v1, const Vec3 v2) {
 
 __host__ __device__ 
 bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
-{
+{   // To be modified soon according to the radius of the triangle object
 	Vec3 dT; 
 	dT.x = (tri.v0.x + tri.v1.x + tri.v2.x) / 3.0f - ray.origin.x;
 	dT.y = (tri.v0.y + tri.v1.y + tri.v2.y) / 3.0f - ray.origin.y;
@@ -260,6 +260,63 @@ __device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& tri, float
         intersectionPoint.z = INFINITY;
     }
     return ( t > 1e-6f );
+}
+
+__device__ bool rayTriangleIntersectSurfaceEdge(const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint, bool* hitEdge, bool* hitVertex) {
+    // This will solve the problem of intersection of radius and vertex or edge of the triangle.
+    Vec3 edge1 = tri.v1 - tri.v0;
+    Vec3 edge2 = tri.v2 - tri.v0;
+    Vec3 h = cross(ray.direction, edge2);
+    float a = dot(edge1, h);
+
+    // Check if the ray is parallel to the triangle
+    if (a > -1e-6f && a < 1e-6f) return false;
+
+    float f = 1.0f / a;
+    Vec3 s = ray.origin - tri.v0;
+    float u = f * dot(s, h);
+
+    // Checking barycentric coordinates
+    if (u < -1e-6f || u > 1.0f) return false;
+
+    Vec3 q = cross(s, edge1);
+    float v = f * dot(ray.direction, q);
+
+    if (v < -1e-6f || u + v > 1.0f + 1e-6f) return false;
+
+    // Calculation of t (distance to intersection)
+    t = f * dot(edge2, q);
+
+    // Check if the intersection is in front of the ray
+    if (t >= 0) {
+        intersectionPoint.x = ray.origin.x + t * ray.direction.x;
+        intersectionPoint.y = ray.origin.y + t * ray.direction.y;
+        intersectionPoint.z = ray.origin.z + t * ray.direction.z;
+
+        // Check if the intersection occurs on an edge
+        *hitEdge = (u <= 1e-6f || v <= 1e-6f || u + v >= 1.0f - 1e-6f);
+        
+		// Check if the intersection occurs on a vertex
+        float epsilon = 1e-6f; // Tolerance to determine if we touch a vertex
+        
+        auto distanceSquared = [](const Vec3& a, const Vec3& b) {
+            float dx = a.x - b.x;
+            float dy = a.y - b.y;
+            float dz = a.z - b.z;
+            return dx*dx + dy*dy + dz*dz;
+        };
+
+        *hitVertex = (distanceSquared(intersectionPoint, tri.v0) < epsilon*epsilon ||
+                      distanceSquared(intersectionPoint, tri.v1) < epsilon*epsilon ||
+                      distanceSquared(intersectionPoint, tri.v2) < epsilon*epsilon);
+        
+        return true; 
+    } else {
+        intersectionPoint.x = INFINITY;
+        intersectionPoint.y = INFINITY;
+        intersectionPoint.z = INFINITY;
+        return false;
+    }
 }
 
 __device__ bool rayAABBIntersect( const Ray& ray, const AABB& aabb )
@@ -395,7 +452,7 @@ __global__ void raytraceKernel_Parallel(
         int nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
         if (nodeIdx < 0 || nodeIdx >= numRays) continue;
-        
+
         //if (!rayAABBIntersect4(ray, node.bounds)) continue;
         if (node.triangleCount == 1) {
 				Triangle& tri = triangles[node.triangleIndex];
