@@ -1002,6 +1002,90 @@ __global__ void rayTracingKernelSurfaceEdge(lbvh::bvh_device<T, U> bvh_dev, Ray 
     }
 }
 
+
+template <typename T, typename U>
+__global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray* rays,
+	HitRay* d_HitRays, int numRays) {
+  // The objective of this function is to explore in the direction of the ray the candidate triangle which intersects.
+  // Like an explorer drone that encounters a wall
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx >= numRays)
+		return;
+
+	bool isView = true;
+	isView = false;
+
+	Ray ray = rays[idx];
+	const auto calc = distance_calculator();
+
+	// Initialization of results
+	d_HitRays[idx].hitResults = -1;
+	d_HitRays[idx].distanceResults = INFINITY; // distance
+	d_HitRays[idx].intersectionPoint = make_float3(INFINITY, INFINITY, INFINITY);
+	d_HitRays[idx].idResults = -1;
+
+	constexpr float epsilon = 0.001f;
+    constexpr float angleLim = 1.0f;
+    constexpr int maxLoops = 10;
+
+	float angle = INFINITY;
+	float distToTri = 0.0f;
+	bool flag = true;
+	bool flagOk = false;
+	Triangle hit_tri;
+	int idNest = -1;
+    int nbLoop = 0;
+
+	while (flag)
+	{
+		float4 pos = ray.origin + ray.direction * epsilon + distToTri * ray.direction;
+		const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
+		flag = false;
+        nbLoop++;
+		if (nest.first != 0xFFFFFFFF) {
+			const auto& hit_triangle = bvh_dev.objects[nest.first];
+			float4 dT;
+			dT.x = (hit_triangle.v1.x + hit_triangle.v2.x + hit_triangle.v3.x) / 3.0f - ray.origin.x;
+			dT.y = (hit_triangle.v1.y + hit_triangle.v2.y + hit_triangle.v3.y) / 3.0f - ray.origin.y;
+			dT.z = (hit_triangle.v1.z + hit_triangle.v2.z + hit_triangle.v3.z) / 3.0f - ray.origin.z;
+			angle = angleScalar(dT, ray.direction);
+			distToTri = sqrt(dT.x * dT.x + dT.y * dT.y + dT.z * dT.z);
+			flagOk = true;
+			idNest = nest.first;
+			hit_tri = hit_triangle;
+      if (angle > angleLim) { flag = true; flagOk = false; }
+		} 
+    if (nbLoop > maxLoops ) { flag = false; flagOk = false; }
+	}
+
+  if (isView) printf("Ray %d Level 1 finished\n", idx);
+
+	if (flagOk)
+	{
+		float t;
+		if (rayTriangleIntersect(ray, hit_tri, t)) {
+			float4 hit_point = ray.origin + ray.direction * t;
+			if (isView) {
+				printf("Ray %d hit triangle %d at point (%f, %f, %f) Distance:%f\n", idx, idNest, hit_point.x, hit_point.y, hit_point.z, t);
+			}
+			d_HitRays[idx].hitResults = idNest;
+			d_HitRays[idx].distanceResults = t; // distance
+			d_HitRays[idx].intersectionPoint = make_float3(hit_point.x, hit_point.y, hit_point.z);
+			d_HitRays[idx].idResults = hit_tri.id;
+		}
+		else {
+			if (isView)
+				printf("Ray %d: Nearest object found but not intersected by ray\n",
+					idx);
+		}
+	}
+	else {
+		// No items found
+		if (isView)
+			printf("Ray %d did not hit any triangle\n", idx);
+	}
+}
+
 } // END namespace bvhLinear
 
 
@@ -1940,6 +2024,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             int blocksPerGrid = ( numRays + threadsPerBlock - 1 ) / threadsPerBlock;
 
             bvhLinear::rayTracingKernel<float, bvhLinear::Triangle><<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays );
+            // rayTracingKernelExploration //<== use this function for testing the other function only gives close distances
             hipDeviceSynchronize();
             std::vector<bvhLinear::HitRay> hostHitRays( numRays );
             HIP_ASSERT( hipMemcpy( hostHitRays.data(), deviceHitRays, numRays * sizeof( bvhLinear::HitRay ), hipMemcpyDeviceToHost ) );
