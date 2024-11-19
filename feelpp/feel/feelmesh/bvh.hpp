@@ -204,6 +204,31 @@ float angleScalar(const Vec3 v1, const Vec3 v2) {
 	return (res);  // in radian
 }
 
+__host__ __device__ 
+float calculateHalfOpeningAngle(const Triangle& triangle, const Vec3& origin) {
+	// This function will be used to speed up the calculations and will adapt the limit angle of the sameDirection function
+    Vec3 barycenter = {
+        (triangle.v0.x + triangle.v1.x + triangle.v2.x) / 3.0f,
+        (triangle.v0.y + triangle.v1.y + triangle.v2.y) / 3.0f,
+        (triangle.v0.z + triangle.v1.z + triangle.v2.z) / 3.0f
+    };
+    float distance = sqrt(pow(barycenter.x - origin.x, 2) +
+                          pow(barycenter.y - origin.y, 2) +
+                          pow(barycenter.z - origin.z, 2));
+    Vec3 edge1 = {triangle.v1.x - triangle.v0.x, triangle.v1.y - triangle.v0.y, triangle.v1.z - triangle.v0.z};
+    Vec3 edge2 = {triangle.v2.x - triangle.v0.x, triangle.v2.y - triangle.v0.y, triangle.v2.z - triangle.v0.z};
+    Vec3 cross = {
+        edge1.y * edge2.z - edge1.z * edge2.y,
+        edge1.z * edge2.x - edge1.x * edge2.z,
+        edge1.x * edge2.y - edge1.y * edge2.x
+    };
+    float area = 0.5f * sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z);
+    float solidAngle = area / (distance * distance);
+    float halfOpeningAngle = asin(sqrt(solidAngle / (4 * M_PI)));
+    return halfOpeningAngle;
+}
+
+
 
 __host__ __device__ 
 bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
@@ -764,6 +789,48 @@ float angleScalar(const float4 v1, const float4 v2) {
 		res = acos(r);
 	}
 	return (res);  // in radian
+}
+
+__host__ __device__
+float calculateHalfOpeningAngle(const Triangle& triangle, const float4& origin) {
+    // This function will be used to speed up the calculations and will adapt the limit angle of the sameDirection function
+    float4 barycenter = {
+        (triangle.v1.x + triangle.v2.x + triangle.v3.x) / 3.0f,
+        (triangle.v1.y + triangle.v2.y + triangle.v3.y) / 3.0f,
+        (triangle.v1.z + triangle.v2.z + triangle.v3.z) / 3.0f,
+        0.0f 
+    };
+
+    float distance = sqrt(pow(barycenter.x - origin.x, 2) +
+                          pow(barycenter.y - origin.y, 2) +
+                          pow(barycenter.z - origin.z, 2));
+
+    float4 edge1 = {
+        triangle.v2.x - triangle.v1.x,
+        triangle.v2.y - triangle.v1.y,
+        triangle.v2.z - triangle.v1.z,
+        0.0f  
+    };
+
+    float4 edge2 = {
+        triangle.v3.x - triangle.v1.x,
+        triangle.v3.y - triangle.v1.y,
+        triangle.v3.z - triangle.v1.z,
+        0.0f  
+    };
+
+    float4 cross = {
+        edge1.y * edge2.z - edge1.z * edge2.y,
+        edge1.z * edge2.x - edge1.x * edge2.z,
+        edge1.x * edge2.y - edge1.y * edge2.x,
+        0.0f 
+    };
+
+    float area = 0.5f * sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z);
+    float solidAngle = area / (distance * distance);
+    float halfOpeningAngle = asin(sqrt(solidAngle / (4 * M_PI)));
+
+    return halfOpeningAngle;
 }
 
 __host__ __device__ 
