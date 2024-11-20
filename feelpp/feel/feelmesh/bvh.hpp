@@ -239,7 +239,8 @@ bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
 	dT.z = (tri.v0.z + tri.v1.z + tri.v2.z) / 3.0f - ray.origin.z;
 	float angle1 = angleScalar(dT, ray.direction);
     float angle2 = calculateHalfOpeningAngle(tri,ray.origin);
-	return ( (angle1 <= angleLim) && (angleLim<=angle2 ) );
+	//return ( (angle1 <= angleLim) && (angleLim<=angle2 ) );
+    return ( (angle1 <= angleLim) ); // TODO : to define the conditions well
 }
 
 
@@ -843,7 +844,8 @@ bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
 	dT.z = (tri.v1.z + tri.v2.z + tri.v3.z) / 3.0f - ray.origin.z;
 	float angle1 = angleScalar(dT, ray.direction);
     float angle2 = calculateHalfOpeningAngle(tri,ray.origin);
-	return ( (angle1 <= angleLim) && (angleLim<=angle2 ) );
+	//return ( (angle1 <= angleLim) && (angleLim<=angle2 ) );
+    return ( (angle1 <= angleLim) ); // TODO : to define the conditions well
 }
 
 
