@@ -274,41 +274,54 @@ __device__ void swap(float& a, float& b) {
 }
 
 // BEGIN::RAY TRACING
-__device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint )
-{
+__device__ bool rayTriangleIntersect(const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint) {
     Vec3 edge1 = tri.v1 - tri.v0;
     Vec3 edge2 = tri.v2 - tri.v0;
-    Vec3 h = cross( ray.direction, edge2 );
-    float a = dot( edge1, h );
-
-    if ( a > -1e-6f && a < 1e-6f ) return false;
+    Vec3 h = cross(ray.direction, edge2);
+    float a = dot(edge1, h);
+    const float EPSILON = 1e-8f;
+    if (fabs(a) < EPSILON) return false;
 
     float f = 1.0f / a;
     Vec3 s = ray.origin - tri.v0;
-    float u = f * dot( s, h );
+    float u = f * dot(s, h);
 
-    if ( u < 0.0f || u > 1.0f ) return false;
+    if (u < 0.0f || u > 1.0f) return false;
 
-    Vec3 q = cross( s, edge1 );
-    float v = f * dot( ray.direction, q );
+    Vec3 q = cross(s, edge1);
+    float v = f * dot(ray.direction, q);
 
-    if ( v < 0.0f || u + v > 1.0f ) return false;
+    if (v < 0.0f || u + v > 1.0f) return false;
 
-    t = f * dot( edge2, q );
+    t = f * dot(edge2, q);
 
-    if ( t > 1e-6 )
-    {
+    // If t is negative, the intersection is behind the origin of the ray
+    // Which means that the origin is inside the triangle
+    if (t < -EPSILON) {
+        t = 0.0f;
+        intersectionPoint = ray.origin;
+        return true;
+    }
+
+    // If t is very close to zero, consider that the origin is on the triangle
+    if (fabs(t) < EPSILON) {
+        intersectionPoint = ray.origin;
+        return true;
+    }
+
+    // Normal intersection in front of the ray origin
+    if (t > EPSILON) {
         intersectionPoint.x = ray.origin.x + t * ray.direction.x;
         intersectionPoint.y = ray.origin.y + t * ray.direction.y;
         intersectionPoint.z = ray.origin.z + t * ray.direction.z;
+        return true;
     }
-    else
-    {
-        intersectionPoint.x = INFINITY;
-        intersectionPoint.y = INFINITY;
-        intersectionPoint.z = INFINITY;
-    }
-    return ( t > 1e-6f );
+
+	intersectionPoint.x = INFINITY;
+    intersectionPoint.y = INFINITY;
+    intersectionPoint.z = INFINITY;
+
+    return false;
 }
 
 __device__ bool rayTriangleIntersectSurfaceEdge(const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint, bool* hitEdge, bool* hitVertex) {
