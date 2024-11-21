@@ -204,6 +204,10 @@ float angleScalar(const Vec3 v1, const Vec3 v2) {
 	return (res);  // in radian
 }
 
+
+
+
+
 __host__ __device__ 
 float calculateHalfOpeningAngle(const Triangle& triangle, const Vec3& origin) {
 	// This function will be used to speed up the calculations and will adapt the limit angle of the sameDirection function
@@ -237,13 +241,31 @@ bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
 	dT.x = (tri.v0.x + tri.v1.x + tri.v2.x) / 3.0f - ray.origin.x;
 	dT.y = (tri.v0.y + tri.v1.y + tri.v2.y) / 3.0f - ray.origin.y;
 	dT.z = (tri.v0.z + tri.v1.z + tri.v2.z) / 3.0f - ray.origin.z;
-	float angle1 = angleScalar(dT, ray.direction);
+	float angle1 = fabs(angleScalar(dT, ray.direction));
     float angle2 = calculateHalfOpeningAngle(tri,ray.origin);
 	//return ( (angle1 <= angleLim) && (angleLim<=angle2 ) );
-    return ( (angle1 <= angleLim) ); // TODO : to define the conditions well
+    //return ( (angle1 <= angleLim) ); // TODO : to define the conditions well
+    return (angle1 <= angleLim) && (angle1 <= angle2);
 }
 
-
+__host__ __device__
+bool sameDirectionTest(Triangle& tri,Ray& ray,const float & angleLim)
+{	
+	Vec3 dT0 = tri.v0 - ray.origin;
+	Vec3 dT1 = tri.v1 - ray.origin;
+	Vec3 dT2 = tri.v2 - ray.origin;
+    Vec3 dT3;
+    dT3.x = (tri.v0.x + tri.v1.x + tri.v2.x) / 3.0f - ray.origin.x;
+    dT3.y = (tri.v0.y + tri.v1.y + tri.v2.y) / 3.0f - ray.origin.y;
+    dT3.z = (tri.v0.z + tri.v1.z + tri.v2.z) / 3.0f - ray.origin.z;
+	
+    bool b0 = (fabs(angleScalar(dT0, ray.direction)) <= angleLim);
+	bool b1 = (fabs(angleScalar(dT1, ray.direction)) <= angleLim);
+	bool b2 = (fabs(angleScalar(dT2, ray.direction)) <= angleLim);
+	bool b3 = (fabs(angleScalar(dT3, ray.direction)) <= angleLim);
+	
+    return (b0 || b1 || b2 || b3);
+}
 
 __device__ void swap(float& a, float& b) {
     float temp = a;
@@ -390,6 +412,8 @@ __global__ void raytraceKernel(
     closestIntersectionPoint.y = INFINITY;
     closestIntersectionPoint.z = INFINITY;
 
+    const float angleLim = 0.6f;
+
     bool isView = false; // isView = true;
 
     while ( stackPtr > 0 )
@@ -404,18 +428,21 @@ __global__ void raytraceKernel(
             for ( int i = 0; i < node.triangleCount; ++i )
             {
                 Triangle& tri = triangles[node.firstTriangleIndex + i];
-                //Triangle& tri = triangles[node.triangleIndex]; vers para
-                float t;
-                if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
+                //if (sameDirection(tri,ray,angleLim))
+                if (sameDirectionTest(tri,ray,angleLim))
                 {
-
-                    if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
-                    if ( t < closestT )
+                    float t;
+                    if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
                     {
-                        closestT = t;
-                        closestTriangle = node.firstTriangleIndex + i;
-                        closestIntersectionPoint = intersectionPointT;
-                        closesIntersectionId = triangles[closestTriangle].id;
+
+                        if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
+                        if ( t < closestT )
+                        {
+                            closestT = t;
+                            closestTriangle = node.firstTriangleIndex + i;
+                            closestIntersectionPoint = intersectionPointT;
+                            closesIntersectionId = triangles[closestTriangle].id;
+                        }
                     }
                 }
             }
@@ -778,6 +805,7 @@ struct aabb_getter
     }
 };
 
+/*
 __host__ __device__ 
 float angleScalar(const float4 v1, const float4 v2) {
 	float p = (v1.x) * (v2.x) + (v1.y) * (v2.y) + (v1.z) * (v2.z);
@@ -792,6 +820,22 @@ float angleScalar(const float4 v1, const float4 v2) {
 	}
 	return (res);  // in radian
 }
+*/
+
+__host__ __device__ 
+float angleScalar(const float4 v1, const float4 v2) {
+    float p = (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
+    float n1 = sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z);
+    float n2 = sqrt(v2.x * v2.x + v2.y * v2.y + v2.z * v2.z);
+    float d = n1 * n2;
+    if (d > 0.0f) {
+        float r = p / d;
+        r = fmaxf(-1.0f, fminf(1.0f, r));  
+        return acosf(r);
+    }
+    return 0.0f; 
+}
+
 
 __host__ __device__
 float calculateHalfOpeningAngle(const Triangle& triangle, const float4& origin) {
@@ -842,11 +886,31 @@ bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
 	dT.x = (tri.v1.x + tri.v2.x + tri.v3.x) / 3.0f - ray.origin.x;
 	dT.y = (tri.v1.y + tri.v2.y + tri.v3.y) / 3.0f - ray.origin.y;
 	dT.z = (tri.v1.z + tri.v2.z + tri.v3.z) / 3.0f - ray.origin.z;
-	float angle1 = angleScalar(dT, ray.direction);
+	float angle1 = fabs(angleScalar(dT, ray.direction));
     float angle2 = calculateHalfOpeningAngle(tri,ray.origin);
 	//return ( (angle1 <= angleLim) && (angleLim<=angle2 ) );
-    return ( (angle1 <= angleLim) ); // TODO : to define the conditions well
+    //return ( (angle1 <= angleLim) ); // TODO : to define the conditions well
+    return (angle1 <= angleLim) && (angle1 <=angle2 );
 }
+
+__host__ __device__
+bool sameDirectionTest(Triangle& tri,Ray& ray,const float & angleLim)
+{	
+	float4 dT1 = tri.v1 - ray.origin;
+	float4 dT2 = tri.v2 - ray.origin;
+	float4 dT3 = tri.v3 - ray.origin;
+    float4 dT4;
+    dT3.x = (tri.v1.x + tri.v2.x + tri.v3.x) / 3.0f - ray.origin.x;
+    dT3.y = (tri.v1.y + tri.v2.y + tri.v3.y) / 3.0f - ray.origin.y;
+    dT3.z = (tri.v1.z + tri.v2.z + tri.v3.z) / 3.0f - ray.origin.z;
+	
+    bool b1 = (fabs(angleScalar(dT1, ray.direction)) <= angleLim);
+	bool b2 = (fabs(angleScalar(dT2, ray.direction)) <= angleLim);
+	bool b3 = (fabs(angleScalar(dT3, ray.direction)) <= angleLim);
+	bool b4 = (fabs(angleScalar(dT4, ray.direction)) <= angleLim);
+    return (b1 || b2 || b3 || b4);
+}
+
 
 
 struct distance_calculator
@@ -1073,89 +1137,111 @@ __global__ void rayTracingKernelSurfaceEdge(lbvh::bvh_device<T, U> bvh_dev, Ray 
     }
 }
 
-
 template <typename T, typename U>
 __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray* rays,
-	HitRay* d_HitRays, int numRays) {
+    HitRay* d_HitRays, int numRays) {
   // The objective of this function is to explore in the direction of the ray the candidate triangle which intersects.
   // Like an explorer drone that encounters a wall
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx >= numRays)
-		return;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= numRays)
+        return;
 
-	bool isView = true;
-	isView = false;
+    bool isView = true;
+    isView = false;
 
-	Ray ray = rays[idx];
-	const auto calc = distance_calculator();
+    Ray ray = rays[idx];
+    const auto calc = distance_calculator();
 
-	// Initialization of results
-	d_HitRays[idx].hitResults = -1;
-	d_HitRays[idx].distanceResults = INFINITY; // distance
-	d_HitRays[idx].intersectionPoint = make_float3(INFINITY, INFINITY, INFINITY);
-	d_HitRays[idx].idResults = -1;
+    // Initialization of results
+    d_HitRays[idx].hitResults = -1;
+    d_HitRays[idx].distanceResults = INFINITY; // distance
+    d_HitRays[idx].intersectionPoint = make_float3(INFINITY, INFINITY, INFINITY);
+    d_HitRays[idx].idResults = -1;
 
-	constexpr float epsilon = 0.001f;
-    constexpr float angleLim = 1.0f;
+    constexpr float epsilon = 0.001f;
+    constexpr float angleLim = 0.6f;
     constexpr int maxLoops = 10;
 
-	float angle = INFINITY;
-	float distToTri = 0.0f;
-	bool flag = true;
-	bool flagOk = false;
-	Triangle hit_tri;
-	int idNest = -1;
-    int nbLoop = 0;
-
-	while (flag)
-	{
-		float4 pos = ray.origin + ray.direction * epsilon + distToTri * ray.direction;
-		const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
-		flag = false;
+    float angle = INFINITY;
+    float distToTri = 0.0f;
+    bool flag = true;
+    bool flagOk = false;
+    bool flagFindCandidate = false;
+    Triangle hit_tri;
+    int idNest  = -1;
+    int idNestC = -1;
+    int nbLoop = 1;
+    float delta = epsilon;
+    while (flag)
+    {
+        float4 pos = ray.origin + ray.direction * delta;
+        const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
+        flag = false;
         nbLoop++;
-		if (nest.first != 0xFFFFFFFF) {
-			const auto& hit_triangle = bvh_dev.objects[nest.first];
-			float4 dT;
-			dT.x = (hit_triangle.v1.x + hit_triangle.v2.x + hit_triangle.v3.x) / 3.0f - ray.origin.x;
-			dT.y = (hit_triangle.v1.y + hit_triangle.v2.y + hit_triangle.v3.y) / 3.0f - ray.origin.y;
-			dT.z = (hit_triangle.v1.z + hit_triangle.v2.z + hit_triangle.v3.z) / 3.0f - ray.origin.z;
-			angle = angleScalar(dT, ray.direction);
-			distToTri = sqrt(dT.x * dT.x + dT.y * dT.y + dT.z * dT.z);
-			flagOk = true;
-			idNest = nest.first;
-			hit_tri = hit_triangle;
-      if (angle > angleLim) { flag = true; flagOk = false; }
-		} 
-    if (nbLoop > maxLoops ) { flag = false; flagOk = false; }
-	}
+        if (nest.first != 0xFFFFFFFF) {
+            const auto& hit_triangle = bvh_dev.objects[nest.first];
+            float4 dT;
+            dT.x = (hit_triangle.v1.x + hit_triangle.v2.x + hit_triangle.v3.x) / 3.0f - ray.origin.x;
+            dT.y = (hit_triangle.v1.y + hit_triangle.v2.y + hit_triangle.v3.y) / 3.0f - ray.origin.y;
+            dT.z = (hit_triangle.v1.z + hit_triangle.v2.z + hit_triangle.v3.z) / 3.0f - ray.origin.z;
+            angle = angleScalar(dT, ray.direction);
+            distToTri = sqrt(dT.x * dT.x + dT.y * dT.y + dT.z * dT.z);
+            flagOk = true; 
+            idNest = nest.first;
+            hit_tri = hit_triangle;
+			
+			//sameDirectionTest(hit_triangle,ray,angleLim);
+			
+            if (angle > angleLim) { flag = true; flagOk = false; delta = distToTri + epsilon;  }
 
-  if (isView) printf("Ray %d Level 1 finished\n", idx);
+            if (angle < 0.785f) { flagFindCandidate = true; idNestC = idNest;  }
 
-	if (flagOk)
-	{
-		float t;
-		if (rayTriangleIntersect(ray, hit_tri, t)) {
-			float4 hit_point = ray.origin + ray.direction * t;
-			if (isView) {
-				printf("Ray %d hit triangle %d at point (%f, %f, %f) Distance:%f\n", idx, idNest, hit_point.x, hit_point.y, hit_point.z, t);
-			}
-			d_HitRays[idx].hitResults = idNest;
-			d_HitRays[idx].distanceResults = t; // distance
-			d_HitRays[idx].intersectionPoint = make_float3(hit_point.x, hit_point.y, hit_point.z);
-			d_HitRays[idx].idResults = hit_tri.id;
-		}
-		else {
-			if (isView)
-				printf("Ray %d: Nearest object found but not intersected by ray\n",
-					idx);
-		}
-	}
-	else {
-		// No items found
-		if (isView)
-			printf("Ray %d did not hit any triangle\n", idx);
-	}
+        } 
+        else
+        {
+            delta = epsilon * exp(nbLoop);
+        }
+
+        if (nbLoop > maxLoops) { 
+            flag = false; flagOk = false; 
+            if (flagFindCandidate) { 
+                flagOk = true; 
+                idNest = idNestC; 
+                const auto& hit_triangle = bvh_dev.objects[idNest];
+                hit_tri = hit_triangle;
+            } 
+        }
+
+    }
+
+    if (isView) printf("Ray %d Level 1 finished\n", idx);
+
+    if (flagOk)
+    {
+        float t;
+        if (rayTriangleIntersect(ray, hit_tri, t)) {
+            float4 hit_point = ray.origin + ray.direction * t;
+            if (isView) {
+                printf("Ray %d hit triangle %d at point (%f, %f, %f) Distance:%f\n", idx, idNest, hit_point.x, hit_point.y, hit_point.z, t);
+            }
+            d_HitRays[idx].hitResults = idNest;
+            d_HitRays[idx].distanceResults = t; // distance
+            d_HitRays[idx].intersectionPoint = make_float3(hit_point.x, hit_point.y, hit_point.z);
+            d_HitRays[idx].idResults = hit_tri.id;
+        }
+        else {
+            if (isView)
+                printf("Ray %d: Nearest object found but not intersected by ray\n",
+                    idx);
+        }
+    }
+    else {
+        // No items found
+        if (isView)
+            printf("Ray %d did not hit any triangle\n", idx);
+    }
 }
+
 
 } // END namespace bvhLinear
 
@@ -1779,7 +1865,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         modeGPU = 1;
         //modeGPU = 4;
         isUnifiedMemory = false;
-        isUnifiedMemory = true;
+        //isUnifiedMemory = true;
     }
 
     BVH_HIP_Party( BVH_HIP_Party&& ) = default;
@@ -1863,8 +1949,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     deviceHipTriangles[k].id = id;
                 }
 
-                bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
-                //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
 
@@ -1923,7 +2009,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         isModeDirectInDevice = true;
         // static constexpr bool isAnyHit = false;
         int numRays = rayons.size();
-        bool isView = false; isView = true;
+        bool isView = false; //isView = true;
 
         std::vector<std::vector<rayintersection_result_type>> resALL;
         // resALL.reserve(numRays);
@@ -1978,7 +2064,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             HIP_ASSERT( hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) ) );
 
-            int blockSize = 512; blockSize = 1024;
+            int blockSize = 512; //blockSize = 1024;
             int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
             hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
@@ -1990,7 +2076,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                                 deviceHipDistanceResults,
                                 deviceHipIntersectionPoint,
                                 deviceHipIdResults );
-
+            
             std::vector<int> hostHipHitTriangles( numRays );
             hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( int ), hipMemcpyDeviceToHost );
 
@@ -2094,7 +2180,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             int threadsPerBlock = 512;
             int blocksPerGrid = ( numRays + threadsPerBlock - 1 ) / threadsPerBlock;
 
-            bvhLinear::rayTracingKernel<float, bvhLinear::Triangle><<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays );
+            //bvhLinear::rayTracingKernel<float, bvhLinear::Triangle><<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays );
+            bvhLinear::rayTracingKernelExploration<float, bvhLinear::Triangle><<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays ); 
             // rayTracingKernelExploration //<== use this function for testing the other function only gives close distances
             hipDeviceSynchronize();
             std::vector<bvhLinear::HitRay> hostHitRays( numRays );
