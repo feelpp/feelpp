@@ -32,8 +32,8 @@ void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_type& mesh )
 {
     wc(mesh)->print(fmt::format("[DofTable::buildGhostDofMap rank={}] starts. hasMeshSupport: {}", rank(mesh), this->hasMeshSupport()), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
-    if ( this->hasMeshSupport() )
-        this->meshSupport()->updateParallelData();
+    // if ( this->hasMeshSupport() )
+    //     this->meshSupport()->updateParallelData();
 
     if ( true )//!mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL ) )
     {
@@ -41,6 +41,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
     }
     else
     {
+#if 0
         if (is_continuous)
         {
             DVLOG(2) << "[buildGhostDofMap] call buildGlobalProcessToGlobalClusterDofMapContinuous() with god rank "<<  this->worldComm().godRank() << "\n";
@@ -54,6 +55,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
 
         if ( this->buildDofTableMPIExtended() )
             this->buildGhostDofMapExtended( mesh );
+#endif
     }
 
 #if 0
@@ -90,7 +92,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
-
+#if 0
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh )
@@ -119,7 +121,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
         this->buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm(mesh,listToSend,procRecvData);
     //------------------------------------------------------------------------------//
 }
-
+#endif
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
@@ -127,6 +129,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
 namespace detail {
 
+#if 0
 template <typename DofTableType>
 boost::tuple<rank_type,size_type >
 updateDofOnVertices( DofTableType const& doftable, typename DofTableType::mesh_type::face_type const& theface, const rank_type myIdProcess,
@@ -223,7 +226,7 @@ updateDofOnVertices( DofTableType const& doftable, typename DofTableType::mesh_t
 
     return boost::make_tuple(procMin,idFaceMin);
 }
-
+#endif
 template <typename DofTableType>
 boost::tuple<rank_type,size_type >
 updateDofOnVertices( DofTableType const& doftable, typename DofTableType::mesh_type::element_type const& theelt, const uint16_type ptIdInElt )
@@ -452,7 +455,7 @@ updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
-
+#if 0
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
@@ -486,7 +489,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
     size_type nDofNotPresent=0;
 
     // iteration on all interprocessfaces in order to send requests to the near proc
-    auto rangeInterProcessFaces = (this->hasMeshSupport())? this->meshSupport()->rangeInterProcessFaces() : interprocessfaces(mesh);
+    auto rangeInterProcessFaces = (this->hasMeshSupport())? interprocessfaces(this->meshSupport()) : interprocessfaces(mesh);
     for ( auto const& faceipWrap : rangeInterProcessFaces )
     {
         auto const& faceip = unwrap_ref(faceipWrap);
@@ -1250,6 +1253,29 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
 } // buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm
 
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //--------------------------------------------------------------------------------------------------------//
@@ -1376,7 +1402,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
 
     if ( is_continuous )
     {
-        auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(mesh);
+        auto rangeElements = (this->hasMeshSupport())? elements(this->meshSupport()) : elements(mesh);
         for ( auto const& activeEltWrap : rangeElements )
         {
             auto const& activeElt = boost::unwrap_ref( activeEltWrap );
@@ -1509,7 +1535,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     } // is_continuous
     else if ( storeRangeActiveEltsTouchInterProcess ) // discontinuous case maybe
     {
-        auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(mesh);
+        auto rangeElements = (this->hasMeshSupport())? elements(this->meshSupport()) : elements(mesh);
         for ( auto const& activeEltWrap : rangeElements )
         {
             auto const& activeElt = boost::unwrap_ref( activeEltWrap );
@@ -1949,7 +1975,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                                             myGhostEltsExtended->begin(),myGhostEltsExtended->end(),myGhostEltsExtended ),
                               _mesh=mesh );
 #endif
-    this->buildGhostDofMapExtended( mesh, elements(mesh,entity_process_t::GHOST_ONLY ) );
+
+    if ( this->hasMeshSupport() && this->meshSupport()->isPartialSupport() )
+        this->buildGhostDofMapExtended( mesh, elements(this->meshSupport(),entity_process_t::GHOST_ONLY ) );
+    else
+        this->buildGhostDofMapExtended( mesh, elements(mesh,entity_process_t::GHOST_ONLY ) );
 
 }
 

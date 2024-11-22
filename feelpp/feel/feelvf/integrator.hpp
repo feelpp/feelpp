@@ -3161,6 +3161,8 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Linear
     bool rangeMeshIsSubMeshOfTestMesh = faceRange.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
     bool testMeshIsSubMeshOfRangeMesh = __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() );
 
+    bool testMeshSupportIsPartial = __form.testSpace()->dof()->hasMeshSupport() && __form.testSpace()->dof()->meshSupport()->isPartialSupport();
+
     using mesh_element_test_type = typename vf::detail::LinearForm<FE,VectorType,ElemContType>::mesh_test_element_type;
     std::vector<std::tuple<uint16_type,mesh_element_test_type const*>> res;
 
@@ -3180,6 +3182,8 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Linear
                 eltTest = &__form.testSpace()->mesh()->element( idEltTest );
         }
         if ( !eltTest )
+            continue;
+        if ( testMeshSupportIsPartial && !__form.testSpace()->dof()->meshSupport()->hasElement( eltTest->id() ) )
             continue;
         res.push_back( std::make_tuple( faceRange.idInElement(k), eltTest ) );
     }

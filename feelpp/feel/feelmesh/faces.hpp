@@ -265,6 +265,8 @@ public:
         return M_faces.end();
     }
 
+    ordered_faces_reference_wrapper_type const& orderedFaces() const noexcept { return M_orderedFaces; }
+
     ordered_face_reference_wrapper_iterator beginOrderedFace()
         {
             return M_orderedFaces.begin();

@@ -33,26 +33,6 @@ namespace Feel {
 namespace detail
 {
 
-// template<typename MeshType>
-// boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-//              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-//              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-//              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-// allelements( MeshType const& mesh )
-// {
-//     typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelements( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
-//     auto it = Feel::unwrap_ptr( mesh ).beginOrderedElement();
-//     auto en = Feel::unwrap_ptr( mesh ).endOrderedElement();
-//     for ( ; it!=en;++it )
-//     {
-//         auto const& elt = unwrap_ref( *it );
-//         myelements->push_back(boost::cref(elt));
-//     }
-//     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-//                               myelements->begin(), myelements->end(),
-//                               myelements );
-// }
-
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,

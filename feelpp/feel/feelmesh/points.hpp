@@ -202,6 +202,8 @@ class Points
         return M_points.end();
     }
 
+    ordered_points_reference_wrapper_type const& orderedPoints() const noexcept { return M_orderedPoints; }
+
     ordered_point_reference_wrapper_iterator beginOrderedPoint()
     {
         return M_orderedPoints.begin();
