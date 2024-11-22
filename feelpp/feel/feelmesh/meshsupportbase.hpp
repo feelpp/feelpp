@@ -40,18 +40,13 @@ class MeshSupportBase
 public :
 
     virtual ~MeshSupportBase() {}
-    
+
     virtual bool isFullSupport() const = 0;
     virtual bool isPartialSupport() const = 0;
 
     virtual size_type numElements() const = 0;
 
     virtual bool hasElement( size_type eltId ) const = 0;
-
-    virtual bool hasGhostElement( size_type eltId ) const = 0;
-
-    virtual std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const = 0;
-    virtual std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const = 0;
 
     virtual void resetLocalizationTool() = 0;
 };

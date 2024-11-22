@@ -467,7 +467,7 @@ public:
                     continue;
                 if ( elt.marker( markerType ).isOff() )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
                     if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
                         continue;
@@ -496,7 +496,7 @@ public:
                     continue;
                 if ( !elt.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
-                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
                 {
                     if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
                         continue;
@@ -651,7 +651,7 @@ public:
         for ( ; it!=en;++it )
         {
             auto const& elt = unwrap_ref( *it );
-            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
             {
                 if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
                     continue;
@@ -702,7 +702,7 @@ public:
                 continue;
             if ( elt.boundaryEntityDimension() > entity_max_dim )
                 continue;
-            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
             {
                 if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
                     continue;
@@ -742,7 +742,7 @@ public:
             auto const& elt = unwrap_ref( *it );
             if ( !elt.isInternal() )
                 continue;
-            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY )
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
             {
                 if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
                     continue;

@@ -4930,7 +4930,7 @@ public:
     typename GetMeshSupport<mesh_ptrtype,i>::range_type
     rangeElements() const
     {
-        return meshSupport<i>()->rangeElements();
+        return elements( meshSupport<i>() );
     }
 
     /**
@@ -5753,7 +5753,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES && 
+               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES &&
                                 !std::is_same<typename RangeType::super,faces_reference_wrapper_t<mesh_type> >::value >* = nullptr ) const
         {
             CHECK(false) << "TODO";

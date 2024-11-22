@@ -130,7 +130,7 @@ public :
         using _quad_type = typename _im_type::_quad_type;
         using _quad1_type = typename _im_type::_quad1_type;
 
-        
+
         //typedef vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > > _quad_type;
         //typedef vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > > _quad1_type;
     };
@@ -205,11 +205,11 @@ public :
 
         range_elements_type rangeElts;
         if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
-            rangeElts = intersect( domainSpace->dof()->meshSupport()->rangeElements(), imageSpace->dof()->meshSupport()->rangeElements() );
+            rangeElts = intersect( elements( support( domainSpace ) ), elements( support( imageSpace ) ) );
         else if ( hasMeshSupportPartialDomain )
-            rangeElts = domainSpace->dof()->meshSupport()->rangeElements();
+            rangeElts = elements( support( domainSpace ) );
         else if ( hasMeshSupportPartialImage )
-            rangeElts = imageSpace->dof()->meshSupport()->rangeElements();
+            rangeElts = elements( support( imageSpace ) );
         else
             rangeElts = elements( imageSpace->mesh() );
 
@@ -224,16 +224,16 @@ public :
     {
         range_faces_type rangeFaces;
 
-        bool hasMeshSupportPartialDomain = domainSpace->dof()->hasMeshSupport() 
+        bool hasMeshSupportPartialDomain = domainSpace->dof()->hasMeshSupport()
             && domainSpace->dof()->meshSupport()->isPartialSupport();
-        bool hasMeshSupportPartialImage = imageSpace->dof()->hasMeshSupport() 
+        bool hasMeshSupportPartialImage = imageSpace->dof()->hasMeshSupport()
             && imageSpace->dof()->meshSupport()->isPartialSupport();
         if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
-            rangeFaces = intersect( domainSpace->dof()->meshSupport()->rangeBoundaryFaces(), imageSpace->dof()->meshSupport()->rangeBoundaryFaces() );
+            rangeFaces = intersect( boundaryfaces( support( domainSpace ) ), boundaryfaces( support( imageSpace ) ) );
         else if ( hasMeshSupportPartialDomain )
-            rangeFaces = domainSpace->dof()->meshSupport()->rangeBoundaryFaces();
+            rangeFaces = boundaryfaces( support( domainSpace ) );
         else if ( hasMeshSupportPartialImage )
-            rangeFaces = imageSpace->dof()->meshSupport()->rangeBoundaryFaces();
+            rangeFaces = boundaryfaces( support( imageSpace ) );
         else
             rangeFaces = boundaryfaces( imageSpace->mesh() );
 
@@ -308,10 +308,10 @@ public :
 
         auto sol = this->dualImageSpace()->element();
 
-        this->setRHSAndBC<domain_element_type>( 
-                sol, 
-                expr, range, 
-                the_im,the_im1,//quad, quad1, 
+        this->setRHSAndBC<domain_element_type>(
+                sol,
+                expr, range,
+                the_im,the_im1,//quad, quad1,
                 geomap,
                 grad_expr, div_expr, curl_expr
                 );
@@ -485,12 +485,12 @@ private :
         M_matrixCst->close();
     }
 
-    template<typename T, 
-        typename ExprT, typename RangeT, 
-        typename QuadT, typename Quad1T, 
+    template<typename T,
+        typename ExprT, typename RangeT,
+        typename QuadT, typename Quad1T,
         typename GradExprT, typename DivExprT, typename CurlExprT>
-    void setRHSAndBC( 
-            dual_image_element_type const& sol, 
+    void setRHSAndBC(
+            dual_image_element_type const& sol,
             ExprT expr, RangeT range,
             QuadT quad, Quad1T quad1,
             GeomapStrategyType geomap,
@@ -515,20 +515,20 @@ private :
         auto uDomain = this->domainSpace()->element();
         M_ie->zero();
 
-        form1( _test=this->dualImageSpace(), _vector=M_ie ) += integrate( 
+        form1( _test=this->dualImageSpace(), _vector=M_ie ) += integrate(
             _range=range, _expr=inner(expr,id( uDomain ) ),
                 _quad=quadOrder+quadOrderId,
                 _quad1=quad1Order+quad1OrderId,
-                _geomap=geomap 
+                _geomap=geomap
                 );
     }
 
-    template<typename T, 
-        typename ExprT, typename RangeT, 
-        typename QuadT, typename Quad1T, 
+    template<typename T,
+        typename ExprT, typename RangeT,
+        typename QuadT, typename Quad1T,
         typename GradExprT, typename DivExprT, typename CurlExprT>
-    void setRHSAndBC( 
-            dual_image_element_type const& sol, 
+    void setRHSAndBC(
+            dual_image_element_type const& sol,
             ExprT expr, RangeT range,
             QuadT quad, Quad1T quad1,
             GeomapStrategyType geomap,
@@ -663,7 +663,7 @@ private :
         typename std::enable_if<is_tensor2_field<T>::value, int>::type = 0>
     dual_image_element_type derivateImpl( ExprT const& expr )
     {
-        static_assert( mpl::not_<is_tensor2_field<T>>::value, 
+        static_assert( mpl::not_<is_tensor2_field<T>>::value,
                 "Derivation in projector class is not yet supported for tensor2 fields." );
     }
 

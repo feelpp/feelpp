@@ -321,6 +321,9 @@ class Mesh1D
         return this->endPoint();
     }
 
+    typename super_points::ordered_points_reference_wrapper_type const& orderedFaces() const noexcept { return this->orderedPoints(); }
+
+
      std::pair<face_iterator,bool> addFace( face_type& f )
         {
             return this->addPoint( f );

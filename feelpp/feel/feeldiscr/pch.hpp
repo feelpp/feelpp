@@ -42,7 +42,7 @@ template<typename MeshType,
 struct Pch
 {
     using type = boost::mp11::mp_if_c<Tag==0 && std::is_same_v<T,double>,
-                                      FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>>,  
+                                      FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>>,
                                       FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts,Tag>>,T> >;
     typedef std::shared_ptr<type> ptrtype;
 };

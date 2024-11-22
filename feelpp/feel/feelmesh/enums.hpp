@@ -49,7 +49,7 @@ enum ElementsType
 using on_elements_t = boost::mp11::mp_int<MESH_ELEMENTS>;
 using on_facets_t = boost::mp11::mp_int<MESH_FACES>;
 using on_internal_faces_t = boost::mp11::mp_int<MESH_INTERNAL_FACES>;
-using on_edges_t = boost::mp11::mp_int<MESH_FACES>;
+using on_edges_t = boost::mp11::mp_int<MESH_EDGES>;
 using on_points_t = boost::mp11::mp_int<MESH_POINTS>;
 
 

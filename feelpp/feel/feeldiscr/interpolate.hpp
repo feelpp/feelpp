@@ -45,10 +45,10 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
 {
     if constexpr (
 #if 0
-        std::is_same_v<typename SpaceType::mesh_type, typename FunctionType::functionspace_type::mesh_type> && 
+        std::is_same_v<typename SpaceType::mesh_type, typename FunctionType::functionspace_type::mesh_type> &&
         std::is_same_v<typename SpaceType::basis_type, typename FunctionType::functionspace_type::basis_type>
 #else
-        std::is_same_v<SpaceType, typename FunctionType::functionspace_type> 
+        std::is_same_v<SpaceType, typename FunctionType::functionspace_type>
 #endif
                   )
     {
@@ -168,11 +168,11 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
         bool hasMeshSupportPartialImage = space->dof()->hasMeshSupport() && space->dof()->meshSupport()->isPartialSupport();
         if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
-            rangeElt = intersect( f.functionSpace()->dof()->meshSupport()->rangeElements(), space->dof()->meshSupport()->rangeElements() );
+            rangeElt = intersect( elements(f.functionSpace()->dof()->meshSupport()), elements(space->dof()->meshSupport()) );
         else if ( hasMeshSupportPartialDomain )
-            rangeElt = f.functionSpace()->dof()->meshSupport()->rangeElements();
+            rangeElt = elements(f.functionSpace()->dof()->meshSupport());
         else if ( hasMeshSupportPartialImage )
-            rangeElt = space->dof()->meshSupport()->rangeElements();
+            rangeElt = elements(space->dof()->meshSupport());
         else
         {
             EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
