@@ -74,6 +74,11 @@ jobs:
             FLAVOR: ${{ inputs.flavor }}
             DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
         steps:
+        - name: Check gpg-agent status
+          run: |
+            gpgconf --launch gpg-agent
+            gpgconf --list-options gpg-agent
+            ps aux | grep gpg-agent
         -
           name: Import GPG key
           uses: crazy-max/ghaction-import-gpg@v6
