@@ -1877,8 +1877,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         numVersion = 1;
         modeGPU = 1;
         //modeGPU = 4;
-        isUnifiedMemory = false;
-        //isUnifiedMemory = true;
+        //isUnifiedMemory = false;
+        isUnifiedMemory = true;
     }
 
     BVH_HIP_Party( BVH_HIP_Party&& ) = default;
@@ -1962,8 +1962,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     deviceHipTriangles[k].id = id;
                 }
 
-                //bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
-                bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
 
