@@ -1952,7 +1952,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateOnBoundary()
 #if !defined( NDEBUG )
     DVLOG( 2 ) << "[updateOnBoundary] We have " << nelements( boundaryelements( this->shared_from_this() ) )
                << " elements sharing a point, a edge or a face with the boundary in the database";
-    // BOOST_FOREACH( auto const& e, this->boundaryElements( 0, 2, 0 ) )
+    // for( auto const& e : this->boundaryElements( 0, 2, 0 ) )
     auto rangebe = this->boundaryElements( 0, 2, 0 );
     auto itbe = std::get<0>( rangebe );
     auto enbe = std::get<1>( rangebe );
@@ -2927,7 +2927,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::send( int p, int tag )
     VLOG( 1 ) << "sending markername\n";
     //this->comm().send( p, tag, M_markername.size() );
     VLOG( 1 ) << "sending markername size: " << this->M_markername.size() << "\n";
-    BOOST_FOREACH ( auto m, this->M_markername )
+    for ( auto const& m : this->M_markername )
     {
         VLOG( 1 ) << "sending key: " << m.first << "\n";
         //this->comm().send( p, tag, m.first );

@@ -30,7 +30,7 @@
 #define __INTEGRATORDIRAC_HPP 1
 
 #include <boost/timer.hpp>
-#include <boost/foreach.hpp>
+
 
 #include <feel/feelalg/enums.hpp>
 

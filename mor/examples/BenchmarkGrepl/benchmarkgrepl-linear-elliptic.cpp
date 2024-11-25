@@ -184,7 +184,7 @@ void BenchmarkGreplLinearElliptic<Order>::checkEimExpansion()
     //check that eim expansion of g is positive on each vertice
     int max = eim_g->mMax();
     auto e = exporter( _mesh=mesh );
-    BOOST_FOREACH( auto mu, *Pset )
+    for( auto mu : *Pset )
     {
 
         if( Environment::worldComm().isMasterRank() )

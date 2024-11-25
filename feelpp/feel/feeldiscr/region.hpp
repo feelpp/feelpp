@@ -30,9 +30,6 @@
 #ifndef FEELPP_REGION_HPP
 #define FEELPP_REGION_HPP 1
 
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
@@ -40,7 +37,6 @@
 /**/
 namespace Feel
 {
-namespace lambda = boost::lambda;
 /**
  *
  * \ingroup SpaceTime

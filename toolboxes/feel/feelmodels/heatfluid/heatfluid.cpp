@@ -427,6 +427,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         this->setAlgebraicFactory( algebraicFactory );
         if ( M_fluidModel->hasOperatorPCD() )
             algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
+        if ( M_fluidModel->hasOperatorPMM() )
+            algebraicFactory->preconditionerTool()->attachOperatorPMM( "pmm", M_fluidModel->operatorPMM() );
 
         if ( ( M_fluidModel->timeStepping() == "Theta" ) || ( M_heatModel->timeStepping() == "Theta" ) )
         {

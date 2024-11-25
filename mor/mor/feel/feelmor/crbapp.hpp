@@ -132,7 +132,7 @@ public:
         Sampling->randomize( 10 );
         int crb_error_type = crb->errorType();
         int output_index = crb->outputIndex();
-        BOOST_FOREACH( auto mu, *Sampling )
+        for( auto mu : *Sampling )
         {
             double sfem = opus->output( output_index, mu );
             int size = mu.size();

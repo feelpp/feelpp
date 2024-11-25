@@ -571,11 +571,11 @@ Aitken<fs_type>::saveConvergenceHistory( std::string const& fname ) const
     if ( ofs )
     {
         ofs.setf( std::ios::scientific );
-        BOOST_FOREACH( auto cit, M_convergence )
+        for( auto cit : M_convergence )
         {
             // iteration
             ofs << std::setw( 6 ) << cit.first << " ";
-            BOOST_FOREACH( auto it, cit.second )
+            for( auto it : cit.second )
             {
                 ofs << std::setw( 20 ) << std::setprecision( 16 ) << it.second << " ";
             }

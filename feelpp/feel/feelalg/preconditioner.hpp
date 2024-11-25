@@ -47,6 +47,7 @@ typedef Backend<double,uint32_type> backend_type;
 typedef std::shared_ptr<Backend<double,uint32_type> > backend_ptrtype;
 
 template<typename T> class OperatorPCDBase;
+template<typename T> class OperatorPMMBase;
 
 /**
  * \class Preconditioner
@@ -90,6 +91,7 @@ public:
     typedef std::shared_ptr<Vector<T,size_type> > vector_ptrtype;
 
     typedef std::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
+    typedef std::shared_ptr<OperatorPMMBase<T> > operator_pmmbase_ptrtype;
     
     //@}
 
@@ -273,6 +275,13 @@ public:
             return M_operatorPCD.find(key)->second;
         }
 
+    bool hasOperatorPMM( std::string const& key ) const { return M_operatorPMM.find( key ) != M_operatorPMM.end(); }
+    operator_pmmbase_ptrtype const& operatorPMM( std::string const& key ) const
+        {
+            CHECK( this->hasOperatorPMM( key ) ) << " operator PMM not given for this key : " << key ;
+            return M_operatorPMM.find(key)->second;
+        }
+
     //@}
 
     /** @name  Mutators
@@ -341,6 +350,11 @@ public:
         M_operatorPCD[key] = opPCD;
     }
 
+    void attachOperatorPMM( std::string const& key, operator_pmmbase_ptrtype const& opPMM )
+    {
+        M_operatorPMM[key] = opPMM;
+    }
+
     //@}
 
     /** @name  Methods
@@ -400,6 +414,8 @@ protected:
     std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
 
     std::map<std::string,operator_pcdbase_ptrtype> M_operatorPCD;
+    std::map<std::string,operator_pmmbase_ptrtype> M_operatorPMM;
+
 };
 
 typedef Preconditioner<double,uint32_type> preconditioner_type;

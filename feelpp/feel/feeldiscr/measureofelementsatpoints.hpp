@@ -53,7 +53,7 @@ measurePointElements( std::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Mesh
         {
             if ( ptdone[elit->point( p ).id()] == false )
             {
-                BOOST_FOREACH( auto pt, elit->point( p ).elements() )
+                for( auto pt : elit->point( p ).elements() )
                 {
                     _fn.plus_assign( elit->id(), p, 0, elit->measure() );
                 }
