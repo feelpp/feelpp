@@ -518,12 +518,13 @@ __global__ void raytraceKernel_Parallel(
     while (stackPtr > 0) {
         int nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
-        if (nodeIdx < 0 || nodeIdx >= numRays) continue;
+        //if (nodeIdx < 0 || nodeIdx >= numRays) continue;
+        if (nodeIdx < 0 ) continue;
 
         //if (!rayAABBIntersect4(ray, node.bounds)) continue;
         if (node.triangleCount == 1) {
 				Triangle& tri = triangles[node.triangleIndex];
-				if (sameDirection(tri,ray,angleLim)) 
+				//if (sameDirection(tri,ray,angleLim)) 
 				{
 					float t;
 					if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
