@@ -441,7 +441,7 @@ __global__ void raytraceKernel(
             for ( int i = 0; i < node.triangleCount; ++i )
             {
                 Triangle& tri = triangles[node.firstTriangleIndex + i];
-                //if (sameDirection(tri,ray,angleLim))
+                //if (sameDirection(tri,ray,angleLim))  
                 if (sameDirectionTest(tri,ray,angleLim))
                 {
                     float t;
@@ -524,7 +524,8 @@ __global__ void raytraceKernel_Parallel(
         //if (!rayAABBIntersect4(ray, node.bounds)) continue;
         if (node.triangleCount == 1) {
 				Triangle& tri = triangles[node.triangleIndex];
-				//if (sameDirection(tri,ray,angleLim)) 
+				//if (sameDirection(tri,ray,angleLim))  
+                // Nota : "sameDirection" If you are too close to a triangle or inside it it does not work but works well for triangles a little far away. Function to be modified in the future.
 				{
 					float t;
 					if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
@@ -894,7 +895,7 @@ float calculateHalfOpeningAngle(const Triangle& triangle, const float4& origin) 
 }
 
 __host__ __device__ 
-bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
+bool sameDirection(const Triangle& tri,const Ray& ray,const float & angleLim)
 {   // To be modified soon according to the radius of the triangle object
 	float4 dT; 
 	dT.x = (tri.v1.x + tri.v2.x + tri.v3.x) / 3.0f - ray.origin.x;
@@ -907,8 +908,9 @@ bool sameDirection(Triangle& tri,Ray& ray,const float & angleLim)
     return (angle1 <= angleLim) && (angle1 <=angle2 );
 }
 
+
 __host__ __device__
-bool sameDirectionTest(Triangle& tri,Ray& ray,const float & angleLim)
+bool sameDirectionTest(const Triangle& tri,const Ray& ray,const float & angleLim)
 {	
 	float4 dT1 = tri.v1 - ray.origin;
 	float4 dT2 = tri.v2 - ray.origin;
@@ -1174,9 +1176,10 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
 
     constexpr float epsilon = 0.001f;
     constexpr float angleLim = 0.6f;
-    constexpr int maxLoops = 10;
+    constexpr int maxLoops = 20;
 
-    float angle = INFINITY;
+    float angle1 = INFINITY;
+    float angle2 = INFINITY;
     float distToTri = 0.0f;
     bool flag = true;
     bool flagOk = false;
@@ -1185,10 +1188,13 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
     int idNest  = -1;
     int idNestC = -1;
     int nbLoop = 1;
-    float delta = epsilon;
+    //float delta = epsilon;
+    float delta = -epsilon; //PB inside triangle
+
     while (flag)
     {
         float4 pos = ray.origin + ray.direction * delta;
+        //printf("Pos=%f %f %f\n",pos.x,pos.y,pos.z);
         const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
         flag = false;
         nbLoop++;
@@ -1198,18 +1204,19 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
             dT.x = (hit_triangle.v1.x + hit_triangle.v2.x + hit_triangle.v3.x) / 3.0f - ray.origin.x;
             dT.y = (hit_triangle.v1.y + hit_triangle.v2.y + hit_triangle.v3.y) / 3.0f - ray.origin.y;
             dT.z = (hit_triangle.v1.z + hit_triangle.v2.z + hit_triangle.v3.z) / 3.0f - ray.origin.z;
-            angle = angleScalar(dT, ray.direction);
+            angle1 = fabs(angleScalar(dT, ray.direction));
             distToTri = sqrt(dT.x * dT.x + dT.y * dT.y + dT.z * dT.z);
             flagOk = true; 
             idNest = nest.first;
             hit_tri = hit_triangle;
-			
-			//sameDirectionTest(hit_triangle,ray,angleLim);
-			
-            if (angle > angleLim) { flag = true; flagOk = false; delta = distToTri + epsilon;  }
-
-            if (angle < 0.785f) { flagFindCandidate = true; idNestC = idNest;  }
-
+            float angle2=calculateHalfOpeningAngle(hit_triangle,ray.origin);
+            //printf("angle1=%f\n",angle1);
+            //printf("angle2=%f\n",angle2);
+            if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
+            //if (!qinfo) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); }
+            //if (angle > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1);  }
+            if ( angle1 < 1.785f ) { flagFindCandidate = true; idNestC = idNest;  }
+            if ( angle2 > 1.0f ) { flag = false; flagOk = true;}
         } 
         else
         {
@@ -1255,7 +1262,6 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
             printf("Ray %d did not hit any triangle\n", idx);
     }
 }
-
 
 } // END namespace bvhLinear
 
