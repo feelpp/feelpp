@@ -288,12 +288,14 @@ if ( OPENTURNS_FOUND )
 endif()
 
 find_package(PkgConfig REQUIRED)
+
 pkg_check_modules(LibZip REQUIRED libzip)
-message(STATUS "[feelpp] LibZip found: ${LibZip_FOUND}")
-message(STATUS "[feelpp] LibZip include dirs: ${LibZip_INCLUDE_DIRS}")
-message(STATUS "[feelpp] LibZip libraries: ${LibZip_LIBRARIES}")
-target_include_directories(feelpp PUBLIC ${LibZip_INCLUDE_DIRS})
-target_link_libraries(feelpp PUBLIC ${LibZip_LINK_LIBRARIES})
+add_library(LibZip::LibZip UNKNOWN IMPORTED)
+set_target_properties(LibZip::LibZip PROPERTIES
+    IMPORTED_LOCATION "${LibZip_LIBRARIES}"
+    INTERFACE_INCLUDE_DIRECTORIES "${LibZip_INCLUDE_DIRS}"
+)
+target_link_libraries(feelpp PUBLIC LibZip::LibZip)
 
 
 
