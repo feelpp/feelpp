@@ -5,7 +5,7 @@
  Author(s): Vincent Chabannes <vincent.chabannnes@feelpp.org>
  Date: 2 April. 2018
 
- Copyright (C) 2018 Feel++ Consortium
+ Copyright (C) 2018-2024 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -26,12 +26,8 @@
 #include <fstream>
 #include <regex>
 #include <boost/algorithm/string.hpp>
+#include <cpr/cpr.h>
 
-extern "C" {
-
-#include <curl/curl.h>
-
-}
 namespace Feel
 {
 
@@ -163,129 +159,117 @@ public :
     std::string const& msg() const { return std::get<2>( *this ); }
 };
 
-StatusRequestHTTP requestHTTPGET( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+StatusRequestHTTP requestHTTPGET(const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000)
 {
-#if defined(FEELPP_HAS_LIBCURL)
-    CURLcode res;
-    res = curl_global_init(CURL_GLOBAL_ALL);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // Convert headers to cpr::Header
+    cpr::Header cpr_headers;
+    for (const auto& header : headers)
+    {
+        auto pos = header.find(": ");
+        if (pos != std::string::npos)
+        {
+            cpr_headers[header.substr(0, pos)] = header.substr(pos + 2);
+        }
+    }
 
-    // init
-    CURL *curl_handle = curl_easy_init();
-    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
+    int retries = 0;
+    while (retries <= max_retries)
+    {
+        // Perform the GET request with timeout
+        auto response = cpr::Get(cpr::Url{url}, cpr_headers, cpr::Timeout{timeout});
 
-    // url
-    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // request GET type
-    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPGET, 1L);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // headers
-    struct curl_slist *list = NULL;
-    for ( std::string const& header : headers )
-        list = curl_slist_append(list, header.c_str() );
-    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Check if the request was successful
+        if (response.status_code == 200)
+        {
+            ofile << response.text;
+            return StatusRequestHTTP(true, response.status_code, "");
+        }
 
-    /* send all data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Retry on certain failure conditions (e.g., timeout or server errors)
+        if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500)
+        {
+            ++retries;
+            if (retries > max_retries)
+            {
+                return StatusRequestHTTP(false, response.status_code, fmt::format("Max retries reached {} for url {}",response.error.message, url ));
+            }
+            // Wait before retrying
+            std::this_thread::sleep_for(std::chrono::milliseconds(backoff_delay));
+        }
+        else
+        {
+            // Non-retryable error
+            return StatusRequestHTTP(false, response.status_code, response.error.message);
+        }
+    }
 
-    /* write the page body to this file handle */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* get it! */
-    res = curl_easy_perform(curl_handle);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    // get http code status
-    long http_code = 0;
-    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
-
-    return StatusRequestHTTP( true, http_code, "" );
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-    return StatusRequestHTTP( false );
-#endif
+    return StatusRequestHTTP(false, 0, fmt::format("Unknown error occurred after retries to get url {}", url));
 }
-
-StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+StatusRequestHTTP requestHTTPPOST(const std::string& url, const std::vector<std::string>& headers,
+                                  std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000)
 {
-#if defined(FEELPP_HAS_LIBCURL)
-    CURLcode res;
-    res = curl_global_init(CURL_GLOBAL_ALL);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // Convert headers to cpr::Header
+    cpr::Header cpr_headers;
+    for (const auto& header : headers)
+    {
+        auto pos = header.find(": ");
+        if (pos != std::string::npos)
+        {
+            cpr_headers[header.substr(0, pos)] = header.substr(pos + 2);
+        }
+    }
 
-    // init
-    CURL *curl_handle = curl_easy_init();
-    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
-    //url
-    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // request POST type
-    res = curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // headers
-    struct curl_slist *list = NULL;
-    for ( std::string const& header : headers )
-        list = curl_slist_append(list, header.c_str() );
-    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    int retries = 0;
+    while (retries <= max_retries)
+    {
+        // Perform the POST request with timeout
+        auto response = cpr::Post(cpr::Url{url},
+                                  cpr_headers,
+                                  //cpr::Body{body},
+                                  cpr::Timeout{timeout});
 
-    // post an empty file
-    long fsize = 0;
-    char * postthis = nullptr;
-    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Check if the request was successful
+        if (response.status_code == 200)
+        {
+            ofile << response.text;
+            return StatusRequestHTTP(true, response.status_code, "");
+        }
 
-    /* send all data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    /* write the page body to this file handle */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    /* get it! */
-    res = curl_easy_perform(curl_handle);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Retry on certain failure conditions (e.g., timeout or server errors)
+        if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500)
+        {
+            ++retries;
+            if (retries > max_retries)
+            {
+                return StatusRequestHTTP(false, response.status_code,
+                                         fmt::format("Max retries reached. Error: {} URL: {}", response.error.message, url));
+            }
+            // Wait before retrying
+            std::this_thread::sleep_for(std::chrono::milliseconds(backoff_delay));
+        }
+        else
+        {
+            // Non-retryable error
+            return StatusRequestHTTP(false, response.status_code, response.error.message);
+        }
+    }
 
-    // get http code status
-    long http_code = 0;
-    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
-
-    return StatusRequestHTTP( true, http_code, "" );
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-    return StatusRequestHTTP( false );
-#endif
+    return StatusRequestHTTP(false, 0, fmt::format("Unknown error occurred after retries for URL: {}", url));
 }
-
 
 #if 0 // allow to print progress
 
-#define TIME_IN_US 1  
+#define TIME_IN_US 1
 #define TIMETYPE curl_off_t
 #define TIMEOPT CURLINFO_TOTAL_TIME_T
 #define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL     3000000
 #define STOP_DOWNLOAD_AFTER_THIS_MANY_BYTES         6000
 struct myprogress {
-  TIMETYPE lastruntime; /* type depends on version, see above */ 
+  TIMETYPE lastruntime; /* type depends on version, see above */
   CURL *curl;
 };
- 
-/* this is how the CURLOPT_XFERINFOFUNCTION callback works */ 
+
+/* this is how the CURLOPT_XFERINFOFUNCTION callback works */
 static int xferinfo(void *p,
                     curl_off_t dltotal, curl_off_t dlnow,
                     curl_off_t ultotal, curl_off_t ulnow)
@@ -293,12 +277,12 @@ static int xferinfo(void *p,
   struct myprogress *myp = (struct myprogress *)p;
   CURL *curl = myp->curl;
   TIMETYPE curtime = 0;
- 
+
   curl_easy_getinfo(curl, TIMEOPT, &curtime);
- 
+
   /* under certain circumstances it may be desirable for certain functionality
      to only run every N seconds, in order to do this the transaction time can
-     be used */ 
+     be used */
   if((curtime - myp->lastruntime) >= MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL) {
     myp->lastruntime = curtime;
 #ifdef TIME_IN_US
@@ -308,197 +292,181 @@ static int xferinfo(void *p,
     fprintf(stderr, "TOTAL TIME: %f \r\n", curtime);
 #endif
   }
- 
+
   fprintf(stderr, "UP: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T
           "  DOWN: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T
           "\r\n",
           ulnow, ultotal, dlnow, dltotal);
- 
+
   if(dlnow > STOP_DOWNLOAD_AFTER_THIS_MANY_BYTES)
     return 1;
   return 0;
 }
 
-#endif
+#endif // 0
 
-StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::istream & ifile, long fsize, std::ostream & ofile )
+
+StatusRequestHTTP requestHTTPPOST(const std::string& url, const std::vector<std::string>& headers,
+                                  std::istream& ifile, int fsize, std::ostream& ofile,
+                                  int timeout = 5000, int max_retries = 3, int backoff_delay = 1000)
 {
-#if defined(FEELPP_HAS_LIBCURL)
-    CURLcode res;
-    res = curl_global_init(CURL_GLOBAL_ALL);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    // Convert headers to cpr::Header
+    cpr::Header cpr_headers;
+    for (const auto& header : headers)
+    {
+        auto pos = header.find(": ");
+        if (pos != std::string::npos)
+        {
+            cpr_headers[header.substr(0, pos)] = header.substr(pos + 2);
+        }
+    }
 
-    // init
-    CURL *curl_handle = curl_easy_init();
-    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
+    // Read the input stream into a string using std::ostringstream
+    std::ostringstream oss;
+    oss << ifile.rdbuf();
+    std::string body = oss.str();
 
-    // url
-    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    int retries = 0;
+    while (retries <= max_retries)
+    {
+        // Perform the POST request with timeout and body
+        auto response = cpr::Post(cpr::Url{url},
+                                  cpr_headers,
+                                  cpr::Body{body},
+                                  cpr::Timeout{timeout});
 
-    // post file
-#if 1
-    char * postthis = new char [fsize];
-    ifile.read( postthis,fsize );
-    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, postthis);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-#else
-    // very slow (need to understand)
-    res = curl_easy_setopt(curl_handle, CURLOPT_POST, 1L);
-    res = curl_easy_setopt(curl_handle, CURLOPT_READDATA, &ifile);
-    res = curl_easy_setopt(curl_handle, CURLOPT_READFUNCTION, read_data);
-#endif
-    res = curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, fsize);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Write the response body to the output stream if the request was successful
+        if (response.status_code == 200)
+        {
+            ofile.write(response.text.c_str(), response.text.size());
+            return StatusRequestHTTP(true, response.status_code, "");
+        }
 
-    // headers
-    struct curl_slist *list = NULL;
-    for ( std::string const& header : headers )
-        list = curl_slist_append(list, header.c_str() );
-    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-#if 0
-    res = curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 500);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    res = curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 500);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-#endif
-#if 0
-    struct myprogress prog;
-    prog.lastruntime = 0;
-    prog.curl = curl_handle;
-    curl_easy_setopt(curl_handle, CURLOPT_XFERINFOFUNCTION, xferinfo);
-    curl_easy_setopt(curl_handle, CURLOPT_XFERINFODATA, &prog);
-    //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress);
-    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(curl_handle, CURLOPT_INFILESIZE_LARGE, fsize);
-#endif
-    /* send all data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    /* write the page body to this file handle */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    /* get it! */
-    res = curl_easy_perform(curl_handle);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Retry on timeout or server errors (5xx)
+        if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500)
+        {
+            ++retries;
+            if (retries > max_retries)
+            {
+                return StatusRequestHTTP(false, response.status_code,
+                                         fmt::format("Max retries reached. Error: {} URL: {}", response.error.message, url));
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(backoff_delay));
+        }
+        else
+        {
+            // Non-retryable error
+            return StatusRequestHTTP(false, response.status_code, response.error.message);
+        }
+    }
 
-    // get http code status
-    long http_code = 0;
-    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    return StatusRequestHTTP(false, 0, fmt::format("Unknown error occurred after retries for URL: {}", url));
+}
+StatusRequestHTTP requestHTTPCUSTOM(const std::string& customRequest, const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000)
+{
+    // Convert headers to cpr::Header
+    cpr::Header cpr_headers;
+    for (const auto& header : headers)
+    {
+        auto pos = header.find(": ");
+        if (pos != std::string::npos)
+        {
+            cpr_headers[header.substr(0, pos)] = header.substr(pos + 2);
+        }
+    }
 
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
+    int retries = 0;
+    while (retries <= max_retries)
+    {
+        cpr::Response response;
 
-    delete [] postthis;
-    return StatusRequestHTTP( true, http_code, "" );
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-    return StatusRequestHTTP( false );
-#endif
+        try {
+            if (customRequest == "PUT")
+            {
+                response = cpr::Put(cpr::Url{url}, cpr_headers, cpr::Timeout{timeout});
+            }
+            else if (customRequest == "DELETE")
+            {
+                response = cpr::Delete(cpr::Url{url}, cpr_headers, cpr::Timeout{timeout});
+            }
+            else if (customRequest == "PATCH")
+            {
+                response = cpr::Patch(cpr::Url{url}, cpr_headers, cpr::Timeout{timeout});
+            }
+            else if (customRequest == "OPTIONS")
+            {
+                response = cpr::Options(cpr::Url{url}, cpr_headers, cpr::Timeout{timeout});
+            }
+            else
+            {
+                return StatusRequestHTTP(false, 400, "Unsupported HTTP method: " + customRequest);
+            }
+
+            // Check for success
+            if (response.status_code >= 200 && response.status_code < 300)
+            {
+                ofile << response.text;
+                return StatusRequestHTTP(true, response.status_code, "");
+            }
+
+            // Retry logic for server errors or timeout
+            if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500)
+            {
+                ++retries;
+                if (retries > max_retries) {
+                    return StatusRequestHTTP(false, response.status_code, "Max retries reached for " + url);
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(backoff_delay));
+            }
+            else
+            {
+                return StatusRequestHTTP(false, response.status_code, response.error.message);
+            }
+        }
+        catch (const std::exception& ex)
+        {
+            return StatusRequestHTTP(false, 0, std::string("Exception: ") + ex.what());
+        }
+    }
+
+    return StatusRequestHTTP(false, 0, "Unknown error occurred.");
 }
 
-StatusRequestHTTP requestHTTPCUSTOM( std::string const& customRequest, std::string const& url, std::vector<std::string> const& headers, std::ostream & ofile )
+StatusRequestHTTP requestDownloadURL(const std::string& url, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000)
 {
-#if defined(FEELPP_HAS_LIBCURL)
-    CURLcode res;
-    res = curl_global_init(CURL_GLOBAL_ALL);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // init
-    CURL *curl_handle = curl_easy_init();
-    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
-    // url
-    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str() );
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // request type
-    res = curl_easy_setopt(curl_handle, CURLOPT_CUSTOMREQUEST, customRequest.c_str()/*"DELETE"*/);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    // headers
-    struct curl_slist *list = NULL;
-    for ( std::string const& header : headers )
-        list = curl_slist_append(list, header.c_str() );
-    res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    int retries = 0;
+    while (retries <= max_retries)
+    {
+        // Perform the GET request with timeout
+        auto response = cpr::Get(cpr::Url{url}, cpr::Timeout{timeout});
 
-    /* send all data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    /* write the page body to this file handle */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Check if the request was successful
+        if (response.status_code == 200)
+        {
+            ofile << response.text; // Write the response body to the output stream
+            return StatusRequestHTTP(true, response.status_code, "");
+        }
 
-    /* get it! */
-    res = curl_easy_perform(curl_handle);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+        // Retry on certain failure conditions (e.g., timeout or server errors)
+        if (response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500)
+        {
+            ++retries;
+            if (retries > max_retries)
+            {
+                return StatusRequestHTTP(false, response.status_code, fmt::format("Max retries reached. Error: {}", response.error.message));
+            }
+            // Wait before retrying
+            std::this_thread::sleep_for(std::chrono::milliseconds(backoff_delay));
+        }
+        else
+        {
+            // Non-retryable error
+            return StatusRequestHTTP(false, response.status_code, response.error.message);
+        }
+    }
 
-    // get http code status
-    long http_code = 0;
-    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
-
-    return StatusRequestHTTP( true, http_code, "" );
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-    return StatusRequestHTTP( false );
-#endif
+    return StatusRequestHTTP(false, 0, "Unknown error occurred after retries.");
 }
-
-StatusRequestHTTP requestDownloadURL( std::string const& url, std::ostream & ofile)
-{
-#if defined(FEELPP_HAS_LIBCURL)
-    CURLcode res;
-    res = curl_global_init(CURL_GLOBAL_ALL);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* init the curl session */
-    CURL *curl_handle = curl_easy_init();
-    if ( !curl_handle ) return StatusRequestHTTP( false, "fail to run curl_easy_init" );
-
-    /* set URL to get here */
-    res = curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-#if 0
-    /* Switch on full protocol/debug output while testing */
-    res = curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-    /* disable progress meter, set to 0L to enable and disable debug output */
-    res = curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-#endif
-
-    /* send all data to this function  */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* write the page body to this file handle */
-    res = curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, &ofile);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    /* get it! */
-    res = curl_easy_perform(curl_handle);
-    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
-    long http_code = 0;
-    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &http_code);
-
-    /* cleanup curl stuff */
-    curl_easy_cleanup(curl_handle);
-    curl_global_cleanup();
-
-    return StatusRequestHTTP( true, http_code, "" );
-#else
-    CHECK( false ) << "LIBCURL is not detected";
-    return StatusRequestHTTP( false );
-#endif
-
-}
-
 
 RemoteData::RemoteData( std::string const& desc, worldcomm_ptr_t const& worldComm )
     :
