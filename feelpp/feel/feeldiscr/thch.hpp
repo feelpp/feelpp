@@ -48,7 +48,7 @@ struct THch
 } //meta
 
 /**
- * Define the type for Taylor-Hood space 
+ * Define the type for Taylor-Hood space
  * \code
  * THch_type<1,Mesh<Simplex<2>>> // generates \f$P2P1\f$ over a mesh of triangles
  * \endcode
@@ -60,7 +60,7 @@ using THch_type = FunctionSpace<MeshType,
                                 Periodicity <NoPeriodicity,NoPeriodicity>,
                                 mortars<NoMortar,NoMortar> >;
 /**
- * Define the shared_ptr type for Taylor-Hood space 
+ * Define the shared_ptr type for Taylor-Hood space
  * \code
  * THch_ptrtype<1,Mesh<Simplex<2>>> // defines the shared_ptr type of \f$P2P1\f$ over a mesh of triangles
  * \endcode
@@ -87,7 +87,7 @@ template<int Order,typename MeshType>
 using THch_velocity_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<0>;
 template<int Order,typename MeshType>
 using THch_pressure_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<1>;
-    
+
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k+1}]^d \times P_{k}]\f$ where $d$ is the
@@ -103,7 +103,7 @@ template<int Order,typename MeshType>
 inline
 THch_ptrtype<Order,MeshType>
 THch( std::shared_ptr<MeshType> mesh,
-      std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
+      std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,true ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return THch_type<Order,MeshType>::New( _mesh=mesh,

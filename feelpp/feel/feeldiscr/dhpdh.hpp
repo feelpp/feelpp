@@ -40,7 +40,7 @@ template<int Order,typename MeshType>
 inline
 std::shared_ptr<FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous> > > >
 DhPdh( std::shared_ptr<MeshType> mesh,
-       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
+       std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,true ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,

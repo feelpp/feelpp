@@ -56,14 +56,14 @@ using P2ch_type = FunctionSpace<MeshType,
                                 Periodicity <NoPeriodicity,NoPeriodicity>,
                                 mortars<NoMortar,NoMortar> >;
 /**
- * Define the shared_ptr type for Taylor-Hood space 
+ * Define the shared_ptr type for Taylor-Hood space
  * \code
  * P2ch_ptrtype<1,Mesh<Simplex<2>>> // defines the shared_ptr type of \f$P2P1\f$ over a mesh of triangles
  * \endcode
  */
 template<typename Base1, typename Base2, typename MeshType>
 using P2ch_ptrtype = std::shared_ptr<P2ch_type<Base1,Base2,MeshType>>;
-    
+
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k}]^d \times P_{l}]\f$ where $d$ is the
@@ -79,7 +79,7 @@ template<typename Base1, typename Base2, typename MeshType>
 inline
 P2ch_ptrtype<Base1, Base2, MeshType>
 P2ch( std::shared_ptr<MeshType> mesh,
-      std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
+      std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,true ) )
 {
     CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return P2ch_type<Base1,Base2,MeshType>::New( _mesh=mesh,
