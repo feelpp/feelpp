@@ -68,7 +68,7 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about("test_distance",
+    AboutData about("test_distance BVH RT CPU AND GPU",
         "test_distance",
         "0.1",
         "nD(n=3)",
@@ -85,21 +85,39 @@ makeOptions()
 {
     Feel::po::options_description opts("Test Environment options");
     opts.add_options()
-        //( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-        //( "number_rays_desired", po::value<int>()->default_value( 703 ), "mesh size" )
-        ("mesh2D.filename", po::value<std::string>(), "mesh2D.filename")
-        ("mesh3D.filename", po::value<std::string>(), "mesh3D.filename")
+        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "number_rays_desired", po::value<int>()->default_value( 703 ), "mesh size" )
         ;
     return opts;
 }
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS(makeAbout(), makeOptions());
 
-// BEGIN::Global data
-std::vector<std::vector<double>> allNodeCoordinates;
-std::vector<double> distanceFastMarching;
-long int t_laps_FastMarching;
-// END::Global data
+struct DataDistanceErrTime {
+    int id;
+    double distanceMinREAL;
+    double distanceFastMarching;
+    double errFastMarching;
+    double distanceMinCPU;
+    double errCPU;
+    double distanceMinGPU;
+    double errGPU;
+    long int t_laps_CPU;
+    long int t_laps_GPU;
+};
+
+struct DataTimeLapsConfig {
+    int  nbRays; // <= uniform distribution
+    int  nbRaysDesired;
+    double hsize;
+    long int t_laps_BVH_CPU;
+    long int t_laps_BVH_GPU;
+    long int t_laps_RT_CPU;
+    long int t_laps_RT_GPU;
+    long int t_laps_FastMarching;
+};
+
+
 
 
 template <typename BvhType, typename RayIntersectionResultType>
@@ -127,43 +145,6 @@ Eigen::Vector3d sphericalToCartesian(double r, double theta, double alpha) {
     return position;
 }
 
-template <typename MeshEntityType>
-struct MeshPrimitiveInfo
-{
-    using mesh_entity_type = std::decay_t<MeshEntityType>;
-    static constexpr uint16_type nDim = mesh_entity_type::nDim;
-    static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
-    using vector_realdim_type = Eigen::Matrix<double, nRealDim, 1>;
-
-    MeshPrimitiveInfo(mesh_entity_type const& meshEntity)
-        : M_meshEntity(meshEntity)
-    {
-        auto verticesUblas = meshEntity.vertices();
-        auto G = em_cmatrix_col_type<double>(verticesUblas.data().begin(), nRealDim, mesh_entity_type::numVertices);
-        M_bound_min = G.rowwise().minCoeff();
-        M_bound_max = G.rowwise().maxCoeff();
-        M_bound_min.array() -= 2 * FLT_MIN;
-        M_bound_max.array() += 2 * FLT_MIN;
-        auto bary = meshEntity.barycenter();
-        M_centroid = Eigen::Map<Eigen::Matrix<double, nRealDim, 1>>(bary.data().begin());
-    }
-    MeshPrimitiveInfo(MeshPrimitiveInfo&&) = default;
-    MeshPrimitiveInfo(MeshPrimitiveInfo const&) = default;
-    MeshPrimitiveInfo& operator=(MeshPrimitiveInfo&&) = default;
-    MeshPrimitiveInfo& operator=(MeshPrimitiveInfo const&) = default;
-
-    mesh_entity_type const& meshEntity() const { return M_meshEntity.get(); }
-    vector_realdim_type const& boundMin() const noexcept { return M_bound_min; }
-    vector_realdim_type const& boundMax() const noexcept { return M_bound_max; }
-    vector_realdim_type const& centroid() const noexcept { return M_centroid; }
-
-private:
-    vector_realdim_type M_bound_min;
-    vector_realdim_type M_bound_max;
-    vector_realdim_type M_centroid;
-    std::reference_wrapper<mesh_entity_type const> M_meshEntity;
-};
-
 
 double calculateStepRays(int n, double start, double end) {
     double n_total = std::sqrt(n);
@@ -171,8 +152,13 @@ double calculateStepRays(int n, double start, double end) {
 }
 
 
-template <typename RangeType2, typename RangeType>
-void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int number_rays_desired, std::ofstream& file, bool isViewInfo)
+template <typename RangeType2>
+void distToBoundaryBVHpu(
+    RangeType2 const& range,
+    DataTimeLapsConfig& allDataPU,
+    std::vector<std::vector<double>>& allNodeCoordinates,
+    std::vector<DataDistanceErrTime>& allDataDistanceBVHRT,
+    bool isViewInfo)
 {
     std::chrono::steady_clock::time_point t_begin_cpu, t_begin_gpu;
     std::chrono::steady_clock::time_point t_end_cpu, t_end_gpu;
@@ -187,19 +173,12 @@ void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int
     long int t_laps_CPU_Total = 0;
     long int t_laps_GPU_Total = 0;
 
-    std::string filenameB = "all_reults_per_vertex.csv";
-    if (remove(filenameB.c_str()) != 0) {
-        std::cerr << "Error delete file." << std::endl;
-    }
-    //std::ofstream myfileB (filenameB);
-    std::ofstream myfileB(filenameB, std::ios::app);
-    myfileB << "Num Vertex,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU,time_RT_CPU,time_RT_GPU\n";
+    int nbRays = 0;
 
-    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
+    int number_rays_desired = allDataPU.nbRaysDesired;
+
+    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType2>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
-
-    using mesh_entity_type2 = std::remove_const_t<entity_range_t<RangeType2>>;
-
 
     // BEGIN::Build BVH CPU
     t_begin_cpu = std::chrono::steady_clock::now();
@@ -230,8 +209,6 @@ void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int
     double distanceMinREAL = 0.0f;
     int nbValues = 0;
 
-
-
     for (int k = 0; k < allNodeCoordinates.size(); ++k)
     {
         // Build ray
@@ -241,14 +218,12 @@ void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int
         Eigen::Vector3d ray_origin = { allNodeCoordinates[k][0], allNodeCoordinates[k][1], allNodeCoordinates[k][2] };
 
         bool ok = false;
-        //if ( (pt0[0]>0.0f) && (pt0[0]<1.0f) && (pt0[1]>0.0f) && (pt0[1]<1.0f) && (pt0[2]>0.0f) && (pt0[2]<1.0f)) { ok = true; }
         //if ( (ray_origin[0]>0.0f) && (ray_origin[0]<1.0f) && (ray_origin[1]>0.0f) && (ray_origin[1]<1.0f) && (ray_origin[2]>0.0f) && (ray_origin[2]<1.0f)) { ok = true; }
 
         ok = true; // All points
 
         if (ok) {
             nbValues++;
-            //distanceMinREAL= std::min( pt0[0], std::min(1.0-pt0[0], std::min(pt0[1], std::min(1.0-pt0[1], std::min(pt0[2],1.0-pt0[2])))));
             distanceMinREAL = std::min(ray_origin[0], std::min(1.0 - ray_origin[0], std::min(ray_origin[1], std::min(1.0 - ray_origin[1], std::min(ray_origin[2], 1.0 - ray_origin[2])))));
 
             double thetaStart = 0.0f;
@@ -266,7 +241,7 @@ void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int
                 }
             }
 
-            //file << "Number of effective rays=" << rays.size() << "\n";
+            nbRays = rays.size();
 
             for (int i = 0; i < rays.size(); ++i)
             {
@@ -322,35 +297,39 @@ void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int
             double errCPU = abs(distanceMinCPU - distanceMinREAL);
             double errGPU = abs(distanceMinGPU - distanceMinREAL);
 
-            double errFastMarching = abs(distanceFastMarching[k] - distanceMinREAL);
-
-            myfileB << k << ","
-                << distanceMinREAL << ","
-                << distanceFastMarching[k] << ","
-                << errFastMarching << ","
-                << distanceMinCPU << ","
-                << errCPU << ","
-                << distanceMinGPU << ","
-                << errGPU << ","
-                << t_laps_CPU << ","
-                << t_laps_GPU << "\n";
+            //double errFastMarching = abs(distanceFastMarching[k] - distanceMinREAL);
 
             if (isViewInfo) std::cout << "[INFO] [" << k
                 << "]"
-                << "<" << ray_origin[0]
-                << "," << ray_origin[1]
-                << "," << ray_origin[2]
+                << "<" << std::setprecision(5)<< ray_origin[0]
+                << "," << std::setprecision(5)<< ray_origin[1]
+                << "," << std::setprecision(5)<< ray_origin[2]
                 << ">"
                 << " Distance Min REAL=" << distanceMinREAL
-                << " FastMarching=" << distanceFastMarching[k]
-                << " err=" << errFastMarching
-                << " CPU=" << distanceMinCPU
-                << " err=" << errCPU
-                << " GPU=" << distanceMinGPU
-                << " err=" << errGPU
+                //<< " FastMarching=" << distanceFastMarching[k]
+                //<< " err=" << errFastMarching
+                << " CPU=" << std::setprecision(5)<< distanceMinCPU
+                << " err=" << std::setprecision(5)<< errCPU
+                << " GPU=" << std::setprecision(5)<< distanceMinGPU
+                << " err=" << std::setprecision(5)<< errGPU
                 << " t_laps_CPU=" << t_laps_CPU
                 << " t_laps_GPU=" << t_laps_GPU
                 << "\n";
+
+            DataDistanceErrTime data = {
+                k,
+                distanceMinREAL,
+                -1,
+                -1,
+                distanceMinCPU,
+                errCPU,
+                distanceMinGPU,
+                errGPU,
+                t_laps_CPU,
+                t_laps_GPU
+            };
+
+            allDataDistanceBVHRT.push_back(data);
 
             // Memory cleaning
             distance_CPU_mode.clear();
@@ -358,46 +337,27 @@ void distScanToBoundary(RangeType2 const& rangeMesh, RangeType const& range, int
         }
     } // END for k
 
-
-    t_laps_CPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << t_laps_CPU << " us\n";
-    file << "TimeBVHCPU=" << t_laps_CPU << "\n";
-
-    t_laps_CPU = t_laps_CPU_Total / nbValues;
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing CPU : " << t_laps_CPU << " us\n";
-    file << "TimeRaytracingCPU=" << t_laps_CPU << "\n";
-
-    t_laps_GPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << t_laps_GPU << " us \n";
-    file << "TimeBVHGPU=" << t_laps_GPU << "\n";
-
-    t_laps_GPU = t_laps_GPU_Total / nbValues;
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing GPU : " << t_laps_GPU << " us\n";
-    file << "TimeRaytracingGPU=" << t_laps_GPU << "\n";
-
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside FastMarching : " << t_laps_FastMarching << " us\n";
-    file << "TimeFastMarching=" << t_laps_FastMarching << "\n";
-
-    myfileB.close();
+    // Elapse Time BVH - RT - CPU - GPU
+    allDataPU.t_laps_BVH_CPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
+    allDataPU.t_laps_RT_CPU = t_laps_CPU_Total / nbValues;
+    allDataPU.t_laps_BVH_GPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
+    allDataPU.t_laps_RT_GPU = t_laps_GPU_Total / nbValues;
+    allDataPU.nbRays = nbRays;
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << allDataPU.t_laps_BVH_CPU << " us\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing CPU : " << allDataPU.t_laps_RT_CPU << " us\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << allDataPU.t_laps_BVH_GPU << " us \n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing GPU : " << allDataPU.t_laps_RT_GPU << " us\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside FastMarching : " << allDataPU.t_laps_FastMarching << " us\n";
 }
 
 
-BOOST_AUTO_TEST_SUITE(bvh_intersection_gpu_tests)
+BOOST_AUTO_TEST_SUITE(distance_bvh_cpu_gpu_gpu_tests)
 
 
-BOOST_AUTO_TEST_CASE(test_load_mesh3)
+BOOST_AUTO_TEST_CASE(all_distance)
 {
 
     bool isViewInfo = true;  //isViewInfo = false;;
-
-    std::string filenameA = "results.csv";
-    if (remove(filenameA.c_str()) != 0) {
-        std::cerr << "Error delete file." << std::endl;
-    }
-
-    std::ofstream myfileA(filenameA);
-    //std::ofstream myfileA(filenameA, std::ios::app);
-
     double hsize = 1.0f / 2.0f;
     int number_rays_desired = 703;
 
@@ -405,7 +365,7 @@ BOOST_AUTO_TEST_CASE(test_load_mesh3)
     using namespace Feel;
     using Feel::cout;
     using mesh_type = Mesh<Simplex<3, 1, 3>>; //<Dim,Order,RDim>
-    auto mesh = unitCube(hsize);
+    auto mesh = unitCube();
     if (isViewInfo)
     {
         std::cout << "[INFO] maxNumElement : " << mesh->maxNumElements() << std::endl;
@@ -413,83 +373,119 @@ BOOST_AUTO_TEST_CASE(test_load_mesh3)
         std::cout << "[INFO] maxNumPoints  : " << mesh->maxNumPoints() << std::endl;
         std::cout << "[INFO] maxNumVerices : " << mesh->maxNumVertices() << std::endl;
     }
-    //auto rangeFaces = markedfaces(mesh);
 
-    auto rangeFaces = boundaryfaces( mesh ) ;
-
-
+    auto rangeFaces = markedfaces(mesh);
+    auto submeshFaces  = boundaryfaces( mesh );
     auto rangeElements = markedelements(mesh);
 
-    myfileA << "h=" << hsize << "\n";
-    myfileA << "number_rays_desired=" << number_rays_desired << "\n";
 
     auto Vh = Pch<1>(mesh);
-    auto exp = exporter( _mesh = mesh, _name = fmt::format( "distance_{}d_o{}", 3, 1 ) );
-    exp->addRegions();
+#if 0
+    auto const& nodes = Vh->mesh()->points();
 
-    std::chrono::steady_clock::time_point t_begin_FastMarching, t_end_FastMarching;
-    t_begin_FastMarching = std::chrono::steady_clock::now();
-        //auto distToBoundary = distanceToRange(_space = Vh, _range = rangeFaces);
-        auto distToBoundary = distanceToRange( _space=Vh, _range=boundaryfaces( mesh )  );
-    t_end_FastMarching = std::chrono::steady_clock::now();
-    t_laps_FastMarching = std::chrono::duration_cast<std::chrono::microseconds>(t_end_FastMarching - t_begin_FastMarching).count();
-    exp->save();
-
-    //auto smesh = createSubmesh(_mesh=mesh,_range=rangeElements);
-    for (auto const& pointPair : mesh->points())
+    for (auto const& pointPair :nodes)
     {
         auto const& point = pointPair.second;
         auto const& coords = point.node();
         allNodeCoordinates.push_back({ coords[0], coords[1], coords[2] });
     }
+#endif
 
-    /*
-    All points
-    for (auto const& face : rangeElements)
+    std::vector<std::vector<double>> allNodeCoordinates;
+    DataTimeLapsConfig allDataPU;
+    allDataPU.nbRaysDesired=number_rays_desired;
+    allDataPU.hsize=hsize;
+    std::vector<DataDistanceErrTime> allDataDistanceBVHRT;
+    
+    // List of node coordinates
+    for (size_type k=0;k<Vh->nLocalDofWithGhost();++k)
     {
-        for (auto const& point : face.get().points())
-        {
-            auto const& coords = point->node();
-            allCoordinates.push_back({coords[0], coords[1], coords[2]});
-        }
-    }
-    */
-
-    for (int i = 0; i < allNodeCoordinates.size(); ++i)
-    {
-        distanceFastMarching.push_back(distToBoundary[i]);
+        auto const& dofPt = Vh->dof()->dofPoint(k).template get<0>();
+        allNodeCoordinates.push_back({ dofPt[0], dofPt[1], dofPt[2] });
     }
 
+    int nbNode=allNodeCoordinates.size();
 
-    // Test distance if it is ok
-    for (int i = 0; i < allNodeCoordinates.size(); ++i)
+
+    // Calculates Node points to Surface distances by the method FastMarching
+    std::chrono::steady_clock::time_point t_begin_FastMarching, t_end_FastMarching;
+    t_begin_FastMarching = std::chrono::steady_clock::now();
+        auto distToBoundary = distanceToRange( _space=Vh, _range=submeshFaces);
+    t_end_FastMarching = std::chrono::steady_clock::now();
+    long int t_laps_FastMarching = std::chrono::duration_cast<std::chrono::microseconds>(t_end_FastMarching - t_begin_FastMarching).count();
+
+    allDataPU.t_laps_FastMarching=t_laps_FastMarching;
+
+
+    // Calculates Node points to Surface distances by the method BVH RT CPU and GPU
+    distToBoundaryBVHpu(rangeFaces,allDataPU,allNodeCoordinates,allDataDistanceBVHRT,isViewInfo);
+
+    //We fill the Fast Marching distance data into the allDataDistanceBVHRT data structure
+    for (int i = 0; i < nbNode; ++i)
     {
-
-        double distanceMinREAL = std::min(allNodeCoordinates[i][0],
-            std::min(1.0 - allNodeCoordinates[i][0],
-                std::min(allNodeCoordinates[i][1],
-                    std::min(1.0 - allNodeCoordinates[i][1],
-                        std::min(allNodeCoordinates[i][2],
-                            1.0 - allNodeCoordinates[i][2])))));
-        std::cout << "["
-            << i
-            << "]"
-            << " Point <"
-            << allNodeCoordinates[i][0] << ", "
-            << allNodeCoordinates[i][1] << ", "
-            << allNodeCoordinates[i][2] << "> = "
-
-            << distToBoundary[i]
-            << " : "
-            << distanceMinREAL
-            << std::endl;
+        allDataDistanceBVHRT[i].distanceFastMarching = distToBoundary[i];
+        allDataDistanceBVHRT[i].errFastMarching = abs(distToBoundary[i]-allDataDistanceBVHRT[i].distanceMinREAL);
     }
 
-    distScanToBoundary(rangeElements, rangeFaces, number_rays_desired, myfileA, isViewInfo);
+    // Debriefing Save all data
+    std::string filenameDataDistanceErrTime = "all_results_per_vertex.csv";
+    if (remove(filenameDataDistanceErrTime.c_str()) != 0) {
+        std::cerr << "Error delete file." << std::endl;
+    }
+    std::ofstream myfileB(filenameDataDistanceErrTime);
+    myfileB << "Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU,time_RT_CPU,time_RT_GPU\n";
+    for (int i = 0; i < nbNode; ++i)
+    {
+        myfileB << allDataDistanceBVHRT[i].id << ","
+                << std::setprecision(5)<< allNodeCoordinates[i][0] << ","
+                << std::setprecision(5)<< allNodeCoordinates[i][1] << ","
+                << std::setprecision(5)<< allNodeCoordinates[i][2] << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceMinREAL << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceFastMarching << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].errFastMarching << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceMinCPU << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].errCPU << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceMinGPU << ","
+                << std::setprecision(5)<< allDataDistanceBVHRT[i].errGPU << ","
+                << allDataDistanceBVHRT[i].t_laps_CPU << ","
+                << allDataDistanceBVHRT[i].t_laps_GPU << "\n";
+    }
+    myfileB.close();
+
+    std::string filenameA = "results.csv";
+    if (remove(filenameA.c_str()) != 0) {
+        std::cerr << "Error delete file." << std::endl;
+    }
+    std::ofstream myfileA(filenameA);
+    myfileA << "hsize=" << allDataPU.hsize<< "\n";
+    myfileA << "maxNumElement= " << mesh->maxNumElements() << "\n";
+    myfileA << "maxNumFace=" << mesh->maxNumFaces() << "\n";
+    myfileA << "maxNumPoints=" << mesh->maxNumPoints() << "\n";
+    myfileA << "maxNumVerices=" << mesh->maxNumVertices() << "\n";
+    myfileA << "nbRaysDesired=" << allDataPU.nbRaysDesired<< "\n";
+    myfileA << "nbRays=" << allDataPU.nbRays<< "\n";
+    myfileA << "timeBVHcpu=" << allDataPU.t_laps_BVH_CPU<< "\n";
+    myfileA << "timeMeanRTcpu=" << allDataPU.t_laps_RT_CPU << "\n";
+    myfileA << "timeBVHgpu=" << allDataPU.t_laps_BVH_GPU << "\n";
+    myfileA << "timeMeanRTgpu=" << allDataPU.t_laps_RT_GPU << "\n";
+    myfileA << "timeFastMarching=" << allDataPU.t_laps_FastMarching<< "\n";
+    myfileA << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU+allDataPU.t_laps_RT_CPU<< "\n";
+    myfileA << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU+allDataPU.t_laps_RT_GPU<< "\n";
     myfileA.close();
-    std::cout << "\n";
-}
 
+    // Data backup file distances for paraview
+    auto exp = exporter( _mesh = mesh, _name = fmt::format( "distance_{}d_o{}", 3, 1 ) );
+    exp->addRegions();
+    exp->add( "distToBoundary", distToBoundary );
+    exp->save();
+
+
+    // Memory cleaning
+    allNodeCoordinates.clear();
+    allDataDistanceBVHRT.clear();
+
+    
+}
 
 
 
