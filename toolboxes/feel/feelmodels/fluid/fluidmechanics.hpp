@@ -2189,7 +2189,8 @@ public :
 
             //auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
             //! WARNING use a temporary fix
-            auto rangeTrace = !M_tmpExporterTraceRangeFaces? this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces() : *M_tmpExporterTraceRangeFaces;
+            //auto rangeTrace = !M_tmpExporterTraceRangeFaces? this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces() : *M_tmpExporterTraceRangeFaces;
+            auto rangeTrace = boundaryfaces( this->functionSpaceVelocity()->template meshSupport<0>() );
 
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
             // set connection markers if has partial mesh support (i.e. physics not in whole mesh)

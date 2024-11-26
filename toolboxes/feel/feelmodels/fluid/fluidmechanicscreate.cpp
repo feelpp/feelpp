@@ -1504,9 +1504,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 #if 1
             range_faces_type rangeTrace;
             auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
-            if ( this->worldComm().localSize() == 1 || !velocityMeshSupport->isPartialSupport() ) // default case
+            if ( true )//this->worldComm().localSize() == 1 || !velocityMeshSupport->isPartialSupport() ) // default case
             {
-                rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
+                //rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
+                rangeTrace = boundaryfaces( velocityMeshSupport );
                 M_meshTrace = createSubmesh( _mesh=velocityMeshSupport/*this->mesh()*/, _range=rangeTrace,
                                              _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
             }
