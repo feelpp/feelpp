@@ -1212,9 +1212,9 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
             float angle2=calculateHalfOpeningAngle(hit_triangle,ray.origin);
             //printf("angle1=%f\n",angle1);
             //printf("angle2=%f\n",angle2);
-            if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
+            //if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
+            if (angle1 > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); } // It's better           
             //if (!qinfo) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); }
-            //if (angle > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1);  }
             if ( angle1 < 1.785f ) { flagFindCandidate = true; idNestC = idNest;  }
             if ( angle2 > 1.0f ) { flag = false; flagOk = true;}
         } 
@@ -2133,7 +2133,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                         std::cout << " IdObject= " << hostHipIdResults[i] << "\n";
                     }
 
-                    M_distance = double( hostHipDistanceResults[i] );
+                    M_distance = fabs(double( hostHipDistanceResults[i] ));
 
                     res.push_back( rayintersection_result_type( this->worldComm().rank(), hostHipIdResults[i], M_distance ) ); //(rank,idPrimitiv,distance)
                     res.back().setCoordinates( vector_realdim_type{ { hostHipIntersectionPoint[i].x, hostHipIntersectionPoint[i].y, hostHipIntersectionPoint[i].z } } );
@@ -2223,7 +2223,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                         std::cout << " IdObject= " << hostHitRays[i].idResults << "\n";
                     }
 
-                    M_distance = double( hostHitRays[i].distanceResults );
+                    M_distance = fabs(double( hostHitRays[i].distanceResults ));
 
                     res.push_back( rayintersection_result_type( this->worldComm().rank(), hostHitRays[i].idResults, M_distance ) ); //(rank,idPrimitiv,distance)
                     res.back().setCoordinates( vector_realdim_type{ { hostHitRays[i].intersectionPoint.x, hostHitRays[i].intersectionPoint.y, hostHitRays[i].intersectionPoint.z } } );
