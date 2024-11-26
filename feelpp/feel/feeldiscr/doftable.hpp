@@ -1985,6 +1985,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         size_type currentActiveDof=0,currentGhostDof=_nLocalDofWithoutGhost;
         std::vector<size_type> newMapGlobalProcessToGlobalCluster( _nLocalDofWithGhost );
         size_type firstGlobIndex = this->firstDofGlobalCluster();
+        //this->worldComm().barrier(); std::cout<< fmt::format("[{}] : ---dtbuild-0aaa _nLocalDofWithGhost:{} _nLocalDofWithoutGhost:{}", this->worldComm().rank(), _nLocalDofWithGhost, _nLocalDofWithoutGhost) << std::endl;this->worldComm().barrier();
+
         for ( size_type k=0;k<_nLocalDofWithGhost;++k )
         {
             size_type gcdof = this->M_mapGlobalProcessToGlobalCluster[k];
@@ -1992,18 +1994,19 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                 previousGlobalIdToNewGlobalId[k]=currentGhostDof++;
             else
                 previousGlobalIdToNewGlobalId[k]=currentActiveDof++;
-
+            DCHECK( previousGlobalIdToNewGlobalId[k] < newMapGlobalProcessToGlobalCluster.size() )
+                << fmt::format("index out of range : id: {} vs  size:{}  isghost:{}",previousGlobalIdToNewGlobalId[k], newMapGlobalProcessToGlobalCluster.size(), this->dofGlobalProcessIsGhost(k) );
             newMapGlobalProcessToGlobalCluster[previousGlobalIdToNewGlobalId[k]] = gcdof;
         }
-        this->M_mapGlobalProcessToGlobalCluster.clear();
-        this->M_mapGlobalProcessToGlobalCluster.swap( newMapGlobalProcessToGlobalCluster );
-
+        this->M_mapGlobalProcessToGlobalCluster = std::move( newMapGlobalProcessToGlobalCluster );
         std::map<size_type, std::set<rank_type> > newActiveDofSharedOnCluster;
         for ( auto const& activeDof : this->M_activeDofSharedOnCluster )
-            newActiveDofSharedOnCluster[ previousGlobalIdToNewGlobalId[activeDof.first] ] = activeDof.second;
-        this->M_activeDofSharedOnCluster.clear();
-        this->M_activeDofSharedOnCluster.swap( newActiveDofSharedOnCluster );
-
+        {
+            DCHECK( activeDof.first < previousGlobalIdToNewGlobalId.size() ) << fmt::format("activeDof.first {} vs size{}",activeDof.first,previousGlobalIdToNewGlobalId.size());
+            DCHECK( previousGlobalIdToNewGlobalId[activeDof.first] < newActiveDofSharedOnCluster.size()) << fmt::format("previousGlobalIdToNewGlobalId {} vs size{}",previousGlobalIdToNewGlobalId[activeDof.first], newActiveDofSharedOnCluster.size());
+            newActiveDofSharedOnCluster.emplace( std::make_pair( previousGlobalIdToNewGlobalId[activeDof.first], activeDof.second ) );
+        }
+        this->M_activeDofSharedOnCluster = std::move( newActiveDofSharedOnCluster );
         for( auto it = M_el_l2g.left.begin(), en = M_el_l2g.left.end(); it != en; ++it )
         {
             auto const& previousGDof=it->second;
@@ -2012,7 +2015,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             bool successfulModify = M_el_l2g.left.modify_data( it, boost::bimaps::_data = newGDof );
             CHECK( successfulModify ) << "modify global dof id fails";
         }
-
         for ( auto & faceDataElt : M_face_l2g )
             for ( FaceDof<size_type> & faceDataDof : faceDataElt.second )
                 faceDataDof.setIndex( previousGlobalIdToNewGlobalId[faceDataDof.index()] );
