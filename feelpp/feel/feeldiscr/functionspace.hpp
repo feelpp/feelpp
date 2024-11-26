@@ -4471,7 +4471,7 @@ public:
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
-                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,true),
                    const std::string& name = "" )
         :
         super( name, _worldsComm[0]->clone() ),
@@ -4488,7 +4488,7 @@ public:
                    std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
-                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,true),
                    const std::string& name = "" )
         :
         super( name, _worldsComm[0]->clone() ),
@@ -4504,7 +4504,7 @@ public:
         :
         super( name, worldcomm ),
         M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
-        M_extendedDofTableComposite( std::vector<bool>(nSpaces,false) ),
+        M_extendedDofTableComposite( std::vector<bool>(nSpaces,true) ),
         M_extendedDofTable( false )
     {}
 
@@ -4520,7 +4520,7 @@ public:
         worldscomm_ptr_t worldscomm = args.get_else_invocable(_worldscomm,[&mesh](){ return Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm(); } );
         size_type components = args.get_else(_components, MESH_RENUMBER | MESH_CHECK);
         auto && periodicity = args.get_else(_periodicity,periodicity_type());
-        auto && extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,false) );
+        auto && extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,true) );
         auto && range = args.get_else(_range,mesh_support_vector_type());
 
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
@@ -4535,7 +4535,7 @@ public:
                                  worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
-                                 std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
+                                 std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,true) )
     {
 
         return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldscomm, extendedDofTable ) );

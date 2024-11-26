@@ -46,7 +46,7 @@ std::shared_ptr<FunctionSpace<MeshType,
                                 T,
                                 Periodicity <NoPeriodicity>,
                                 mortars<Mortar>>>
-Moch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
+Moch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=true )
 {
     return FunctionSpace<MeshType,
                          bases<Lagrange<Order,Scalar,Continuous,Pts>>,

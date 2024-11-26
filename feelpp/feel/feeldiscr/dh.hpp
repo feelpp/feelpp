@@ -56,7 +56,7 @@ using Dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
 template<int Order,typename MeshType>
 inline
 dh_ptrtype<Order,MeshType>
-Dh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
+Dh( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=true )
 {
     return dh_type<Order,MeshType>::New( _mesh=mesh,
                                          _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),

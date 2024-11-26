@@ -37,7 +37,7 @@ template<typename MeshType,int Order,template<class, uint16_type, class> class P
 using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
 template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pdh_ptrtype=std::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
-    
+
 template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
 using Pdh_element_t=typename Pdh_type<MeshType,Order,Pts>::element_type;
 
@@ -51,7 +51,7 @@ using Pdh_element_type=Pdh_element_t<MeshType,Order,Pts>;
 template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
+Pdh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=true )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
@@ -65,7 +65,7 @@ Pdh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,typename RangeType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false )
+Pdh( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=true )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _range=std::forward<RangeType>(rangeElt),
