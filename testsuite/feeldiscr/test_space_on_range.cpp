@@ -79,8 +79,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
     auto g = VhPS->element();
     g.on(_range=therange,_expr=cst(1.));
     BOOST_CHECK( VhPS->dof()->hasMeshSupport() );
-    VhPS->dof()->meshSupport()->updateBoundaryInternalFaces();
-    auto myboundaryfaces = VhPS->dof()->meshSupport()->rangeBoundaryFaces();
+    auto myboundaryfaces = boundaryfaces( support(VhPS) );
     auto l = form1( _test=VhPS );
     l = integrate(_range=therange,
                   _expr=id(v));
@@ -89,14 +88,6 @@ BOOST_AUTO_TEST_CASE( test_2d )
                   _expr=gradt(u)*trans(grad(v)) );
     a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=idv(g) );
     a.solve(_rhs=l,_solution=u);
-
-    // export results
-    auto e = exporter( _mesh=mesh,_name="test2d" );
-    e->addRegions();
-    e->add( "u", u );
-    e->add( "chi-partial-support", chiShapeFS );
-    e->add( "chi-full-support", chiShapePS );
-    e->save();
 
     // test a laplacian solve (weak dirichlet)
     auto u2 = VhPS->element();
@@ -118,6 +109,15 @@ BOOST_AUTO_TEST_CASE( test_2d )
     a2.solve(_rhs=l2,_solution=u2);
     double diffsol = normL2(_range=therange,_expr=idv(u)-idv(u2));
     BOOST_CHECK_SMALL( diffsol,1e-3 );
+
+    // export results
+    auto e = exporter( _mesh=mesh,_name="test2d",_geo="static" );
+    e->addRegions();
+    e->add( "u", u );
+    e->add( "u2", u2 );
+    e->add( "chi-partial-support", chiShapePS );
+    e->add( "chi-full-support", chiShapeFS );
+    e->save();
 }
 
 BOOST_AUTO_TEST_CASE( test_composite_2d )
@@ -246,13 +246,12 @@ BOOST_AUTO_TEST_CASE( test_extended_2d )
                     _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=therange,
                   _expr=gradt(u)*trans(grad(v)) );
-    Vh->dof()->meshSupport()->updateBoundaryInternalFaces();
-    auto myinternalfaces = Vh->dof()->meshSupport()->rangeInternalFaces();
+    auto myinternalfaces = internalfaces( support( Vh ) );
     a +=integrate( _range=myinternalfaces,
                    _expr=-averaget( gradt( u ) )*jump( id( v ) )
                    -average( grad( v ) )*jumpt( idt( u ) )
                    + 50* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace() );
-    auto myboundaryfaces = Vh->dof()->meshSupport()->rangeBoundaryFaces();
+    auto myboundaryfaces = boundaryfaces( support( Vh ) );
     a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=cst(0.) );
     a.solve(_rhs=l,_solution=u,_rebuild=true);
 }
@@ -362,8 +361,6 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     //double evalIntLF_check = 2*integrate(_range=elements(submeshBoundarySupport2),_expr=cst(2.)).evaluate()(0,0);
     BOOST_TEST_MESSAGE( "evalIntLF= " << evalIntLF );
     BOOST_CHECK_CLOSE( evalIntLF, evalIntLF_check, 1e-9 );
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
