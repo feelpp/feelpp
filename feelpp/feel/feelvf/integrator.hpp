@@ -5646,8 +5646,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
             else
             {
-                if ( faceConnection.element( 0 ).isGhostCell() )
-                    continue;
                 uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
                 __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
                 map_gmc_type mapgmc = Feel::vf::mapgmc(__c0);
