@@ -1504,6 +1504,8 @@ var hierarchy =
     [ "super::domain_space_type::template Element", null, [
       [ "Feel::OperatorLinear< DomainSpace, DualImageSpace >::domain_element< T, Storage >", "structFeel_1_1OperatorLinear_1_1domain__element.html", null ]
     ] ],
+    [ "Feel::vf::OpMax< ExprT1, ExprT2 >::tensor< Geo_t, Basis_i_t, Basis_i_t >", "structFeel_1_1vf_1_1OpMax_1_1tensor.html", null ],
+    [ "Feel::vf::Cast< T, ExprT >::tensor< Geo_t, mpl::void_, mpl::void_ >", "structFeel_1_1vf_1_1Cast_1_1tensor.html", null ],
     [ "utility::centre< T >", "structutility_1_1centre.html", null ],
     [ "Feel::Vector< double >", "classFeel_1_1Vector.html", null ],
     [ "VectorUblas", "classVectorUblas.html", [
