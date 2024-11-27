@@ -538,10 +538,10 @@ BOOST_AUTO_TEST_CASE(all_distance)
     auto distanceMinGPU = Vh->element();
     for (size_t i = 0; i < nbNode; ++i) {
         distanceMinCPU[i] = allDataDistanceBVHRT[i].distanceMinCPU;
-        distanceMinCPU[i] = allDataDistanceBVHRT[i].distanceMinGPU;
+        distanceMinGPU[i] = allDataDistanceBVHRT[i].distanceMinGPU;
     }
     // Save the file with all the distance parameters
-    auto exp = exporter( _mesh = mesh, _name = fmt::format( "distance_{}d_o{}", 3, 1 ) );
+    auto exp = exporter( _mesh = mesh, _name = fmt::format( "distance_{}d_o{}", 3, 3 ) );
     exp->addRegions();
     exp->add( "distToBoundary", distToBoundary );
     exp->add( "distanceMinCPU", distanceMinCPU );
