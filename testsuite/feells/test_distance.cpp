@@ -85,8 +85,9 @@ makeOptions()
 {
     Feel::po::options_description opts("Test Environment options");
     opts.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-        ( "number_rays_desired", po::value<int>()->default_value( 703 ), "mesh size" )
+        ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+        ( "number_rays_desired", po::value<int>()->default_value( 703 ), "nbRays" )
+        ( "isViewInfo", po::value<bool>()->default_value(true), "isViewInfo" )
         ;
     return opts;
 }
@@ -117,6 +118,11 @@ struct DataTimeLapsConfig {
     long int t_laps_FastMarching;
 };
 
+struct StatsResult {
+    double mean;
+    double variance;
+    double stdDev;
+};
 
 
 
@@ -197,11 +203,11 @@ void distToBoundaryBVHpu(
     sleep(1);
 
 
-    t_laps_CPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << t_laps_CPU << " us\n";
+    //t_laps_CPU = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_bvh_cpu - t_begin_cpu).count();
+    //if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << t_laps_CPU << " ms\n";
 
-    t_laps_GPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << t_laps_GPU << " us\n";
+    //t_laps_GPU = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_bvh_gpu - t_begin_gpu).count();
+    //if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << t_laps_GPU << " ms\n";
 
     const double epsilon = 0.00001f;
     double distanceMinCPU = 0.0f;
@@ -288,8 +294,8 @@ void distToBoundaryBVHpu(
             }
 
 
-            t_laps_CPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_cpu - t_begin_raytracing_cpu).count();
-            t_laps_GPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_raytracing_gpu - t_begin_raytracing_gpu).count();
+            t_laps_CPU = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_raytracing_cpu - t_begin_raytracing_cpu).count();
+            t_laps_GPU = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_raytracing_gpu - t_begin_raytracing_gpu).count();
 
             t_laps_CPU_Total = t_laps_CPU_Total + t_laps_CPU;
             t_laps_GPU_Total = t_laps_GPU_Total + t_laps_GPU;
@@ -301,17 +307,17 @@ void distToBoundaryBVHpu(
 
             if (isViewInfo) std::cout << "[INFO] [" << k
                 << "]"
-                << "<" << std::setprecision(5)<< ray_origin[0]
-                << "," << std::setprecision(5)<< ray_origin[1]
-                << "," << std::setprecision(5)<< ray_origin[2]
+                << "<" << std::fixed << std::setprecision(9)<< ray_origin[0]
+                << "," << std::fixed << std::setprecision(9)<< ray_origin[1]
+                << "," << std::fixed << std::setprecision(9)<< ray_origin[2]
                 << ">"
                 << " Distance Min REAL=" << distanceMinREAL
                 //<< " FastMarching=" << distanceFastMarching[k]
                 //<< " err=" << errFastMarching
-                << " CPU=" << std::setprecision(5)<< distanceMinCPU
-                << " err=" << std::setprecision(5)<< errCPU
-                << " GPU=" << std::setprecision(5)<< distanceMinGPU
-                << " err=" << std::setprecision(5)<< errGPU
+                << " CPU=" << std::fixed << std::setprecision(9)<< distanceMinCPU
+                << " err=" << std::fixed << std::setprecision(9)<< errCPU
+                << " GPU=" << std::fixed << std::setprecision(9)<< distanceMinGPU
+                << " err=" << std::fixed << std::setprecision(9)<< errGPU
                 << " t_laps_CPU=" << t_laps_CPU
                 << " t_laps_GPU=" << t_laps_GPU
                 << "\n";
@@ -338,16 +344,47 @@ void distToBoundaryBVHpu(
     } // END for k
 
     // Elapse Time BVH - RT - CPU - GPU
-    allDataPU.t_laps_BVH_CPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_cpu - t_begin_cpu).count();
+    allDataPU.t_laps_BVH_CPU = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_bvh_cpu - t_begin_cpu).count();
     allDataPU.t_laps_RT_CPU = t_laps_CPU_Total / nbValues;
-    allDataPU.t_laps_BVH_GPU = std::chrono::duration_cast<std::chrono::microseconds>(t_end_bvh_gpu - t_begin_gpu).count();
+    allDataPU.t_laps_BVH_GPU = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_bvh_gpu - t_begin_gpu).count();
     allDataPU.t_laps_RT_GPU = t_laps_GPU_Total / nbValues;
     allDataPU.nbRays = nbRays;
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << allDataPU.t_laps_BVH_CPU << " us\n";
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing CPU : " << allDataPU.t_laps_RT_CPU << " us\n";
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << allDataPU.t_laps_BVH_GPU << " us \n";
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing GPU : " << allDataPU.t_laps_RT_GPU << " us\n";
-    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside FastMarching : " << allDataPU.t_laps_FastMarching << " us\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << allDataPU.t_laps_BVH_CPU << " ms\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing CPU : " << allDataPU.t_laps_RT_CPU << " ms\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << allDataPU.t_laps_BVH_GPU << " ms\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside Ray Tracing GPU : " << allDataPU.t_laps_RT_GPU << " ms\n";
+    if (isViewInfo) std::cout << "[INFO] Elapsed microseconds inside FastMarching : " << allDataPU.t_laps_FastMarching << " ms\n";
+}
+
+// Statistical part mean, std,variance...
+StatsResult calculateStats(const std::vector<long int>& values) {
+    StatsResult result;
+    int n = values.size();
+    double sum = 0.0;
+    for (const auto& value : values) {
+        sum += value;
+    }
+    result.mean = sum / n;
+    double squaredDiffSum = 0.0;
+    for (const auto& value : values) {
+        double diff = value - result.mean;
+        squaredDiffSum += diff * diff;
+    }
+    result.variance = squaredDiffSum / n;
+    result.stdDev = std::sqrt(result.variance);
+    return result;
+}
+
+// We combine the two calculations to make only one pass
+void calculateCPUGPUStats(const std::vector<DataDistanceErrTime>& allDataDistanceBVHRT,StatsResult& cpuStats, StatsResult& gpuStats) {
+    std::vector<long int> cpuTimes, gpuTimes;
+
+    for (const auto& data : allDataDistanceBVHRT) {
+        cpuTimes.push_back(data.t_laps_CPU);
+        gpuTimes.push_back(data.t_laps_GPU);
+    }
+    cpuStats = calculateStats(cpuTimes);
+    gpuStats = calculateStats(gpuTimes);
 }
 
 
@@ -357,15 +394,24 @@ BOOST_AUTO_TEST_SUITE(distance_bvh_cpu_gpu_gpu_tests)
 BOOST_AUTO_TEST_CASE(all_distance)
 {
 
-    bool isViewInfo = true;  //isViewInfo = false;;
-    double hsize = 1.0f / 2.0f;
-    int number_rays_desired = 703;
-
+    // We read the value of "hsize" and "number_rays_desired"
+    double hsize = option(_name="hsize").as<double>();
+    int number_rays_desired = option(_name="number_rays_desired").as<int>();
+    bool isViewInfo = option(_name="isViewInfo").as<bool>();
+    //double hsize = 1.0f / 2.0f;
+    //int number_rays_desired = 703;
 
     using namespace Feel;
     using Feel::cout;
+
+    // 3D object initialization
     using mesh_type = Mesh<Simplex<3, 1, 3>>; //<Dim,Order,RDim>
-    auto mesh = unitCube();
+    
+    //auto mesh = unitCube();
+    
+    auto mesh = unitCube(hsize);
+
+    // Small information about the structure
     if (isViewInfo)
     {
         std::cout << "[INFO] maxNumElement : " << mesh->maxNumElements() << std::endl;
@@ -374,6 +420,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
         std::cout << "[INFO] maxNumVerices : " << mesh->maxNumVertices() << std::endl;
     }
 
+    // Selecting what you want to process
     auto rangeFaces = markedfaces(mesh);
     auto submeshFaces  = boundaryfaces( mesh );
     auto rangeElements = markedelements(mesh);
@@ -381,6 +428,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
 
     auto Vh = Pch<1>(mesh);
 #if 0
+    // old version to access the coordinates of the nodes of the points which is not the same for the distancetorange function
     auto const& nodes = Vh->mesh()->points();
 
     for (auto const& pointPair :nodes)
@@ -406,13 +454,12 @@ BOOST_AUTO_TEST_CASE(all_distance)
 
     int nbNode=allNodeCoordinates.size();
 
-
     // Calculates Node points to Surface distances by the method FastMarching
     std::chrono::steady_clock::time_point t_begin_FastMarching, t_end_FastMarching;
     t_begin_FastMarching = std::chrono::steady_clock::now();
         auto distToBoundary = distanceToRange( _space=Vh, _range=submeshFaces);
     t_end_FastMarching = std::chrono::steady_clock::now();
-    long int t_laps_FastMarching = std::chrono::duration_cast<std::chrono::microseconds>(t_end_FastMarching - t_begin_FastMarching).count();
+    long int t_laps_FastMarching = std::chrono::duration_cast<std::chrono::milliseconds>(t_end_FastMarching - t_begin_FastMarching).count();
 
     allDataPU.t_laps_FastMarching=t_laps_FastMarching;
 
@@ -437,20 +484,24 @@ BOOST_AUTO_TEST_CASE(all_distance)
     for (int i = 0; i < nbNode; ++i)
     {
         myfileB << allDataDistanceBVHRT[i].id << ","
-                << std::setprecision(5)<< allNodeCoordinates[i][0] << ","
-                << std::setprecision(5)<< allNodeCoordinates[i][1] << ","
-                << std::setprecision(5)<< allNodeCoordinates[i][2] << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceMinREAL << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceFastMarching << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].errFastMarching << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceMinCPU << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].errCPU << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].distanceMinGPU << ","
-                << std::setprecision(5)<< allDataDistanceBVHRT[i].errGPU << ","
+                << std::fixed << std::setprecision(9)<< allNodeCoordinates[i][0] << ","
+                << std::fixed << std::setprecision(9)<< allNodeCoordinates[i][1] << ","
+                << std::fixed << std::setprecision(9)<< allNodeCoordinates[i][2] << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].distanceMinREAL << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].distanceFastMarching << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].errFastMarching << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].distanceMinCPU << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].errCPU << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].distanceMinGPU << ","
+                << std::fixed << std::setprecision(9)<< allDataDistanceBVHRT[i].errGPU << ","
                 << allDataDistanceBVHRT[i].t_laps_CPU << ","
                 << allDataDistanceBVHRT[i].t_laps_GPU << "\n";
     }
     myfileB.close();
+
+    // Statistical part
+    StatsResult cpuStats, gpuStats;
+    calculateCPUGPUStats(allDataDistanceBVHRT, cpuStats, gpuStats);
 
     std::string filenameA = "results.csv";
     if (remove(filenameA.c_str()) != 0) {
@@ -464,19 +515,37 @@ BOOST_AUTO_TEST_CASE(all_distance)
     myfileA << "maxNumVerices=" << mesh->maxNumVertices() << "\n";
     myfileA << "nbRaysDesired=" << allDataPU.nbRaysDesired<< "\n";
     myfileA << "nbRays=" << allDataPU.nbRays<< "\n";
+
     myfileA << "timeBVHcpu=" << allDataPU.t_laps_BVH_CPU<< "\n";
     myfileA << "timeMeanRTcpu=" << allDataPU.t_laps_RT_CPU << "\n";
+    //myfileA << "timeStandardDeviationRTcpu=" << cpuStats.stdDev  << "\n";
+    //myfileA << "timeVarianceRTcpu=" << cpuStats.variance << "\n";
+
     myfileA << "timeBVHgpu=" << allDataPU.t_laps_BVH_GPU << "\n";
     myfileA << "timeMeanRTgpu=" << allDataPU.t_laps_RT_GPU << "\n";
+    //myfileA << "timeStandardDeviationRTgpu=" << gpuStats.stdDev << "\n";
+    //myfileA << "timeVarianceRTgpu=" << gpuStats.variance << "\n";
+
     myfileA << "timeFastMarching=" << allDataPU.t_laps_FastMarching<< "\n";
     myfileA << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU+allDataPU.t_laps_RT_CPU<< "\n";
     myfileA << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU+allDataPU.t_laps_RT_GPU<< "\n";
     myfileA.close();
 
+
     // Data backup file distances for paraview
+    // Transferring data in the format for the export function
+    auto distanceMinCPU = Vh->element();
+    auto distanceMinGPU = Vh->element();
+    for (size_t i = 0; i < nbNode; ++i) {
+        distanceMinCPU[i] = allDataDistanceBVHRT[i].distanceMinCPU;
+        distanceMinCPU[i] = allDataDistanceBVHRT[i].distanceMinGPU;
+    }
+    // Save the file with all the distance parameters
     auto exp = exporter( _mesh = mesh, _name = fmt::format( "distance_{}d_o{}", 3, 1 ) );
     exp->addRegions();
     exp->add( "distToBoundary", distToBoundary );
+    exp->add( "distanceMinCPU", distanceMinCPU );
+    exp->add( "distanceMinGPU", distanceMinGPU );
     exp->save();
 
 
@@ -486,6 +555,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
 
     
 }
+
 
 
 
