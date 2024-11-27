@@ -1,10 +1,14 @@
 // Define the test module name
 #define BOOST_TEST_MODULE RemoteDataTest
 
-#include <feel/feelcore/testsuite.hpp>
+
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/remotedata.hpp>
 #include <feel/feelcore/json.hpp>
+#include <feel/feelcore/testsuite.hpp>
+#include <boost/test/unit_test.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/test/data/monomorphic.hpp>
 #include <cpr/cpr.h>
 #include <iostream>
 #include <fstream>
@@ -47,67 +51,100 @@ BOOST_AUTO_TEST_CASE(test_remotedata_github)
 }
 
 // girder
-BOOST_AUTO_TEST_CASE(test_remotedata_girder)
+BOOST_AUTO_TEST_CASE(test_remotedata_girder_delete_if_exist_and_upload)
 {
+    BOOST_TEST_MESSAGE("Test Girder RemoteData delete if exist and upload");
+    RemoteData rd("girder:{path:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset}", Environment::worldCommPtr());
 
-    // Girder API base URL
-    std::string girderApiUrl = "https://girder.math.unistra.fr/api/v1";
-
-    // The path to the file in Girder
-    std::string filePath = "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset";
-
-    // If authentication is required, set your token
-    // std::string authToken = "your_token_here";
-
-    // 1. Lookup the resource to get the file ID
-    cpr::Response res = cpr::Get(
-        cpr::Url{girderApiUrl + "/resource/lookup"},
-        cpr::Parameters{{"path", filePath}}
-        // If authentication is needed:
-        // , cpr::Header{{"Girder-Token", authToken}}
-    );
-
-    if (res.status_code != 200) 
+    // Check if we can download the data
+    //if (rd.canUpload())
+    if ( 1 )
     {
-        BOOST_FAIL( fmt::format("Failed to lookup resource. HTTP status code: {}\n error message: {} ", res.status_code, res.text) );
-    }
-
-    // Parse the JSON response to get the file ID
-    nlohmann::json jsonResponse = nlohmann::json::parse(res.text);
-    if (jsonResponse.contains("_id")) 
-    {
-        std::string fileId = jsonResponse["_id"];
-        std::string modelType = jsonResponse["_modelType"];
-        std::string name = jsonResponse["name"];
-        std::cout << fmt::format("File ID: {}, Model Type: {} ", fileId, modelType) << std::endl;
-        std::string url =  fmt::format("{}/{}/{}/download",girderApiUrl,modelType,fileId);
-        std::cout << "Download URL: " << url << std::endl;
-        // 2. Download the file using the file ID
-        cpr::Response fileRes = cpr::Get(
-            cpr::Url{url},
-            // If authentication is needed:
-            // cpr::Header{{"Girder-Token", authToken}}
-            cpr::VerifySsl{false} // Add this if SSL verification causes issues
-        );
-
-        if (fileRes.status_code != 200) 
+        BOOST_TEST_MESSAGE("Can upload data using RemoteData");
+        // find item collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset
+        nl::json rid = rd.resourceLookup("collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset");
+        if (!rid.empty())
         {
-            BOOST_FAIL( fmt::format("Failed to download file. HTTP status code: {}\n error message: {} ", fileRes.status_code, fileRes.text) );
+            BOOST_TEST_MESSAGE(fmt::format("collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset exists with id: {}", rid.dump()));
+            rd.deleteResource(rid);
         }
-
-        // Save the file content to a local file
-        std::string outputFileName = fmt::format("{}.zip",name); // Set desired output file name
-        std::ofstream outputFile(outputFileName, std::ios::binary);
-        outputFile << fileRes.text;
-        outputFile.close();
-
-        std::cout << "File downloaded successfully: " << outputFileName << std::endl;
-    } else {
-        std::cerr << "File ID not found in the response." << std::endl;
-        return ;
+        rid = rd.resourceLookup("collection/feelpp/testsuite/feelcore/feelpp_test_remotedata");
+        if (!rid.empty())
+        {
+            BOOST_TEST_MESSAGE(fmt::format("collection/feelpp/testsuite/feelcore/feelpp_test_remotedata exists with id: {}", rid.dump()));
+        }
+        auto r = rd.createItem("dataset", rid["_id"].get<std::string>());
+        if ( r.empty() )
+        {
+            BOOST_FAIL("Cannot create item");
+        }
+        // create upload directory in Environment::downloadsRepository()/uploads
+        std::string uploadDir = Environment::downloadsRepository() + "/uploads";
+        fs::create_directories(uploadDir);
+        // create file1.txt and add dummy text
+        std::string dataPath = Environment::downloadsRepository() + "/uploads/file.txt";
+        std::ofstream file(dataPath);
+        file << "Hello, World!";
+        file.close();
+        // create file2.txt and add dummy text
+        std::string dataPath2 = Environment::downloadsRepository() + "/uploads/file2.txt";
+        std::ofstream file2(dataPath2);
+        file2 << "Hello, World!";
+        file2.close();
+        // upload file1.txt and file2.txt
+        std::vector<std::pair<std::string, std::string>> dataToUpload = {
+            {dataPath, "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset"},
+            {dataPath2, "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset"}
+        };
+        auto data = rd.upload(dataToUpload);
+        //std::cout << fmt::format("Uploaded data: {}", data);
     }
+    else
+    {
+        BOOST_FAIL("Cannot upload data using RemoteData");
+    }
+}
+std::map<std::string, std::string> data = 
+    {
+        {"path", "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset"},
+        {"path", "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/"},
+        //{"file", "67455d49b0e95728eb010c4a"},
+        {"folder", "6743a47bb0e95728eb010c47"}
+    };
+std::vector<std::map<std::string, std::string>> datasets_map = {data};
+namespace bdata = boost::unit_test::data;
 
+BOOST_DATA_TEST_CASE(test_remotedata_girder, bdata::make(datasets_map), dataset)
+{
+    BOOST_TEST(!dataset.empty());
+    for( auto const& [key, value] : dataset )
+    {
+        BOOST_TEST_MESSAGE(fmt::format("key = {}, value = {}", key, value));
+        // Create RemoteData object with GitHub description
+        RemoteData rd(fmt::format("girder:{{{}:{}}}",key,value), Environment::worldCommPtr());
 
+        // Check if we can download the data
+        if (rd.canDownload())
+        {
+            // Get the downloads repository directory
+            std::string d = Environment::downloadsRepository();
+            std::cout << "Download data in: " << d << std::endl;
+
+            // Perform the download
+            auto data = rd.download(d);
+            std::cout << "Downloaded data:";
+            for (const auto& file : data)
+                std::cout << " " << file;
+            std::cout << std::endl;
+
+            // Optionally, add assertions to check the downloaded files
+            BOOST_CHECK(!data.empty()); // Check that data was downloaded
+        }
+        else
+        {
+            BOOST_FAIL("Cannot download data using RemoteData");
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
