@@ -772,6 +772,74 @@ void buildBVH_GPU_Parallel(Triangle* d_triangles, BVHNode* d_nodes, int numTrian
     hipFree(d_triInfo);
 }
 
+// In this next part we will look for the best axis to increase the acceleration for RT
+__global__ void computeExtents(TriangleInfo* triInfo, int numTriangles, float* minExtents, float* maxExtents) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numTriangles) {
+        for (int axis = 0; axis < 3; ++axis) {
+            atomicMin(&minExtents[axis], triInfo[idx].centroid[axis]);
+            atomicMax(&maxExtents[axis], triInfo[idx].centroid[axis]);
+        }
+    }
+}
+
+void buildBVH_GPU_Parallel_Best_Axis(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles) {
+    std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
+
+    int totalNodes = 2 * numTriangles - 1;
+    int blockSize = 512;
+    int numBlocks = (numTriangles + blockSize - 1) / blockSize;
+
+    TriangleInfo* d_triInfo;
+    hipMalloc(&d_triInfo, numTriangles * sizeof(TriangleInfo));
+    hipLaunchKernelGGL(initTriangleInfo, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_triInfo, numTriangles);
+
+    // Compute extents
+    float* d_minExtents, *d_maxExtents;
+    hipMalloc(&d_minExtents, 3 * sizeof(float));
+    hipMalloc(&d_maxExtents, 3 * sizeof(float));
+    
+    // Initialize extents
+    float initMin = std::numeric_limits<float>::max();
+    float initMax = std::numeric_limits<float>::lowest();
+    hipMemset(d_minExtents, *reinterpret_cast<int*>(&initMin), 3 * sizeof(float));
+    hipMemset(d_maxExtents, *reinterpret_cast<int*>(&initMax), 3 * sizeof(float));
+
+    hipLaunchKernelGGL(computeExtents, dim3(numBlocks), dim3(blockSize), 0, 0, d_triInfo, numTriangles, d_minExtents, d_maxExtents);
+
+    // Copy extents back to host
+    float h_minExtents[3], h_maxExtents[3];
+    hipMemcpy(h_minExtents, d_minExtents, 3 * sizeof(float), hipMemcpyDeviceToHost);
+    hipMemcpy(h_maxExtents, d_maxExtents, 3 * sizeof(float), hipMemcpyDeviceToHost);
+
+    // Find axis with largest extent
+    int bestAxis = 0;
+    float maxExtent = h_maxExtents[0] - h_minExtents[0];
+    for (int axis = 1; axis < 3; ++axis) {
+        float extent = h_maxExtents[axis] - h_minExtents[axis];
+        if (extent > maxExtent) {
+            maxExtent = extent;
+            bestAxis = axis;
+        }
+    }
+
+    // Sort using the best axis
+    for (int k = 2; k <= numTriangles; k *= 2) {
+        for (int j = k / 2; j > 0; j /= 2) {
+            hipLaunchKernelGGL(bitonicSort, dim3(numBlocks), dim3(blockSize), 0, 0, d_triInfo, j, k, numTriangles, bestAxis);
+        }
+    }
+
+    numBlocks = (totalNodes + blockSize - 1) / blockSize;
+    hipLaunchKernelGGL(buildBVHNodes, dim3(numBlocks), dim3(blockSize), 0, 0, d_nodes, d_triInfo, d_triangles, numTriangles);
+
+    // And finally free memory
+    hipFree(d_triInfo);
+    hipFree(d_minExtents);
+    hipFree(d_maxExtents);
+}
+
+
 
 // END::GPU
 
@@ -1947,6 +2015,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
             else
             {
@@ -1972,6 +2041,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
 
         } // END modeGPU==1
