@@ -477,7 +477,6 @@ __global__ void raytraceKernel(
     hitId[idx] = closesIntersectionId;
 }
 
-
 __global__ void raytraceKernel_Parallel(
     Ray* rays,
     int numRays,
@@ -497,6 +496,7 @@ __global__ void raytraceKernel_Parallel(
     int stack[64];
     int stackPtr = 0;
     stack[stackPtr++] = 0;
+    //stack[stackPtr++] = 13;
 
     float closestT = INFINITY;
     int closestTriangle = -1;
@@ -513,19 +513,22 @@ __global__ void raytraceKernel_Parallel(
 
     bool isView = false; //isView = true;
 
-	const float angleLim = 1.0f; 
+	const float angleLim = 0.6f; 
 
     while (stackPtr > 0) {
         int nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
-        //if (nodeIdx < 0 || nodeIdx >= numRays) continue;
-        if (nodeIdx < 0 ) continue;
+
+		//if (nodeIdx < 0 || nodeIdx >= numRays) continue;
+
+		if (nodeIdx < 0 ) continue;
 
         //if (!rayAABBIntersect4(ray, node.bounds)) continue;
-        if (node.triangleCount == 1) {
+
+        if (node.triangleCount == 1) 
+		{
 				Triangle& tri = triangles[node.triangleIndex];
-				//if (sameDirection(tri,ray,angleLim))  
-                // Nota : "sameDirection" If you are too close to a triangle or inside it it does not work but works well for triangles a little far away. Function to be modified in the future.
+				//if (sameDirectionTest(tri,ray,angleLim)) 
 				{
 					float t;
 					if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
@@ -555,6 +558,7 @@ __global__ void raytraceKernel_Parallel(
     intersectionPoint[idx] = closestIntersectionPoint;
     hitId[idx] = closesIntersectionId;
 }
+
 
 // END::RAY TRACING
 
@@ -1288,9 +1292,9 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
             }
             else 
             {
-              if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
+              //if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
               //if (!qinfo) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); }
-              //if (angle1 > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1);  }
+              if (angle1 > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1);  }
               if ( angle1 < 1.785f ) { flagFindCandidate = true; idNestC = idNest;  }
             }
         } 
@@ -2169,6 +2173,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
             hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
+            //hipLaunchKernelGGL( bvhHip::raytraceKernel_Parallel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                 deviceHipRays,
                                 numRays,
                                 devicebvhHipNodes,
