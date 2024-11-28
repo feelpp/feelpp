@@ -1091,7 +1091,7 @@ __device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& triangle, 
         ray.direction.x * edge2.y - ray.direction.y * edge2.x,
         0 );
     float a = edge1.x * h.x + edge1.y * h.y + edge1.z * h.z;
-    if ( a > -1e-6 && a < 1e-6 ) return false;
+    if ( a > -1e-8 && a < 1e-8 ) return false;
     float f = 1.0f / a;
     float4 s = ray.origin - triangle.v1;
     float u = f * ( s.x * h.x + s.y * h.y + s.z * h.z );
@@ -1104,7 +1104,7 @@ __device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& triangle, 
     float v = f * ( ray.direction.x * q.x + ray.direction.y * q.y + ray.direction.z * q.z );
     if ( v < 0.0 || u + v > 1.0 ) return false;
     t = f * ( edge2.x * q.x + edge2.y * q.y + edge2.z * q.z );
-    return ( t > 1e-6 );
+    return ( t > 1e-8 );
 }
 
 template <typename T, typename U>
@@ -1257,12 +1257,13 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
     int idNestC = -1;
     int nbLoop = 1;
     //float delta = epsilon;
-    float delta = -epsilon; //PB inside triangle
+    float delta = -1.0f*epsilon; //PB inside triangle
+    float ct = 0.0f;
 
     while (flag)
     {
         float4 pos = ray.origin + ray.direction * delta;
-        //printf("Pos=%f %f %f\n",pos.x,pos.y,pos.z);
+        //printf("%i Pos=%f %f %f\n",nbLoop,pos.x,pos.y,pos.z);
         const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
         flag = false;
         nbLoop++;
@@ -1278,13 +1279,20 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
             idNest = nest.first;
             hit_tri = hit_triangle;
             float angle2=calculateHalfOpeningAngle(hit_triangle,ray.origin);
-            //printf("angle1=%f\n",angle1);
-            //printf("angle2=%f\n",angle2);
-            //if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
-            if (angle1 > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); } // It's better           
-            //if (!qinfo) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); }
-            if ( angle1 < 1.785f ) { flagFindCandidate = true; idNestC = idNest;  }
-            if ( angle2 > 1.0f ) { flag = false; flagOk = true;}
+            //printf("%i angle1=%f angle2=%f distToTri=%f\n",nbLoop,angle1,angle2,distToTri);
+            if ( angle2 > 0.4f )   {  // angle solide donc objet très proche 22°*2=44°
+               flag = false; flagOk = true;
+               float4 dT2; dT2 = pos - ray.origin; //distance de correction 
+               ct = sqrt(dT2.x * dT2.x + dT2.y * dT2.y + dT2.z * dT2.z);
+               ray.origin=pos;
+            }
+            else 
+            {
+              if (angle1 > angleLim) { flag = true; flagOk = false; delta = delta+ distToTri*0.5f + epsilon;  }
+              //if (!qinfo) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1); }
+              //if (angle1 > angleLim) { flag = true; flagOk = false; delta = epsilon * exp(nbLoop-1);  }
+              if ( angle1 < 1.785f ) { flagFindCandidate = true; idNestC = idNest;  }
+            }
         } 
         else
         {
@@ -1311,10 +1319,13 @@ __global__ void rayTracingKernelExploration(lbvh::bvh_device<T, U> bvh_dev, Ray*
         if (rayTriangleIntersect(ray, hit_tri, t)) {
             float4 hit_point = ray.origin + ray.direction * t;
             if (isView) {
-                printf("Ray %d hit triangle %d at point (%f, %f, %f) Distance:%f\n", idx, idNest, hit_point.x, hit_point.y, hit_point.z, t);
+                printf("Ray %d hit triangle %d at point (%f, %f, %f) Distance:%f\n", 
+                idx, 
+                idNest, 
+                hit_point.x, hit_point.y, hit_point.z, t);
             }
             d_HitRays[idx].hitResults = idNest;
-            d_HitRays[idx].distanceResults = t; // distance
+            d_HitRays[idx].distanceResults = t-ct; // distance
             d_HitRays[idx].intersectionPoint = make_float3(hit_point.x, hit_point.y, hit_point.z);
             d_HitRays[idx].idResults = hit_tri.id;
         }
