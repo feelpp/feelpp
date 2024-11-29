@@ -27,16 +27,30 @@ echo "--- Updating package lists"
 apt-get update -yq
 
 echo "--- Installing base tools"
-apt-get install -yq apt-transport-https ca-certificates gnupg software-properties-common wget
 
+if [ "$DIST" = "trixie" ]; then
+    apt-get -y install apt-transport-https ca-certificates gnupg  wget
+else
+    apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget
+fi
+
+if [ "$DIST" = "jammy" ]; then
+    echo "--- Checking and adding jammy-updates and jammy-backports if missing"
+    if ! grep -q "jammy-updates" /etc/apt/sources.list; then
+        echo "deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list
+    fi
+    if ! grep -q "jammy-backports" /etc/apt/sources.list; then
+        echo "deb http://archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
+    fi
+fi
 
 echo "--- Removing old Feel++ repository configurations"
 rm -f /etc/apt/sources.list.d/feelpp.list
 
 echo "--- Adding Feel++ repository"
-if [ $DIST = "jammy" -o  $DIST = "focal" -o $DIST = "bookworm" ]; then
+if [ "$DIST" = "jammy" -o "$DIST" = "focal" -o "$DIST" = "bookworm" ]; then
     wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
-    echo 'deb [trusted=yes] http://apt.feelpp.org/ubuntu/jammy jammy latest' > /etc/apt/sources.list.d/feelpp.list 
+    echo 'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' > /etc/apt/sources.list.d/feelpp.list 
 else
     wget -O - http://apt.feelpp.org/apt.gpg 2>/dev/null | gpg --dearmor - |  tee /usr/share/keyrings/feelpp-archive-keyring.gpg >/dev/null
     echo 'deb [signed-by=/usr/share/keyrings/feelpp-archive-keyring.gpg] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' | tee /etc/apt/sources.list.d/feelpp.list >/dev/null
@@ -47,7 +61,6 @@ if ! grep -q "feelpp" /etc/apt/sources.list.d/feelpp.list; then
     echo "Error: Failed to add Feel++ repository."
     exit 1
 fi
-
 
 if [ "$DIST" = "focal" ]; then
     echo "--- Adding Kitware repository for Focal"

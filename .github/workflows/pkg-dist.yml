@@ -74,18 +74,6 @@ jobs:
             FLAVOR: ${{ inputs.flavor }}
             DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
         steps:
-        - name: Check gpg-agent status
-          run: |
-            gpgconf --kill gpg-agent
-            gpgconf --launch gpg-agent
-            gpgconf --list-options gpg-agent
-            ps aux | grep gpg-agent
-        -
-          name: Import GPG key
-          uses: crazy-max/ghaction-import-gpg@v6
-          with:
-            gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-            passphrase: ${{ secrets.GPG_PASSPHRASE }}
         - name: Checkout code
           uses: actions/checkout@v4
           with: 
