@@ -166,7 +166,7 @@ jobs:
             echo "skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}"
 
     pkg-docker:
-      if: ${{ inputs.docker == 'true' }}
+#      if: ${{ inputs.docker == 'true' }}
       needs: pkg
       uses: ./.github/workflows/pkg-docker.yml
       with:
