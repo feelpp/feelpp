@@ -2002,6 +2002,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         {
             if ( !isUnifiedMemory )
             {
+                tic();
                 std::vector<bvhHip::Triangle> HostHipTriangles;
 
                 // Load Mesh  in host
@@ -2027,13 +2028,18 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 HIP_ASSERT( hipMemcpy( deviceHipTriangles, HostHipTriangles.data(), numTriangles * sizeof( bvhHip::Triangle ), hipMemcpyHostToDevice ) );
 
                 HIP_ASSERT( hipMalloc( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
-                bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
-                //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+
+                auto timeDataTransfertDuration = toc("timeDataTransfertDuration");
+                std::cout << "time data Transfert " << timeDataTransfertDuration << " \n";
+
+                //bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
             else
             {
+                tic();
                 int numTriangles = this->M_primitiveInfo.size();
                 HIP_ASSERT( hipMallocManaged( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
                 HIP_ASSERT( hipMallocManaged( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
@@ -2052,9 +2058,11 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     deviceHipTriangles[k].v2 = bvhHip::Vec3( pt2[0], pt2[1], pt2[2] );
                     deviceHipTriangles[k].id = id;
                 }
+                auto timeDataTransfertDuration = toc("timeDataTransfertDuration");
+                std::cout << "time data Transfert " << timeDataTransfertDuration << " \n";
 
-                bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
-                //bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 //bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
             }
