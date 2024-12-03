@@ -467,172 +467,63 @@ __global__ void raytraceKernel(
     hitId[idx] = closesIntersectionId;
 }
 
-__global__ void raytraceKernel_Parallel(
-    Ray* rays,
-    int numRays,
-    BVHNode* bvhNodes,
-    Triangle* triangles,
-    int* hitTriangles,
-    float* distance,
-    Vec3* intersectionPoint,
-    int* hitId )
 
+__global__ void raytraceKernel_Parallel(Ray *rays, int numRays, BVHNode *bvhNodes,
+                                           Triangle *triangles, int *hitTriangles,
+                                           float *distance, Vec3 *intersectionPoint, int *hitId)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( idx >= numRays ) return;
+    if (idx >= numRays) return;
 
     Ray ray = rays[idx];
-    int stack[64];
+    constexpr int MAX_STACK_SIZE = 64;
+    //constexpr int MAX_STACK_SIZE = 32; // voir si on peut jouer là dessus pour les perf 
+    //constexpr int MAX_STACK_SIZE = 128;
+    int stack[MAX_STACK_SIZE];
     int stackPtr = 0;
-    stack[stackPtr++] = 0;
-    // stack[stackPtr++] = 13;
 
     float closestT = INFINITY;
     int closestTriangle = -1;
-    int closesIntersectionId = -1;
+    int closestIntersectionId = -1;
+    Vec3 closestIntersectionPoint = Vec3(INFINITY, INFINITY, INFINITY);
 
-    Vec3 intersectionPointT;
-    intersectionPointT.x = INFINITY;
-    intersectionPointT.y = INFINITY;
-    intersectionPointT.z = INFINITY;
-    Vec3 closestIntersectionPoint;
-    closestIntersectionPoint.x = INFINITY;
-    closestIntersectionPoint.y = INFINITY;
-    closestIntersectionPoint.z = INFINITY;
+    stack[stackPtr++] = 0;
 
-    bool isView = false; // isView = true;
-
-    const float angleLim = 0.6f;
-
-    while ( stackPtr > 0 )
-    {
+    while (stackPtr > 0 && stackPtr < MAX_STACK_SIZE) {
         int nodeIdx = stack[--stackPtr];
-        BVHNode& node = bvhNodes[nodeIdx];
+        const BVHNode &node = bvhNodes[nodeIdx];
 
-        // if (nodeIdx < 0 || nodeIdx >= numRays) continue;
+        if (!rayAABBIntersect(ray, node.bounds)) continue;
 
-        if ( nodeIdx < 0 ) continue;
-
-        // if (!rayAABBIntersect4(ray, node.bounds)) continue;
-
-        if ( node.triangleCount == 1 )
-        {
-            Triangle& tri = triangles[node.triangleIndex];
-            // if (sameDirectionTest(tri,ray,angleLim))
-            {
+        if (node.triangleCount > 0) {
+            // Leaf node
+            for (int i = 0; i < node.triangleCount; ++i) {
+                int triIdx = node.firstTriangleIndex + i;
+                Triangle &tri = triangles[triIdx];
                 float t;
-                if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
-                {
+                Vec3 intersectionPointT;
 
-                    if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
-                    if ( t < closestT )
-                    {
+                if (rayTriangleIntersect(ray, tri, t, intersectionPointT)) {
+                    if (t < closestT) {
                         closestT = t;
-                        closestTriangle = node.triangleIndex;
+                        closestTriangle = triIdx;
                         closestIntersectionPoint = intersectionPointT;
-                        closesIntersectionId = triangles[closestTriangle].id;
+                        closestIntersectionId = tri.id;
                     }
                 }
             }
-        }
-        else
-        {
-            stack[stackPtr++] = node.rightChild;
-            stack[stackPtr++] = node.leftChild;
-        }
-    }
-
-    hitTriangles[idx] = closestTriangle;
-    distance[idx] = closestT;
-    intersectionPoint[idx] = closestIntersectionPoint;
-    hitId[idx] = closesIntersectionId;
-}
-
-__global__ void
-raytraceKernel_Parallel005( Ray* rays, int numRays, BVHNode* bvhNodes,
-                            Triangle* triangles, int* hitTriangles,
-                            float* distance, Vec3* intersectionPoint, int* hitId )
-
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( idx >= numRays )
-        return;
-
-    Ray ray = rays[idx];
-    int stack[64];    // // Stack for the BVH race
-    int stackPtr = 0; // On starts with the root of the BVH
-    stack[stackPtr++] = 0;
-
-    float closestT = INFINITY;
-    int closestTriangle = -1;
-    int closesIntersectionId = -1;
-
-    Vec3 intersectionPointT;
-    intersectionPointT.x = INFINITY;
-    intersectionPointT.y = INFINITY;
-    intersectionPointT.z = INFINITY;
-    Vec3 closestIntersectionPoint;
-    closestIntersectionPoint.x = INFINITY;
-    closestIntersectionPoint.y = INFINITY;
-    closestIntersectionPoint.z = INFINITY;
-
-    bool isView = false; // isView = true;
-
-    const float angleLim = 0.6f;
-
-    while ( stackPtr > 0 )
-    {
-        int nodeIdx = stack[--stackPtr];
-        const BVHNode& node = bvhNodes[nodeIdx];
-
-        // if (nodeIdx < 0 || nodeIdx >= numRays) continue;
-
-        if ( nodeIdx < 0 )
-            continue;
-
-        // if (!rayAABBIntersect(ray, node.bounds)) continue;
-
-        // if (intersectAABB(ray, node.bounds)) { //new
-
-        // if (rayAABBIntersect(ray, node.bounds))
-        {
-
-            // if (node.triangleCount >= 0) //If it is a leaf node
-            if ( node.triangleCount == 1 ) // If it is a leaf node
-            {
-                Triangle& tri = triangles[node.triangleIndex];
-                // if (sameDirectionTest(tri,ray,angleLim))
-                {
-                    float t;
-                    if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
-                    {
-
-                        if ( isView )
-                            printf( "      Num Ray[%i] <%f %f %f>\n", idx,
-                                    intersectionPointT.x, intersectionPointT.y,
-                                    intersectionPointT.z );
-                        if ( t < closestT )
-                        {
-                            closestT = t;
-                            closestTriangle = node.triangleIndex;
-                            closestIntersectionPoint = intersectionPointT;
-                            closesIntersectionId = triangles[closestTriangle].id;
-                        }
-                    }
-                }
-            }
-            else
-            { // Internal node
-                stack[stackPtr++] = node.leftChild;
-                stack[stackPtr++] = node.rightChild;
-            }
+        } else {
+            // Internal node - traverse children
+            if (node.leftChild >= 0) stack[stackPtr++] = node.leftChild;
+            if (node.rightChild >= 0) stack[stackPtr++] = node.rightChild;
         }
     }
 
+    // Store results
     hitTriangles[idx] = closestTriangle;
     distance[idx] = closestT;
     intersectionPoint[idx] = closestIntersectionPoint;
-    hitId[idx] = closesIntersectionId;
+    hitId[idx] = closestIntersectionId;
 }
 
 // END::RAY TRACING
@@ -2369,7 +2260,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
             if ( numVersion == 2 )
             {
-                hipLaunchKernelGGL( bvhHip::raytraceKernel_Parallel005, dim3( numBlocks ), dim3( blockSize ), 0, 0,
+                hipLaunchKernelGGL( bvhHip::raytraceKernel_Parallel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                     deviceHipRays,
                                     numRays,
                                     devicebvhHipNodes,
