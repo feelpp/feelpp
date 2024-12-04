@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-4/_work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp File Reference</title>
+<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-2/_work/feelpp/feelpp/feelpp/feel/feelvf/form.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -131,6 +131,11 @@ template&lt;typename X1 , typename X2 &gt; </td></tr>
 <tr class="memitem:gaae0194bba0f2f858c384597706e3c59e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">Feel::form2</a> (Ts &amp;&amp;... v)</td></tr>
 <tr class="memdesc:gaae0194bba0f2f858c384597706e3c59e"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a bi-linear form using named arguments  <a href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">More...</a><br /></td></tr>
 <tr class="separator:gaae0194bba0f2f858c384597706e3c59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52393ba85645a31ddb85aa3001a4d47f"><td class="memTemplParams" colspan="2"><a id="a52393ba85645a31ddb85aa3001a4d47f" name="a52393ba85645a31ddb85aa3001a4d47f"></a>
+template&lt;typename FormT , typename  = std::enable_if_t&lt;                                        std::is_base_of_v&lt;BilinearFormBase&lt;typename FormT::value_type&gt;, FormT&gt;&gt;&gt; </td></tr>
+<tr class="memitem:a52393ba85645a31ddb85aa3001a4d47f"><td class="memTemplItemLeft" align="right" valign="top">FormT&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::operator*</b> (double a, FormT const &amp;b)</td></tr>
+<tr class="memdesc:a52393ba85645a31ddb85aa3001a4d47f"><td class="mdescLeft">&#160;</td><td class="mdescRight">left multiply a form by a scalar <br /></td></tr>
+<tr class="separator:a52393ba85645a31ddb85aa3001a4d47f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>

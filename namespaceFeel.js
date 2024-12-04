@@ -864,6 +864,7 @@ var namespaceFeel =
     [ "nsrQ", "namespaceFeel.html#ab41461e608c4d0c9806e662a1aae5a72", null ],
     [ "Odh", "namespaceFeel.html#aa917fdbd007b7c7851cf5a1e07048ffa", null ],
     [ "opelt", "group__Discretization.html#ga4e35dac0b54b50e6560b001d5aa28307", null ],
+    [ "operator*", "namespaceFeel.html#a52393ba85645a31ddb85aa3001a4d47f", null ],
     [ "operator*", "namespaceFeel.html#ace05c15f6b84bdc04894799aaee36f73", null ],
     [ "operator*", "namespaceFeel.html#a2733a0d20df66af2d212d6eddd833f1d", null ],
     [ "operator+", "namespaceFeel.html#ad8680c8a60a14624161567f4ba6aee55", null ],
