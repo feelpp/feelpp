@@ -104,7 +104,12 @@ void runModel( const nl::json& specs )
             if (rotation == 1 )
             {
                 ElasticRigid<2, 1> model( specs );
-                model.rotation();
+                model.rotationNeumann2D();
+            }
+            else 
+            {
+                ElasticRigid<2, 1> model( specs );
+                model.translationContact();
             }
         }
         else if (dimension == 3)

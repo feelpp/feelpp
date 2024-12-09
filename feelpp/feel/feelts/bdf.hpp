@@ -995,10 +995,13 @@ void
 Bdf<SpaceType>::updateDerivative( element_type const& u, element_type & du ) const
 {
     du.zero();
-    du.add( this->polyDerivCoefficient( 0 ), u );
-    for ( uint8_type k = 0; k < this->timeOrder(); ++k )
-        du.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[k] );
-}
+    du.add( -this->polyDerivCoefficient( 0 ), u );
+
+    for ( uint8_type k = 0; k < this->timeOrder(); k++ )
+        du.add( this->polyDerivCoefficient( k+1 ), *M_unknowns[k] );
+        
+    
+}        
 
 template <typename ... Ts>
 auto bdf( Ts && ... v )

@@ -7,7 +7,8 @@
             "dimension": 2,
             "order": 1,
             "orderGeo":1,
-            "rigidMotion":0,
+            "rigidMotion":1,
+            "rotation":1,
             "Materials":[
                 "Caoutchouc"
             ],
@@ -15,7 +16,7 @@
                 "F1": {
                     "type" : "Gravity",
                     "parameters" : {
-                        "expr": "{0,-0.1}"
+                        "expr": "{0,0}"
                     }
                 }
             }
@@ -52,9 +53,9 @@
     "Meshes": {
         "LinearElasticity": {
             "Import": {
-                "filename": "$cfgdir/ellipse.geo",
+                "filename": "$cfgdir/carre.geo",
                 "partition": 0,
-                "h": 0.4
+                "h": 0.01
             }
         }
     },
@@ -64,10 +65,10 @@
             "steady": false,
             "order" : 2,
             "start": 0.0,
-            "end": 30.0,
+            "end": 10.2,
             "gamma":0.5,
             "beta":0.5,
-            "step": "1/20"
+            "step": "0.1"
         }
     },
     "InitialConditions": {
@@ -79,20 +80,27 @@
     },
     "BoundaryConditions": {
         "LinearElasticity": {
-
+            "Neumann":{
+                "Upper":{
+                    "expr":"{-0.02,0}"
+                },
+                "Lower":{
+                    "expr":"{0.02,0}"
+                }
+            }
         }
     },
     "Collision":{
         "LinearElasticity":{
-            "method":"penalty",
+            "method":"nitsche",
             "direction":"{0,-1}",
             "ddirection":[0,-1],
             "theta":0,
             "epsilon":0.001,
-            "gamma0":1750,
+            "gamma0":750,
             "fixedPoint":1,
             "fixedPointTol":0.0001,
-            "pressurePoint":[0,10],
+            "pressurePoint":[0,4],
             "tolContactRegion":-0.01,
             "tolDistance":0,
             "nbrObs":1

@@ -18,7 +18,7 @@ makeOptions()
         ( "steady", Feel::po::value<bool>()->default_value( 1 ),
           "if 1: steady else unsteady" );
 
-    return options.add( Feel::feel_options() );
+    return options.add( Feel::feel_options() ).add( Feel::backend_options("elastic") ).add( Feel::backend_options("rigid") );
 }
 template <int Dim, int Order>
 class ContactStatic
