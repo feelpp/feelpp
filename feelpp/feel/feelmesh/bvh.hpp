@@ -101,41 +101,38 @@ namespace bvhHip
 struct Vec3
 {
     float x, y, z;
-    __host__ __device__ Vec3()
-        : x( 0 ), y( 0 ), z( 0 ) {}
-    __host__ __device__ Vec3(float a) : x(a), y(a), z(a) {}
-    __host__ __device__ Vec3( float x, float y, float z )
-        : x( x ), y( y ), z( z ) {}
 
-    __host__ __device__ Vec3 operator+( const Vec3& v ) const { return Vec3( x + v.x, y + v.y, z + v.z ); }
-    __host__ __device__ Vec3 operator-( const Vec3& v ) const { return Vec3( x - v.x, y - v.y, z - v.z ); }
-    __host__ __device__ Vec3 operator*( float f ) const { return Vec3( x * f, y * f, z * f ); }
+    __host__ __device__ __forceinline__ Vec3() : x(0), y(0), z(0) {}
+    __host__ __device__ __forceinline__ Vec3(float a) : x(a), y(a), z(a) {}
+    __host__ __device__ __forceinline__ Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
 
-    __host__ __device__ Vec3 operator*( const Vec3& v ) const { return Vec3( x * v.x, y * v.y, z * v.z ); }
+    __host__ __device__ __forceinline__ Vec3 operator+(const Vec3& v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
+    __host__ __device__ __forceinline__ Vec3 operator-(const Vec3& v) const { return Vec3(x - v.x, y - v.y, z - v.z); }
+    __host__ __device__ __forceinline__ Vec3 operator*(float f) const { return Vec3(x * f, y * f, z * f); }
+    __host__ __device__ __forceinline__ Vec3 operator*(const Vec3& v) const { return Vec3(x * v.x, y * v.y, z * v.z); }
+    __host__ __device__ __forceinline__ Vec3 operator/(const Vec3& v) const { return Vec3(x / v.x, y / v.y, z / v.z); }
+    __host__ __device__ __forceinline__ Vec3 operator/(float f) const { float inv = 1.0f / f; return Vec3(x * inv, y * inv, z * inv); }
 
-    __host__ __device__ Vec3 operator/( const Vec3& other ) const { return Vec3( x / other.x, y / other.y, z / other.z ); }
-    __host__ __device__ Vec3 operator/( float scalar ) const { return Vec3( x / scalar, y / scalar, z / scalar ); }
-
-    __host__ __device__ float& operator[]( int i ) { return ( &x )[i]; }
-    __host__ __device__ const float& operator[]( int i ) const { return ( &x )[i]; }
+    __host__ __device__ __forceinline__ float& operator[](int i) { return (&x)[i]; }
+    __host__ __device__ __forceinline__ const float& operator[](int i) const { return (&x)[i]; }
 };
 
-__host__ __device__ Vec3 min( const Vec3& a, const Vec3& b )
+__host__ __device__ __forceinline__ Vec3 min( const Vec3& a, const Vec3& b )
 {
     return Vec3( fminf( a.x, b.x ), fminf( a.y, b.y ), fminf( a.z, b.z ) );
 }
 
-__host__ __device__ Vec3 max( const Vec3& a, const Vec3& b )
+__host__ __device__ __forceinline__ Vec3 max( const Vec3& a, const Vec3& b )
 {
     return Vec3( fmaxf( a.x, b.x ), fmaxf( a.y, b.y ), fmaxf( a.z, b.z ) );
 }
 
-__host__ __device__ Vec3 cross( const Vec3& a, const Vec3& b )
+__host__ __device__ __forceinline__ Vec3 cross( const Vec3& a, const Vec3& b )
 {
     return Vec3( a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x );
 }
 
-__host__ __device__ float dot( const Vec3& a, const Vec3& b )
+__host__ __device__ __forceinline__ float dot( const Vec3& a, const Vec3& b )
 {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
@@ -183,7 +180,7 @@ struct TriangleInfo
     int index;
 };
 
-__host__ __device__ float angleScalar( const Vec3 v1, const Vec3 v2 )
+__host__ __device__ __forceinline__ float angleScalar( const Vec3 v1, const Vec3 v2 )
 {
     float p = ( v1.x ) * ( v2.x ) + ( v1.y ) * ( v2.y ) + ( v1.z ) * ( v2.z );
     float n1 = sqrt( v1.x * v1.x + v1.y * v1.y + v1.z * v1.z );
@@ -199,7 +196,7 @@ __host__ __device__ float angleScalar( const Vec3 v1, const Vec3 v2 )
     return ( res ); // in radian
 }
 
-__host__ __device__ float calculateHalfOpeningAngle( const Triangle& triangle, const Vec3& origin )
+__host__ __device__ __forceinline__ float calculateHalfOpeningAngle( const Triangle& triangle, const Vec3& origin )
 {
     // This function will be used to speed up the calculations and will adapt the limit angle of the sameDirection function
     Vec3 barycenter = {
@@ -221,7 +218,7 @@ __host__ __device__ float calculateHalfOpeningAngle( const Triangle& triangle, c
     return halfOpeningAngle;
 }
 
-__host__ __device__ bool sameDirection( Triangle& tri, Ray& ray, const float& angleLim )
+__host__ __device__ __forceinline__ bool sameDirection( Triangle& tri, Ray& ray, const float& angleLim )
 { // To be modified soon according to the radius of the triangle object
     Vec3 dT;
     dT.x = ( tri.v0.x + tri.v1.x + tri.v2.x ) / 3.0f - ray.origin.x;
@@ -234,7 +231,7 @@ __host__ __device__ bool sameDirection( Triangle& tri, Ray& ray, const float& an
     return ( angle1 <= angleLim ) && ( angle1 <= angle2 );
 }
 
-__host__ __device__ bool sameDirectionTest( Triangle& tri, Ray& ray, const float& angleLim )
+__host__ __device__ __forceinline__ bool sameDirectionTest( Triangle& tri, Ray& ray, const float& angleLim )
 {
     Vec3 dT0 = tri.v0 - ray.origin;
     Vec3 dT1 = tri.v1 - ray.origin;
@@ -252,7 +249,7 @@ __host__ __device__ bool sameDirectionTest( Triangle& tri, Ray& ray, const float
     return ( b0 || b1 || b2 || b3 );
 }
 
-__device__ void swap( float& a, float& b )
+__device__ __forceinline__ void swap( float& a, float& b )
 {
     float temp = a;
     a = b;
@@ -260,7 +257,7 @@ __device__ void swap( float& a, float& b )
 }
 
 // BEGIN::RAY TRACING
-__device__ bool rayTriangleIntersect( const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint )
+__device__ __forceinline__ bool rayTriangleIntersect( const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint )
 {
     Vec3 edge1 = tri.v1 - tri.v0;
     Vec3 edge2 = tri.v2 - tri.v0;
@@ -376,7 +373,7 @@ __device__ bool rayTriangleIntersectSurfaceEdge( const Ray& ray, const Triangle&
     }
 }
 
-__device__ bool rayAABBIntersect( const Ray& ray, const AABB& aabb )
+__device__ bool rayAABBIntersect0( const Ray& ray, const AABB& aabb )
 {
     Vec3 invDir = Vec3( 1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z );
     Vec3 tMin = ( aabb.min - ray.origin ) * invDir;
@@ -386,6 +383,30 @@ __device__ bool rayAABBIntersect( const Ray& ray, const AABB& aabb )
     float tNear = fmaxf( fmaxf( t1.x, t1.y ), t1.z );
     float tFar = fminf( fminf( t2.x, t2.y ), t2.z );
     return tNear <= tFar;
+}
+
+__device__ __forceinline__ bool rayAABBIntersect(const Ray& ray, const AABB& aabb)
+{
+    Vec3 invDir = Vec3( 1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z );
+    float tx1 = (aabb.min.x - ray.origin.x) * invDir.x;
+    float tx2 = (aabb.max.x - ray.origin.x) * invDir.x;
+
+    float tmin = fminf(tx1, tx2);
+    float tmax = fmaxf(tx1, tx2);
+
+    float ty1 = (aabb.min.y - ray.origin.y) * invDir.y;
+    float ty2 = (aabb.max.y - ray.origin.y) * invDir.y;
+
+    tmin = fmaxf(tmin, fminf(ty1, ty2));
+    tmax = fminf(tmax, fmaxf(ty1, ty2));
+
+    float tz1 = (aabb.min.z - ray.origin.z) * invDir.z;
+    float tz2 = (aabb.max.z - ray.origin.z) * invDir.z;
+
+    tmin = fmaxf(tmin, fminf(tz1, tz2));
+    tmax = fminf(tmax, fmaxf(tz1, tz2));
+
+    return tmax >= tmin;
 }
 
 __global__ void raytraceKernel(
@@ -518,7 +539,7 @@ __global__ void raytraceKernel2(
             for ( int i = 0; i < node.triangleCount; ++i )
             {
                 Triangle& tri = triangles[node.firstTriangleIndex + i];
-                // if (sameDirection(tri,ray,angleLim))
+
                 if ( sameDirectionTest( tri, ray, angleLim ) )
                 {
                     float t;
@@ -551,7 +572,7 @@ __global__ void raytraceKernel2(
 }
 
 
-__device__ bool rayTriangleIntersect4(const Ray &ray, const Triangle &tri,
+__device__ __forceinline__ bool rayTriangleIntersect4(const Ray &ray, const Triangle &tri,
                                      float &t, Vec3 &intersectionPoint) {
   Vec3 edge1 = tri.v1 - tri.v0;
   Vec3 edge2 = tri.v2 - tri.v0;
@@ -612,7 +633,9 @@ __device__ bool rayTriangleIntersect4(const Ray &ray, const Triangle &tri,
 }
 
 
-__device__ bool rayAABBIntersect4(const Ray &ray, const AABB &aabb) {
+
+
+__device__ bool rayAABBIntersect4Old(const Ray &ray, const AABB &aabb) {
 
   bool isView=false; //isView=true; 
   const float EPSILON = 1e-8f;
@@ -638,6 +661,27 @@ __device__ bool rayAABBIntersect4(const Ray &ray, const AABB &aabb) {
     return tNear < 0;
   }
   return tNear <= tFar + EPSILON;
+}
+
+__device__ __forceinline__ bool rayAABBIntersect4(const Ray &ray, const AABB &aabb) {
+    const float EPSILON = 1e-8f;
+    float3 invDir;
+    invDir.x = 1.0f / ray.direction.x;
+    invDir.y = 1.0f / ray.direction.y;
+    invDir.z = 1.0f / ray.direction.z;
+
+    float3 t1, t2;
+    t1.x = (aabb.min.x - ray.origin.x) * invDir.x;
+    t1.y = (aabb.min.y - ray.origin.y) * invDir.y;
+    t1.z = (aabb.min.z - ray.origin.z) * invDir.z;
+    t2.x = (aabb.max.x - ray.origin.x) * invDir.x;
+    t2.y = (aabb.max.y - ray.origin.y) * invDir.y;
+    t2.z = (aabb.max.z - ray.origin.z) * invDir.z;
+
+    float tNear = fmaxf(fmaxf(fminf(t1.x, t2.x), fminf(t1.y, t2.y)), fminf(t1.z, t2.z));
+    float tFar = fminf(fminf(fmaxf(t1.x, t2.x), fmaxf(t1.y, t2.y)), fmaxf(t1.z, t2.z));
+
+    return tFar >= 0.0f && tNear <= tFar + EPSILON;
 }
 
 
@@ -767,13 +811,18 @@ __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNod
 
         BVHNode &node = bvhNodes[nodeIdx];
 
-       // if (!rayAABBIntersect4(ray, node.bounds))
-        //    continue;
+        
 
         if (node.triangleCount == 1 && node.triangleIndex >= 0 && node.triangleIndex < numTriangles)
         {
+
+
+            if (!rayAABBIntersect4(ray, node.bounds)) //add test 1
+            continue;
+
+
             Triangle &tri = triangles[node.triangleIndex];
-            //if (sameDirectionTest(tri, ray, angleLim))
+            //if (sameDirectionTest(tri, ray, angleLim)) //add test 2
             {
                 float t;
                 Vec3 intersectionPointT;
@@ -1743,9 +1792,11 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         : super_type( quality, worldComm )
     {
         numDevice = 0;
+        numDevice = 3;
+        //numDevice = 1;
         //numVersion = 0;
         numVersion = 1;
-        numVersion = 2;
+        //numVersion = 2;
         modeGPU = 1;
         isUnifiedMemory = true; // isUnifiedMemory = false;
     }
