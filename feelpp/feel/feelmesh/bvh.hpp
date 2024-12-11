@@ -311,7 +311,7 @@ __device__ __inline__ bool rayTriangleIntersect( const Ray& ray, const Triangle&
     return false;
 }
 
-__device__ bool rayTriangleIntersectSurfaceEdge( const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint, bool* hitEdge, bool* hitVertex )
+__device__ __inline__ bool rayTriangleIntersectSurfaceEdge( const Ray& ray, const Triangle& tri, float& t, Vec3& intersectionPoint, bool* hitEdge, bool* hitVertex )
 {
     // This will solve the problem of intersection of radius and vertex or edge of the triangle.
     Vec3 edge1 = tri.v1 - tri.v0;
@@ -501,6 +501,11 @@ __global__ void raytraceKernel2(
     int* hitId )
 
 {
+
+    //hipEvent_t start, stop;
+    //hipEventCreate(&start);
+
+
     // an improved version to avoid errors if the stack size is insufficient and the mesh is large.
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx >= numRays ) return;
@@ -804,6 +809,11 @@ __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNod
 
     constexpr float angleLim = 0.6f;
 
+
+
+
+    
+
     while (stackPtr > 0 && stackPtr < MAX_STACK_SIZE)
     {
         int nodeIdx = stack[--stackPtr];
@@ -847,7 +857,6 @@ __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNod
                 stack[stackPtr++] = node.rightChild;
         }
     }
-
     hitTriangles[idx] = closestTriangle;
     distance[idx] = closestT;
     intersectionPoint[idx] = closestIntersectionPoint;
@@ -859,7 +868,7 @@ __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNod
 // END::RAY TRACING
 
 // BEGIN::BVH GPU
-__host__ __device__ void calculateBoundingBox( const Triangle& triangle, Vec3& min_values, Vec3& max_values )
+__host__ __device__ __inline__ void calculateBoundingBox( const Triangle& triangle, Vec3& min_values, Vec3& max_values )
 {
     min_values = min( triangle.v0, min( triangle.v1, triangle.v2 ) );
     max_values = max( triangle.v0, max( triangle.v1, triangle.v2 ) );
@@ -937,7 +946,7 @@ void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTria
 
 // Bellow new versions...
 
-__device__ bool compareTriangles( const TriangleInfo& a, const TriangleInfo& b, int axis )
+__device__ __inline__ bool compareTriangles( const TriangleInfo& a, const TriangleInfo& b, int axis )
 {
     return a.centroid[axis] < b.centroid[axis];
 }
@@ -1073,7 +1082,7 @@ __global__ void computeExtents( TriangleInfo* triInfo, int numTriangles, float* 
 void buildBVH_GPU_Parallel(Triangle *d_triangles, BVHNode *d_nodes,
                            int numTriangles) {
 
-  std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
+  //std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
 
   int totalNodes = 2 * numTriangles - 1;
   int blockSize = 512;
@@ -1943,6 +1952,12 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
         if ( modeGPU == 1 ) // mode hip
         {
+
+            hipEvent_t start1, stop1;
+            hipEventCreate(&start1);
+            hipEventCreate(&stop1);
+            hipEventRecord(start1);
+
             if ( isView ) std::cout << "[BEGIN::LIST RAYs]"
                                     << "\n";
 
@@ -1975,6 +1990,15 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 }
             }
 
+            hipEventRecord(stop1);
+            hipEventSynchronize(stop1);
+            float milliseconds1 = 0;
+            hipEventElapsedTime(&milliseconds1, start1, stop1);
+            printf("dt1 duration data CPU to GPU =%f s\n",milliseconds1/1000.0);
+            hipEventDestroy(start1);
+            hipEventDestroy(stop1);
+
+
             if ( isView ) std::cout << "[END::LIST RAYs]"
                                     << "\n";
 
@@ -1992,6 +2016,13 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
             //auto timeDataTransfertDuration = toc( "timeDataTransfertRaysDuration" );
                 //std::cout << "time data Transfert Rays = " << timeDataTransfertDuration << " \n";
+
+
+
+            hipEvent_t start2, stop2;
+            hipEventCreate(&start2);
+            hipEventCreate(&stop2);
+            hipEventRecord(start2);
 
             int blockSize = 512;
             int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
@@ -2025,6 +2056,19 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                                     deviceHipIdResults );
             }
 
+            hipEventRecord(stop2);
+            hipEventSynchronize(stop2);
+            float milliseconds2 = 0;
+            hipEventElapsedTime(&milliseconds2, start2, stop2);
+            printf("dt2 duration RT in Kernel=%f s\n",milliseconds2/1000.0);
+            hipEventDestroy(start2);
+            hipEventDestroy(stop2);
+
+            hipEvent_t start3, stop3;
+            hipEventCreate(&start3);
+            hipEventCreate(&stop3);
+            hipEventRecord(start3);
+
             std::vector<int> hostHipHitTriangles( numRays );
             hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( int ), hipMemcpyDeviceToHost );
 
@@ -2037,6 +2081,17 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             std::vector<int> hostHipIdResults( numRays );
             hipMemcpy( hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof( int ), hipMemcpyDeviceToHost );
 
+
+            hipEventRecord(stop3);
+            hipEventSynchronize(stop3);
+            float milliseconds3 = 0;
+            hipEventElapsedTime(&milliseconds3, start3, stop3);
+            printf("dt3 duration data GPU to CPU=%f s \n",milliseconds3/1000.0);
+            hipEventDestroy(start3);
+            hipEventDestroy(stop3);
+
+
+
             if ( isView ) std::cout << "[END::RAYS TRACING]"
                                     << "\n";
 
@@ -2044,6 +2099,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                                     << "\n";
 
             // Reading the results and transmitting the information that will be used later
+            tic();
             for ( int i = 0; i < numRays; ++i )
             {
                 double M_distance = std::numeric_limits<double>::max();
@@ -2079,6 +2135,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     resALL.push_back( std::move( res ) );
                 }
             }
+
+            auto timeDataTransfertResultsDuration = toc( "timeDataTransfertResultsDuration" );
+            std::cout << "timeDataTransfertResultsDuration= " << timeDataTransfertResultsDuration  << " \n";
 
             if ( isView ) std::cout << "[END::DEBRIFING COLLISION]"
                                     << "\n";
