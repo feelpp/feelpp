@@ -293,8 +293,8 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem::functionspace_type functionspace_type;
-        static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
-        static constexpr bool is_comp_space = boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
+        static constexpr bool is_same_space = std::is_same_v<functionspace_type,Elem1>;
+        static constexpr bool is_comp_space = std::is_same_v<functionspace_type,typename Elem1::component_functionspace_type>;
         VLOG(2) << fmt::format("[IntegratorOn::assemble()] is_same: {} is_comp: {}", is_same_space, is_comp_space);
         if constexpr ( ( is_same_space || is_comp_space ) && ( on_type::value == MESH_ELEMENTS ) )
             onElements( __u, __v, __f );
