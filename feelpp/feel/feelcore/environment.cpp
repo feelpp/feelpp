@@ -606,13 +606,13 @@ Environment::Environment( int argc, char** argv,
 #else
     fs::path directory;
     if ( S_vm.count( "directory" ) )
-        directory = S_vm["directory"].as<std::string>();
+        directory = expand(S_vm["directory"].as<std::string>());
     if ( S_vm.count( "repository.prefix" ) )
-        directory = S_vm["repository.prefix"].as<std::string>();
+        directory = expand(S_vm["repository.prefix"].as<std::string>());
     if ( S_vm.count( "repository.case" ) )
     {
         fs::path d{ directory };
-        d /= S_vm["repository.case"].as<std::string>();
+        d /= expand(S_vm["repository.case"].as<std::string>());
         directory = d.string();
     }
 
