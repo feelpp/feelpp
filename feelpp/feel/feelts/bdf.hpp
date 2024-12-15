@@ -355,6 +355,12 @@ public:
     //! update field \u with derivative at previous time indexed by \i (i.e. curent_time - i - 1)
     void updateDerivative( element_type & u, int i = 0 ) const;
 
+    //! compute derivative du from solution from previous time steps usinf bdf formula
+    void derivative( element_type const& u, element_type & du ) const;
+
+    //! compute derivative du from solution from previous time steps usinf bdf formula
+    element_type derivative( element_type const& u ) const;
+
     element_type const& prior() const { return *M_unknowns[0]; }
 
     element_type& prior() { return *M_unknowns[0]; }
@@ -982,6 +988,25 @@ Bdf<SpaceType>::updateDerivative( element_type & u, int i ) const
     u.add( this->polyDerivCoefficient( 0 ), *M_unknowns[i] );
     for ( uint8_type k = 0; k < this->timeOrder(); ++k )
         u.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[i+k+1] );
+}
+
+template <typename SpaceType>
+void
+Bdf<SpaceType>::derivative( element_type const& u, element_type & du ) const
+{
+    du.zero();
+    du.add( this->polyDerivCoefficient( 0 ), u );
+
+    for ( uint8_type k = 0; k < this->timeOrder(); k++ )
+        du.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[k] );
+}
+template <typename SpaceType>
+typename Bdf<SpaceType>::element_type
+Bdf<SpaceType>::derivative( element_type const& u ) const
+{
+    element_type du( M_space );
+    derivative( u, du );
+    return du;
 }
 
 template <typename ... Ts>
