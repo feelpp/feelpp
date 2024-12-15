@@ -4,12 +4,18 @@ local archs = [
   'aarch64',
 ];
 
-local types = [
-  'default',
-  'asan',
-  'spack',
+local distros = [
+    'default',
+    'ubuntu',
+    'spack',
+    // Add other distributions or environments as needed
 ];
 
+local analysisTools = [
+    'none',
+    'asan',
+    'scorep'    
+];
 local compilers = [
     'clang',
     'gcc',
@@ -39,56 +45,56 @@ local components = [
     'feelpp-mor',
     'feelpp-python',
 ];
-local cp_generator(component, compiler, cpp, type, gpu, config) =
+local cp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
-    displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + gpu + '|' + std.asciiLower(config),
-    inherits: [gpu, cpp, compiler, type, config,component],
+    name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
+    displayName: component + ' |' + compiler + '|' + cpp + '|' + distro + '|' + gpu + '|' + analysisTool + '|' + std.asciiLower(config),
+    inherits: [analysisTool, gpu, cpp, compiler, distro, config,component],
   };
 
-local bp_generator(component, compiler, cpp, type, gpu, config) =
+local bp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
-    displayName: component + ' |' + compiler + '|' + cpp + '|' + type + '|' + gpu + '|' + std.asciiLower(config),
-    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
+    displayName: component + ' |' + compiler + '|' + cpp + '|' + distro + '|' + gpu + '|' + analysisTool + '|' + std.asciiLower(config),
+    configurePreset: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
     configuration: config,
     inherits: "default"
   };
 
-local tp_generator(component, compiler, cpp, type, gpu, config) =
+local tp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
-    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
+    configurePreset: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
     inherits: "default",
   };
 
-local pp_generator(component, compiler, cpp, type, gpu, config) =
+local pp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
     steps: [
       {
-        type: 'configure',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+        distro: 'configure',
+        name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
       },
       {
-        type: 'build',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+        distro: 'build',
+        name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
       },
       {
-        type: 'test',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+        distro: 'test',
+        name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
       },
       {
-        type: 'package',
-        name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+        distro: 'package',
+        name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
       },
     ],
   };
 
-local wp_generator(component, compiler, cpp, type, gpu, config) =
+local wp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
-    name: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
-    configurePreset: component + '-' + compiler + '-' + cpp + '-' + type + '-' + gpu + '-' + std.asciiLower(config),
+    name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
+    configurePreset: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
     generators: [
       'TGZ',
     ],
@@ -127,21 +133,34 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
       inherits: 'default',
       hidden: true,
       cacheVariables: {
-        CMAKE_CXX_FLAGS_SANITIZE: '-U_FORTIFY_SOURCE -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common',
+        CMAKE_CXX_FLAGS: '-U_FORTIFY_SOURCE -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common',
+        CMAKE_LINKER_FLAGS: "-fsanitize=address",
       },
     },
-    {
-        name: "spack",
+    { 
+        name: "scorep",
+        cacheVariables: {
+        CMAKE_C_COMPILER: "scorep --clangc",
+        CMAKE_CXX_COMPILER: "scorep --clang++",
+        // Additional Score-P settings if necessary
+      },
+    },
+    { 
+        name: "none",
         hidden: true,
-        displayName: "spack package manager",
-        description: "spack config",
+    },
+    {
+        name: "ubuntu",
+        hidden: true,
+        displayName: "Ubuntu package manager",
+        description: "Ubuntu config",
         inherits: [
             "default"
         ],
         cacheVariables: {
             CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
             FEELPP_ENABLE_ANN: "OFF",
-            FEELPP_USE_EXTERNAL_NAPP: "ON",
+            FEELPP_USE_EXTERNAL_NAPP: "OFF",
             FEELPP_USE_EXTERNAL_NANOFLANN: "ON",
             FEELPP_USE_EXTERNAL_FMT: "ON",
             FEELPP_USE_EXTERNAL_GFLAGS: "ON",
@@ -154,15 +173,15 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             FEELPP_USE_EXTERNAL_IPOPT: "ON",
             FEELPP_USE_EXTERNAL_PYBIND11: "ON",
             FEELPP_USE_EXTERNAL_MONGOCXX: "OFF",
-            FEELPP_USE_EXTERNAL_FMI4CPP: "ON",
-            FEELPP_USE_EXTERNAL_TABULATE: "ON",
-            FEELPP_USE_FETCHCONTENT_TABULATE: "ON",
-            FEELPP_USE_EXTERNAL_INDICATORS: "ON",
-            FEELPP_ENABLE_SIMPLE_WEB_SERVER: "ON",
+            FEELPP_USE_EXTERNAL_FMI4CPP: "OFF",
+            FEELPP_USE_EXTERNAL_TABULATE: "OFF",
+            FEELPP_USE_FETCHCONTENT_TABULATE: "OFF",
+            FEELPP_USE_EXTERNAL_INDICATORS: "OFF",
+            FEELPP_ENABLE_SIMPLE_WEB_SERVER: "OFF",
             FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER: "OFF",   
             FEELPP_USE_EXTERNAL_RANGE_V3: "OFF",
-            FEELPP_ENABLE_MATPLOT: "ON",
-            FEELPP_USE_EXTERNAL_MATPLOT: "ON",
+            FEELPP_ENABLE_MATPLOT: "OFF",
+            FEELPP_USE_EXTERNAL_MATPLOT: "OFF",
             FEELPP_USE_EXTERNAL_MMG: "ON",
             FEELPP_USE_EXTERNAL_CPR: "ON",
             FEELPP_USE_EXTERNAL_SPECX: "OFF",
@@ -171,6 +190,55 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             FEELPP_ENABLE_VTK: "OFF",
             USE_VTK: "OFF",
             FEELPP_ENABLE_OPENTURNS: "OFF"
+        },
+        environment: {
+            VERBOSE: "1"
+        }
+    },
+    {
+        name: "spack",
+        hidden: true,
+        displayName: "spack package manager",
+        description: "spack config",
+        inherits: [
+            "default"
+        ],
+        cacheVariables: {
+            CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
+
+            FEELPP_USE_EXTERNAL_MONGOCXX: "OFF",
+            FEELPP_ENABLE_ANN: "OFF",
+            FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER: "OFF",
+            FEELPP_USE_EXTERNAL_RANGE_V3: "OFF",
+            FEELPP_ENABLE_OPENTURNS: "OFF",
+            FEELPP_USE_EXTERNAL_SPECX: "OFF",
+            FEELPP_ENABLE_VTK: "OFF",
+            USE_VTK: "OFF",
+
+            FEELPP_USE_EXTERNAL_NAPP: "ON",
+            FEELPP_USE_EXTERNAL_NANOFLANN: "ON",
+            FEELPP_USE_EXTERNAL_FMT: "ON",
+            FEELPP_USE_EXTERNAL_GFLAGS: "ON",
+            FEELPP_USE_EXTERNAL_GLOG: "ON",
+            FEELPP_USE_EXTERNAL_CLN: "ON",
+            FEELPP_USE_EXTERNAL_GINAC: "ON",
+            FEELPP_USE_EXTERNAL_METIS: "ON",
+            FEELPP_USE_EXTERNAL_EIGEN3: "ON",
+            FEELPP_USE_EXTERNAL_NLOPT: "ON",
+            FEELPP_ENABLE_IPOPT: "ON",
+            FEELPP_USE_EXTERNAL_IPOPT: "ON",
+            FEELPP_USE_EXTERNAL_PYBIND11: "ON",
+            FEELPP_USE_EXTERNAL_FMI4CPP: "ON",
+            FEELPP_USE_EXTERNAL_TABULATE: "ON",
+            FEELPP_USE_FETCHCONTENT_TABULATE: "ON",
+            FEELPP_USE_EXTERNAL_INDICATORS: "ON",
+            FEELPP_ENABLE_SIMPLE_WEB_SERVER: "ON",
+            FEELPP_ENABLE_MATPLOT: "ON",
+            FEELPP_USE_EXTERNAL_MATPLOT: "ON",
+            FEELPP_USE_EXTERNAL_MMG: "ON",
+            FEELPP_USE_EXTERNAL_CPR: "ON",
+            FEELPP_ENABLE_EIGENRAND: "ON",
+            FEELPP_USE_EXTERNAL_EIGENRAND: "ON",
         },
         environment: {
             VERBOSE: "1"
@@ -413,7 +481,7 @@ local wp_generator(component, compiler, cpp, type, gpu, config) =
             FEELPP_COMPONENT: "python"
         }
     },
-  ] + [cp_generator(component, compiler, cpp, type, gpu, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
+  ] + [cp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
 
 buildPresets: [
   {
@@ -451,7 +519,7 @@ buildPresets: [
       configurePreset: "feelpp-python",
       inherits: "default"
   },
-] + [bp_generator(component, compiler, cpp, type, gpu, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
+] + [bp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
 testPresets: [
     {
       name: "default",
@@ -520,7 +588,7 @@ testPresets: [
       configurePreset: "feelpp-testsuite",
       inherits: "feelpp"
   },
-] + [tp_generator(component, compiler, cpp, type, gpu, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
-//packagePresets: [] + [pp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
-//workflowPresets: [] + [wp_generator(component, compiler, cpp, type, config) for component in components for compiler in compilers for cpp in cpps for type in types for gpu in gpus for config in configs],
+] + [tp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
+//packagePresets: [] + [pp_generator(component, compiler, cpp, distro, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
+//workflowPresets: [] + [wp_generator(component, compiler, cpp, distro, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
 }
