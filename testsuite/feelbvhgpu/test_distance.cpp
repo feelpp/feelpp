@@ -500,7 +500,8 @@ void distToBoundaryBVHpuSendAllNode(
     std::vector<int> id_GPU;
     
     
-    
+
+
     // Ray Tracing BVH CPU
     t_begin_raytracing_cpu = std::chrono::steady_clock::now();
     tic();
