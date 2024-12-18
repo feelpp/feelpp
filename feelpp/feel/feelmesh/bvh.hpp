@@ -1409,7 +1409,6 @@ class BVH : public CommObject
     template <typename... Ts>
     auto intersect( Ts&&... v )
     {
-        
         auto args = NA::make_arguments( std::forward<Ts>( v )... );
         auto&& ray = args.get( _ray );
         bool useRobustTraversal = args.get_else( _robust, true );
