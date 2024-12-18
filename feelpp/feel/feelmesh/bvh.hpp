@@ -532,7 +532,7 @@ __global__ void raytraceKernel2(
 
     bool isView = false; // isView = true;
 
-    while (stackPtr > 0 && stackPtr < 64) 
+    while (stackPtr > 0 && stackPtr < 64)
     {
         int nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
@@ -605,7 +605,7 @@ __device__ __inline__ bool rayTriangleIntersect4(const Ray &ray, const Triangle 
 
   // If t is negative, the intersection is behind the origin of the ray
   // Which means that the origin is inside the triangle
- /* 
+ /*
   if (t < -EPSILON) {
     t = 0.0f;
     intersectionPoint = ray.origin;
@@ -643,7 +643,7 @@ __device__ __inline__ bool rayTriangleIntersect4(const Ray &ray, const Triangle 
 
 __device__ bool rayAABBIntersect4Old(const Ray &ray, const AABB &aabb) {
 
-  bool isView=false; //isView=true; 
+  bool isView=false; //isView=true;
   const float EPSILON = 1e-8f;
   Vec3 invDir = Vec3(1.0f / ray.direction.x, 1.0f / ray.direction.y,
                      1.0f / ray.direction.z);
@@ -779,8 +779,8 @@ raytraceKernel_Parallel(Ray *rays, int numRays, BVHNode *bvhNodes,
 
 
 __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNodes,
-                                        int numNodes, 
-                                        Triangle *triangles, int numTriangles, int *hitTriangles, 
+                                        int numNodes,
+                                        Triangle *triangles, int numTriangles, int *hitTriangles,
                                         float *distance,Vec3 *intersectionPoint, int *hitId)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -792,7 +792,7 @@ __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNod
     int stack[MAX_STACK_SIZE];
     int stackPtr = 0;
 
-    stack[stackPtr++] = 0; 
+    stack[stackPtr++] = 0;
 
     float closestT = INFINITY;
     int closestTriangle = -1;
@@ -1179,6 +1179,7 @@ void buildBVH_GPU_Parallel_Best_Axis(Triangle *d_triangles, BVHNode *d_nodes,
 
 
 
+
 //***********************
 //***********************
 //***********************
@@ -1408,16 +1409,20 @@ class BVH : public CommObject
     template <typename... Ts>
     auto intersect( Ts&&... v )
     {
+        
         auto args = NA::make_arguments( std::forward<Ts>( v )... );
         auto&& ray = args.get( _ray );
         bool useRobustTraversal = args.get_else( _robust, true );
         IntersectContext ctx = args.get_else( _context, IntersectContext::closest );
         bool parallel = args.get_else( _parallel, this->worldComm().size() > 1 );
 
+        if (this->isGPUHip()) parallel = false;
+
         bool closestOnly = ctx == IntersectContext::closest;
         using napp_ray_type = std::decay_t<decltype( ray )>;
         if constexpr ( std::is_same_v<BVHRaysDistributed<nRealDim>, napp_ray_type> ) // case rays distributed on process
         {
+            tic();
             // WARNING: this algo is not good (all_gather of rays then all run bvh), just a quick version for test
             auto const& localRays = ray.rays();
             std::vector<int> resLocalSize( this->worldComm().size() );
@@ -1440,14 +1445,18 @@ class BVH : public CommObject
             for ( int p = 0; p < this->worldComm().rank(); ++p )
                 startRayIndexInThisProcess += resLocalSize[p];
             std::copy_n( intersectGlobal.cbegin() + startRayIndexInThisProcess, localRays.size(), res.begin() );
+
+            auto timeDuration_intersect_block1= toc( "timeDuration_intersect_block1" );
             return res;
         }
         else if constexpr ( is_iterable_v<std::decay_t<decltype( ray )>> ) // case rays container are identical all on process (TODO: internal case)
         {
+            tic();
             std::vector<std::vector<rayintersection_result_type>> resSeq;
             resSeq.reserve( ray.size() );
 
-            // std::cout<<"Value isGPU="<<this->isGPUHip()<<"\n";
+            auto timeDuration_resSeqreserve= toc( "timeDuration_resSeqreserve" );
+
             if ( !( this->isGPUHip() ) )
             {
                 for ( auto const& currentRay : ray )
@@ -1460,12 +1469,15 @@ class BVH : public CommObject
             }
             else
             {
+                tic();
                 resSeq = this->intersectAllRaysWithGPU( ray );
+                auto timeDurationFunctionIntersectAllRaysWithGPU= toc( "timeDurationFunctionIntersectAllRaysWithGPU" );
             }
 
             if ( !parallel )
                 return resSeq;
 
+            tic();
             mpi::all_reduce( this->worldComm(), mpi::inplace( resSeq ), []( auto const& x, auto const& y ) -> std::vector<std::vector<rayintersection_result_type>>
                              {
                         std::size_t retSize = x.size();
@@ -1490,6 +1502,8 @@ class BVH : public CommObject
                             }
                         }
                         return ret; } );
+            auto timeDuration_intersect_block2= toc( "timeDuration_intersect_block2" );
+
             return resSeq;
         }
         else // only one ray (all process should have the same ray if parallel=true)
@@ -1502,6 +1516,8 @@ class BVH : public CommObject
             */
 
             // TODO CTRL This part if OK
+
+            tic();
             std::vector<std::vector<rayintersection_result_type>> resSeq;
             if ( !( this->isGPUHip() ) )
             {
@@ -1514,6 +1530,9 @@ class BVH : public CommObject
 
             if ( closestOnly && resSeq.size() > 1 )
                 resSeq.resize( 1 );
+
+            auto timeDuration_intersect_block3= toc( "timeDuration_intersect_block3" );
+
 
             if ( !parallel )
                 return resSeq;
@@ -1535,6 +1554,7 @@ class BVH : public CommObject
                         } } );
             return resSeq;
 #else
+            tic();
             std::vector<int> resLocalSize( this->worldComm().size() );
             mpi::gather( this->worldComm(), (int)resSeq.size(), resLocalSize, this->worldComm().masterRank() );
             std::vector<rayintersection_result_type> resPar;
@@ -1552,6 +1572,10 @@ class BVH : public CommObject
                     resPar.resize( 1 );
             }
             mpi::broadcast( this->worldComm(), resPar, this->worldComm().masterRank() );
+
+            auto timeDuration_intersect_block4= toc( "timeDuration_intersect_block4" );
+
+
             return resPar;
 #endif
         }
@@ -1795,7 +1819,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
     int numDevice;
     int numVersion;
-    int modeGPU; // 1 - HIP 
+    int modeGPU; // 1 - HIP
     bool isUnifiedMemory;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
@@ -1869,7 +1893,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 HIP_ASSERT( hipMalloc( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
 
                 auto timeDataTransfertDuration = toc( "timeDataTransfertTriangleDuration" );
-                std::cout << "time data Transfert Triangle= " << timeDataTransfertDuration << " \n";
+
 
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
@@ -1902,14 +1926,14 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     deviceHipTriangles[k].id = id;
                 }
                 auto timeDataTransfertDuration = toc( "timeDataTransfertTriangleDuration" );
-                std::cout << "time data Transfert Triangle= " << timeDataTransfertDuration << " \n";
+
 
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
 
                 nbTriangles=numTriangles;
-                nbNodes=2 * nbTriangles - 1;               
+                nbNodes=2 * nbTriangles - 1;
             }
 
         } // END modeGPU==1
@@ -1953,18 +1977,21 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         if ( modeGPU == 1 ) // mode hip
         {
 
-            hipEvent_t start1, stop1;
-            hipEventCreate(&start1);
-            hipEventCreate(&stop1);
-            hipEventRecord(start1);
-
             if ( isView ) std::cout << "[BEGIN::LIST RAYs]"
                                     << "\n";
 
             bvhHip::Ray* deviceHipRays;
             // isUnifiedMemory=true;
 
-            //tic();
+
+
+            tic();
+            hipEvent_t start1, stop1;
+            hipEventCreate(&start1);
+            hipEventCreate(&stop1);
+            hipEventRecord(start1);
+
+
 
             if ( !isUnifiedMemory )
             {
@@ -1990,15 +2017,6 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 }
             }
 
-            hipEventRecord(stop1);
-            hipEventSynchronize(stop1);
-            float milliseconds1 = 0;
-            hipEventElapsedTime(&milliseconds1, start1, stop1);
-            printf("dt1 duration data CPU to GPU =%f s\n",milliseconds1/1000.0);
-            hipEventDestroy(start1);
-            hipEventDestroy(stop1);
-
-
             if ( isView ) std::cout << "[END::LIST RAYs]"
                                     << "\n";
 
@@ -2014,11 +2032,19 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             HIP_ASSERT( hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) ) );
 
-            //auto timeDataTransfertDuration = toc( "timeDataTransfertRaysDuration" );
-                //std::cout << "time data Transfert Rays = " << timeDataTransfertDuration << " \n";
+
+            hipEventRecord(stop1);
+            hipEventSynchronize(stop1);
+            float milliseconds1 = 0;
+            hipEventElapsedTime(&milliseconds1, start1, stop1);
+            printf("dt1 duration data CPU to GPU =%f s\n",milliseconds1/1000.0);
+            hipEventDestroy(start1);
+            hipEventDestroy(stop1);
+            auto timeDataTransfertAllRaysCPUtoGPU = toc( "timeDataTransfertAllRaysCPUtoGPU" );
 
 
 
+            tic();
             hipEvent_t start2, stop2;
             hipEventCreate(&start2);
             hipEventCreate(&stop2);
@@ -2063,7 +2089,12 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             printf("dt2 duration RT in Kernel=%f s\n",milliseconds2/1000.0);
             hipEventDestroy(start2);
             hipEventDestroy(stop2);
+            auto timeDurationInKernel = toc( "timeDurationInKernel" );
 
+
+
+
+            tic();
             hipEvent_t start3, stop3;
             hipEventCreate(&start3);
             hipEventCreate(&stop3);
@@ -2089,6 +2120,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             printf("dt3 duration data GPU to CPU=%f s \n",milliseconds3/1000.0);
             hipEventDestroy(start3);
             hipEventDestroy(stop3);
+            auto timeDurationDataTransfertResultsGPUtoCPU = toc( "timeDurationDataTransfertResultsGPUtoCPU" );
+
 
 
 
@@ -2136,8 +2169,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 }
             }
 
-            auto timeDataTransfertResultsDuration = toc( "timeDataTransfertResultsDuration" );
-            std::cout << "timeDataTransfertResultsDuration= " << timeDataTransfertResultsDuration  << " \n";
+
 
             if ( isView ) std::cout << "[END::DEBRIFING COLLISION]"
                                     << "\n";
@@ -2154,6 +2186,10 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hostHipIntersectionPoint.clear();
             hostHipDistanceResults.clear();
             hostHipIdResults.clear();
+
+            auto timeDataResultsDuration= toc( "timeDataResultsDuration" );
+
+
         } // END mode hip
 
         return ( resALL );
@@ -2651,3 +2687,4 @@ auto boundingVolumeHierarchy( Ts&&... v )
 }
 
 } // namespace Feel
+
