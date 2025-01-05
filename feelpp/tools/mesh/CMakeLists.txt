@@ -21,10 +21,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
+message( STATUS "--------------------------------------------")
+message( STATUS "[tools/mesh] Enable feelpp_mesh_partitioner")
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
-
-
 
 if(NOT FEELPP_MINIMAL_BUILD)
 

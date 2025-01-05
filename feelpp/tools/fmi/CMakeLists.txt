@@ -23,6 +23,8 @@
 #
 
 if ( FEELPP_HAS_FMI4CPP )
+    message( STATUS "--------------------------------------------")
+    message( STATUS "[tools/fmi] Enable feelpp_fmu")
     feelpp_add_application( fmu SRCS fmu.cpp INCLUDE_IN_ALL PROJECT fmi  INSTALL MAN fmu )
     feelpp_add_testcase( fmus PREFIX fmu CATEGORY fmi ) 
 endif()

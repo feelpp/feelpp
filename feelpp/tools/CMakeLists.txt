@@ -21,14 +21,23 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+foreach( _dir
+  info
+  excompiler
+  remotedata
+  mesh
+  plot
+  fmi
+  databases
+  sync_case
+  scripts
+  )
 
-add_subdirectory(info)
-add_subdirectory(remotedata)
-add_subdirectory( mesh )
-add_subdirectory( plot )
-add_subdirectory( fmi )
-add_subdirectory( databases )
-add_subdirectory( sync_case )
+  message( STATUS "----------------[ BEGIN TOOLS ]----------------------------")
+  add_subdirectory( ${_dir} )
+  message( STATUS "----------------[  END TOOLS  ]----------------------------")
+    
+endforeach()
 
 add_subdirectory(scripts)
 install(DIRECTORY lsan DESTINATION share/feelpp)

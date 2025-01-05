@@ -21,7 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
+message( STATUS "--------------------------------------------")
+message( STATUS "[tools/databases] Enable feelpp_export and feelpp_pod")
 if (FEELPP_HAS_HDF5 )
 
   if ( NOT TARGET app-databases )
