@@ -92,3 +92,9 @@
 [submodule "feelpp/contrib/bvh"]
 	path = feelpp/contrib/bvh
 	url = https://github.com/feelpp/bvh.git
+[submodule "feelpp/contrib/glog"]
+	path = feelpp/contrib/glog
+	url = https://github.com/feelpp/glog.git
+[submodule "feelpp/contrib/gflags"]
+	path = feelpp/contrib/gflags
+	url = https://github.com/feelpp/gflags
