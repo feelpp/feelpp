@@ -33,6 +33,15 @@ namespace Feel
 {
 namespace vf {
 
+inline GiNaC::lst convertToGiNaCList(const std::vector<GiNaC::ex>& vec)
+{
+    GiNaC::lst result;
+    for (const auto& elem : vec) 
+    {
+        result.append(elem);
+    }
+    return result;
+}
 
 /**
  * Handle Ginac matrix expression
@@ -571,7 +580,7 @@ public:
         auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), diff_se );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,N,Order,symbols_expression_with_diff_type>;
-        GiNaC::matrix resmat(M,N,res);
+        GiNaC::matrix resmat(M,N,convertToGiNaCList(res));
 #if 0
         std::string exprDesc = str( resmat );
 #else
@@ -644,7 +653,7 @@ public:
         auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), diff_se );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,Dim,Order,symbols_expression_with_diff_type>;
-        GiNaC::matrix resmat(M,Dim,res);
+        GiNaC::matrix resmat( M, Dim, convertToGiNaCList(res) );
         std::string exprDesc = (boost::format("grad(%1%)")% this->exprDesc() ).str();
         for ( std::string const& diffVariable : diffVariables )
             exprDesc += "_" + diffVariable;

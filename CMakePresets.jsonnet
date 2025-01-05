@@ -6,6 +6,9 @@ local archs = [
 
 local distros = [
     'default',
+    //'jammy',
+    //'noble',
+    //'bookworm',
     'ubuntu',
     'spack',
     // Add other distributions or environments as needed
@@ -14,7 +17,7 @@ local distros = [
 local analysisTools = [
     'none',
     'asan',
-    'scorep'    
+    'scorep'
 ];
 local compilers = [
     'clang',
@@ -51,7 +54,20 @@ local cp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) 
     displayName: component + ' |' + compiler + '|' + cpp + '|' + distro + '|' + gpu + '|' + analysisTool + '|' + std.asciiLower(config),
     inherits: [analysisTool, gpu, cpp, compiler, distro, config,component],
   };
-
+local cp_generator_default(component, distro) =
+  {
+    name: component + "-" + distro,
+    displayName: component + " |clang|cpp20|" + distro + "|cpu|none|release",
+    inherits: [
+      "none",       // analysisTool
+      "cpu",        // gpu
+      "cpp20",      // cpps
+      "clang",      // compiler
+      distro,
+      "Release",    // config
+      component,
+    ],
+  };
 local bp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
     name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
@@ -60,11 +76,24 @@ local bp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) 
     configuration: config,
     inherits: "default"
   };
-
+local bp_generator_default(component, distro) =
+  {
+    name: component + "-" + distro,
+    displayName: component + " |clang|cpp20|" + distro + "|cpu|none|release",
+    configurePreset: component + "-" + distro,
+    configuration: "Release",
+    inherits: "default",
+  };
 local tp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) =
   {
     name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
     configurePreset: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
+    inherits: "default",
+  };
+local tp_generator_default(component, distro) =
+  {
+    name: component + "-" + distro,
+    configurePreset: component + "-" + distro,
     inherits: "default",
   };
 
@@ -87,6 +116,28 @@ local pp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) 
       {
         distro: 'package',
         name: component + '-' + compiler + '-' + cpp + '-' + distro + '-' + gpu + '-' + analysisTool + '-' + std.asciiLower(config),
+      },
+    ],
+  };
+local pp_generator_default(component, distro) =
+  {
+    name: component + "-" + distro,
+    steps: [
+      {
+        distro: 'configure',
+        name: component + "-" + distro,
+      },
+      {
+        distro: 'build',
+        name: component + "-" + distro,
+      },
+      {
+        distro: 'test',
+        name: component + "-" + distro,
+      },
+      {
+        distro: 'package',
+        name: component + "-" + distro,
       },
     ],
   };
@@ -481,7 +532,13 @@ local wp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) 
             FEELPP_COMPONENT: "python"
         }
     },
-  ] + [cp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
+  ] + 
+  [
+    cp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs
+  ] + 
+  [
+    cp_generator_default(component, distro) for component in components for distro in distros
+  ],
 
 buildPresets: [
   {
@@ -519,7 +576,13 @@ buildPresets: [
       configurePreset: "feelpp-python",
       inherits: "default"
   },
-] + [bp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
+] + 
+[
+    bp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs
+] + 
+[
+    bp_generator_default(component, distro) for component in components for distro in distros
+],
 testPresets: [
     {
       name: "default",
@@ -588,7 +651,13 @@ testPresets: [
       configurePreset: "feelpp-testsuite",
       inherits: "feelpp"
   },
-] + [tp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
+] + 
+[
+    tp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs
+] + 
+[
+    tp_generator_default(component, distro) for component in components for distro in distros
+],
 //packagePresets: [] + [pp_generator(component, compiler, cpp, distro, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
 //workflowPresets: [] + [wp_generator(component, compiler, cpp, distro, config) for component in components for compiler in compilers for cpp in cpps for distro in distros for gpu in gpus for analysisTool in analysisTools  for config in configs],
 }

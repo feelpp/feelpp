@@ -18178,6 +18178,132 @@
          "displayName": "feelpp-python |gcc|cpp23|spack|rocm-kokkos|scorep|release",
          "inherits": "default",
          "name": "feelpp-python-gcc-cpp23-spack-rocm-kokkos-scorep-release"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-default",
+         "displayName": "feelpp |clang|cpp20|default|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-default"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-ubuntu",
+         "displayName": "feelpp |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-ubuntu"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-spack",
+         "displayName": "feelpp |clang|cpp20|spack|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-spack"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-core-default",
+         "displayName": "feelpp-core |clang|cpp20|default|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-core-default"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-core-ubuntu",
+         "displayName": "feelpp-core |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-core-ubuntu"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-core-spack",
+         "displayName": "feelpp-core |clang|cpp20|spack|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-core-spack"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-testsuite-default",
+         "displayName": "feelpp-testsuite |clang|cpp20|default|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-testsuite-default"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-testsuite-ubuntu",
+         "displayName": "feelpp-testsuite |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-testsuite-ubuntu"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-testsuite-spack",
+         "displayName": "feelpp-testsuite |clang|cpp20|spack|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-testsuite-spack"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-toolboxes-default",
+         "displayName": "feelpp-toolboxes |clang|cpp20|default|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-toolboxes-default"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-toolboxes-ubuntu",
+         "displayName": "feelpp-toolboxes |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-toolboxes-ubuntu"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-toolboxes-spack",
+         "displayName": "feelpp-toolboxes |clang|cpp20|spack|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-toolboxes-spack"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-mor-default",
+         "displayName": "feelpp-mor |clang|cpp20|default|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-mor-default"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-mor-ubuntu",
+         "displayName": "feelpp-mor |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-mor-ubuntu"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-mor-spack",
+         "displayName": "feelpp-mor |clang|cpp20|spack|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-mor-spack"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-python-default",
+         "displayName": "feelpp-python |clang|cpp20|default|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-python-default"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-python-ubuntu",
+         "displayName": "feelpp-python |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-python-ubuntu"
+      },
+      {
+         "configuration": "Release",
+         "configurePreset": "feelpp-python-spack",
+         "displayName": "feelpp-python |clang|cpp20|spack|cpu|none|release",
+         "inherits": "default",
+         "name": "feelpp-python-spack"
       }
    ],
    "cmakeMinimumRequired": {
@@ -18233,17 +18359,17 @@
             "FEELPP_ENABLE_IPOPT": "ON",
             "FEELPP_ENABLE_MATPLOT": "OFF",
             "FEELPP_ENABLE_OPENTURNS": "OFF",
-            "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF",
+            "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "ON",
             "FEELPP_ENABLE_VTK": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON",
             "FEELPP_USE_EXTERNAL_CPR": "ON",
             "FEELPP_USE_EXTERNAL_EIGEN3": "ON",
             "FEELPP_USE_EXTERNAL_EIGENRAND": "ON",
-            "FEELPP_USE_EXTERNAL_FMI4CPP": "OFF",
+            "FEELPP_USE_EXTERNAL_FMI4CPP": "ON",
             "FEELPP_USE_EXTERNAL_FMT": "ON",
             "FEELPP_USE_EXTERNAL_GFLAGS": "ON",
             "FEELPP_USE_EXTERNAL_GLOG": "ON",
-            "FEELPP_USE_EXTERNAL_INDICATORS": "OFF",
+            "FEELPP_USE_EXTERNAL_INDICATORS": "ON",
             "FEELPP_USE_EXTERNAL_IPOPT": "ON",
             "FEELPP_USE_EXTERNAL_MATPLOT": "OFF",
             "FEELPP_USE_EXTERNAL_METIS": "ON",
@@ -18256,8 +18382,8 @@
             "FEELPP_USE_EXTERNAL_RANGE_V3": "OFF",
             "FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER": "OFF",
             "FEELPP_USE_EXTERNAL_SPECX": "OFF",
-            "FEELPP_USE_EXTERNAL_TABULATE": "OFF",
-            "FEELPP_USE_FETCHCONTENT_TABULATE": "OFF",
+            "FEELPP_USE_EXTERNAL_TABULATE": "ON",
+            "FEELPP_USE_FETCHCONTENT_TABULATE": "ON",
             "USE_VTK": "OFF"
          },
          "description": "Ubuntu config",
@@ -52247,6 +52373,240 @@
             "feelpp-python"
          ],
          "name": "feelpp-python-gcc-cpp23-spack-rocm-kokkos-scorep-release"
+      },
+      {
+         "displayName": "feelpp |clang|cpp20|default|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "default",
+            "Release",
+            "feelpp"
+         ],
+         "name": "feelpp-default"
+      },
+      {
+         "displayName": "feelpp |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "ubuntu",
+            "Release",
+            "feelpp"
+         ],
+         "name": "feelpp-ubuntu"
+      },
+      {
+         "displayName": "feelpp |clang|cpp20|spack|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "spack",
+            "Release",
+            "feelpp"
+         ],
+         "name": "feelpp-spack"
+      },
+      {
+         "displayName": "feelpp-core |clang|cpp20|default|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "default",
+            "Release",
+            "feelpp-core"
+         ],
+         "name": "feelpp-core-default"
+      },
+      {
+         "displayName": "feelpp-core |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "ubuntu",
+            "Release",
+            "feelpp-core"
+         ],
+         "name": "feelpp-core-ubuntu"
+      },
+      {
+         "displayName": "feelpp-core |clang|cpp20|spack|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "spack",
+            "Release",
+            "feelpp-core"
+         ],
+         "name": "feelpp-core-spack"
+      },
+      {
+         "displayName": "feelpp-testsuite |clang|cpp20|default|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "default",
+            "Release",
+            "feelpp-testsuite"
+         ],
+         "name": "feelpp-testsuite-default"
+      },
+      {
+         "displayName": "feelpp-testsuite |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "ubuntu",
+            "Release",
+            "feelpp-testsuite"
+         ],
+         "name": "feelpp-testsuite-ubuntu"
+      },
+      {
+         "displayName": "feelpp-testsuite |clang|cpp20|spack|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "spack",
+            "Release",
+            "feelpp-testsuite"
+         ],
+         "name": "feelpp-testsuite-spack"
+      },
+      {
+         "displayName": "feelpp-toolboxes |clang|cpp20|default|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "default",
+            "Release",
+            "feelpp-toolboxes"
+         ],
+         "name": "feelpp-toolboxes-default"
+      },
+      {
+         "displayName": "feelpp-toolboxes |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "ubuntu",
+            "Release",
+            "feelpp-toolboxes"
+         ],
+         "name": "feelpp-toolboxes-ubuntu"
+      },
+      {
+         "displayName": "feelpp-toolboxes |clang|cpp20|spack|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "spack",
+            "Release",
+            "feelpp-toolboxes"
+         ],
+         "name": "feelpp-toolboxes-spack"
+      },
+      {
+         "displayName": "feelpp-mor |clang|cpp20|default|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "default",
+            "Release",
+            "feelpp-mor"
+         ],
+         "name": "feelpp-mor-default"
+      },
+      {
+         "displayName": "feelpp-mor |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "ubuntu",
+            "Release",
+            "feelpp-mor"
+         ],
+         "name": "feelpp-mor-ubuntu"
+      },
+      {
+         "displayName": "feelpp-mor |clang|cpp20|spack|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "spack",
+            "Release",
+            "feelpp-mor"
+         ],
+         "name": "feelpp-mor-spack"
+      },
+      {
+         "displayName": "feelpp-python |clang|cpp20|default|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "default",
+            "Release",
+            "feelpp-python"
+         ],
+         "name": "feelpp-python-default"
+      },
+      {
+         "displayName": "feelpp-python |clang|cpp20|ubuntu|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "ubuntu",
+            "Release",
+            "feelpp-python"
+         ],
+         "name": "feelpp-python-ubuntu"
+      },
+      {
+         "displayName": "feelpp-python |clang|cpp20|spack|cpu|none|release",
+         "inherits": [
+            "none",
+            "cpu",
+            "cpp20",
+            "clang",
+            "spack",
+            "Release",
+            "feelpp-python"
+         ],
+         "name": "feelpp-python-spack"
       }
    ],
    "testPresets": [
@@ -65268,6 +65628,96 @@
          "configurePreset": "feelpp-python-gcc-cpp23-spack-rocm-kokkos-scorep-release",
          "inherits": "default",
          "name": "feelpp-python-gcc-cpp23-spack-rocm-kokkos-scorep-release"
+      },
+      {
+         "configurePreset": "feelpp-default",
+         "inherits": "default",
+         "name": "feelpp-default"
+      },
+      {
+         "configurePreset": "feelpp-ubuntu",
+         "inherits": "default",
+         "name": "feelpp-ubuntu"
+      },
+      {
+         "configurePreset": "feelpp-spack",
+         "inherits": "default",
+         "name": "feelpp-spack"
+      },
+      {
+         "configurePreset": "feelpp-core-default",
+         "inherits": "default",
+         "name": "feelpp-core-default"
+      },
+      {
+         "configurePreset": "feelpp-core-ubuntu",
+         "inherits": "default",
+         "name": "feelpp-core-ubuntu"
+      },
+      {
+         "configurePreset": "feelpp-core-spack",
+         "inherits": "default",
+         "name": "feelpp-core-spack"
+      },
+      {
+         "configurePreset": "feelpp-testsuite-default",
+         "inherits": "default",
+         "name": "feelpp-testsuite-default"
+      },
+      {
+         "configurePreset": "feelpp-testsuite-ubuntu",
+         "inherits": "default",
+         "name": "feelpp-testsuite-ubuntu"
+      },
+      {
+         "configurePreset": "feelpp-testsuite-spack",
+         "inherits": "default",
+         "name": "feelpp-testsuite-spack"
+      },
+      {
+         "configurePreset": "feelpp-toolboxes-default",
+         "inherits": "default",
+         "name": "feelpp-toolboxes-default"
+      },
+      {
+         "configurePreset": "feelpp-toolboxes-ubuntu",
+         "inherits": "default",
+         "name": "feelpp-toolboxes-ubuntu"
+      },
+      {
+         "configurePreset": "feelpp-toolboxes-spack",
+         "inherits": "default",
+         "name": "feelpp-toolboxes-spack"
+      },
+      {
+         "configurePreset": "feelpp-mor-default",
+         "inherits": "default",
+         "name": "feelpp-mor-default"
+      },
+      {
+         "configurePreset": "feelpp-mor-ubuntu",
+         "inherits": "default",
+         "name": "feelpp-mor-ubuntu"
+      },
+      {
+         "configurePreset": "feelpp-mor-spack",
+         "inherits": "default",
+         "name": "feelpp-mor-spack"
+      },
+      {
+         "configurePreset": "feelpp-python-default",
+         "inherits": "default",
+         "name": "feelpp-python-default"
+      },
+      {
+         "configurePreset": "feelpp-python-ubuntu",
+         "inherits": "default",
+         "name": "feelpp-python-ubuntu"
+      },
+      {
+         "configurePreset": "feelpp-python-spack",
+         "inherits": "default",
+         "name": "feelpp-python-spack"
       }
    ],
    "version": 3

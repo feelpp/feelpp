@@ -82,15 +82,15 @@ jobs:
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate feelpp-openmpi4
-          cmake --preset feelpp-clang-cpp20-spack-cpu-release
+          cmake --preset feelpp-spack
       - name: Build Feelpp
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate feelpp-openmpi4
-          cmake --build --preset feelpp-clang-cpp20-spack-cpu-release -j60 
+          cmake --build --preset feelpp-spack -j60 
       - name: Test Feelpp
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate feelpp-openmpi4
-          ctest --preset feelpp-clang-cpp20-spack-cpu-release -j4 -R feelpp
+          ctest --preset feelpp-spack -j4 -R feelpp
 

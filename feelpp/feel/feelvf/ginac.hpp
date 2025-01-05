@@ -39,6 +39,7 @@
 // #endif
 
 #include <ginac/ginac.h>
+#include <feel/feelvf/excompiler.hpp>
 extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
 extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
 

@@ -88,16 +88,12 @@ extern "C"
 #include <feel/feeltiming/tic.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcore/remotedata.hpp>
+#include <feel/feelvf/excompiler.hpp>
 
 #define stringize2(x) #x
 #define stringize(x) stringize2(x)
 
 
-
-namespace GiNaC
-{
-extern void cleanup_ex( bool verbose );
-}
 namespace detail
 {
 void DebugWait(int rank)
@@ -885,7 +881,7 @@ Environment::~Environment()
     S_paths.clear();
 
     VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
-    GiNaC::cleanup_ex( false );
+    Feel::cleanup_ex( false );
 
     VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -1810,7 +1806,7 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
         }
     }
 
-    LOG( ERROR ) << fmt::format("File {} not found", filename);
+    //LOG( ERROR ) << fmt::format("File {} not found", filename);
     return std::string();
 }
 std::vector<std::string>

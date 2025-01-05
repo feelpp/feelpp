@@ -23,6 +23,7 @@
 #
 CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
+configure_file(feelvf/excompiler.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/feelvf/excompiler.cpp @ONLY)
 
 # Define the two required variables before including
 # the source code for watching a git repository.
@@ -51,7 +52,7 @@ endforeach()
 #if(FEELPP_ENABLE_BUILD_STATIC)
 #  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
 #else()
-  add_library(feelpp SHARED options.cpp ${POST_CONFIGURE_FILE} ${FEELPP_SRCS})
+  add_library(feelpp SHARED options.cpp ${CMAKE_CURRENT_BINARY_DIR}/feelvf/excompiler.cpp ${POST_CONFIGURE_FILE} ${FEELPP_SRCS})
   set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
   set_property(TARGET feelpp PROPERTY MACOSX_RPATH ON)
   set_property(TARGET feelpp PROPERTY CXX_STANDARD ${FEELPP_STD_CPP})
@@ -192,6 +193,25 @@ foreach(COMPONENT ${BOOST_COMPONENTS_REQUIRED})
   target_link_libraries( feelpp PUBLIC Boost::${COMPONENT} )
 endforeach()
 endif()
+
+#
+# Check for libdl
+#
+include(CheckLibraryExists)
+check_library_exists(dl dlopen "" HAVE_LIBDL)
+if(NOT HAVE_LIBDL)
+  message(FATAL_ERROR "libdl (with dlopen) not found. Feel++ GiNaC JIT functionality requires libdl.")
+endif()
+# CMake often sets CMAKE_DL_LIBS to 'dl' automatically.
+# But we verify it for clarity:
+set(DL_LIBS "${CMAKE_DL_LIBS}")
+if(NOT DL_LIBS)
+  # On some systems, CMAKE_DL_LIBS might be empty; then fall back to 'dl'.
+  set(DL_LIBS "dl")
+endif()
+
+target_compile_definitions(feelpp PUBLIC FEELPP_HAS_LIBDL HAVE_LIBDL)
+target_link_libraries(feelpp PUBLIC ${DL_LIBS})
 
 if ( FFTW_DOUBLE_LIB_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_FFTW_DOUBLE )

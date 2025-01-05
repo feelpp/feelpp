@@ -29,6 +29,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/exreader.hpp>
+#include <feel/feelvf/detail/ginacmatrix.hpp>
 #include <fmt/core.h>
 #include <fmt/ostream.h>
 
@@ -90,7 +92,7 @@ ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<s
                      } );
     VLOG(1) << " . table : " << table;
     VLOG(1) <<"Defining parser";
-    parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
+    parser reader(table ,option(_name="ginac.strict-parser").as<bool>(),Feel::get_default_reader()); // true to ensure that no more symbols are added
 
     VLOG(1) <<"parse expression\n";
     ex e; // = reader(str);
@@ -188,7 +190,7 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
 #endif
 
     VLOG(1) <<"Defining parser";
-    parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
+    parser reader(table ,option(_name="ginac.strict-parser").as<bool>(),Feel::get_default_reader()); // true to ensure that no more symbols are added
 
     VLOG(1) <<"parse expression: " << strexpr;
     if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
@@ -241,7 +243,7 @@ grad( ex const& f, std::vector<symbol> const& l )
                 v.push_back( g.op(e) );
         }
 
-        matrix h( g.nops(), g.op(0).nops(), v );
+        matrix h( g.nops(), g.op(0).nops(), Feel::vf::convertToGiNaCList(v) );
         return h;
     }
     else
@@ -289,7 +291,7 @@ div( ex const& f, std::vector<symbol> const& l )
     {
         v[0] += g.op(e).op(e);
     }
-    matrix h( 1, 1, v );
+    matrix h( 1, 1, Feel::vf::convertToGiNaCList(v) );
     return h;
 }
 
@@ -322,7 +324,7 @@ curl( ex const& f, std::vector<symbol> const& l )
         CHECK( l[0].get_name() == "x") << "Symbol x not present in list of symbols, cannot compute curl(" << f << ")\n";
         CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
         v[0] = f.op(1).diff(l[0])-f.op(0).diff(l[1]);
-        matrix h( 1, 1, v );
+        matrix h( 1, 1, Feel::vf::convertToGiNaCList(v) );
         return h;
     }
     if   ( f.nops() == 3){
@@ -333,7 +335,7 @@ curl( ex const& f, std::vector<symbol> const& l )
         v[0]=f.op(2).diff(l[1])-f.op(1).diff(l[2]);
         v[1]=f.op(0).diff(l[2])-f.op(2).diff(l[0]);
         v[2]=f.op(1).diff(l[0])-f.op(0).diff(l[1]);
-        matrix h( 3, 1, v );
+        matrix h( 3, 1, Feel::vf::convertToGiNaCList(v) );
         return h;
     }
 	}else{ //   ( is_a<lst>( f ) )
@@ -342,7 +344,7 @@ curl( ex const& f, std::vector<symbol> const& l )
         CHECK( l[1].get_name() == "y") << "Symbol y not present in list of symbols, cannot compute curl(" << f << ")\n";
         std::vector<ex> v(1);
         v[0] = f[1].diff(l[0])-f[0].diff(l[1]);
-        matrix h( 1, 1, v );
+        matrix h( 1, 1, Feel::vf::convertToGiNaCList(v) );
         return h;
 		}
     if   ( f.nops() == 3 ){
@@ -353,7 +355,7 @@ curl( ex const& f, std::vector<symbol> const& l )
       v[0]=f[2].diff(l[1])-f[1].diff(l[2]);
       v[1]=f[0].diff(l[2])-f[2].diff(l[0]);
       v[2]=f[1].diff(l[0])-f[0].diff(l[1]);
-      matrix h( 3, 1, v );
+      matrix h( 3, 1, Feel::vf::convertToGiNaCList(v) );
       return h;
 		}
 	}
@@ -373,7 +375,7 @@ matrix
 laplacian( ex const& f, std::vector<symbol> const& l )
 {
     ex e = f.evalm();
-    if ( e.is_a_matrix() ) //is_a<matrix>(e) )
+    if ( is_a<matrix>(e) )
     {
         matrix m( ex_to<matrix>(e) );
         matrix g( m.rows(),1 );
@@ -400,7 +402,7 @@ laplacian( ex const& f, std::vector<symbol> const& l )
                                g[n] += e.op(n).diff( x,2 );
                            } );
         }
-        matrix h(e.nops(),1,g);
+        matrix h(e.nops(),1,Feel::vf::convertToGiNaCList(g));
         return h;
     }
     else
@@ -411,7 +413,7 @@ laplacian( ex const& f, std::vector<symbol> const& l )
                        {
                            g += e.diff( x,2 );
                        } );
-        matrix h(1,1,std::vector<ex>(1,g));
+        matrix h(1,1,Feel::vf::convertToGiNaCList(std::vector<ex>(1,g)));
         return h;
 
     }
@@ -451,7 +453,7 @@ matrix diff(ex const& f, symbol const& l, const int n)
         std::vector<ex> g(f.nops());
         for( int i = 0; i < f.nops(); ++i )
             g[i] = f.op(i).diff( l, n );
-        matrix ret(f.nops(),1,g);
+        matrix ret(f.nops(),1,Feel::vf::convertToGiNaCList(g));
         return ret;
     }
     else

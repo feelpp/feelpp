@@ -1,0 +1,15 @@
+message( STATUS  "--------------------------------------------")
+message( STATUS "[tools/excompiler] Enable excompiler")
+IF(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER)
+  #add -DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER to CFLAGS
+  message( STATUS "[tools/excompiler] Enable use of standard headers: ${USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER}")
+  set(_USE_STANDARD_C_HEADERS_ "-DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER")
+ENDIF()
+
+configure_file(feelpp_excompiler.in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feelpp_excompiler)
+file(COPY ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feelpp_excompiler
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+  FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ
+  GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+install(PROGRAMS  ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feelpp_excompiler DESTINATION bin/ COMPONENT Bin )
+install(FILES  ${CMAKE_CURRENT_SOURCE_DIR}/ginac-extern-math.h DESTINATION include/feelpp/excompiler COMPONENT Devel )

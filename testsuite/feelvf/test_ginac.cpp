@@ -30,6 +30,7 @@
 #define BOOST_TEST_MODULE test_ginac
 #include <feel/feelcore/testsuite.hpp>
 
+#include <ranges>
 #include <iostream>
 #include <string>
 #include <list>
@@ -888,7 +889,7 @@ BOOST_AUTO_TEST_CASE( test_mod )
     auto a1b = expr("mod(u,v):u:v");
     a1b.setParameterValues( { { "u", 2 }, { "v", 1 }} );
     BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
-    a1b.setParameterValues( { { "u", 3 }, { "v", 6 }} );
+    a1b.setParameterValues( { { "u", int(3) }, { "v", int(6) }} );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 3, 1e-12 );
     a1b.setParameterValues( { { "u", 6.1 }, { "v", 3 }} );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.1, 1e-12 );
@@ -960,4 +961,223 @@ BOOST_AUTO_TEST_CASE( test_mapabcd )
     a1b.setParameterValues( { { "t", 1.75 } } );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
 }
+BOOST_AUTO_TEST_CASE( test_greater_than )
+{
+    auto a1b = expr("u > v:u:v");
+    a1b.setParameterValues( { { "u", 2 }, { "v", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "u", 1 }, { "v", 2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 2 }, { "v", 2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_less_than )
+{
+    auto a1b = expr("u < v:u:v");
+    a1b.setParameterValues( { { "u", 1 }, { "v", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "u", 2 }, { "v", 1 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 2 }, { "v", 2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_smoothstep )
+{
+    auto a1b = expr("smoothstep(t,1,2):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.15625, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.84375, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_clamp )
+{
+    auto a1b = expr("clamp(t,0,1):t");
+    a1b.setParameterValues( { { "t", -0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_ceil )
+{
+    auto a1b = expr("ceil(t):t");
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 2, 1e-12 );
+    a1b.setParameterValues( { { "t", -0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+    a1b.setParameterValues( { { "t", -1.2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_floor )
+{
+    auto a1b = expr("floor(t):t");
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", -0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", -1.2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -2, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_rand )
+{
+    auto a1b = expr("rand(0,1):t");
+    for (int i = 0; i < 10; ++i)
+    {
+        double result = a1b.evaluate()(0,0);
+        BOOST_TEST_MESSAGE( "rand(0,1) = " << result );
+        BOOST_CHECK(result >= 0.0 && result < 1.0);
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_uniform )
+{
+    auto a1b = expr("uniform(0,1):t");
+    for (int i = 0; i < 10; ++i)
+    {
+        double result = a1b.evaluate()(0,0);
+        BOOST_TEST_MESSAGE( "uniform(0,1) = " << result );
+        BOOST_CHECK(result >= 0.0 && result <= 1.0);
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_normal )
+{
+    auto a1b = expr("normal(0,1):t");
+    for (int i = 0; i < 10; ++i)
+    {
+        double result = a1b.evaluate()(0,0);
+        BOOST_TEST_MESSAGE( "normal(0,1) = " << result );
+        BOOST_CHECK(result >= -5.0 && result <= 5.0); // Assuming 5 standard deviations for a normal distribution
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_loguniform )
+{
+    auto a1b = expr("loguniform(0.01,10):t");
+    for (int i = 0; i < 10; ++i)
+    {
+        double result = a1b.evaluate()(0,0);
+        BOOST_TEST_MESSAGE( "loguniform(0.01,10) = " << result );
+        BOOST_CHECK(result >= 0.01 && result <= 10.0);
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_lognormal )
+{
+    auto a1b = expr("lognormal(0,1):t");
+    for (int i = 0; i < 10; ++i)
+    {
+        double result = a1b.evaluate()(0,0);
+        BOOST_TEST_MESSAGE( "lognormal(0,1) = " << result );
+        BOOST_CHECK( result >= 0.0 ); // Assuming 5 standard deviations for a lognormal distribution
+    }
+}
+BOOST_AUTO_TEST_CASE( test_sign )
+{
+     auto a1b = expr("sign(t):t");
+     a1b.setParameterValues( { { "t", 0 } } );
+     BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+     a1b.setParameterValues( { { "t", 1 } } );
+     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+     a1b.setParameterValues( { { "t", -1 } } );
+     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_sinewave )
+{
+    // The sinewave function returns sin(2*pi*1*t+2) for the given t.
+    auto a1b = expr("sinewave(t,1,2):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::sin(2), 1e-12 );
+    a1b.setParameterValues( { { "t", 0.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::sin(2 + 0.5 * M_PI), 1e-12 );
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::sin(2 + M_PI), 1e-12 );
+    a1b.setParameterValues( { { "t", 0.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::sin(2 + 1.5 * M_PI), 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::sin(2 + 2 * M_PI), 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_pulse )
+{
+    // The pulse function returns 1 if a <= std::fmod(t, p) <= b, otherwise 0.
+    // here a =1, b = 2, p = 3
+    // this means that the pulse function will return 1 if 1 <= std::fmod(t, 3) <= 2, otherwise 0.
+    // this generates a rectangular pulse of width 1, centered at 1.5, and repeats every 3 units.
+    auto a1b = expr("pulse(t,1,2,3):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 ); // std::fmod(0, 3) = 0, which is < 1
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 ); // std::fmod(1, 3) = 1, which is >= 1 and <= 2
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 ); // std::fmod(2, 3) = 2, which is >= 1 and <= 2
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 ); // std::fmod(3, 3) = 0, which is < 1
+    a1b.setParameterValues( { { "t", 4 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 ); // std::fmod(4, 3) = 1, which is >= 1 and <= 2
+    a1b.setParameterValues( { { "t", 5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 ); // std::fmod(5, 3) = 2, which is >= 1 and <= 2
+    a1b.setParameterValues( { { "t", 6 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 ); // std::fmod(6, 3) = 0, which is < 1
+}
+BOOST_AUTO_TEST_CASE( test_gaussianFilter )
+{
+    // The gaussianFilter function has 0 mean and 1 standard deviation.
+    // This means that the gaussianFilter function will return exp(-0.5 * (t - 0)^2 / 1^2) / (1 * sqrt(2 * M_PI)) = exp(-0.5 * t^2) / sqrt(2 * M_PI) for the given t.
+    auto a1b = expr("gaussianFilter(t,0,1):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::exp(-0.5 * 0 * 0) / std::sqrt(2 * M_PI), 1e-12 ); // Gaussian filter at mean
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::exp(-0.5 * 1 * 1) / std::sqrt(2 * M_PI), 1e-12 ); // Gaussian filter at one standard deviation
+    a1b.setParameterValues( { { "t", -1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::exp(-0.5 * 1 * 1) / std::sqrt(2 * M_PI), 1e-12 ); // Gaussian filter at negative one standard deviation
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::exp(-0.5 * 0.5 * 0.5) / std::sqrt(2 * M_PI), 1e-12 ); // Gaussian filter at half standard deviation
+    a1b.setParameterValues( { { "t", -0.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), std::exp(-0.5 * 0.5 * 0.5) / std::sqrt(2 * M_PI), 1e-12 ); // Gaussian filter at negative half standard deviation
+}
+/*
+
+*/
+BOOST_AUTO_TEST_CASE( test_wavelet )
+{
+    auto fc = 161107;
+    auto wavelet = [=](double t) { return std::sin(2*M_PI*fc*t)*std::exp(-5*std::pow(fc*t-2,2)); };
+
+    auto wavelet_expr = expr(fmt::format("sinewave(t, fc, 0) * gaussianFilter(fc * t, 2, {}) * ({} * sqrt(2 * pi)):t:fc", 1./std::sqrt(10), 1./std::sqrt(10)));
+    
+    //auto wavelet_expr = expr(fmt::format("sinewave(t, fc, 0) * gaussianFilter(fc * t, 2, {}):t:fc",1./std::sqrt(10)));
+    for (int i : std::views::iota(0, 10))
+    {
+        double t = i * 0.1/fc;
+        wavelet_expr.setParameterValues( { { "t", t }, { "fc", fc } } );
+        BOOST_TEST_MESSAGE( "wavelet(" << t << ") = " << wavelet(t) );
+        BOOST_CHECK_CLOSE( wavelet_expr.evaluate()(0,0), wavelet(t), 1e-12 );
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

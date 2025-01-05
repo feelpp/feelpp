@@ -94,24 +94,24 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
                     using namespace std::string_literals;
                     throw std::logic_error( "directories "s + filename + " not created");
                 }
-                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                GiNaC::compile_ex( exprs, syml, *cfun, filename );
+                DVLOG( 2 ) << "Feel::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                Feel::compile_ex( exprs, syml, *cfun, filename );
             }
             else if ( !filename.empty() )
             {
-                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                DVLOG( 2 ) << "GiNaC::compile_ex with parent_path " << filename_parent_p << "\n";
+                DVLOG( 2 ) << "Feel::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                DVLOG( 2 ) << "Feel::compile_ex with parent_path " << filename_parent_p << "\n";
                 if ( !fs::exists( filename_parent_p ) )
                     fs::create_directories( filename_parent_p );
                 if ( filename_parent_p == Environment::exprRepository() )
-                    GiNaC::compile_ex( exprs, syml, *cfun, filename );
+                    Feel::compile_ex( exprs, syml, *cfun, filename );
                 else
-                    GiNaC::compile_ex( exprs, syml, *cfun, (fs::path(Environment::exprRepository()) / filename_p).string() );
+                    Feel::compile_ex( exprs, syml, *cfun, (fs::path(Environment::exprRepository()) / filename_p).string() );
             }
             else
             {
-                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                GiNaC::compile_ex( exprs, syml, *cfun, filename );
+                DVLOG( 2 ) << "Feel::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                Feel::compile_ex( exprs, syml, *cfun, filename );
             }
                      
 
@@ -134,8 +134,8 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         // link with other process
         if ( !hasLinked )
         {
-            DVLOG( 2 ) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-            GiNaC::link_ex( filenameWithSuffix, *cfun );
+            DVLOG( 2 ) << "Feel::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+            Feel::link_ex( filenameWithSuffix, *cfun );
             if ( !filename.empty() )
                 GinacExprManager::instance().operator[]( keyExprManager /*exprDesc*/ /*filename*/ ) = cfun;
         }
