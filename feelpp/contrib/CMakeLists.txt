@@ -215,31 +215,48 @@ else()
   )
 endif()
 
+#
+# ginac
+#
+option( FEELPP_USE_EXTERNAL_GINAC "USE_EXTERNAL_GINAC" OFF)
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Ginac")
-add_subdirectory(ginac)
-#
-# cln and ginac
-#
-#find_package(CLN)
+if ( FEELPP_USE_EXTERNAL_GINAC )
+  message(STATUS "Using external Ginac")
+  find_package(ginac REQUIRED)
+  if ( ginac_FOUND )
+    target_link_libraries(feelpp_contrib INTERFACE ginac::ginac )
+    target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC )
+  else( ginac_FOUND )
+    message(FATAL_ERROR "GiNaC was not found externally. Aborting.")
+  endif( ginac_FOUND )
+else()
+
+  set(INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
+  add_subdirectory(ginac)
+  #
+  # cln and ginac
+  #
+  #find_package(CLN)
 
 
-target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC IN_GINAC HAVE_LIBDL)
 
-#link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
+  #link_directories( ${CMAKE_BINARY_DIR}/contrib/ginac/ginac)
 
-target_include_directories( feelpp_contrib BEFORE
-  INTERFACE
-  # ${CLN_INCLUDE_DIR}
-  $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
-  $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
-  $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/contrib/ginac/ginac>
-  $<INSTALL_INTERFACE:include/feelpp>
-  $<INSTALL_INTERFACE:include/feelpp/ginac>
-  )
-set(DL_LIBS ${CMAKE_DL_LIBS})
-target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
+  target_include_directories( feelpp_contrib BEFORE
+    INTERFACE
+    # ${CLN_INCLUDE_DIR}
+    $<BUILD_INTERFACE:${FEELPP_SOURCE_DIR}/contrib/ginac/>
+    $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/ginac/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/ginac/ginac>
+    $<BUILD_INTERFACE:${FEELPP_BUILD_DIR}/contrib/ginac/ginac>
+    $<INSTALL_INTERFACE:include/feelpp>
+    $<INSTALL_INTERFACE:include/feelpp/ginac>
+    )
+  set(DL_LIBS ${CMAKE_DL_LIBS})
+  target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac ${DL_LIBS} )
+endif()
 
 option( FEELPP_ENABLE_MKL "Enable MKL Support" ON )
 if ( FEELPP_ENABLE_MKL )
