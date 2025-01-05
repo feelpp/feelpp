@@ -146,6 +146,17 @@ auto form2( Ts && ... v )
 }
 
 
+//! left multiply a form by a scalar
+template<typename FormT, 
+         typename = std::enable_if_t<
+                                        std::is_base_of_v<BilinearFormBase<typename FormT::value_type>, FormT>> 
+                                    >
+FormT operator*(double a, FormT const& b)
+{
+    FormT c(b); // Copy the input bilinear form
+    c *= a;      // Scale the form
+    return c;    // Return the scaled form
+}
 
 } // Feel
 #endif /* __Form_H */

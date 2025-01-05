@@ -45,7 +45,6 @@ libglpk-dev
 libbz2-dev
 libbson-dev
 libmongoc-dev
-libmongoclient-dev
 python3-pymongo
 ruby-progressbar
 ruby-tilt
