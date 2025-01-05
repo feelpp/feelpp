@@ -69,7 +69,7 @@ function(fetch_or_find_package PACKAGE_OPTION PACKAGE_NAME TARGET_NAME ALIAS_TAR
     endif()
 endfunction()
 
-message(STATUS "============================================================")
+message( STATUS "----------------[ BEGIN CONTRIB ]----------------------------")
 message(STATUS "Contrib libraries")
 include(FetchContent)
 
@@ -1134,4 +1134,5 @@ INSTALL(TARGETS feelpp_contrib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-con
 install(EXPORT feelpp-contrib-export-targets NAMESPACE Feelpp:: DESTINATION share/feelpp/feel/cmake/modules)
 
 message(STATUS "Contrib libraries configured")
-message(STATUS "============================================================")
+message( STATUS "----------------[  END CONTRIB  ]----------------------------")
+

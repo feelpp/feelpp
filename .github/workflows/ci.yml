@@ -87,7 +87,8 @@ jobs:
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate feelpp-openmpi4
-          cmake --build --preset feelpp-spack -j60 
+          cmake --build --preset feelpp-spack -j60
+          cmake --build --preset feelpp-spack -t install/fast
       - name: Test Feelpp
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh

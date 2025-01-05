@@ -351,7 +351,7 @@ static void clamp_print_csrc_float(const ex & x, const ex& lo, const ex& hi, con
     x.print(cx);
     lo.print(clo);
     hi.print(chi);
-    c.s << fmt::format("std::clamp({}, {}, {})", sx.str(), slo.str(), shi.str());
+    c.s << fmt::format("std::clamp({}, static_cast<double>({}), static_cast<double>({}))", sx.str(), slo.str(), shi.str());
 }
 
 

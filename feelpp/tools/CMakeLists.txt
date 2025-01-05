@@ -21,6 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+message( STATUS "----------------[ BEGIN TOOLS ]----------------------------")
 foreach( _dir
   info
   excompiler
@@ -33,10 +34,10 @@ foreach( _dir
   scripts
   )
 
-  message( STATUS "----------------[ BEGIN TOOLS ]----------------------------")
+
   add_subdirectory( ${_dir} )
-  message( STATUS "----------------[  END TOOLS  ]----------------------------")
+
     
 endforeach()
-
 install(DIRECTORY lsan DESTINATION share/feelpp)
+message( STATUS "----------------[  END TOOLS  ]----------------------------")
