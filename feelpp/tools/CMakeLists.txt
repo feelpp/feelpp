@@ -39,5 +39,4 @@ foreach( _dir
     
 endforeach()
 
-add_subdirectory(scripts)
 install(DIRECTORY lsan DESTINATION share/feelpp)
