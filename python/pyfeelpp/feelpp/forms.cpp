@@ -330,7 +330,6 @@ bind_forms( py::module &m, std::string const& space_str )
     //        // Define the scaling operation
     //        a.scale(factor);
     //    }, "Scale the form by a factor", py::arg("factor"))
-#if 0        
         .def(
             "__assign__", []( form2_type<SpaceType, SpaceType>& a, const form2_type<SpaceType, SpaceType>& b )
             {
@@ -338,11 +337,12 @@ bind_forms( py::module &m, std::string const& space_str )
                 return a; },
             "Assign one form to another", py::return_value_policy::reference_internal )
         .def(
-            "__iadd__", []( form2_type<SpaceType, SpaceType>& a, form2_type<SpaceType, SpaceType> const& b )
-            {
-                a += b;
-                return a; },
-            "In-place add two forms", py::return_value_policy::reference_internal )
+            "__iadd__", [](form2_type<SpaceType, SpaceType>& a, const form2_type<SpaceType, SpaceType>& b) {
+                            a+=b;
+                            return a;
+                        },
+            "In-place add two forms", py::return_value_policy::reference_internal
+        )
         .def(
             "__add__", []( const form2_type<SpaceType, SpaceType>& a, form2_type<SpaceType, SpaceType> const& b )
             {
@@ -373,7 +373,6 @@ bind_forms( py::module &m, std::string const& space_str )
                 l.scale(alpha);
                 return l; },
             "Multiply form with a scalar from left" )
-#endif
         .def( "__call__", []( form2_type<SpaceType, SpaceType> const& a, element_t const& u, element_t const& v )
               { return a( u, v ); } )
         .def(

@@ -1,41 +1,91 @@
-set -eo pipefail
-#set -x
+#!/bin/bash
 
-# this script must be executed at the top level of the Feel++ directories
+set -euo pipefail
 
-scriptdir=$PWD/$(dirname $0)
-source $(dirname $0)/feelpp_pkg_common.sh
+# Script must be run from the Feel++ top-level directory
+scriptdir="$(cd "$(dirname "$0")" && pwd)"
+source "$scriptdir/feelpp_pkg_common.sh"
 
-builddeps=$(cat $DIST | tr "\n" " ")
-
-
-feelpp-pbuilder-dist $DIST login --save-after-login << EOF
-echo "--- apt update"
-apt-get update
-apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget
-
-
-echo "--- add-apt-repository  "
-add-apt-repository  'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL'
-echo "--- get repo signatures"
-wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
-
-if test "$DIST" = "focal"; then    
-    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc  | apt-key add -
-    add-apt-repository  'deb https://apt.kitware.com/$FLAVOR/ $DIST main'
+# Ensure DIST, FLAVOR, and CHANNEL are set
+if [[ -z "${DIST:-}" || -z "${FLAVOR:-}" || -z "${CHANNEL:-}" ]]; then
+    echo "Error: DIST, FLAVOR, and CHANNEL must be set."
+    exit 1
 fi
+
+# Read build dependencies
+if [[ ! -f "$DIST" ]]; then
+    echo "Error: File '$DIST' with build dependencies not found."
+    exit 1
+fi
+builddeps=$(cat "$DIST" | tr "\n" " ")
+
+# Start pbuilder update
+feelpp-pbuilder-dist "$DIST" login --save-after-login << EOF
+echo "--- Running in pbuilder for DIST=$DIST, FLAVOR=$FLAVOR, CHANNEL=$CHANNEL"
+
+echo "--- Updating package lists"
+apt-get update -yq
+
+echo "--- Installing base tools"
+
+if [ "$DIST" = "trixie" ]; then
+    apt-get -y install apt-transport-https ca-certificates gnupg  wget
+else
+    apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget
+fi
+
+if [ "$DIST" = "jammy" ]; then
+    echo "--- Checking and adding jammy-updates and jammy-backports if missing"
+    if ! grep -q "jammy-updates" /etc/apt/sources.list; then
+        echo "deb http://archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list
+    fi
+    if ! grep -q "jammy-backports" /etc/apt/sources.list; then
+        echo "deb http://archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
+    fi
+fi
+
+echo "--- Removing old Feel++ repository configurations"
+rm -f /etc/apt/sources.list.d/feelpp.list
+
+echo "--- Adding Feel++ repository"
+if [ "$DIST" = "jammy" -o "$DIST" = "focal" -o "$DIST" = "bookworm" ]; then
+    wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
+    echo 'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' > /etc/apt/sources.list.d/feelpp.list 
+else
+    wget -O - http://apt.feelpp.org/apt.gpg 2>/dev/null | gpg --dearmor - |  tee /usr/share/keyrings/feelpp-archive-keyring.gpg >/dev/null
+    echo 'deb [signed-by=/usr/share/keyrings/feelpp-archive-keyring.gpg] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' | tee /etc/apt/sources.list.d/feelpp.list >/dev/null
+fi
+
+echo "--- Importing Feel++ repository GPG key"
+if ! grep -q "feelpp" /etc/apt/sources.list.d/feelpp.list; then
+    echo "Error: Failed to add Feel++ repository."
+    exit 1
+fi
+
+if [ "$DIST" = "focal" ]; then
+    echo "--- Adding Kitware repository for Focal"
+    wget -qO- https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/$FLAVOR/ $DIST main" > /etc/apt/sources.list.d/kitware.list
+fi
+
 if [ "$DIST" = "bullseye" ]; then
-    add-apt-repository  'deb http://deb.debian.org/debian $DIST-backports main'
+    echo "--- Adding Debian Backports for Bullseye"
+    echo "deb http://deb.debian.org/debian $DIST-backports main" > /etc/apt/sources.list.d/backports.list
 fi
 
-echo "--- apt update"
-apt-get update
+echo "--- Updating package lists after adding repositories"
+apt-get update -yq
 
-echo $builddeps
+echo "--- Installing build dependencies"
+echo "Build dependencies: $builddeps"
+apt-get install -yq $builddeps
 
-echo "--- apt install"
-apt-get -y install $builddeps
 if [ "$DIST" = "bullseye" ]; then
-    apt-get -y install -t bullseye-backports  cmake
+    echo "--- Installing CMake from Bullseye Backports"
+    apt-get install -yq -t bullseye-backports cmake
 fi
+
+echo "--- Cleaning up"
+apt-get clean
+
 EOF

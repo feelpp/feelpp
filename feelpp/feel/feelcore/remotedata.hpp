@@ -5,7 +5,7 @@
  Author(s): Vincent Chabannes <vincent.chabannnes@feelpp.org>
  Date: 2 April. 2018
 
- Copyright (C) 2018 Feel++ Consortium
+ Copyright (C) 2018-2024 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 
 namespace Feel
 {
-
+using namespace Feel;
 /**
  * \brief class which manage downloads from an url or github and download/upload with the Girder database by using the libcurl
  */
