@@ -60,7 +60,8 @@
 
 #include <hwloc.h>
 
-
+//#include <rccl.h> // For multi-GPU not ready yet
+//#include <roctx.h> //Scan Perf not ready yet
 
 using namespace Feel;
 
@@ -138,6 +139,23 @@ struct StatsResult {
     double stdDev;
 };
 
+__global__ void onKernelNothing(float4 *nothing) {
+  // nothing void
+}
+
+void runPreheatingGPU(int numDevice) {
+
+  int nbDevices = 0;
+  hipGetDeviceCount( &nbDevices );
+  if ( numDevice > nbDevices ) numDevice = 0;
+  hipSetDevice( numDevice );
+
+  float4 *d_nothing;
+  hipMalloc(&d_nothing, 14 * sizeof(float4));
+  onKernelNothing<<<1, 1>>>(d_nothing);
+  hipFree(d_nothing);
+
+}
 
 
 template <typename BvhType, typename RayIntersectionResultType>
@@ -500,13 +518,12 @@ void distToBoundaryBVHpuSendAllNode(
     std::vector<int> id_GPU;
     
     
-
-
+    
     // Ray Tracing BVH CPU
     t_begin_raytracing_cpu = std::chrono::steady_clock::now();
     tic();
     auto multiRayDistributedIntersectionResult = bvhThirdParty->intersect(_ray = raysDistributed);
-    auto timeRTCPUDuration = toc("timeRTCPUDuration");    
+    auto timeRTCPUDuration = toc("timeRTCPUDuration");
 
     for (auto const& rayIntersectionResult : multiRayDistributedIntersectionResult)
     {
@@ -522,7 +539,7 @@ void distToBoundaryBVHpuSendAllNode(
     // Ray Tracing BVH GPU
     t_begin_raytracing_gpu = std::chrono::steady_clock::now();
     tic();
-    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray = raysDistributed);
+    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect(_ray = raysDistributed,_parallel=false);
     auto timeRTGPUDuration = toc("timeRTGPUDuration");
 
     for (auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult)
@@ -556,7 +573,7 @@ void distToBoundaryBVHpuSendAllNode(
                 //std::cout << "CPU NumRay "<<id_CPU[i]<<" blockid="<<idBlock<<" value="<<distance_CPU_mode[i]<<" \n";
                 value = fmin(value, distance_CPU_mode[i]);
             }
-            if (idBlock != idBlockLast) {  
+            if (idBlock != idBlockLast) {
                 distanceMinCPU.push_back(value);
                 //std::cout << "  CPU NumRay "<<id_CPU[i-1]<<" blockid="<<idBlockLast << " value="<<value<< " \n";
                 if (isViewInfo) std::cout << "  CPU blockid="<<idBlockLast << " value="<<value<< " \n";
@@ -683,7 +700,7 @@ BOOST_AUTO_TEST_SUITE(distance_bvh_cpu_gpu_gpu_tests)
 
 BOOST_AUTO_TEST_CASE(all_distance)
 {
-
+    
     // We read the value of "hsize" and "number_rays_desired"
     double hsize = option(_name="hsize").as<double>();
     int number_rays_desired = option(_name="number_rays_desired").as<int>();
@@ -695,6 +712,12 @@ BOOST_AUTO_TEST_CASE(all_distance)
     //hsize = 0.005;
 
     //number_rays_desired =2000;
+
+    bool isPreheating = true; //isPreheating = false;
+    if (isPreheating) runPreheatingGPU(0);
+    if (isPreheating) runPreheatingGPU(1);
+    if (isPreheating) runPreheatingGPU(2);
+    if (isPreheating) runPreheatingGPU(3);
 
     using namespace Feel;
     using Feel::cout;
@@ -765,7 +788,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
     bool isTransferAllNodes=true;
     //isTransferAllNodes=false;
 
-    if (isTransferAllNodes) 
+    if (isTransferAllNodes)
     {
         // In this part all data is sent at once from CPU to GPU.
         std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
@@ -812,7 +835,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
             }
             std::ofstream myfileA(filenameA);
             myfileA << "hsize=" << allDataPU.hsize<< "\n";
-            myfileA << "maxNumElement= " << mesh->maxNumElements() << "\n";
+            myfileA << "maxNumElement=" << mesh->maxNumElements() << "\n";
             myfileA << "maxNumFace=" << mesh->maxNumFaces() << "\n";
             myfileA << "maxNumPoints=" << mesh->maxNumPoints() << "\n";
             myfileA << "maxNumVerices=" << mesh->maxNumVertices() << "\n";
@@ -829,6 +852,54 @@ BOOST_AUTO_TEST_CASE(all_distance)
             myfileA << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU+allDataPU.t_laps_RT_CPU<< "\n";
             myfileA << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU+allDataPU.t_laps_RT_GPU<< "\n";
             myfileA.close();
+
+
+
+            std::string filenameC = "results2.csv";
+            if (remove(filenameC.c_str()) != 0) {
+                std::cerr << "Error delete file." << std::endl;
+            }
+            std::ofstream myfileC(filenameC);
+            myfileC << "hsize" << ",";
+            myfileC << "maxNumElement" << ",";
+            myfileC << "maxNumFace"  << ",";
+            myfileC << "maxNumPoints"  << ",";
+            myfileC << "maxNumVerices"  << ",";
+            myfileC << "nbRaysDesired"  << ",";
+            myfileC << "nbRays"  << ",";
+
+            myfileC << "timeBVHcpu"  << ",";
+            myfileC << "timeRTcpu" << ",";
+
+            myfileC << "timeBVHgpu"  << ",";
+            myfileC << "timeRTgpu" << ",";
+
+            myfileC << "timeFastMarching" << ",";
+            myfileC << "totalTimeBVHRTcpu"  << ",";
+            myfileC << "totalTimeBVHRTgpu" << "\n";
+
+
+            myfileC <<  allDataPU.hsize << ",";
+            myfileC <<  mesh->maxNumElements() << ",";
+            myfileC <<  mesh->maxNumFaces() << ",";
+            myfileC <<  mesh->maxNumPoints() << ",";
+            myfileC <<  mesh->maxNumVertices() << ",";
+            myfileC <<  allDataPU.nbRaysDesired<< ",";
+            myfileC <<  allDataPU.nbRays << ",";
+
+            myfileC << allDataPU.t_laps_BVH_CPU << ",";
+            myfileC << allDataPU.t_laps_RT_CPU << ",";
+
+            myfileC << allDataPU.t_laps_BVH_GPU << ",";
+            myfileC << allDataPU.t_laps_RT_GPU << ",";
+
+            myfileC << allDataPU.t_laps_FastMarching << ",";
+            myfileC << allDataPU.t_laps_BVH_CPU+allDataPU.t_laps_RT_CPU << ",";
+            myfileC << allDataPU.t_laps_BVH_GPU+allDataPU.t_laps_RT_GPU<< "\n";
+
+
+
+            myfileC.close();
 
 
 
@@ -853,7 +924,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
 
 
     }
-    else 
+    else
     {
         // Calculates Node points to Surface distances by the method BVH RT CPU and GPU
         isViewInfo=false;
@@ -903,7 +974,7 @@ BOOST_AUTO_TEST_CASE(all_distance)
             }
             std::ofstream myfileA(filenameA);
             myfileA << "hsize=" << allDataPU.hsize<< "\n";
-            myfileA << "maxNumElement= " << mesh->maxNumElements() << "\n";
+            myfileA << "maxNumElement=" << mesh->maxNumElements() << "\n";
             myfileA << "maxNumFace=" << mesh->maxNumFaces() << "\n";
             myfileA << "maxNumPoints=" << mesh->maxNumPoints() << "\n";
             myfileA << "maxNumVerices=" << mesh->maxNumVertices() << "\n";
@@ -924,6 +995,57 @@ BOOST_AUTO_TEST_CASE(all_distance)
             myfileA << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU+allDataPU.t_laps_RT_CPU<< "\n";
             myfileA << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU+allDataPU.t_laps_RT_GPU<< "\n";
             myfileA.close();
+
+
+            std::string filenameC = "results2.csv";
+            if (remove(filenameC.c_str()) != 0) {
+                std::cerr << "Error delete file." << std::endl;
+            }
+            std::ofstream myfileC(filenameA);
+            myfileC << "hsize=" << allDataPU.hsize<< "\n";
+            myfileC << "maxNumElement=" << mesh->maxNumElements() << "\n";
+            myfileC << "maxNumFace=" << mesh->maxNumFaces() << "\n";
+            myfileC << "maxNumPoints=" << mesh->maxNumPoints() << "\n";
+            myfileC << "maxNumVerices=" << mesh->maxNumVertices() << "\n";
+            myfileC << "nbRaysDesired=" << allDataPU.nbRaysDesired<< "\n";
+            myfileC << "nbRays=" << allDataPU.nbRays<< "\n";
+
+            myfileC << "timeBVHcpu,";
+            myfileC << "timeMeanRTcpu,";
+            //myfileC << "timeStandardDeviationRTcpu=" << cpuStats.stdDev  << "\n";
+            //myfileC << "timeVarianceRTcpu=" << cpuStats.variance << "\n";
+
+            myfileC << "timeBVHgpun,";
+            myfileC << "timeMeanRTgpu,";
+            //myfileA << "timeStandardDeviationRTgpu=" << gpuStats.stdDev << "\n";
+            //myfileA << "timeVarianceRTgpu=" << gpuStats.variance << "\n";
+
+            myfileC << "timeFastMarching,";
+            myfileC << "totalTimeBVHRTcpu,";
+            myfileC << "totalTimeBVHRTgpu\n";
+
+            myfileC << allDataPU.hsize<< ",";
+            myfileC << mesh->maxNumElements() << ",";
+            myfileC << mesh->maxNumFaces() << ",";
+            myfileC << mesh->maxNumPoints() << ",";
+            myfileC << mesh->maxNumVertices() << ",";
+            myfileC << allDataPU.nbRaysDesired<< ",";
+            myfileC << allDataPU.nbRays<< ",";
+
+            myfileC <<allDataPU.t_laps_BVH_CPU<< ",";
+            myfileC << allDataPU.t_laps_RT_CPU << ",";
+            //myfileC << "timeStandardDeviationRTcpu=" << cpuStats.stdDev  <<  ",";
+            //myfileC << "timeVarianceRTcpu=" << cpuStats.variance << ",";
+
+            myfileC << allDataPU.t_laps_BVH_GPU << ",";
+            myfileC << allDataPU.t_laps_RT_GPU << ",";
+            //myfileA << "timeStandardDeviationRTgpu=" << gpuStats.stdDev <<  ",";
+            //myfileA << "timeVarianceRTgpu=" << gpuStats.variance << ",";
+
+            myfileC << allDataPU.t_laps_FastMarching<< ",";
+            myfileC << allDataPU.t_laps_BVH_CPU+allDataPU.t_laps_RT_CPU<< ",";
+            myfileC << allDataPU.t_laps_BVH_GPU+allDataPU.t_laps_RT_GPU<< "\n";
+            myfileC.close();
 
 
             // Data backup file distances for paraview
@@ -952,9 +1074,8 @@ BOOST_AUTO_TEST_CASE(all_distance)
 }
 
 
-
-
 BOOST_AUTO_TEST_SUITE_END()
+
 
 
 

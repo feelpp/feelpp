@@ -532,7 +532,7 @@ __global__ void raytraceKernel2(
 
     bool isView = false; // isView = true;
 
-    while (stackPtr > 0 && stackPtr < 64) 
+    while (stackPtr > 0 && stackPtr < 64)
     {
         int nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
@@ -605,7 +605,7 @@ __device__ __inline__ bool rayTriangleIntersect4(const Ray &ray, const Triangle 
 
   // If t is negative, the intersection is behind the origin of the ray
   // Which means that the origin is inside the triangle
- /* 
+ /*
   if (t < -EPSILON) {
     t = 0.0f;
     intersectionPoint = ray.origin;
@@ -643,7 +643,7 @@ __device__ __inline__ bool rayTriangleIntersect4(const Ray &ray, const Triangle 
 
 __device__ bool rayAABBIntersect4Old(const Ray &ray, const AABB &aabb) {
 
-  bool isView=false; //isView=true; 
+  bool isView=false; //isView=true;
   const float EPSILON = 1e-8f;
   Vec3 invDir = Vec3(1.0f / ray.direction.x, 1.0f / ray.direction.y,
                      1.0f / ray.direction.z);
@@ -779,8 +779,8 @@ raytraceKernel_Parallel(Ray *rays, int numRays, BVHNode *bvhNodes,
 
 
 __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNodes,
-                                        int numNodes, 
-                                        Triangle *triangles, int numTriangles, int *hitTriangles, 
+                                        int numNodes,
+                                        Triangle *triangles, int numTriangles, int *hitTriangles,
                                         float *distance,Vec3 *intersectionPoint, int *hitId)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -792,7 +792,7 @@ __global__ void raytraceKernel_Parallel3(Ray *rays, int numRays, BVHNode *bvhNod
     int stack[MAX_STACK_SIZE];
     int stackPtr = 0;
 
-    stack[stackPtr++] = 0; 
+    stack[stackPtr++] = 0;
 
     float closestT = INFINITY;
     int closestTriangle = -1;
@@ -1409,6 +1409,7 @@ class BVH : public CommObject
     template <typename... Ts>
     auto intersect( Ts&&... v )
     {
+        
         auto args = NA::make_arguments( std::forward<Ts>( v )... );
         auto&& ray = args.get( _ray );
         bool useRobustTraversal = args.get_else( _robust, true );
@@ -1417,33 +1418,50 @@ class BVH : public CommObject
 
         if (this->isGPUHip()) parallel = false;
 
+    
         bool closestOnly = ctx == IntersectContext::closest;
         using napp_ray_type = std::decay_t<decltype( ray )>;
         if constexpr ( std::is_same_v<BVHRaysDistributed<nRealDim>, napp_ray_type> ) // case rays distributed on process
         {
+            printf("worldCommSize=%i\n",this->worldComm().size());
+
             tic();
             // WARNING: this algo is not good (all_gather of rays then all run bvh), just a quick version for test
-            auto const& localRays = ray.rays();
-            std::vector<int> resLocalSize( this->worldComm().size() );
-            mpi::all_gather( this->worldComm(), (int)localRays.size(), resLocalSize );
+            tic();
+                auto const& localRays = ray.rays();
+                std::vector<int> resLocalSize( this->worldComm().size() );
+                mpi::all_gather( this->worldComm(), (int)localRays.size(), resLocalSize );
+            auto timeDuration_intersect_block1_1= toc( "timeDuration_intersect_block1_1" );
 
-            std::vector<ray_type> raysGathered;
-            if ( this->worldComm().isMasterRank() )
-            {
-                int gatherRaySize = std::accumulate( resLocalSize.begin(), resLocalSize.end(), 0 );
-                raysGathered.resize( gatherRaySize );
-            }
-            mpi::gatherv( this->worldComm(), localRays, raysGathered.data(), resLocalSize, this->worldComm().masterRank() );
-            mpi::broadcast( this->worldComm(), raysGathered, this->worldComm().masterRank() );
+            tic();
+                std::vector<ray_type> raysGathered;
+                if ( this->worldComm().isMasterRank() )
+                {
+                    int gatherRaySize = std::accumulate( resLocalSize.begin(), resLocalSize.end(), 0 );
+                    raysGathered.resize( gatherRaySize );
+                }
+            auto timeDuration_intersect_block1_2= toc( "timeDuration_intersect_block1_2" );
+            tic();
+                mpi::gatherv( this->worldComm(), localRays, raysGathered.data(), resLocalSize, this->worldComm().masterRank() );
+            auto timeDuration_intersect_block1_3= toc( "timeDuration_intersect_block1_3" );
 
-            auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx, _parallel = true );
+            tic();
+                mpi::broadcast( this->worldComm(), raysGathered, this->worldComm().masterRank() );
+            auto timeDuration_intersect_block1_4= toc( "timeDuration_intersect_block1_4" );
 
+            tic();
+                auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx, _parallel = true );
+                //auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx);
+            auto timeDuration_intersect_block1_5= toc( "timeDuration_intersect_block1_5" );
+
+            tic();
             std::vector<std::vector<rayintersection_result_type>> res;
             res.resize( ray.numberOfLocalRay() );
             std::size_t startRayIndexInThisProcess = 0;
             for ( int p = 0; p < this->worldComm().rank(); ++p )
                 startRayIndexInThisProcess += resLocalSize[p];
             std::copy_n( intersectGlobal.cbegin() + startRayIndexInThisProcess, localRays.size(), res.begin() );
+            auto timeDuration_intersect_block1_6= toc( "timeDuration_intersect_block1_6" );
 
             auto timeDuration_intersect_block1= toc( "timeDuration_intersect_block1" );
             return res;
@@ -1818,7 +1836,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
     int numDevice;
     int numVersion;
-    int modeGPU; // 1 - HIP 
+    int modeGPU; // 1 - HIP
     bool isUnifiedMemory;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
@@ -1932,7 +1950,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
 
                 nbTriangles=numTriangles;
-                nbNodes=2 * nbTriangles - 1;               
+                nbNodes=2 * nbTriangles - 1;
             }
 
         } // END modeGPU==1
@@ -2686,3 +2704,4 @@ auto boundingVolumeHierarchy( Ts&&... v )
 }
 
 } // namespace Feel
+
