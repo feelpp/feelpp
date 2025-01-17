@@ -73,7 +73,6 @@ set(CTEST_TIMEOUT "20")
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
 #endif()
 
-
 if ( FEELPP_BENCHMARK_FLAGS )
   set(CMAKE_BUILD_TYPE Release )
   set(GCC_PARAM_INLINE_UNIT_GROWTH 150)
@@ -202,7 +201,7 @@ feelpp_get_environment()
 add_subdirectory(cmake)
 
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
-OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
+  OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
 
 add_subdirectory(tools)
 include(feelpp.module.quickstart)
@@ -219,3 +218,5 @@ endif()
 set(FEELPP_CONFIG_LIB_FILE ${FEELPP_BINARY_DIR}/feelpp/cmake/modules/Feel++Config.cmake )
 configure_file(${FEELPP_SOURCE_DIR}/feelpp/cmake/modules/Feel++Config.cmake.in ${FEELPP_CONFIG_LIB_FILE} @ONLY)
 configure_file(${FEELPP_SOURCE_DIR}/feelpp/cmake/modules/feelpp.install.config.cmake.in ${FEELPP_BINARY_DIR}/feelpp/cmake/modules/feelpp.install.config.cmake @ONLY)
+
+

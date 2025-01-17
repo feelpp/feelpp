@@ -67,3 +67,4 @@ foreach( testdir core python math alg mesh poly filters material models interpol
   add_subdirectory( feel${testdir} )
 
 endforeach()
+

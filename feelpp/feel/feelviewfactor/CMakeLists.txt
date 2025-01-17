@@ -22,7 +22,18 @@
 #
 #
 
+
+
+
+
 set( SRC viewfactorbase.cpp unobstructedplanarviewfactor.cpp raytracingviewfactor.cpp )
 
+
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+
+
+
+
 feel_append_src(feelviewfactor "${SRC};${HDR}")
+
+
