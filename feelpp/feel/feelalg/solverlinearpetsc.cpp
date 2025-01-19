@@ -856,105 +856,209 @@ SolverLinearPetsc<T>::updateNearNullSpace( Mat A )
     PETSc::MatNullSpaceDestroy( nullsp );
 #endif
 }
-
 template <typename T>
 void
 SolverLinearPetsc<T>::setPetscSolverType()
 {
     int ierr = 0;
-    DVLOG(2) << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
+    DVLOG(2) << "[SolverLinearPetsc] solver type: " << this->solverType() << "\n";
 
-    switch ( this->solverType() )
+    switch (this->solverType())
     {
+        case CG:
+            ierr = KSPSetType(M_ksp, (char*)KSPCG);
+            break;
 
-    case CG:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPCG );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case CR:
+            ierr = KSPSetType(M_ksp, (char*)KSPCR);
+            break;
 
-    case CR:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPCR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case CGS:
+            ierr = KSPSetType(M_ksp, (char*)KSPCGS);
+            break;
 
-    case CGS:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPCGS );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case BICG:
+            ierr = KSPSetType(M_ksp, (char*)KSPBICG);
+            break;
 
-    case BICG:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPBICG );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case TCQMR:
+            ierr = KSPSetType(M_ksp, (char*)KSPTCQMR);
+            break;
 
-    case TCQMR:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPTCQMR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case TFQMR:
+            ierr = KSPSetType(M_ksp, (char*)KSPTFQMR);
+            break;
 
-    case TFQMR:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPTFQMR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case LSQR:
+            ierr = KSPSetType(M_ksp, (char*)KSPLSQR);
+            break;
 
-    case LSQR:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPLSQR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case BICGSTAB:
+            ierr = KSPSetType(M_ksp, (char*)KSPBCGS);
+            break;
 
-    case BICGSTAB:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPBCGS );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case MINRES:
+            ierr = KSPSetType(M_ksp, (char*)KSPMINRES);
+            break;
 
-    case MINRES:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPMINRES );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case GMRES:
+            ierr = KSPSetType(M_ksp, (char*)KSPGMRES);
+            break;
 
-    case GMRES:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPGMRES );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case FGMRES:
+            ierr = KSPSetType(M_ksp, (char*)KSPFGMRES);
+            break;
 
-    case FGMRES:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPFGMRES );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case RICHARDSON:
+            ierr = KSPSetType(M_ksp, (char*)KSPRICHARDSON);
+            break;
 
-    case RICHARDSON:
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPRICHARDSON );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case CHEBYSHEV:
+            ierr = KSPSetType(M_ksp, (char*)KSPCHEBYSHEV);
+            break;
 
-    case CHEBYSHEV:
-#if PETSC_VERSION_LESS_THAN(3,3,0)
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYCHEV );
-#else
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYSHEV );
-#endif
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case PREONLY:
+            ierr = KSPSetType(M_ksp, (char*)KSPPREONLY);
+            break;
 
-    case PREONLY :
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        case GCR:
+            ierr = KSPSetType(M_ksp, (char*)KSPGCR);
+            break;
 
-    case GCR :
-        ierr = KSPSetType ( M_ksp, ( char* ) KSPGCR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+        // new KSP solvers
+        case CGN:        // CG on Normal Equations => KSPCGNE
+            ierr = KSPSetType(M_ksp, (char*)KSPCGNE);
+            break;
 
-    default:
-        std::cerr << "ERROR:  Unsupported PETSC Solver: "
-                  << this->solverType()               << std::endl
-                  << "Continuing with PETSC defaults" << std::endl;
-    }
+        case QMR:        // NOTE: PETSc has "KSPQMRCGS" (qmrcgs) 
+                         // There is no direct "qmr" in modern PETSc 
+                         // Possibly fallback to KSPQMRCGS or 
+                         // just ignore if not used
+            ierr = KSPSetType(M_ksp, (char*)KSPQMRCGS);
+            break;
 
-}
+        case JACOBI:      // Historically, Jacobi is not a KSP in PETSc, 
+                          // but if we want to emulate, we might do:
+            // We have to fake it or do a preonly+pc=jacobi
+            ierr = KSPSetType(M_ksp, (char*)KSPPREONLY);
+            break;
 
+        case SOR_FORWARD: // Again, no direct KSP in PETSc
+        case SOR_BACKWARD:
+        case SSOR:
+            // Typically we do KSPPREONLY + PCType SOR
+            ierr = KSPSetType(M_ksp, (char*)KSPPREONLY);
+            break;
 
+        case DGMRES:
+            ierr = KSPSetType(M_ksp, (char*)KSPDGMRES);
+            break;
+
+        case LGMRES:
+            ierr = KSPSetType(M_ksp, (char*)KSPLGMRES);
+            break;
+
+        case PGMRES:
+            ierr = KSPSetType(M_ksp, (char*)KSPPGMRES);
+            break;
+
+        case PIPEGMRES:
+            // Could map to "KSPPGMRES" or "KSPPIPEFGMRES" 
+            // depending on which pipeline GMRES is intended
+            ierr = KSPSetType(M_ksp, (char*)KSPPIPEFGMRES);
+            break;
+
+        case PIPECG:
+            ierr = KSPSetType(M_ksp, (char*)KSPPIPECG);
+            break;
+
+        case PIPECR:
+            ierr = KSPSetType(M_ksp, (char*)KSPPIPECR);
+            break;
+
+        case BCGSL:
+            ierr = KSPSetType(M_ksp, (char*)KSPBCGSL);
+            break;
+
+        case FBCGS:
+            ierr = KSPSetType(M_ksp, (char*)KSPFBCGS);
+            break;
+
+        case IBCGS:
+            ierr = KSPSetType(M_ksp, (char*)KSPIBCGS);
+            break;
+
+        case FCG:
+            ierr = KSPSetType(M_ksp, (char*)KSPFCG);
+            break;
+
+        case FBCGSR:
+            ierr = KSPSetType(M_ksp, (char*)KSPFBCGSR);
+            break;
+
+        case GROPPCG:
+            ierr = KSPSetType(M_ksp, (char*)KSPGROPPCG);
+            break;
+
+        case PIPECGRR:
+            ierr = KSPSetType(M_ksp, (char*)KSPPIPECGRR);
+            break;
+
+        case PIPEFCG:
+            ierr = KSPSetType(M_ksp, (char*)KSPPIPEFCG);
+            break;
+
+        case CGLS:
+            ierr = KSPSetType(M_ksp, (char*)KSPCGLS);
+            break;
+
+        case NASH:
+            ierr = KSPSetType(M_ksp, (char*)KSPNASH);
+            break;
+
+        case STCG:
+            ierr = KSPSetType(M_ksp, (char*)KSPSTCG);
+            break;
+
+        case GLTR:
+            ierr = KSPSetType(M_ksp, (char*)KSPGLTR);
+            break;
+
+        case QCG:
+            ierr = KSPSetType(M_ksp, (char*)KSPQCG);
+            break;
+
+        case FETIDP:
+            ierr = KSPSetType(M_ksp, (char*)KSPFETIDP);
+            break;
+
+        case TSIRM:
+            ierr = KSPSetType(M_ksp, (char*)KSPTSIRM);
+            break;
+
+        case SYMMLQ:
+            ierr = KSPSetType(M_ksp, (char*)KSPSYMMLQ);
+            break;
+
+        case PYTHON:
+            ierr = KSPSetType(M_ksp, (char*)KSPPYTHON);
+            break;
+
+        case NONE:
+            ierr = KSPSetType(M_ksp, (char*)KSPNONE);
+            break;
+
+        case INVALID_SOLVER:
+        default:
+            std::cerr << "ERROR: Unsupported PETSC SolverType: " 
+                      << this->solverType() << "\n"
+                      << "Continuing with PETSc default (gmres)\n";
+            ierr = KSPSetType(M_ksp, (char*)KSPGMRES);
+            break;
+    } // end switch
+
+    CHKERRABORT(this->worldComm().globalComm(), ierr);
+} // setPetscSolverType()
 
 
 
@@ -965,141 +1069,257 @@ template <typename T>
 void
 SolverLinearPetsc<T>::setPetscPreconditionerType()
 {
-
     int ierr = 0;
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 9, 0 )
-    ierr = PCFactorSetMatSolverType( M_pc,MATSOLVERUMFPACK );
+    DVLOG(2) << "[SolverLinearPetsc] preconditioner type: " << this->preconditionerType() << "\n";
 
-    if ( ierr )
-    {
-        ierr = PCFactorSetMatSolverType( M_pc,MATSOLVERSUPERLU );
-
-        if ( ierr )
-        {
-            ierr = PCFactorSetMatSolverType( M_pc,MATSOLVERPETSC );
-        }
-    }
-#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 2, 0 )
-    ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERUMFPACK );
-
-    if ( ierr )
-    {
-        ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERSUPERLU );
-
-        if ( ierr )
-        {
-            ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERPETSC );
-        }
-    }
-
-#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 0, 0 )
-    ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_UMFPACK );
-
-    if ( ierr )
-    {
-        ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_SUPERLU );
-
-        if ( ierr )
-        {
-            ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_PETSC );
-        }
-    }
-#else
-
-#endif
-    DVLOG(2) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
+    // Attempt default factor solver package if none given
+    #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,9,0)
+    ierr = PCFactorSetMatSolverType( M_pc, MATSOLVERUMFPACK );
+    if ( ierr ) ierr = PCFactorSetMatSolverType( M_pc, MATSOLVERSUPERLU );
+    if ( ierr ) ierr = PCFactorSetMatSolverType( M_pc, MATSOLVERPETSC );
+    #elif PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,2,0)
+    ierr = PCFactorSetMatSolverPackage( M_pc, MATSOLVERUMFPACK );
+    if ( ierr ) ierr = PCFactorSetMatSolverPackage( M_pc, MATSOLVERSUPERLU );
+    if ( ierr ) ierr = PCFactorSetMatSolverPackage( M_pc, MATSOLVERPETSC );
+    #endif
 
     switch ( this->preconditionerType() )
     {
-    case IDENTITY_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCNONE );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case IDENTITY_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCNONE );
+          break;
 
-    case CHOLESKY_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCCHOLESKY );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case CHOLESKY_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCCHOLESKY );
+          break;
 
-    case ICC_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCICC );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case ICC_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCICC );
+          break;
 
-    case ILU_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCILU );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case ILU_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCILU );
+          break;
 
-    case LU_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCLU );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case LU_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCLU );
+          break;
 
-    case ASM_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCASM );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case ASM_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCASM );
+          break;
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-    case GASM_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCGASM );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
-#endif
+      case GASM_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCGASM );
+          break;
 
-    case JACOBI_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCJACOBI );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case JACOBI_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCJACOBI );
+          break;
 
-    case BLOCK_JACOBI_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCBJACOBI );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case BLOCK_JACOBI_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCBJACOBI );
+          break;
 
-    case SOR_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCSOR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case SOR_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSOR );
+          break;
 
-    case EISENSTAT_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCEISENSTAT );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case SSOR_PRECOND:
+          // PETSc typically does SOR with -pc_sor_symmetric 
+          // or user sets if they want SSOR specifically
+          ierr = PCSetType( M_pc, (char*)PCSOR );
+          break;
 
-#if !((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
+      case EISENSTAT_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCEISENSTAT );
+          break;
 
-    case USER_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCMAT );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
-#endif
+      case USER_PRECOND:
+          // "USER_PRECOND" might have meant PCMAT historically
+          ierr = PCSetType( M_pc, (char*)PCMAT );
+          break;
 
-    case SHELL_PRECOND:
-        ierr = PCSetType ( M_pc, ( char* ) PCSHELL );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case SHELL_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSHELL );
+          break;
 
-    case FIELDSPLIT_PRECOND:
-        ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        ierr = PCFieldSplitSetType( M_pc,PC_COMPOSITE_SCHUR );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case FIELDSPLIT_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCFIELDSPLIT );
+          // optionally use a default Schur factorization
+          ierr = PCFieldSplitSetType( M_pc, PC_COMPOSITE_SCHUR );
+          break;
 
-    case ML_PRECOND:
-        ierr = PCSetType( M_pc,( char* ) PCML );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-        return;
+      case ML_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCML );
+          break;
 
-    default:
-        std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
-                  << this->preconditionerType()       << std::endl
-                  << "Continuing with PETSC defaults" << std::endl;
-    }
+      case GAMG_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCGAMG );
+          break;
 
-}
+      case BOOMERAMG_PRECOND:
+      case AMS_PRECOND:
+          // Typically we do PCSetType( m_pc, PCHYPRE ), then set 
+          // -pc_hypre_type boomeramg or -pc_hypre_type ams at runtime 
+          ierr = PCSetType( M_pc, (char*)PCHYPRE );
+          break;
+
+      case REDUNDANT_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCREDUNDANT );
+          break;
+
+      case NONE_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCNONE );
+          break;
+
+      // New PC entries 
+
+      case BDDC_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCBDDC );
+          break;
+
+      case KSP_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCKSP );
+          break;
+
+      case PYTHON_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCPYTHON );
+          break;
+
+      case AMGX_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCAMGX );
+          break;
+
+      case QR_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCQR );
+          break;
+
+      case NN_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCNN );
+          break;
+
+      case SPAI_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSPAI );
+          break;
+
+      case MAT_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCMAT );
+          break;
+
+      case HYPRE_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCHYPRE );
+          break;
+
+      case PARMS_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCPARMS );
+          break;
+
+      case TFS_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCTFS );
+          break;
+
+      case GALERKIN_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCGALERKIN );
+          break;
+
+      case EXOTIC_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCEXOTIC );
+          break;
+
+      case CP_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCCP );
+          break;
+
+      case BFBT_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCBFBT );
+          break;
+
+      case PFMG_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCPFMG );
+          break;
+
+      case SMG_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSMG );
+          break;
+
+      case SYSPFMG_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSYSPFMG );
+          break;
+
+      case REDISTRIBUTE_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCREDISTRIBUTE );
+          break;
+
+      case SVD_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSVD );
+          break;
+
+      case CHOWILUVIENNACL_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCCHOWILUVIENNACL );
+          break;
+
+      case ROWSCALINGVIENNACL_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCROWSCALINGVIENNACL );
+          break;
+
+      case SAVIENNACL_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCSAVIENNACL );
+          break;
+
+      case KACZMARZ_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCKACZMARZ );
+          break;
+
+      case TELESCOPE_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCTELESCOPE );
+          break;
+
+      case PATCH_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCPATCH );
+          break;
+
+      case LMVM_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCLMVM );
+          break;
+
+      case HMG_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCHMG );
+          break;
+
+      case DEFLATION_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCDEFLATION );
+          break;
+
+      case HPDDM_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCHPDDM );
+          break;
+
+      case H2OPUS_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCH2OPUS );
+          break;
+
+      case MPI_PRECOND:
+          ierr = PCSetType( M_pc, (char*)PCMPI );
+          break;
+
+      case AMG_PRECOND:
+          // Historically in Feel++ we had "AMG" to mean generic algebraic MG. 
+          // You could do PCGAMG or PCHYPRE
+          ierr = PCSetType( M_pc, (char*)PCGAMG );
+          break;
+
+      default:
+          std::cerr << "ERROR: Unsupported PETSC PreconditionerType: "
+                    << this->preconditionerType() << "\n"
+                    << "Continuing with PETSc default (none)\n";
+          ierr = PCSetType( M_pc, (char*)PCNONE );
+          break;
+    } // end switch
+
+    CHKERRABORT( this->worldComm().globalComm(), ierr );
+} // setPetscPreconditionerType()
+
 
 
 

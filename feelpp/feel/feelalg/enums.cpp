@@ -70,35 +70,80 @@ std::map<std::string, size_type> EigenMap = {
 
 
 PreconditionerType
-pcTypeConvertStrToEnum( std::string const& type )
+pcTypeConvertStrToEnum(std::string const& type)
 {
-    /**/ if ( type=="lu" )           return PreconditionerType::LU_PRECOND;
-    else if ( type=="ilu" )          return PreconditionerType::ILU_PRECOND;
-    else if ( type=="id" )           return PreconditionerType::IDENTITY_PRECOND;
-    else if ( type=="cholesky" )     return PreconditionerType::CHOLESKY_PRECOND;
-    else if ( type=="icc" )          return PreconditionerType::ICC_PRECOND;
-    else if ( type=="asm" )          return PreconditionerType::ASM_PRECOND;
-    else if ( type=="gasm" )         return PreconditionerType::GASM_PRECOND;
-    else if ( type=="jacobi" )       return PreconditionerType::JACOBI_PRECOND;
-    else if ( type=="block_jacobi" ) return PreconditionerType::BLOCK_JACOBI_PRECOND;
-    else if ( type=="bjacobi" )      return PreconditionerType::BLOCK_JACOBI_PRECOND;
-    else if ( type=="sor" )          return PreconditionerType::SOR_PRECOND;
-    else if ( type=="eisenstat" )    return PreconditionerType::EISENSTAT_PRECOND;
-    else if ( type=="shell" )        return PreconditionerType::SHELL_PRECOND;
-    else if ( type=="fieldsplit" )   return PreconditionerType::FIELDSPLIT_PRECOND;
-    else if ( type=="lsc" )          return PreconditionerType::LSC_PRECOND;
-    else if ( type=="lsc2" )         return PreconditionerType::LSC2_PRECOND;
-    else if ( type=="pmm" )          return PreconditionerType::PMM_PRECOND;
-    else if ( type=="pcd" )          return PreconditionerType::PCD_PRECOND;
-    else if ( type=="blockns" )      return PreconditionerType::FEELPP_BLOCKNS_PRECOND;
-    else if ( type=="blockms" )      return PreconditionerType::FEELPP_BLOCKMS_PRECOND;
-    else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
-    else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
-    else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
-    else if ( type=="ams" )          return PreconditionerType::AMS_PRECOND;
-    else if ( type=="redundant" )    return PreconditionerType::REDUNDANT_PRECOND;
-    else if ( type=="none" )         return PreconditionerType::NONE_PRECOND;
-    else                             return PreconditionerType::LU_PRECOND;
+    // Keep the existing matches
+    if      ( type == "lu" )            return PreconditionerType::LU_PRECOND;
+    else if ( type == "ilu" )           return PreconditionerType::ILU_PRECOND;
+    else if ( type == "id" )            return PreconditionerType::IDENTITY_PRECOND;
+    else if ( type == "cholesky" )      return PreconditionerType::CHOLESKY_PRECOND;
+    else if ( type == "icc" )           return PreconditionerType::ICC_PRECOND;
+    else if ( type == "asm" )           return PreconditionerType::ASM_PRECOND;
+    else if ( type == "gasm" )          return PreconditionerType::GASM_PRECOND;
+    else if ( type == "jacobi" )        return PreconditionerType::JACOBI_PRECOND;
+    else if ( type == "block_jacobi" )  return PreconditionerType::BLOCK_JACOBI_PRECOND;
+    else if ( type == "bjacobi" )       return PreconditionerType::BLOCK_JACOBI_PRECOND;
+    else if ( type == "sor" )           return PreconditionerType::SOR_PRECOND;
+    else if ( type == "ssor" )          return PreconditionerType::SSOR_PRECOND;
+    else if ( type == "eisenstat" )     return PreconditionerType::EISENSTAT_PRECOND;
+    else if ( type == "shell" )         return PreconditionerType::SHELL_PRECOND;
+    else if ( type == "fieldsplit" )    return PreconditionerType::FIELDSPLIT_PRECOND;
+    else if ( type == "lsc" )           return PreconditionerType::LSC_PRECOND;
+    else if ( type == "lsc2" )          return PreconditionerType::LSC2_PRECOND;
+    else if ( type == "pmm" )           return PreconditionerType::PMM_PRECOND;
+    else if ( type == "pcd" )           return PreconditionerType::PCD_PRECOND;
+    else if ( type == "blockns" )       return PreconditionerType::FEELPP_BLOCKNS_PRECOND;
+    else if ( type == "blockms" )       return PreconditionerType::FEELPP_BLOCKMS_PRECOND;
+    else if ( type == "ml" )            return PreconditionerType::ML_PRECOND;
+    else if ( type == "gamg" )          return PreconditionerType::GAMG_PRECOND;
+    else if ( type == "boomeramg" )     return PreconditionerType::BOOMERAMG_PRECOND;
+    else if ( type == "ams" )           return PreconditionerType::AMS_PRECOND;
+    else if ( type == "redundant" )     return PreconditionerType::REDUNDANT_PRECOND;
+    else if ( type == "none" )          return PreconditionerType::NONE_PRECOND;
+
+    // Newly added in previous iteration ( Feel++ side ) 
+    else if ( type == "bddc" )          return PreconditionerType::BDDC_PRECOND;
+    else if ( type == "ksp" )           return PreconditionerType::KSP_PRECOND;
+    else if ( type == "python" )        return PreconditionerType::PYTHON_PRECOND;
+
+    // Additional PETSc PCs from the extended enum
+    else if ( type == "amgx" )          return PreconditionerType::AMGX_PRECOND;
+    else if ( type == "qr" )            return PreconditionerType::QR_PRECOND;
+    else if ( type == "nn" )            return PreconditionerType::NN_PRECOND;
+    else if ( type == "spai" )          return PreconditionerType::SPAI_PRECOND;
+    else if ( type == "mat" )           return PreconditionerType::MAT_PRECOND;
+    else if ( type == "hypre" )         return PreconditionerType::HYPRE_PRECOND;
+    else if ( type == "parms" )         return PreconditionerType::PARMS_PRECOND;
+    else if ( type == "tfs" )           return PreconditionerType::TFS_PRECOND;
+    else if ( type == "galerkin" )      return PreconditionerType::GALERKIN_PRECOND;
+    else if ( type == "exotic" )        return PreconditionerType::EXOTIC_PRECOND;
+    else if ( type == "cp" )            return PreconditionerType::CP_PRECOND;
+    else if ( type == "bfbt" )          return PreconditionerType::BFBT_PRECOND;
+    else if ( type == "pfmg" )          return PreconditionerType::PFMG_PRECOND;
+    else if ( type == "smg" )           return PreconditionerType::SMG_PRECOND;
+    else if ( type == "syspfmg" )       return PreconditionerType::SYSPFMG_PRECOND;
+    else if ( type == "redistribute" )  return PreconditionerType::REDISTRIBUTE_PRECOND;
+    else if ( type == "svd" )           return PreconditionerType::SVD_PRECOND;
+    else if ( type == "chowiluviennacl" ) return PreconditionerType::CHOWILUVIENNACL_PRECOND;
+    else if ( type == "rowscalingviennacl" ) return PreconditionerType::ROWSCALINGVIENNACL_PRECOND;
+    else if ( type == "saviennacl" )    return PreconditionerType::SAVIENNACL_PRECOND;
+    else if ( type == "kaczmarz" )      return PreconditionerType::KACZMARZ_PRECOND;
+    else if ( type == "telescope" )     return PreconditionerType::TELESCOPE_PRECOND;
+    else if ( type == "patch" )         return PreconditionerType::PATCH_PRECOND;
+    else if ( type == "lmvm" )          return PreconditionerType::LMVM_PRECOND;
+    else if ( type == "hmg" )           return PreconditionerType::HMG_PRECOND;
+    else if ( type == "deflation" )     return PreconditionerType::DEFLATION_PRECOND;
+    else if ( type == "hpddm" )         return PreconditionerType::HPDDM_PRECOND;
+    else if ( type == "h2opus" )        return PreconditionerType::H2OPUS_PRECOND;
+    else if ( type == "mpi" )           return PreconditionerType::MPI_PRECOND;
+
+    // Optionally map "amg" -> AMG_PRECOND or "user" -> USER_PRECOND if you want:
+    else if ( type == "amg" )          return PreconditionerType::AMG_PRECOND;
+    else if ( type == "user" )         return PreconditionerType::USER_PRECOND;
+
+    // If nothing matches, default to LU
+    else
+        return PreconditionerType::LU_PRECOND;
 }
 
 #if FEELPP_HAS_PETSC
@@ -116,24 +161,65 @@ kspNormTypeConvertStrToEnum( std::string const& type )
 
 
 SolverType
-kspTypeConvertStrToEnum( std::string const& type )
+kspTypeConvertStrToEnum(std::string const& type)
 {
-    /**/ if ( type=="cg" )         return SolverType::CG;
-    else if ( type=="cr" )         return SolverType::CR;
-    else if ( type=="cgs" )        return SolverType::CGS;
-    else if ( type=="bicg" )       return SolverType::BICG;
-    else if ( type=="tcqmr" )      return SolverType::TCQMR;
-    else if ( type=="tfqmr" )      return SolverType::TFQMR;
-    else if ( type=="lsqr" )       return SolverType::LSQR;
-    else if ( type=="bicgstab" )   return SolverType::BICGSTAB;
-    else if ( type=="minres" )     return SolverType::MINRES;
-    else if ( type=="gmres" )      return SolverType::GMRES;
-    else if ( type=="fgmres" )     return SolverType::FGMRES;
-    else if ( type=="richardson" ) return SolverType::RICHARDSON;
-    else if ( type=="chebyshev" )  return SolverType::CHEBYSHEV;
-    else if ( type=="preonly" )    return SolverType::PREONLY;
-    else if ( type=="gcr" )        return SolverType::GCR;
-    else                           return SolverType::GMRES;
+    // --- Existing mappings from the old code ---
+    if      ( type == "cg" )         return SolverType::CG;
+    else if ( type == "cr" )         return SolverType::CR;
+    else if ( type == "cgs" )        return SolverType::CGS;
+    else if ( type == "bicg" )       return SolverType::BICG;
+    else if ( type == "tcqmr" )      return SolverType::TCQMR;
+    else if ( type == "tfqmr" )      return SolverType::TFQMR;
+    else if ( type == "lsqr" )       return SolverType::LSQR;
+    else if ( type == "bicgstab" )   return SolverType::BICGSTAB;
+    else if ( type == "minres" )     return SolverType::MINRES;
+    else if ( type == "gmres" )      return SolverType::GMRES;
+    else if ( type == "fgmres" )     return SolverType::FGMRES;
+    else if ( type == "richardson" ) return SolverType::RICHARDSON;
+    else if ( type == "chebyshev" )  return SolverType::CHEBYSHEV;
+    else if ( type == "preonly" )    return SolverType::PREONLY;
+    else if ( type == "gcr" )        return SolverType::GCR;
+
+    // --- Other Feel++ or PETSc solver names we haven't yet mapped ---
+
+    else if ( type == "cgn" )        return SolverType::CGN;      // Conjugate Gradient on Normal Eqns
+    else if ( type == "qmr" )        return SolverType::QMR;      // (Legacy QMR, note PETSc has KSPQMRCGS)
+    else if ( type == "jacobi" )     return SolverType::JACOBI;   // (Feel++ historically used as KSP solver)
+    else if ( type == "sor_forward" )return SolverType::SOR_FORWARD; 
+    else if ( type == "sor_backward")return SolverType::SOR_BACKWARD;
+    else if ( type == "ssor" )       return SolverType::SSOR;
+
+    // Pipelined, deflated, flexible, etc.
+    else if ( type == "dgmres" )     return SolverType::DGMRES;
+    else if ( type == "lgmres" )     return SolverType::LGMRES;
+    else if ( type == "pgmres" )     return SolverType::PGMRES;    // Pipelined GMRES
+    else if ( type == "pipegmres" )  return SolverType::PIPEGMRES; // could map to "pipefgmres" or "pgmres" in PETSc
+    else if ( type == "pipecg" )     return SolverType::PIPECG;
+    else if ( type == "pipecr" )     return SolverType::PIPECR;
+    else if ( type == "bcgsl" )      return SolverType::BCGSL;
+    else if ( type == "fbcgs" )      return SolverType::FBCGS;
+    else if ( type == "ibcgs" )      return SolverType::IBCGS;
+    else if ( type == "fcg" )        return SolverType::FCG;
+
+    // New additions from the PETSc KSP table
+    else if ( type == "fbcgsr" )     return SolverType::FBCGSR;
+    else if ( type == "groppcg" )    return SolverType::GROPPCG;
+    else if ( type == "pipecgrr" )   return SolverType::PIPECGRR;
+    else if ( type == "pipefcg" )    return SolverType::PIPEFCG;
+    else if ( type == "cgls" )       return SolverType::CGLS;
+    else if ( type == "nash" )       return SolverType::NASH;
+    else if ( type == "stcg" )       return SolverType::STCG;
+    else if ( type == "gltr" )       return SolverType::GLTR;
+    else if ( type == "qcg" )        return SolverType::QCG;
+    else if ( type == "fetidp" )     return SolverType::FETIDP;
+    else if ( type == "tsirm" )      return SolverType::TSIRM;
+    else if ( type == "symmlq" )     return SolverType::SYMMLQ;
+    else if ( type == "python" )     return SolverType::PYTHON;
+    else if ( type == "none" )       return SolverType::NONE;
+
+    // If nothing matches, default to GMRES
+    else
+        return SolverType::GMRES;
 }
 
 SolverNonLinearType
