@@ -35,7 +35,8 @@
 namespace Feel
 {
 
-namespace solve {
+namespace solve 
+{
 
 enum class strategy
 {
