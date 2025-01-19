@@ -22,16 +22,12 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#if 0
-#include <feel/feel.hpp>
-#else
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pchv.hpp>
-#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelts/newmark.hpp>
-#endif
 
 inline
 Feel::po::options_description
@@ -43,6 +39,7 @@ makeOptions()
     ( "poisson-coeff", Feel::po::value<double>()->default_value( 0.4 ), "poisson-coeff" )
     ( "rho", Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
     ( "gravity-cst", Feel::po::value<double>()->default_value( 2 ), "gravity-cst" )
+    ( "ul", Feel::po::value<bool>()->default_value( false ), "update lagrangian formulation" )
     ;
     return stvenantkirchhoffoptions;
 }
@@ -66,15 +63,8 @@ main( int argc, char** argv )
     double rho= doption(_name="rho");
     double gravityCst=doption(_name="gravity-cst");
 
-    typedef Mesh<Simplex<2,1,2> > mesh_type;
-    GeoTool::Node x1( (0.4+math::sqrt(0.0096))/2.,0.19 );
-    GeoTool::Node x2( 0.6,0.21 );
-    GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
-    R.setMarker(_type="line",_name="fixe",_marker4=true);
-    R.setMarker(_type="line",_name="free",_marker1=true,_marker2=true,_marker3=true);
-    R.setMarker(_type="surface",_name="Omega",_markerAll=true);
-    auto mesh = R.createMesh(_mesh=new mesh_type,
-                             _name="domainRectangle" );
+    using mesh_t = Mesh<Simplex<2,1,2>>;
+    auto mesh = loadMesh(_mesh=new mesh_t );
 
     auto Vh = Pchv<1>( mesh );
     auto u = Vh->element();
@@ -83,7 +73,7 @@ main( int argc, char** argv )
     auto Res = backend()->newVector( Vh );
     auto Jac = backend()->newMatrix( _test=Vh, _trial=Vh );
 
-    auto e = exporter( _mesh=mesh );
+    auto e = exporter( _mesh=mesh, _geo="change" );
 
     auto ts = newmark( _space=Vh, _name="structure",_rank_proc_in_files_name=true );
     static const uint16_type nDim=2;
@@ -101,13 +91,16 @@ main( int argc, char** argv )
         u = ts->previousUnknown();
         if ( e->doExport() ) e->restart(ti);
     }
+    ts->updateFromDisp(u);
 
-    for ( ; !ts->isFinished(); ts->next(u) )
+    for ( ; !ts->isFinished();  )
     {
         if ( Environment::isMasterRank() )
         {
             std::cout << "============================================================\n";
             std::cout << "time : " << ts->time() << "s\n";
+            LOG(INFO) << "============================================================\n";
+            LOG(INFO) << fmt::format("time : {}",ts->time());
         }
 
         auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
@@ -129,9 +122,8 @@ main( int argc, char** argv )
                                 _expr= rho*inner( ts->polyDerivCoefficient()*idt(u),id( v ) ) );
 
                 auto RR = backend()->newVector( Vh );
-                a += on( _range=markedfaces(mesh,"fixe"),
-                         _element=u, _rhs=RR,
-                         _expr=zero<nDim,1>() );
+                a += on( _range=markedfaces(mesh,"fixe"),_element=u, _rhs=RR,_expr=zero<nDim,1>() );
+                a += on( _range=markedpoints(mesh,"Pinned"),_element=u, _rhs=RR,_expr=zero<nDim,1>() );
             };
         auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
             {
@@ -154,19 +146,50 @@ main( int argc, char** argv )
                 auto temp = Vh->element();
                 temp = *R;
                 temp.on( _range=markedfaces(mesh,"fixe"),_expr=zero<nDim,1>() );
+                temp.on( _range=markedpoints(mesh,"Pinned"),_expr=zero<nDim,1>() );
                 *R = temp;
             };
 
         u.on( _range=markedfaces(mesh,"fixe"),_expr=zero<nDim,1>() );
+        u.on( _range=markedpoints(mesh,"Pinned"),_expr=zero<nDim,1>() );
         backend()->nlSolver()->residual = Residual;
         backend()->nlSolver()->jacobian = Jacobian;
         backend()->nlSolve( _solution=u,_jacobian=Jac,_residual=Res );
 
         ts->updateFromDisp(u);
+        
+
+        e->step(ts->time())->setMesh(mesh);
         e->step(ts->time())->add( "displacement", u );
         e->step(ts->time())->add( "velocity", ts->currentVelocity() );
         e->step(ts->time())->add( "acceleration", ts->currentAcceleration() );
         e->save();
+        ts->next(u,false);
+        if ( boption( "ul" ) )
+        {
+            
+            meshMove( mesh, u );
+            
+            Vh = Pchv<1>( mesh );
+            u = Vh->element();
+            v = Vh->element();
+            Res = backend()->newVector( Vh );
+            Jac = backend()->newMatrix( _test=Vh, _trial=Vh );
+            double ti = ts->time();
+            double dt = ts->timeStep();
+            LOG(INFO) << "restart at time " << ti-dt;
+
+            ts = newmark( _space=Vh, _name="structure",_rank_proc_in_files_name=true, _initial_time=ti-dt, _restart=true  );
+            ts->restart();
+             LOG(INFO) << "after restart time " << ts->time();
+            //ts->loadCurrent();
+            ts->previousUnknown().zero();
+
+
+        }
+        else
+            ts->next(u);
+         
     }
 
 

@@ -30,6 +30,7 @@ local cpps = [
 ];
 local gpus = [
   'cpu',
+  'kokkos',
   'rocm',
   'cuda',
   'rocm-kokkos',
@@ -389,6 +390,17 @@ local wp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) 
             FEELPP_ENABLE_ROCM: 'OFF',
             FEELPP_ENABLE_CUDA: 'OFF',
         /* Additional CPU-specific settings */
+        },
+    },    
+    {
+        name: 'kokkos',
+        hidden: true,
+        inherits: [
+            'feelpp-core-tests-only',
+        ],
+        cacheVariables: {
+            FEELPP_ENABLE_KOKKOS: 'ON',
+            /* Additional Kokkos-specific settings */
         },
     },
     {

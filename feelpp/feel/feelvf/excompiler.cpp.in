@@ -205,7 +205,7 @@ public:
 			// try the compiler in Feel++ source
 			namespace fs = boost::filesystem;
 
-            std::string firstPathToTry = "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler";
+            std::string firstPathToTry = "@FEELPP_BUILD_DIR@/feelpp/tools/excompiler/feelpp_excompiler";
 
             const char * pathFromEnv = getenv( "FEELPP_EXPRESSION_COMPILER_PATH" );
             if ( pathFromEnv != NULL && pathFromEnv[0] != '\0' )
@@ -228,8 +228,8 @@ public:
 			else
 			{
 
-                std::vector<std::string> paths = { "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
-                std::vector<std::string> names = { "feelpp_excompiler", "ginac-excompiler" };
+                std::vector<std::string> paths = { "@FEELPP_INSTALL_DIR@/bin/", "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
+                std::vector<std::string> names = { "feelpp_excompiler" };
                 for( auto p: paths )
                 {
                     for( auto n: names )

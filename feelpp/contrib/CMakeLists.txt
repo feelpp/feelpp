@@ -69,7 +69,7 @@ function(fetch_or_find_package PACKAGE_OPTION PACKAGE_NAME TARGET_NAME ALIAS_TAR
     endif()
 endfunction()
 
-message(STATUS "============================================================")
+message( STATUS "----------------[ BEGIN CONTRIB ]----------------------------")
 message(STATUS "Contrib libraries")
 include(FetchContent)
 
@@ -230,13 +230,13 @@ message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Ginac")
 if ( FEELPP_USE_EXTERNAL_GINAC )
   message(STATUS "Using external Ginac")
-  find_package(ginac REQUIRED)
-  if ( ginac_FOUND )
+  find_package(GINAC REQUIRED)
+  if ( GINAC_FOUND )
     target_link_libraries(feelpp_contrib INTERFACE ginac::ginac )
     target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC )
-  else( ginac_FOUND )
+  else( GINAC_FOUND )
     message(FATAL_ERROR "GiNaC was not found externally. Aborting.")
-  endif( ginac_FOUND )
+  endif( GINAC_FOUND )
 else()
 
   set(INCLUDE_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
@@ -1141,4 +1141,5 @@ INSTALL(TARGETS feelpp_contrib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-con
 install(EXPORT feelpp-contrib-export-targets NAMESPACE Feelpp:: DESTINATION share/feelpp/feel/cmake/modules)
 
 message(STATUS "Contrib libraries configured")
-message(STATUS "============================================================")
+message( STATUS "----------------[  END CONTRIB  ]----------------------------")
+

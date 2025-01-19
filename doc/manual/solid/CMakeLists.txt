@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-11
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,6 +24,6 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application(beam SRCS beam.cpp LABELS doc)
 feelpp_add_application(stvenant_kirchhoff SRCS stvenant_kirchhoff.cpp LABELS doc)
-feelpp_add_application(stvenant_kirchhoff2 SRCS stvenant_kirchhoff2.cpp LABELS doc CFG stvenant_kirchhoff2.cfg)
+feelpp_add_application(stvenant_kirchhoff2 SRCS stvenant_kirchhoff2.cpp LABELS doc CFG stvenant_kirchhoff2.cfg omega.geo)
 feelpp_add_application(axi_1D SRCS axi_1D.cpp LABELS doc)
 feelpp_add_application(linelaxi SRCS linelaxi.cpp LABELS doc)
