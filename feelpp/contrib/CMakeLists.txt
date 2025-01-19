@@ -95,8 +95,15 @@ set(FMT_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/feelpp/fmt")
 set(FMT_PKGCONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig/feelpp")
 fetch_or_find_package( FMT fmt fmt fmt::fmt https://github.com/feelpp/fmt.git GIT_TAG 11.0.2) 
 
+set(GFLAGS_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/feelpp/gflags")
+set(GFLAGS_PKGCONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig/feelpp")
+fetch_or_find_package( GFLAGS gflags gflags gflags::gflags https://github.com/feelpp/gflags.git GIT_TAG v2.2.2) 
 
+set(GLOG_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/feelpp/glog")
+set(GLOG_PKGCONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig/feelpp")
+fetch_or_find_package( GLOG glog glog glog::glog https://github.com/feelpp/glog.git GIT_TAG v2.2.2) 
 
+if ( 0 )
 option( FEELPP_USE_EXTERNAL_GFLAGS "Feel++ uses external GFlags" OFF )
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
@@ -167,7 +174,7 @@ else( FEELPP_USE_EXTERNAL_GLOG )
     set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
   endif()
 endif( FEELPP_USE_EXTERNAL_GLOG )
-
+endif( 0 )
 #
 # cln
 #

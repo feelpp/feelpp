@@ -7,7 +7,7 @@ local archs = [
 local distros = [
     'default',
     //'jammy',
-    //'noble',
+    'noble',
     //'bookworm',
     'ubuntu',
     'spack',
@@ -238,6 +238,52 @@ local wp_generator(component, compiler, cpp, distro, gpu, analysisTool, config) 
             FEELPP_USE_EXTERNAL_SPECX: "OFF",
             FEELPP_ENABLE_EIGENRAND: "ON",
             FEELPP_USE_EXTERNAL_EIGENRAND: "ON",
+            FEELPP_ENABLE_VTK: "OFF",
+            USE_VTK: "OFF",
+            FEELPP_ENABLE_OPENTURNS: "OFF"
+        },
+        environment: {
+            VERBOSE: "1"
+        }
+    },
+    {
+        name: "noble",
+        hidden: true,
+        displayName: "Ubuntu 24.04 package manager",
+        description: "Ubuntu 24.04 config",
+        inherits: [
+            "default"
+        ],
+        cacheVariables: {
+            CMAKE_INSTALL_RPATH_USE_LINK_PATH: "ON",
+            FEELPP_ENABLE_ANN: "ON",
+            FEELPP_USE_EXTERNAL_NAPP: "OFF",
+            FEELPP_USE_EXTERNAL_NANOFLANN: "ON",
+            FEELPP_USE_EXTERNAL_FMT: "ON",
+            FEELPP_USE_EXTERNAL_GFLAGS: "ON",
+            FEELPP_USE_EXTERNAL_GLOG: "ON",
+            FEELPP_USE_EXTERNAL_CLN: "ON",
+            FEELPP_USE_EXTERNAL_METIS: "ON",
+            FEELPP_USE_EXTERNAL_EIGEN3: "ON",
+            FEELPP_USE_EXTERNAL_NLOPT: "ON",
+            FEELPP_ENABLE_IPOPT: "OFF",
+            FEELPP_USE_EXTERNAL_IPOPT: "ON",
+            FEELPP_USE_EXTERNAL_PYBIND11: "ON",
+            FEELPP_USE_EXTERNAL_MONGOCXX: "OFF",
+            FEELPP_USE_EXTERNAL_FMI4CPP: "OFF",
+            FEELPP_USE_EXTERNAL_TABULATE: "OFF",
+            FEELPP_USE_FETCHCONTENT_TABULATE: "ON",
+            FEELPP_USE_EXTERNAL_INDICATORS: "OFF",
+            FEELPP_ENABLE_SIMPLE_WEB_SERVER: "ON",
+            FEELPP_USE_EXTERNAL_SIMPLE_WEB_SERVER: "OFF",
+            FEELPP_USE_EXTERNAL_RANGE_V3: "OFF",
+            FEELPP_ENABLE_MATPLOT: "OFF",
+            FEELPP_USE_EXTERNAL_MATPLOT: "OFF",
+            FEELPP_USE_EXTERNAL_MMG: "OFF",
+            FEELPP_USE_EXTERNAL_CPR: "OFF",
+            FEELPP_USE_EXTERNAL_SPECX: "OFF",
+            FEELPP_ENABLE_EIGENRAND: "ON",
+            FEELPP_USE_EXTERNAL_EIGENRAND: "OFF",
             FEELPP_ENABLE_VTK: "OFF",
             USE_VTK: "OFF",
             FEELPP_ENABLE_OPENTURNS: "OFF"
