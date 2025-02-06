@@ -23,10 +23,52 @@
 #
 
 #feelpp_add_test(bvhgpu SRCS test_bvhgpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
 #feelpp_add_test(bvhgpu SRCS test_old.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 #feelpp_add_test(bvhgpu SRCS test_old_empty.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
-feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
-#feelpp_add_test(bvhgpu SRCS test_distance_main.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
-set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
 
+
+feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
+
+
+
+
+#feelpp_add_test(bvhgpu SRCS test_bvhgpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#set_target_properties(feelpp_test_bvhgpuKokkos PROPERTIES HIP_LANGUAGE CXX)
+#set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
+
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_cholesky.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_kokkos_laps_pu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_MemSpace.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu2.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_bvh.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu3.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_mpi.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_execution_patterns.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_execution_patterns_policies.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_atomic.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_dual_view.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_SIMD.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_polynom_jacobi.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+
+
+
+set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
 

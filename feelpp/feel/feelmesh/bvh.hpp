@@ -891,7 +891,8 @@ __global__ void initializeLeaves( Triangle* triangles, BVHNode* nodes, int numTr
 void buildBVH_GPU_Version2( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
 {
     int totalNodes = 2 * numTriangles - 1;
-    int blockSize = 512;
+    //int blockSize = 512;
+    int blockSize = 1024;
     int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
     hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
 
@@ -936,7 +937,8 @@ __global__ void buildEvaluationNodes( BVHNode* nodes, int numTriangles )
 
 void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
 {
-    int blockSize = 512;
+    //int blockSize = 512;
+    int blockSize = 1024;
     int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
     hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
     hipDeviceSynchronize();
@@ -1085,7 +1087,8 @@ void buildBVH_GPU_Parallel(Triangle *d_triangles, BVHNode *d_nodes,
   //std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
 
   int totalNodes = 2 * numTriangles - 1;
-  int blockSize = 512;
+  //int blockSize = 512;
+  int blockSize = 1024;
   int numBlocks = (numTriangles + blockSize - 1) / blockSize;
 
   TriangleInfo *d_triInfo;
@@ -1114,7 +1117,8 @@ void buildBVH_GPU_Parallel_Best_Axis(Triangle *d_triangles, BVHNode *d_nodes,
   std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
 
   int totalNodes = 2 * numTriangles - 1;
-  int blockSize = 512;
+  //int blockSize = 512;
+  int blockSize = 1024;
   int numBlocks = (numTriangles + blockSize - 1) / blockSize;
 
   TriangleInfo *d_triInfo;
@@ -1842,11 +1846,16 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
         : super_type( quality, worldComm )
     {
-        numDevice = 0;
+        //numDevice = 0;
         numDevice = 3;
         //numDevice = 1;
         //numVersion = 0;
         //numVersion = 1;
+        int rank = worldComm->rank();
+        numDevice = rank;
+        printf("rank for numDevice %i\n",numDevice);
+
+
         numVersion = 2;
         modeGPU = 1;
         isUnifiedMemory = true; // isUnifiedMemory = false;
@@ -2067,7 +2076,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipEventCreate(&stop2);
             hipEventRecord(start2);
 
-            int blockSize = 512;
+            //int blockSize = 512;
+            int blockSize = 1024;
             int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
             if ( numVersion == 1 )

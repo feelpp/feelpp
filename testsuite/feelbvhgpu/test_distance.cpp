@@ -157,6 +157,18 @@ void runPreheatingGPU(int numDevice) {
 
 }
 
+void runScanPreheatingGPU() {
+  int nDevices;
+  hipGetDeviceCount(&nDevices);
+  for (int i = 0; i < nDevices; ++i) { 
+    hipSetDevice(i);
+    float4 *d_nothing;
+    hipMalloc(&d_nothing, 100 * sizeof(float4));
+    onKernelNothing<<<1, 1>>>(d_nothing);
+    hipFree(d_nothing);
+  }
+}
+
 
 template <typename BvhType, typename RayIntersectionResultType>
 std::vector<double> getAllDistanceRayIntersections(BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs)
@@ -714,10 +726,15 @@ BOOST_AUTO_TEST_CASE(all_distance)
     //number_rays_desired =2000;
 
     bool isPreheating = true; //isPreheating = false;
+
+    /*
     if (isPreheating) runPreheatingGPU(0);
     if (isPreheating) runPreheatingGPU(1);
     if (isPreheating) runPreheatingGPU(2);
     if (isPreheating) runPreheatingGPU(3);
+    */
+
+    if (isPreheating) runScanPreheatingGPU();
 
     using namespace Feel;
     using Feel::cout;
