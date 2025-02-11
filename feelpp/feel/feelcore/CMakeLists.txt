@@ -41,6 +41,9 @@ set(SRC
   ptreetools.cpp
   checker.cpp
   remotedata.cpp
+  remotedatackan.cpp
+  remotedatagirder.cpp
+  remotedatagithub.cpp
   journalmanager.cpp
   journalwatcher.cpp
   table.cpp

@@ -32,6 +32,43 @@ namespace Feel
 {
 using namespace Feel;
 
+// Function to preprocess JSON-like input
+std::string preprocessCustomFormat(const std::string& input);
+// parse JSON-like input
+nl::json parseCustomFormat(const std::string& customInput);
+
+class StatusRequestHTTP : public std::tuple<bool, uint16_type, std::string>
+{
+    typedef std::tuple<bool, uint16_type, std::string> super_type;
+
+  public:
+    StatusRequestHTTP( bool s, std::string const& m = "" )
+        : super_type( s, invalid_uint16_type_value, m )
+    {
+    }
+    StatusRequestHTTP( bool s, uint16_type c, std::string const& m = "" )
+        : super_type( s, c, m )
+    {
+    }
+    StatusRequestHTTP( StatusRequestHTTP const& ) = default;
+    StatusRequestHTTP( StatusRequestHTTP&& ) = default;
+    StatusRequestHTTP& operator=( StatusRequestHTTP const& ) = default;
+
+    bool success() const { return std::get<0>( *this ); }
+    uint16_type code() const { return std::get<1>( *this ); }
+    std::string const& msg() const { return std::get<2>( *this ); }
+};
+
+StatusRequestHTTP requestHTTPGET( const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+StatusRequestHTTP requestHTTPPOST( const std::string& url, const std::vector<std::string>& headers,
+                                   std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+StatusRequestHTTP requestHTTPPOST( const std::string& url, const std::vector<std::string>& headers,
+                                   std::istream& ifile, int fsize, std::ostream& ofile,
+                                   int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+StatusRequestHTTP requestHTTPCUSTOM( const std::string& customRequest, const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+StatusRequestHTTP requestDownloadURL( const std::string& url, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+
+std::pair<bool, nl::json> convertDescToJson( std::string const& desc );
 /**
  * \brief Class which manages downloads from a URL or GitHub and download/upload with the Girder database by using libcurl
  */
@@ -99,11 +136,14 @@ struct RemoteData
     createFolder( std::string const& folderPath, std::string const& parentId = "", bool sync = true ) const;
 
     //! Create item  on remote storage
-    //! @param itemPath : the item 
+    //! @param itemPath : the item
     //! @param parentId : id where item is created, empty means to use folder id in the desc
     //! @param sync : apply MPI synchronization with returned infos (else only master rank has these infos)
     std::vector<std::pair<std::string, std::string>>
     createItem( std::string const& itemPath, std::string const& parentId, bool sync = true ) const;
+
+    nl::json createDataset(const std::string& datasetName) const;
+    bool deleteDataset(const std::string& datasetId) const;
 
     //! Content info data structure
     class ContentsInfo : public std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
@@ -121,7 +161,7 @@ struct RemoteData
     };
 
     //! Lookup a resource by path
-    //! @param path : the path to the resource 
+    //! @param path : the path to the resource
     //! @param token : authentication token
     //! @return : JSON object containing resource information
     nl::json resourceLookup( const std::string& path, const std::string& token = "" ) const;
@@ -253,7 +293,7 @@ struct RemoteData
         createFolder( std::string const& folderPath, std::string const& parentId = "", bool sync = true ) const;
 
         //! Create item  on remote storage
-        //! @param itemPath : the item 
+        //! @param itemPath : the item
         //! @param parentId : id where item is created, empty means to use folder id in the desc
         //! @param sync : apply MPI synchronization with returned infos (else only master rank has these infos)
         std::vector<std::pair<std::string, std::string>>
@@ -279,15 +319,18 @@ struct RemoteData
       private:
         std::string downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const;
         std::string downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const;
+        std::string downloadItem( std::string const& folderId, std::string const& dir, std::string const& token ) const;
         std::vector<std::string> uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         //std::string uploadFileImpl( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
         std::string uploadFileImpl(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType) const;
+        nl::json getResourceInfoById(const std::string& resourceId, const std::string& token) const;
 
         void uploadDirectoryToFolder(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources) const;
         void uploadFilesToItem(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources) const;
         void replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const;
         //std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
         std::string createToken( int duration = 1 ) const;
+        bool validateToken(const std::string& token) const;
         void removeToken( std::string const& token ) const;
         std::string createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token) const;
         std::string createFolderImpl(const std::string& folderName, const std::string& parentId, const std::string& token, const std::string& parentType = "folder") const;
@@ -311,6 +354,69 @@ struct RemoteData
         std::shared_ptr<WorldComm> M_worldComm;
         std::string M_url, M_apiKey, M_token, M_path;
         std::set<std::string> M_fileIds, M_folderIds, M_itemIds;
+    };
+
+    class CKAN
+    {
+      public:
+        //! Initialize from a description:
+        //! ckan:{url:https://ckan.example.com,api_key:xxx,token:yyy,...}
+        CKAN( std::string const& desc, WorldComm& worldComm = Environment::worldComm() );
+        CKAN( CKAN const& ) = default;
+        CKAN( CKAN&& ) = default;
+
+        //! Check if initialized
+        bool isInit() const;
+
+        //! Return true if enough information is available to download a file
+        bool canDownload() const;
+
+        //! Return true if enough information is available to upload data
+        bool canUpload() const;
+
+        //! Download data from CKAN
+        std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
+
+        //! Upload data to CKAN
+        std::vector<std::string> upload( std::string const& dataPath, std::string const& parentId = "" ) const;
+
+        //! Replace a resource
+        void replaceResource( std::string const& resourcePath, std::string const& resourceId ) const;
+
+        //! Create a new resource in CKAN
+        std::string createResource( const std::string& name, const std::string& description, const std::string& parentId ) const;
+
+        //! Lookup a resource by path or ID
+        nl::json resourceLookup( const std::string& pathOrId ) const;
+
+        //! Delete a resource by ID
+        bool deleteResource( const std::string& resourceId ) const;
+
+        std::vector<std::string> upload(const std::string& dataPath, const std::string& datasetId, bool sync) const;
+        std::string createDataset(const std::string& name, const std::string& organization, const std::string& description) const;
+        nl::json createDataset(const std::string& datasetName) const;
+        bool deleteDataset(const std::string& datasetId) const;
+
+      private:
+        //! Check if CKAN is initialized and can perform dataset operations
+        bool canPerformDatasetOperations() const;
+
+        //! Check if CKAN is initialized and can access a resource
+        bool canAccessResource() const;
+
+        //! Helper for initializing from description
+        void initializeFromDescription( std::string const& desc );
+
+        //! Upload a file to CKAN
+        std::string uploadFile( const std::string& filePath, const std::string& resourceId ) const;
+
+        //! Parse resource metadata from JSON
+        nl::json parseResourceMetadata( const std::string& metadata ) const;
+
+        std::shared_ptr<WorldComm> M_worldComm;
+        std::string M_url, M_apiKey, M_token, M_organization;
+        std::string M_resourceId; // Resource ID for CKAN operations
+        std::string M_dataset;    // Dataset name or ID
     };
 
     struct FolderInfo : public std::tuple<std::string, std::string, size_type>
@@ -402,6 +508,7 @@ struct RemoteData
     boost::optional<URL> M_url;
     boost::optional<Github> M_github;
     boost::optional<Girder> M_girder;
+    boost::optional<CKAN> M_ckan;
 };
 
 } // namespace Feel
