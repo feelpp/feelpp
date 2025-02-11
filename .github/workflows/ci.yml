@@ -138,6 +138,7 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
         env:
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
