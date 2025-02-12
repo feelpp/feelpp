@@ -800,6 +800,7 @@ var hierarchy =
     [ "Feel::RegionTree", "classFeel_1_1RegionTree.html", null ],
     [ "Feel::RegionTree::box_index_type", "structFeel_1_1RegionTree_1_1box__index__type.html", null ],
     [ "Feel::RemoteData", "structFeel_1_1RemoteData.html", null ],
+    [ "Feel::RemoteData::CKAN", "classFeel_1_1RemoteData_1_1CKAN.html", null ],
     [ "Feel::RemoteData::Girder", "classFeel_1_1RemoteData_1_1Girder.html", null ],
     [ "Feel::RemoteData::Github", "classFeel_1_1RemoteData_1_1Github.html", null ],
     [ "Feel::RemoteData::URL", "classFeel_1_1RemoteData_1_1URL.html", null ],

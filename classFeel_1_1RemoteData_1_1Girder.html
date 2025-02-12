@@ -119,20 +119,29 @@ $(document).ready(function(){initNavTree('classFeel_1_1RemoteData_1_1Girder.html
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aa9f26dff726563d6846df7497e21ae9c"><td class="memItemLeft" align="right" valign="top"><a id="aa9f26dff726563d6846df7497e21ae9c" name="aa9f26dff726563d6846df7497e21ae9c"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>canDownload</b> () const</td></tr>
-<tr class="memdesc:aa9f26dff726563d6846df7497e21ae9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if enough information are available for download a file <br /></td></tr>
+<tr class="memdesc:aa9f26dff726563d6846df7497e21ae9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return true if enough information is available to download a file. <br /></td></tr>
 <tr class="separator:aa9f26dff726563d6846df7497e21ae9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae342212c88238f2933dfbbd28fd0ac76"><td class="memItemLeft" align="right" valign="top"><a id="ae342212c88238f2933dfbbd28fd0ac76" name="ae342212c88238f2933dfbbd28fd0ac76"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>canUpload</b> () const</td></tr>
-<tr class="memdesc:ae342212c88238f2933dfbbd28fd0ac76"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if enough information are available for upload data <br /></td></tr>
+<tr class="memdesc:ae342212c88238f2933dfbbd28fd0ac76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return true if enough information is available to upload data. <br /></td></tr>
 <tr class="separator:ae342212c88238f2933dfbbd28fd0ac76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a545f775d55ea4f73f326e9107765bedf"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1RemoteData_1_1FolderInfo.html">FolderInfo</a> &gt; &gt;, std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1RemoteData_1_1ItemInfo.html">ItemInfo</a> &gt; &gt;, std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1RemoteData_1_1FileInfo.html">FileInfo</a> &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a545f775d55ea4f73f326e9107765bedf">contents</a> () const</td></tr>
-<tr class="memdesc:a545f775d55ea4f73f326e9107765bedf"><td class="mdescLeft">&#160;</td><td class="mdescRight">get contents of a remote data (folder,item,file)  <a href="classFeel_1_1RemoteData_1_1Girder.html#a545f775d55ea4f73f326e9107765bedf">More...</a><br /></td></tr>
+<tr class="memdesc:a545f775d55ea4f73f326e9107765bedf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get contents of remote data (folder, item, file)  <a href="classFeel_1_1RemoteData_1_1Girder.html#a545f775d55ea4f73f326e9107765bedf">More...</a><br /></td></tr>
 <tr class="separator:a545f775d55ea4f73f326e9107765bedf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cba8e4653c0d07908ee7fd8e0eb74a6"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::string, std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a1cba8e4653c0d07908ee7fd8e0eb74a6">createFolder</a> (std::string const &amp;folderPath, std::string const &amp;parentId=&quot;&quot;, <a class="el" href="classbool.html">bool</a> sync=true) const</td></tr>
-<tr class="memdesc:a1cba8e4653c0d07908ee7fd8e0eb74a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">create folders hierarchy on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>  <a href="classFeel_1_1RemoteData_1_1Girder.html#a1cba8e4653c0d07908ee7fd8e0eb74a6">More...</a><br /></td></tr>
+<tr class="memdesc:a1cba8e4653c0d07908ee7fd8e0eb74a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create folders hierarchy on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a1cba8e4653c0d07908ee7fd8e0eb74a6">More...</a><br /></td></tr>
 <tr class="separator:a1cba8e4653c0d07908ee7fd8e0eb74a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22141e9ec21fb21b77f35428ed686fc2"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; std::string, std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a22141e9ec21fb21b77f35428ed686fc2">createItem</a> (std::string const &amp;itemPath, std::string const &amp;parentId, <a class="el" href="classbool.html">bool</a> sync=true) const</td></tr>
+<tr class="memdesc:a22141e9ec21fb21b77f35428ed686fc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create item on remote storage.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a22141e9ec21fb21b77f35428ed686fc2">More...</a><br /></td></tr>
+<tr class="separator:a22141e9ec21fb21b77f35428ed686fc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50b6718597aeb1fbdfe45095e88add27"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a50b6718597aeb1fbdfe45095e88add27">deleteResource</a> (const <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;resourceId, const std::string &amp;token=&quot;&quot;) const</td></tr>
+<tr class="memdesc:a50b6718597aeb1fbdfe45095e88add27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a resource by id.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a50b6718597aeb1fbdfe45095e88add27">More...</a><br /></td></tr>
+<tr class="separator:a50b6718597aeb1fbdfe45095e88add27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1ce76424a82a53971718dbc101ec98a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#af1ce76424a82a53971718dbc101ec98a">download</a> (const std::string &amp;dir, const std::string &amp;path) const</td></tr>
+<tr class="memdesc:af1ce76424a82a53971718dbc101ec98a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download file/folder/item from the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> desc.  <a href="classFeel_1_1RemoteData_1_1Girder.html#af1ce76424a82a53971718dbc101ec98a">More...</a><br /></td></tr>
+<tr class="separator:af1ce76424a82a53971718dbc101ec98a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8653cd5a4e77b02b67e406e205d959d9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a8653cd5a4e77b02b67e406e205d959d9">download</a> (std::string const &amp;dir=<a class="el" href="classFeel_1_1Environment.html#ae42b6f934fb8fb12d4b8d45c9b5b380e">Environment::downloadsRepository</a>()) const</td></tr>
-<tr class="memdesc:a8653cd5a4e77b02b67e406e205d959d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">download file/folder from the girder desc  <a href="classFeel_1_1RemoteData_1_1Girder.html#a8653cd5a4e77b02b67e406e205d959d9">More...</a><br /></td></tr>
+<tr class="memdesc:a8653cd5a4e77b02b67e406e205d959d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download file/folder from the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> desc.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a8653cd5a4e77b02b67e406e205d959d9">More...</a><br /></td></tr>
 <tr class="separator:a8653cd5a4e77b02b67e406e205d959d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ee66ce5c1f6dde81df0bc2b090fd03c"><td class="memItemLeft" align="right" valign="top"><a id="a7ee66ce5c1f6dde81df0bc2b090fd03c" name="a7ee66ce5c1f6dde81df0bc2b090fd03c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Girder</b> (<a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> &amp;&amp;)=default</td></tr>
@@ -142,27 +151,30 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae428d3f4eafddbb33317dd9b5517305f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a614a1f170b94dfb9c3f52eb7adcac60d"><td class="memItemLeft" align="right" valign="top"><a id="a614a1f170b94dfb9c3f52eb7adcac60d" name="a614a1f170b94dfb9c3f52eb7adcac60d"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Girder</b> (std::string const &amp;desc, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;<a class="el" href="structFeel_1_1RemoteData.html#a8c80f497f1b97f28fb21b079a5efdba9">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Environment::worldComm</a>())</td></tr>
-<tr class="memdesc:a614a1f170b94dfb9c3f52eb7adcac60d"><td class="mdescLeft">&#160;</td><td class="mdescRight">init from a description : github:{owner:feelpp,repo:feelpp,branch:develop,path:toolboxes/fluid/TurekHron,token:xxxxx} girder:{url:https://girder.math.unistra.fr,<a href="file:5ac722e9b0e9574027047886,token:xxxxx">file:5ac722e9b0e9574027047886,token:xxxxx</a>} girder:{url:https://girder.math.unistra.fr,file:[5ac7253ab0e957402704788d,5ac722e9b0e9574027047886],token:xxxxx} <br /></td></tr>
+<tr class="memdesc:a614a1f170b94dfb9c3f52eb7adcac60d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize from a description: girder:{url:https://girder.math.unistra.fr,<a href="file:5ac722e9b0e9574027047886,token:xxxxx">file:5ac722e9b0e9574027047886,token:xxxxx</a>} girder:{url:https://girder.math.unistra.fr,file:[5ac7253ab0e957402704788d,5ac722e9b0e9574027047886],token:xxxxx}. <br /></td></tr>
 <tr class="separator:a614a1f170b94dfb9c3f52eb7adcac60d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1e6be9dd9fd7a22c4cc4e4b3c6b5fa3"><td class="memItemLeft" align="right" valign="top"><a id="ab1e6be9dd9fd7a22c4cc4e4b3c6b5fa3" name="ab1e6be9dd9fd7a22c4cc4e4b3c6b5fa3"></a>
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isInit</b> () const</td></tr>
-<tr class="memdesc:ab1e6be9dd9fd7a22c4cc4e4b3c6b5fa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> remote server is defined from a desc <br /></td></tr>
+<tr class="memdesc:ab1e6be9dd9fd7a22c4cc4e4b3c6b5fa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return true if the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> remote server is defined from a desc. <br /></td></tr>
 <tr class="separator:ab1e6be9dd9fd7a22c4cc4e4b3c6b5fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bdd9640772a157b6b0e30ee73c71191"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a3bdd9640772a157b6b0e30ee73c71191">replaceFile</a> (std::string const &amp;filePath, std::string const &amp;fileId) const</td></tr>
-<tr class="memdesc:a3bdd9640772a157b6b0e30ee73c71191"><td class="mdescLeft">&#160;</td><td class="mdescRight">replace contents of a file  <a href="classFeel_1_1RemoteData_1_1Girder.html#a3bdd9640772a157b6b0e30ee73c71191">More...</a><br /></td></tr>
+<tr class="memdesc:a3bdd9640772a157b6b0e30ee73c71191"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace contents of a file.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a3bdd9640772a157b6b0e30ee73c71191">More...</a><br /></td></tr>
 <tr class="separator:a3bdd9640772a157b6b0e30ee73c71191"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1895513ecc0056009489ceb24972ce36"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a1895513ecc0056009489ceb24972ce36">replaceFile</a> (std::vector&lt; std::pair&lt; std::string, std::string &gt; &gt; const &amp;filesToReplace) const</td></tr>
-<tr class="memdesc:a1895513ecc0056009489ceb24972ce36"><td class="mdescLeft">&#160;</td><td class="mdescRight">replace contents of a file  <a href="classFeel_1_1RemoteData_1_1Girder.html#a1895513ecc0056009489ceb24972ce36">More...</a><br /></td></tr>
+<tr class="memdesc:a1895513ecc0056009489ceb24972ce36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace contents of files.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a1895513ecc0056009489ceb24972ce36">More...</a><br /></td></tr>
 <tr class="separator:a1895513ecc0056009489ceb24972ce36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac473104e5f424ed8fbe2c09a4967cad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#aac473104e5f424ed8fbe2c09a4967cad">resourceLookup</a> (const std::string &amp;path, const std::string &amp;token=&quot;&quot;) const</td></tr>
+<tr class="memdesc:aac473104e5f424ed8fbe2c09a4967cad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lookup a resource by path.  <a href="classFeel_1_1RemoteData_1_1Girder.html#aac473104e5f424ed8fbe2c09a4967cad">More...</a><br /></td></tr>
+<tr class="separator:aac473104e5f424ed8fbe2c09a4967cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afac7413a2cd9bacc22d96dce7fb21fe2"><td class="memItemLeft" align="right" valign="top"><a id="afac7413a2cd9bacc22d96dce7fb21fe2" name="afac7413a2cd9bacc22d96dce7fb21fe2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std::string const &amp;folderId)</td></tr>
-<tr class="memdesc:afac7413a2cd9bacc22d96dce7fb21fe2"><td class="mdescLeft">&#160;</td><td class="mdescRight">set folder ids to only one folder id <br /></td></tr>
+<tr class="memdesc:afac7413a2cd9bacc22d96dce7fb21fe2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set folder ids to only one folder id. <br /></td></tr>
 <tr class="separator:afac7413a2cd9bacc22d96dce7fb21fe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0b51a0f238308da09027b7555196c2a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#af0b51a0f238308da09027b7555196c2a">upload</a> (std::string const &amp;dataPath, std::string const &amp;parentId=&quot;&quot;, <a class="el" href="classbool.html">bool</a> sync=true) const</td></tr>
-<tr class="memdesc:af0b51a0f238308da09027b7555196c2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>  <a href="classFeel_1_1RemoteData_1_1Girder.html#af0b51a0f238308da09027b7555196c2a">More...</a><br /></td></tr>
+<tr class="memdesc:af0b51a0f238308da09027b7555196c2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>.  <a href="classFeel_1_1RemoteData_1_1Girder.html#af0b51a0f238308da09027b7555196c2a">More...</a><br /></td></tr>
 <tr class="separator:af0b51a0f238308da09027b7555196c2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f51a7992dba903415df605b49d9c6c5"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; std::string &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a8f51a7992dba903415df605b49d9c6c5">upload</a> (std::vector&lt; std::pair&lt; std::string, std::string &gt; &gt; const &amp;dataToUpload, <a class="el" href="classbool.html">bool</a> sync=true) const</td></tr>
-<tr class="memdesc:a8f51a7992dba903415df605b49d9c6c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>  <a href="classFeel_1_1RemoteData_1_1Girder.html#a8f51a7992dba903415df605b49d9c6c5">More...</a><br /></td></tr>
+<tr class="memdesc:a8f51a7992dba903415df605b49d9c6c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>.  <a href="classFeel_1_1RemoteData_1_1Girder.html#a8f51a7992dba903415df605b49d9c6c5">More...</a><br /></td></tr>
 <tr class="separator:a8f51a7992dba903415df605b49d9c6c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -181,8 +193,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>get contents of a remote data (folder,item,file) </p>
-<dl class="section return"><dt>Returns</dt><dd>: (Folders info,Items info, Files info) </dd></dl>
+<p>Get contents of remote data (folder, item, file) </p>
+<dl class="section return"><dt>Returns</dt><dd>: (Folders info, Items info, Files info) </dd></dl>
 
 </div>
 </div>
@@ -218,12 +230,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>create folders hierarchy on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> </p>
+<p>Create folders hierarchy on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">folderPath</td><td>: the folder hierarchy </td></tr>
-    <tr><td class="paramname">parentId</td><td>: id where folder are created, empty say to use folder id in the desc </td></tr>
-    <tr><td class="paramname">sync</td><td>: apply a mpi synchronization with returned infos (else only master rank have these infos) </td></tr>
+    <tr><td class="paramname">parentId</td><td>: id where folder is created, empty means to use folder id in the desc </td></tr>
+    <tr><td class="paramname">sync</td><td>: apply MPI synchronization with returned infos (else only master rank has these infos) </td></tr>
   </table>
   </dd>
 </dl>
@@ -231,8 +243,130 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
 
 </div>
 </div>
+<a id="a22141e9ec21fb21b77f35428ed686fc2" name="a22141e9ec21fb21b77f35428ed686fc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22141e9ec21fb21b77f35428ed686fc2">&#9670;&nbsp;</a></span>createItem()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::pair&lt; std::string, std::string &gt; &gt; Feel::RemoteData::Girder::createItem </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>itemPath</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>parentId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>sync</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create item on remote storage. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">itemPath</td><td>: the item </td></tr>
+    <tr><td class="paramname">parentId</td><td>: id where item is created, empty means to use folder id in the desc </td></tr>
+    <tr><td class="paramname">sync</td><td>: apply MPI synchronization with returned infos (else only master rank has these infos) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a50b6718597aeb1fbdfe45095e88add27" name="a50b6718597aeb1fbdfe45095e88add27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50b6718597aeb1fbdfe45095e88add27">&#9670;&nbsp;</a></span>deleteResource()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> Feel::RemoteData::Girder::deleteResource </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;&#160;</td>
+          <td class="paramname"><em>resourceId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>token</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Delete a resource by id. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">resourceId</td><td>: the id of the resource in <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> </td></tr>
+    <tr><td class="paramname">token</td><td>: authentication token </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>: true if the resource was deleted </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::contains()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#ad0912bbeb61a9b5d50f054fe4e55e3fe">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
+
+</div>
+</div>
+<a id="af1ce76424a82a53971718dbc101ec98a" name="af1ce76424a82a53971718dbc101ec98a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1ce76424a82a53971718dbc101ec98a">&#9670;&nbsp;</a></span>download() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::string &gt; Feel::RemoteData::Girder::download </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>path</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Download file/folder/item from the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> desc. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dir</td><td>: the directory where the file is downloaded </td></tr>
+    <tr><td class="paramname">path</td><td>: the path of the file/folder/item </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>: vector of paths of the downloaded files or the path of downloaded folder </dd></dl>
+
+</div>
+</div>
 <a id="a8653cd5a4e77b02b67e406e205d959d9" name="a8653cd5a4e77b02b67e406e205d959d9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8653cd5a4e77b02b67e406e205d959d9">&#9670;&nbsp;</a></span>download()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8653cd5a4e77b02b67e406e205d959d9">&#9670;&nbsp;</a></span>download() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -247,14 +381,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>download file/folder from the girder desc </p>
+<p>Download file/folder from the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> desc. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">dir</td><td>: the directory where the file is downloaded </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>: vector of path of the downloaded file or the path of downloaded folder </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>: vector of paths of the downloaded files or the path of downloaded folder </dd></dl>
+
+<p class="reference">References <a class="el" href="structFeel_1_1RemoteData.html#ae7aca8c7d3f15edf5032c0d1bb4403ae">Feel::RemoteData::download()</a>.</p>
 
 </div>
 </div>
@@ -284,11 +420,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>replace contents of a file </p>
+<p>Replace contents of a file. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">filePath</td><td>: path of new file </td></tr>
-    <tr><td class="paramname">filedId</td><td>: id of the file to replace </td></tr>
+    <tr><td class="paramname">fileId</td><td>: id of the file to replace </td></tr>
   </table>
   </dd>
 </dl>
@@ -313,13 +449,51 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>replace contents of a file </p>
+<p>Replace contents of files. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">filesToReplace</td><td>: vector of (path of new file, file id to replace) </td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="aac473104e5f424ed8fbe2c09a4967cad" name="aac473104e5f424ed8fbe2c09a4967cad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac473104e5f424ed8fbe2c09a4967cad">&#9670;&nbsp;</a></span>resourceLookup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> Feel::RemoteData::Girder::resourceLookup </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>path</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>token</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Lookup a resource by path. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">path</td><td>: the path to the resource in <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> </td></tr>
+    <tr><td class="paramname">token</td><td>: authentication token </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>: JSON object containing resource information </dd></dl>
 
 </div>
 </div>
@@ -355,16 +529,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> </p>
+<p>Upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">dataPath</td><td>: a path of a file or a folder </td></tr>
-    <tr><td class="paramname">parentId</td><td>: id where folder are created, empty say to use folder id in the desc </td></tr>
-    <tr><td class="paramname">sync</td><td>: apply a mpi synchronization with returned infos (else only master rank have these infos) </td></tr>
+    <tr><td class="paramname">parentId</td><td>: id where folder is created, empty means to use folder id in the desc </td></tr>
+    <tr><td class="paramname">sync</td><td>: apply MPI synchronization with returned infos (else only master rank has these infos) </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>: vector of file id uploaded </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>: vector of file ids uploaded </dd></dl>
 
 <p class="reference">References <a class="el" href="structFeel_1_1RemoteData.html#ad3210c2403d750d708245a5dd0d5850a">Feel::RemoteData::upload()</a>.</p>
 
@@ -396,15 +570,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFolderIds</b> (std
       </table>
 </div><div class="memdoc">
 
-<p>upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> </p>
+<p>Upload data on <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">dataToUpload</td><td>: vector of (paths of a file or a folder, ids where folder are created, empty say to use folder id in the desc) </td></tr>
-    <tr><td class="paramname">sync</td><td>: apply a mpi synchronization with returned infos (else only master rank have these infos) </td></tr>
+    <tr><td class="paramname">dataToUpload</td><td>: vector of (paths of a file or a folder, ids where folder is created, empty means to use folder id in the desc) </td></tr>
+    <tr><td class="paramname">sync</td><td>: apply MPI synchronization with returned infos (else only master rank has these infos) </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>: vector of vector of file id uploaded </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>: vector of vectors of file ids uploaded </dd></dl>
 
 </div>
 </div>

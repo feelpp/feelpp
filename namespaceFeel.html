@@ -693,7 +693,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">implements a region-tree for point search in a set of boxes  <a href="classFeel_1_1RegionTree.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html">RemoteData</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">class which manage downloads from an url or github and download/upload with the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> database by using the libcurl  <a href="structFeel_1_1RemoteData.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class which manages downloads from a <a class="el" href="classFeel_1_1RemoteData_1_1URL.html">URL</a> or GitHub and download/upload with the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> database by using libcurl.  <a href="structFeel_1_1RemoteData.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1remove__shared__ptr.html">remove_shared_ptr</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2187,9 +2187,9 @@ Feel::po::options_description&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:aa913270cd2843deef2b86218e20a88f3"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">context</a> (Ts &amp;&amp;... v)</td></tr>
 <tr class="memdesc:aa913270cd2843deef2b86218e20a88f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the the geometric mapping context associated to a functionspace  <a href="namespaceFeel.html#aa913270cd2843deef2b86218e20a88f3">More...</a><br /></td></tr>
 <tr class="separator:aa913270cd2843deef2b86218e20a88f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64d8cd65b22fcbcdd53ebdfc4cdce502"><td class="memItemLeft" align="right" valign="top"><a id="a64d8cd65b22fcbcdd53ebdfc4cdce502" name="a64d8cd65b22fcbcdd53ebdfc4cdce502"></a>
-std::pair&lt; <a class="el" href="classbool.html">bool</a>, pt::ptree &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>convertDescToPropertyTree</b> (std::string const &amp;desc)</td></tr>
-<tr class="separator:a64d8cd65b22fcbcdd53ebdfc4cdce502"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a022c0d367f6043c349b128753d363cd0"><td class="memItemLeft" align="right" valign="top"><a id="a022c0d367f6043c349b128753d363cd0" name="a022c0d367f6043c349b128753d363cd0"></a>
+std::pair&lt; <a class="el" href="classbool.html">bool</a>, <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>convertDescToJson</b> (std::string const &amp;desc)</td></tr>
+<tr class="separator:a022c0d367f6043c349b128753d363cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26b74cd0cfff4d2f211cd827a3606864"><td class="memTemplParams" colspan="2"><a id="a26b74cd0cfff4d2f211cd827a3606864" name="a26b74cd0cfff4d2f211cd827a3606864"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:a26b74cd0cfff4d2f211cd827a3606864"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>convolve</b> (Ts &amp;&amp;... varg)</td></tr>
@@ -3266,6 +3266,9 @@ template&lt;typename T , typename ... Ts, typename  = typename std::enable_if_t&
 <tr class="memitem:a193d1bfb0031dc932e4adfdee46b4a6e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#a9fcb954b948f5d344879954c7ffd94a5">P2ch_ptrtype</a>&lt; Base1, Base2, MeshType &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a193d1bfb0031dc932e4adfdee46b4a6e">P2ch</a> (std::shared_ptr&lt; MeshType &gt; mesh, std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt; buildExtendedDofTable=std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;(2, false))</td></tr>
 <tr class="memdesc:a193d1bfb0031dc932e4adfdee46b4a6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <code>mesh</code> and polynomial order \(k\)(template argument), build a product function space of \([P_{k}]^d \times P_{l}]\) where $d$ is the dimension of the associated mesh.  <a href="namespaceFeel.html#a193d1bfb0031dc932e4adfdee46b4a6e">More...</a><br /></td></tr>
 <tr class="separator:a193d1bfb0031dc932e4adfdee46b4a6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ec61b49f10b73d769f0de23bfa38cdf"><td class="memItemLeft" align="right" valign="top"><a id="a0ec61b49f10b73d769f0de23bfa38cdf" name="a0ec61b49f10b73d769f0de23bfa38cdf"></a>
+<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>parseCustomFormat</b> (const std::string &amp;customInput)</td></tr>
+<tr class="separator:a0ec61b49f10b73d769f0de23bfa38cdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1cf13b141aa5defc5d93328fb5b67eb"><td class="memTemplParams" colspan="2">template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:ab1cf13b141aa5defc5d93328fb5b67eb"><td class="memTemplItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classFeel_1_1MeshPartitionSet.html">MeshPartitionSet</a>&lt; MeshType &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#ab1cf13b141aa5defc5d93328fb5b67eb">partitionMesh</a> (std::shared_ptr&lt; MeshType &gt; mesh, <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> nGlobalParts, std::vector&lt; <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; MeshType, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt; &gt; partitionByRange=std::vector&lt; <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; MeshType, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt; &gt;(), <a class="el" href="classnlohmann_1_1basic__json.html">json</a> const &amp;partconfig=<a class="el" href="classnlohmann_1_1basic__json.html">json</a>())</td></tr>
 <tr class="memdesc:ab1cf13b141aa5defc5d93328fb5b67eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">partition a mesh and provide a helper data struct navigate in the newly partitioned mesh  <a href="namespaceFeel.html#ab1cf13b141aa5defc5d93328fb5b67eb">More...</a><br /></td></tr>
@@ -3348,6 +3351,9 @@ template&lt;typename A0 , typename A1 , typename A2 &gt; </td></tr>
 <tr class="memitem:ga77eb5fc8ec24e18ccf2a27c9399d0e25"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga77eb5fc8ec24e18ccf2a27c9399d0e25">prefixvm</a> (std::string const  &amp;prefix, std::string const  &amp;opt, std::string const  &amp;sep=&quot;.&quot;)</td></tr>
 <tr class="memdesc:ga77eb5fc8ec24e18ccf2a27c9399d0e25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Function that compute the command line option prefix for the option variable map.  <a href="group__Core.html#ga77eb5fc8ec24e18ccf2a27c9399d0e25">More...</a><br /></td></tr>
 <tr class="separator:ga77eb5fc8ec24e18ccf2a27c9399d0e25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a555f9b0fd29b5794e231a05e2810750a"><td class="memItemLeft" align="right" valign="top"><a id="a555f9b0fd29b5794e231a05e2810750a" name="a555f9b0fd29b5794e231a05e2810750a"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>preprocessCustomFormat</b> (const std::string &amp;input)</td></tr>
+<tr class="separator:a555f9b0fd29b5794e231a05e2810750a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a527e0de93d0413a5f89385f959189354"><td class="memTemplParams" colspan="2"><a id="a527e0de93d0413a5f89385f959189354" name="a527e0de93d0413a5f89385f959189354"></a>
 template&lt;typename MeshT &gt; </td></tr>
 <tr class="memitem:a527e0de93d0413a5f89385f959189354"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>print</b> (MeshT *m)</td></tr>
@@ -4682,9 +4688,9 @@ const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>MESH_ALL
 <tr class="memitem:abb3d68ba0c883c2d7cbd75e7f37e4231"><td class="memItemLeft" align="right" valign="top"><a id="abb3d68ba0c883c2d7cbd75e7f37e4231" name="abb3d68ba0c883c2d7cbd75e7f37e4231"></a>
 const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>MESH_COMPONENTS_DEFAULTS</b> = MESH_RENUMBER | MESH_CHECK</td></tr>
 <tr class="separator:abb3d68ba0c883c2d7cbd75e7f37e4231"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ae980ae4c9ed4aac8e8e87694e6b381"><td class="memItemLeft" align="right" valign="top"><a id="a9ae980ae4c9ed4aac8e8e87694e6b381" name="a9ae980ae4c9ed4aac8e8e87694e6b381"></a>
+<tr class="memitem:adcb8d937e8922c23f462b9fdfe2e1a3d"><td class="memItemLeft" align="right" valign="top"><a id="adcb8d937e8922c23f462b9fdfe2e1a3d" name="adcb8d937e8922c23f462b9fdfe2e1a3d"></a>
 const std::map&lt; std::string, std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mimeTypes</b></td></tr>
-<tr class="separator:a9ae980ae4c9ed4aac8e8e87694e6b381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:adcb8d937e8922c23f462b9fdfe2e1a3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2562e349bc473a382b2e36938fd17732"><td class="memItemLeft" align="right" valign="top"><a id="a2562e349bc473a382b2e36938fd17732" name="a2562e349bc473a382b2e36938fd17732"></a>
 constexpr <a class="el" href="classboost_1_1hana_1_1integral__constant.html">multiple_space_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>multiple_space_c</b> {}</td></tr>
 <tr class="separator:a2562e349bc473a382b2e36938fd17732"><td class="memSeparator" colspan="2">&#160;</td></tr>

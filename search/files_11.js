@@ -6,5 +6,8 @@ var searchData=
   ['refentity_2ehpp_3',['refentity.hpp',['../refentity_8hpp.html',1,'']]],
   ['refhypercube_2ehpp_4',['refhypercube.hpp',['../refhypercube_8hpp.html',1,'']]],
   ['refsimplex_2ehpp_5',['refsimplex.hpp',['../refsimplex_8hpp.html',1,'']]],
-  ['region_2ehpp_6',['region.hpp',['../region_8hpp.html',1,'']]]
+  ['region_2ehpp_6',['region.hpp',['../region_8hpp.html',1,'']]],
+  ['remotedatackan_2ecpp_7',['remotedatackan.cpp',['../remotedatackan_8cpp.html',1,'']]],
+  ['remotedatagirder_2ecpp_8',['remotedatagirder.cpp',['../remotedatagirder_8cpp.html',1,'']]],
+  ['remotedatagithub_2ecpp_9',['remotedatagithub.cpp',['../remotedatagithub_8cpp.html',1,'']]]
 ];
