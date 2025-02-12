@@ -93,7 +93,8 @@ jobs:
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp
-            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            GPG_KEY: ${{ secrets.GPG_KEY }}
+            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -111,7 +112,8 @@ jobs:
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-toolboxes
-            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            GPG_KEY: ${{ secrets.GPG_KEY }}
+            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -129,7 +131,8 @@ jobs:
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-mor
-            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            GPG_KEY: ${{ secrets.GPG_KEY }}
+            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -147,7 +150,8 @@ jobs:
             feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
           env:
             COMPONENT: feelpp-python
-            BUILDKITE_PASSPHRASE: ${{ secrets.BUILDKITE_PASSPHRASE }}
+            GPG_KEY: ${{ secrets.GPG_KEY }}
+            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
             AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
