@@ -21,7 +21,7 @@ jobs:
         check_skip_python: ${{ steps.check_skip_components.outputs.SKIP_PYTHON }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Check if skip components
@@ -87,11 +87,14 @@ jobs:
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate feelpp-openmpi4
-          cmake --build --preset feelpp-spack -j60
+          cmake --build --preset feelpp-spack -j40
           cmake --build --preset feelpp-spack -t install/fast
       - name: Test Feelpp
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate feelpp-openmpi4
           ctest --preset feelpp-spack -j4 -R feelpp
+        env:
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
 

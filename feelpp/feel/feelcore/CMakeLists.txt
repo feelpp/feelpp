@@ -31,6 +31,22 @@ set(SRC
   feel.cpp
   feelio.cpp
   info.cpp
+  repository.cpp
+  simget.cpp
+  xmlparser.hpp
+  about.cpp
+  typeinfo.cpp
+  smartassert.cpp
+  pslogger.cpp
+  worldcomm.cpp
+  debug.cpp
+  utility.cpp
+  ptreetools.cpp
+  checker.cpp
+  remotedata.cpp
+  remotedatackan.cpp
+  remotedatagirder.cpp
+  remotedatagithub.cpp
   journalmanager.cpp
   journalwatcher.cpp
   mpilogsink.cpp
