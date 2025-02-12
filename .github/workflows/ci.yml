@@ -21,7 +21,7 @@ jobs:
         check_skip_python: ${{ steps.check_skip_components.outputs.SKIP_PYTHON }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Check if skip components
@@ -88,12 +88,12 @@ jobs:
               - { target: "debian:12", continue-on-error: false }
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Workaround checkout Needed single revision issue
         run: |
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -103,6 +103,8 @@ jobs:
           echo "Building Feelpp for branch ${{ env.BRANCH }}"
           feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
         env:
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
@@ -129,7 +131,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -138,6 +140,7 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
         env:
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
@@ -165,7 +168,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -174,6 +177,8 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
         env:
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
@@ -200,7 +205,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -209,6 +214,8 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh mor
         env:
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
@@ -235,7 +242,7 @@ jobs:
               - "debian:12"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
             submodules: recursive
 
@@ -244,6 +251,8 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
         env:
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.TARGET }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
