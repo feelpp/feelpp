@@ -12,8 +12,12 @@ builddeps=$(cat $DIST | tr "\n" " ")
 feelpp-pbuilder-dist $DIST login --save-after-login << EOF
 echo "--- apt update"
 apt-get update
-apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget
 
+if [ "$DIST" = "trixie" ]; then
+    apt-get -y install apt-transport-https ca-certificates gnupg  wget
+elif
+        apt-get -y install apt-transport-https ca-certificates gnupg software-properties-common wget
+fi
 
 echo "--- add-apt-repository  "
 add-apt-repository  'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL'
