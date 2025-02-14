@@ -19,6 +19,7 @@ on:
           default: 'jammy'
           type: choice
           options:
+          - 'trixie'
           - 'jammy'
           - 'focal'
           - 'noble'
@@ -79,7 +80,7 @@ on:
 jobs:
 
   docker:
-#    if: ${{ !contains( inputs.skip, 'skip docker' ) && inputs.docker == 'true'}}
+    if: ${{ !contains( inputs.skip, 'skip docker' ) && inputs.docker == 'true'}}
     runs-on: self-docker
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     outputs:

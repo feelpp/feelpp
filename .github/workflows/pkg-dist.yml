@@ -171,7 +171,7 @@ jobs:
 
     pkg-docker:
       if: ${{ inputs.docker == 'true' }}
-      needs: pkg
+#      needs: pkg
       uses: ./.github/workflows/pkg-docker.yml
       with:
         dist: ${{ inputs.dist }}
@@ -183,8 +183,8 @@ jobs:
       secrets: inherit
 
     pkg-apptainer:
-#      if: ${{ inputs.apptainer == 'true' }}
-#      needs: pkg-docker
+      if: ${{ inputs.apptainer == 'true' }}
+      needs: pkg-docker
       uses: ./.github/workflows/pkg-apptainer.yml
       with:
         dist: ${{ inputs.dist }}
