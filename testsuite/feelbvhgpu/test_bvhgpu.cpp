@@ -2,9 +2,9 @@
 
 // NOTA : Objective: Ray tracing from inside a cube using BVH Ray Tracing with a CPU and a GPU method. Compare the performances of the two methods.
 
-#include <ranges>
-#include <fmt/chrono.h>
 #include <feel/feelmesh/ranges.hpp>
+#include <fmt/chrono.h>
+#include <ranges>
 
 #include <feel/feelcore/enumerate.hpp>
 
@@ -30,23 +30,20 @@
 #include <feel/feelmesh/partitionmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
-
-
-#if defined(FEELPP_HAS_HIP)
+#if defined( FEELPP_HAS_HIP )
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
+#include <thrust/copy.h>
+#include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/functional.h>
+#include <thrust/generate.h>
 #include <thrust/host_vector.h>
 #include <thrust/random.h>
 #include <thrust/sort.h>
 #include <thrust/transform.h>
-#include <thrust/copy.h>
-#include <thrust/count.h>
-#include <thrust/generate.h>
-#include <thrust/sort.h>
 #endif
 
 using namespace Feel;
@@ -280,7 +277,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
     std::string filename = "results.txt";
     std::ofstream myfile( filename );
 
-    for ( int kkk : std::views::iota(1, 2) )
+    for ( int kkk : std::views::iota( 1, 2 ) )
     {
 
         Eigen::Vector3d ray_origin = { 0.0f, 0.0f, 0.0f };
@@ -337,9 +334,9 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
                 distance_CPU_mode.insert( distance_CPU_mode.end(), dist.begin(), dist.end() );
             }
             double time_end = timer.seconds();
-            LOG( INFO ) << fmt::format("[cpu] bvh : {}s, rt: {}s, total: {}s, distance GPU={}", time_bvh, time_raytracing, time_end, distance_CPU_mode.size() );
+            LOG( INFO ) << fmt::format( "[cpu] bvh : {}s, rt: {}s, total: {}s, distance GPU={}", time_bvh, time_raytracing, time_end, distance_CPU_mode.size() );
         }
-#if defined(FEELPP_HAS_HIP)
+#if defined( FEELPP_HAS_HIP )
         if constexpr ( std::is_same_v<ExecSpace, Kokkos::HIP> )
         {
             // In GPU mode with AMD HIP
@@ -347,10 +344,12 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
 
             Kokkos::Timer timer;
             auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-            double time_bvh = timer.seconds();timer.reset();
+            double time_bvh = timer.seconds();
+            timer.reset();
 
             auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed );
-            double time_raytracing = timer.seconds();timer.reset();
+            double time_raytracing = timer.seconds();
+            timer.reset();
 
             std::vector<double> distance_GPU_mode;
             for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
@@ -361,7 +360,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
             }
             double time_end = timer.seconds();
 
-            LOG( INFO ) << fmt::format("[gpu] bvh : {}s, rt: {}s, total: {}s, distance GPU={}", time_bvh, time_raytracing, time_end, distance_GPU_mode.size() );
+            LOG( INFO ) << fmt::format( "[gpu] bvh : {}s, rt: {}s, total: {}s, distance GPU={}", time_bvh, time_raytracing, time_end, distance_GPU_mode.size() );
         }
 #endif
     }
@@ -392,7 +391,7 @@ void test3DInsideObjectWithHybrid( RangeType const& range )
             LOG( INFO ) << "WELL DONE :-) No error (same distance). \n";
         }
 
-#endif         
+#endif
 }
 
 template <typename RangeType>
@@ -410,8 +409,8 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
-    bool isModeGPU = true;//isThereAnyGPUhere( false );
-    //isModeGPU = false;
+    bool isModeGPU = true; // isThereAnyGPUhere( false );
+    // isModeGPU = false;
 
     int kkk = 1;
 
@@ -466,7 +465,7 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
         }
         LOG( INFO ) << "dist : " << distance_CPU_mode.size() << "\n";
     }
-#if defined(FEELPP_HAS_HIP)
+#if defined( FEELPP_HAS_HIP )
     if ( isModeGPU )
     {
         // In GPU mode with AMD HIP
@@ -483,14 +482,12 @@ void test3D_AutoDecisionCPUorGPU( RangeType const& range )
         }
         LOG( INFO ) << "dist : " << distance_GPU_mode.size() << "\n";
     }
-#endif    
+#endif
     t_end = std::chrono::steady_clock::now();
 
     t_laps = std::chrono::duration_cast<std::chrono::microseconds>( t_end - t_begin ).count();
     LOG( INFO ) << "Elapsed microseconds inside BVH Ray Tracing GPU : " << t_laps << " us\n";
 }
-
-
 
 BOOST_AUTO_TEST_SUITE( bvh_intersection_gpu_tests )
 
@@ -537,20 +534,17 @@ BOOST_AUTO_TEST_CASE( test_load_mesh3 )
     LOG( INFO ) << "nbdyfaces : " << nbdyfaces << "\n";
     LOG( INFO ) << "\n";
 
- 
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     LOG( INFO ) << "Execute on CPU" << std::endl;
     test3DInsideObjectWithHybrid<Kokkos::Serial>( rangeFaces );
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
 
-#if defined(FEELPP_HAS_HIP)
+#if defined( FEELPP_HAS_HIP )
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
     LOG( INFO ) << "Execute on GPU" << std::endl;
     test3DInsideObjectWithHybrid<Kokkos::HIP>( rangeFaces );
     LOG( INFO ) << "+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n";
 #endif
-
-
 
     LOG( INFO ) << "\n";
 }

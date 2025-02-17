@@ -1427,7 +1427,13 @@ class BVH : public CommObject
         using napp_ray_type = std::decay_t<decltype( ray )>;
         if constexpr ( std::is_same_v<BVHRaysDistributed<nRealDim>, napp_ray_type> ) // case rays distributed on process
         {
-            printf("worldCommSize=%i\n",this->worldComm().size());
+
+#if 1
+          // Old Version  
+            int worldSize = this->worldComm().size(); // Nombre de processus
+            int worldRank = this->worldComm().rank(); // Rang du processus actuel
+            printf("IIIIIIIIIIIIIIIIIII worldSize=%i worldRank=%i\n",worldSize,worldRank);
+        
 
             tic();
             // WARNING: this algo is not good (all_gather of rays then all run bvh), just a quick version for test
@@ -1469,6 +1475,73 @@ class BVH : public CommObject
 
             auto timeDuration_intersect_block1= toc( "timeDuration_intersect_block1" );
             return res;
+#endif
+
+
+   
+
+            
+        
+#if 0
+        // Une nouvelle version on découpe le vecteur
+        
+        int worldSize = this->worldComm().size(); // Nombre de processus
+        int worldRank = this->worldComm().rank(); // Rang du processus actuel
+
+
+        printf("IIIIIIIIIIIIIIIIIII worldSize=%i worldRank=%i\n",worldSize,worldRank);
+
+        // Récupération des rayons locaux
+        auto const& allRays = ray.rays();
+        int totalRays = allRays.size();
+
+        // Calcul de la répartition des rayons entre les processus
+        int raysPerProcess = totalRays / worldSize;
+        int remainingRays = totalRays % worldSize;
+
+        // On détermine l'intervalle de rayons pour ce processus
+        int startRayIndex = raysPerProcess * worldRank + std::min(worldRank, remainingRays);
+        int endRayIndex = startRayIndex + raysPerProcess + (worldRank < remainingRays ? 1 : 0);
+
+        //std::vector<ray_type> localRays(allRays.begin() + startRayIndex, allRays.begin() + endRayIndex);
+        std::vector<ray_type> localRays;
+        localRays.reserve(endRayIndex - startRayIndex); // Pré-allocation
+        localRays.insert(localRays.end(), allRays.begin() + startRayIndex, allRays.begin() + endRayIndex);
+
+        // On effectue l'intersection pour les rayons locaux en appelant `this->intersect`
+        auto localResults = this->intersect(
+            _ray = localRays,
+            _robust = useRobustTraversal,
+            _context = ctx,
+            _parallel = true 
+        );
+
+        // On rassemble les résultats sur le processus maître
+        std::vector<std::vector<std::vector<rayintersection_result_type>>> gatheredResults;
+        if (worldRank == 0) {
+            gatheredResults.resize(worldSize);
+        }
+
+        mpi::gather(this->worldComm(), localResults, gatheredResults, 0);
+
+        // On combiner tous les résultats sur le maître
+        std::vector<std::vector<rayintersection_result_type>> finalResults;
+        if (worldRank == 0) {
+            finalResults.resize(totalRays);
+            int currentIndex = 0;
+            for (int p = 0; p < worldSize; ++p) {
+                for (auto& result : gatheredResults[p]) {
+                    finalResults[currentIndex++] = std::move(result);
+                }
+            }
+        }
+
+        // On diffuse le résultat final à tous les processus
+        //mpi::broadcast(this->worldComm(), finalResults, 0);
+
+        return finalResults;
+ #endif 
+
         }
         else if constexpr ( is_iterable_v<std::decay_t<decltype( ray )>> ) // case rays container are identical all on process (TODO: internal case)
         {
@@ -1842,20 +1915,18 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     int numVersion;
     int modeGPU; // 1 - HIP
     bool isUnifiedMemory;
+    int rank;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
         : super_type( quality, worldComm )
     {
+        int num_gpus = 0;
+        hipGetDeviceCount( &num_gpus );
         //numDevice = 0;
-        numDevice = 3;
-        //numDevice = 1;
-        //numVersion = 0;
-        //numVersion = 1;
-        int rank = worldComm->rank();
-        numDevice = rank;
-        printf("rank for numDevice %i\n",numDevice);
-
-
+        //numDevice = 3;
+        rank = worldComm->rank();
+        numDevice = rank % num_gpus;
+        printf("[INFO GPU]: constructor rank %i numDevice=%i  num_gpus=%i\n",rank,numDevice,num_gpus);
         numVersion = 2;
         modeGPU = 1;
         isUnifiedMemory = true; // isUnifiedMemory = false;
@@ -1868,24 +1939,28 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     updateForUse( RangeType const& range )
     {
 
-        bool isView = false;
+        bool isView = false;  //isView = true;
         // up primitiveinfos
         super_type::updateForUse( range );
         // init bvh backend
-        if ( isView ) std::cout << "[INFO]: Size primitiveInfo=" << this->M_primitiveInfo.size() << "\n";
+        if ( isView ) std::cout << "[INFO GPU]: Size primitiveInfo=" << this->M_primitiveInfo.size() <<" ["<<rank<<":"<<numDevice<<"]"<<"\n";
         //...
 
         // hip device used
         hipSetDevice( numDevice );
         int numDeviceActivated;
         hipGetDevice( &numDeviceActivated );
-        if ( isView ) std::cout << "[INFO]: Num Device Activated=" << numDeviceActivated << "\n";
+        if ( isView ) std::cout << "[INFO GPU]: Num Device Activated=" << numDeviceActivated  <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
         // Definition of operating modes
         bool isModeBox = true;
         isModeBox = false;
         bool isModeDirectInDevice = false;
         // isModeDirectInDevice = true; // Todo CTRL in infinity and size max of HIP GPU
+
+        std::chrono::steady_clock::time_point t_begin_bvh_gpu, t_end_bvh_gpu;
+        long int t_laps_bvh_gpu = 0;
+       
 
         if ( modeGPU == 1 )
         {
@@ -1918,12 +1993,20 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
                 HIP_ASSERT( hipMalloc( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
 
+                
+
                 auto timeDataTransfertDuration = toc( "timeDataTransfertTriangleDuration" );
+                if ( isView ) std::cout << "[INFO GPU]: TransfertDataTriangle=" << numTriangles  <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
-
+                t_begin_bvh_gpu=std::chrono::steady_clock::now();
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                t_end_bvh_gpu=std::chrono::steady_clock::now();
+
+                if ( isView ) std::cout << "[INFO GPU]: BVH GPU FINISHED" <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+                t_laps_bvh_gpu = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_gpu - t_begin_bvh_gpu ).count();
+                if ( isView ) std::cout << "[INFO GPU]: Elapsed microseconds inside BVH  : " << t_laps_bvh_gpu << " us"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
                 nbTriangles=numTriangles;
                 nbNodes=2 * nbTriangles - 1;
@@ -1952,12 +2035,17 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     deviceHipTriangles[k].id = id;
                 }
                 auto timeDataTransfertDuration = toc( "timeDataTransfertTriangleDuration" );
+                if ( isView ) std::cout << "[INFO GPU]: TransfertDataTriangle With Unified Memory=" << numTriangles  <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
-
+                t_begin_bvh_gpu=std::chrono::steady_clock::now();
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                t_end_bvh_gpu=std::chrono::steady_clock::now();
 
+                if ( isView ) std::cout << "[INFO GPU]: BVH GPU FINISHED" <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+                t_laps_bvh_gpu = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_gpu - t_begin_bvh_gpu ).count();
+                if ( isView ) std::cout << "[INFO GPU]: Elapsed microseconds inside BVH  : " << t_laps_bvh_gpu << " us"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
                 nbTriangles=numTriangles;
                 nbNodes=2 * nbTriangles - 1;
             }
@@ -1993,7 +2081,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         isModeDirectInDevice = true;
         // static constexpr bool isAnyHit = false;
         int numRays = rayons.size();
-        bool isView = false; // isView = true;
+        bool isView = false; //isView = true;
 
         std::vector<std::vector<rayintersection_result_type>> resALL;
         // resALL.reserve(numRays);
@@ -2003,8 +2091,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         if ( modeGPU == 1 ) // mode hip
         {
 
-            if ( isView ) std::cout << "[BEGIN::LIST RAYs]"
-                                    << "\n";
+            if ( isView ) std::cout << " [INFO GPU]: [BEGIN::LIST RAYs]" <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
             bvhHip::Ray* deviceHipRays;
             // isUnifiedMemory=true;
@@ -2043,11 +2130,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 }
             }
 
-            if ( isView ) std::cout << "[END::LIST RAYs]"
-                                    << "\n";
-
-            if ( isView ) std::cout << "[BEGIN::RAYS TRACING]"
-                                    << "\n";
+            if ( isView ) std::cout << "[INFO GPU]: [END::LIST RAYs]"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+            if ( isView ) std::cout << "[INFO GPU]: [BEGIN::RAYS TRACING]"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
             int* deviceHipHitTriangles;
             bvhHip::Vec3* deviceHipIntersectionPoint;
             float* deviceHipDistanceResults;
@@ -2063,7 +2147,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipEventSynchronize(stop1);
             float milliseconds1 = 0;
             hipEventElapsedTime(&milliseconds1, start1, stop1);
-            printf("dt1 duration data CPU to GPU =%f s\n",milliseconds1/1000.0);
+            printf("[INFO GPU]: dt1 duration data CPU to GPU =%f s\n",milliseconds1/1000.0);
             hipEventDestroy(start1);
             hipEventDestroy(stop1);
             auto timeDataTransfertAllRaysCPUtoGPU = toc( "timeDataTransfertAllRaysCPUtoGPU" );
@@ -2113,7 +2197,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipEventSynchronize(stop2);
             float milliseconds2 = 0;
             hipEventElapsedTime(&milliseconds2, start2, stop2);
-            printf("dt2 duration RT in Kernel=%f s\n",milliseconds2/1000.0);
+            printf("[INFO GPU]: dt2 duration RT in Kernel=%f s\n",milliseconds2/1000.0);
             hipEventDestroy(start2);
             hipEventDestroy(stop2);
             auto timeDurationInKernel = toc( "timeDurationInKernel" );
@@ -2144,19 +2228,13 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipEventSynchronize(stop3);
             float milliseconds3 = 0;
             hipEventElapsedTime(&milliseconds3, start3, stop3);
-            printf("dt3 duration data GPU to CPU=%f s \n",milliseconds3/1000.0);
+            printf("[INFO GPU]: dt3 duration data GPU to CPU=%f s \n",milliseconds3/1000.0);
             hipEventDestroy(start3);
             hipEventDestroy(stop3);
             auto timeDurationDataTransfertResultsGPUtoCPU = toc( "timeDurationDataTransfertResultsGPUtoCPU" );
 
-
-
-
-            if ( isView ) std::cout << "[END::RAYS TRACING]"
-                                    << "\n";
-
-            if ( isView ) std::cout << "[BEGIN::DEBRIFING COLLISION]"
-                                    << "\n";
+            if ( isView ) std::cout << "[INFO GPU]: [END::RAYS TRACING]"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+            if ( isView ) std::cout << "[INFO GPU]: [BEGIN::DEBRIFING COLLISION]"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
             // Reading the results and transmitting the information that will be used later
             tic();
@@ -2172,9 +2250,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     {
                         // std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostHipRays[i].origin.x<<","<<hostHipRays[i].origin.y<<","<<hostHipRays[i].origin.z<<"> ";
                         // std::cout<<" dir= <"<<hostHipRays[i].direction.x<<","<<hostHipRays[i].direction.y<<","<<hostHipRays[i].direction.z<<"> ";
-                        std::cout << " dist (min)=" << hostHipDistanceResults[i];
+                        std::cout << " [INFO GPU]: dist (min)=" << hostHipDistanceResults[i];
                         std::cout << " IntersectionPoint= <" << hostHipIntersectionPoint[i].x << "," << hostHipIntersectionPoint[i].y << "," << hostHipIntersectionPoint[i].z << "> ";
-                        std::cout << " IdObject= " << hostHipIdResults[i] << "\n";
+                        std::cout << " IdObject= " << hostHipIdResults[i] <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
                     }
 
                     M_distance = fabs( double( hostHipDistanceResults[i] ) );
@@ -2198,12 +2276,10 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
 
 
-            if ( isView ) std::cout << "[END::DEBRIFING COLLISION]"
-                                    << "\n";
+            if ( isView ) std::cout << "[INFO GPU]: [END::DEBRIFING COLLISION]"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
 
             // Memory cleaning
-            if ( isView ) std::cout << "[END::MEMORY CLEANING]"
-                                    << "\n";
+            if ( isView ) std::cout << "[INFO GPU]: [END::MEMORY CLEANING]"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
             hipFree( deviceHipHitTriangles );
             hipFree( deviceHipDistanceResults );
             hipFree( deviceHipIntersectionPoint );
@@ -2238,6 +2314,469 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     };
 };
 #endif
+
+/***************************************************************************************************************************************************/
+
+
+#if defined( FEELPP_HAS_HIP )
+
+
+struct GpuData {
+    bvhHip::Triangle* triangles;
+    bvhHip::BVHNode* nodes;
+    int num_triangles;
+    int num_nodes;
+    int num_device;
+};
+
+
+template <typename MeshEntityType>
+class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
+{
+    using super_type = BVH<MeshEntityType>;
+    using mesh_entity_type = typename super_type::mesh_entity_type;
+    using vector_realdim_type = typename super_type::vector_realdim_type;
+    static constexpr uint16_type nRealDim = super_type::nRealDim;
+
+  public:
+    using ray_type = typename super_type::ray_type;
+    using rayintersection_result_type = typename super_type::rayintersection_result_type;
+
+    bvhHip::BVHNode* devicebvhHipNodes;
+    bvhHip::Triangle* deviceHipTriangles;
+    int nbTriangles;
+    int nbNodes;
+
+
+    int numDevice;
+    int numVersion;
+    int modeGPU; // 1- HIP 2- 
+    bool isUnifiedMemory;
+    int rank;
+    int num_gpus;
+    int nbWorkDistributionGPUs;
+    std::vector<GpuData> deviceInformationForGPUs;
+    bool isView;
+
+
+    BVH_HIP_CPU_GPUs_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
+        : super_type( quality, worldComm )
+    {
+        num_gpus = 0;
+        hipGetDeviceCount( &num_gpus );
+        //numDevice = 0;
+        //numDevice = 3;
+        rank = worldComm->rank();
+        numDevice = rank % num_gpus;
+        printf("[INFO GPU]: constructor rank %i numDevice=%i  num_gpus=%i\n",rank,numDevice,num_gpus);
+        numVersion = 2;
+        modeGPU = 1;
+        isUnifiedMemory = true; // isUnifiedMemory = false;
+
+        nbWorkDistributionGPUs = num_gpus;
+        isView = true;  isView = false;
+    }
+
+    ~BVH_HIP_CPU_GPUs_Party()
+    {
+        //isView=true;
+        // Memory cleaning
+        for (int device_id = 0; device_id < nbWorkDistributionGPUs; ++device_id) {
+            HIP_ASSERT(hipFree(deviceInformationForGPUs[device_id].triangles));
+            HIP_ASSERT(hipFree(deviceInformationForGPUs[device_id].nodes));
+            if (isView) std::cout << "[INFO GPU]: [MEMORY CLEANING MULTI-GPU]" << " [" << rank <<"] Device: " << device_id << "\n";
+        }
+        if (isView) std::cout << "[INFO GPU]: [MULTI-GPU MEMORY CLEANING DONE]"<< "\n";
+    }
+
+    BVH_HIP_CPU_GPUs_Party( BVH_HIP_CPU_GPUs_Party&& ) = default;
+
+    template <typename RangeType>
+    void
+    updateForUse( RangeType const& range )
+    {
+
+        //isView = true;
+        // up primitiveinfos
+        super_type::updateForUse( range );
+        // init bvh backend
+        if ( isView ) std::cout << "[INFO GPU]: Size primitiveInfo=" << this->M_primitiveInfo.size() <<" ["<<rank<<":"<<numDevice<<"]"<<"\n";
+        //...
+
+        // hip device used
+        hipSetDevice( numDevice );
+        int numDeviceActivated;
+        hipGetDevice( &numDeviceActivated );
+        if ( isView ) std::cout << "[INFO GPU]: Num Device Activated=" << numDeviceActivated  <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+
+        // Definition of operating modes
+        bool isModeBox = true;
+        isModeBox = false;
+        bool isModeDirectInDevice = false;
+        // isModeDirectInDevice = true; // Todo CTRL in infinity and size max of HIP GPU
+
+        std::chrono::steady_clock::time_point t_begin_bvh_gpu, t_end_bvh_gpu;
+        long int t_laps_bvh_gpu = 0;
+       
+
+        if ( modeGPU == 1 )
+        {
+            
+                tic();
+                int numTriangles = this->M_primitiveInfo.size();
+                HIP_ASSERT( hipMallocManaged( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
+                HIP_ASSERT( hipMallocManaged( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
+                // Load Mesh  in host-device
+
+                for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
+                {
+                    int id = this->M_primitiveInfo[k].meshEntity().id();
+                    auto const& primInfo = this->M_primitiveInfo[k];
+                    auto const& meshEntity = primInfo.meshEntity();
+                    auto const& pt0 = meshEntity.point( 0 );
+                    auto const& pt1 = meshEntity.point( 1 );
+                    auto const& pt2 = meshEntity.point( 2 );
+                    deviceHipTriangles[k].v0 = bvhHip::Vec3( pt0[0], pt0[1], pt0[2] );
+                    deviceHipTriangles[k].v1 = bvhHip::Vec3( pt1[0], pt1[1], pt1[2] );
+                    deviceHipTriangles[k].v2 = bvhHip::Vec3( pt2[0], pt2[1], pt2[2] );
+                    deviceHipTriangles[k].id = id;
+                }
+                auto timeDataTransfertDuration = toc( "timeDataTransfertTriangleDuration" );
+                if ( isView ) std::cout << "[INFO GPU]: TransfertDataTriangle With Unified Memory=" << numTriangles  <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+
+                t_begin_bvh_gpu=std::chrono::steady_clock::now();
+                if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                t_end_bvh_gpu=std::chrono::steady_clock::now();
+
+                if ( isView ) std::cout << "[INFO GPU]: BVH GPU FINISHED" <<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+                t_laps_bvh_gpu = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_gpu - t_begin_bvh_gpu ).count();
+                if ( isView ) std::cout << "[INFO GPU]: Elapsed microseconds inside BVH  : " << t_laps_bvh_gpu << " us"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+                nbTriangles=numTriangles;
+                nbNodes=2 * nbTriangles - 1;
+            
+
+            // BEGIN::Dispach Informations
+            std::cout << "[INFO]: Number of HIP devices found: " << num_gpus  << "\n";
+            std::cout << "[INFO]: Dispatch Number of HIP devices: " << nbWorkDistributionGPUs  << "\n";
+
+            std::chrono::steady_clock::time_point t_begin_stream_gpu, t_end_stream_gpu;
+            t_begin_stream_gpu=std::chrono::steady_clock::now();
+            long int t_laps_stream_gpu = 0;
+
+
+            hipStream_t stream;
+            HIP_ASSERT(hipStreamCreate(&stream));
+
+            // Prefetch data to each GPU
+            for (int device_id = 0; device_id < nbWorkDistributionGPUs; ++device_id) {
+                 HIP_ASSERT(hipSetDevice(device_id));
+                 HIP_ASSERT(hipMemPrefetchAsync(deviceHipTriangles, numTriangles * sizeof(bvhHip::Triangle), device_id, stream));
+                 HIP_ASSERT(hipMemPrefetchAsync(devicebvhHipNodes, (2 * numTriangles - 1) * sizeof(bvhHip::BVHNode), device_id, stream));
+            }
+
+            //Wait for prefetching to complete
+            HIP_ASSERT(hipStreamSynchronize(stream));
+
+
+            for (int device_id = 0; device_id < nbWorkDistributionGPUs; ++device_id) {
+                // Configuration du GPU courant
+                HIP_ASSERT(hipSetDevice(device_id));
+                std::cout << "[INFO]: Sending data to device: " << device_id << "\n";
+                GpuData tmp;
+                // Memory allocation for each GPU
+                tmp.num_device = device_id;
+                tmp.triangles = deviceHipTriangles;
+                tmp.nodes = devicebvhHipNodes;
+                tmp.num_triangles = numTriangles;
+                tmp.num_nodes = 2 * numTriangles - 1;
+                deviceInformationForGPUs.push_back(tmp);
+                std::cout << "[INFO]: Data is available on device " << device_id << " (Unified Memory).\n";
+            }
+           HIP_ASSERT(hipStreamDestroy(stream));
+
+           t_end_stream_gpu=std::chrono::steady_clock::now();
+
+           t_laps_stream_gpu = std::chrono::duration_cast<std::chrono::microseconds>( t_end_stream_gpu - t_begin_stream_gpu ).count();
+           if ( isView ) std::cout << "[INFO GPU]: Elapsed microseconds inside Sending all data to device  : " << t_laps_stream_gpu << " us"<<" ["<<rank<<":"<<numDevice<<"]"<< "\n";
+
+           // END::Dispach Informations
+
+           // Back to numDevice 
+           HIP_ASSERT(hipSetDevice(numDevice));
+
+        } // END modeGPU==1
+
+        
+    }
+
+  private:
+    // Value indicating whether we are in GPU mode
+    bool isGPUHip() override
+    {
+        return ( true );
+    }
+
+    // Specifies the GPU device number
+    void setNumDevice( int v )
+    {
+        int nbDevices = 0;
+        hipGetDeviceCount( &nbDevices );
+        if ( v > nbDevices )
+        {
+            v = 0;
+        }
+        numDevice = v;
+    }
+
+
+    std::vector<std::vector<rayintersection_result_type>> processRaysOnGPU(const std::vector<ray_type>& rayons, int deviceId)
+    {
+        bool isModeDirectInDevice = true;
+        int numRays = rayons.size();
+        //isView = true;
+
+        std::vector<std::vector<rayintersection_result_type>> resALL;
+        //resALL.reserve(numRays);
+
+        if (modeGPU == 1) // mode hip
+        {
+            if (isView) std::cout << " [INFO GPU]: [BEGIN::LIST RAYs]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+
+            bvhHip::Ray* deviceHipRays;
+tic();
+            hipEvent_t start1, stop1;
+            HIP_ASSERT(hipEventCreate(&start1));
+            HIP_ASSERT(hipEventCreate(&stop1));
+            HIP_ASSERT(hipEventRecord(start1));
+
+            if (!isUnifiedMemory)
+            {
+                std::vector<bvhHip::Ray> hostHipRays;
+                // Load Ray
+                for (int k = 0; k < numRays; ++k)
+                {
+                    bvhHip::Ray ray;
+                    ray.origin = bvhHip::Vec3(rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2]);
+                    ray.direction = bvhHip::Vec3(rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2]);
+                    hostHipRays.push_back(ray);
+                }
+                HIP_ASSERT(hipMalloc(&deviceHipRays, hostHipRays.size() * sizeof(bvhHip::Ray)));
+                HIP_ASSERT(hipMemcpy(deviceHipRays, hostHipRays.data(), hostHipRays.size() * sizeof(bvhHip::Ray), hipMemcpyHostToDevice));
+            }
+            else
+            {
+                HIP_ASSERT(hipMallocManaged(&deviceHipRays, numRays * sizeof(bvhHip::Ray)));
+                for (int k = 0; k < numRays; ++k)
+                {
+                    deviceHipRays[k].origin = bvhHip::Vec3(rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2]);
+                    deviceHipRays[k].direction = bvhHip::Vec3(rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2]);
+                }
+            }
+
+            if (isView) std::cout << "[INFO GPU]: [END::LIST RAYs]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+            if (isView) std::cout << "[INFO GPU]: [BEGIN::RAYS TRACING]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+            
+            int* deviceHipHitTriangles;
+            bvhHip::Vec3* deviceHipIntersectionPoint;
+            float* deviceHipDistanceResults;
+            int* deviceHipIdResults;
+
+            HIP_ASSERT(hipMalloc(&deviceHipHitTriangles, numRays * sizeof(int)));
+            HIP_ASSERT(hipMalloc(&deviceHipIntersectionPoint, numRays * sizeof(bvhHip::Vec3)));
+            HIP_ASSERT(hipMalloc(&deviceHipDistanceResults, numRays * sizeof(float)));
+            HIP_ASSERT(hipMalloc(&deviceHipIdResults, numRays * sizeof(int)));
+
+            HIP_ASSERT(hipEventRecord(stop1));
+            HIP_ASSERT(hipEventSynchronize(stop1));
+            float milliseconds1 = 0;
+            HIP_ASSERT(hipEventElapsedTime(&milliseconds1, start1, stop1));
+            if (isView) printf("[INFO GPU]: dt1 duration data CPU to GPU =%f s, Device %d\n", milliseconds1 / 1000.0, deviceId);
+            HIP_ASSERT(hipEventDestroy(start1));
+            HIP_ASSERT(hipEventDestroy(stop1));
+auto timeDataTransfertAllRaysCPUtoGPU = toc("timeDataTransfertAllRaysCPUtoGPU");
+
+tic();
+            hipEvent_t start2, stop2;
+            HIP_ASSERT(hipEventCreate(&start2));
+            HIP_ASSERT(hipEventCreate(&stop2));
+            HIP_ASSERT(hipEventRecord(start2));
+
+            int blockSize = 1024;
+            int numBlocks = (numRays + blockSize - 1) / blockSize;
+
+            if (numVersion == 1)
+            {
+                hipLaunchKernelGGL(bvhHip::raytraceKernel2, dim3(numBlocks), dim3(blockSize), 0, 0,
+                                deviceHipRays, numRays, devicebvhHipNodes, deviceHipTriangles,
+                                deviceHipHitTriangles, deviceHipDistanceResults,
+                                deviceHipIntersectionPoint, deviceHipIdResults);
+            }
+            else if (numVersion == 2)
+            {
+                hipLaunchKernelGGL(bvhHip::raytraceKernel_Parallel3, dim3(numBlocks), dim3(blockSize), 0, 0,
+                                deviceHipRays, numRays, devicebvhHipNodes, nbNodes,
+                                deviceHipTriangles, nbTriangles, deviceHipHitTriangles,
+                                deviceHipDistanceResults, deviceHipIntersectionPoint, deviceHipIdResults);
+            }
+
+            HIP_ASSERT(hipEventRecord(stop2));
+            HIP_ASSERT(hipEventSynchronize(stop2));
+            float milliseconds2 = 0;
+            HIP_ASSERT(hipEventElapsedTime(&milliseconds2, start2, stop2));
+            if (isView) printf("[INFO GPU]: dt2 duration RT in Kernel=%f s, Device %d\n", milliseconds2 / 1000.0, deviceId);
+            HIP_ASSERT(hipEventDestroy(start2));
+            HIP_ASSERT(hipEventDestroy(stop2));
+auto timeDurationInKernel = toc("timeDurationInKernel");
+
+tic();
+            hipEvent_t start3, stop3;
+            HIP_ASSERT(hipEventCreate(&start3));
+            HIP_ASSERT(hipEventCreate(&stop3));
+            HIP_ASSERT(hipEventRecord(start3));
+
+            std::vector<int> hostHipHitTriangles(numRays);
+            std::vector<bvhHip::Vec3> hostHipIntersectionPoint(numRays);
+            std::vector<float> hostHipDistanceResults(numRays);
+            std::vector<int> hostHipIdResults(numRays);
+
+            HIP_ASSERT(hipMemcpy(hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof(int), hipMemcpyDeviceToHost));
+            HIP_ASSERT(hipMemcpy(hostHipIntersectionPoint.data(), deviceHipIntersectionPoint, numRays * sizeof(bvhHip::Vec3), hipMemcpyDeviceToHost));
+            HIP_ASSERT(hipMemcpy(hostHipDistanceResults.data(), deviceHipDistanceResults, numRays * sizeof(float), hipMemcpyDeviceToHost));
+            HIP_ASSERT(hipMemcpy(hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof(int), hipMemcpyDeviceToHost));
+
+            HIP_ASSERT(hipEventRecord(stop3));
+            HIP_ASSERT(hipEventSynchronize(stop3));
+            float milliseconds3 = 0;
+            HIP_ASSERT(hipEventElapsedTime(&milliseconds3, start3, stop3));
+            if (isView) printf("[INFO GPU]: dt3 duration data GPU to CPU=%f s , Device %d\n", milliseconds3 / 1000.0, deviceId);
+            HIP_ASSERT(hipEventDestroy(start3));
+            HIP_ASSERT(hipEventDestroy(stop3));
+auto timeDurationDataTransfertResultsGPUtoCPU = toc("timeDurationDataTransfertResultsGPUtoCPU");
+
+            if (isView) std::cout << "[INFO GPU]: [END::RAYS TRACING]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+            if (isView) std::cout << "[INFO GPU]: [BEGIN::DEBRIFING COLLISION]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+tic();
+            for (int i = 0; i < numRays; ++i)
+            {
+                double M_distance = std::numeric_limits<double>::max();
+                int numId = -1;
+
+                if (hostHipIdResults[i] != -1)
+                {
+                    if (isView)
+                    {
+                        std::cout << " [INFO GPU]: dist (min)=" << hostHipDistanceResults[i];
+                        std::cout << " IntersectionPoint= <" << hostHipIntersectionPoint[i].x << "," << hostHipIntersectionPoint[i].y << "," << hostHipIntersectionPoint[i].z << "> ";
+                        std::cout << " IdObject= " << hostHipIdResults[i] << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+
+                        //deviceHipRays[k].origin.x
+                    }
+
+                    M_distance = fabs(double(hostHipDistanceResults[i]));
+
+                    std::vector<rayintersection_result_type> res;
+                    res.push_back(rayintersection_result_type(this->worldComm().rank(), hostHipIdResults[i], M_distance));
+                    res.back().setCoordinates(vector_realdim_type{{hostHipIntersectionPoint[i].x, hostHipIntersectionPoint[i].y, hostHipIntersectionPoint[i].z}});
+                    res.back().M_id = rayons[i].id;
+                    resALL.push_back(std::move(res));
+                }
+                else
+                {
+                    resALL.push_back(std::vector<rayintersection_result_type>());
+                }
+            }
+
+
+            if (isView) std::cout << "[INFO GPU]: Nb resALL="<<resALL.size()<< " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+
+            if (isView) std::cout << "[INFO GPU]: [END::DEBRIFING COLLISION]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+
+            // Memory cleaning
+            if (isView) std::cout << "[INFO GPU]: [BEGIN::MEMORY CLEANING]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+            HIP_ASSERT(hipFree(deviceHipRays));
+            HIP_ASSERT(hipFree(deviceHipHitTriangles));
+            HIP_ASSERT(hipFree(deviceHipDistanceResults));
+            HIP_ASSERT(hipFree(deviceHipIntersectionPoint));
+            HIP_ASSERT(hipFree(deviceHipIdResults));
+
+            if (isView) std::cout << "[INFO GPU]: [END::MEMORY CLEANING]" << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
+
+auto timeDataResultsDuration = toc("timeDataResultsDuration");
+        }
+        else
+        {
+            // mode lbvh explorer.... 
+        }
+        return resALL;
+    }
+
+
+
+std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU(std::vector<ray_type> const& rayons) override
+{
+    int numRays = rayons.size();
+    //isView = true;
+    
+   // Calculate the number of rays per GPU
+    int raysPerGPU = numRays / nbWorkDistributionGPUs;
+    int remainingRays = numRays % nbWorkDistributionGPUs;
+
+    std::vector<std::thread> threads;
+    std::vector<std::vector<std::vector<rayintersection_result_type>>> partialResults(nbWorkDistributionGPUs);
+
+    for (int deviceId = 0; deviceId < nbWorkDistributionGPUs; ++deviceId)
+    {
+        int startIdx = deviceId * raysPerGPU + std::min(deviceId, remainingRays);
+        int endIdx = startIdx + raysPerGPU + (deviceId < remainingRays ? 1 : 0);
+
+        threads.emplace_back([this, deviceId, &rayons, startIdx, endIdx, &partialResults]() {
+            HIP_ASSERT(hipSetDevice(deviceId));
+
+            std::vector<ray_type> deviceRayons(rayons.begin() + startIdx, rayons.begin() + endIdx);
+            partialResults[deviceId] = this->processRaysOnGPU(deviceRayons, deviceId);
+        });
+    }
+
+    // Wait for all threads to finish
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
+
+    // Merge all the results
+    std::vector<std::vector<rayintersection_result_type>> resALL;
+    //resALL.reserve(numRays);
+    for (const auto& partialResult : partialResults)
+    {
+        resALL.insert(resALL.end(), partialResult.begin(), partialResult.end());
+    }
+
+    if (isView) std::cout << "[INFO GPU]: Nb resALL Total="<<resALL.size()<< " [" << rank << ":" << numDevice << "]"<< "\n";
+
+    return resALL;
+}
+
+
+
+    vector_realdim_type CartesianCoordinates( float x, float y, float z ) const
+    { // Deleted maybe later
+        return vector_realdim_type{ {
+            x,
+            y,
+            z,
+        } };
+    }
+
+    std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, bool useRobustTraversal = true ) override
+    {
+        std::vector<rayintersection_result_type> res;
+        return ( res );
+    };
+};
+#endif
+
 
 /***************************************************************************************************************************************************/
 
@@ -2704,6 +3243,15 @@ auto boundingVolumeHierarchy( Ts&&... v )
         auto bvhHIPParty = std::make_unique<BVH_HIP_Party<mesh_entity_type>>( quality, worldcomm );
         bvhHIPParty->updateForUse( range );
         bvh = std::move( bvhHIPParty );
+    }
+    else if ( kind == "hip-multi-gpu-party" )
+    {
+        printf("<<<<<<<<<<> hip-multi-gpu-party <>>>>>>>>>>>>>>\n");
+        if constexpr ( mesh_entity_type::nRealDim != 3 )
+            throw std::invalid_argument( "hip-multi-gpu-party only implement with triangle in 3D" );
+        auto bvhHIPMultiGPUParty = std::make_unique<BVH_HIP_CPU_GPUs_Party<mesh_entity_type>>( quality, worldcomm );
+        bvhHIPMultiGPUParty->updateForUse( range );
+        bvh = std::move( bvhHIPMultiGPUParty );
     }
 #endif
 

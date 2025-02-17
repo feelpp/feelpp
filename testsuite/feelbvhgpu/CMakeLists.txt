@@ -28,7 +28,9 @@
 #feelpp_add_test(bvhgpu SRCS test_old_empty.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
 
-feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+# Here ***
+#feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_distanceTestMPI.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 #set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
 
 
@@ -46,12 +48,13 @@ feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu 
 
 #feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 #feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu2.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu3.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
 #feelpp_add_test(bvhgpu SRCS test_kokkos_bvh.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
-#feelpp_add_test(bvhgpu SRCS test_kokkos_multi_gpu3.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
-#feelpp_add_test(bvhgpu SRCS test_kokkos_mpi.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+
 
 
 
@@ -68,7 +71,19 @@ feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu 
 #feelpp_add_test(bvhgpu SRCS test_kokkos_polynom_jacobi.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
 
+#feelpp_add_test(bvhgpu SRCS test_kokkos_draft.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_mpi.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+#feelpp_add_test(bvhgpu SRCS test_kokkos_mpi_gpu.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_kokkos_mpi_gpu2.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+
+#feelpp_add_test(bvhgpu SRCS test_distance2.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_distanceTestMPI.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+feelpp_add_test(bvhgpu SRCS test_distance3.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
 set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
 
