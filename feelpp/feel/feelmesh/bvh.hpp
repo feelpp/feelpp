@@ -147,6 +147,7 @@ __host__ __device__ __inline__ float dot( const Vec3& a, const Vec3& b )
 struct Ray
 {
     Vec3 origin, direction;
+    int id;
 };
 
 struct Triangle
@@ -1915,6 +1916,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     int modeGPU; // 1 - HIP
     bool isUnifiedMemory;
     int rank;
+    bool isView;
+    bool isViewDataRT;;
 
     BVH_HIP_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
         : super_type( quality, worldComm )
@@ -1929,6 +1932,17 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         numVersion = 2;
         modeGPU = 1;
         isUnifiedMemory = true; // isUnifiedMemory = false;
+        isView = false; //isView = true;
+        isViewDataRT = false;
+    }
+
+    ~BVH_HIP_Party()
+    {
+        //  isView=true;
+        //  Memory cleaning
+        HIP_ASSERT( hipFree( devicebvhHipNodes ) );
+        HIP_ASSERT( hipFree( deviceHipTriangles) );
+        if ( isView ) std::cout << "[INFO GPU]: [GPU MEMORY CLEANING DONE]"<< "\n";
     }
 
     BVH_HIP_Party( BVH_HIP_Party&& ) = default;
@@ -1937,8 +1951,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
     void
     updateForUse( RangeType const& range )
     {
-
-        bool isView = false; // isView = true;
+        // isView = true;
         // up primitiveinfos
         super_type::updateForUse( range );
         // init bvh backend
@@ -2086,7 +2099,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         isModeDirectInDevice = true;
         // static constexpr bool isAnyHit = false;
         int numRays = rayons.size();
-        bool isView = false; // isView = true;
+        // isView = true;
 
         std::vector<std::vector<rayintersection_result_type>> resALL;
         // resALL.reserve(numRays);
@@ -2118,6 +2131,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     bvhHip::Ray ray;
                     ray.origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
                     ray.direction = bvhHip::Vec3( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2] );
+                    ray.id =  rayons[k].id;
                     hostHipRays.push_back( ray );
                 }
                 HIP_ASSERT( hipMalloc( &deviceHipRays, hostHipRays.size() * sizeof( bvhHip::Ray ) ) );
@@ -2242,6 +2256,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
             // Reading the results and transmitting the information that will be used later
             tic();
+            
             for ( int i = 0; i < numRays; ++i )
             {
                 double M_distance = std::numeric_limits<double>::max();
@@ -2250,7 +2265,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 // if (hostHipHitResults[i]!=-1)
                 if ( hostHipIdResults[i] != -1 )
                 {
-                    if ( isView )
+                    if ( isViewDataRT )
                     {
                         // std::cout<<"      Intersection found with Num Ray ["<<i<<"] ori= <"<<hostHipRays[i].origin.x<<","<<hostHipRays[i].origin.y<<","<<hostHipRays[i].origin.z<<"> ";
                         // std::cout<<" dir= <"<<hostHipRays[i].direction.x<<","<<hostHipRays[i].direction.y<<","<<hostHipRays[i].direction.z<<"> ";
@@ -2361,8 +2376,10 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
     int rank;
     int num_gpus;
     int nbWorkDistributionGPUs;
+    int deviceIdBegin;
     std::vector<GpuData> deviceInformationForGPUs;
     bool isView;
+    bool isViewDataRT;
 
     BVH_HIP_CPU_GPUs_Party( BVHEnum::Quality quality, worldcomm_ptr_t worldComm )
         : super_type( quality, worldComm )
@@ -2379,8 +2396,9 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
         isUnifiedMemory = true; // isUnifiedMemory = false;
 
         nbWorkDistributionGPUs = num_gpus;
-        isView = true;
-        isView = false;
+        deviceIdBegin=0;
+        isView = true; isView = false;
+        isViewDataRT = false;
     }
 
     ~BVH_HIP_CPU_GPUs_Party()
@@ -2582,6 +2600,7 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
                     bvhHip::Ray ray;
                     ray.origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
                     ray.direction = bvhHip::Vec3( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2] );
+                    ray.id =  rayons[k].id;
                     hostHipRays.push_back( ray );
                 }
                 HIP_ASSERT( hipMalloc( &deviceHipRays, hostHipRays.size() * sizeof( bvhHip::Ray ) ) );
@@ -2691,7 +2710,7 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
 
                 if ( hostHipIdResults[i] != -1 )
                 {
-                    if ( isView )
+                    if ( isViewDataRT )
                     {
                         std::cout << " [INFO GPU]: dist (min)=" << hostHipDistanceResults[i];
                         std::cout << " IntersectionPoint= <" << hostHipIntersectionPoint[i].x << "," << hostHipIntersectionPoint[i].y << "," << hostHipIntersectionPoint[i].z << "> ";
@@ -2746,6 +2765,8 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
         // isView = true;
 
         // Calculate the number of rays per GPU
+        if (nbWorkDistributionGPUs > numRays) nbWorkDistributionGPUs = 1;
+
         int raysPerGPU = numRays / nbWorkDistributionGPUs;
         int remainingRays = numRays % nbWorkDistributionGPUs;
 
