@@ -57,7 +57,6 @@
 
 #include <hwloc.h>
 
-
 #include <signal.h>
 
 // #include <rccl.h> // For multi-GPU not ready yet
@@ -65,10 +64,10 @@
 
 using namespace Feel;
 
-
-void sigterm_handler(int signum) {
-    MPI_Abort(MPI_COMM_WORLD, 0);
-    exit(0);
+void sigterm_handler( int signum )
+{
+    MPI_Abort( MPI_COMM_WORLD, 0 );
+    exit( 0 );
 }
 
 inline AboutData
@@ -167,9 +166,9 @@ std::vector<double> getAllDistanceRayIntersections( BvhType const& bvh, std::vec
     {
         if ( rir.processId() == bvh->worldComm().rank() )
         {
-            //std::cout << " RIR --  Distance: " << rir.distance()<< "\n";
-            //std::cout << " RIR --  Distance " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.distance()<< "\n";
-            //std::cout << " id="<<rir.get_id()<<" RIR --  Distance " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.distance()<< "\n";
+            // std::cout << " RIR --  Distance: " << rir.distance()<< "\n";
+            // std::cout << " RIR --  Distance " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.distance()<< "\n";
+            // std::cout << " id="<<rir.get_id()<<" RIR --  Distance " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.distance()<< "\n";
             distance.push_back( rir.distance() );
         }
         bvh->worldComm().barrier();
@@ -187,11 +186,11 @@ std::vector<size_t> getId( BvhType const& bvh, std::vector<RayIntersectionResult
         if ( rir.processId() == bvh->worldComm().rank() )
         {
             // std::cout << " --  Distance: " << rir.distance()<< "\n";
-            //std::cout << " RIR --  id " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.get_id()<< "\n";
+            // std::cout << " RIR --  id " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.get_id()<< "\n";
             id.push_back( rir.get_id() );
         }
         bvh->worldComm().barrier();
-        //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        // std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     return id;
 }
@@ -211,34 +210,33 @@ double calculateStepRays( int n, double start, double end )
     return ( end - start ) / ( n_total - 1 );
 }
 
-
 template <typename BVHRayType>
-std::vector<BVHRayType> generateRays(const std::vector<std::vector<double>>& allNodeCoordinates, int number_rays_desired)
+std::vector<BVHRayType> generateRays( const std::vector<std::vector<double>>& allNodeCoordinates, int number_rays_desired )
 {
     std::vector<BVHRayType> rays;
-    int nbRays = std::sqrt(number_rays_desired);
+    int nbRays = std::sqrt( number_rays_desired );
     nbRays = nbRays * nbRays;
     const size_t kblock = nbRays + 1;
 
-    for (size_t k = 0; k < allNodeCoordinates.size(); ++k)
+    for ( size_t k = 0; k < allNodeCoordinates.size(); ++k )
     {
-        Eigen::Vector3d ray_origin = {allNodeCoordinates[k][0], allNodeCoordinates[k][1], allNodeCoordinates[k][2]};
+        Eigen::Vector3d ray_origin = { allNodeCoordinates[k][0], allNodeCoordinates[k][1], allNodeCoordinates[k][2] };
         double thetaStart = 0.0;
         double thetaEnd = M_PI;
         double alphaStart = 0.0;
         double alphaEnd = 2.0 * M_PI;
-        double thetaStep = calculateStepRays(number_rays_desired, thetaStart, thetaEnd);
-        double alphaStep = calculateStepRays(number_rays_desired, alphaStart, alphaEnd);
+        double thetaStep = calculateStepRays( number_rays_desired, thetaStart, thetaEnd );
+        double alphaStep = calculateStepRays( number_rays_desired, alphaStart, alphaEnd );
 
         size_t j = 0;
-        for (double theta = thetaStart; theta <= thetaEnd; theta += thetaStep)
+        for ( double theta = thetaStart; theta <= thetaEnd; theta += thetaStep )
         {
-            for (double alpha = alphaStart; alpha <= alphaEnd; alpha += alphaStep)
+            for ( double alpha = alphaStart; alpha <= alphaEnd; alpha += alphaStep )
             {
-                Eigen::Vector3d ray_direction = sphericalToCartesian(1.0, theta, alpha);
+                Eigen::Vector3d ray_direction = sphericalToCartesian( 1.0, theta, alpha );
                 Eigen::Vector3d ray_origin_Epsilon = ray_origin;
-                rays.push_back(BVHRayType(ray_origin_Epsilon, ray_direction));
-                rays.back().id = j + (k + 1) * kblock;
+                rays.push_back( BVHRayType( ray_origin_Epsilon, ray_direction ) );
+                rays.back().id = j + ( k + 1 ) * kblock;
                 j++;
             }
         }
@@ -247,85 +245,73 @@ std::vector<BVHRayType> generateRays(const std::vector<std::vector<double>>& all
     return rays;
 }
 
-
-
-
-
-
-
-double valueFilter(double v)
+double valueFilter( double v )
 {
-    if (fabs(v)<1.0e-10) return 0.0;
+    if ( fabs( v ) < 1.0e-10 ) return 0.0;
     return v;
 }
 
-
-double calculateDist(std::vector<std::vector<double>> allNodeCoordinates, int index )
+double calculateDist( std::vector<std::vector<double>> allNodeCoordinates, int index )
 {
     double distanceMinREAL;
-        distanceMinREAL = std::min( allNodeCoordinates[index][0],
-                                        std::min( 1.0 - allNodeCoordinates[index][0],
-                                                  std::min( allNodeCoordinates[index][1],
-                                                            std::min( 1.0 - allNodeCoordinates[index][1],
-                                                                      std::min( allNodeCoordinates[index][2], 1.0 - allNodeCoordinates[index][2] ) ) ) ) );
+    distanceMinREAL = std::min( allNodeCoordinates[index][0],
+                                std::min( 1.0 - allNodeCoordinates[index][0],
+                                          std::min( allNodeCoordinates[index][1],
+                                                    std::min( 1.0 - allNodeCoordinates[index][1],
+                                                              std::min( allNodeCoordinates[index][2], 1.0 - allNodeCoordinates[index][2] ) ) ) ) );
 
-    distanceMinREAL=valueFilter(distanceMinREAL);
-    return(distanceMinREAL);
+    distanceMinREAL = valueFilter( distanceMinREAL );
+    return ( distanceMinREAL );
 }
-
-
 
 std::vector<double> calculateDistanceMinPU(
     const std::vector<size_t>& id_PU,
     const std::vector<double>& distance_PU_mode,
     size_t kblock,
     const std::vector<std::vector<double>>& allNodeCoordinates,
-    bool isViewValues = false)
+    bool isViewValues = false )
 {
     std::vector<double> distanceMinPU;
     size_t idBlock = 1;
     size_t idBlockLast = 1;
     double value = distance_PU_mode[0];
 
-    for (size_t i = 0; i < distance_PU_mode.size(); ++i)
+    for ( size_t i = 0; i < distance_PU_mode.size(); ++i )
     {
-        idBlock = static_cast<size_t>(id_PU[i] / kblock);
-        if (idBlock == idBlockLast)
+        idBlock = static_cast<size_t>( id_PU[i] / kblock );
+        if ( idBlock == idBlockLast )
         {
-            value = std::min(value, distance_PU_mode[i]);
+            value = std::min( value, distance_PU_mode[i] );
         }
-        if (idBlock != idBlockLast)
+        if ( idBlock != idBlockLast )
         {
-            value = valueFilter(value);
-            distanceMinPU.push_back(value);
-            if (isViewValues) 
-                std::cout << "  Block Point id=" << idBlockLast << " value =" << value << "  <>  " << calculateDist(allNodeCoordinates, idBlockLast - 1) << " \n";
+            value = valueFilter( value );
+            distanceMinPU.push_back( value );
+            if ( isViewValues )
+                std::cout << "  Block Point id=" << idBlockLast << " value =" << value << "  <>  " << calculateDist( allNodeCoordinates, idBlockLast - 1 ) << " \n";
             value = std::numeric_limits<double>::infinity();
             idBlockLast = idBlock;
         }
     }
 
-    value = valueFilter(value);
-    distanceMinPU.push_back(value);
-    if (isViewValues) 
-        std::cout << "  Block Point id=" << idBlockLast << " value =" << value << "  <>  " << calculateDist(allNodeCoordinates, idBlockLast - 1) << " \n";
+    value = valueFilter( value );
+    distanceMinPU.push_back( value );
+    if ( isViewValues )
+        std::cout << "  Block Point id=" << idBlockLast << " value =" << value << "  <>  " << calculateDist( allNodeCoordinates, idBlockLast - 1 ) << " \n";
 
     return distanceMinPU;
 }
-
-
-
 
 void barrierAlpha()
 {
     mpi::environment env;
     mpi::communicator world;
-    for (int r = 0; r < world.size(); ++r)
+    for ( int r = 0; r < world.size(); ++r )
     {
         world.barrier();
-        if (r == world.rank())
+        if ( r == world.rank() )
         {
-            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" <<r<<"] BARRIER RRRRRRRRRRRRRRRRRRRRR\n";
+            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" << r << "] BARRIER RRRRRRRRRRRRRRRRRRRRR\n";
         }
     }
 }
@@ -350,10 +336,9 @@ void distToBoundaryBVHpuSendAllNode(
     long int t_laps_GPU_Total = 0;
 
     int number_rays_desired = allDataPU.nbRaysDesired;
-    int numRank=0; 
+    int numRank = 0;
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType2>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
-
 
     //******************************************************************************************************************/
     // BUILD RAYS
@@ -367,30 +352,31 @@ void distToBoundaryBVHpuSendAllNode(
     int nbRays = std::sqrt( number_rays_desired );
     nbRays = nbRays * nbRays;
 
-    //size_t kblock = 10000;
-    size_t kblock = nbRays+1;
+    // size_t kblock = 10000;
+    size_t kblock = nbRays + 1;
 
-    if ( isViewInfo ) std::cout << "[INFO] Number of ray  = "<<nbRays<<"\n";
-    if ( isViewInfo ) std::cout << "[INFO] Number of allNodeCoordinates   = "<<allNodeCoordinates.size()<<"\n";
-    if ( isViewInfo ) std::cout << "[INFO] Max Size of allNodeCoordinates ="<<allNodeCoordinates.max_size()<<"\n";   
+    if ( isViewInfo ) std::cout << "[INFO] Number of ray  = " << nbRays << "\n";
+    if ( isViewInfo ) std::cout << "[INFO] Number of allNodeCoordinates   = " << allNodeCoordinates.size() << "\n";
+    if ( isViewInfo ) std::cout << "[INFO] Max Size of allNodeCoordinates =" << allNodeCoordinates.max_size() << "\n";
 
-    if ( isViewInfo ) std::cout << "[INFO] Generate Rays"<<"\n";
+    if ( isViewInfo ) std::cout << "[INFO] Generate Rays"
+                                << "\n";
     size_t estimatedRayCount = allNodeCoordinates.size() * nbRays;
-    if ( isViewInfo ) std::cout << "[INFO] Estimation Nb Rays ="<<estimatedRayCount<<"\n";
-    rays = generateRays<bvh_ray_type>(allNodeCoordinates, number_rays_desired);
-    for ( size_t k = 0; k < rays.size(); ++k ) { raysDistributed.push_back( rays[k] );}
-    if ( isViewInfo ) std::cout << "[INFO] Generate "<<rays.size()<<" Rays Done"<<"\n";
+    if ( isViewInfo ) std::cout << "[INFO] Estimation Nb Rays =" << estimatedRayCount << "\n";
+    rays = generateRays<bvh_ray_type>( allNodeCoordinates, number_rays_desired );
+    for ( size_t k = 0; k < rays.size(); ++k )
+    {
+        raysDistributed.push_back( rays[k] );
+    }
+    if ( isViewInfo ) std::cout << "[INFO] Generate " << rays.size() << " Rays Done"
+                                << "\n";
     //******************************************************************************************************************/
 
-
     barrierAlpha();
-
-
 
     //******************************************************************************************************************/
     //==================================================================================================================/
     //******************************************************************************************************************/
-
 
 #if 1
     //******************************************************************************************************************/
@@ -402,13 +388,14 @@ void distToBoundaryBVHpuSendAllNode(
     auto timeBVHCPUDuration = toc( "timeBVHCPUDuration" );
     t_end_bvh_cpu = std::chrono::steady_clock::now();
     // END::Build BVH CPU
-    numRank=bvhThirdParty->worldComm().rank();
+    numRank = bvhThirdParty->worldComm().rank();
     t_laps_CPU = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_cpu - t_begin_cpu ).count();
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << t_laps_CPU << " us"<<" rank=["<<numRank<<"]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH CPU : " << t_laps_CPU << " us"
+                                << " rank=[" << numRank << "]\n";
     sleep( 1 );
     //******************************************************************************************************************/
 #endif
-        
+
 #if 1
     //******************************************************************************************************************/
     // BUILD BVH GPU
@@ -416,18 +403,17 @@ void distToBoundaryBVHpuSendAllNode(
     t_begin_gpu = std::chrono::steady_clock::now();
     tic();
     auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+    // auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
     auto timeBVHGPUDuration = toc( "timeBVHGPUDuration" );
     t_end_bvh_gpu = std::chrono::steady_clock::now();
     // END::Build BVH GPU
-    numRank=bvhHIPParty->worldComm().rank();
+    numRank = bvhHIPParty->worldComm().rank();
     t_laps_GPU = std::chrono::duration_cast<std::chrono::microseconds>( t_end_bvh_gpu - t_begin_gpu ).count();
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << t_laps_GPU << " us"<<" rank=["<<numRank<<"]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH GPU : " << t_laps_GPU << " us"
+                                << " rank=[" << numRank << "]\n";
     sleep( 1 );
     //******************************************************************************************************************/
 #endif
-
-
 
     //******************************************************************************************************************/
     //==================================================================================================================/
@@ -440,7 +426,6 @@ void distToBoundaryBVHpuSendAllNode(
     std::vector<size_t> id;
     std::vector<size_t> id_CPU;
     std::vector<size_t> id_GPU;
-
 
 #if 1
     //******************************************************************************************************************/
@@ -460,7 +445,7 @@ void distToBoundaryBVHpuSendAllNode(
 
     t_end_raytracing_cpu = std::chrono::steady_clock::now();
     if ( isViewInfo ) std::cout << "HHHHHHHHHHHHHHHHHHH timeRTCPUDuration " << timeRTCPUDuration << " \n";
-    //******************************************************************************************************************/
+        //******************************************************************************************************************/
 #endif
 
 #if 1
@@ -480,13 +465,12 @@ void distToBoundaryBVHpuSendAllNode(
     }
     t_end_raytracing_gpu = std::chrono::steady_clock::now();
     if ( isViewInfo ) std::cout << "HHHHHHHHHHHHHHHHHHH timeRTGPUDuration " << timeRTGPUDuration << " \n";
-    //******************************************************************************************************************/
- #endif   
+        //******************************************************************************************************************/
+#endif
 
-
-    //******************************************************************************************************************/
-    //==================================================================================================================/
-    //******************************************************************************************************************/
+        //******************************************************************************************************************/
+        //==================================================================================================================/
+        //******************************************************************************************************************/
 
 #if 1
     //******************************************************************************************************************/
@@ -494,38 +478,36 @@ void distToBoundaryBVHpuSendAllNode(
     if ( isViewInfo ) std::cout << "\n\n";
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist CPU\n";
     std::vector<double> distanceMinCPU;
-    distanceMinCPU=calculateDistanceMinPU(id_CPU,distance_CPU_mode,kblock,allNodeCoordinates,true);
+    distanceMinCPU = calculateDistanceMinPU( id_CPU, distance_CPU_mode, kblock, allNodeCoordinates, true );
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist GPU\n";
     std::vector<double> distanceMinGPU;
-    distanceMinGPU=calculateDistanceMinPU(id_GPU,distance_GPU_mode,kblock,allNodeCoordinates,true);
+    distanceMinGPU = calculateDistanceMinPU( id_GPU, distance_GPU_mode, kblock, allNodeCoordinates, true );
     //******************************************************************************************************************/
- #endif  
-
+#endif
 
     //******************************************************************************************************************/
     //==================================================================================================================/
     //******************************************************************************************************************/
-
 
     //******************************************************************************************************************/
     // DEBRIEFING
 
     for ( size_t index = 0; index < allNodeCoordinates.size(); ++index )
     {
-        double distanceMinREAL=calculateDist(allNodeCoordinates,index);
+        double distanceMinREAL = calculateDist( allNodeCoordinates, index );
         double errCPU = abs( distanceMinCPU[index] - distanceMinREAL );
         double errGPU = abs( distanceMinGPU[index] - distanceMinREAL );
 
         DataDistanceErrTimeAll data = {
-                index,
-                distanceMinREAL,
-                -1,
-                -1,
-                distanceMinCPU[index],
-                errCPU,
-                distanceMinGPU[index],
-                errGPU };
-            allDataDistanceBVHRTAll.push_back( data );
+            index,
+            distanceMinREAL,
+            -1,
+            -1,
+            distanceMinCPU[index],
+            errCPU,
+            distanceMinGPU[index],
+            errGPU };
+        allDataDistanceBVHRTAll.push_back( data );
     }
 
     allDataPU.t_laps_BVH_CPU = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_bvh_cpu - t_begin_cpu ).count();
@@ -548,10 +530,8 @@ void distToBoundaryBVHpuSendAllNode(
 
     //******************************************************************************************************************/
 
-    printf("FINISHED\n");
+    printf( "FINISHED\n" );
 }
-
-
 
 void saveAllData2(
     const int maxNumElements,
@@ -560,97 +540,101 @@ void saveAllData2(
     const int maxNumVertices,
     const std::vector<std::vector<double>>& allNodeCoordinates,
     const std::vector<DataDistanceErrTimeAll>& allDataDistanceBVHRTAll,
-    const DataTimeLapsConfig& allDataPU) {
+    const DataTimeLapsConfig& allDataPU )
+{
 
-    const std::vector<std::pair<std::string, std::function<void(std::ofstream&)>>> files = {
-        {"all_results_per_vertex.csv", [&](std::ofstream& file) {
-            file << "Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
-            for (size_t i = 0; i < allNodeCoordinates.size(); ++i) {
-                file << allDataDistanceBVHRTAll[i].id << ","
-                     << std::fixed << std::setprecision(9)
-                     << allNodeCoordinates[i][0] << ","
-                     << allNodeCoordinates[i][1] << ","
-                     << allNodeCoordinates[i][2] << ","
-                     << allDataDistanceBVHRTAll[i].distanceMinREAL << ","
-                     << allDataDistanceBVHRTAll[i].distanceFastMarching << ","
-                     << allDataDistanceBVHRTAll[i].errFastMarching << ","
-                     << allDataDistanceBVHRTAll[i].distanceMinCPU << ","
-                     << allDataDistanceBVHRTAll[i].errCPU << ","
-                     << allDataDistanceBVHRTAll[i].distanceMinGPU << ","
-                     << allDataDistanceBVHRTAll[i].errGPU << "\n";
-            }
-        }},
-        {"results.csv", [&](std::ofstream& file) {
-            file << "hsize=" << allDataPU.hsize << "\n"
-                 << "maxNumElement=" << maxNumElements << "\n"
-                 << "maxNumFace=" << maxNumFaces << "\n"
-                 << "maxNumPoints=" << maxNumPoints << "\n"
-                 << "maxNumVerices=" << maxNumVertices << "\n"
-                 << "nbRaysDesired=" << allDataPU.nbRaysDesired << "\n"
-                 << "nbRays=" << allDataPU.nbRays << "\n"
-                 << "timeBVHcpu=" << allDataPU.t_laps_BVH_CPU << "\n"
-                 << "timeRTcpu=" << allDataPU.t_laps_RT_CPU << "\n"
-                 << "timeBVHgpu=" << allDataPU.t_laps_BVH_GPU << "\n"
-                 << "timeRTgpu=" << allDataPU.t_laps_RT_GPU << "\n"
-                 << "timeFastMarching=" << allDataPU.t_laps_FastMarching << "\n"
-                 << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU + allDataPU.t_laps_RT_CPU << "\n"
-                 << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
-        }},
-        {"results2.csv", [&](std::ofstream& file) {
-            file << "hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
-                 << "timeBVHcpu,timeRTcpu,timeBVHgpu,timeRTgpu,timeFastMarching,totalTimeBVHRTcpu,totalTimeBVHRTgpu\n"
-                 << allDataPU.hsize << ","
-                 << maxNumElements << ","
-                 << maxNumFaces << ","
-                 << maxNumPoints << ","
-                 << maxNumVertices << ","
-                 << allDataPU.nbRaysDesired << ","
-                 << allDataPU.nbRays << ","
-                 << allDataPU.t_laps_BVH_CPU << ","
-                 << allDataPU.t_laps_RT_CPU << ","
-                 << allDataPU.t_laps_BVH_GPU << ","
-                 << allDataPU.t_laps_RT_GPU << ","
-                 << allDataPU.t_laps_FastMarching << ","
-                 << allDataPU.t_laps_BVH_CPU + allDataPU.t_laps_RT_CPU << ","
-                 << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
-        }}
-    };
+    const std::vector<std::pair<std::string, std::function<void( std::ofstream& )>>> files = {
+        { "all_results_per_vertex.csv", [&]( std::ofstream& file )
+          {
+              file << "Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
+              for ( size_t i = 0; i < allNodeCoordinates.size(); ++i )
+              {
+                  file << allDataDistanceBVHRTAll[i].id << ","
+                       << std::fixed << std::setprecision( 9 )
+                       << allNodeCoordinates[i][0] << ","
+                       << allNodeCoordinates[i][1] << ","
+                       << allNodeCoordinates[i][2] << ","
+                       << allDataDistanceBVHRTAll[i].distanceMinREAL << ","
+                       << allDataDistanceBVHRTAll[i].distanceFastMarching << ","
+                       << allDataDistanceBVHRTAll[i].errFastMarching << ","
+                       << allDataDistanceBVHRTAll[i].distanceMinCPU << ","
+                       << allDataDistanceBVHRTAll[i].errCPU << ","
+                       << allDataDistanceBVHRTAll[i].distanceMinGPU << ","
+                       << allDataDistanceBVHRTAll[i].errGPU << "\n";
+              }
+          } },
+        { "results.csv", [&]( std::ofstream& file )
+          {
+              file << "hsize=" << allDataPU.hsize << "\n"
+                   << "maxNumElement=" << maxNumElements << "\n"
+                   << "maxNumFace=" << maxNumFaces << "\n"
+                   << "maxNumPoints=" << maxNumPoints << "\n"
+                   << "maxNumVerices=" << maxNumVertices << "\n"
+                   << "nbRaysDesired=" << allDataPU.nbRaysDesired << "\n"
+                   << "nbRays=" << allDataPU.nbRays << "\n"
+                   << "timeBVHcpu=" << allDataPU.t_laps_BVH_CPU << "\n"
+                   << "timeRTcpu=" << allDataPU.t_laps_RT_CPU << "\n"
+                   << "timeBVHgpu=" << allDataPU.t_laps_BVH_GPU << "\n"
+                   << "timeRTgpu=" << allDataPU.t_laps_RT_GPU << "\n"
+                   << "timeFastMarching=" << allDataPU.t_laps_FastMarching << "\n"
+                   << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU + allDataPU.t_laps_RT_CPU << "\n"
+                   << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
+          } },
+        { "results2.csv", [&]( std::ofstream& file )
+          {
+              file << "hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
+                   << "timeBVHcpu,timeRTcpu,timeBVHgpu,timeRTgpu,timeFastMarching,totalTimeBVHRTcpu,totalTimeBVHRTgpu\n"
+                   << allDataPU.hsize << ","
+                   << maxNumElements << ","
+                   << maxNumFaces << ","
+                   << maxNumPoints << ","
+                   << maxNumVertices << ","
+                   << allDataPU.nbRaysDesired << ","
+                   << allDataPU.nbRays << ","
+                   << allDataPU.t_laps_BVH_CPU << ","
+                   << allDataPU.t_laps_RT_CPU << ","
+                   << allDataPU.t_laps_BVH_GPU << ","
+                   << allDataPU.t_laps_RT_GPU << ","
+                   << allDataPU.t_laps_FastMarching << ","
+                   << allDataPU.t_laps_BVH_CPU + allDataPU.t_laps_RT_CPU << ","
+                   << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
+          } } };
 
-    for (const auto& [filename, writeFunc] : files) {
-        std::ofstream file(filename);
-        if (!file.is_open()) {
+    for ( const auto& [filename, writeFunc] : files )
+    {
+        std::ofstream file( filename );
+        if ( !file.is_open() )
+        {
             std::cerr << "Erreur lors de l'ouverture du fichier " << filename << std::endl;
             continue;
         }
-        writeFunc(file);
+        writeFunc( file );
         file.close();
     }
 }
-
-
 
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
 BOOST_AUTO_TEST_CASE( all_distance )
 {
 
-/*
-    int provided;
-    int initialized;
-    MPI_Initialized( &initialized );
-    if ( !initialized )
-    {
-        MPI_Init_thread( nullptr, nullptr, MPI_THREAD_FUNNELED, &provided );
-    }
+    /*
+        int provided;
+        int initialized;
+        MPI_Initialized( &initialized );
+        if ( !initialized )
+        {
+            MPI_Init_thread( nullptr, nullptr, MPI_THREAD_FUNNELED, &provided );
+        }
 
-    int rank, world_size;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &world_size );
+        int rank, world_size;
+        MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+        MPI_Comm_size( MPI_COMM_WORLD, &world_size );
 
-    Kokkos::Timer timer;
-*/
+        Kokkos::Timer timer;
+    */
 
-    //signal(SIGTERM, sigterm_handler);
+    // signal(SIGTERM, sigterm_handler);
 
     // We read the value of "hsize" and "number_rays_desired"
     double hsize = option( _name = "hsize" ).as<double>();
@@ -689,7 +673,6 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     auto Vh = Pch<1>( mesh );
 
-
     std::vector<std::vector<double>> allNodeCoordinates;
     DataTimeLapsConfig allDataPU;
     allDataPU.nbRaysDesired = number_rays_desired;
@@ -711,8 +694,6 @@ BOOST_AUTO_TEST_CASE( all_distance )
     auto distToBoundary = distanceToRange( _space = Vh, _range = submeshFaces );
     t_end_FastMarching = std::chrono::steady_clock::now();
     long int t_laps_FastMarching = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_FastMarching - t_begin_FastMarching ).count();
-
-    
 
     //******************************************************************************************************************/
     //==================================================================================================================/
@@ -736,12 +717,10 @@ BOOST_AUTO_TEST_CASE( all_distance )
             allDataDistanceBVHRTAll[i].errFastMarching = abs( distToBoundary[i] - allDataDistanceBVHRTAll[i].distanceMinREAL );
         }
 
-
         //******************************************************************************************************************/
         // Save All Data
-        saveAllData2(mesh->maxNumElements(),mesh->maxNumFaces(),mesh->maxNumPoints(),mesh->maxNumVertices(),
-                     allNodeCoordinates,allDataDistanceBVHRTAll,allDataPU);
-
+        saveAllData2( mesh->maxNumElements(), mesh->maxNumFaces(), mesh->maxNumPoints(), mesh->maxNumVertices(),
+                      allNodeCoordinates, allDataDistanceBVHRTAll, allDataPU );
 
         //******************************************************************************************************************/
         // Data backup file distances for paraview
@@ -753,7 +732,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
             distanceMinCPU[i] = allDataDistanceBVHRTAll[i].distanceMinCPU;
             distanceMinGPU[i] = allDataDistanceBVHRTAll[i].distanceMinGPU;
         }
-            // Save the file with all the distance parameters
+        // Save the file with all the distance parameters
         auto exp = exporter( _mesh = mesh, _name = fmt::format( "distance_{}d_o{}", 3, 1 ) );
         exp->addRegions();
         exp->add( "distToBoundary", distToBoundary );
@@ -762,35 +741,34 @@ BOOST_AUTO_TEST_CASE( all_distance )
         exp->save();
         //******************************************************************************************************************/
 
-/*
-int rank, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+        /*
+        int rank, size;
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-try {
-        std::cout << "Processus " << rank << " sur " << size << " en cours d'exécution." << std::endl;
-        MPI_Barrier(MPI_COMM_WORLD);
+        try {
+                std::cout << "Processus " << rank << " sur " << size << " en cours d'exécution." << std::endl;
+                MPI_Barrier(MPI_COMM_WORLD);
 
-    } catch (const std::exception& e) {
-        std::cerr << "Erreur sur le processus " << rank << ": " << e.what() << std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
+            } catch (const std::exception& e) {
+                std::cerr << "Erreur sur le processus " << rank << ": " << e.what() << std::endl;
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+        */
+        // MPI_Abort(MPI_COMM_WORLD, 1);
+        // MPI_Barrier(MPI_COMM_WORLD);
     }
-*/
-//MPI_Abort(MPI_COMM_WORLD, 1);
-//MPI_Barrier(MPI_COMM_WORLD);
-    }
 
-  //  double elapsed_time = timer.seconds();
-  //  std::cout << "Elapsed time: " << elapsed_time << " seconds" << std::endl;
+    //  double elapsed_time = timer.seconds();
+    //  std::cout << "Elapsed time: " << elapsed_time << " seconds" << std::endl;
 
-/*
-    MPI_Initialized( &initialized );
-    if ( initialized )
-    {
-        MPI_Finalize();
-    }
-*/
-
+    /*
+        MPI_Initialized( &initialized );
+        if ( initialized )
+        {
+            MPI_Finalize();
+        }
+    */
 }
 
 BOOST_AUTO_TEST_SUITE_END()
