@@ -120,8 +120,8 @@ struct Vec3
         return Vec3( x * inv, y * inv, z * inv );
     }
 
-    __host__ __device__ __inline__ float& operator[]( int i ) { return ( &x )[i]; }
-    __host__ __device__ __inline__ const float& operator[]( int i ) const { return ( &x )[i]; }
+    __host__ __device__ __inline__ float& operator[]( size_t i ) { return ( &x )[i]; }
+    __host__ __device__ __inline__ const float& operator[]( size_t i ) const { return ( &x )[i]; }
 };
 
 __host__ __device__ __inline__ Vec3 min( const Vec3& a, const Vec3& b )
@@ -147,13 +147,13 @@ __host__ __device__ __inline__ float dot( const Vec3& a, const Vec3& b )
 struct Ray
 {
     Vec3 origin, direction;
-    int id;
+    size_t id;
 };
 
 struct Triangle
 {
     Vec3 v0, v1, v2;
-    int id;
+    size_t id;
 };
 
 struct AABB
@@ -164,28 +164,28 @@ struct AABB
 struct BVHNode
 {
     AABB bounds;
-    int leftChild;
-    int rightChild;
-    int firstTriangleIndex;
-    int triangleCount;
+    size_t leftChild;
+    size_t rightChild;
+    size_t firstTriangleIndex;
+    size_t triangleCount;
 
-    int firstPrimitive;
-    int primitiveCount;
+    size_t firstPrimitive;
+    size_t primitiveCount;
 
-    int triangleIndex;
+    size_t triangleIndex;
 };
 
 struct Intersection
 {
     bool hit;
     float t;
-    int triangleIndex;
+    size_t triangleIndex;
 };
 
 struct TriangleInfo
 {
     Vec3 centroid;
-    int index;
+    size_t index;
 };
 
 __host__ __device__ __inline__ float angleScalar( const Vec3 v1, const Vec3 v2 )
@@ -419,7 +419,7 @@ __device__ __inline__ bool rayAABBIntersect( const Ray& ray, const AABB& aabb )
 
 __global__ void raytraceKernel(
     Ray* rays,
-    int numRays,
+    size_t numRays,
     BVHNode* bvhNodes,
     Triangle* triangles,
     int* hitTriangles,
@@ -428,17 +428,17 @@ __global__ void raytraceKernel(
     int* hitId )
 
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx >= numRays ) return;
 
     Ray ray = rays[idx];
-    int stack[64];
-    int stackPtr = 0;
+    size_t stack[64];
+    size_t stackPtr = 0;
     stack[stackPtr++] = 0;
 
     float closestT = INFINITY;
-    int closestTriangle = -1;
-    int closesIntersectionId = -1;
+    size_t closestTriangle = -1;
+    size_t closesIntersectionId = -1;
 
     Vec3 intersectionPointT;
     intersectionPointT.x = INFINITY;
@@ -455,14 +455,14 @@ __global__ void raytraceKernel(
 
     while ( stackPtr > 0 )
     {
-        int nodeIdx = stack[--stackPtr];
+        size_t nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
 
         if ( !rayAABBIntersect( ray, node.bounds ) ) continue;
 
         if ( node.triangleCount > 0 )
         {
-            for ( int i = 0; i < node.triangleCount; ++i )
+            for ( size_t i = 0; i < node.triangleCount; ++i )
             {
                 Triangle& tri = triangles[node.firstTriangleIndex + i];
                 // if (sameDirection(tri,ray,angleLim))
@@ -472,7 +472,8 @@ __global__ void raytraceKernel(
                     if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
                     {
 
-                        if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
+                        //if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
+                        if ( isView ) printf( "      Num Ray[%zi] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
                         if ( t < closestT )
                         {
                             closestT = t;
@@ -499,7 +500,7 @@ __global__ void raytraceKernel(
 
 __global__ void raytraceKernel2(
     Ray* rays,
-    int numRays,
+    size_t numRays,
     BVHNode* bvhNodes,
     Triangle* triangles,
     int* hitTriangles,
@@ -513,17 +514,17 @@ __global__ void raytraceKernel2(
     // hipEventCreate(&start);
 
     // an improved version to avoid errors if the stack size is insufficient and the mesh is large.
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx >= numRays ) return;
 
     Ray ray = rays[idx];
-    int stack[64];
-    int stackPtr = 0;
+    size_t stack[64];
+    size_t stackPtr = 0;
     stack[stackPtr++] = 0;
 
     float closestT = INFINITY;
-    int closestTriangle = -1;
-    int closesIntersectionId = -1;
+    size_t closestTriangle = -1;
+    size_t closesIntersectionId = -1;
 
     Vec3 intersectionPointT;
     intersectionPointT.x = INFINITY;
@@ -540,14 +541,14 @@ __global__ void raytraceKernel2(
 
     while ( stackPtr > 0 && stackPtr < 64 )
     {
-        int nodeIdx = stack[--stackPtr];
+        size_t nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
 
         if ( !rayAABBIntersect( ray, node.bounds ) ) continue;
 
         if ( node.triangleCount > 0 )
         {
-            for ( int i = 0; i < node.triangleCount; ++i )
+            for ( size_t i = 0; i < node.triangleCount; ++i )
             {
                 Triangle& tri = triangles[node.firstTriangleIndex + i];
 
@@ -557,7 +558,8 @@ __global__ void raytraceKernel2(
                     if ( rayTriangleIntersect( ray, tri, t, intersectionPointT ) )
                     {
 
-                        if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
+                        //if ( isView ) printf( "      Num Ray[%i] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
+                        if ( isView ) printf( "      Num Ray[%zu] <%f %f %f>\n", idx, intersectionPointT.x, intersectionPointT.y, intersectionPointT.z );
                         if ( t < closestT )
                         {
                             closestT = t;
@@ -698,24 +700,24 @@ __device__ __inline__ bool rayAABBIntersect4( const Ray& ray, const AABB& aabb )
 }
 
 __global__ void
-raytraceKernel_Parallel( Ray* rays, int numRays, BVHNode* bvhNodes,
+raytraceKernel_Parallel( Ray* rays, size_t numRays, BVHNode* bvhNodes,
                          Triangle* triangles, int* hitTriangles,
                          float* distance, Vec3* intersectionPoint, int* hitId )
 
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx >= numRays )
         return;
 
     Ray ray = rays[idx];
-    int stack[64];
-    int stackPtr = 0;
+    size_t stack[64];
+    size_t stackPtr = 0;
     // On commence par la racine du BVH
     stack[stackPtr++] = 0;
 
     float closestT = INFINITY;
-    int closestTriangle = -1;
-    int closesIntersectionId = -1;
+    size_t closestTriangle = -1;
+    size_t closesIntersectionId = -1;
 
     Vec3 intersectionPointT;
     intersectionPointT.x = INFINITY;
@@ -732,7 +734,7 @@ raytraceKernel_Parallel( Ray* rays, int numRays, BVHNode* bvhNodes,
 
     while ( stackPtr > 0 )
     {
-        int nodeIdx = stack[--stackPtr];
+        size_t nodeIdx = stack[--stackPtr];
         BVHNode& node = bvhNodes[nodeIdx];
 
         // if (nodeIdx < 0 || nodeIdx >= numRays) continue;
@@ -751,9 +753,11 @@ raytraceKernel_Parallel( Ray* rays, int numRays, BVHNode* bvhNodes,
                 if ( rayTriangleIntersect4( ray, tri, t, intersectionPointT ) )
                 {
 
-                    if ( isView )
-                        printf( "      Num Ray[%i] <%f %f %f> dist=%f\n", idx, intersectionPointT.x,
-                                intersectionPointT.y, intersectionPointT.z, t );
+                    //if ( isView ) printf( "      Num Ray[%i] <%f %f %f> dist=%f\n", idx, intersectionPointT.x,intersectionPointT.y, intersectionPointT.z, t );
+
+
+                    if ( isView ) printf( "      Num Ray[%zu] <%f %f %f> dist=%f\n", idx, intersectionPointT.x,intersectionPointT.y, intersectionPointT.z, t );
+
                     if ( t < closestT )
                     {
                         closestT = t;
@@ -761,9 +765,8 @@ raytraceKernel_Parallel( Ray* rays, int numRays, BVHNode* bvhNodes,
                         closestIntersectionPoint = intersectionPointT;
                         closesIntersectionId = triangles[closestTriangle].id;
 
-                        if ( isView )
-                            printf( "      Close Num Ray[%i] <%f %f %f> dist=%f\n", idx, intersectionPointT.x,
-                                    intersectionPointT.y, intersectionPointT.z, t );
+                        //if ( isView ) printf( "      Close Num Ray[%i] <%f %f %f> dist=%f\n", idx, intersectionPointT.x,intersectionPointT.y, intersectionPointT.z, t );
+                        if ( isView ) printf( "      Close Num Ray[%zu] <%f %f %f> dist=%f\n", idx, intersectionPointT.x,intersectionPointT.y, intersectionPointT.z, t );
                     }
                 }
             }
@@ -788,25 +791,25 @@ raytraceKernel_Parallel( Ray* rays, int numRays, BVHNode* bvhNodes,
     hitId[idx] = closesIntersectionId;
 }
 
-__global__ void raytraceKernel_Parallel3( Ray* rays, int numRays, BVHNode* bvhNodes,
-                                          int numNodes,
-                                          Triangle* triangles, int numTriangles, int* hitTriangles,
+__global__ void raytraceKernel_Parallel3( Ray* rays, size_t numRays, BVHNode* bvhNodes,
+                                          size_t numNodes,
+                                          Triangle* triangles, size_t numTriangles, int* hitTriangles,
                                           float* distance, Vec3* intersectionPoint, int* hitId )
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx >= numRays || numNodes <= 0 || numTriangles <= 0 )
         return;
 
     Ray ray = rays[idx];
-    constexpr int MAX_STACK_SIZE = 64;
-    int stack[MAX_STACK_SIZE];
-    int stackPtr = 0;
+    constexpr size_t MAX_STACK_SIZE = 64;
+    size_t stack[MAX_STACK_SIZE];
+    size_t stackPtr = 0;
 
     stack[stackPtr++] = 0;
 
     float closestT = INFINITY;
-    int closestTriangle = -1;
-    int closestIntersectionId = -1;
+    size_t closestTriangle = -1;
+    size_t closestIntersectionId = -1;
     Vec3 intersectionPointT;
     intersectionPointT.x = INFINITY;
     intersectionPointT.y = INFINITY;
@@ -821,7 +824,7 @@ __global__ void raytraceKernel_Parallel3( Ray* rays, int numRays, BVHNode* bvhNo
 
     while ( stackPtr > 0 && stackPtr < MAX_STACK_SIZE )
     {
-        int nodeIdx = stack[--stackPtr];
+        size_t nodeIdx = stack[--stackPtr];
         if ( nodeIdx < 0 || nodeIdx >= numNodes )
             continue;
 
@@ -873,9 +876,9 @@ __host__ __device__ __inline__ void calculateBoundingBox( const Triangle& triang
     max_values = max( triangle.v0, max( triangle.v1, triangle.v2 ) );
 }
 
-__global__ void initializeLeaves( Triangle* triangles, BVHNode* nodes, int numTriangles )
+__global__ void initializeLeaves( Triangle* triangles, BVHNode* nodes, size_t numTriangles )
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx < numTriangles )
     {
         BVHNode& node = nodes[numTriangles - 1 + idx];
@@ -887,22 +890,22 @@ __global__ void initializeLeaves( Triangle* triangles, BVHNode* nodes, int numTr
     }
 }
 
-void buildBVH_GPU_Version2( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
+void buildBVH_GPU_Version2( Triangle* d_triangles, BVHNode* d_nodes, size_t numTriangles )
 {
-    int totalNodes = 2 * numTriangles - 1;
-    // int blockSize = 512;
-    int blockSize = 1024;
-    int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
+    size_t totalNodes = 2 * numTriangles - 1;
+    // size_t blockSize = 512;
+    size_t blockSize = 1024;
+    size_t numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
     hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
 
     BVHNode* h_nodes = new BVHNode[2 * numTriangles - 1];
     hipMemcpy( h_nodes, d_nodes, ( 2 * numTriangles - 1 ) * sizeof( BVHNode ), hipMemcpyDeviceToHost );
 
-    for ( int i = numTriangles - 2; i >= 0; --i )
+    for ( size_t i = numTriangles - 2; i >= 0; --i )
     {
         BVHNode& node = h_nodes[i];
-        int leftChild = 2 * i + 1;
-        int rightChild = 2 * i + 2;
+        size_t leftChild = 2 * i + 1;
+        size_t rightChild = 2 * i + 2;
         node.leftChild = leftChild;
         node.rightChild = rightChild;
         node.triangleIndex = -1;
@@ -916,13 +919,13 @@ void buildBVH_GPU_Version2( Triangle* d_triangles, BVHNode* d_nodes, int numTria
     delete[] h_nodes;
 }
 
-__global__ void buildEvaluationNodes( BVHNode* nodes, int numTriangles )
+__global__ void buildEvaluationNodes( BVHNode* nodes, size_t numTriangles )
 {
-    for ( int i = numTriangles - 2; i >= 0; --i )
+    for ( size_t i = numTriangles - 2; i >= 0; --i )
     {
         BVHNode& node = nodes[i];
-        int leftChild = 2 * i + 1;
-        int rightChild = 2 * i + 2;
+        size_t leftChild = 2 * i + 1;
+        size_t rightChild = 2 * i + 2;
         node.leftChild = leftChild;
         node.rightChild = rightChild;
         node.triangleIndex = -1;
@@ -934,11 +937,11 @@ __global__ void buildEvaluationNodes( BVHNode* nodes, int numTriangles )
     //__syncthreads();
 }
 
-void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
+void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, size_t numTriangles )
 {
-    // int blockSize = 512;
-    int blockSize = 1024;
-    int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
+    // size_t blockSize = 512;
+    size_t blockSize = 1024;
+    size_t numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
     hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
     hipDeviceSynchronize();
     hipLaunchKernelGGL( buildEvaluationNodes, dim3( 1 ), dim3( 1 ), 0, 0, d_nodes, numTriangles );
@@ -947,14 +950,14 @@ void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTria
 
 // Bellow new versions...
 
-__device__ __inline__ bool compareTriangles( const TriangleInfo& a, const TriangleInfo& b, int axis )
+__device__ __inline__ bool compareTriangles( const TriangleInfo& a, const TriangleInfo& b, size_t axis )
 {
     return a.centroid[axis] < b.centroid[axis];
 }
 
-__global__ void initTriangleInfo( Triangle* triangles, TriangleInfo* triInfo, int numTriangles )
+__global__ void initTriangleInfo( Triangle* triangles, TriangleInfo* triInfo, size_t numTriangles )
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx < numTriangles )
     {
         Triangle& tri = triangles[idx];
@@ -963,10 +966,10 @@ __global__ void initTriangleInfo( Triangle* triangles, TriangleInfo* triInfo, in
     }
 }
 
-__global__ void bitonicSort( TriangleInfo* triInfo, int j, int k, int numTriangles, int axis )
+__global__ void bitonicSort( TriangleInfo* triInfo, size_t j, size_t k, size_t numTriangles, size_t axis )
 {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int ixj = i ^ j;
+    size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t ixj = i ^ j;
 
     if ( ( ixj > i ) && ( i < numTriangles ) && ( ixj < numTriangles ) )
     {
@@ -980,10 +983,10 @@ __global__ void bitonicSort( TriangleInfo* triInfo, int j, int k, int numTriangl
     }
 }
 
-__global__ void buildBVHNodes( BVHNode* nodes, TriangleInfo* triInfo, Triangle* triangles, int numTriangles )
+__global__ void buildBVHNodes( BVHNode* nodes, TriangleInfo* triInfo, Triangle* triangles, size_t numTriangles )
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int totalNodes = 2 * numTriangles - 1;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t totalNodes = 2 * numTriangles - 1;
 
     if ( idx < totalNodes )
     {
@@ -991,7 +994,7 @@ __global__ void buildBVHNodes( BVHNode* nodes, TriangleInfo* triInfo, Triangle* 
 
         if ( idx >= numTriangles - 1 )
         { // Leaf node
-            int triIdx = triInfo[idx - ( numTriangles - 1 )].index;
+            size_t triIdx = triInfo[idx - ( numTriangles - 1 )].index;
             node.bounds.min = node.bounds.max = triangles[triIdx].v0;
             node.bounds.min = min( node.bounds.min, min( triangles[triIdx].v1, triangles[triIdx].v2 ) );
             node.bounds.max = max( node.bounds.max, max( triangles[triIdx].v1, triangles[triIdx].v2 ) );
@@ -1001,8 +1004,8 @@ __global__ void buildBVHNodes( BVHNode* nodes, TriangleInfo* triInfo, Triangle* 
         }
         else
         { // Internal node
-            int leftChild = 2 * idx + 1;
-            int rightChild = 2 * idx + 2;
+            size_t leftChild = 2 * idx + 1;
+            size_t rightChild = 2 * idx + 2;
             node.leftChild = leftChild;
             node.rightChild = rightChild;
             node.triangleIndex = -1;
@@ -1015,10 +1018,10 @@ __global__ void buildBVHNodes( BVHNode* nodes, TriangleInfo* triInfo, Triangle* 
 }
 
 __global__ void buildBVHNodesParallel( BVHNode* nodes, TriangleInfo* triInfo,
-                                       Triangle* triangles, int numTriangles )
+                                       Triangle* triangles, size_t numTriangles )
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int totalNodes = 2 * numTriangles - 1;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t totalNodes = 2 * numTriangles - 1;
 
     if ( idx < totalNodes )
     {
@@ -1026,7 +1029,7 @@ __global__ void buildBVHNodesParallel( BVHNode* nodes, TriangleInfo* triInfo,
 
         if ( idx >= numTriangles - 1 )
         { // Leaf node
-            int triIdx = triInfo[idx - ( numTriangles - 1 )].index;
+            size_t triIdx = triInfo[idx - ( numTriangles - 1 )].index;
             // Initialization of the node limits with the first top of the triangle
             node.bounds.min = node.bounds.max = triangles[triIdx].v0;
 
@@ -1042,8 +1045,8 @@ __global__ void buildBVHNodesParallel( BVHNode* nodes, TriangleInfo* triInfo,
         }
         else
         { // Internal node
-            int leftChild = 2 * idx + 1;
-            int rightChild = 2 * idx + 2;
+            size_t leftChild = 2 * idx + 1;
+            size_t rightChild = 2 * idx + 2;
 
             // Verification that children exist before accessing their limits
             if ( leftChild < totalNodes && rightChild < totalNodes )
@@ -1075,12 +1078,12 @@ __global__ void buildBVHNodesParallel( BVHNode* nodes, TriangleInfo* triInfo,
     }
 }
 
-__global__ void computeExtents( TriangleInfo* triInfo, int numTriangles, float* minExtents, float* maxExtents )
+__global__ void computeExtents( TriangleInfo* triInfo, size_t numTriangles, float* minExtents, float* maxExtents )
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx < numTriangles )
     {
-        for ( int axis = 0; axis < 3; ++axis )
+        for ( size_t axis = 0; axis < 3; ++axis )
         {
             atomicMin( &minExtents[axis], triInfo[idx].centroid[axis] );
             atomicMax( &maxExtents[axis], triInfo[idx].centroid[axis] );
@@ -1089,15 +1092,15 @@ __global__ void computeExtents( TriangleInfo* triInfo, int numTriangles, float* 
 }
 
 void buildBVH_GPU_Parallel( Triangle* d_triangles, BVHNode* d_nodes,
-                            int numTriangles )
+                            size_t numTriangles )
 {
 
     // std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
 
-    int totalNodes = 2 * numTriangles - 1;
-    // int blockSize = 512;
-    int blockSize = 1024;
-    int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
+    size_t totalNodes = 2 * numTriangles - 1;
+    // size_t blockSize = 512;
+    size_t blockSize = 1024;
+    size_t numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
 
     TriangleInfo* d_triInfo;
     HIP_ASSERT( hipMalloc( &d_triInfo, numTriangles * sizeof( TriangleInfo ) ) );
@@ -1105,9 +1108,9 @@ void buildBVH_GPU_Parallel( Triangle* d_triangles, BVHNode* d_nodes,
                         d_triangles, d_triInfo, numTriangles );
 
     // Sort by axis X=0
-    for ( int k = 2; k <= numTriangles; k *= 2 )
+    for ( size_t k = 2; k <= numTriangles; k *= 2 )
     {
-        for ( int j = k / 2; j > 0; j /= 2 )
+        for ( size_t j = k / 2; j > 0; j /= 2 )
         {
             hipLaunchKernelGGL( bitonicSort, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                 d_triInfo, j, k, numTriangles, 0 );
@@ -1122,14 +1125,14 @@ void buildBVH_GPU_Parallel( Triangle* d_triangles, BVHNode* d_nodes,
 }
 
 void buildBVH_GPU_Parallel_Best_Axis( Triangle* d_triangles, BVHNode* d_nodes,
-                                      int numTriangles )
+                                      size_t numTriangles )
 {
     std::cout << "[INFO]: buildBVH_GPU_Parallel\n";
 
-    int totalNodes = 2 * numTriangles - 1;
-    // int blockSize = 512;
-    int blockSize = 1024;
-    int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
+    size_t totalNodes = 2 * numTriangles - 1;
+    // size_t blockSize = 512;
+    size_t blockSize = 1024;
+    size_t numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
 
     TriangleInfo* d_triInfo;
     HIP_ASSERT( hipMalloc( &d_triInfo, numTriangles * sizeof( TriangleInfo ) ) );
@@ -1160,9 +1163,9 @@ void buildBVH_GPU_Parallel_Best_Axis( Triangle* d_triangles, BVHNode* d_nodes,
                            hipMemcpyDeviceToHost ) );
 
     // Find axis with largest extent
-    int bestAxis = 0;
+    size_t bestAxis = 0;
     float maxExtent = h_maxExtents[0] - h_minExtents[0];
-    for ( int axis = 1; axis < 3; ++axis )
+    for ( size_t axis = 1; axis < 3; ++axis )
     {
         float extent = h_maxExtents[axis] - h_minExtents[axis];
         if ( extent > maxExtent )
@@ -1173,9 +1176,9 @@ void buildBVH_GPU_Parallel_Best_Axis( Triangle* d_triangles, BVHNode* d_nodes,
     }
 
     // Sort using the best axis
-    for ( int k = 2; k <= numTriangles; k *= 2 )
+    for ( size_t k = 2; k <= numTriangles; k *= 2 )
     {
-        for ( int j = k / 2; j > 0; j /= 2 )
+        for ( size_t j = k / 2; j > 0; j /= 2 )
         {
             hipLaunchKernelGGL( bitonicSort, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                 d_triInfo, j, k, numTriangles, bestAxis );
@@ -1234,7 +1237,7 @@ class BVHRay
     vec_t const& dir() const noexcept { return M_dir; }
     double distanceMin() const { return M_distanceMin; }
     double distanceMax() const { return M_distanceMax; }
-    int id;
+    size_t id;
 
 #if 0
     Orthant orthant() const {
@@ -1353,13 +1356,13 @@ class BVH : public CommObject
         rank_type processId() const noexcept { return M_processId; }
         index_type primitiveId() const noexcept { return M_primitiveId; }
         double distance() const noexcept { return M_distance; }
-        int get_id() const noexcept { return M_id; }
+        size_t get_id() const noexcept { return M_id; }
 
         template <typename T>
         void setCoordinates( T&& coord ) { M_coordinates = std::forward<T>( coord ); }
         bool hasCoordinates() const noexcept { return M_coordinates.has_value(); }
         vector_realdim_type const& coordinates() const noexcept { return *M_coordinates; }
-        int M_id;
+        size_t M_id;
 
       private:
         friend class boost::serialization::access;
@@ -1908,8 +1911,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
     bvhHip::BVHNode* devicebvhHipNodes;
     bvhHip::Triangle* deviceHipTriangles;
-    int nbTriangles;
-    int nbNodes;
+    size_t nbTriangles;
+    size_t nbNodes;
 
     int numDevice;
     int numVersion;
@@ -1983,9 +1986,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 std::vector<bvhHip::Triangle> HostHipTriangles;
 
                 // Load Mesh  in host
-                for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
+                for ( size_t k = 0; k < this->M_primitiveInfo.size(); ++k )
                 {
-                    int id = this->M_primitiveInfo[k].meshEntity().id();
+                    size_t id = this->M_primitiveInfo[k].meshEntity().id();
                     auto const& primInfo = this->M_primitiveInfo[k];
                     auto const& meshEntity = primInfo.meshEntity();
                     auto const& pt0 = meshEntity.point( 0 );
@@ -1999,7 +2002,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                     HostHipTriangles.push_back( ltri );
                 }
 
-                int numTriangles = HostHipTriangles.size();
+                size_t numTriangles = HostHipTriangles.size();
 
                 HIP_ASSERT( hipMalloc( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
                 HIP_ASSERT( hipMemcpy( deviceHipTriangles, HostHipTriangles.data(), numTriangles * sizeof( bvhHip::Triangle ), hipMemcpyHostToDevice ) );
@@ -2031,14 +2034,14 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             else
             {
                 tic();
-                int numTriangles = this->M_primitiveInfo.size();
+                size_t numTriangles = this->M_primitiveInfo.size();
                 HIP_ASSERT( hipMallocManaged( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
                 HIP_ASSERT( hipMallocManaged( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
                 // Load Mesh  in host-device
 
-                for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
+                for ( size_t k = 0; k < this->M_primitiveInfo.size(); ++k )
                 {
-                    int id = this->M_primitiveInfo[k].meshEntity().id();
+                    size_t id = this->M_primitiveInfo[k].meshEntity().id();
                     auto const& primInfo = this->M_primitiveInfo[k];
                     auto const& meshEntity = primInfo.meshEntity();
                     auto const& pt0 = meshEntity.point( 0 );
@@ -2098,7 +2101,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         bool isModeDirectInDevice = false;
         isModeDirectInDevice = true;
         // static constexpr bool isAnyHit = false;
-        int numRays = rayons.size();
+        size_t numRays = rayons.size();
         // isView = true;
 
         std::vector<std::vector<rayintersection_result_type>> resALL;
@@ -2126,7 +2129,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             {
                 std::vector<bvhHip::Ray> hostHipRays;
                 // Load Ray
-                for ( int k = 0; k < numRays; ++k )
+                for ( size_t k = 0; k < numRays; ++k )
                 {
                     bvhHip::Ray ray;
                     ray.origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
@@ -2140,7 +2143,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             else
             {
                 HIP_ASSERT( hipMallocManaged( &deviceHipRays, numRays * sizeof( bvhHip::Ray ) ) );
-                for ( int k = 0; k < numRays; ++k )
+                for ( size_t k = 0; k < numRays; ++k )
                 {
                     deviceHipRays[k].origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
                     deviceHipRays[k].direction = bvhHip::Vec3( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2] );
@@ -2158,10 +2161,11 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             float* deviceHipDistanceResults;
             int* deviceHipIdResults;
 
-            HIP_ASSERT( hipMalloc( &deviceHipHitTriangles, numRays * sizeof( int ) ) );
+
+            HIP_ASSERT( hipMalloc( &deviceHipHitTriangles, numRays * sizeof( size_t ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) ) );
-            HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) ) );
+            HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( size_t ) ) );
 
             hipEventRecord( stop1 );
             hipEventSynchronize( stop1 );
@@ -2178,9 +2182,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipEventCreate( &stop2 );
             hipEventRecord( start2 );
 
-            // int blockSize = 512;
-            int blockSize = 1024;
-            int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
+            // size_t blockSize = 512;
+            size_t blockSize = 1024;
+            size_t numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
             if ( numVersion == 1 )
             {
@@ -2226,8 +2230,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipEventCreate( &stop3 );
             hipEventRecord( start3 );
 
-            std::vector<int> hostHipHitTriangles( numRays );
-            hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( int ), hipMemcpyDeviceToHost );
+            std::vector<size_t> hostHipHitTriangles( numRays );
+            hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( size_t ), hipMemcpyDeviceToHost );
 
             std::vector<bvhHip::Vec3> hostHipIntersectionPoint( numRays );
             hipMemcpy( hostHipIntersectionPoint.data(), deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ), hipMemcpyDeviceToHost );
@@ -2235,8 +2239,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             std::vector<float> hostHipDistanceResults( numRays );
             hipMemcpy( hostHipDistanceResults.data(), deviceHipDistanceResults, numRays * sizeof( float ), hipMemcpyDeviceToHost );
 
-            std::vector<int> hostHipIdResults( numRays );
-            hipMemcpy( hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof( int ), hipMemcpyDeviceToHost );
+            std::vector<size_t> hostHipIdResults( numRays );
+            hipMemcpy( hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof( size_t ), hipMemcpyDeviceToHost );
 
             hipEventRecord( stop3 );
             hipEventSynchronize( stop3 );
@@ -2257,10 +2261,10 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             // Reading the results and transmitting the information that will be used later
             tic();
             
-            for ( int i = 0; i < numRays; ++i )
+            for ( size_t i = 0; i < numRays; ++i )
             {
                 double M_distance = std::numeric_limits<double>::max();
-                int numId = -1;
+                size_t numId = -1;
 
                 // if (hostHipHitResults[i]!=-1)
                 if ( hostHipIdResults[i] != -1 )
@@ -2347,9 +2351,9 @@ struct GpuData
 {
     bvhHip::Triangle* triangles;
     bvhHip::BVHNode* nodes;
-    int num_triangles;
-    int num_nodes;
-    int num_device;
+    size_t num_triangles;
+    size_t num_nodes;
+    size_t num_device;
 };
 
 template <typename MeshEntityType>
@@ -2366,8 +2370,8 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
 
     bvhHip::BVHNode* devicebvhHipNodes;
     bvhHip::Triangle* deviceHipTriangles;
-    int nbTriangles;
-    int nbNodes;
+    size_t nbTriangles;
+    size_t nbNodes;
 
     int numDevice;
     int numVersion;
@@ -2451,14 +2455,14 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
         {
 
             tic();
-            int numTriangles = this->M_primitiveInfo.size();
+            size_t numTriangles = this->M_primitiveInfo.size();
             HIP_ASSERT( hipMallocManaged( &deviceHipTriangles, numTriangles * sizeof( bvhHip::Triangle ) ) );
             HIP_ASSERT( hipMallocManaged( &devicebvhHipNodes, ( 2 * numTriangles - 1 ) * sizeof( bvhHip::BVHNode ) ) );
             // Load Mesh  in host-device
 
-            for ( int k = 0; k < this->M_primitiveInfo.size(); ++k )
+            for ( size_t k = 0; k < this->M_primitiveInfo.size(); ++k )
             {
-                int id = this->M_primitiveInfo[k].meshEntity().id();
+                size_t id = this->M_primitiveInfo[k].meshEntity().id();
                 auto const& primInfo = this->M_primitiveInfo[k];
                 auto const& meshEntity = primInfo.meshEntity();
                 auto const& pt0 = meshEntity.point( 0 );
@@ -2573,7 +2577,7 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
     std::vector<std::vector<rayintersection_result_type>> processRaysOnGPU( const std::vector<ray_type>& rayons, int deviceId )
     {
         bool isModeDirectInDevice = true;
-        int numRays = rayons.size();
+        size_t numRays = rayons.size();
         // isView = true;
 
         std::vector<std::vector<rayintersection_result_type>> resALL;
@@ -2595,7 +2599,7 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             {
                 std::vector<bvhHip::Ray> hostHipRays;
                 // Load Ray
-                for ( int k = 0; k < numRays; ++k )
+                for ( size_t k = 0; k < numRays; ++k )
                 {
                     bvhHip::Ray ray;
                     ray.origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
@@ -2609,7 +2613,7 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             else
             {
                 HIP_ASSERT( hipMallocManaged( &deviceHipRays, numRays * sizeof( bvhHip::Ray ) ) );
-                for ( int k = 0; k < numRays; ++k )
+                for ( size_t k = 0; k < numRays; ++k )
                 {
                     deviceHipRays[k].origin = bvhHip::Vec3( rayons[k].origin()[0], rayons[k].origin()[1], rayons[k].origin()[2] );
                     deviceHipRays[k].direction = bvhHip::Vec3( rayons[k].dir()[0], rayons[k].dir()[1], rayons[k].dir()[2] );
@@ -2626,10 +2630,10 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             float* deviceHipDistanceResults;
             int* deviceHipIdResults;
 
-            HIP_ASSERT( hipMalloc( &deviceHipHitTriangles, numRays * sizeof( int ) ) );
+            HIP_ASSERT( hipMalloc( &deviceHipHitTriangles, numRays * sizeof( size_t ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ) ) );
             HIP_ASSERT( hipMalloc( &deviceHipDistanceResults, numRays * sizeof( float ) ) );
-            HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( int ) ) );
+            HIP_ASSERT( hipMalloc( &deviceHipIdResults, numRays * sizeof( size_t ) ) );
 
             HIP_ASSERT( hipEventRecord( stop1 ) );
             HIP_ASSERT( hipEventSynchronize( stop1 ) );
@@ -2646,8 +2650,8 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             HIP_ASSERT( hipEventCreate( &stop2 ) );
             HIP_ASSERT( hipEventRecord( start2 ) );
 
-            int blockSize = 1024;
-            int numBlocks = ( numRays + blockSize - 1 ) / blockSize;
+            size_t blockSize = 1024;
+            size_t numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
             if ( numVersion == 1 )
             {
@@ -2679,15 +2683,15 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             HIP_ASSERT( hipEventCreate( &stop3 ) );
             HIP_ASSERT( hipEventRecord( start3 ) );
 
-            std::vector<int> hostHipHitTriangles( numRays );
+            std::vector<size_t> hostHipHitTriangles( numRays );
             std::vector<bvhHip::Vec3> hostHipIntersectionPoint( numRays );
             std::vector<float> hostHipDistanceResults( numRays );
-            std::vector<int> hostHipIdResults( numRays );
+            std::vector<size_t> hostHipIdResults( numRays );
 
-            HIP_ASSERT( hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( int ), hipMemcpyDeviceToHost ) );
+            HIP_ASSERT( hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( size_t ), hipMemcpyDeviceToHost ) );
             HIP_ASSERT( hipMemcpy( hostHipIntersectionPoint.data(), deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ), hipMemcpyDeviceToHost ) );
             HIP_ASSERT( hipMemcpy( hostHipDistanceResults.data(), deviceHipDistanceResults, numRays * sizeof( float ), hipMemcpyDeviceToHost ) );
-            HIP_ASSERT( hipMemcpy( hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof( int ), hipMemcpyDeviceToHost ) );
+            HIP_ASSERT( hipMemcpy( hostHipIdResults.data(), deviceHipIdResults, numRays * sizeof( size_t ), hipMemcpyDeviceToHost ) );
 
             HIP_ASSERT( hipEventRecord( stop3 ) );
             HIP_ASSERT( hipEventSynchronize( stop3 ) );
@@ -2703,10 +2707,10 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             if ( isView ) std::cout << "[INFO GPU]: [BEGIN::DEBRIFING COLLISION]"
                                     << " [" << rank << ":" << numDevice << "] Device: " << deviceId << "\n";
             tic();
-            for ( int i = 0; i < numRays; ++i )
+            for ( size_t i = 0; i < numRays; ++i )
             {
                 double M_distance = std::numeric_limits<double>::max();
-                int numId = -1;
+                size_t numId = -1;
 
                 if ( hostHipIdResults[i] != -1 )
                 {
@@ -2761,22 +2765,22 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
 
     std::vector<std::vector<rayintersection_result_type>> intersectAllRaysWithGPU( std::vector<ray_type> const& rayons ) override
     {
-        int numRays = rayons.size();
+        size_t numRays = rayons.size();
         // isView = true;
 
         // Calculate the number of rays per GPU
         if (nbWorkDistributionGPUs > numRays) nbWorkDistributionGPUs = 1;
 
-        int raysPerGPU = numRays / nbWorkDistributionGPUs;
-        int remainingRays = numRays % nbWorkDistributionGPUs;
+        size_t raysPerGPU = numRays / nbWorkDistributionGPUs;
+        size_t remainingRays = numRays % nbWorkDistributionGPUs;
 
         std::vector<std::thread> threads;
         std::vector<std::vector<std::vector<rayintersection_result_type>>> partialResults( nbWorkDistributionGPUs );
 
-        for ( int deviceId = 0; deviceId < nbWorkDistributionGPUs; ++deviceId )
+        for ( size_t deviceId = 0; deviceId < nbWorkDistributionGPUs; ++deviceId )
         {
-            int startIdx = deviceId * raysPerGPU + std::min( deviceId, remainingRays );
-            int endIdx = startIdx + raysPerGPU + ( deviceId < remainingRays ? 1 : 0 );
+            size_t startIdx = deviceId * raysPerGPU + std::min( deviceId, remainingRays );
+            size_t endIdx = startIdx + raysPerGPU + ( deviceId < remainingRays ? 1 : 0 );
 
             threads.emplace_back( [this, deviceId, &rayons, startIdx, endIdx, &partialResults]()
                                   {
