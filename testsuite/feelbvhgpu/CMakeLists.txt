@@ -83,7 +83,10 @@
 #feelpp_add_test(bvhgpu SRCS test_distance2.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 #feelpp_add_test(bvhgpu SRCS test_distanceTestMPI.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
-feelpp_add_test(bvhgpu SRCS test_distance3.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+#feelpp_add_test(bvhgpu SRCS test_distance3.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
+feelpp_add_test(bvhgpu SRCS test_distance4.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
+
 #feelpp_add_test(bvhgpu SRCS test_distance.cpp LINK_LIBRARIES Feelpp::feelpp_gpu )
 
 set_target_properties(feelpp_test_bvhgpu PROPERTIES HIP_LANGUAGE CXX)
