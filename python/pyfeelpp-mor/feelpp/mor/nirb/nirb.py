@@ -1130,8 +1130,8 @@ class nirbOnline(ToolboxModel):
 
         Args:
         -----
-            coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, \phi_j)
-            coeffFine (numpy.array): the coefficient matrix (U^h_i, \phi_j)
+            coeffCoarse (numpy.array): the coefficient matrix gieven by (U^H_i, phi_j)
+            coeffFine (numpy.array): the coefficient matrix (U^h_i, phi_j)
             lambd (float, optional): regularization parameter. Defaults to 1.e-10.
             Nb (int, optional): number of basis function selected in the online step. Defaults to None, in which case all the basis are used.
 
