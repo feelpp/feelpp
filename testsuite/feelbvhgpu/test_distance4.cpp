@@ -98,6 +98,9 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 struct DataDistanceErrTimeAll {
     int rank;
     size_t id;
+    double px;
+    double py;
+    double pz;
     double distanceMinREAL;
     double distanceFastMarching;
     double errFastMarching;
@@ -113,6 +116,9 @@ struct DataDistanceErrTimeAll {
     {
         ar & rank;
         ar & id;
+        ar & px;
+        ar & py;
+        ar & pz;
         ar & distanceMinREAL;
         ar & distanceFastMarching;
         ar & errFastMarching;
@@ -130,6 +136,10 @@ struct DataTimeLapsConfig
     size_t nbRays;
     size_t nbRaysDesired;
     double hsize;
+    int maxNumElements;
+    int maxNumFaces;
+    int maxNumPoints;
+    int maxNumVertices;
     long int t_laps_BVH_CPU;
     long int t_laps_BVH_GPU;
     long int t_laps_RT_CPU;
@@ -145,6 +155,10 @@ struct DataTimeLapsConfig
         ar & nbRays;
         ar & nbRaysDesired;
         ar & hsize;
+        ar & maxNumElements;
+        ar & maxNumFaces;
+        ar & maxNumPoints;
+        ar & maxNumVertices;
         ar & t_laps_BVH_CPU;
         ar & t_laps_BVH_GPU;
         ar & t_laps_RT_CPU;
@@ -518,6 +532,9 @@ void distToBoundaryBVHpuSendAllNode(
         DataDistanceErrTimeAll data = {
             numRank,
             index,
+            allNodeCoordinates[index][0],
+            allNodeCoordinates[index][1],
+            allNodeCoordinates[index][2],
             distanceMinREAL,
             -1,
             -1,
@@ -539,28 +556,25 @@ void distToBoundaryBVHpuSendAllNode(
     printf( "FINISHED\n" );
 }
 
+
 void saveAllData(
-    const int maxNumElements,
-    const int maxNumFaces,
-    const int maxNumPoints,
-    const int maxNumVertices,
-    const std::vector<std::vector<double>>& allNodeCoordinates,
+    const std::string nameFile,
     const std::vector<DataDistanceErrTimeAll>& allDataDistanceBVHRTAll,
     const DataTimeLapsConfig& allDataPU )
-{
 
+{
     const std::vector<std::pair<std::string, std::function<void( std::ofstream& )>>> files = {
-        { "all_results_per_vertex.csv", [&]( std::ofstream& file )
+        { nameFile+"_all_data.csv", [&]( std::ofstream& file )
           {
               file << "Num Rank,Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
-              for ( size_t i = 0; i < allNodeCoordinates.size(); ++i )
+              for ( size_t i = 0; i < allDataDistanceBVHRTAll.size(); ++i )
               {
                   file << allDataDistanceBVHRTAll[i].rank << ","
                        << allDataDistanceBVHRTAll[i].id << ","
                        << std::fixed << std::setprecision( 9 )
-                       << allNodeCoordinates[i][0] << ","
-                       << allNodeCoordinates[i][1] << ","
-                       << allNodeCoordinates[i][2] << ","
+                       << allDataDistanceBVHRTAll[i].px << ","
+                       << allDataDistanceBVHRTAll[i].py << ","
+                       << allDataDistanceBVHRTAll[i].pz << ","
                        << allDataDistanceBVHRTAll[i].distanceMinREAL << ","
                        << allDataDistanceBVHRTAll[i].distanceFastMarching << ","
                        << allDataDistanceBVHRTAll[i].errFastMarching << ","
@@ -570,14 +584,14 @@ void saveAllData(
                        << allDataDistanceBVHRTAll[i].errGPU << "\n";
               }
           } },
-        { "results.csv", [&]( std::ofstream& file )
+        { nameFile+"_in_column.csv", [&]( std::ofstream& file )
           {
               file << "rank=" << allDataPU.rank << "\n"
                    << "hsize=" << allDataPU.hsize << "\n"
-                   << "maxNumElement=" << maxNumElements << "\n"
-                   << "maxNumFace=" << maxNumFaces << "\n"
-                   << "maxNumPoints=" << maxNumPoints << "\n"
-                   << "maxNumVerices=" << maxNumVertices << "\n"
+                   << "maxNumElement=" << allDataPU.maxNumElements << "\n"
+                   << "maxNumFace=" << allDataPU.maxNumFaces << "\n"
+                   << "maxNumPoints=" << allDataPU.maxNumPoints << "\n"
+                   << "maxNumVerices=" << allDataPU.maxNumVertices << "\n"
                    << "nbRaysDesired=" << allDataPU.nbRaysDesired << "\n"
                    << "nbRays=" << allDataPU.nbRays << "\n"
                    << "timeBVHcpu=" << allDataPU.t_laps_BVH_CPU << "\n"
@@ -588,16 +602,16 @@ void saveAllData(
                    << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU + allDataPU.t_laps_RT_CPU << "\n"
                    << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
           } },
-        { "results2.csv", [&]( std::ofstream& file )
+        { nameFile+"_in_line.csv", [&]( std::ofstream& file )
           {
               file << "rank,hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
                    << "timeBVHcpu,timeRTcpu,timeBVHgpu,timeRTgpu,timeFastMarching,totalTimeBVHRTcpu,totalTimeBVHRTgpu\n"
                    << allDataPU.rank << ","
                    << allDataPU.hsize << ","
-                   << maxNumElements << ","
-                   << maxNumFaces << ","
-                   << maxNumPoints << ","
-                   << maxNumVertices << ","
+                   << allDataPU.maxNumElements << ","
+                   << allDataPU.maxNumFaces << ","
+                   << allDataPU.maxNumPoints << ","
+                   << allDataPU.maxNumVertices << ","
                    << allDataPU.nbRaysDesired << ","
                    << allDataPU.nbRays << ","
                    << allDataPU.t_laps_BVH_CPU << ","
@@ -621,6 +635,7 @@ void saveAllData(
         file.close();
     }
 }
+
 
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
@@ -674,6 +689,11 @@ BOOST_AUTO_TEST_CASE( all_distance )
     DataTimeLapsConfig allDataPU;
     allDataPU.nbRaysDesired = number_rays_desired;
     allDataPU.hsize = hsize;
+    allDataPU.maxNumElements = mesh->maxNumElements();
+    allDataPU.maxNumFaces = mesh->maxNumFaces();
+    allDataPU.maxNumPoints = mesh->maxNumPoints();
+    allDataPU.maxNumVertices = mesh->maxNumVertices();
+
     //std::vector<DataDistanceErrTime> allDataDistanceBVHRT;
 
     // List of node coordinates
@@ -718,9 +738,8 @@ BOOST_AUTO_TEST_CASE( all_distance )
         }
 
         //******************************************************************************************************************/
-        // Save All Data
-        saveAllData( mesh->maxNumElements(), mesh->maxNumFaces(), mesh->maxNumPoints(), mesh->maxNumVertices(),
-                      allNodeCoordinates, allDataDistanceBVHRTAll, allDataPU );
+        // Save All Data for rank n
+        saveAllData( "rank_"+std::to_string(numRank)+"_results",allDataDistanceBVHRTAll, allDataPU );
 
         //******************************************************************************************************************/
         // Data backup file distances for paraview
@@ -748,7 +767,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
         if ( isViewInfo )
         {
             std::cout << "\n";
-            std::cout << "[INFO] Elapsed microseconds\n";
+            std::cout << "[INFO] Elapsed microseconds for Rank : "<<numRank<<"\n";
             std::cout << "[INFO] BVH CPU : " << allDataPU.t_laps_BVH_CPU << " ms\n";
             std::cout << "[INFO] RT  CPU : " << allDataPU.t_laps_RT_CPU << " ms\n";
             std::cout << "[INFO] BVH GPU : " << allDataPU.t_laps_BVH_GPU << " ms\n";
@@ -798,17 +817,22 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         // Debriefing part.
         // we display the collected data
-        std::cout << "Data rang 0:" << std::endl;
-        for (const auto& data : gatheredData) {
-            std::cout << "Rang: " << data.rank << ", ID: " << data.id 
-                      << ", distanceMinREAL: " << data.distanceMinREAL << std::endl;
-            // ...
-        }
-        for (const auto& data : gatheredDataTimeLaps) {
-            std::cout << "Rang: " << data.rank << ", nbRays: " << data.nbRays 
-                      << ", hsize: " << data.hsize << std::endl;
+        if ( isViewInfo )
+        {
+            std::cout << "Data rank 0:" << std::endl;
+            for (const auto& data : gatheredData) {
+                std::cout << "Rank: " << data.rank << ", ID: " << data.id 
+                        << ", distanceMinREAL: " << data.distanceMinREAL << std::endl;
+                // ...
+            }
+            for (const auto& data : gatheredDataTimeLaps) {
+                std::cout << "Rank: " << data.rank << ", nbRays: " << data.nbRays 
+                        << ", hsize: " << data.hsize << std::endl;
+            }
         }
         //... Save all data
+
+        //saveAllDataDebriefing( "debriefing_results",gatheredData, gatheredDataTimeLaps);
 
     } else {
         // Other ranks simply send their data.
