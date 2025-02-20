@@ -193,3 +193,4 @@ mor/examples/heat3d/heat3dapp.cpp
 conftest.o
 python/notebooks/feelpp-python/
 install/
+.venv*/

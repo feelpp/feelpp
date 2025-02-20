@@ -72,7 +72,7 @@ public:
     auto addFragment( int fragmentId, std::string const& fragmentName, RT && r )
         {
             CHECK( M_strategy == Strategy::Custom ) << "add fragment only valid with custom strategy";
-            return M_customParts.emplace( std::make_tuple( fragmentId, fragmentName, std::forward<RT>( r ) ) );
+            return M_customParts.emplace( fragmentId, std::make_tuple( fragmentName, std::forward<RT>( r ) ) );
         }
 
 private:
