@@ -637,6 +637,88 @@ void saveAllData(
 }
 
 
+template<typename MeshType>
+std::shared_ptr<MeshType> concatenate(const std::shared_ptr<MeshType>& mesh1, const std::shared_ptr<MeshType>& mesh2)
+{
+    auto result_mesh = std::make_shared<MeshType>("concatenated_mesh", mesh1->worldCommPtr());
+    for (auto const& elt : elements(mesh1))
+    {
+        result_mesh->addElement(typename MeshType::element_type(elt));
+    }
+    for (auto const& elt : elements(mesh2))
+    {
+        result_mesh->addElement(typename MeshType::element_type(elt));
+    }
+    for (auto const& pt : points(mesh1))
+    {
+        result_mesh->addPoint(pt);
+    }
+    for (auto const& pt : points(mesh2))
+    {
+        result_mesh->addPoint(pt);
+    }
+    result_mesh->updateForUse();
+    return result_mesh;
+}
+
+
+
+ template<typename MeshType>
+std::shared_ptr<MeshType> gatherMeshes(const std::shared_ptr<MeshType>& local_mesh) {
+    boost::mpi::communicator world;
+    int rank = world.rank();
+    int size = world.size();
+
+    // Serialize the local mesh
+    std::vector<char> local_mesh_data;
+    {
+        std::ostringstream oss;
+        boost::archive::binary_oarchive oa(oss);
+        oa << local_mesh;
+        std::string str = oss.str();
+        local_mesh_data.assign(str.begin(), str.end());
+    }
+
+    // Collect mesh sizes
+    std::vector<int> sizes(size); 
+    int local_size = static_cast<int>(local_mesh_data.size()); 
+    boost::mpi::gather(world, local_size, sizes, 0);
+
+    std::vector<char> received_data;
+    if (rank == 0) {
+        int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
+        received_data.resize(total_size);
+    }
+
+    boost::mpi::gatherv(world, local_mesh_data.data(), local_mesh_data.size(), received_data.data(), sizes, 0);
+
+    std::shared_ptr<MeshType> global_mesh;
+    if (rank == 0) {
+        std::vector<std::shared_ptr<MeshType>> meshes;
+        int current_position = 0;
+        for (int i = 0; i < size; ++i) {
+            std::vector<char> current_mesh_data(received_data.begin() + current_position, 
+                                                received_data.begin() + current_position + sizes[i]);
+            std::istringstream iss(std::string(current_mesh_data.begin(), current_mesh_data.end()));
+            boost::archive::binary_iarchive ia(iss);
+            std::shared_ptr<MeshType> mesh_part;
+            ia >> mesh_part;
+            meshes.push_back(mesh_part);
+            current_position += sizes[i];
+        }
+
+        // We concatenate all meshes
+        global_mesh = meshes[0];
+        for (size_t i = 1; i < meshes.size(); ++i) {
+            global_mesh = concatenate(global_mesh, meshes[i]);
+        }
+    }
+
+    return global_mesh;
+}
+
+
+
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
 BOOST_AUTO_TEST_CASE( all_distance )
@@ -645,6 +727,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     mpi::communicator world;
 
     int numRank = world.rank();
+    int nbCPUs = world.size();
 
     // signal(SIGTERM, sigterm_handler);
 
@@ -838,6 +921,25 @@ BOOST_AUTO_TEST_CASE( all_distance )
         // Other ranks simply send their data.
         mpi::gatherv(world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(), 0);
         mpi::gather(world, allDataPU, 0);
+    }
+
+    //******************************************************************************************************************/
+    // Gathering Meshs results... Will see if it works properly ;-)
+
+
+    std::shared_ptr<decltype(mesh)::element_type> global_mesh;
+
+    if (nbCPUs > 1) {
+        global_mesh = gatherMeshes(mesh);
+    } else {
+        global_mesh = mesh;
+    }
+
+
+    if (numRank == 0) {
+        std::cout << "Well done mesh assembled on master process.\n";
+        std::cout << "Number of elements in the global mesh : " << global_mesh->numElements() << std::endl;
+        auto e = exporter(_mesh=global_mesh, _name="my_global_mesh");
     }
 
 
