@@ -95,8 +95,7 @@ makeOptions()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 
-struct DataDistanceErrTimeAll
-{
+struct DataDistanceErrTimeAll {
     int rank;
     size_t id;
     double distanceMinREAL;
@@ -106,12 +105,29 @@ struct DataDistanceErrTimeAll
     double errCPU;
     double distanceMinGPU;
     double errGPU;
+
+    // Add this part for serialization
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & rank;
+        ar & id;
+        ar & distanceMinREAL;
+        ar & distanceFastMarching;
+        ar & errFastMarching;
+        ar & distanceMinCPU;
+        ar & errCPU;
+        ar & distanceMinGPU;
+        ar & errGPU;
+    }
 };
+
 
 struct DataTimeLapsConfig
 {
     int rank;
-    size_t nbRays; // <= uniform distribution
+    size_t nbRays;
     size_t nbRaysDesired;
     double hsize;
     long int t_laps_BVH_CPU;
@@ -119,6 +135,22 @@ struct DataTimeLapsConfig
     long int t_laps_RT_CPU;
     long int t_laps_RT_GPU;
     long int t_laps_FastMarching;
+
+    // Add this part for serialization
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & rank;
+        ar & nbRays;
+        ar & nbRaysDesired;
+        ar & hsize;
+        ar & t_laps_BVH_CPU;
+        ar & t_laps_BVH_GPU;
+        ar & t_laps_RT_CPU;
+        ar & t_laps_RT_GPU;
+        ar & t_laps_FastMarching;
+    }
 };
 
 struct StatsResult
@@ -668,10 +700,12 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     bool isOn = true; // isOn = false;
 
+    // In this part all data is sent at once from CPU to GPU.
+    std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
+
     if ( isOn )
     {
-        // In this part all data is sent at once from CPU to GPU.
-        std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
+
         // We calculate the distances from the edge of the cube and the intersection points.
         distToBoundaryBVHpuSendAllNode( rangeFaces, allDataPU, allNodeCoordinates, allDataDistanceBVHRTAll, true );
 
@@ -722,6 +756,64 @@ BOOST_AUTO_TEST_CASE( all_distance )
             std::cout << "[INFO] FastMarching : " << allDataPU.t_laps_FastMarching << " ms\n";
             std::cout << "\n";
         }
+    }
+
+
+    //******************************************************************************************************************/
+    //==================================================================================================================/
+    //******************************************************************************************************************/
+
+    //******************************************************************************************************************/
+    // Gathering results from all MPI CPUs. Then synthesis of the results...  Will see if it works properly ;-)
+
+    barrierAlpha();
+
+    // We collect the sizes of the local vectors.
+    std::vector<int> sizes(world.size());
+    int local_size = allDataDistanceBVHRTAll.size();
+    mpi::gather(world, local_size, sizes, 0);
+
+    // We prepare the vector to receive all the data on rank 0.
+    std::vector<DataDistanceErrTimeAll> gatheredData;
+    std::vector<DataTimeLapsConfig> gatheredDataTimeLaps;
+
+    if (world.rank() == 0) {
+        // we calculate the displacement.
+        std::vector<int> displacements(world.size(), 0);
+        for (int i = 1; i < world.size(); ++i) {
+            displacements[i] = displacements[i-1] + sizes[i-1];
+        }
+        
+        // we resize the reception vector.
+        int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
+        gatheredData.resize(total_size);
+
+        // we gather data from all ranks.
+        mpi::gatherv(world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(),
+                     gatheredData.data(), sizes, displacements, 0);
+
+        // we gather data from allDataPU from all ranks.
+        gatheredDataTimeLaps.resize(world.size());
+        mpi::gather(world, allDataPU, gatheredDataTimeLaps, 0);
+
+        // Debriefing part.
+        // we display the collected data
+        std::cout << "Data rang 0:" << std::endl;
+        for (const auto& data : gatheredData) {
+            std::cout << "Rang: " << data.rank << ", ID: " << data.id 
+                      << ", distanceMinREAL: " << data.distanceMinREAL << std::endl;
+            // ...
+        }
+        for (const auto& data : gatheredDataTimeLaps) {
+            std::cout << "Rang: " << data.rank << ", nbRays: " << data.nbRays 
+                      << ", hsize: " << data.hsize << std::endl;
+        }
+        //... Save all data
+
+    } else {
+        // Other ranks simply send their data.
+        mpi::gatherv(world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(), 0);
+        mpi::gather(world, allDataPU, 0);
     }
 
 
