@@ -61,6 +61,8 @@ fi
 docker build \
        --pull \
        --tag=ghcr.io/feelpp/${image}:${tag} \
+       --build-arg=FEELPP_GITHUB_TOKEN=${FEELPP_GITHUB_TOKEN} \
+       --build-arg=FEELPP_GIRDER_API_KEY=${FEELPP_GIRDER_API_KEY} \
        --build-arg=BUILD_JOBS=${JOBS}\
        --build-arg=BRANCH=${BRANCH}\
        --build-arg=CXX="${CXX}" \
