@@ -94,22 +94,10 @@ makeOptions()
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
-struct DataDistanceErrTime
-{
-    size_t id;
-    double distanceMinREAL;
-    double distanceFastMarching;
-    double errFastMarching;
-    double distanceMinCPU;
-    double errCPU;
-    double distanceMinGPU;
-    double errGPU;
-    long int t_laps_CPU;
-    long int t_laps_GPU;
-};
 
 struct DataDistanceErrTimeAll
 {
+    int rank;
     size_t id;
     double distanceMinREAL;
     double distanceFastMarching;
@@ -122,6 +110,7 @@ struct DataDistanceErrTimeAll
 
 struct DataTimeLapsConfig
 {
+    int rank;
     size_t nbRays; // <= uniform distribution
     size_t nbRaysDesired;
     double hsize;
@@ -166,9 +155,6 @@ std::vector<double> getAllDistanceRayIntersections( BvhType const& bvh, std::vec
     {
         if ( rir.processId() == bvh->worldComm().rank() )
         {
-            // std::cout << " RIR --  Distance: " << rir.distance()<< "\n";
-            // std::cout << " RIR --  Distance " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.distance()<< "\n";
-            // std::cout << " id="<<rir.get_id()<<" RIR --  Distance " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.distance()<< "\n";
             distance.push_back( rir.distance() );
         }
         bvh->worldComm().barrier();
@@ -185,7 +171,6 @@ std::vector<size_t> getId( BvhType const& bvh, std::vector<RayIntersectionResult
     {
         if ( rir.processId() == bvh->worldComm().rank() )
         {
-            // std::cout << " --  Distance: " << rir.distance()<< "\n";
             // std::cout << " RIR --  id " <<"["<<bvh->worldComm().rank()<<"] = "<< rir.get_id()<< "\n";
             id.push_back( rir.get_id() );
         }
@@ -499,6 +484,7 @@ void distToBoundaryBVHpuSendAllNode(
         double errGPU = abs( distanceMinGPU[index] - distanceMinREAL );
 
         DataDistanceErrTimeAll data = {
+            numRank,
             index,
             distanceMinREAL,
             -1,
@@ -510,30 +496,18 @@ void distToBoundaryBVHpuSendAllNode(
         allDataDistanceBVHRTAll.push_back( data );
     }
 
+    allDataPU.rank = numRank;
     allDataPU.t_laps_BVH_CPU = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_bvh_cpu - t_begin_cpu ).count();
     allDataPU.t_laps_RT_CPU = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_raytracing_cpu - t_begin_raytracing_cpu ).count();
     allDataPU.t_laps_BVH_GPU = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_bvh_gpu - t_begin_gpu ).count();
     allDataPU.t_laps_RT_GPU = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_raytracing_gpu - t_begin_raytracing_gpu ).count();
     allDataPU.nbRays = nbRays;
-
-    if ( isViewInfo )
-    {
-        std::cout << "\n";
-        std::cout << "[INFO] Elapsed microseconds\n";
-        std::cout << "[INFO] BVH CPU : " << allDataPU.t_laps_BVH_CPU << " ms\n";
-        std::cout << "[INFO] RT  CPU : " << allDataPU.t_laps_RT_CPU << " ms\n";
-        std::cout << "[INFO] BVH GPU : " << allDataPU.t_laps_BVH_GPU << " ms\n";
-        std::cout << "[INFO] RT  GPU : " << allDataPU.t_laps_RT_GPU << " ms\n";
-        std::cout << "[INFO] FastMarching : " << allDataPU.t_laps_FastMarching << " ms\n";
-        std::cout << "\n";
-    }
-
     //******************************************************************************************************************/
 
     printf( "FINISHED\n" );
 }
 
-void saveAllData2(
+void saveAllData(
     const int maxNumElements,
     const int maxNumFaces,
     const int maxNumPoints,
@@ -546,10 +520,11 @@ void saveAllData2(
     const std::vector<std::pair<std::string, std::function<void( std::ofstream& )>>> files = {
         { "all_results_per_vertex.csv", [&]( std::ofstream& file )
           {
-              file << "Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
+              file << "Num Rank,Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
               for ( size_t i = 0; i < allNodeCoordinates.size(); ++i )
               {
-                  file << allDataDistanceBVHRTAll[i].id << ","
+                  file << allDataDistanceBVHRTAll[i].rank << ","
+                       << allDataDistanceBVHRTAll[i].id << ","
                        << std::fixed << std::setprecision( 9 )
                        << allNodeCoordinates[i][0] << ","
                        << allNodeCoordinates[i][1] << ","
@@ -565,7 +540,8 @@ void saveAllData2(
           } },
         { "results.csv", [&]( std::ofstream& file )
           {
-              file << "hsize=" << allDataPU.hsize << "\n"
+              file << "rank=" << allDataPU.rank << "\n"
+                   << "hsize=" << allDataPU.hsize << "\n"
                    << "maxNumElement=" << maxNumElements << "\n"
                    << "maxNumFace=" << maxNumFaces << "\n"
                    << "maxNumPoints=" << maxNumPoints << "\n"
@@ -582,8 +558,9 @@ void saveAllData2(
           } },
         { "results2.csv", [&]( std::ofstream& file )
           {
-              file << "hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
+              file << "rank,hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
                    << "timeBVHcpu,timeRTcpu,timeBVHgpu,timeRTgpu,timeFastMarching,totalTimeBVHRTcpu,totalTimeBVHRTgpu\n"
+                   << allDataPU.rank << ","
                    << allDataPU.hsize << ","
                    << maxNumElements << ","
                    << maxNumFaces << ","
@@ -617,22 +594,10 @@ BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
 BOOST_AUTO_TEST_CASE( all_distance )
 {
+    mpi::environment env;
+    mpi::communicator world;
 
-    /*
-        int provided;
-        int initialized;
-        MPI_Initialized( &initialized );
-        if ( !initialized )
-        {
-            MPI_Init_thread( nullptr, nullptr, MPI_THREAD_FUNNELED, &provided );
-        }
-
-        int rank, world_size;
-        MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-        MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-
-        Kokkos::Timer timer;
-    */
+    int numRank = world.rank();
 
     // signal(SIGTERM, sigterm_handler);
 
@@ -677,7 +642,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     DataTimeLapsConfig allDataPU;
     allDataPU.nbRaysDesired = number_rays_desired;
     allDataPU.hsize = hsize;
-    std::vector<DataDistanceErrTime> allDataDistanceBVHRT;
+    //std::vector<DataDistanceErrTime> allDataDistanceBVHRT;
 
     // List of node coordinates
     for ( size_type k = 0; k < Vh->nLocalDofWithGhost(); ++k )
@@ -688,21 +653,22 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     int nbNode = allNodeCoordinates.size();
 
+    //******************************************************************************************************************/
     // Calculates Node points to Surface distances by the method FastMarching
     std::chrono::steady_clock::time_point t_begin_FastMarching, t_end_FastMarching;
     t_begin_FastMarching = std::chrono::steady_clock::now();
     auto distToBoundary = distanceToRange( _space = Vh, _range = submeshFaces );
     t_end_FastMarching = std::chrono::steady_clock::now();
     long int t_laps_FastMarching = std::chrono::duration_cast<std::chrono::milliseconds>( t_end_FastMarching - t_begin_FastMarching ).count();
+    //******************************************************************************************************************/
 
     //******************************************************************************************************************/
     //==================================================================================================================/
     //******************************************************************************************************************/
 
-    bool isTransferAllNodes = true;
-    // isTransferAllNodes=false;
+    bool isOn = true; // isOn = false;
 
-    if ( isTransferAllNodes )
+    if ( isOn )
     {
         // In this part all data is sent at once from CPU to GPU.
         std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
@@ -719,7 +685,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         //******************************************************************************************************************/
         // Save All Data
-        saveAllData2( mesh->maxNumElements(), mesh->maxNumFaces(), mesh->maxNumPoints(), mesh->maxNumVertices(),
+        saveAllData( mesh->maxNumElements(), mesh->maxNumFaces(), mesh->maxNumPoints(), mesh->maxNumVertices(),
                       allNodeCoordinates, allDataDistanceBVHRTAll, allDataPU );
 
         //******************************************************************************************************************/
@@ -741,34 +707,24 @@ BOOST_AUTO_TEST_CASE( all_distance )
         exp->save();
         //******************************************************************************************************************/
 
-        /*
-        int rank, size;
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-            MPI_Comm_size(MPI_COMM_WORLD, &size);
+        //******************************************************************************************************************/
+        //==================================================================================================================/
+        //******************************************************************************************************************/
 
-        try {
-                std::cout << "Processus " << rank << " sur " << size << " en cours d'exécution." << std::endl;
-                MPI_Barrier(MPI_COMM_WORLD);
-
-            } catch (const std::exception& e) {
-                std::cerr << "Erreur sur le processus " << rank << ": " << e.what() << std::endl;
-                MPI_Abort(MPI_COMM_WORLD, 1);
-            }
-        */
-        // MPI_Abort(MPI_COMM_WORLD, 1);
-        // MPI_Barrier(MPI_COMM_WORLD);
+        if ( isViewInfo )
+        {
+            std::cout << "\n";
+            std::cout << "[INFO] Elapsed microseconds\n";
+            std::cout << "[INFO] BVH CPU : " << allDataPU.t_laps_BVH_CPU << " ms\n";
+            std::cout << "[INFO] RT  CPU : " << allDataPU.t_laps_RT_CPU << " ms\n";
+            std::cout << "[INFO] BVH GPU : " << allDataPU.t_laps_BVH_GPU << " ms\n";
+            std::cout << "[INFO] RT  GPU : " << allDataPU.t_laps_RT_GPU << " ms\n";
+            std::cout << "[INFO] FastMarching : " << allDataPU.t_laps_FastMarching << " ms\n";
+            std::cout << "\n";
+        }
     }
 
-    //  double elapsed_time = timer.seconds();
-    //  std::cout << "Elapsed time: " << elapsed_time << " seconds" << std::endl;
 
-    /*
-        MPI_Initialized( &initialized );
-        if ( initialized )
-        {
-            MPI_Finalize();
-        }
-    */
 }
 
 BOOST_AUTO_TEST_SUITE_END()
