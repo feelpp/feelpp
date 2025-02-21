@@ -94,8 +94,8 @@ makeOptions()
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
-
-struct DataDistanceErrTimeAll {
+struct DataDistanceErrTimeAll
+{
     int rank;
     size_t id;
     double px;
@@ -111,24 +111,23 @@ struct DataDistanceErrTimeAll {
 
     // Add this part for serialization
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
     {
-        ar & rank;
-        ar & id;
-        ar & px;
-        ar & py;
-        ar & pz;
-        ar & distanceMinREAL;
-        ar & distanceFastMarching;
-        ar & errFastMarching;
-        ar & distanceMinCPU;
-        ar & errCPU;
-        ar & distanceMinGPU;
-        ar & errGPU;
+        ar& rank;
+        ar& id;
+        ar& px;
+        ar& py;
+        ar& pz;
+        ar& distanceMinREAL;
+        ar& distanceFastMarching;
+        ar& errFastMarching;
+        ar& distanceMinCPU;
+        ar& errCPU;
+        ar& distanceMinGPU;
+        ar& errGPU;
     }
 };
-
 
 struct DataTimeLapsConfig
 {
@@ -148,22 +147,22 @@ struct DataTimeLapsConfig
 
     // Add this part for serialization
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    template <class Archive>
+    void serialize( Archive& ar, const unsigned int version )
     {
-        ar & rank;
-        ar & nbRays;
-        ar & nbRaysDesired;
-        ar & hsize;
-        ar & maxNumElements;
-        ar & maxNumFaces;
-        ar & maxNumPoints;
-        ar & maxNumVertices;
-        ar & t_laps_BVH_CPU;
-        ar & t_laps_BVH_GPU;
-        ar & t_laps_RT_CPU;
-        ar & t_laps_RT_GPU;
-        ar & t_laps_FastMarching;
+        ar& rank;
+        ar& nbRays;
+        ar& nbRaysDesired;
+        ar& hsize;
+        ar& maxNumElements;
+        ar& maxNumFaces;
+        ar& maxNumPoints;
+        ar& maxNumVertices;
+        ar& t_laps_BVH_CPU;
+        ar& t_laps_BVH_GPU;
+        ar& t_laps_RT_CPU;
+        ar& t_laps_RT_GPU;
+        ar& t_laps_FastMarching;
     }
 };
 
@@ -274,6 +273,57 @@ std::vector<BVHRayType> generateRays( const std::vector<std::vector<double>>& al
     }
 
     return rays;
+}
+
+// Goal: to be able to visualize things later with camera
+template <typename BVHRayType>
+std::vector<BVHRayType> generateCameraRays(
+    const Eigen::Vector3d& cameraPosition, // Camera position in world space
+    const Eigen::Vector3d& cameraLookAt,   // Point the camera is looking at
+    int imageWidth,                        // Image width in pixels
+    int imageHeight,                       // Image height in pixels
+    double fieldOfViewDegrees )            // Vertical field of view in degrees
+{
+    std::vector<BVHRayType> rays;
+    rays.reserve( imageWidth * imageHeight );
+
+    Eigen::Vector3d cameraDirection = ( cameraLookAt - cameraPosition ).normalized();
+    Eigen::Vector3d cameraRight = cameraDirection.unitOrthogonal().normalized();
+    Eigen::Vector3d cameraUp = cameraRight.cross( cameraDirection ).normalized();
+    double fieldOfViewRadians = fieldOfViewDegrees * M_PI / 180.0;
+    double viewportHeight = 2.0 * tan( fieldOfViewRadians / 2.0 );
+    double viewportWidth = viewportHeight * ( static_cast<double>( imageWidth ) / static_cast<double>( imageHeight ) );
+
+    Eigen::Vector3d viewportRight = viewportWidth * cameraRight;
+    Eigen::Vector3d viewportUp = viewportHeight * cameraUp;
+
+    Eigen::Vector3d pixelDeltaU = viewportRight / static_cast<double>( imageWidth );
+    Eigen::Vector3d pixelDeltaV = viewportUp / static_cast<double>( imageHeight );
+
+    Eigen::Vector3d viewportUpperLeft = cameraPosition + cameraDirection - viewportRight / 2.0 + viewportUp / 2.0;
+
+    // Generate rays
+    int rayId = 0;
+    for ( int y = 0; y < imageHeight; ++y )
+    {
+        for ( int x = 0; x < imageWidth; ++x )
+        {
+            Eigen::Vector3d pixelPosition = viewportUpperLeft + ( static_cast<double>( x ) * pixelDeltaU ) - ( static_cast<double>( y ) * pixelDeltaV );
+            Eigen::Vector3d rayDirection = ( pixelPosition - cameraPosition ).normalized();
+            rays.push_back( BVHRayType( cameraPosition, rayDirection ) );
+            rays.back().id = rayId++;
+        }
+    }
+    return rays;
+}
+
+void savePPM( const std::string& filename, unsigned char* data, int width,
+              int height )
+{
+    std::ofstream file( filename, std::ios::binary );
+    file << "P6\n"
+         << width << " " << height << "\n255\n";
+    file.write( reinterpret_cast<char*>( data ), width * height * 3 );
 }
 
 double valueFilter( double v )
@@ -556,7 +606,6 @@ void distToBoundaryBVHpuSendAllNode(
     printf( "FINISHED\n" );
 }
 
-
 void saveAllData(
     const std::string nameFile,
     const std::vector<DataDistanceErrTimeAll>& allDataDistanceBVHRTAll,
@@ -564,7 +613,7 @@ void saveAllData(
 
 {
     const std::vector<std::pair<std::string, std::function<void( std::ofstream& )>>> files = {
-        { nameFile+"_all_data.csv", [&]( std::ofstream& file )
+        { nameFile + "_all_data.csv", [&]( std::ofstream& file )
           {
               file << "Num Rank,Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
               for ( size_t i = 0; i < allDataDistanceBVHRTAll.size(); ++i )
@@ -584,7 +633,7 @@ void saveAllData(
                        << allDataDistanceBVHRTAll[i].errGPU << "\n";
               }
           } },
-        { nameFile+"_in_column.csv", [&]( std::ofstream& file )
+        { nameFile + "_in_column.csv", [&]( std::ofstream& file )
           {
               file << "rank=" << allDataPU.rank << "\n"
                    << "hsize=" << allDataPU.hsize << "\n"
@@ -602,7 +651,7 @@ void saveAllData(
                    << "totalTimeBVHRTcpu=" << allDataPU.t_laps_BVH_CPU + allDataPU.t_laps_RT_CPU << "\n"
                    << "totalTimeBVHRTgpu=" << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
           } },
-        { nameFile+"_in_line.csv", [&]( std::ofstream& file )
+        { nameFile + "_in_line.csv", [&]( std::ofstream& file )
           {
               file << "rank,hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
                    << "timeBVHcpu,timeRTcpu,timeBVHgpu,timeRTgpu,timeFastMarching,totalTimeBVHRTcpu,totalTimeBVHRTgpu\n"
@@ -623,12 +672,14 @@ void saveAllData(
                    << allDataPU.t_laps_BVH_GPU + allDataPU.t_laps_RT_GPU << "\n";
           } } };
 
+    // Add other files if needed for debriefing ...
+
     for ( const auto& [filename, writeFunc] : files )
     {
         std::ofstream file( filename );
         if ( !file.is_open() )
         {
-            std::cerr << "Erreur lors de l'ouverture du fichier " << filename << std::endl;
+            std::cerr << "Error opening file " << filename << std::endl;
             continue;
         }
         writeFunc( file );
@@ -636,35 +687,155 @@ void saveAllData(
     }
 }
 
+void saveAllDataDebriefing(
+    const std::string nameFile,
+    const std::vector<DataDistanceErrTimeAll>& allDataDistanceBVHRTAll,
+    const std::vector<DataTimeLapsConfig>& allDataPU )
 
-template<typename MeshType>
-std::shared_ptr<MeshType> concatenate(const std::shared_ptr<MeshType>& mesh1, const std::shared_ptr<MeshType>& mesh2)
 {
-    auto result_mesh = std::make_shared<MeshType>("concatenated_mesh", mesh1->worldCommPtr());
-    for (auto const& elt : elements(mesh1))
+    const std::vector<std::pair<std::string, std::function<void( std::ofstream& )>>> files = {
+        { nameFile + "_all_data.csv", [&]( std::ofstream& file )
+          {
+              file << "Num Rank,Num Vertex,PosX,PosY,PosZ,distanceMinREAL,distanceFastMarching,errFastMarching,distanceMinCPU,errCPU,distanceMinGPU,errGPU\n";
+              for ( size_t i = 0; i < allDataDistanceBVHRTAll.size(); ++i )
+              {
+                  file << allDataDistanceBVHRTAll[i].rank << ","
+                       << allDataDistanceBVHRTAll[i].id << ","
+                       << std::fixed << std::setprecision( 9 )
+                       << allDataDistanceBVHRTAll[i].px << ","
+                       << allDataDistanceBVHRTAll[i].py << ","
+                       << allDataDistanceBVHRTAll[i].pz << ","
+                       << allDataDistanceBVHRTAll[i].distanceMinREAL << ","
+                       << allDataDistanceBVHRTAll[i].distanceFastMarching << ","
+                       << allDataDistanceBVHRTAll[i].errFastMarching << ","
+                       << allDataDistanceBVHRTAll[i].distanceMinCPU << ","
+                       << allDataDistanceBVHRTAll[i].errCPU << ","
+                       << allDataDistanceBVHRTAll[i].distanceMinGPU << ","
+                       << allDataDistanceBVHRTAll[i].errGPU << "\n";
+              }
+          } },
+        { nameFile + "_in_line.csv", [&]( std::ofstream& file )
+          {
+              file << "rank,hsize,maxNumElement,maxNumFace,maxNumPoints,maxNumVerices,nbRaysDesired,nbRays,"
+                   << "timeBVHcpu,timeRTcpu,timeBVHgpu,timeRTgpu,timeFastMarching,totalTimeBVHRTcpu,totalTimeBVHRTgpu\n";
+              for ( size_t i = 0; i < allDataPU.size(); ++i )
+              {
+                  file << allDataPU[i].rank << ","
+                       << allDataPU[i].hsize << ","
+                       << allDataPU[i].maxNumElements << ","
+                       << allDataPU[i].maxNumFaces << ","
+                       << allDataPU[i].maxNumPoints << ","
+                       << allDataPU[i].maxNumVertices << ","
+                       << allDataPU[i].nbRaysDesired << ","
+                       << allDataPU[i].nbRays << ","
+                       << allDataPU[i].t_laps_BVH_CPU << ","
+                       << allDataPU[i].t_laps_RT_CPU << ","
+                       << allDataPU[i].t_laps_BVH_GPU << ","
+                       << allDataPU[i].t_laps_RT_GPU << ","
+                       << allDataPU[i].t_laps_FastMarching << ","
+                       << allDataPU[i].t_laps_BVH_CPU + allDataPU[i].t_laps_RT_CPU << ","
+                       << allDataPU[i].t_laps_BVH_GPU + allDataPU[i].t_laps_RT_GPU << "\n";
+              }
+          } } };
+
+    for ( const auto& [filename, writeFunc] : files )
     {
-        result_mesh->addElement(typename MeshType::element_type(elt));
+        std::ofstream file( filename );
+        if ( !file.is_open() )
+        {
+            std::cerr << "Error opening file " << filename << std::endl;
+            continue;
+        }
+        writeFunc( file );
+        file.close();
     }
-    for (auto const& elt : elements(mesh2))
+}
+
+void saveAllDataDebriefingJSON(
+    const std::string nameFile,
+    const std::vector<DataDistanceErrTimeAll>& allDataDistanceBVHRTAll,
+    const std::vector<DataTimeLapsConfig>& allDataPU )
+{
+    using json = nlohmann::json;
+
+    json allData;
+
+    json allDataDistanceJson = json::array();
+    for ( const auto& data : allDataDistanceBVHRTAll )
     {
-        result_mesh->addElement(typename MeshType::element_type(elt));
+        allDataDistanceJson.push_back( { { "rank", data.rank },
+                                         { "id", data.id },
+                                         { "px", data.px },
+                                         { "py", data.py },
+                                         { "pz", data.pz },
+                                         { "distanceMinREAL", data.distanceMinREAL },
+                                         { "distanceFastMarching", data.distanceFastMarching },
+                                         { "errFastMarching", data.errFastMarching },
+                                         { "distanceMinCPU", data.distanceMinCPU },
+                                         { "errCPU", data.errCPU },
+                                         { "distanceMinGPU", data.distanceMinGPU },
+                                         { "errGPU", data.errGPU } } );
     }
-    for (auto const& pt : points(mesh1))
+    allData["allDataDistanceBVHRTAll"] = allDataDistanceJson;
+
+    json allDataPUJson = json::array();
+    for ( const auto& data : allDataPU )
     {
-        result_mesh->addPoint(pt);
+        allDataPUJson.push_back( { { "rank", data.rank },
+                                   { "hsize", data.hsize },
+                                   { "maxNumElements", data.maxNumElements },
+                                   { "maxNumFaces", data.maxNumFaces },
+                                   { "maxNumPoints", data.maxNumPoints },
+                                   { "maxNumVertices", data.maxNumVertices },
+                                   { "nbRaysDesired", data.nbRaysDesired },
+                                   { "nbRays", data.nbRays },
+                                   { "t_laps_BVH_CPU", data.t_laps_BVH_CPU },
+                                   { "t_laps_RT_CPU", data.t_laps_RT_CPU },
+                                   { "t_laps_BVH_GPU", data.t_laps_BVH_GPU },
+                                   { "t_laps_RT_GPU", data.t_laps_RT_GPU },
+                                   { "t_laps_FastMarching", data.t_laps_FastMarching },
+                                   { "totalTimeBVHRTcpu", data.t_laps_BVH_CPU + data.t_laps_RT_CPU },
+                                   { "totalTimeBVHRTgpu", data.t_laps_BVH_GPU + data.t_laps_RT_GPU } } );
     }
-    for (auto const& pt : points(mesh2))
+    allData["allDataPU"] = allDataPUJson;
+
+    std::ofstream file( nameFile + "_debriefing_data.json" );
+    if ( !file.is_open() )
     {
-        result_mesh->addPoint(pt);
+        std::cerr << "Error opening file " << nameFile + "_debriefing_data.json" << std::endl;
+        return;
+    }
+    file << std::setw( 4 ) << allData << std::endl;
+    file.close();
+}
+
+template <typename MeshType>
+std::shared_ptr<MeshType> concatenate( const std::shared_ptr<MeshType>& mesh1, const std::shared_ptr<MeshType>& mesh2 )
+{
+    auto result_mesh = std::make_shared<MeshType>( "concatenated_mesh", mesh1->worldCommPtr() );
+    for ( auto const& elt : elements( mesh1 ) )
+    {
+        result_mesh->addElement( typename MeshType::element_type( elt ) );
+    }
+    for ( auto const& elt : elements( mesh2 ) )
+    {
+        result_mesh->addElement( typename MeshType::element_type( elt ) );
+    }
+    for ( auto const& pt : points( mesh1 ) )
+    {
+        result_mesh->addPoint( pt );
+    }
+    for ( auto const& pt : points( mesh2 ) )
+    {
+        result_mesh->addPoint( pt );
     }
     result_mesh->updateForUse();
     return result_mesh;
 }
 
-
-
- template<typename MeshType>
-std::shared_ptr<MeshType> gatherMeshes(const std::shared_ptr<MeshType>& local_mesh) {
+template <typename MeshType>
+std::shared_ptr<MeshType> gatherMeshes( const std::shared_ptr<MeshType>& local_mesh )
+{
     boost::mpi::communicator world;
     int rank = world.rank();
     int size = world.size();
@@ -673,51 +844,53 @@ std::shared_ptr<MeshType> gatherMeshes(const std::shared_ptr<MeshType>& local_me
     std::vector<char> local_mesh_data;
     {
         std::ostringstream oss;
-        boost::archive::binary_oarchive oa(oss);
+        boost::archive::binary_oarchive oa( oss );
         oa << local_mesh;
         std::string str = oss.str();
-        local_mesh_data.assign(str.begin(), str.end());
+        local_mesh_data.assign( str.begin(), str.end() );
     }
 
     // Collect mesh sizes
-    std::vector<int> sizes(size); 
-    int local_size = static_cast<int>(local_mesh_data.size()); 
-    boost::mpi::gather(world, local_size, sizes, 0);
+    std::vector<int> sizes( size );
+    int local_size = static_cast<int>( local_mesh_data.size() );
+    boost::mpi::gather( world, local_size, sizes, 0 );
 
     std::vector<char> received_data;
-    if (rank == 0) {
-        int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
-        received_data.resize(total_size);
+    if ( rank == 0 )
+    {
+        int total_size = std::accumulate( sizes.begin(), sizes.end(), 0 );
+        received_data.resize( total_size );
     }
 
-    boost::mpi::gatherv(world, local_mesh_data.data(), local_mesh_data.size(), received_data.data(), sizes, 0);
+    boost::mpi::gatherv( world, local_mesh_data.data(), local_mesh_data.size(), received_data.data(), sizes, 0 );
 
     std::shared_ptr<MeshType> global_mesh;
-    if (rank == 0) {
+    if ( rank == 0 )
+    {
         std::vector<std::shared_ptr<MeshType>> meshes;
         int current_position = 0;
-        for (int i = 0; i < size; ++i) {
-            std::vector<char> current_mesh_data(received_data.begin() + current_position, 
-                                                received_data.begin() + current_position + sizes[i]);
-            std::istringstream iss(std::string(current_mesh_data.begin(), current_mesh_data.end()));
-            boost::archive::binary_iarchive ia(iss);
+        for ( int i = 0; i < size; ++i )
+        {
+            std::vector<char> current_mesh_data( received_data.begin() + current_position,
+                                                 received_data.begin() + current_position + sizes[i] );
+            std::istringstream iss( std::string( current_mesh_data.begin(), current_mesh_data.end() ) );
+            boost::archive::binary_iarchive ia( iss );
             std::shared_ptr<MeshType> mesh_part;
             ia >> mesh_part;
-            meshes.push_back(mesh_part);
+            meshes.push_back( mesh_part );
             current_position += sizes[i];
         }
 
         // We concatenate all meshes
         global_mesh = meshes[0];
-        for (size_t i = 1; i < meshes.size(); ++i) {
-            global_mesh = concatenate(global_mesh, meshes[i]);
+        for ( size_t i = 1; i < meshes.size(); ++i )
+        {
+            global_mesh = concatenate( global_mesh, meshes[i] );
         }
     }
 
     return global_mesh;
 }
-
-
 
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
@@ -777,7 +950,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     allDataPU.maxNumPoints = mesh->maxNumPoints();
     allDataPU.maxNumVertices = mesh->maxNumVertices();
 
-    //std::vector<DataDistanceErrTime> allDataDistanceBVHRT;
+    // std::vector<DataDistanceErrTime> allDataDistanceBVHRT;
 
     // List of node coordinates
     for ( size_type k = 0; k < Vh->nLocalDofWithGhost(); ++k )
@@ -822,7 +995,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         //******************************************************************************************************************/
         // Save All Data for rank n
-        saveAllData( "rank_"+std::to_string(numRank)+"_results",allDataDistanceBVHRTAll, allDataPU );
+        saveAllData( "rank_" + std::to_string( numRank ) + "_results", allDataDistanceBVHRTAll, allDataPU );
 
         //******************************************************************************************************************/
         // Data backup file distances for paraview
@@ -850,7 +1023,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
         if ( isViewInfo )
         {
             std::cout << "\n";
-            std::cout << "[INFO] Elapsed microseconds for Rank : "<<numRank<<"\n";
+            std::cout << "[INFO] Elapsed microseconds for Rank : " << numRank << "\n";
             std::cout << "[INFO] BVH CPU : " << allDataPU.t_laps_BVH_CPU << " ms\n";
             std::cout << "[INFO] RT  CPU : " << allDataPU.t_laps_RT_CPU << " ms\n";
             std::cout << "[INFO] BVH GPU : " << allDataPU.t_laps_BVH_GPU << " ms\n";
@@ -859,7 +1032,6 @@ BOOST_AUTO_TEST_CASE( all_distance )
             std::cout << "\n";
         }
     }
-
 
     //******************************************************************************************************************/
     //==================================================================================================================/
@@ -871,62 +1043,69 @@ BOOST_AUTO_TEST_CASE( all_distance )
     barrierAlpha();
 
     // We collect the sizes of the local vectors.
-    std::vector<int> sizes(world.size());
+    std::vector<int> sizes( world.size() );
     int local_size = allDataDistanceBVHRTAll.size();
-    mpi::gather(world, local_size, sizes, 0);
+    mpi::gather( world, local_size, sizes, 0 );
 
     // We prepare the vector to receive all the data on rank 0.
     std::vector<DataDistanceErrTimeAll> gatheredData;
     std::vector<DataTimeLapsConfig> gatheredDataTimeLaps;
 
-    if (world.rank() == 0) {
+    if ( world.rank() == 0 )
+    {
         // we calculate the displacement.
-        std::vector<int> displacements(world.size(), 0);
-        for (int i = 1; i < world.size(); ++i) {
-            displacements[i] = displacements[i-1] + sizes[i-1];
+        std::vector<int> displacements( world.size(), 0 );
+        for ( int i = 1; i < world.size(); ++i )
+        {
+            displacements[i] = displacements[i - 1] + sizes[i - 1];
         }
-        
+
         // we resize the reception vector.
-        int total_size = std::accumulate(sizes.begin(), sizes.end(), 0);
-        gatheredData.resize(total_size);
+        int total_size = std::accumulate( sizes.begin(), sizes.end(), 0 );
+        gatheredData.resize( total_size );
 
         // we gather data from all ranks.
-        mpi::gatherv(world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(),
-                     gatheredData.data(), sizes, displacements, 0);
+        mpi::gatherv( world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(),
+                      gatheredData.data(), sizes, displacements, 0 );
 
         // we gather data from allDataPU from all ranks.
-        gatheredDataTimeLaps.resize(world.size());
-        mpi::gather(world, allDataPU, gatheredDataTimeLaps, 0);
+        gatheredDataTimeLaps.resize( world.size() );
+        mpi::gather( world, allDataPU, gatheredDataTimeLaps, 0 );
 
         // Debriefing part.
         // we display the collected data
         if ( isViewInfo )
         {
             std::cout << "Data rank 0:" << std::endl;
-            for (const auto& data : gatheredData) {
-                std::cout << "Rank: " << data.rank << ", ID: " << data.id 
-                        << ", distanceMinREAL: " << data.distanceMinREAL << std::endl;
+            for ( const auto& data : gatheredData )
+            {
+                std::cout << "Rank: " << data.rank << ", ID: " << data.id
+                          << ", distanceMinREAL: " << data.distanceMinREAL << std::endl;
                 // ...
             }
-            for (const auto& data : gatheredDataTimeLaps) {
-                std::cout << "Rank: " << data.rank << ", nbRays: " << data.nbRays 
-                        << ", hsize: " << data.hsize << std::endl;
+            for ( const auto& data : gatheredDataTimeLaps )
+            {
+                std::cout << "Rank: " << data.rank << ", nbRays: " << data.nbRays
+                          << ", hsize: " << data.hsize << std::endl;
             }
         }
         //... Save all data
 
-        //saveAllDataDebriefing( "debriefing_results",gatheredData, gatheredDataTimeLaps);
-
-    } else {
+        saveAllDataDebriefing( "debriefing_results", gatheredData, gatheredDataTimeLaps );
+        saveAllDataDebriefingJSON( "debriefing_results", gatheredData, gatheredDataTimeLaps );
+        // saveAllDataDebriefing( "debriefing_results",gatheredData);
+    }
+    else
+    {
         // Other ranks simply send their data.
-        mpi::gatherv(world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(), 0);
-        mpi::gather(world, allDataPU, 0);
+        mpi::gatherv( world, allDataDistanceBVHRTAll.data(), allDataDistanceBVHRTAll.size(), 0 );
+        mpi::gather( world, allDataPU, 0 );
     }
 
     //******************************************************************************************************************/
     // Gathering Meshs results... Will see if it works properly ;-)
 
-
+#if 0
     std::shared_ptr<decltype(mesh)::element_type> global_mesh;
 
     if (nbCPUs > 1) {
@@ -935,14 +1114,13 @@ BOOST_AUTO_TEST_CASE( all_distance )
         global_mesh = mesh;
     }
 
-
+    // The goal is to check if the mesh is correct.
     if (numRank == 0) {
         std::cout << "Well done mesh assembled on master process.\n";
         std::cout << "Number of elements in the global mesh : " << global_mesh->numElements() << std::endl;
         auto e = exporter(_mesh=global_mesh, _name="my_global_mesh");
     }
-
-
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()
