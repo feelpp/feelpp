@@ -1,24 +1,33 @@
 #pragma once
 #include "qs_active_elasticity.hpp"
+#include <feel/feelts/bdf.hpp>
+#include <cmath> 
 
 namespace Feel
 {
 
-template <int Dim, int Order>
+template <int Dim>
 class MagnetoSwimmer
 {
 public:
     using mesh_t = Mesh<Simplex<Dim>>;
-    using spacev_t = Pchv_type<mesh_t, Order>;
-    using space_t = Pch_type<mesh_t, Order>;
-    using spacev_ptr_t = Pchv_ptrtype<mesh_t, Order>; 
-    using space_ptr_t = Pch_ptrtype<mesh_t, Order>;
+
+    using spacer_t = Pch_type<mesh_t, 0>;
+    using spacev_t = Pchv_type<mesh_t, 1>;
+
+    using spacev_ptr_t = Pchv_ptrtype<mesh_t, 1>; 
+    using spacer_ptr_t = Pch_ptrtype<mesh_t, 0>;
+
+    using elementr_t = typename spacer_t::element_type;
     using elementv_t = typename spacev_t::element_type;
-    using element_t = typename space_t::element_type;
+
     using form2_type = form2_t<spacev_t,spacev_t>; 
-    using form1_type = form1_t<spacev_t>; 
-    using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
+    using form1_type = form1_t<spacev_t>;
     using exporter_ptrtype = std::shared_ptr<Exporter<mesh_t>>; 
+    using ts_ptrtype = std::shared_ptr<Newmark<spacev_t>>;
+
+
+    std::vector<double> velocities; //Stores the velocities
 
     // Constructors
     MagnetoSwimmer() = default;
@@ -27,485 +36,333 @@ public:
     // Accessors
     nl::json const& specs() const { return specs_; }
     std::shared_ptr<mesh_t> const& mesh() const { return mesh_; }
-    spacev_ptr_t const& Xhv() const { return Xhv_; }
-    elementv_t const& u() const { return u_; }
-    exporter_ptrtype const& exporter() const { return e_; }
     
     // Mutators
     void setSpecs(nl::json const& specs) { specs_ = specs; }
     void setMesh(std::shared_ptr<mesh_t> const& mesh) { mesh_ = mesh; }
-    void setU(elementv_t const& u) { u_ = u; }
 
     // Methods
     void initialize();
-    void run();
-    void timeLoop();
-    void exportResults(double t);
+    void run_rigid();
+    void run_elastic();
+    void timeloop_rigid();
+    void timeloop_elastic();
+    void exportResults_rigid(double t);
+    void exportResults_elastic(double t);
     
 
 private:
-    nl::json specs_;
-    std::shared_ptr<mesh_t> mesh_;
-    spacev_ptr_t Xhv_, Xhv_F, Xhv_H;
+    nl::json specs_; // json
 
-    elementv_t u_, u_F, u_H;
-    ts_ptrtype ts_F, ts_H;
-    exporter_ptrtype e_;
+    double H_; //Mesh step
+    std::shared_ptr<mesh_t> mesh_; //Mesh 
+    std::shared_ptr<mesh_t> mesh_init; //Mesh 
 
-    double H_;
-    double E_F_, nu_F_, lambda_F_, mu_F_, rho_F_;
-    double E_H_, nu_H_, lambda_H_, mu_H_, rho_H_;
-    std::string disp_, source_;
-    std::string activation_;
-    std::vector<double> center_;
-    double disp_x, disp_y;
-    double Ca_, Lc_, rc_, fa_, va_;
-    std::string type_;
+    spacev_ptr_t Vh_disp_; //Displacement space
+    spacev_ptr_t Vh_disp_current;
+
+    double rho_; // density
+    double lambda_;
+    double mu_;
+    double rescale_;
+    double freq_;
+    double bx_;
+    double by_;
+    double initial_time, final_time, time_step;
+
+    exporter_ptrtype e_r; // exporter
+    exporter_ptrtype e_e; // exporter
+    ts_ptrtype ts_;
+
+    double omega_; //Angular speed
+    double theta_; //Angle
+    elementv_t u_r; //Rotation displacement
+    elementv_t u_e; //Rotation displacement
 
 };
 
 // Constructor
-template <int Dim, int Order>
-MagnetoSwimmer<Dim, Order>::MagnetoSwimmer(nl::json const& specs) : specs_(specs)
+template <int Dim>
+MagnetoSwimmer<Dim>::MagnetoSwimmer(nl::json const& specs) : specs_(specs)
 {
 }
 
 // Initialization 
-template <int Dim, int Order>
-void MagnetoSwimmer<Dim, Order>::initialize()
+template <int Dim>
+void MagnetoSwimmer<Dim>::initialize()
 {
     // Get mesh parameters
-    H_ = specs_["/Meshes/HyperElasticity/Import/h"_json_pointer].get<double>();
-    mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/HyperElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
-    
+    H_ = specs_["/Meshes/Rigid/Import/h"_json_pointer].get<double>();
+    mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/Rigid/Import/filename"_json_pointer].get<std::string>(), _h = H_);
+    mesh_init = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/Rigid/Import/filename"_json_pointer].get<std::string>(), _h = H_);
+
     // Define space
-    Xhv_ = Pchv<Order>( mesh_);
-    Xhv_F = Pchv<Order>( mesh_, markedelements(mesh_,"flagellum") );
-    Xhv_H = Pchv<Order>( mesh_, markedelements(mesh_,"head") );
-
-    // Get flagellum parameters
-    std::string matRho_F = fmt::format( "/Materials/Swimmer/parameters/rho_F/value");
-    rho_F_ = std::stod(specs_[nl::json::json_pointer( matRho_F )].get<std::string>());
-
-    std::string matE_F = fmt::format( "/Materials/Swimmer/parameters/E_F/value" );
-    E_F_ = std::stod(specs_[nl::json::json_pointer( matE_F )].get<std::string>());
+    Vh_disp_ = Pchv<1>( mesh_init);
+    Vh_disp_current = Pchv<1> (mesh_);
     
-    std::string matNu_F = fmt::format( "/Materials/Swimmer/parameters/nu_F/value" );
-    nu_F_ = std::stod(specs_[nl::json::json_pointer( matNu_F )].get<std::string>());
+    // Get density
+    std::string matRho = fmt::format( "/Materials/MagnetoObject/parameters/rho/value");
+    rho_ = std::stod(specs_[nl::json::json_pointer( matRho )].get<std::string>());
+
+    std::string matE = fmt::format( "/Materials/MagnetoObject/parameters/E/value" );
+    double E_ = std::stod(specs_[nl::json::json_pointer( matE )].get<std::string>());
     
-    lambda_F_ = E_F_*nu_F_/( (1+nu_F_)*(1-2*nu_F_) );
-    mu_F_ = E_F_/(2*(1+nu_F_));
-
-    std::string matCa = fmt::format("/Materials/Swimmer/parameters/Ca/value");
-    Ca_ = std::stod(specs_[nl::json::json_pointer( matCa )].get<std::string>());
-
-    std::string matLc = fmt::format("/Materials/Swimmer/parameters/Lc/value");
-    Lc_ = std::stod(specs_[nl::json::json_pointer( matLc )].get<std::string>());
-
-    std::string matRc = fmt::format("/Materials/Swimmer/parameters/rc/value");
-    rc_ = std::stod(specs_[nl::json::json_pointer( matRc )].get<std::string>());
-
-    std::string matFa = fmt::format("/Materials/Swimmer/parameters/fa/value");
-    fa_ = std::stod(specs_[nl::json::json_pointer( matFa )].get<std::string>());
-
-    std::string matVa = fmt::format("/Materials/Swimmer/parameters/va/value");
-    va_ = std::stod(specs_[nl::json::json_pointer( matVa )].get<std::string>());
+    std::string matNu = fmt::format( "/Materials/MagnetoObject/parameters/nu/value" );
+    double nu_ = std::stod(specs_[nl::json::json_pointer( matNu )].get<std::string>());
     
-    std::string matType = fmt::format("/Materials/Swimmer/parameters/type/value");
-    type_ = specs_[nl::json::json_pointer( matType )].get<std::string>();
-
-    // Get head parameters
-    std::string matRho_H = fmt::format( "/Materials/Swimmer/parameters/rho_H/value");
-    rho_H_ = std::stod(specs_[nl::json::json_pointer( matRho_H )].get<std::string>());
-
-    std::string matE_H = fmt::format( "/Materials/Swimmer/parameters/E_H/value" );
-    E_H_ = std::stod(specs_[nl::json::json_pointer( matE_H )].get<std::string>());
+    lambda_ = E_*nu_/( (1+nu_)*(1-2*nu_) );
+    mu_ = E_/(2*(1+nu_));
     
-    std::string matNu_H = fmt::format( "/Materials/Swimmer/parameters/nu_H/value" );
-    nu_H_ = std::stod(specs_[nl::json::json_pointer( matNu_H )].get<std::string>());
-    
-    lambda_H_ = E_H_*nu_H_/( (1+nu_H_)*(1-2*nu_H_) );
-    mu_H_ = E_H_/(2*(1+nu_H_));
+    // Get param
+    std::string matRescale = fmt::format( "/Materials/MagnetoObject/parameters/rescale/value");
+    rescale_ = std::stod(specs_[nl::json::json_pointer( matRescale )].get<std::string>());
 
-    std::string matActivation = fmt::format( "/Models/HyperElasticity/activation" );
-    activation_ = specs_[nl::json::json_pointer( matActivation )].get<std::string>();
+    std::string matFreq = fmt::format( "/Materials/MagnetoObject/parameters/freq/value");
+    freq_ = std::stod(specs_[nl::json::json_pointer( matFreq )].get<std::string>());
 
-    if (activation_.compare("disp") == 0)
-    {
-        std::string matDisp = fmt::format( "/Materials/Swimmer/parameters/disp/value" );
-        disp_ = specs_[nl::json::json_pointer( matDisp )].get<std::string>();
-    }
-    else if (activation_.compare("source") == 0)
-    {
-        std::string matSource = fmt::format( "/Materials/Swimmer/parameters/source/value" );
-        source_ = specs_[nl::json::json_pointer( matSource )].get<std::string>();
+    std::string matBx = fmt::format( "/Materials/MagnetoObject/parameters/bx/value");
+    bx_ = std::stod(specs_[nl::json::json_pointer( matBx )].get<std::string>());
 
-        std::string matCenter = fmt::format( "/Materials/Swimmer/parameters/center/value" );
-        center_ = specs_[nl::json::json_pointer( matCenter )].get<std::vector<double>>();  
+    std::string matBy = fmt::format( "/Materials/MagnetoObject/parameters/by/value");
+    by_ = std::stod(specs_[nl::json::json_pointer( matBy )].get<std::string>());
 
-    }
-    
     // Initialize exporter
-    e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
+    e_r = Feel::exporter(_mesh = mesh_init, _name = "rigid", _geo="change" ); 
+    e_e = Feel::exporter(_mesh = mesh_, _name = "elastic", _geo="change" );
     
-    // Initialize Newmark scheme
-    bool steady = get_value(specs_, "/TimeStepping/HyperElasticity/steady", true);
-    int time_order = get_value(specs_, "/TimeStepping/HyperElasticity/order", 2);
-    double initial_time = get_value(specs_, "/TimeStepping/HyperElasticity/start", 0.0);
-    double final_time = get_value(specs_, "/TimeStepping/HyperElasticity/end", 1.0);
-    double time_step = expr(get_value(specs_, "/TimeStepping/HyperElasticity/step", std::string("0.1"))).evaluate()(0,0);
-    double gamma = get_value(specs_, "/TimeStepping/HyperElasticity/gamma", 0.5);
-    double beta = get_value(specs_, "/TimeStepping/HyperElasticity/beta", 0.25);
-
+    // Time scheme
+    initial_time = get_value(specs_, "/TimeStepping/Rigid/start", 0.0);
+    final_time = get_value(specs_, "/TimeStepping/Rigid/end", 1.0);
+    time_step = expr(get_value(specs_, "/TimeStepping/Rigid/step", std::string("0.1"))).evaluate()(0,0);
+    
     // Set initial conditions
-    u_ = Xhv_->element();
-    u_ .on(_range=elements(support(Xhv_)), _expr = 0.*one());
-    u_F = Xhv_F->element();
-    u_F.on(_range=elements(support(Xhv_F)), _expr = 0.*one() );
-    u_H = Xhv_H->element();
-    u_H.on(_range=elements(support(Xhv_H)), _expr = 0.*one());
+    omega_ = 0.;
+    theta_ = 0.;
 
-    ts_F =  newmark(_space = Xhv_F, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
-    ts_H =  newmark(_space = Xhv_H, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
+    u_r = Vh_disp_->element();
+    u_r.on(_range=elements(mesh_init), _expr=vec(cst(0.),cst(0.)));
+
+    u_e =  Vh_disp_current->element();
+    u_e.on(_range=elements(mesh_), _expr=vec(cst(0.),cst(0.)));
+}
+
+
+template<int Dim>
+void MagnetoSwimmer<Dim>::timeloop_rigid()
+{
+    // External magnetic field
+    double bx = bx_/rescale_;
+    double by = by_/rescale_;
+    //double By = 0;
     
-    ts_F->start();
-    ts_F->initialize( u_F );
+    // Magnetic momentum 
+    double Mx = std::cos(0);
+    double My = std::sin(0);
 
-    ts_H->start();
-    ts_H->initialize( u_H );
+    // Compute moment of inertia J
+    auto massCenter = mean( _range = elements(mesh_), _expr = P());
+    auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+    std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
 
-    ts_F->updateFromDisp(u_F);
-    ts_H->updateFromDisp(u_H);
+    auto momentOfInertia = integrate(_range=elements(mesh_),_expr=cst(rho_)*( inner(P()-massCenterVec) ) ).evaluate()(0,0);
+    std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
+   
+    // Time 
+    double time = time_step;
+
+    // Output
+    std::ofstream ofs("res_rigid.csv");
+    ofs << fmt::format("theta") << std::endl;
+    ofs << fmt::format( "{:.6f}",theta_) << std::endl;
+
+    while (time < final_time)
+    {
+        std::cout << "Time : " << time << std::endl;
+
+        //By = by * std::sin(2*freq_*M_PI*time);
+
+        //Compute torque
+        //Mx = std::cos(theta_);
+        //My = std::sin(theta_);
+
+
+        //double Tm = (Mx*By - My*bx);
+        double Tm = (Mx*by - My*bx);
+        std::cout << "Torque : " << Tm << std::endl;
+
+        //Update
+        omega_ = omega_ + time_step * (Tm/momentOfInertia);
+        //std::cout << "Angular velocity : " << omega_ << std::endl;
+        theta_ = theta_ + omega_*time_step;
+        //std::cout << "Rotation angle : " << theta_ << std::endl;
+        
+        ofs << fmt::format( "{:.6f}",theta_) << std::endl;
+
+        auto rot = vec(
+            cos(theta_) * (Px() - massCenter(0,0)) - sin(theta_) * (Py() - massCenter(1,0)) - Px() + massCenter(0,0),
+            sin(theta_) * (Px() - massCenter(0,0)) + cos(theta_) * (Py() - massCenter(1,0)) - Py() + massCenter(1,0)
+        );
+
+        u_r.on(_range = elements(mesh_), _expr = rot);
+
+        
+        // Export results
+        this->exportResults_rigid(time);
+        time += time_step;
+    }
 }
 
 // Time loop
-template <int Dim, int Order>
-void MagnetoSwimmer<Dim, Order>::timeLoop()
+template <int Dim>
+void MagnetoSwimmer<Dim>::timeloop_elastic()
 {
-    auto Id = eye<Dim,Dim>();
+    // External magnetic field
+    double bx = bx_/rescale_;
+    double by = by_/rescale_;
+    double By = 0;
+    double hx = 0;
     
-    if (activation_.compare("disp") == 0)  
+    // Magnetic momentum 
+    double Mx = std::cos(0);
+    double My = std::sin(0);
+
+    // define fields
+    auto utot = Vh_disp_->element(); 
+    utot.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));  
+
+    auto utot_e = Vh_disp_->element(); 
+    utot_e.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));  
+
+    auto dt_u_tot = Vh_disp_->element();
+    dt_u_tot.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));   
+
+    auto dtt_u_tot = Vh_disp_->element();
+    dtt_u_tot.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));  
+
+    auto dt_u_old = Vh_disp_->element(); 
+    dt_u_old.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));  
+
+    auto dtt_u_old = Vh_disp_->element();
+    dtt_u_old.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));   
+
+    auto dtt_u_old2 = Vh_disp_->element();
+    dtt_u_old2.on(_range=elements( mesh_init ), _expr= vec(cst(0.),cst(0.)));  
+
+    auto Id = eye<2,2>();
+    double beta = 0.25;
+    double gamma = 0.5;
+
+    int iter = 0;
+    while (time_step * iter < final_time)
     {
-        std::size_t offset = 0;
-        disp_x = std::stod(&disp_[1],&offset);
-        disp_y = std::stod(&disp_[offset+2]);
-    }
+        std::cout << "time : " << time_step * iter << std::endl;
+        ////////////////////////////////////////////////////
+        //          Newmark beta-model for dttun          //
+        ////////////////////////////////////////////////////
 
+        //hx = 0.75 * (Mx*by - My*bx);
+        hx = (Mx*by - My*bx)/0.75;
+        std::cout << "hx : " << hx << std::endl;
 
-    // Initialize Flagellum
+        std::cout << "Solve elasticity" << std::endl;
+        
+        Vh_disp_current = Pchv<1>( mesh_);
+        u_e =  Vh_disp_current->element();
+        u_e.on(_range=elements(mesh_), _expr=vec(cst(0.),cst(0.)));
     
-    
-    auto a_F_ = form2( _test = Xhv_F, _trial = Xhv_F );
-    auto at_F_ = form2( _test = Xhv_F, _trial = Xhv_F );
-    auto l_F_ = form1( _test = Xhv_F );
-    auto lt_F_ = form1( _test = Xhv_F );
-    
-    a_F_.zero();
-    at_F_.zero();
-    l_F_.zero();
-    lt_F_.zero();
+        auto eps_curr = sym(gradt(u_e));
+        auto sigma_curr = lambda_*trace(eps_curr)*Id + 2*mu_*eps_curr;
 
-    auto deft_F = sym(gradt(u_F));
-    auto def_F = sym(grad(u_F));
+        auto eps_tot = sym(gradv(utot)); 
+        auto F = Id + gradv(utot); 
+        auto J = det(F); 
+        auto Js = J * sqrt(trans(N())*( trans(F) * F) * N()); 
+        auto sigma_tot = lambda_*trace(eps_tot)*Id + 2*mu_*eps_tot;
 
-    auto sigmat_F_ = lambda_F_*trace(deft_F)*Id + 2*mu_F_*deft_F;
-    a_F_ += integrate( _range = elements(support(Xhv_F)), _expr = cst(rho_F_)*inner( ts_F->polyDerivCoefficient()*idt(u_F),id( u_F ) ) + inner(sigmat_F_,def_F));
-    
+        auto eps_mix = 0.5 * (gradt(u_e)*gradv(utot) + trans(gradv(utot))*trans(gradt(u_e)));
+        auto sigma_mix = lambda_ * trace(eps_mix) * Id + 2 * mu_ * eps_mix;
+       
+        auto a = form2( _trial=Vh_disp_current, _test=Vh_disp_current);
+        auto l = form1( _test=Vh_disp_current );
 
- 
-    //auto ResF = backend()->newVector(Xhv_F);
-    //auto JacF = backend()->newMatrix( _test=Xhv_F, _trial=Xhv_F );
-    
-    // Initialize Head
-    auto a_H_ = form2( _test = Xhv_H, _trial = Xhv_H );
-    auto at_H_ = form2( _test = Xhv_H, _trial = Xhv_H );
-    auto l_H_ = form1( _test = Xhv_H );
-    auto lt_H_ = form1( _test = Xhv_H );
-    
-    a_H_.zero();
-    at_H_.zero();
-    l_H_.zero();
-    lt_H_.zero();
+        a.zero();
+        l.zero();
 
-    auto deft_H = sym(gradt(u_H));
-    auto def_H = sym(grad(u_H));
+        a += integrate(_range = elements(mesh_), _expr = cst(1.)/J * inner( sigma_curr * trans(F), grad(u_e) ));
+        a += integrate(_range = elements(mesh_), _expr = cst(1.)/J * inner( sigma_mix * trans(F), grad(u_e) ));
+        a += integrate(_range = elements(mesh_), _expr= cst(rho_)/J * inner( cst(1.0)/(cst(beta)*std::pow(time_step,2)) * idt( u_e ),id( u_e ) ) );
+           
+        l += integrate( _range = elements(mesh_), _expr= - cst(1.)/J * inner( sigma_tot * trans(F), grad(u_e) ) );
+        l += integrate( _range = markedfaces(mesh_, "Upper"), _expr = cst(1)/Js * trans(vec(cst(-hx),cst(0)))*id(u_e));
+        l += integrate( _range = markedfaces(mesh_, "Lower"), _expr = cst(1)/Js * trans(vec(cst(hx),cst(0)))*id(u_e));
+           
+        l += integrate( _range = elements(mesh_), _expr = cst( rho_ )/J * inner( cst(1.0)/(cst(beta)*time_step) * idv( dt_u_old ), id( u_e ) ) );
+        l += integrate( _range = elements(mesh_), _expr = cst( rho_ )/J * inner(  (cst(1.0)/(cst(2.0)*cst(beta)) - cst(1.0)) * idv( dtt_u_old ), id( u_e ) ) );
 
-    auto sigmat_H_ = lambda_H_*trace(deft_H)*Id + 2*mu_H_*deft_H;
-    a_H_ += integrate( _range = elements(support(Xhv_H)), _expr = cst(rho_H_)*inner( ts_H->polyDerivCoefficient()*idt(u_H),id( u_H ) ) + inner(sigmat_H_,def_H));
+        a.solve(_rhs=l,_solution=u_e);
 
-    if (activation_.compare("source") == 0)
-    {
-        std::cout << "Activation : source" << std::endl;
-        l_H_ += integrate( _range = elements( support(Xhv_H)), _expr = trans(expr<Dim,1>( source_ ))*id(u_H));
-    }
-        
+        // Update time scheme
+        dtt_u_old2 = project(_space = Vh_disp_, _range = elements(mesh_init), _expr = idv(dtt_u_old));
+        dtt_u_old = project(_space = Vh_disp_, _range = elements(mesh_init), _expr = cst(1.0) / (cst(beta)*std::pow(time_step,2)) * idv(u_e) - cst(1.0) / (cst(beta)*cst(time_step)) * idv( dt_u_old ) -  (cst(1.0)/(cst(2.0)*cst(beta)) - cst(1.0)) * idv( dtt_u_old ));
+        dt_u_old = project(_space = Vh_disp_, _range = elements(mesh_init), _expr = idv(dt_u_old) + cst(1.0)*cst(time_step) * ((cst(1.0) - cst(gamma)) * idv(dtt_u_old2) + cst(gamma) * idv(dtt_u_old)) );
+        utot  =  project(_space = Vh_disp_, _range = elements(mesh_init), _expr = idv(utot) + idv(u_e) );
 
-    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] start time stepping start: {}, stop: {}, step: {}", 
-                                fmt::localtime(std::time(nullptr)), ts_F->timeInitial(),ts_F->timeFinal(), ts_F->timeStep()) << std::endl;
-    
-    for ( ts_F->start(); ts_F->isFinished()==false; ts_F->next(u_F), ts_H->next(u_H) )
-    {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_F->time(),ts_F->timeFinal()) << std::endl;
+        std::cout << "Export" << std::endl;
+        this->exportResults_elastic(time_step*iter);
 
-        
+        std::cout << "Update current" << std::endl;
+        meshMove( mesh_, u_e );
 
-        // Flagellum
-        /*
-        auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
-        {
-            auto u = Xhv_F->element();
-            u = *X;
-            auto Fv = Id + gradv(u);
-            auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
-            auto Sv = lambda_F_*trace(Ev)*Id + 2*mu_F_*Ev;
-            
-            auto dF = gradt(u);
-            auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
-            auto dS = lambda_F_*trace(dE)*Id + 2*mu_F_*dE;
-            
-            auto ea = vec(cst(0.), cst(1.));
-            auto eaea = ea*trans(ea);
-            
-            auto a = form2( _test=Xhv_F, _trial=Xhv_F, _matrix=J );
-
-            a = integrate( _range=elements(support(Xhv_F)),
-                           _expr= inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
-            
-            a += integrate( _range=elements(support(Xhv_F)),
-                            _expr= cst(rho_F_)*inner( ts_F->polyDerivCoefficient()*idt(u),id( u ) ) );
-
-            
-            if (type_.compare("bending") == 0)
-            {
-                std::cout << "Bending" << std::endl;
-                auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_F->time());
-                a += integrate(_range=elements( support(Xhv_F) ), _expr= - inner(dF*sigma_a*Px()*eaea, grad(u) ) );
-            }    
-            else if (type_.compare("flapping") == 0)
-            {
-                std::cout << "Flapping" << std::endl;
-                auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*(Py() - va_*ts_F->time()));
-                a += integrate(_range=elements( support(Xhv_F) ), _expr= - inner(dF*sigma_a*Px()*eaea, grad(u) ) );
-            }
-            
-            
-            auto RR = backend()->newVector( Xhv_F );
-
-            if (activation_.compare("disp") == 0)  
-            {
-                std::cout << "Activation : displacement" << std::endl;
-                auto dx = disp_x*ts_F->time();
-                auto dy = disp_y*ts_F->time();
-                a += on(_range=markedfaces(mesh_,"motor"), _rhs=RR, _element=u, _expr= vec(cst(dx),cst(dy)));
-            }  
-            else if (activation_.compare("source") == 0)  
-            {
-                std::cout << "Activation : source" << std::endl;
-
-                // On détermine le déplacement u_H
-                auto ctx = Xhv_H->context();
-                node_type t(Dim);
-                t(0)=center_[0]; t(1)=center_[1];  
-                ctx.add( t );
-
-                auto ifv_uH = evaluateFromContext( _context=ctx, _expr= idv(u_H) ); 
-                std::cout << "Disp_x : " << ifv_uH(0,0)  << " Disp_y : " << ifv_uH(1,0) << std::endl;
-
-                a += on(_range=markedfaces(mesh_,"motor"), _rhs=RR, _element=u, _expr =  vec(cst(ifv_uH(0,0)),cst(ifv_uH(1,0))));
-            }
-
-        };
-
-        auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
-        {
-            auto u = Xhv_F->element();
-            u = *X;
-            
-            auto Fv = Id + gradv(u);
-            auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
-            auto Sv = lambda_F_*trace(Ev)*Id + 2*mu_F_*Ev;
-
-            auto ea = vec(cst(1.), cst(0.));
-            auto eaea = ea*trans(ea);
-            auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_F->time());
-        
-
-            auto r = form1( _test=Xhv_F, _vector=R );
-            r = integrate( _range=elements(support(Xhv_F)),
-                           _expr= inner( val(Fv*Sv) , grad(u) ) );
-
-            r += integrate( _range=elements(support(Xhv_F)),
-                            _expr= cst(rho_F_)*inner( ts_F->polyDerivCoefficient()*idv(u) -idv(ts_F->polyDeriv()),id( u ) ) );
-            
-            
-            if (type_.compare("bending") == 0)
-            {
-                auto sigma_a = Ca_/(Lc_*rc_)*std::sin(2*pi*fa_*ts_F->time());
-                r += integrate(_range=elements( support(Xhv_F)), _expr= - inner( val(Fv)*sigma_a*Px()*eaea,grad( u )));
-            }    
-            else if (type_.compare("flapping") == 0)
-            {
-                auto sigma_a = Ca_/(Lc_*rc_)*sin(2*pi*fa_*(Py() - va_*ts_F->time()));
-                r += integrate(_range=elements( support(Xhv_F)), _expr= - inner( val(Fv)*sigma_a*Px()*eaea,grad( u )));
-            }
-            
-
-            R->close();
-            auto temp = Xhv_F->element();
-            temp = *R;
-
-            if (activation_.compare("disp") == 0)  
-            {
-                std::cout << "Activation : displacement" << std::endl;
-                auto dx = disp_x*ts_F->time();
-                auto dy = disp_y*ts_F->time();
-                temp.on( _range=markedfaces(mesh_,"motor"),_expr=vec(cst(dx),cst(dy)) );
-            }  
-            else if (activation_.compare("source") == 0)  
-            {
-                std::cout << "Activation : source" << std::endl;
-
-                // On détermine le déplacement u_H
-                auto ctx = Xhv_H->context();
-                node_type t(Dim);
-                t(0)=center_[0]; t(1)=center_[1];  
-                ctx.add( t );
-
-                auto ifv_uH = evaluateFromContext( _context=ctx, _expr= idv(u_H) ); 
-                std::cout << "Disp_x : " << ifv_uH(0,0)  << " Disp_y : " << ifv_uH(1,0) << std::endl;
-
-                temp.on(_range=markedfaces(mesh_,"motor"),_expr =  vec(cst(ifv_uH(0,0)),cst(ifv_uH(1,0))));
-            }
-
-            *R = temp;
-        };
-
-        
-        if (activation_.compare("disp") == 0)  
-        {
-            std::cout << "Activation : displacement" << std::endl;
-            auto dx = disp_x*ts_F->time();
-            auto dy = disp_y*ts_F->time();
-            u_F.on( _range=markedfaces(mesh_,"motor"),_expr=vec(cst(dx),cst(dy)) );
-        }  
-        else if (activation_.compare("source") == 0)  
-        {
-            std::cout << "Activation : source" << std::endl;
-
-            // On détermine le déplacement u_H
-            auto ctx = Xhv_H->context();
-            node_type t(Dim);
-            t(0)=center_[0]; t(1)=center_[1];  
-            ctx.add( t );
-
-            auto ifv_uH = evaluateFromContext( _context=ctx, _expr= idv(u_H) ); 
-            std::cout << "Disp_x : " << ifv_uH(0,0)  << " Disp_y : " << ifv_uH(1,0) << std::endl;
-
-            u_F.on(_range=markedfaces(mesh_,"motor"),_expr =  vec(cst(ifv_uH(0,0)),cst(ifv_uH(1,0))));
-        }
-        
-        backend()->nlSolver()->residual = Residual;
-        backend()->nlSolver()->jacobian = Jacobian;
-        backend()->nlSolve( _solution=u_F,_jacobian=JacF,_residual=ResF);
-        ts_F->updateFromDisp(u_F);
-        */
-
-
-        
-        lt_F_ = l_F_;
-        at_F_ = a_F_;
-    
-        std::cout << "Solve flagellum" << std::endl;
-        lt_F_ +=  integrate( _range=elements( support(Xhv_F)), _expr= cst(rho_F_)*inner( idv(ts_F->polyDeriv()),id( u_F ) ));
-
-        if (activation_.compare("disp") == 0)  
-        {
-            std::cout << "Activation : displacement" << std::endl;
-            auto dx = disp_x*ts_F->time();
-            auto dy = disp_y*ts_F->time();
-            at_F_ += on(_range=markedfaces(mesh_,"motor"), _rhs=lt_F_, _element=u_F, _expr=  vec(cst(dx),cst(dy)));
-        }  
-        else if (activation_.compare("source") == 0)  
-        {
-            std::cout << "Activation : source" << std::endl;
-
-            // On détermine le déplacement u_H
-            auto ctx = Xhv_H->context();
-            node_type t(Dim);
-            t(0)=center_[0]; t(1)=center_[1];  
-            ctx.add( t );
-
-            auto ifv_uH = evaluateFromContext( _context=ctx, _expr= idv(u_H) ); 
-            std::cout << "Disp_x : " << ifv_uH(0,0)  << " Disp_y : " << ifv_uH(1,0) << std::endl;
-
-            at_F_ += on(_range=markedfaces(mesh_,"motor"), _rhs=lt_F_, _element=u_F, _expr =  vec(cst(ifv_uH(0,0)),cst(ifv_uH(1,0))));
-        } 
-
-        at_F_.solve( _rhs = lt_F_, _solution = u_F, _rebuild=true );
-        
-        
-
-        // Head
-        lt_H_ = l_H_;
-        at_H_ = a_H_;
-
-        std::cout << "Solve head" << std::endl;
-        lt_H_ +=  integrate( _range=elements( support(Xhv_H)), _expr= cst(rho_H_)*inner( idv(ts_H->polyDeriv()),id( u_H ) ));
-
-        if (activation_.compare("disp") == 0)  
-        {
-            std::cout << "Activation : displacement" << std::endl;  
-            auto dx = disp_x*ts_F->time();
-            auto dy = disp_y*ts_F->time();
-            std::cout << "Disp_x : " << dx  << " Disp_y : " << dy << std::endl;
-            //at_H_ += on(_range=markedfaces(mesh_,"headB"), _rhs=lt_H_, _element=u_H, _expr= expr<Dim,1>( disp_ ));
-            at_H_ += on(_range=markedfaces(mesh_,"headB"), _rhs=lt_H_, _element=u_H, _expr= vec(cst(dx),cst(dy)));
-        }
-
-        at_H_.solve( _rhs = lt_H_, _solution = u_H, _rebuild=true );
-  
-        ts_H->updateFromDisp(u_H);
-
-        
-
-        // Total displacement
-        std::cout << "Solve swimmer" << std::endl;
-        u_.on(_range=elements(support(Xhv_)),_expr=idv(u_F) + idv(u_H));
-
-        this->exportResults(ts_F->time());
-
-        // Reset
-        //at_F_.zero();
-        //lt_F_.zero();
-        at_H_.zero();
-        lt_H_.zero();
-    }    
+        iter++;
+    } 
+       
 }
 
 // Run method 
-template <int Dim, int Order>
-void MagnetoSwimmer<Dim, Order>::run()
+template <int Dim>
+void MagnetoSwimmer<Dim>::run_rigid()
 {
-    std::cout << "***** Initialize elasticity parameters *****" << std::endl;
+    std::cout << "***** Init *****" << std::endl;
     initialize();
 
+    std::cout <<  "***** Export *****" << std::endl;
+    this->exportResults_rigid(0);
+
     std::cout <<  "***** Start time loop *****" << std::endl;
-    this->exportResults(0);
-    timeLoop();
+    timeloop_rigid();
 }
 
+// Run method 
+template <int Dim>
+void MagnetoSwimmer<Dim>::run_elastic()
+{
+    std::cout << "***** Init *****" << std::endl;
+    initialize();
+
+    std::cout <<  "***** Export *****" << std::endl;
+    //this->exportResults_elastic(0);
+
+    std::cout <<  "***** Start time loop *****" << std::endl;
+    timeloop_elastic();
+}
 
 // Export results
-template <int Dim, int Order>
+template <int Dim>
 void 
-MagnetoSwimmer<Dim, Order>::exportResults(double t)
+MagnetoSwimmer<Dim>::exportResults_rigid(double t)
 {
-    e_->step(t)->addRegions();
-    e_->step(t)->add( "displacement", u_ );
-    e_->step(t)->add( "displacementH", u_H );
-    e_->step(t)->add( "displacementF", u_F );
-    e_->save();
+    e_r->step(t)->addRegions();
+    e_r->step(t)->add( "disp", u_r );
+    e_r->save();
 }
 
-} 
+template <int Dim>
+void 
+MagnetoSwimmer<Dim>::exportResults_elastic(double t)
+{
+    e_e->step(t)->setMesh(mesh_);
+    e_e->step(t)->add( "disp", u_e );
+    e_e->save();
+}
+}
+

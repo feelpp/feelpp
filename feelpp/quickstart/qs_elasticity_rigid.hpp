@@ -65,10 +65,9 @@ public:
     void initG();
 
     // Run
-    void rotation();
-    void rotationNeumann();
-    void rotationNeumann2D();
-    void translationContact();
+    void rotationNeumann2DNew();
+    void ball_tmp();
+    void rigidSwimmer();
 
     // Export
     void exportResults(double t);
@@ -80,53 +79,51 @@ private:
 
     // Mesh
     double H_;
-    std::shared_ptr<mesh_t> mesh_;
-    spacev_ptr_t_E XvE_;
-    space_ptr_t_E XE_;
-    spacev_ptr_t_R XvR_;
-    space_ptr_t_R XR_;
+    std::shared_ptr<mesh_t> mesh_init;
+    std::shared_ptr<mesh_t> mesh_current;
 
-    // Param
+    // Spaces
+    spacev_ptr_t_E Xv_init;
+    space_ptr_t_E X_init;
+    spacev_ptr_t_E Xv_current;
+    space_ptr_t_E X_current;
+    
+    // Param Solid
     double density_, mass_;
     double E_, nu_, lambda_, mu_;
     std::string externalforce_, neumannUpper_, neumannLower_;
     double extFx_,extFy_;
     double Upper_x, Upper_y, Lower_x, Lower_y;
 
-    // Contact param
-    double epsilon_,tolContactRegion_,tolDistance_;
-    double theta_, gamma0_, gamma_;
-    std::string method_, direction_;
-    std::vector<double> ddirection_;
-    std::vector<double> pressurePoint_;
-    int fixedPoint_;
-    double fixedPointtol_;
-    element_t_E contactRegion_;
-    element_t_E g_;
-    int nbrFaces_;
-    Range<mesh_t, MESH_FACES> myelts_;
-    backend_ptrtype backend_e_, backend_r_;
-
-
     // Fields
-    elementv_t_E u_total_; 
-    elementv_t_E u_E_;
-    elementv_t_E u_R_;
-    elementv_t_R u_translation_; 
-    elementv_t_E u_rotation_;
-    elementv_t_E u_true;
+    elementv_t_E u_e_curr;
+    elementv_t_E dt_u_e_tot;
+    elementv_t_E dtt_u_e_tot;
+    elementv_t_E dt_u_e_old;
+    elementv_t_E dtt_u_e_old;
+    elementv_t_E dtt_u_e_old2;
+    elementv_t_E utotal;
 
     // Newmark schemes
     double initial_time_, final_time_, time_step_;
-    ts_ptrtype_E ts_E_;
-    ts_ptrtype_E ts_true;
-    ts_ptrtype_Translation ts_Translation_;
+    double gamma_, beta_;
 
     // Exporter
-    exporter_ptrtype e_;
+    exporter_ptrtype e_init;
+    exporter_ptrtype e_current;
+
+    // Contact param
+    double epsilon_,tolContactRegion_,tolDistance_;
+    double theta_, gamma0_, gamma_contact;
+    std::string method_, direction_;
+    std::vector<double> ddirection_;
+    element_t_E contactRegion_;
+    element_t_E g_;
+    element_t_E contactFaces_;
+    int nbrFaces_;
+    Range<mesh_t, MESH_FACES> myelts_;
 
 };
-
 
 // Constructor
 template <int Dim, int Order>
@@ -134,19 +131,24 @@ ElasticRigid<Dim, Order>::ElasticRigid(nl::json const& specs) : specs_(specs)
 {
 }
 
+
 // Initialization Mesh
 template <int Dim, int Order>
 void ElasticRigid<Dim, Order>::initializeMesh()
 {
+    // Mesh
     H_ = specs_["/Meshes/LinearElasticity/Import/h"_json_pointer].get<double>();
-    mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
+    mesh_init = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
+    mesh_current = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
+    //mesh_current = createSubmesh( _mesh=mesh_current_total, _range=markedelements( mesh_current_total, "Solid" ) , _worldcomm=Environment::worldCommSeqPtr() );
 
-    XvE_ = Pchv<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );
-    XvR_ = Pchv<0>(mesh_, markedelements(mesh_, "Caoutchouc"));
-    XE_ = Pch<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );
-    XR_ = Pch<0>(mesh_, markedelements(mesh_, "Caoutchouc"));
-
+    // Spaces
+    Xv_init  = Pchv<Order>( mesh_init, markedelements( mesh_init, "Solid" ) );
+    X_init = Pch<Order>(mesh_init, markedelements( mesh_init, "Solid" ) );
+    Xv_current  = Pchv<Order>( mesh_current, markedelements( mesh_current, "Solid" ) );
+    X_current = Pch<Order>( mesh_current, markedelements( mesh_current, "Solid" ) );
 }
+
 
 // Initialization body parameters
 template <int Dim, int Order>
@@ -154,7 +156,7 @@ void ElasticRigid<Dim, Order>::initializeParam()
 {
     std::string matRho = fmt::format( "/Materials/Caoutchouc/parameters/rho/value");
     density_ = std::stod(specs_[nl::json::json_pointer( matRho )].get<std::string>());
-    mass_ = integrate( _range = elements(support(XvE_)), _expr = cst(density_) ).evaluate()(0,0);
+    mass_ = integrate( _range = elements(support(Xv_init)), _expr = cst(density_) ).evaluate()(0,0);
 
     // Young modulus and poisson coefficient
     std::string matE = fmt::format( "/Materials/Caoutchouc/parameters/E/value" );
@@ -167,7 +169,6 @@ void ElasticRigid<Dim, Order>::initializeParam()
     mu_ = E_/(2*(1+nu_));
 
     // External force
-    
     if ( specs_["/Models/LinearElasticity"_json_pointer].contains("loading") )
     {
         for ( auto [key, loading] : specs_["/Models/LinearElasticity/loading"_json_pointer].items() )
@@ -179,6 +180,7 @@ void ElasticRigid<Dim, Order>::initializeParam()
                 LOG( INFO ) << fmt::format( "Loading {}: Gravity found", key );
                 std::string loadexpr = fmt::format( "/Models/LinearElasticity/loading/{}/parameters/expr", key );
                 externalforce_ = specs_[nl::json::json_pointer( loadexpr )].get<std::string>();
+
                 std::size_t offsetE = 0;
                 extFx_ = std::stod(&externalforce_[1],&offsetE);
                 extFy_ = std::stod(&externalforce_[offsetE+2]);
@@ -209,1041 +211,58 @@ void ElasticRigid<Dim, Order>::initializeParam()
         else 
             neumannLower_ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
     }
-
 }
 
- 
-
-// Initialization displacement fields
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::initializeFields()
-{
-    // Displacement
-    u_total_ = XvE_->element();
-    u_E_ = XvE_->element();
-    u_R_ = XvE_->element();
-    u_translation_ = XvR_->element();
-    u_rotation_ = XvE_->element();
-    u_true = XvE_->element();
-
-    // Init to zero
-    std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
-    
-    u_total_.on(_range=elements(support(XvE_)), _expr= expr<Dim,1>(default_displ));    
-    u_E_.on(_range=elements(support(XvE_)), _expr=expr<Dim,1>(default_displ));    
-    u_R_.on(_range=elements(support(XvE_)), _expr=expr<Dim,1>(default_displ));    
-    u_translation_.on(_range=elements(support(XvR_)), _expr=expr<Dim,1>(default_displ));    
-    u_rotation_.on(_range=elements(support(XvE_)), _expr=expr<Dim,1>(default_displ));    
-    u_true.on(_range=elements(support(XvE_)), _expr=expr<Dim,1>(default_displ));    
-}
 
 // Initialization exporter and newmark time scheme
 template <int Dim, int Order>
 void ElasticRigid<Dim, Order>::initializeTs_Exp()
 {
     // Exporter
-    e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
-    this->exportResults(0);
+    e_init = Feel::exporter(_mesh = mesh_init, _name = "initial", _geo="change" );
+    e_current =  Feel::exporter(_mesh = mesh_current, _name = "current", _geo="change" );
 
     // Initialize Newmark scheme
     initial_time_ = get_value(specs_, "/TimeStepping/LinearElasticity/start", 0.0);
     final_time_ = get_value(specs_, "/TimeStepping/LinearElasticity/end", 1.0);
     time_step_ = expr(get_value(specs_, "/TimeStepping/LinearElasticity/step", std::string("0.1"))).evaluate()(0,0);
-    
-    double gamma = get_value(specs_, "/TimeStepping/LinearElasticity/gamma", 0.5);
-    double beta = get_value(specs_, "/TimeStepping/LinearElasticity/beta", 0.25);
-
-    ts_E_ = newmark(_space = XvE_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_, _gamma=gamma, _beta=beta );
-    ts_E_->start();
-    ts_E_->initialize( u_E_ );
-    ts_E_->updateFromDisp(u_E_);
-
-    ts_Translation_ = newmark(_space = XvR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_, _gamma=gamma, _beta=beta );
-    ts_Translation_->start();
-    ts_Translation_->initialize( u_translation_ );
-    ts_Translation_->updateFromDisp( u_translation_);
-
-    ts_true = newmark(_space = XvE_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_, _gamma=gamma, _beta=beta );
-    ts_true->start();
-    ts_true->initialize( u_true );
-    ts_true->updateFromDisp( u_true);
+    gamma_ = get_value(specs_, "/TimeStepping/LinearElasticity/gamma", 0.5);
+    beta_ = get_value(specs_, "/TimeStepping/LinearElasticity/beta", 0.25);
 }
 
-// Time loop
+// Initialization displacement fields
 template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::rotationNeumann()
+void ElasticRigid<Dim, Order>::initializeFields()
 {
-    if constexpr(Dim == 3)
-    {
-        auto Id = eye<Dim,Dim>();
-        auto iter = -1;
-        // Inits
-        this->initializeMesh();
-        this->initializeParam();
-        this->initializeFields();
-        this->initializeTs_Exp();
-
-        /*
-            Assemblage Rotation \theta_z
-        */
-        // Fix a constant angular velocity
-        auto v_angular_z = XvR_->element();
-        v_angular_z.on(_range=elements(support(XvR_)), _expr= expr<Dim,1>(std::string("{0.,0.,0.}")));
-    
-        auto theta_z = XvR_->element();
-        theta_z.on(_range=elements(support(XvR_)), _expr= expr<Dim,1>(std::string("{0.,0.,0.}")));
-    
-        auto ts_Theta_ = bdf(_space = XvR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_ );
-        ts_Theta_->start();
-    
-        // Mass center
-        auto massCenter = mean( _range = elements(support(XvR_)), _expr = P());
-        auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)),cst(massCenter(2,0)));
-        std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << ", " << massCenter(2,0) << std::endl;
-
-        auto a_theta_z = form2( _test = XvR_, _trial = XvR_ );
-        auto l_theta_z = form1( _test = XvR_ );
-
-        a_theta_z.zero();
-        l_theta_z.zero();
-
-        a_theta_z += integrate( _range = elements(support(XvR_)), _expr =  inner( ts_Theta_->polyDerivCoefficient(0)*idt(theta_z),id( theta_z ) ) );
-    
-
-        // Matrix of inertia
-        auto massCenterVec2d = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
-        auto momentOfInertia = integrate(_range=elements(support(XvR_)),_expr=cst(density_)*( inner(vec(Px(),Py())-massCenterVec2d) ) ).evaluate()(0,0);
-        std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
-        
-        /*
-            Assemblage : translation
-        */
-        auto a_translation_ = form2( _test = XvR_, _trial = XvR_ );
-        auto l_translation_ = form1( _test = XvR_ );
-        auto lt_translation_ = form1( _test = XvR_ );
-    
-        a_translation_.zero();
-        l_translation_.zero();
-        lt_translation_.zero();
-
-        l_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*trans(expr<Dim,1>( externalforce_ ))*id(u_translation_));
-        a_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idt(u_translation_),id( u_translation_ ) ) );
-
-    
-        /*
-            Assemblage : elasticity
-        */
-        auto a_e = form2( _test = XvE_, _trial = XvE_ );
-        auto at_e = form2( _test = XvE_, _trial = XvE_ );
-        auto l_e = form1( _test = XvE_ );
-        auto lt_e = form1( _test = XvE_ );
-
-        a_e.zero();
-        at_e.zero();
-        l_e.zero();
-        lt_e.zero();
-
-        auto deft = sym(gradt(u_E_));
-        auto def = sym(grad(u_E_));
-        auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-        a_e += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_E_->polyDerivCoefficient()*idt(u_E_),id( u_E_ ) ) + inner(sigmat,def));
-        l_e = integrate( _range = elements(support(XvE_)), _expr = cst(density_) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_E_ ) );
-    
-        l_e += integrate( _range = markedfaces(mesh_, "Neumann2"), _expr = trans(vec(cst(0.),cst(0.),cst(1.)))*id(u_E_));
-        l_e += integrate( _range = markedfaces(mesh_, "Neumann1"), _expr = trans(vec(cst(0.),cst(0.),cst(-1.)))*id(u_E_));
-
-        l_e += integrate( _range = markedfaces(mesh_, "Neumann2"), _expr = trans(vec(cst(0.),cst(1.),cst(0.)))*id(u_E_));
-
-        backend_e_ = backend(_name = "elastic", _worldcomm = XvE_->worldCommPtr() );
-        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend_e_,qsNullSpace(XvE_,mpl::int_<Dim>())) );
-        backend_e_->attachNearNullSpace( myNullSpace );
-        backend_r_ = backend(_name = "rigid", _worldcomm = XvR_->worldCommPtr() );
-
-        auto meanDisp = mean(_range=elements(support(XvE_)), _expr=idv(u_E_));
-        auto meanCurl = mean(_range=elements(support(XvE_)), _expr=curlv(u_E_));
-
-        // Starting time loop
-        for ( ts_E_->start(); ts_E_->isFinished() == false; ts_E_->next( u_E_ ))
-        {
-            if (Environment::isMasterRank())
-                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_E_->time(),ts_E_->timeFinal()) << std::endl;
-
-            /*
-                Solve translation
-            */
-            lt_translation_ = l_translation_;
-            lt_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst( density_ ) * inner( idv( ts_Translation_->polyDeriv() ), id( u_translation_ ) ) );
-            a_translation_.solve( _rhs = lt_translation_, _solution = u_translation_, _name="rigid" );
-            ts_Translation_->updateFromDisp(u_translation_);
-            ts_Translation_->next(u_translation_);
-
-            /*
-                Solve rotation
-            */
-            l_theta_z.zero();
-            l_theta_z += integrate( _range = elements(support(XvR_)), _expr = inner(idv(v_angular_z), id(theta_z)));
-            l_theta_z += integrate( _range = elements(support(XvR_)), _expr = inner( idv( ts_Theta_->polyDeriv()) , id( theta_z ) ) );
-            a_theta_z.solve( _rhs = l_theta_z, _solution = theta_z, _name="rigid");
-            ts_Theta_->next(theta_z);
-
-            auto angle = mean(_range = elements(support(XvR_)), _expr = idv(theta_z));    
-            std::cout << "Rotation angle : " << angle(0,0) << ", " << angle(1,0) << ", " << angle(2,0) << std::endl;
-            auto angle_z = angle(2,0);
-            auto rot = vec(cos(angle_z)*(Px() - massCenter(0,0)) - sin(angle_z)*(Py() - massCenter(1,0)) - Px() + massCenter(0,0), sin(angle_z)*(Px() - massCenter(0,0)) + cos(angle_z)*(Py() - massCenter(1,0)) - Py() + massCenter(1,0),cst(0.));
-            u_rotation_.on(_range=elements(support(XvE_)),_expr =  rot);
-        
-
-            /*
-                Compute rigid motion
-            */
-            u_R_.on(_range=elements(support(XE_)),_expr =  idv(u_translation_) + idv(u_rotation_));
-
-
-            /*
-                Solve elasticity
-            */
-            lt_e = l_e;
-            at_e = a_e;
-
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_E_->polyDeriv()),id( u_E_ ) ));
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= -cst(density_)*inner( idv(ts_Translation_->currentAcceleration()),id( u_E_ ) )); // translational acceleration
-
-            auto rot_z = vec(-cos(angle_z)*(Px() - massCenter(0,0)) + sin(angle_z)*(Py() - massCenter(1,0)), -sin(angle_z)*(Px() - massCenter(0,0)) - cos(angle_z)*(Py() - massCenter(1,0)),cst(0.));
-            //lt_e += integrate( _range=elements(support(XvE_)), _expr= -cst(density_)*trans(rot_z)* id( u_E_ ) ); // rotational acceleration
-
-            
-            /*
-            // Delete rigid motion 
-        
-            at_e+=on(_range=markedpoints(mesh_,"a0"), _rhs=lt_e, _element=u_E_, _expr=0.*one()); // translation
-        
-            // Rotation 
-        
-            
-            std::cout << "Delete rotation" << std::endl;
-            
-            at_e+=on(_range=markedpoints(mesh_,"a1"), _rhs=lt_e, _element=u_E_[Component::X], _expr=cst(0.));
-            at_e+=on(_range=markedpoints(mesh_,"a2"), _rhs=lt_e, _element=u_E_[Component::Y], _expr=cst(0.));
-            at_e+=on(_range=markedpoints(mesh_,"a3"), _rhs=lt_e, _element=u_E_[Component::Z], _expr=cst(0.));
-            */
-
-            at_e.solve( _rhs = lt_e, _solution = u_E_, _name="elastic");
-
-            
-            meanDisp = mean(_range=elements(support(XvE_)), _expr=idv(u_E_));
-            std::cout << "Mean displacement x : " << meanDisp(0,0) << std::endl;
-            std::cout << "Mean displacement y : " << meanDisp(1,0) << std::endl;
-            std::cout << "Mean displacement z : " << meanDisp(2,0) << std::endl;
-            meanCurl = mean(_range=elements(support(XvE_)), _expr = curlv(u_E_));
-            std::cout << "Mean curl x : " << meanCurl(0,0) << std::endl;
-            std::cout << "Mean curl y : " << meanCurl(1,0) << std::endl;
-            std::cout << "Mean curl z : " << meanCurl(2,0) << std::endl;
-            
-            at_e.matrixPtr()->printMatlab(fmt::format("A{}.m",ts_E_->iteration()));
-            lt_e.vectorPtr()->printMatlab(fmt::format("l{}.m",ts_E_->iteration()));
-
-            
-            ts_E_->updateFromDisp(u_E_);
-
-            /*
-                Compute total motion
-            */
-            u_total_.on(_range=elements(support(XvE_)), _expr=idv(u_R_) + idv(u_E_));
-
-            // Export
-            this->exportResults(ts_E_->time());
-
-            // Set to zero
-            at_e.zero();
-            lt_e.zero();
-
-        }
-    }
-}
-
-// Time loop
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::rotationNeumann2D()
-{
-    if constexpr(Dim == 2)
-    {
-        auto Id = eye<Dim,Dim>();
-        double acc = 0.1;
-
-        double gamma = get_value(specs_, "/TimeStepping/LinearElasticity/gamma", 0.5);
-        double beta = get_value(specs_, "/TimeStepping/LinearElasticity/beta", 0.25);
-
-
-        // Inits
-        this->initializeMesh();
-        this->initializeParam();
-        this->initializeFields();
-        this->initializeTs_Exp();
- 
-        // Compute mass center
-        auto massCenter = mean( _range = elements(support(XvR_)), _expr = P());
-        auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
-        std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
-
-        // Matrix of inertia
-        auto momentOfInertia = integrate(_range=elements(support(XvR_)),_expr=cst(density_)*( inner(P()-massCenterVec) ) ).evaluate()(0,0);
-        std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
-
-        // Angular velocity
-        double velocity = 0;
-        auto v_angular_ = XR_->element();
-        v_angular_.on(_range=elements(support(XR_)), _expr= cst(0.));
-        auto v_angular_old = XR_->element();
-        v_angular_old.on(_range=elements(support(XR_)), _expr= cst(0.));
-        auto dt_v_angular_ = XR_->element();
-        dt_v_angular_.on(_range=elements(support(XR_)), _expr= cst(0.));
-        
-        auto ts_V_angular_ = bdf(_space = XR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_ );
-        ts_V_angular_->start();
-
-        auto a_v_angular_ = form2( _test = XR_, _trial = XR_ );
-        auto l_v_angular_ = form1( _test = XR_ );
-        auto lt_v_angular_ = form1( _test = XR_ );
-        a_v_angular_.zero();
-        l_v_angular_.zero();
-        lt_v_angular_.zero();
-
-        a_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia)*inner( ts_V_angular_->polyDerivCoefficient(0)*idt(v_angular_),id( v_angular_ ) ) );
-        l_v_angular_ += integrate(_range = markedfaces(mesh_, "Upper"), _expr = ( - cst(Upper_x) * Py()  ) * id(v_angular_));
-        l_v_angular_ += integrate(_range = markedfaces(mesh_, "Lower"), _expr = ( - cst(Lower_x) * Py() ) * id(v_angular_));
-
-        // Test
-        auto testUpper = integrate(_range = markedfaces(mesh_, "Upper"), _expr = - cst(Upper_x) * Py()  ).evaluate()(0,0);
-        auto testLower = integrate(_range = markedfaces(mesh_, "Lower"), _expr = - cst(Lower_x) * Py()  ).evaluate()(0,0);
-        std::cout << "Test : " << testUpper << ", " << testLower << std::endl;
-
-                        
-        // Rotation Angle 
-        double angle = 0;
-
-        // Elastic displacement
-        auto a_e = form2( _test = XvE_, _trial = XvE_ );
-        auto at_e = form2( _test = XvE_, _trial = XvE_ );
-        auto l_e = form1( _test = XvE_ );
-        auto lt_e = form1( _test = XvE_ );
-
-        a_e.zero();
-        at_e.zero();
-        l_e.zero();
-        lt_e.zero();
-
-        auto deft = sym(gradt(u_E_));
-        auto def = sym(grad(u_E_));
-        auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-        a_e += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_E_->polyDerivCoefficient()*idt(u_E_),id( u_E_ ) ) + inner(sigmat,def));
-        l_e += integrate( _range = markedfaces(mesh_, "Upper"), _expr =  trans(expr<Dim,1>(neumannUpper_))*id(u_E_));
-        l_e += integrate( _range = markedfaces(mesh_, "Lower"), _expr =  trans(expr<Dim,1>(neumannLower_))*id(u_E_));
-
-
-        //    Assemblage : true solution
-        auto a_true = form2( _test = XvE_, _trial = XvE_ );
-        auto l_true = form1( _test = XvE_ );
-        auto lt_true = form1( _test = XvE_ );
-
-        a_true.zero();
-        l_true.zero();
-        lt_true.zero();
-
-        auto deft_true = sym(gradt(u_true));
-        auto def_true = sym(grad(u_true));
-        auto sigmat_true = lambda_*trace(deft_true)*Id + 2*mu_*deft_true;
-
-        a_true += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_true->polyDerivCoefficient()*idt(u_true),id( u_true ) ) + inner(sigmat_true,def_true));
-        l_true += integrate( _range = markedfaces(mesh_, "Upper"), _expr = trans(expr<Dim,1>(neumannUpper_))*id(u_true));
-        l_true += integrate( _range = markedfaces(mesh_, "Lower"), _expr = trans(expr<Dim,1>(neumannLower_))*id(u_true));
-
-        // Time derivative rotational displacement
-        auto ts_omega = newmark(_space = XvE_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_, _gamma=gamma, _beta=beta );
-        ts_omega->start();
-        ts_omega->initialize( u_rotation_ );
-        ts_omega->updateFromDisp( u_rotation_);
-
-        // Starting time loop
-        for ( ts_V_angular_->start(); ts_V_angular_->isFinished() == false; ts_V_angular_->next( v_angular_ ))
-        {
-            if (Environment::isMasterRank())
-                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_V_angular_->time(),ts_V_angular_->timeFinal()) << std::endl;
-    
-            double accelerationTrue = -6.*Upper_x/density_;
-            double velocityTrue = accelerationTrue*(ts_V_angular_->time()+ts_V_angular_->timeStep()/2.);
-            double angleTrue = 0.5*accelerationTrue*math::pow(ts_V_angular_->time()+ts_V_angular_->timeStep(),2);
-            
-            /*
-                Solve angular velocity
-            */
-            v_angular_old.on(_range=elements(support(XR_)), _expr= idv(v_angular_));
-            lt_v_angular_.zero();
-            lt_v_angular_ = l_v_angular_;
-            lt_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia) * inner( idv( ts_V_angular_->polyDeriv()) , id( v_angular_ ) ) );
-
-            a_v_angular_.solve( _rhs = lt_v_angular_, _solution = v_angular_, _rebuild = true);
-
-            velocity = mean(_range = elements(support(XR_)), _expr = idv(v_angular_))(0,0);
-            std::cout << " Angular velocity : " << velocity << std::endl; 
-
-            ts_V_angular_->updateDerivative(v_angular_,dt_v_angular_);
-            double acceleration = math::abs(mean(_range = elements(support(XR_)), _expr = idv(dt_v_angular_))(0,0)); 
-            std::cout << "Rotation acceleration : " << acceleration << std::endl;
-
-            double err_acc = math::abs(acceleration - accelerationTrue);
-            std::cout << "Error on acceleration : " << err_acc << std::endl;
-        
-            /*
-                Solve rotational angle
-            */
-            angle = ts_V_angular_->timeStep()*velocity +  angle;  
-            std::cout << "Rotation angle : " << angle << std::endl;
-            
-            /*
-                Solve rotational displacement
-            */
-            auto rot = vec(cos(angle)*Px() - sin(angle)*Py() - Px(), sin(angle)*Px() + cos(angle)*Py() - Py());
-            u_rotation_.on(_range=elements(support(XvE_)),_expr =  rot);
-
-            // Update newmark scheme
-            ts_omega->updateFromDisp(u_rotation_);
-            ts_omega->next(u_rotation_);
-
-            /*
-                Compute rotational acceleration
-            */
-            auto coef_1 = - cst(acceleration) * sin(angle) - cst(velocity)*cst(velocity) * cos(angle);
-            auto coef_2 = - cst(acceleration) * cos(angle) + cst(velocity)*cst(velocity) * sin(angle);
-            auto coef_3 = cst(acceleration) * cos(angle) - cst(velocity)*cst(velocity) * sin(angle);
-            auto coef_4 = - cst(acceleration) * sin(angle) - cst(velocity)*cst(velocity) * cos(angle);
-
-            std::cout << "coef 1 : " << - (acceleration) * math::sin(angle) - (velocity)*(velocity) * math::cos(angle) << std::endl;
-            std::cout << "coef 2 : " << - (acceleration) * math::cos(angle) + (velocity)*(velocity) * math::sin(angle) << std::endl;
-            std::cout << "coef 3 : " << (acceleration) * math::cos(angle) - (velocity)*(velocity) * math::sin(angle) << std::endl;
-            std::cout << "coef 4 : " << - (acceleration) * math::sin(angle) - (velocity)*(velocity) * math::cos(angle) << std::endl;
-
-            //auto coef_1 = cos(acceleration);
-            //auto coef_2 = - sin(acceleration);
-            //auto coef_3 = sin(acceleration);
-            //auto coef_4 = cos(acceleration);
-
-            auto rot_a = vec(coef_1*(Px() - massCenter(0,0)) + coef_2*(Py() - massCenter(1,0)), coef_3*(Px() - massCenter(0,0)) + coef_4*(Py() - massCenter(1,0)));
-            
-            /*
-                Solve elasticity
-            */
-            lt_e.zero();
-            lt_e = l_e;
-
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_E_->polyDeriv()),id( u_E_ ) ));        
-            
-            //lt_e += integrate( _range=elements(support(XvE_)), _expr= - cst(density_)*inner(rot_a, id( u_E_ ) ) ); // rotational acceleration
-            
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= -cst(momentOfInertia)*inner( idv(ts_omega->currentAcceleration()),id( u_E_ ) )); // rotational acceleration
-
-
-
-            a_e.solve( _rhs = lt_e, _solution = u_E_ , _name = "elastic");
-
-            ts_E_->updateFromDisp(u_E_);
-            ts_E_->next(u_E_);
-
-            auto l2errA = normL2( _range=elements(support(XvE_)), _expr=rot_a - idv(ts_omega->currentAcceleration()) );
-            std::cout << "Error L2 acc: " << l2errA << std::endl;
-
-        
-
-            // Checks
-            auto meanDisp = mean(_range=elements(support(XvE_)), _expr=idv(u_E_));
-            std::cout << "Mean displacement x : " << meanDisp(0,0) << std::endl;
-            std::cout << "Mean displacement y : " << meanDisp(1,0) << std::endl;
-        
-            auto meanCurl = mean(_range=elements(support(XvE_)), _expr = curlv_op(u_E_));
-            std::cout << "Mean curl x : " << meanCurl(0,0) << std::endl;
-            std::cout << "Mean curl y : " << meanCurl(1,0) << std::endl;
-            std::cout << "Mean curl z : " << meanCurl(2,0) << std::endl;
-
-            //    Solve true solution
-            lt_true.zero();
-            lt_true = l_true;
-
-            lt_true += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_true->polyDeriv()),id( u_true ) ));
-            a_true.solve( _rhs = lt_true, _solution = u_true , _name = "elastic");
-
-            ts_true->updateFromDisp(u_true);
-            ts_true->next(u_true);
-
-            //    Compute total motion
-            u_R_.on(_range=elements(support(XvE_)),_expr =  idv(u_rotation_));
-            u_total_.on(_range=elements(support(XvE_)), _expr=idv(u_R_) + idv(u_E_));
-
-            //    Compue error
-            auto l2err = normL2( _range=elements(support(XvE_)), _expr=idv(u_true) - idv(u_total_) );
-            auto h1err = normH1( _range=elements(support(XvE_)), _expr=idv(u_true) - idv(u_total_), _grad_expr=gradv(u_true) - gradv(u_total_) );
-            std::cout << "Error L2: " << l2err << std::endl;
-            std::cout << "Error H1: " << h1err << std::endl;
-        
-            // Export
-            this->exportResults(ts_V_angular_->time());
-        }
-    }
-}
-
-/*
-// Time loop
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::rotationNeumann2D()
-{
-    if constexpr(Dim == 2)
-    {
-        auto Id = eye<Dim,Dim>();
-
-        // Inits
-        this->initializeMesh();
-        this->initializeParam();
-        this->initializeFields();
-        this->initializeTs_Exp();
-
-        // Angular velocity
-        auto v_angular_ = XR_->element();
-        auto v_angular_old =  XR_->element();
-        auto dt_v_angular_ = XR_->element();
-
-        v_angular_.on(_range=elements(support(XR_)), _expr= cst(0.));
-        v_angular_old.on(_range=elements(support(XR_)), _expr= idv(v_angular_));
-        dt_v_angular_.on(_range=elements(support(XR_)), _expr= cst(0.));
-    
-        auto ts_V_angular_ = bdf(_space = XR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_ );
-        ts_V_angular_->start();
-
-        // Rotation Angle 
-        auto theta_ = XR_->element();
-        theta_.on(_range=elements(support(XR_)), _expr= cst(0.));
-    
-        auto ts_Theta_ = bdf(_space = XR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_ );
-        ts_Theta_->start();
-
-        // Mass center
-        auto massCenter_ref = mean( _range = elements(support(XvR_)), _expr = P());
-        auto massCenterVec_ref = vec(cst(massCenter_ref(0,0)),cst(massCenter_ref(1,0)));
-        std::cout << "massCenter reference domain: " << massCenter_ref(0,0) << ", " << massCenter_ref(1,0) << std::endl;
-
-        // Matrix of inertia
-        auto momentOfInertia_ref = integrate(_range=elements(support(XvR_)),_expr=cst(density_)*( inner(P()-massCenterVec_ref) ) ).evaluate()(0,0);
-        std::cout << "momentOfInertia reference domain : " << momentOfInertia_ref << std::endl;
-
-        // Bilinear and linear forms
-
-        //Assemblage : translation
-        
-        auto a_translation_ = form2( _test = XvR_, _trial = XvR_ );
-        auto l_translation_ = form1( _test = XvR_ );
-        auto lt_translation_ = form1( _test = XvR_ );
-    
-        a_translation_.zero();
-        l_translation_.zero();
-        lt_translation_.zero();
-
-        l_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*trans(expr<Dim,1>( externalforce_ ))*id(u_translation_));
-        l_translation_ += integrate( _range = markedfaces(mesh_, "Upper"), _expr = trans(expr<Dim,1>(neumannUpper_))*id(u_translation_));
-        l_translation_ += integrate( _range = markedfaces(mesh_, "Lower"), _expr = trans(expr<Dim,1>(neumannLower_))*id(u_translation_));
-        a_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idt(u_translation_),id( u_translation_ ) ) );
-
-        //    Assemblage : rotation
-        
-        auto a_v_angular_ = form2( _test = XR_, _trial = XR_ );
-        auto l_v_angular_ = form1( _test = XR_ );
-        a_v_angular_.zero();
-        l_v_angular_.zero();
-
-        auto a_theta_ = form2( _test = XR_, _trial = XR_ );
-        auto l_theta_ = form1( _test = XR_ );
-        a_theta_.zero();
-        l_theta_.zero();
-
-        a_theta_ += integrate( _range = elements(support(XR_)), _expr =  inner( ts_Theta_->polyDerivCoefficient(0)*idt(theta_),id( theta_ ) ) );
-    
-        double angle = 0;
-        angle = mean(_range = elements(support(XR_)), _expr = idv(theta_))(0,0); 
-        
-        //    Assemblage : elasticity
-        
-        auto a_e = form2( _test = XvE_, _trial = XvE_ );
-        auto at_e = form2( _test = XvE_, _trial = XvE_ );
-        auto l_e = form1( _test = XvE_ );
-        auto lt_e = form1( _test = XvE_ );
-
-        a_e.zero();
-        at_e.zero();
-        l_e.zero();
-        lt_e.zero();
-
-        auto deft = sym(gradt(u_E_));
-        auto def = sym(grad(u_E_));
-        auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-        a_e += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_E_->polyDerivCoefficient()*idt(u_E_),id( u_E_ ) ) + inner(sigmat,def));
-        l_e = integrate( _range = elements(support(XvE_)), _expr = cst(density_) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_E_ ) );
-        l_e += integrate( _range = markedfaces(mesh_, "Upper"), _expr =  trans(expr<Dim,1>(neumannUpper_))*id(u_E_));
-        l_e += integrate( _range = markedfaces(mesh_, "Lower"), _expr =  trans(expr<Dim,1>(neumannLower_))*id(u_E_));
-
-        //    Assemblage : true solution
-        
-        auto a_true = form2( _test = XvE_, _trial = XvE_ );
-        auto at_true = form2( _test = XvE_, _trial = XvE_ );
-        auto l_true = form1( _test = XvE_ );
-        auto lt_true = form1( _test = XvE_ );
-
-        auto deft_true = sym(gradt(u_true));
-        auto def_true = sym(grad(u_true));
-        auto sigmat_true = lambda_*trace(deft_true)*Id + 2*mu_*deft_true;
-
-        a_true += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_true->polyDerivCoefficient()*idt(u_true),id( u_true ) ) + inner(sigmat_true,def_true));
-        l_true = integrate( _range = elements(support(XvE_)), _expr = cst(density_) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_true ) );
-        l_true += integrate( _range = markedfaces(mesh_, "Upper"), _expr = trans(expr<Dim,1>(neumannUpper_))*id(u_true));
-        l_true += integrate( _range = markedfaces(mesh_, "Lower"), _expr = trans(expr<Dim,1>(neumannLower_))*id(u_true));
-
-        //    Preconditioner
-        
-        backend_e_ = backend(_name = "elastic", _worldcomm = XvE_->worldCommPtr() );
-        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend_e_,qsNullSpace(XvE_,mpl::int_<Dim>())) );
-        backend_e_->attachNearNullSpace( myNullSpace );
-        backend_r_ = backend(_name = "rigid", _worldcomm = XvR_->worldCommPtr() );
-
-        auto meanDisp = mean(_range=elements(support(XvE_)), _expr=idv(u_E_));
-        auto meanCurl = mean(_range=elements(support(XvE_)), _expr=curlv(u_E_));
-
-        // Starting time loop
-        for ( ts_Translation_->start(); ts_Translation_->isFinished() == false; ts_Translation_->next( u_translation_ ))
-        {
-            if (Environment::isMasterRank())
-                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_Translation_->time(),ts_Translation_->timeFinal()) << std::endl;
-
-            //    Solve translation
-            
-            lt_translation_.zero();
-            lt_translation_ = l_translation_;
-            lt_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst( density_ ) * inner( idv( ts_Translation_->polyDeriv() ), id( u_translation_ ) ) );
-            a_translation_.solve( _rhs = lt_translation_, _solution = u_translation_, _name = "rigid" );
-            ts_Translation_->updateFromDisp(u_translation_);
-
-            // Solve rotation
-        
-            //    Compute current mass center and moment of inertia
-            
-            auto domainCurrX = cos(angle)*(Px() - massCenter_ref(0,0)) - sin(angle)*(Py() - massCenter_ref(1,0)) + massCenter_ref(0,0);
-            auto domainCurrY = sin(angle)*(Px() - massCenter_ref(0,0)) + cos(angle)*(Py() - massCenter_ref(1,0)) + massCenter_ref(1,0);
-            auto domainCurr = vec(domainCurrX,  domainCurrY);
-
-            auto massCenter_curr = mean( _range = elements(support(XvR_)), _expr = domainCurr);
-            auto massCenterVec_curr = vec(cst(massCenter_curr(0,0)),cst(massCenter_curr(1,0)));
-            std::cout << "massCenter current domain: " << massCenter_curr(0,0) << ", " << massCenter_curr(1,0) << std::endl;
-
-            auto momentOfInertia_curr = integrate(_range=elements(support(XvR_)),_expr=cst(density_)*( inner(domainCurr-massCenterVec_curr) ) ).evaluate()(0,0);
-            std::cout << "momentOfInertia current domain : " << momentOfInertia_curr << std::endl;
-        
-            //    Solve angular velocity
-            
-            
-            v_angular_old.on(_range=elements(support(XR_)), _expr= idv(v_angular_));
-
-            a_v_angular_.zero();
-            l_v_angular_.zero();
-
-            a_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia_curr)*inner( ts_V_angular_->polyDerivCoefficient(0)*idt(v_angular_),id( v_angular_ ) ) );
-            l_v_angular_ += integrate( _range = elements(support(XR_)), _expr = ( cst(extFy_) * (domainCurrX - massCenter_curr(0,0)) - cst(extFx_) * (domainCurrY - massCenter_curr(1,0))) * id(v_angular_));
-            l_v_angular_ += integrate(_range = markedfaces(mesh_, "Upper"), _expr = ( cst(Upper_y) * (domainCurrX - massCenter_curr(0,0)) - cst(Upper_x) * (domainCurrY - massCenter_curr(1,0)) ) * id(v_angular_));
-            l_v_angular_ += integrate(_range = markedfaces(mesh_, "Lower"), _expr = ( cst(Lower_y) * (domainCurrX - massCenter_curr(0,0)) - cst(Lower_x) * (domainCurrY - massCenter_curr(1,0)) ) * id(v_angular_));
-            l_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia_curr) * inner( idv( ts_V_angular_->polyDeriv()) , id( v_angular_ ) ) );
-            
-            a_v_angular_.solve( _rhs = l_v_angular_, _solution = v_angular_, _rebuild = true);
-            ts_V_angular_->next(v_angular_);
-
-            double velocity = 0;
-            velocity = mean(_range = elements(support(XR_)), _expr = idv(v_angular_))(0,0);     
-            std::cout << "Angular velocity : " << velocity << std::endl; 
-        
-            //    Solve rotational angle
-            
-            l_theta_.zero();
-            l_theta_ += integrate( _range = elements(support(XR_)), _expr = cst(velocity) * id(theta_));
-            l_theta_ += integrate( _range = elements(support(XR_)), _expr =  inner( idv( ts_Theta_->polyDeriv()) , id( theta_ ) ) );
-        
-            a_theta_.solve( _rhs = l_theta_, _solution = theta_, _rebuild = true);
-            ts_Theta_->next(theta_);
-
-        
-            angle = mean(_range = elements(support(XR_)), _expr = idv(theta_))(0,0);    
-            std::cout << "Rotation angle : " << angle << std::endl;
-            
-            //    Solve rotational displacement
-            
-            auto rot = vec(cos(angle)*(Px() - massCenter_ref(0,0)) - sin(angle)*(Py() - massCenter_ref(1,0)) - Px() + massCenter_ref(0,0), sin(angle)*(Px() - massCenter_ref(0,0)) + cos(angle)*(Py() - massCenter_ref(1,0)) - Py() + massCenter_ref(1,0));
-            u_rotation_.on(_range=elements(support(XvE_)),_expr =  rot);
-
-            /    Compute rigid motion
-            
-            u_R_.on(_range=elements(support(XE_)),_expr =  idv(u_translation_) + idv(u_rotation_));
-
-            //    Solve elasticity
-            
-            at_e.zero();
-            lt_e.zero();
-
-            lt_e = l_e;
-            at_e = a_e;
-
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_E_->polyDeriv()),id( u_E_ ) ));
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= -cst(density_)*inner( idv(ts_Translation_->currentAcceleration()),id( u_E_ ) )); // translational acceleration
-        
-            ts_V_angular_->updateDerivative(v_angular_old,dt_v_angular_);
-            double acceleration = math::abs(mean(_range = elements(support(XR_)), _expr = idv(dt_v_angular_))(0,0)); 
-            std::cout << "Rotation acceleration : " << acceleration << std::endl;
-        
-            auto coef_1 = - cst(acceleration) * sin(angle) - cst(velocity)*cst(velocity) * cos(angle);
-            auto coef_2 = - cst(acceleration) * cos(angle) + cst(velocity)*cst(velocity) * sin(angle);
-            auto coef_3 = cst(acceleration) * cos(angle) - cst(velocity)*cst(velocity) * sin(angle);
-            auto coef_4 = - cst(acceleration) * sin(angle) - cst(velocity)*cst(velocity) * cos(angle);
-
-            auto rot_a = vec(coef_1*(Px() - massCenter_ref(0,0)) + coef_2*(Py() - massCenter_ref(1,0)), coef_3*(Px() - massCenter_ref(0,0)) + coef_4*(Py() - massCenter_ref(1,0)));
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= -  cst(density_)*inner(rot_a, id( u_E_ ) ) ); // rotational acceleration
-        
-        
-            at_e+=on(_range=markedpoints(mesh_,"a0"), _rhs=lt_e, _element=u_E_, _expr=0.*one()); // translation
-
-            at_e.solve( _rhs = lt_e, _solution = u_E_ , _name = "elastic");
-            ts_E_->updateFromDisp(u_E_);
-            ts_E_->next(u_E_);
-
-            meanDisp = mean(_range=elements(support(XvE_)), _expr=idv(u_E_));
-            std::cout << "Mean displacement x : " << meanDisp(0,0) << std::endl;
-            std::cout << "Mean displacement y : " << meanDisp(1,0) << std::endl;
-        
-            meanCurl = mean(_range=elements(support(XvE_)), _expr = curlv(u_E_));
-            std::cout << "Mean curl x : " << meanCurl(0,0) << std::endl;
-            std::cout << "Mean curl y : " << meanCurl(1,0) << std::endl;
-            std::cout << "Mean curl z : " << meanCurl(2,0) << std::endl;
-        
-
-            //    Solve true solution
-            
-            lt_true.zero();
-            at_true.zero();
-            lt_true = l_true;
-            at_true = a_true;
-
-            lt_true += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_true->polyDeriv()),id( u_true ) ));
-            at_true.solve( _rhs = lt_true, _solution = u_true , _name = "elastic");
-
-            ts_true->updateFromDisp(u_true);
-            ts_true->next(u_true);
-
-
-            //    Compute total motion
-            
-            u_total_.on(_range=elements(support(XvE_)), _expr=idv(u_R_) + idv(u_E_));
-
-            //    Compue error
-            
-            auto l2err = normL2( _range=elements(support(XvE_)), _expr=idv(u_true) - idv(u_total_) );
-            auto h1err = normH1( _range=elements(support(XvE_)), _expr=idv(u_true) - idv(u_total_), _grad_expr=gradv(u_true) - gradv(u_total_) );
-            std::cout << "Error L2: " << l2err << std::endl;
-            std::cout << "Error H1: " << h1err << std::endl;
-
-            // Export
-            this->exportResults(ts_Translation_->time());
-        }
-    }
-}
-*/
-
-
-// Time loop
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::rotation()
-{
-    auto Id = eye<Dim,Dim>();
-    auto iter = -1;
-    // Inits
-    this->initializeMesh();
-    this->initializeParam();
-    this->initializeFields();
-    this->initializeTs_Exp();
-
-    // Initialize rotation
-    auto elem_const = [&]() 
-    { 
-        if constexpr(Dim == 2) 
-            return XR_->element(); 
-        else if constexpr(Dim == 3)
-            return XvR_->element(); 
-    };
-
-    auto ts_const = [&]() 
-    { 
-        if constexpr(Dim == 2) 
-            return bdf(_space = XR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_ );
-        else if constexpr(Dim == 3)
-            return bdf(_space = XvR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_ );
-
-    };
-
-    // Angular velocity
-    std::string default_displ = std::string("{0.,0.,0.}");
-    auto v_angular_ = elem_const();
-    auto dt_v_angular_ = elem_const();
-
-    if constexpr(Dim == 2)
-    {
-        v_angular_.on(_range=elements(support(XR_)), _expr= cst(0.));
-        dt_v_angular_.on(_range=elements(support(XR_)), _expr= cst(0.));
-    }
-    else if constexpr(Dim == 3)
-    {
-        v_angular_.on(_range=elements(support(XvR_)), _expr= expr<Dim,1>(default_displ));
-        dt_v_angular_.on(_range=elements(support(XvR_)), _expr= expr<Dim,1>(default_displ));
-    }
-    
-
-    auto ts_V_angular_ = ts_const();
-    ts_V_angular_->start();
-
-    // Rotation Angle 
-    auto theta_ = elem_const();
-
-    if constexpr(Dim == 2)
-        theta_.on(_range=elements(support(XR_)), _expr= cst(0.));
-    else if constexpr(Dim == 3)
-        theta_.on(_range=elements(support(XvR_)), _expr= expr<Dim,1>(default_displ));
-
-    auto ts_Theta_ = ts_const();
-    ts_Theta_->start();
-
-    // Mass center
-    auto massCenter = mean( _range = elements(support(XvR_)), _expr = P());
-    auto massCenter_const = [&]()
-    {
-        if constexpr(Dim == 2) 
-            return vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
-        else if constexpr(Dim == 3)
-            return vec(cst(massCenter(0,0)),cst(massCenter(1,0)),cst(massCenter(2,0)));
-    };
-    auto massCenterVec = massCenter_const();
-    std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
-
-    // Matrix of inertia
-    auto momentOfInertia_const = [&]() 
-    { 
-        if constexpr(Dim == 2) 
-            return integrate(_range=elements(support(XvR_)),_expr=cst(density_)*( inner(P()-massCenterVec) ) ).evaluate()(0,0);
-        else if constexpr(Dim == 3)
-        {
-            auto rvec = P()-massCenterVec;
-            return integrate(_range=elements(support(XvR_)),_expr=cst(density_)*( inner(rvec)*Id - rvec*trans(rvec) ) ).evaluate();
-        } 
-    };
-    auto momentOfInertia = momentOfInertia_const();
-    std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
-
-    // Bilinear and linear forms
-
     /*
-        Assemblage : translation
+        Elasticity
     */
-    auto a_translation_ = form2( _test = XvR_, _trial = XvR_ );
-    auto l_translation_ = form1( _test = XvR_ );
-    auto lt_translation_ = form1( _test = XvR_ );
-    
-    a_translation_.zero();
-    l_translation_.zero();
-    lt_translation_.zero();
+    std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
 
-    l_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*trans(expr<Dim,1>( externalforce_ ))*id(u_translation_));
-    a_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idt(u_translation_),id( u_translation_ ) ) );
+    u_e_curr = Xv_current->element();
+    u_e_curr.on(_range=elements(support(Xv_current)), _expr= expr<Dim,1>(default_displ));  
 
-    /*
-        Assemblage : rotation
-    */
-    auto a_const = [&]() 
-    { 
-        if constexpr(Dim == 2) 
-            return form2( _test = XR_, _trial = XR_ );
-        else if constexpr(Dim == 3)
-            return form2( _test = XvR_, _trial = XvR_ );
-    };
+    dt_u_e_tot = Xv_init->element();
+    dt_u_e_tot.on(_range=elements(support(Xv_init)), _expr= expr<Dim,1>(default_displ));   
 
-    auto l_const = [&]() 
-    { 
-        if constexpr(Dim == 2) 
-            return form1( _test = XR_ );
-        else if constexpr(Dim == 3)
-            return form1( _test = XvR_ );
-    };
+    dtt_u_e_tot = Xv_init->element();
+    dtt_u_e_tot.on(_range=elements(support(Xv_init)), _expr= expr<Dim,1>(default_displ));  
 
-    auto a_v_angular_ = a_const();
-    auto l_v_angular_ = l_const();
-    auto lt_v_angular_ = l_const();
-    a_v_angular_.zero();
-    l_v_angular_.zero();
+    dt_u_e_old = Xv_init->element(); 
+    dt_u_e_old.on(_range=elements(support(Xv_init)), _expr= expr<Dim,1>(default_displ));  
 
-    
-    if constexpr(Dim == 2)
-    {
-        a_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia)*inner( ts_V_angular_->polyDerivCoefficient(0)*idt(v_angular_),id( v_angular_ ) ) );
-        l_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia) * (cst(extFy_)*(Px()-massCenter(0,0)) - cst(extFx_)*(Py() - massCenter(1,0))) * id(v_angular_));
-    }
+    dtt_u_e_old = Xv_init->element();
+    dtt_u_e_old.on(_range=elements(support(Xv_init)), _expr= expr<Dim,1>(default_displ));   
 
-    auto a_theta_ = a_const();
-    auto l_theta_ = l_const();
-    a_theta_.zero();
-    l_theta_.zero();
-
-    if constexpr(Dim == 2)
-    {
-        a_theta_ += integrate( _range = elements(support(XR_)), _expr =  inner( ts_Theta_->polyDerivCoefficient(0)*idt(theta_),id( theta_ ) ) );
-    }
+    dtt_u_e_old2 = Xv_init->element();
+    dtt_u_e_old2.on(_range=elements(support(Xv_init)), _expr= expr<Dim,1>(default_displ));  
     
     /*
-        Assemblage : elasticity
+        Total displacement
     */
-    auto a_e = form2( _test = XvE_, _trial = XvE_ );
-    auto at_e = form2( _test = XvE_, _trial = XvE_ );
-    auto l_e = form1( _test = XvE_ );
-    auto lt_e = form1( _test = XvE_ );
-
-    a_e.zero();
-    at_e.zero();
-    l_e.zero();
-    lt_e.zero();
-
-    auto deft = sym(gradt(u_E_));
-    auto def = sym(grad(u_E_));
-    auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-    a_e += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_E_->polyDerivCoefficient()*idt(u_E_),id( u_E_ ) ) + inner(sigmat,def));
-    l_e = integrate( _range = elements(support(XvE_)), _expr = cst(density_) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_E_ ) );
-
-    // Starting time loop
-    for ( ts_Translation_->start(); ts_Translation_->isFinished() == false; ts_Translation_->next( u_translation_ ))
-    {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_Translation_->time(),ts_Translation_->timeFinal()) << std::endl;
-
-        /*
-            Solve translation
-        */
-        lt_translation_ = l_translation_;
-        lt_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst( density_ ) * inner( idv( ts_Translation_->polyDeriv() ), id( u_translation_ ) ) );
-        a_translation_.solve( _rhs = lt_translation_, _solution = u_translation_, _rebuild = true );
-        ts_Translation_->updateFromDisp(u_translation_);
-
-        /*
-            Solve rotation
-        */
-        if constexpr(Dim == 2)
-        {
-            lt_v_angular_ = l_v_angular_;
-            lt_v_angular_ += integrate( _range = elements(support(XR_)), _expr = cst(momentOfInertia) * inner( idv( ts_V_angular_->polyDeriv()) , id( v_angular_ ) ) );
-            // on donne une vitesse angulaire
-            a_v_angular_+=on(_range= elements(support(XE_)), _rhs=lt_v_angular_, _element=v_angular_,_expr=cst(0.1));
-        }
-        a_v_angular_.solve( _rhs = lt_v_angular_, _solution = v_angular_, _rebuild = true);
-        ts_V_angular_->next(v_angular_);
-
-        double velocity = 0;
-        if constexpr(Dim == 2)
-        {
-            velocity = mean(_range = elements(support(XR_)), _expr = idv(v_angular_))(0,0);     
-            std::cout << "Angular velocity : " << velocity << std::endl; 
-        } 
-
-        if constexpr(Dim == 2)
-        {
-            l_theta_ += integrate( _range = elements(support(XR_)), _expr = idv(v_angular_) * id(theta_));
-            l_theta_ += integrate( _range = elements(support(XR_)), _expr =  inner( idv( ts_Theta_->polyDeriv()) , id( theta_ ) ) );
-        }
-        a_theta_.solve( _rhs = l_theta_, _solution = theta_, _rebuild = true);
-        ts_Theta_->next(theta_);
-
-        double angle = 0;
-        if constexpr(Dim == 2)
-        {
-            angle = mean(_range = elements(support(XR_)), _expr = idv(theta_))(0,0);    
-            std::cout << "Rotation angle : " << angle << std::endl;
-            auto rot = vec(cos(angle)*(Px() - massCenter(0,0)) - sin(angle)*(Py() - massCenter(1,0)) - Px() + massCenter(0,0), sin(angle)*(Px() - massCenter(0,0)) + cos(angle)*(Py() - massCenter(1,0)) - Py() + massCenter(1,0));
-            u_rotation_.on(_range=elements(support(XvE_)),_expr =  rot);
-        }
-
-        /*
-            Compute rigid motion
-        */
-        u_R_.on(_range=elements(support(XE_)),_expr =  idv(u_translation_) + idv(u_rotation_));
-
-        /*
-            Solve elasticity
-        */
-        lt_e = l_e;
-        at_e = a_e;
-
-        lt_e += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_E_->polyDeriv()),id( u_E_ ) ));
-        lt_e += integrate( _range=elements(support(XvE_)), _expr= -cst(density_)*inner( idv(ts_Translation_->currentAcceleration()),id( u_E_ ) )); // translational acceleration
-        
-
-        if constexpr(Dim == 2)
-        {
-            ts_V_angular_->updateDerivative(v_angular_,dt_v_angular_);
-            double acceleration = mean(_range = elements(support(XR_)), _expr = idv(dt_v_angular_))(0,0); 
-            std::cout << "Rotation acceleration : " << acceleration << std::endl;
-
-            auto coef_1 = - cst(acceleration) * sin(angle) - cst(velocity)*cst(velocity) * cos(angle);
-            auto coef_2 = - cst(acceleration) * cos(angle) + cst(velocity)*cst(velocity) * sin(angle);
-            auto coef_3 = cst(acceleration) * cos(angle) - cst(velocity)*cst(velocity) * sin(angle);
-            auto coef_4 = - cst(acceleration) * sin(angle) - cst(velocity)*cst(velocity) * cos(angle);
-
-            auto rot = vec(coef_1*(Px() - massCenter(0,0)) - coef_2*(Py() - massCenter(1,0)), coef_3*(Px() - massCenter(0,0)) - coef_4*(Py() - massCenter(1,0)));
-            lt_e += integrate( _range=elements(support(XvE_)), _expr= - inner(rot, id( u_E_ ) ) ); // rotational acceleration
-        }
-                
-        // Delete rigid motion 
-        at_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_e, _element=u_E_, _expr=0.*one()); // translation
-        
-        // Rotation 
-        if constexpr(Dim == 2)
-        {
-            at_e+=on(_range=markedpoints(mesh_,"rx"), _rhs=lt_e, _element=u_E_[Component::X], _expr=cst(0.));
-            //at_e+=on(_range=markedpoints(mesh_,"rx2"), _rhs=lt_e, _element=u_E_[Component::X], _expr=cst(0.));
-            at_e+=on(_range=markedpoints(mesh_,"ry"), _rhs=lt_e, _element=u_E_[Component::Y], _expr=cst(0.));
-            //at_e+=on(_range=markedpoints(mesh_,"ry2"), _rhs=lt_e, _element=u_E_[Component::Y], _expr=cst(0.));
-        }
-        
-        at_e.solve( _rhs = lt_e, _solution = u_E_ , _rebuild = true);
-
-        at_e.matrixPtr()->printMatlab(fmt::format("A{}.m",ts_E_->iteration()));
-        lt_e.vectorPtr()->printMatlab(fmt::format("l{}.m",ts_E_->iteration()));
-
-        ts_E_->updateFromDisp(u_E_);
-        ts_E_->next(u_E_);
-
-        /*
-            Compute total motion
-        */
-        u_total_.on(_range=elements(support(XvE_)), _expr=idv(u_R_) + idv(u_E_));
-
-        // Export
-        this->exportResults(ts_Translation_->time());
-
-        // Set to zero
-        lt_translation_.zero();
-        lt_v_angular_.zero();
-        l_theta_.zero();
-        at_e.zero();
-        lt_e.zero();
-
-    }
+    utotal = Xv_init->element(); 
+    utotal.on(_range=elements(support(Xv_init)), _expr= expr<Dim,1>(default_displ));    
 }
-
 
 
 // Export results
@@ -1251,329 +270,481 @@ template <int Dim, int Order>
 void
 ElasticRigid<Dim, Order>::exportResults(double t)
 {
-    e_->step(t)->addRegions();
-    e_->step(t)->add( "u_total_", u_total_ );
-    e_->step(t)->add( "u_E_", u_E_ );
-    e_->step(t)->add( "u_R_", u_R_ );
-    e_->step(t)->add( "u_translation_", u_translation_ );
-    e_->step(t)->add( "u_rotation_", u_rotation_);
-    e_->step(t)->add( "u_true", u_true);
-    e_->save();
+    std::cout << "Export" << std::endl;
+    e_init->step(t)->setMesh(mesh_init);
+    e_init->step(t)->add( "utotal", utotal );
+    e_init->step(t)->add("distance",g_);
+    e_init->step(t)->add("contactRegion",contactRegion_);
+    e_init->save(); 
+    
+
+    e_current->step(t)->setMesh(mesh_current);
+    e_current->step(t)->add( "u_e_curr", u_e_curr );
+    e_current->step(t)->add("contactFaces",contactFaces_);
+    e_current->save();
 }
 
-
-/*
-// Time loop
 template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::rotation()
+void ElasticRigid<Dim, Order>::ball_tmp()
 {
-    
-    for ( ts_trans_->start(); ts_trans_->isFinished() == false; ts_trans_->next( u_trans ), ts_omega_->next( omega_ ), ts_theta_->next(theta_), ts_elas_->next())
+    if constexpr(Dim == 2)
     {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_trans_->time(),ts_trans_->timeFinal()) << std::endl;
+        // Init
+        std::cout << "Init mesh" << std::endl;
+        this->initializeMesh();
+        std::cout << "Init param solid" << std::endl;
+        this->initializeParam();
+        std::cout << "Init param contact" << std::endl;
+        this->initializeContact();
+        std::cout << "Init exporter and time data" << std::endl;
+        this->initializeTs_Exp();
+        std::cout << "Init fields" << std::endl;
+        this->initializeFields();
+        
+        
+        // Get distance
+        std::cout << "Distance" << std::endl;
+        this->initG();
 
-        if constexpr(Dim == 2)
+        // Export
+        this->exportResults(0);
+
+        // Translation
+        std::cout << "Init translation" << std::endl;
+        Eigen::Vector2d u_trans(0.,0.);
+        Eigen::Vector2d u_trans_tot(0.,0.);
+        Eigen::Vector2d dt_u_trans_old(0.,0.);
+        Eigen::Vector2d dtt_u_trans_old(0.,0.);
+        Eigen::Vector2d dtt_u_trans_old2(0.,0.);
+        Eigen::Vector2d Force(extFx_,extFy_);
+        Eigen::Vector2d ForceContact(0.,0.);
+
+        // Rotation
+        std::cout << "Init rotation" << std::endl;
+        double velocity = 0;
+        double angle = 0;
+
+
+        // Starting time loop
+        int iter = 0;
+        std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
+        auto Id = eye<Dim,Dim>();
+
+        std::ofstream ofs("outputs_ball.csv");
+        ofs << fmt::format("utot_x,utot_y,u_trans_tot_x,u_trans_tot_y, fc_x, fc_y") << std::endl;
+
+        while (time_step_ * iter < final_time_)
         {
-            
-            // Compute Xcm in current domain
-            double angle = mean(_range = elements(support(VTheta_)), _expr = idv(theta_))(0,0);  
-            std::cout << "Current angle : " << angle << std::endl; 
-
-            auto xC = cos(angle) * (Px() - xcmI) - sin(angle) * (Py() - ycmI) + xcmI ;
-            auto yC = sin(angle) * (Px() - xcmI) + cos(angle) * (Py() - ycmI) + ycmI ; 
-
-            auto xcmCurr = mean( _range =  elements(support(VUTheta_)), _expr = vec( xC, yC ));
-            auto xcmC = xcmCurr(0,0);
-            auto ycmC = xcmCurr(1,0);
-            std::cout << "Mass center current domain: " << xcmC << ", " << ycmC << std::endl;
-            
-            // Compute current J
-            auto J_expr = cst(rho_) * ((xC-xcmC)*(xC-xcmC) + (yC-ycmC)*(yC-ycmC));
-            auto J = integrate( _range = elements(support(VTheta_)), _expr = J_expr).evaluate()(0,0);
-            std::cout << "J : " << J << std::endl;
-
-            // Compute T
-            auto T_expr = cst(rho_) * (cst(extTy)*(xC-xcmC) - cst(extTx)*(yC - ycmC));
-            auto T = integrate( _range = elements(support(VTheta_)), _expr = T_expr).evaluate()(0,0); 
-            std::cout << "T : " << T << std::endl;
-            
-            // Compute omega
-            auto bdf_poly_omega = ts_omega_->polyDeriv();
-            auto extrap_omega = ts_omega_->poly();
-
-            a_omega_ += integrate( _range = elements(support(VTheta_)), _expr = J_expr * inner( ts_omega_->polyDerivCoefficient(0)*idt(omega_),id( omega_ ) ) );
-            //a_omega_ += integrate( _range = elements(support(VTheta_)), _expr = J_expr * trans(gradt(omega_)*idv(extrap_omega))*id( omega_ )  );
-            l_omega_ += integrate( _range = elements(support(VTheta_)), _expr = T_expr * id(omega_));
-            l_omega_ += integrate( _range = elements(support(VTheta_)), _expr = J_expr * inner( idv( bdf_poly_omega) , id( omega_ ) ) );
-            a_omega_+=on(_range= elements(support(VTheta_)), _rhs=l_omega_, _element=omega_,_expr=cst(avel));
-            a_omega_.solve( _rhs = l_omega_, _solution = omega_, _rebuild = true);
-
-            double velAng = mean(_range = elements(support(VTheta_)), _expr = idv(omega_))(0,0);     
-            std::cout << "velAng : " << velAng << std::endl;  
-
-            // Compute theta
-            auto bdf_poly_theta = ts_theta_->polyDeriv();
-            auto extrap_theta = ts_theta_->poly();
-
-            a_theta_ += integrate( _range = elements(support(VTheta_)), _expr =  inner( ts_theta_->polyDerivCoefficient(0)*idt(theta_),id( theta_ ) ) );
-            //a_theta_ += integrate( _range = elements(support(VTheta_)), _expr = J_expr * trans(gradt(theta_)*idv(extrap_theta))*id( theta_ )  );
-            l_theta_ += integrate( _range = elements(support(VTheta_)), _expr = idv(omega_) * id(theta_));
-            l_theta_ += integrate( _range = elements(support(VTheta_)), _expr =  inner( idv( bdf_poly_theta) , id( theta_ ) ) );
-            a_theta_.solve( _rhs = l_theta_, _solution = theta_, _rebuild = true);
-
-            // Compute rotation matrix
-            double angleN = mean(_range = elements(support(VTheta_)), _expr = idv(theta_))(0,0);     
-            std::cout << "AngleN : " << angleN << std::endl;  
-            auto rot = vec(cos(angleN)*(Px() - xcmI) - sin(angleN)*(Py() - ycmI) - Px() + xcmI, sin(angleN)*(Px() - xcmI) + cos(angleN)*(Py() - ycmI) - Py() + ycmI);
-
-            // Compute new displacement
-            u_t.on(_range=elements(support(VUTheta_)),_expr =  rot);
-
-            // Compute translation
-            lt_trans_ = l_trans_;
-            lt_trans_ += integrate( _range = elements(support(VUTrans_)), _expr = cst( rho_ ) * inner( idv( ts_trans_->polyDeriv() ), id( u_trans ) ) );
-            a_trans_.solve( _rhs = lt_trans_, _solution = u_trans, _rebuild = true );
-            
-            // Compute rigid displacement
-            u_rigid.on(_range=elements(support(VUTheta_)),_expr =  idv(u_trans) + idv(u_t));
-
-            lt_e = l_e;
-            at_e = a_e;
-
-            lt_e += integrate( _range=elements(support(VUElas_)), _expr= cst(rho_)*inner( idv(ts_elas_->polyDeriv()),id( u_elas ) ));
-            lt_e += integrate( _range=elements(support(VUElas_)), _expr= -cst(rho_)*inner( idv(ts_trans_->currentAcceleration()),id( u_elas ) ));
-            //lt_e += integrate( _range=elements(support(VUElas_)), _expr= J_expr * idv( ts_omega_->polyDeriv()) * id( u_elas ) ) ;
-            
-            at_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_e, _element=u_elas, _expr=0.*one());
-            at_e.solve( _rhs = lt_e, _solution = u_elas , _rebuild = true);
-
-            u_total.on(_range=elements(support(VUTheta_)), _expr=idv(u_rigid) + idv(u_elas));
-
-            e_->step(ts_trans_->time())->addRegions();
-            e_->step(ts_trans_->time())->add( "utheta", u_t );
-            e_->step(ts_trans_->time())->add( "u_trans", u_trans );
-            e_->step(ts_trans_->time())->add( "u_rigid", u_rigid );
-            e_->step(ts_trans_->time())->add( "u_elas", u_elas );
-            e_->step(ts_trans_->time())->add( "u_total", u_total );
-            e_->save();
-
-            ts_trans_->updateFromDisp(u_trans);
-            ts_elas_->updateFromDisp(u_elas);
-
-            a_omega_.zero();
-            l_omega_.zero();
-            a_theta_.zero();
-            l_theta_.zero();
-            lt_trans_.zero();
-            lt_e.zero();
-            at_e.zero();
-        }
+            iter++;
+            if (Environment::isMasterRank())
+                std::cout << "Time step : " << iter*time_step_ << std::endl;
     
+            /*
+                Outputs 
+            */ 
+            auto meanTot = mean(_range=elements(support(Xv_init)), _expr=idv(utotal));
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",meanTot(0,0),meanTot(1,0),u_trans_tot[0],u_trans_tot[1],ForceContact[0],ForceContact[1]) << std::endl;
+            
+            /*
+                Solve translation 
+            */
+            std::cout << "Solve translation" << std::endl;
+            std::cout << "Print contactForce : " << ForceContact[0] << " " << ForceContact[1] << std::endl;
+            u_trans = beta_ * std::pow(time_step_,2) * ((1./(beta_ * time_step_) * dt_u_trans_old + (1. - 2*beta_)/(2*beta_) * dtt_u_trans_old) + Force + ForceContact) ; 
+
+            // Update Newmark scheme
+            dtt_u_trans_old2 = dtt_u_trans_old;
+            dtt_u_trans_old = 1. / (beta_ *std::pow(time_step_,2)) * u_trans - 1. / (beta_ * time_step_) *  dt_u_trans_old -  (1./(2.*beta_) - 1.) *  dtt_u_trans_old;
+            dt_u_trans_old = dt_u_trans_old + time_step_ * ((1. - gamma_) * dtt_u_trans_old2 + gamma_ * dtt_u_trans_old) ;
+            u_trans_tot  += u_trans;
+            
+            utotal = project(_space = Xv_init, _range = elements(support(Xv_init)), _expr = idv(utotal) + vec(cst(u_trans[0]),cst(u_trans[1])) );
+            
+            auto translational_move =  project(_space =  Pchv<Order>( mesh_current ),  _range = elements(mesh_current), _expr = vec(cst(0.),cst(0.) )); 
+            translational_move = project(_space = Xv_current,  _range = elements(support(Xv_current)), _expr = vec(cst(u_trans[0]),cst(u_trans[1])) );
+            meshMove( mesh_current, translational_move); 
+
+            /*
+                Solve rotation
+            */
+
+            /*
+                Solve contact
+            */
+            
+            std::cout << "Solve contact" << std::endl;
+            
+            Xv_current = Pchv<Order>( mesh_current, markedelements( mesh_current, "Solid" ) );
+            X_current = Pch<Order>( mesh_current, markedelements( mesh_current, "Solid" ) );
+
+            u_e_curr = Xv_current->element();
+            u_e_curr.on( _range=elements(support(Xv_current)), _expr=expr<Dim,1>(default_displ));
+                
+            // Compute contact faces
+            myelts_ = getContactRegion(utotal);
+            std::cout << "Nombre of faces in contact : " << nbrFaces_ << std::endl;
+             
+            /*
+                Solve elasticity
+            */
+            
+            std::cout << "Solve elasticity" << std::endl;
+
+            auto eps_curr = sym(gradt(u_e_curr));
+            auto sigma_curr = lambda_*trace(eps_curr)*Id + 2*mu_*eps_curr;
+
+            auto eps_tot = sym(gradv(utotal)); 
+            auto F = Id + gradv(utotal); 
+            auto J = det(F); 
+            auto Js = J * sqrt(trans(N())*( trans(F) * F) * N()); 
+            auto sigma_tot = lambda_*trace(eps_tot)*Id + 2*mu_*eps_tot;
+
+            auto eps_mix = 0.5 * (gradt(u_e_curr)*gradv(utotal) + trans(gradv(utotal))*trans(gradt(u_e_curr)));
+            auto sigma_mix = lambda_ * trace(eps_mix) * Id + 2 * mu_ * eps_mix;
+        
+            auto a = form2( _trial=Xv_current, _test=Xv_current);
+            auto l = form1( _test=Xv_current );
+
+            a.zero();
+            l.zero();
+
+            a += integrate(_range = elements(support(Xv_current)), _expr = cst(1.)/J * inner( sigma_curr * trans(F), grad(u_e_curr) ));
+            a += integrate(_range = elements(support(Xv_current)), _expr = cst(1.)/J * inner( sigma_mix * trans(F), grad(u_e_curr) ));
+            a += integrate(_range = elements(support(Xv_current)), _expr= cst(density_)/J * inner( cst(1.0)/(cst(beta_)*std::pow(time_step_,2)) * idt( u_e_curr ),id( u_e_curr ) ) );
+            
+                
+            l += integrate( _range = elements(support(Xv_current)), _expr= - cst( density_ )/J * inner(vec(cst(dtt_u_trans_old[0]),cst(dtt_u_trans_old[1])), id( u_e_curr ) )); 
+            l += integrate( _range = elements(support(Xv_current)), _expr= - cst(1.)/J * inner( sigma_tot * trans(F), grad(u_e_curr) ) );
+            
+            l += integrate( _range = elements(support(Xv_current)), _expr = cst( density_ )/J * inner( cst(1.0)/(cst(beta_)*time_step_) * idv( dt_u_e_old ), id( u_e_curr ) ) );
+            l += integrate( _range = elements(support(Xv_current)), _expr = cst( density_ )/J * inner(  (cst(1.0)/(cst(2.0)*cst(beta_)) - cst(1.0)) * idv( dtt_u_e_old ), id( u_e_curr ) ) );
+            l += integrate( _range = elements(support(Xv_current)), _expr= cst( density_ ) / J * trans(expr<Dim,1>(externalforce_))*id(u_e_curr) );
+
+            // Contact 
+            if (nbrFaces_ > 0)
+            {
+                //a += integrate(_range = myelts_, _expr= cst(1.)/(cst(epsilon_)*Js) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_curr),trans(expr<Dim,1>(direction_))*id(u_e_curr)));
+                //l += integrate (_range = myelts_,_expr= - cst(1.)/(cst(epsilon_)*Js) * inner(trans(expr<Dim,1>(direction_))*idv(utotal) - idv(g_),trans(expr<Dim,1>(direction_))*id(u_e_curr)) );
+                a += integrate(_range = myelts_, _expr = cst(1.)/(cst(epsilon_)*Js) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_curr),trans(expr<Dim,1>(direction_))*id(u_e_curr)));
+                l += integrate (_range = myelts_,_expr = - cst(1.)/(cst(epsilon_)*Js) * inner(trans(expr<Dim,1>(direction_))*idv(utotal) - idv(g_),trans(expr<Dim,1>(direction_))*id(u_e_curr)) );
+            }
+
+            a.solve(_rhs=l,_solution=u_e_curr);
+            
+
+            // Update time scheme
+            dtt_u_e_old2 = project(_space = Xv_init, _range = elements(support(Xv_init)), _expr = idv(dtt_u_e_old));
+            dtt_u_e_old = project(_space = Xv_init, _range = elements(support(Xv_init)), _expr = cst(1.0) / (cst(beta_)*std::pow(time_step_,2)) * idv(u_e_curr) - cst(1.0) / (cst(beta_)*cst(time_step_)) * idv( dt_u_e_old ) -  (cst(1.0)/(cst(2.0)*cst(beta_)) - cst(1.0)) * idv( dtt_u_e_old ));
+            dt_u_e_old = project(_space = Xv_init, _range = elements(support(Xv_init)), _expr = idv(dt_u_e_old) + cst(time_step_) * ((cst(1.0) - cst(gamma_)) * idv(dtt_u_e_old2) + cst(gamma_) * idv(dtt_u_e_old)) );
+            utotal  =  project(_space = Xv_init, _range = elements(support(Xv_init)), _expr = idv(utotal) + idv(u_e_curr) );
+
+            // Compute new contact force
+            if (nbrFaces_ == 0)
+            {
+                ForceContact[0] = 0.;
+                ForceContact[1] = 0.;
+            } 
+            else 
+            {
+                auto f_c = integrate(_range=myelts_,_expr= cst(1)/Js * trans(expr<Dim,1>(direction_))*(lambda_*trace(sym(gradv(u_e_curr)))*Id + 2*mu_*sym(gradv(u_e_curr)))*expr<Dim,1>(direction_)).evaluate();
+                std::cout << f_c(0,0) << std::endl;
+    
+                auto f_c_3 = integrate( _range = myelts_, _expr = cst(1)/Js * (lambda_*trace(sym(gradv(u_e_curr)))*Id + 2*mu_*sym(gradv(u_e_curr)))*N() ).evaluate();
+                std::cout << f_c_3(0,0) << ", " <<  f_c_3(1,0) << std::endl;
+
+                ForceContact[0] = f_c_3(0,0); 
+                ForceContact[1] = f_c_3(1,0);
+
+            }
+
+            // Checks
+            auto meanDisp = mean(_range=elements(support(Xv_current)), _expr=idv(u_e_curr));
+            std::cout << "Mean displacement x : " << meanDisp(0,0) << std::endl;
+            std::cout << "Mean displacement y : " << meanDisp(1,0) << std::endl;
+            auto meanCurl = mean(_range=elements(support(Xv_current)), _expr = curlv_op(u_e_curr));
+            std::cout << "Mean curl x : " << meanCurl(0,0) << std::endl;
+            std::cout << "Mean curl y : " << meanCurl(1,0) << std::endl;
+            std::cout << "Mean curl z : " << meanCurl(2,0) << std::endl;
+
+            // Export 
+            this->exportResults(iter*time_step_);
+
+            // Move
+            auto elastic_move =  project(_space =  Pchv<Order>( mesh_current ),  _range = elements(mesh_current), _expr = vec(cst(0.),cst(0.) )); 
+            elastic_move = project(_space =  Xv_current,  _range = elements(support(Xv_current)), _expr =idv(u_e_curr)); 
+            meshMove( mesh_current, elastic_move );
+ 
+        }
+        ofs.close();
     }
 }
-*/
 
-/*
-// Time loop
 template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::rotation()
+void ElasticRigid<Dim, Order>::rotationNeumann2DNew()
 {
-    // Init parameters
-    std::cout << "init parameters" << std::endl;
-    H_ = specs_["/Meshes/LinearElasticity/Import/h"_json_pointer].get<double>();
-    mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H_);
-
-    std::string matRho = fmt::format( "/Materials/Caoutchouc/parameters/rho/value");
-    rho_ = std::stod(specs_[nl::json::json_pointer( matRho )].get<std::string>());
-
-    std::size_t offset = 0;
-    double extFx = 0;
-    double extFy = 0;
-
-    // External force
-    if ( specs_["/Models/LinearElasticity"_json_pointer].contains("loading") )
+    if constexpr(Dim == 2)
     {
-        for ( auto [key, loading] : specs_["/Models/LinearElasticity/loading"_json_pointer].items() )
-        {
-            std::string loadtype = fmt::format( "/Models/LinearElasticity/loading/{}/type", key );
+        // Get parameters
+        std::string matRho = fmt::format( "/Materials/Caoutchouc/parameters/rho/value");
+        double density = std::stod(specs_[nl::json::json_pointer( matRho )].get<std::string>());
 
-            if ( specs_[nl::json::json_pointer( loadtype )].get<std::string>() == "Gravity" )
-            {
-                LOG( INFO ) << fmt::format( "Loading {}: Gravity found", key );
-                std::string loadexpr = fmt::format( "/Models/LinearElasticity/loading/{}/parameters/expr", key );
-                externalforce_ = specs_[nl::json::json_pointer( loadexpr )].get<std::string>();
-                extFx = std::stod(&externalforce_[1],&offset);
-                extFy = std::stod(&externalforce_[offset+2]);
-            }
-        }
-    }
+        // Young modulus and poisson coefficient
+        std::string matE = fmt::format( "/Materials/Caoutchouc/parameters/E/value" );
+        double E = std::stod(specs_[nl::json::json_pointer( matE )].get<std::string>());
 
-    // External torque
-    double extTx = 0.;
-    double extTy = 0.;
-    if ( specs_["/Models/LinearElasticity"_json_pointer].contains("torque") )
-    {
-        for ( auto [key, loading] : specs_["/Models/LinearElasticity/torque"_json_pointer].items() )
-        {
-            std::string loadtype = fmt::format( "/Models/LinearElasticity/torque/{}/type", key );
+        std::string matNu = fmt::format( "/Materials/Caoutchouc/parameters/nu/value" );
+        double nu = std::stod(specs_[nl::json::json_pointer( matNu )].get<std::string>());
 
-            if ( specs_[nl::json::json_pointer( loadtype )].get<std::string>() == "Gravity" )
-            {
-                LOG( INFO ) << fmt::format( "Loading {}: Gravity found", key );
-                std::string loadexpr = fmt::format( "/Models/LinearElasticity/torque/{}/parameters/expr", key );
-                auto torque = specs_[nl::json::json_pointer( loadexpr )].get<std::string>();
-                extTx = std::stod(&torque[1],&offset);
-                extTy = std::stod(&torque[offset+2]);
-            }
-        }
-    }
+        double lambda = E*nu/( (1+nu)*(1-2*nu) );
+        double mu = E/(2*(1+nu));
 
-    // Space
-    std::cout << "init spaces" << std::endl;
-    auto VTheta_ = Pch<0>(mesh_, markedelements(mesh_, "Caoutchouc"));
-    auto VUTheta_ = Pchv<Order>( mesh_, markedelements( mesh_, "Caoutchouc" ) );
-    auto VUTrans_ = Pchv<0>(mesh_, markedelements(mesh_, "Caoutchouc"));
-   
-    // Exporter
-    std::cout << "init exporter" << std::endl;
-    auto e_ = Feel::exporter(_mesh = mesh_, _name = specs_["/ShortName"_json_pointer].get<std::string>() );
+        std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
+        auto Id = eye<Dim,Dim>();
 
-    // Initialize Newmark scheme
-    std::cout << "init newmark" << std::endl;
-    double initial_time = get_value(specs_, "/TimeStepping/LinearElasticity/start", 0.0);
-    double final_time = get_value(specs_, "/TimeStepping/LinearElasticity/end", 1.0);
-    double time_step = expr(get_value(specs_, "/TimeStepping/LinearElasticity/step", std::string("0.1"))).evaluate()(0,0);
-    double gamma = get_value(specs_, "/TimeStepping/LinearElasticity/gamma", 0.5);
-    double beta = get_value(specs_, "/TimeStepping/LinearElasticity/beta", 0.25);
+        // Neumann boundary conditions
+        std::string neumannLower = specs_[nl::json::json_pointer( "/BoundaryConditions/LinearElasticity/Neumann/Lower/expr" )].get<std::string>();
+        std::string neumannUpper = specs_[nl::json::json_pointer( "/BoundaryConditions/LinearElasticity/Neumann/Upper/expr" )].get<std::string>();
 
-    // Rotation
-    auto theta_ = VTheta_->element();
-    theta_.on(_range=elements(support(VTheta_)), _expr= cst(0.));
+        std::size_t offsetU = 0;
+        double Upper_x = std::stod(&neumannUpper[1],&offsetU);
+        double Upper_y = std::stod(&neumannUpper[offsetU+2]);
 
-    tst_ptrtype ts_t_ = newmark(_space = VTheta_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
-    ts_t_->start();
-    ts_t_->initialize( theta_ );
-    ts_t_->updateFromDisp(theta_);
+        std::cout << "Upper_x : " << Upper_x << " Upper_y : " << Upper_y << std::endl;
+        
+        std::size_t offsetL = 0;
+        double Lower_x = std::stod(&neumannLower[1],&offsetL);
+        double Lower_y = std::stod(&neumannLower[offsetL+2]);
 
-    // Rotational displacement
-    auto u_t = VUTheta_->element();
-    std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
-    u_t.on(_range=elements(support(VUTheta_)), _expr=expr<Dim,1>(default_displ));
+        std::cout << "Lower_x : " << Lower_x << " Lower_y : " << Lower_y << std::endl;
+        
+        // External force
+        std::string externalforce = specs_[nl::json::json_pointer( "/Models/LinearElasticity/loading/F1/parameters/expr" )].get<std::string>();
 
-    // Translation displacement
-    auto u_trans = VUTrans_->element();
-    u_trans.on(_range=elements(support(VUTrans_)), _expr=expr<Dim,1>(default_displ));
+        // Time scheme parameters
+        double initial_time = get_value(specs_, "/TimeStepping/LinearElasticity/start", 0.0);
+        double final_time = get_value(specs_, "/TimeStepping/LinearElasticity/end", 1.0);
+        double time_step = expr(get_value(specs_, "/TimeStepping/LinearElasticity/step", std::string("0.1"))).evaluate()(0,0);
     
-    tsr_ptrtype ts_trans_ =  newmark(_space = VUTrans_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
-    ts_trans_->start();
-    ts_trans_->initialize( u_trans );
-    ts_trans_->updateFromDisp(u_trans);
-    
-    // Rigid displacement
-    auto u_rigid = VUTheta_->element();
-    u_rigid.on(_range=elements(support(VUTheta_)), _expr=idv(u_trans) + idv(u_t));
+        double gamma = get_value(specs_, "/TimeStepping/LinearElasticity/gamma", 0.5);
+        double beta = get_value(specs_, "/TimeStepping/LinearElasticity/beta", 0.25);
 
-    // Export at init time
-    e_->step(0)->addRegions();
-    e_->step(0)->add( "utheta", u_t );
-    e_->step(0)->add( "u_trans", u_trans );
-    e_->step(0)->add( "u_rigid", u_rigid );
-    e_->save();
 
-    // Init forms
-    std::cout << "init forms" << std::endl;
-    auto a_theta_ = form2( _test = VTheta_, _trial = VTheta_ );
-    auto l_theta_ = form1( _test = VTheta_ );
-    a_theta_.zero();
-    l_theta_.zero();
+        // Get init mesh
+        double H = specs_["/Meshes/LinearElasticity/Import/h"_json_pointer].get<double>();
+        auto mesh = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H);
+        auto mesh_init = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/LinearElasticity/Import/filename"_json_pointer].get<std::string>(), _h = H);
 
-    auto a_trans_ = form2( _test = VUTrans_, _trial = VUTrans_ );
-    auto l_trans_ = form1( _test = VUTrans_ );
-    auto lt_trans_ = form1( _test = VUTrans_ );
-    a_trans_.zero();
-    l_trans_.zero();
-    lt_trans_.zero();
+        // Exporter
+        auto e = Feel::exporter(_mesh = mesh, _name = "ucurr", _geo="change" );
+        auto e_init =  Feel::exporter(_mesh = mesh, _name = "utot", _geo="change" );
 
-    l_trans_ += integrate( _range = elements(support(VUTrans_)), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_trans));
-    a_trans_ += integrate( _range = elements(support(VUTrans_)), _expr = cst(rho_)*inner( ts_trans_->polyDerivCoefficient()*idt(u_trans),id( u_trans ) ) );
+        // Initialisation
+        auto Vhv = Pchv<Order>( mesh );
+        auto Vhv_init = Pchv<Order>( mesh_init );
 
-    auto xcmInit = mean( _range =  elements(support(VUTheta_)), _expr = P());
-    auto xcmI = xcmInit(0,0);
-    auto ycmI = xcmInit(1,0);
-    std::cout << "Mass center reference domain : " << xcmI << ", " << ycmI << std::endl;
+        // Elasticity
+        auto u_curr = Vhv->element();
+        u_curr.on(_range=elements( mesh ), _expr= expr<Dim,1>(default_displ));  
 
-    std::cout << "start time loop" << std::endl;
-    for ( ts_t_->start(); ts_t_->isFinished() == false; ts_t_->next( theta_ ), ts_trans_->next( u_trans ))
-    {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_t_->time(),ts_t_->timeFinal()) << std::endl;
+        auto u_tot_curr = Vhv->element(); 
+        u_tot_curr.on(_range=elements( mesh ), _expr= expr<Dim,1>(default_displ));  
 
-        if constexpr(Dim == 2)
+        auto utot = Vhv_init->element(); 
+        utot.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        auto utot_e = Vhv_init->element(); 
+        utot_e.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        auto dt_u_tot = Vhv_init->element();
+        dt_u_tot.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));   
+
+        auto dtt_u_tot = Vhv_init->element();
+        dtt_u_tot.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        auto dt_u_old = Vhv_init->element(); 
+        dt_u_old.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        auto dtt_u_old = Vhv_init->element();
+        dtt_u_old.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));   
+
+        auto dtt_u_old2 = Vhv_init->element();
+        dtt_u_old2.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        // Rotation
+        auto u_rot = Vhv->element();
+        u_rot.on(_range=elements( mesh ), _expr= expr<Dim,1>(default_displ));  
+
+        auto u_rot_tot = Vhv_init->element(); 
+        u_rot_tot.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        auto dt_u_rot_old = Vhv_init->element(); 
+        dt_u_rot_old.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        auto dtt_u_rot_old = Vhv_init->element();
+        dtt_u_rot_old.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));   
+
+        auto dtt_u_rot_old2 = Vhv_init->element();
+        dtt_u_rot_old2.on(_range=elements( mesh_init ), _expr= expr<Dim,1>(default_displ));  
+
+        std::cout << "Export" << std::endl;
+        e_init->step(0)->setMesh(mesh_init);
+        e_init->step(0)->add( "utot", utot );
+        e_init->step(0)->add( "urot", u_rot_tot);
+        e_init->step(0)->add( "utot_e", utot_e);
+        e_init->save(); 
+            
+        e->step(0)->setMesh(mesh);
+        e->step(0)->add( "u_curr", u_curr );
+        e->step(0)->add( "u_rot", u_rot );
+        e->save();
+
+        double velocity = 0;
+
+        // Starting time loop
+        int iter = 0;
+
+        std::ofstream ofs("outputs_new.csv");
+        ofs << fmt::format("x_curr,y_curr,utot_x,utot_y,utot_e_x,utot_e_y") << std::endl;
+
+
+        while (time_step * iter < final_time)
         {
-            
-            // Compute Xcm in current domain
-            double angle = mean(_range = elements(support(VTheta_)), _expr = idv(theta_))(0,0);  
-            std::cout << "Current angle : " << angle << std::endl; 
-
-            auto xC = cos(angle) * (Px() - xcmI) - sin(angle) * (Py() - ycmI) + xcmI ;
-            auto yC = sin(angle) * (Px() - xcmI) + cos(angle) * (Py() - ycmI) + ycmI ; 
-
-            auto xcmCurr = mean( _range =  elements(support(VUTheta_)), _expr = vec( xC, yC ));
-            auto xcmC = xcmCurr(0,0);
-            auto ycmC = xcmCurr(1,0);
-            std::cout << "Mass center current domain: " << xcmC << ", " << ycmC << std::endl;
-            
-            // Compute current J
-            auto J_expr = cst(rho_) * ((xC-xcmC)*(xC-xcmC) + (yC-ycmC)*(yC-ycmC));
-            auto J = integrate( _range = elements(support(VTheta_)), _expr = J_expr).evaluate()(0,0);
-            std::cout << "J : " << J << std::endl;
-
-            // Compute T
-            auto T_expr = cst(rho_) * (cst(extTy)*(xC-xcmC) - cst(extTx)*(yC - ycmC));
-            auto T = integrate( _range = elements(support(VTheta_)), _expr = T_expr).evaluate()(0,0); 
-            std::cout << "T : " << T << std::endl;
-            
-            // Compute theta
-            a_theta_ += integrate( _range = elements(support(VTheta_)), _expr = J_expr * inner( ts_t_->polyDerivCoefficient()*idt(theta_),id( theta_ ) ) );
-            l_theta_ += integrate( _range = elements(support(VTheta_)), _expr = T_expr * id(theta_));
-            l_theta_ += integrate( _range = elements(support(VTheta_)), _expr = J_expr * inner( idv( ts_t_->polyDeriv() ), id( theta_ ) ) );
-            a_theta_.solve( _rhs = l_theta_, _solution = theta_, _rebuild = true);
-
-            // Compute rotation matrix
-            double angleN = mean(_range = elements(support(VTheta_)), _expr = idv(theta_))(0,0);     
-            std::cout << "AngleN : " << angleN << std::endl;  
-            auto rot = vec(cos(angleN)*(Px() - xcmI) - sin(angleN)*(Py() - ycmI) - Px() + xcmI, sin(angleN)*(Px() - xcmI) + cos(angleN)*(Py() - ycmI) - Py() + ycmI);
-
-            // Compute new displacement
-            u_t.on(_range=elements(support(VUTheta_)),_expr =  rot);
-
-            // Compute translation
-            lt_trans_ = l_trans_;
-            lt_trans_ += integrate( _range = elements(support(VUTrans_)), _expr = cst( rho_ ) * inner( idv( ts_trans_->polyDeriv() ), id( u_trans ) ) );
-            a_trans_.solve( _rhs = lt_trans_, _solution = u_trans, _rebuild = true );
-            
-            // Compute rigid displacement
-            u_rigid.on(_range=elements(support(VUTheta_)),_expr =  idv(u_trans) + idv(u_t));
-
-            e_->step(ts_t_->time())->addRegions();
-            e_->step(ts_t_->time())->add( "utheta", u_t );
-            e_->step(ts_t_->time())->add( "u_trans", u_trans );
-            e_->step(ts_t_->time())->add( "u_rigid", u_rigid );
-            e_->save();
-
-            ts_t_->updateFromDisp(theta_);
-            ts_trans_->updateFromDisp(u_trans);
-
-            a_theta_.zero();
-            l_theta_.zero();
-            lt_trans_.zero();
-        }
+            iter++;
+            if (Environment::isMasterRank())
+                std::cout << "Time step : " << iter*time_step << std::endl;
     
+            // Exports
+            auto mass = mean( _range = elements(mesh), _expr = P());
+            auto meanE = mean(_range=elements(mesh_init), _expr=idv(utot_e));
+            auto meanTot = mean(_range=elements(mesh_init), _expr=idv(utot));
+            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}, {:.6f}",mass(0,0),mass(1,0),meanTot(0,0),meanTot(1,0),meanE(0,0),meanE(1,0)) << std::endl;
+           
+            
+            /*
+                Solve rotational 
+            */
+            std::cout << "Solve rotational" << std::endl;
+
+            auto massCenter = mean( _range = elements(mesh), _expr = P());
+            auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+            std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+
+            // Matrix of inertia
+            auto momentOfInertia = integrate(_range=elements(mesh),_expr=cst(density)*( (Px()-massCenter(0,0))*(Px()-massCenter(0,0)) + (Py()-massCenter(1,0))*(Py()-massCenter(1,0)) ) ).evaluate()(0,0);
+            std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
+
+            // Rotation
+            double h = integrate(_range= markedfaces(mesh, "Upper"), _expr= -(Py()-massCenter(1,0))*cst(Upper_x)).evaluate()(0,0);
+            h += integrate(_range= markedfaces(mesh, "Lower"), _expr= -(Py()-massCenter(1,0))*cst(Lower_x)).evaluate()(0,0);
+            std::cout << "h : " << h << std::endl;
+            velocity = h/momentOfInertia * time_step + velocity;
+            double theta = velocity * time_step;
+
+            std::cout << "Velocity : " << velocity << std::endl;
+            std::cout << "theta : " << theta << std::endl;
+
+            auto rot = vec(cos(theta)*(Px() - massCenter(0,0)) - sin(theta)*(Py() - massCenter(1,0)) - (Px() - massCenter(0,0)), sin(theta)*(Px() - massCenter(0,0)) + cos(theta)* (Py() - massCenter(1,0)) - (Py() - massCenter(1,0)));
+            //u_rot.on(_range=elements(mesh),_expr = rot);
+            u_rot = project(_space = Vhv, _range = elements(mesh), _expr = rot);
+
+            // Update time scheme
+            dtt_u_rot_old2 = project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(dtt_u_rot_old));
+            dtt_u_rot_old = project(_space = Vhv_init, _range = elements(mesh_init), _expr = cst(1.0) / (cst(beta)*std::pow(time_step,2)) * idv(u_rot) - cst(1.0) / (cst(beta)*cst(time_step)) * idv( dt_u_rot_old ) -  (cst(1.0)/(cst(2.0)*cst(beta)) - cst(1.0)) * idv( dtt_u_rot_old ));
+            dt_u_rot_old = project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(dt_u_rot_old) + cst(1.0)*cst(time_step) * ((cst(1.0) - cst(gamma)) * idv(dtt_u_rot_old2) + cst(gamma) * idv(dtt_u_rot_old)) );
+            u_rot_tot  =  project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(u_rot_tot) + idv(u_rot)  );
+            utot  =  project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(utot) + idv(u_rot) );
+
+            auto test = mean( _range = elements(mesh_init), _expr = idv(dtt_u_rot_old));
+            std::cout << "Test : " << test(0,0) << std::endl;
+
+            meshMove( mesh, u_rot);
+
+            /*
+                Solve elasticity
+            */
+            std::cout << "Solve elasticity" << std::endl;
+
+            auto eps_curr = sym(gradt(u_curr));
+            auto sigma_curr = lambda*trace(eps_curr)*Id + 2*mu*eps_curr;
+
+            auto eps_tot = sym(gradv(utot)); 
+            auto F = Id + gradv(utot); 
+            auto J = det(F); 
+            auto Js = J * sqrt(trans(N())*( trans(F) * F) * N()); 
+            auto sigma_tot = lambda*trace(eps_tot)*Id + 2*mu*eps_tot;
+
+            auto eps_mix = 0.5 * (gradt(u_curr)*gradv(utot) + trans(gradv(utot))*trans(gradt(u_curr)));
+            auto sigma_mix = lambda * trace(eps_mix) * Id + 2 * mu * eps_mix;
+        
+            auto a = form2( _trial=Vhv, _test=Vhv);
+            auto l = form1( _test=Vhv );
+
+            a.zero();
+            l.zero();
+
+            std::cout << "Assemble a" << std::endl;
+
+            a += integrate(_range = elements(mesh), _expr = cst(1.)/J * inner( sigma_curr * trans(F), grad(u_curr) ));
+            a += integrate(_range = elements(mesh), _expr = cst(1.)/J * inner( sigma_mix * trans(F), grad(u_curr) ));
+            a += integrate(_range = elements(mesh), _expr= cst(density)/J * inner( cst(1.0)/(cst(beta)*std::pow(time_step,2)) * idt( u_curr ),id( u_curr ) ) );
+            
+            std::cout << "assemle l" << std::endl;
+            l += integrate( _range = elements(mesh), _expr= - cst( density )/J * inner(idv(dtt_u_rot_old), id( u_curr ) )); 
+            l += integrate( _range = elements(mesh), _expr= - cst(1.)/J * inner( sigma_tot * trans(F), grad(u_curr) ) );
+            l += integrate( _range = markedfaces(mesh, "Upper"), _expr = cst(1)/Js * trans(expr<Dim,1>(neumannUpper))*id(u_curr));
+            l += integrate( _range = markedfaces(mesh, "Lower"), _expr = cst(1)/Js * trans(expr<Dim,1>(neumannLower))*id(u_curr));
+            
+            l += integrate( _range = elements(mesh), _expr = cst( density )/J * inner( cst(1.0)/(cst(beta)*time_step) * idv( dt_u_old ), id( u_curr ) ) );
+            l += integrate( _range = elements(mesh), _expr = cst( density )/J * inner(  (cst(1.0)/(cst(2.0)*cst(beta)) - cst(1.0)) * idv( dtt_u_old ), id( u_curr ) ) );
+            l += integrate( _range = elements(mesh), _expr= cst( density ) / J * trans(expr<Dim,1>(externalforce))*id(u_curr) );
+
+            a.solve(_rhs=l,_solution=u_curr, _rebuild = true);
+
+            // Update time scheme
+            dtt_u_old2 = project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(dtt_u_old));
+            dtt_u_old = project(_space = Vhv_init, _range = elements(mesh_init), _expr = cst(1.0) / (cst(beta)*std::pow(time_step,2)) * idv(u_curr) - cst(1.0) / (cst(beta)*cst(time_step)) * idv( dt_u_old ) -  (cst(1.0)/(cst(2.0)*cst(beta)) - cst(1.0)) * idv( dtt_u_old ));
+            dt_u_old = project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(dt_u_old) + cst(1.0)*cst(time_step) * ((cst(1.0) - cst(gamma)) * idv(dtt_u_old2) + cst(gamma) * idv(dtt_u_old)) );
+            utot  =  project(_space = Vhv_init, _range = elements(mesh_init), _expr = idv(utot) + idv(u_curr) );
+            utot_e = project(_space = Vhv_init,  _range = elements(mesh_init), _expr = idv(utot_e) + idv(u_curr) );
+
+            // Checks
+            auto meanDisp = mean(_range=elements(mesh), _expr=idv(u_curr));
+            std::cout << "Mean displacement x : " << meanDisp(0,0) << std::endl;
+            std::cout << "Mean displacement y : " << meanDisp(1,0) << std::endl;
+        
+            auto meanCurl = mean(_range=elements(mesh), _expr = curlv_op(u_curr));
+            std::cout << "Mean curl x : " << meanCurl(0,0) << std::endl;
+            std::cout << "Mean curl y : " << meanCurl(1,0) << std::endl;
+            std::cout << "Mean curl z : " << meanCurl(2,0) << std::endl;
+
+            std::cout << "Export" << std::endl;
+            e_init->step(time_step*iter)->setMesh(mesh_init);
+            e_init->step(time_step*iter)->add( "utot", utot );
+            e_init->step(time_step*iter)->add( "urot", u_rot_tot);
+            e_init->step(time_step*iter)->add( "utot_e", utot_e);
+            e_init->save(); 
+            
+            e->step(time_step*iter)->setMesh(mesh);
+            e->step(time_step*iter)->add( "u_curr", u_curr );
+            e->step(time_step*iter)->add( "u_rot", u_rot );
+            e->save();
+
+            std::cout << "Update current" << std::endl;
+            meshMove( mesh, u_curr );
+            Vhv = Pchv<Order> (mesh);
+            
+            u_rot = Vhv->element();
+            u_rot.on(_range=elements(mesh), _expr=expr<Dim,1>(default_displ)); 
+
+            u_curr = Vhv->element();
+            u_curr.on(_range=elements(mesh), _expr=expr<Dim,1>(default_displ)); 
+            
+        }
+        ofs.close();
+
     }
+    
 }
-*/
-
 
 
 // Initialization contact parameters 
@@ -1582,7 +753,8 @@ void
 ElasticRigid<Dim, Order>::initializeContact()
 {
     // Initialize contact field
-    contactRegion_ =  project(_space=XE_, _range=elements(support(XE_)), _expr = cst(0.));
+    contactRegion_ =  project(_space=X_init, _range=elements(support(X_init)), _expr = cst(0.));
+    contactFaces_ = project(_space=X_current, _range=elements(support(X_current)), _expr = cst(0.));
     nbrFaces_ = 0;
 
     // Get contact parameters
@@ -1603,7 +775,7 @@ ElasticRigid<Dim, Order>::initializeContact()
 
     std::string matGamma0 = fmt::format( "/Collision/LinearElasticity/gamma0" );
     gamma0_ = specs_[nl::json::json_pointer( matGamma0 )].get<double>();
-    gamma_ = gamma0_/H_;
+    gamma_contact = gamma0_/H_;
 
     std::string mattolContactRegion = fmt::format( "/Collision/LinearElasticity/tolContactRegion" );
     tolContactRegion_ = specs_[nl::json::json_pointer( mattolContactRegion )].get<double>();
@@ -1611,43 +783,30 @@ ElasticRigid<Dim, Order>::initializeContact()
     std::string mattolDistance = fmt::format("/Collision/LinearElasticity/tolDistance");
     tolDistance_ = specs_[nl::json::json_pointer( mattolDistance )].get<double>();
 
-    std::string matFixedPointtol = fmt::format( "/Collision/LinearElasticity/fixedPointTol" );
-    fixedPointtol_ = specs_[nl::json::json_pointer( matFixedPointtol )].get<double>();
-
-    std::string matFixedPoint = fmt::format( "/Collision/LinearElasticity/fixedPoint" );
-    fixedPoint_ = specs_[nl::json::json_pointer( matFixedPoint )].get<int>();
-
-    std::string matpressurePoint = fmt::format( "/Collision/LinearElasticity/pressurePoint" );
-    pressurePoint_ = specs_[nl::json::json_pointer( matpressurePoint )].get<std::vector<double>>();
 }
-
 
 template <int Dim, int Order>
 Range<typename ElasticRigid<Dim, Order>::mesh_t, MESH_FACES>
 ElasticRigid<Dim, Order>::getContactRegion(elementv_t_E const& u)
 {
-    Range<mesh_t,MESH_FACES> myelts(mesh_ );
-
-    auto defv = sym(gradv(u));
-    auto Id = eye<Dim,Dim>();
-    auto sigmav = (lambda_*trace(defv)*Id + 2*mu_*defv)*N();
-
-    contactRegion_.on( _range=elements(support(XvE_)), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));
-
+    Range<mesh_t,MESH_FACES> myelts(mesh_init);
+    
+    contactRegion_ = project(_space = X_init,  _range = elements(support(X_init)), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));
+    
     nbrFaces_ = 0;
-    auto const& trialDofIdToContainerId =  form2(_test=XE_, _trial=XE_).dofIdToContainerIdTest();
-    for (auto const& theface : boundaryfaces(support(XE_)) )
+    auto const& trialDofIdToContainerId =  form2(_test=X_init, _trial=X_init).dofIdToContainerIdTest();
+    for (auto const& theface : boundaryfaces(support(X_init)) )
     {
         auto & face = boost::unwrap_ref( theface );
         int contactDof = 0;
-        for( auto const& ldof : XE_->dof()->faceLocalDof( face.id() ) )
+        for( auto const& ldof : X_init->dof()->faceLocalDof( face.id() ) )
         {
             index_type thedof = ldof.index();
             thedof = trialDofIdToContainerId[ thedof ];
-
+            
             if (contactRegion_[thedof] >= tolContactRegion_)
                 contactDof++;
-
+                        
             if (Order == 1)
             {
                 if (Dim == 2)
@@ -1656,30 +815,12 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t_E const& u)
                     {
                         nbrFaces_++;
                         myelts.push_back( face );
+                        contactFaces_[thedof] = 1.;
                     }
                 }
                 else if (Dim == 3)
                 {
                     if (contactDof == 3)
-                    {
-                        nbrFaces_++;
-                        myelts.push_back( face );
-                    }
-                }
-            }
-            else if (Order == 2)
-            {
-                if (Dim == 2)
-                {
-                    if (contactDof == 3)
-                    {
-                        nbrFaces_++;
-                        myelts.push_back( face );
-                    }
-                }
-                else if (Dim == 3)
-                {
-                    if (contactDof == 4)
                     {
                         nbrFaces_++;
                         myelts.push_back( face );
@@ -1693,15 +834,65 @@ ElasticRigid<Dim, Order>::getContactRegion(elementv_t_E const& u)
     return myelts;
 }
 
+/*
+template <int Dim, int Order>
+Range<typename ElasticRigid<Dim, Order>::mesh_t, MESH_FACES>
+ElasticRigid<Dim, Order>::getContactRegion(elementv_t_E const& u)
+{
+    Range<mesh_t,MESH_FACES> myelts(mesh_init);
+    contactRegion_.on( _range=elements(support(X_init)), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));
+    
+    nbrFaces_ = 0;
+    auto const& trialDofIdToContainerId =  form2(_test=X_init, _trial=X_init).dofIdToContainerIdTest();
+    for (auto const& theface : boundaryfaces(support(X_init)) )
+    {
+        auto & face = boost::unwrap_ref( theface );
+        int contactDof = 0;
+        for( auto const& ldof : X_init->dof()->faceLocalDof( face.id() ) )
+        {
+            index_type thedof = ldof.index();
+            thedof = trialDofIdToContainerId[ thedof ];
+            
+            if (contactRegion_[thedof] >= tolContactRegion_)
+                contactDof++;
+                        
+                
 
+            if (Order == 1)
+            {
+                if (Dim == 2)
+                {
+                    if (contactDof == 2)
+                    {
+                        nbrFaces_++;
+                        myelts.push_back( face );
+                        contactFaces_[thedof] = 1.;
+                    }
+                }
+                else if (Dim == 3)
+                {
+                    if (contactDof == 3)
+                    {
+                        nbrFaces_++;
+                        myelts.push_back( face );
+                    }
+                }
+            }
+        }
+    }
+    myelts.shrink_to_fit();
 
+    return myelts;
+}
+*/
+/*
 template <int Dim, int Order>
 void
 ElasticRigid<Dim, Order>::initG()
 {
     // Init the distance fields
-    g_ = XE_->element();
-    g_.on(_range=elements(support(XE_)), _expr=cst(100000.));
+    g_ = X_current->element();
+    g_.on(_range=elements(support(X_current)), _expr=cst(1000.));
 
     // Raytracing to compute distance
     using bvh_ray_type = BVHRay<Dim>;
@@ -1715,13 +906,13 @@ ElasticRigid<Dim, Order>::initG()
 
     std::string kind = (Dim==2)?"in-house":"third-party";
 
-    auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_, "Obs1"), _kind=kind);
+    auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_current, "Obs1"), _kind=kind);
 
     std::vector<std::size_t> faceIDs;
 
     BVHRaysDistributed<Dim> allrays;
 
-    for ( auto const& theface : markedfaces( mesh_, "Wall" ) )
+    for ( auto const& theface : markedfaces( mesh_current, "Wall" ) )
     {
         auto & face = boost::unwrap_ref( theface );
 
@@ -1744,8 +935,11 @@ ElasticRigid<Dim, Order>::initG()
                 {
                     for ( auto const& rir : rayIntersection )
                     {
-                        for (auto const& ldof  : XE_->dof()->faceLocalDof( face.id() ))
-                            g_[ldof.index()] = rir.distance() - tolDistance_;
+                        for (auto const& ldof  : X_current->dof()->faceLocalDof( face.id() ))
+                        {
+                            g_[ldof.index()] = rir.distance() - tolDistance_ ;
+                        }
+                            
                     }
                 }
             }
@@ -1758,717 +952,135 @@ ElasticRigid<Dim, Order>::initG()
         }
         
     }
-    if constexpr(Dim == 3)
-    {
-            // compute intersections for allrays
-        auto multiRayIntersectionResult = bvh->intersect(_ray=allrays);//,_parallel=false);
-    
-        for (auto const& [fid,rirs] : enumerate(multiRayIntersectionResult))
-        {
-            for (auto const& [rid,rir] : enumerate(rirs))
-            {
-                for (auto const& ldof : XE_->dof()->faceLocalDof(faceIDs[fid]))
-                    g_[ldof.index()] = rir.distance() - tolDistance_;
-            }
-            
-        }
-    }
-
-}
-
-
-// Time loop
-/*
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::translationContact()
-{
-    auto Id = eye<Dim,Dim>();
-    auto dir = oneZ();
-    int nbrFacesOld = 0;
-
-    // Inits
-    this->initializeMesh();
-    this->initializeParam();
-    this->initializeFields();
-    this->initializeTs_Exp();
-
-    // Contact inits
-    this->initializeContact();
-    this->initG();
-
-    // Linear and bilinear forms
-
-    
-    //Assemblage tranlsation
-    
-
-    auto a_translation_ = form2( _test = XvR_, _trial = XvR_ );
-    auto l_translation_ = form1( _test = XvR_ );
-    auto lt_translation_ = form1( _test = XvR_ );
-    
-    a_translation_.zero();
-    l_translation_.zero();
-    lt_translation_.zero();
-
-    l_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*trans(expr<Dim,1>( externalforce_ ))*id(u_translation_));
-    a_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idt(u_translation_),id( u_translation_ ) ) );
-
-    
-    //    Assemblage elasticity
-    
-
-    auto a_e = form2( _test = XvE_, _trial = XvE_ );
-    auto at_e = form2( _test = XvE_, _trial = XvE_ );
-    auto l_e = form1( _test = XvE_ );
-    auto lt_e = form1( _test = XvE_ );
-
-    a_e.zero();
-    at_e.zero();
-    l_e.zero();
-    lt_e.zero();
-
-    auto deft = sym(gradt(u_E_));
-    auto def = sym(grad(u_E_));
-    auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-    a_e += integrate( _range = elements(support(XvE_)), _expr = cst(density_) * inner( ts_E_->polyDerivCoefficient()*idt(u_E_),id( u_E_ ) ) + inner(sigmat,def));
-    l_e = integrate( _range = elements(support(XvE_)), _expr = cst(density_) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_E_ ) );
-
-    // Preconditioners
-    backend_e_ = backend(_name = "elastic", _worldcomm = XvE_->worldCommPtr() );
-    backend_r_ = backend(_name = "rigid", _worldcomm = XvR_->worldCommPtr() );
-
-    // output 
-    std::ofstream ofs("outputs.csv");
-    ofs << fmt::format( "time, evaluateStress, evaluateDisp") << std::endl;
-
-    // Start time loop
-    for ( ts_Translation_->start(); ts_Translation_->isFinished() == false; ts_Translation_->next( u_translation_ ))
-    {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_Translation_->time(),ts_Translation_->timeFinal()) << std::endl;
-
-        if (Environment::isMasterRank())
-            std::cout << "***** Compute new contact region *****" << std::endl;
-
-        
-
-        
-        //    Solve translation
-        
-
-        lt_translation_ = l_translation_;
-        lt_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst( density_ ) * inner( idv( ts_Translation_->polyDeriv() ), id( u_translation_ ) ) );
-        if (nbrFaces_ > 0)//Add contact terms
-        {
-            auto epsv = sym(gradv(u_E_));
-            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-            lt_translation_ += integrate( _range = myelts_, _expr = inner(sigmav, id( u_translation_ ) ) );
-        }
-        
-        a_translation_.solve( _rhs = lt_translation_, _solution = u_translation_, _name="rigid" );
-        ts_Translation_->updateFromDisp(u_translation_);
-
-        
-        //    Solve elasticity
-        
-
-        lt_e = l_e;
-        at_e = a_e;
-
-        lt_e += integrate( _range=elements(support(XvE_)), _expr= cst(density_)*inner( idv(ts_E_->polyDeriv()),id( u_E_ ) ));
-        lt_e += integrate( _range=elements(support(XvE_)), _expr= -cst(density_)*inner( idv(ts_Translation_->currentAcceleration()),id( u_E_ ) )); // translational acceleration
-        
-        auto u_total_new = project(_space=XvE_, _range=elements(support(XvE_)), _expr=idv(u_translation_) + idv(u_E_));
-        myelts_ = getContactRegion(u_total_new); 
-            
-        if (nbrFaces_ > 0) // add contact terms
-        {
-            std::cout << "nbrFaces_ : " << nbrFaces_ << std::endl; 
-            
-            nbrFacesOld = nbrFaces_;
-
-            if (method_.compare("penalty") == 0)
-            {
-                at_e += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_E_),trans(expr<Dim,1>(direction_))*id(u_E_)) );
-                lt_e += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_translation_), trans(expr<Dim,1>(direction_))*id(u_E_)) );
-            }
-            else if (method_.compare("nitsche") == 0)
-            {
-                auto deft = sym(gradt(u_E_));
-                auto def = sym(grad(u_E_));
-                auto sigma = (lambda_*trace(def)*Id + 2*mu_*def)*N();
-                auto sigmat = (lambda_*trace(deft)*Id + 2*mu_*deft)*N();
-
-                at_e += integrate (_range=myelts_,_expr= - cst(theta_)/cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*sigmat, trans(expr<Dim,1>(direction_))*sigma)); 
-                at_e += integrate (_range=myelts_,_expr= cst(1.)/cst(gamma_) * inner(cst(gamma_) * trans(expr<Dim,1>(direction_))*idt(u_E_) - trans(expr<Dim,1>(direction_))*sigmat, cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u_E_) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));
-                lt_e += integrate (_range=myelts_,_expr= inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_translation_), cst(gamma_) * trans(expr<Dim,1>(direction_))*id(u_E_) - cst(theta_)*trans(expr<Dim,1>(direction_))*sigma));     
-            }    
-        }
-
-        // deleting translation
-        //at_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_e, _element=u_E_, _expr=0.*one());
-
-        at_e.solve( _rhs = lt_e, _solution = u_E_ , _name="elastic");
-        ts_E_->updateFromDisp(u_E_);
-        ts_E_->next(u_E_);
-
-        
-        //    Solve total displacement
-        
-        u_total_.on(_range=elements(support(XvE_)), _expr=idv(u_translation_) + idv(u_E_));
-
-        // Reset
-        lt_translation_.zero();
-        at_e.zero();
-        lt_e.zero();
-
-        // Exports
-        this->exportResults(ts_Translation_->time());
-
-        
-        auto ctx = XE_->context();
-        node_type t1(Dim);
-       
-        if (Dim == 2)
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
-        }
-        else 
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
-        }    
-        ctx.add( t1 );
-
-        auto epsv = sym(gradv(u_E_));
-        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-        auto contactPressure = XE_->element();
-        contactPressure.on(_range=myelts_, _expr = trans(expr<Dim,1>(direction_))*sigmav);
-        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure) ); 
-
-        auto evaluateDispExpr = XE_->element();
-        evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_total_));
-        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
-    
-
-        ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",ts_E_->time(),evaluateStress(0,0), evaluateDisp(0,0)) << std::endl;
-
-    }
-    ofs.close();
 }
 */
 
-
 template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::translationContact()
+void
+ElasticRigid<Dim, Order>::initG()
 {
-    auto Id = eye<Dim,Dim>();
-    auto dir = oneZ();
+    // Init the distance fields
+    g_ = X_init->element();
+    g_.on(_range=elements(support(X_init)), _expr=cst(10.));
 
-    // Inits
-    this->initializeMesh();
-    this->initializeParam();
-    this->initializeFields();
-    this->initializeTs_Exp();
+    // Raytracing to compute distance
+    using bvh_ray_type = BVHRay<Dim>;
+    Eigen::VectorXd origin(Dim);
+    Eigen::VectorXd dir(Dim);
 
-    // Contact inits
-    this->initializeContact();
-    this->initG();
+    if constexpr(Dim == 2)
+        dir << ddirection_[0], ddirection_[1];
+    else if constexpr(Dim == 3)
+        dir << ddirection_[0], ddirection_[1], ddirection_[2];
 
-    // Preconditioners
-    backend_e_ = backend(_name = "elastic", _worldcomm = XvE_->worldCommPtr() );
-    backend_r_ = backend(_name = "rigid", _worldcomm = XvR_->worldCommPtr() );
+    std::string kind = (Dim==2)?"in-house":"third-party";
 
-    // Linear and bilinear forms
+    auto bvh = boundingVolumeHierarchy(_range=markedfaces(mesh_init, "Obs1"), _kind=kind);
 
-    /*
-        Assemblage tranlsation
-    */
-    auto a_translation_ = form2( _test = XvR_, _trial = XvR_ );
-    auto l_translation_ = form1( _test = XvR_ );
-    auto lt_translation_ = form1( _test = XvR_ );
-    
-    a_translation_.zero();
-    l_translation_.zero();
-    lt_translation_.zero();
+    std::vector<std::size_t> faceIDs;
 
-    l_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*trans(expr<Dim,1>( externalforce_ ))*id(u_translation_));
-    a_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idt(u_translation_),id( u_translation_ ) ) );
+    BVHRaysDistributed<Dim> allrays;
 
-    /*
-        Assemblage elasticity
-    */
-
-    auto Res_e = backend_e_->newVector(XvE_);
-    auto Jac_e = backend_e_->newMatrix( _test=XvE_, _trial=XvE_ );
-
-
-    // output 
-    std::ofstream ofs("outputs.csv");
-    ofs << fmt::format( "time, evaluateStress, evaluateDisp") << std::endl;
-
-    // Start time loop
-    for ( ts_Translation_->start(); ts_Translation_->isFinished() == false; ts_Translation_->next( u_translation_ ))
+    for ( auto const& theface : markedfaces( mesh_init, "Wall" ) )
     {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.3f}/{}", fmt::localtime(std::time(nullptr)), ts_Translation_->time(),ts_Translation_->timeFinal()) << std::endl;
+        auto & face = boost::unwrap_ref( theface );
 
-        if (Environment::isMasterRank())
-            std::cout << "***** Compute new contact region *****" << std::endl;
-
-        /*
-            Solve contact
-        */
-        auto u_total_new = project(_space=XvE_, _range=elements(support(XvE_)), _expr=idv(u_translation_) + idv(u_E_));
-        myelts_ = getContactRegion(u_total_new);
-        if (Environment::isMasterRank())
-            std::cout << "nbrFaces_ : " << nbrFaces_ << std::endl; 
-
-        
-        /*
-            Solve translation
-        */
-
-        /*
-        auto Jacobian_r = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+        auto &point = face.point(0);
+        if (point.isOnBoundary())
         {
-            std::cout << "Solve rigid" << std::endl;
-            auto u = XvE_->element();
-            u = *X;
-            
-            auto a = form2( _test=XvR_, _trial=XvR_, _matrix=J );
-            
-            a += integrate( _range=elements(support(XvR_)),
-                            _expr= cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idt(u),id( u ) ) );
 
-        };
-    
-        auto Residual_r = [=](const vector_ptrtype& X, vector_ptrtype& R)
-        {
-            auto u = XvE_->element();
-            u = *X;
-            
-            auto r = form1( _test=XvR_, _vector=R );
+            if constexpr(Dim == 2)
+                origin << point.node()[0], point.node()[1];
+            else if constexpr(Dim == 3)
+                origin << point.node()[0], point.node()[1], point.node()[2];
 
-            r += integrate( _range=elements(support(XvR_)),
-                            _expr= - cst(density_)*trans( expr<Dim, 1>( externalforce_ ) )*id( u )  );
-            r += integrate( _range=elements(support(XvR_)),
-                            _expr= cst(density_)*inner( ts_Translation_->polyDerivCoefficient()*idv(u) -idv(ts_Translation_->polyDeriv()),id( u ) ) );
-            
-            if (nbrFaces_ > 0)//Add contact terms
-            {
-                auto Ev = sym(gradv(u));
-                auto Sv = (lambda_*trace(Ev)*Id + 2*mu_*Ev)*N();
-                r += integrate( _range = myelts_, _expr = - inner(Sv, id( u ) ) );
-            }
-
-            R->close();
-            
-        };
-        
-        backend_r_->nlSolver()->residual = Residual_r;
-        backend_r_->nlSolver()->jacobian = Jacobian_r;
-        backend_r_->nlSolve( _solution=u_translation_,_jacobian=Jac_r,_residual=Res_r );
-        */
-
-        lt_translation_ = l_translation_;
-        lt_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst( density_ ) * inner( idv( ts_Translation_->polyDeriv() ), id( u_translation_ ) ) );
-        if (nbrFaces_ > 0)//Add contact terms
-        {
-            auto epsv = sym(gradv(u_E_));
-            auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-            lt_translation_ += integrate( _range = myelts_, _expr = inner(sigmav, id( u_translation_ ) ) );
-        }
-        
-        a_translation_.solve( _rhs = lt_translation_, _solution = u_translation_, _name="rigid" );
-        ts_Translation_->updateFromDisp(u_translation_);
-
-        
-        /*
-            Solve elasticity
-        */
-
-        auto Jacobian_e = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
-        {
-            auto u = XvE_->element();
-            u = *X;
-            
-            auto dE = sym(gradt(u));
-            auto dS = lambda_*trace(dE)*Id + 2*mu_*dE;
-
-            auto a = form2( _test=XvE_, _trial=XvE_, _matrix=J );
-
-            a = integrate( _range=elements(support(XvE_)),
-                           _expr= inner( dS , grad(u) ) );
-            
-            a += integrate( _range=elements(support(XvE_)),
-                            _expr= cst(density_)*inner( ts_E_->polyDerivCoefficient()*idt(u),id( u ) ) );
-
-            if (nbrFaces_ > 0)
-            {
-                if (method_.compare("penalty") == 0)
-                    a += integrate(_range=myelts_, _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
-                else if (method_.compare("nitsche") == 0)
-                {
-                    a += integrate (_range=myelts_,_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) );
-                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*dS*N(),trans(expr<Dim,1>(direction_))*id(u)));
-                }
-            }           
-        };
-    
-        auto Residual_e = [=](const vector_ptrtype& X, vector_ptrtype& R)
-        {
-            auto u = XvE_->element();
-            u = *X;
-            
-            auto Ev = sym(gradv(u));
-            auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
-
-            
-            auto r = form1( _test=XvE_, _vector=R );
-            r = integrate( _range=elements(support(XvE_)),
-                           _expr= inner( val(Sv) , grad(u) ) );
-            r += integrate( _range=elements(support(XvE_)),
-                            _expr= - cst(density_)*trans( expr<Dim, 1>( externalforce_ ) )*id( u )  );
-            r += integrate( _range=elements(support(XvE_)),
-                            _expr= cst(density_)*inner( ts_E_->polyDerivCoefficient()*idv(u) -idv(ts_E_->polyDeriv()),id( u ) ) );
-            r += integrate( _range=elements(support(XvE_)), 
-                            _expr= cst(density_)*inner( idv(ts_Translation_->currentAcceleration()),id( u ) )); // translational acceleration
-        
-            
-            if (nbrFaces_ > 0)
-            {
-                if (method_.compare("penalty") == 0)
-                {
-                    r += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
-                    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_translation_),trans(expr<Dim,1>(direction_))*id(u)) );
-                }   
-                else if (method_.compare("nitsche") == 0)
-                {
-                    r += integrate (_range=myelts_,_expr= cst(gamma_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
-                    r += integrate (_range=myelts_,_expr= - cst(gamma_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_translation_),trans(expr<Dim,1>(direction_))*id(u)) );
-                    r += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) );
-                }
-                
-            }
-
-            R->close();
-            
-            
-        };
-        
-        backend_e_->nlSolver()->residual = Residual_e;
-        backend_e_->nlSolver()->jacobian = Jacobian_e;
-        backend_e_->nlSolve( _solution=u_E_,_jacobian=Jac_e,_residual=Res_e );
-
-        ts_E_->updateFromDisp(u_E_);
-        ts_E_->next(u_E_);
-
-        /*
-            Solve total displacement
-        */
-        u_total_.on(_range=elements(support(XvE_)), _expr=idv(u_translation_) + idv(u_E_));
-
-        // Exports
-        this->exportResults(ts_Translation_->time());
-
-        
-        auto ctx = XE_->context();
-        node_type t1(Dim);
-       
-        if (Dim == 2)
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
-        }
-        else 
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
-        }    
-        ctx.add( t1 );
-
-        auto epsv = sym(gradv(u_E_));
-        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-        auto contactPressure = XE_->element();
-        contactPressure.on(_range=myelts_, _expr = trans(expr<Dim,1>(direction_))*sigmav);
-        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure) ); 
-
-        auto evaluateDispExpr = XE_->element();
-        evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_total_));
-        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
-    
-
-        ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",ts_E_->time(),evaluateStress(0,0), evaluateDisp(0,0)) << std::endl;
-
-    }
-    ofs.close();  
-}
-
-
-/*
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::timeLoopFixedPoint()
-{
-    // Elasticity equations   
-
-    auto a_e = form2( _test = Xhv_, _trial = Xhv_ );
-    auto at_e = form2( _test = Xhv_, _trial = Xhv_ );
-    auto at_tmp_e = form2( _test = Xhv_, _trial = Xhv_ );
-    auto l_e = form1( _test = Xhv_ );
-    auto lt_e = form1( _test = Xhv_ );
-    auto lt_tmp_e = form1( _test = Xhv_ );
-
-    a_e.zero();
-    at_e.zero();
-    at_tmp_e.zero();
-    l_e.zero();
-    lt_e.zero();
-    lt_tmp_e.zero();
-
-    auto deft = sym(gradt(u_e_));
-    auto def = sym(grad(u_e_));
-    auto Id = eye<Dim,Dim>();
-    auto sigmat = lambda_*trace(deft)*Id + 2*mu_*deft;
-
-    a_e += integrate( _range = elements(support(Xhv_)), _expr = cst(rho_)*inner( ts_e_->polyDerivCoefficient()*idt(u_e_),id( u_e_ ) ) + inner(sigmat,def));
-    l_e = integrate( _range = elements(support(Xhv_)), _expr = cst( rho_ ) * trans( expr<Dim, 1>( externalforce_ ) ) * id( u_e_ ) );
-
-    // Rigid equations
-    auto a_r_ = form2( _test = VhvC_, _trial = VhvC_ );
-    auto at_r_ = form2( _test = VhvC_, _trial = VhvC_ );
-    auto l_r_ = form1( _test = VhvC_ );
-    auto lt_r_ = form1( _test = VhvC_ );
-    auto lt_tmp_r_ = form1( _test = VhvC_ );
-
-    a_r_.zero();
-    at_r_.zero();
-    l_r_.zero();
-    lt_r_.zero();
-    lt_tmp_r_.zero();
-
-    auto dir = oneZ();//-expr<Dim,1>(direction_);
-
-    l_r_ += integrate( _range = elements(support(VhvC_)), _expr = cst(rho_)*trans(expr<Dim,1>( externalforce_ ))*id(u_r_));
-    a_r_ += integrate( _range = elements(support(VhvC_)), _expr = cst(rho_)*inner( ts_r_->polyDerivCoefficient()*idt(u_r_),id( u_r_ ) ) );
-
-    // Outputs
-    std::ofstream ofs("outputs.csv");
-    ofs << fmt::format( "time, evaluateStress, evaluateDisp") << std::endl;
-
-    int iteration = 0;
-    for ( ts_e_->start(); ts_e_->isFinished() == false; ts_e_->next( u_e_ ), ts_r_->next( u_r_ ) )
-    {
-        if (Environment::isMasterRank())
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S}] time {:.6f}/{}", fmt::localtime(std::time(nullptr)), ts_e_->time(),ts_e_->timeFinal()) << std::endl;
-
-        if (Environment::isMasterRank())
-            std::cout << "***** Compute new contact region *****" << std::endl;
-        myelts_ = getContactRegion(u_);
-        
-        if (Environment::isMasterRank())
-            std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
-
-        if (nbrFaces_ == 0)
-        {
-            
-            lt_r_ = l_r_;
-            at_r_ = a_r_;
-
-            lt_r_ += integrate( _range = markedelements( support( VhvC_ ), "Caoutchouc" ), _expr = cst( rho_ ) * inner( idv( ts_r_->polyDeriv() ), id( u_r_ ) ) );
-
-            at_r_.solve( _rhs = lt_r_, _solution = u_r_, _rebuild = true );
-            ts_r_->updateFromDisp(u_r_);
-
-            lt_e = l_e;
-            at_e = a_e;
-
-            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
-            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
-            
-            at_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_e, _element=u_e_, _expr=0.*one());
-            at_e.solve( _rhs = lt_e, _solution = u_e_ , _rebuild = true);
-            ts_e_->updateFromDisp(u_e_);
-
-            u_.on(_range=elements(support(Xhv_)),_expr=idv(u_e_) + idv(u_r_));
-        }
-        else
-        {
-            
-            int fixedPointIteration = 0;
-            double fixedPointerror = 0.;
-
-            lt_r_ = l_r_;
-            at_r_ = a_r_;
-
-            lt_r_ += integrate( _range = markedelements( support( VhvC_ ), "Caoutchouc" ), _expr = cst( rho_ ) * inner( idv( ts_r_->polyDeriv() ), id( u_r_ ) ) );
-
-            lt_e = l_e;
-            at_e = a_e;
-
-            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= cst(rho_)*inner( idv(ts_e_->polyDeriv()),id( u_e_ ) ));
-            lt_e += integrate( _range=markedelements(support(Xh_),"Caoutchouc"), _expr= -cst(rho_)*inner( idv(ts_r_->currentAcceleration()),id( u_e_ ) ));
-
-            auto u_e_tmp =  Xhv_->element();
-            u_e_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_e_));
-
-            auto u_e_tmpNew = Xhv_->element();
-            u_e_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_e_)); 
-
-            auto u_r_tmp =  VhvC_->element();
-            u_r_tmp.on( _range=elements(support(VhvC_)), _expr = idv(u_r_));
-
-            auto u_r_tmpNew = VhvC_->element();
-            u_r_tmpNew.on( _range=elements(support(VhvC_)), _expr = idv(u_r_)); 
-
-            auto u_tmp =  Xhv_->element();
-            u_tmp.on( _range=elements(support(Xhv_)), _expr = idv(u_));
-
-            auto u_tmpNew = Xhv_->element();
-            u_tmpNew.on( _range=elements(support(Xhv_)), _expr = idv(u_)); 
-            
-        
-            while ((fixedPointerror > fixedPointtol_) || (fixedPointIteration < 1))
-            {
-            
-                if (Environment::isMasterRank())
-                    std::cout << "Fixed point iteration : " << fixedPointIteration << std::endl;
-                u_e_tmp.on( _range=elements(mesh_), _expr = idv(u_e_tmpNew)); ;
-                u_r_tmp.on( _range=elements(mesh_), _expr = idv(u_r_tmpNew)); ;
-                u_tmp.on( _range=elements(mesh_), _expr = idv(u_tmpNew)); ;
-            
-                if (Environment::isMasterRank())
-                    std::cout << "***** Compute new contact region *****" << std::endl;
-                myelts_ = getContactRegion(u_);
-                
-                if (Environment::isMasterRank())
-                    std::cout << "Nbr faces for processContact : " << nbrFaces_ << std::endl;
+            bvh_ray_type ray(origin,dir);
  
-                lt_tmp_r_ = lt_r_;
-
-                //auto epsv = sym(gradv(u_e_tmp));
-                auto epsv = sym(gradv(u_tmp));
-                auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-
-                lt_tmp_r_ +=  integrate( _range=myelts_, _expr= inner( sigmav,id( u_r_tmp )));
-                at_r_.solve( _rhs = lt_tmp_r_, _solution = u_r_tmpNew, _rebuild = true );
-
-                                
-                at_tmp_e = at_e;
-                lt_tmp_e = lt_e;
-
-                at_tmp_e += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u_e_tmp),trans(expr<Dim,1>(direction_))*id(u_e_tmp)) );
-                lt_tmp_e += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_r_tmp), trans(expr<Dim,1>(direction_))*id(u_e_tmp)) );
-                        
-                at_tmp_e+=on(_range=markedpoints(mesh_,"CM"), _rhs=lt_tmp_e, _element=u_e_tmp, _expr=0.*one());
-                at_tmp_e.solve( _rhs = lt_tmp_e, _solution = u_e_tmpNew , _rebuild = true);
-
-                u_tmpNew.on(_range=elements(support(Xhv_)),_expr=idv(u_e_tmpNew) + idv(u_r_tmpNew));
-
-                fixedPointerror = integrate(_range=elements(support(Xhv_)), _expr = norm2( idv(u_tmp)-idv(u_tmpNew))).evaluate()(0,0) / integrate(_range=elements(support(Xhv_)),_expr=norm2(idv(u_))).evaluate()(0,0); 
-
-                if (Environment::isMasterRank())
-                    std::cout << "Error fixed point : " << fixedPointerror << std::endl;
-                fixedPointIteration++;
-
-                if (fixedPointIteration == 10)
-                    break;
             
-                // Reset
-                lt_tmp_r_.zero();
-                at_tmp_e.zero();
-                lt_tmp_e.zero();
-            
+            if constexpr(Dim == 2)
+            {
+                auto rayIntersection = bvh->intersect( _ray = ray );
+                if (!rayIntersection.empty())
+                {
+                    for ( auto const& rir : rayIntersection )
+                    {
+                        for (auto const& ldof  : X_init->dof()->faceLocalDof( face.id() ))
+                        {
+                            g_[ldof.index()] = rir.distance() - tolDistance_ ;
+                        }
+                            
+                    }
+                }
             }
+            else 
+            {
+                allrays.push_back(std::move(ray));
+                faceIDs.push_back(face.id());
+            }            
 
-            u_e_.on( _range=elements(support(Xhv_)), _expr = idv(u_e_tmpNew));
-            u_r_.on( _range=elements(support(VhvC_)), _expr = idv(u_r_tmpNew));
-            u_.on( _range=elements(support(Xhv_)), _expr = idv(u_tmpNew)); 
-
-
-            ts_r_->updateFromDisp(u_r_);
-            ts_e_->updateFromDisp(u_e_);
         }
-
-        // Reset
-        at_r_.zero();
-        lt_r_.zero();
-        at_e.zero();
-        lt_e.zero();
-
-
-        // Exports
-        myelts_ = getContactRegion(u_);
-
-        auto ctx = Xh_->context();
-        node_type t1(Dim);
-       
         
-        if (Dim == 2)
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1];
-        }
-        else 
-        {
-            t1(0)=pressurePoint_[0]; t1(1)=pressurePoint_[1]; t1(2)=pressurePoint_[2];
-        }    
-                
-        ctx.add( t1 );
-
-        auto epsv = sym(gradv(u_e_));
-        auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-
-        auto contactPressure = Xh_->element();
-        contactPressure.on(_range=myelts_, _expr = trans(expr<Dim,1>(direction_))*sigmav);
-        auto evaluateStress = evaluateFromContext( _context=ctx, _expr= idv(contactPressure) ); 
-
-        auto evaluateDispExpr = Xh_->element();
-        evaluateDispExpr.on(_range=elements(mesh_), _expr = trans(expr<Dim,1>(direction_))*idv(u_));
-        auto evaluateDisp = evaluateFromContext( _context=ctx, _expr= idv(evaluateDispExpr) );     
-    
-        if ( Dim == 2 )
-            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",
-                                ts_e_->time(), evaluateStress(0,0), evaluateDisp(0,0))
-                << std::endl;
-        else
-            ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",
-                                ts_e_->time(), evaluateStress(0,0), evaluateDisp(0,0) )
-                << std::endl;
-
-        // Export
-        this->exportResults( ts_e_->time() );
-
-        iteration++;
     }
-    ofs.close();
-    
 }
-*/
 
+}
 /*
-// Run method
-template <int Dim, int Order>
-void ElasticRigid<Dim, Order>::run()
-{
-    if (Environment::isMasterRank())
-        std::cout << "***** Initialize parameters *****" << std::endl;
-    initialize();
+auto Res = backend()->newVector(Vhv);
+            auto Jac = backend()->newMatrix( _test=Vhv, _trial=Vhv );
 
-    if (Environment::isMasterRank())
-        std::cout << "***** Initialize contact parameters *****" << std::endl;
-    initializeContact();
+            auto eps_tot = sym(gradv(utot)); 
+            auto F = Id + gradv(utot); 
+            auto J = det(F); 
+            auto Js = J * sqrt(trans(N())*( trans(F) * F) * N()); 
+            auto sigma_tot = lambda*trace(eps_tot)*Id + 2*mu*eps_tot;
 
-    if (Environment::isMasterRank())
-        std::cout <<  "***** Initialize distance g *****" << std::endl;
-    initG();
+            auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J_)
+            {
+                auto u = Vhv->element();
+                u = *X;
 
-    this->exportResults(0.);
+                auto deps = sym(gradt(u));
+                auto dsigma = lambda*trace(deps)*Id + 2*mu*deps;
 
-    if (Environment::isMasterRank())
-        std::cout <<  "***** Start time loop *****" << std::endl;
-    if (fixedPoint_ == 1)
-        timeLoopFixedPoint();
-    else 
-        timeLoop();
-}
+                auto deps_mix = 0.5 * (gradt(u)*gradv(utot) + trans(gradv(utot))*trans(gradt(u)));
+                auto dsigma_mix = lambda * trace(deps_mix) * Id + 2 * mu * deps_mix;
+        
+                auto a = form2( _test=Vhv, _trial=Vhv, _matrix=J_ );
+                
+                a = integrate( _range = elements(mesh), _expr= cst(1.)/J * inner( dsigma * trans(F), grad(u) ) );
+                a += integrate( _range = elements(mesh), _expr= cst(1.)/J * inner( dsigma_mix * trans(F), grad(u) ) );
+
+                a += integrate( _range=elements(mesh), _expr=  cst( density )/J * inner( cst(1.0)/(cst(beta)*std::pow(time_step,2)) * idt( u ),id( u ) ) );
+            
+            };
+
+            auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+            {
+                auto u = Vhv->element();
+                u = *X;
+            
+                auto eps_v = sym(gradv(u));
+                auto sigma_v = lambda*trace(eps_v)*Id + 2*mu*eps_v;
+
+                auto eps_mix = 0.5 * (gradv(u)*gradv(utot) + trans(gradv(utot))*trans(gradv(u)));
+                auto sigma_mix = lambda * trace(eps_mix) * Id + 2 * mu * eps_mix;
+        
+                auto r = form1( _test=Vhv, _vector=R );
+
+                r += integrate( _range = elements(mesh), _expr = -cst( density )/J * trans( expr<Dim, 1>( externalforce ) )* id( u )  ); // external forces
+                r += integrate( _range = elements(mesh), _expr =  cst( density )/J * inner( cst(1.0)/(cst(beta)*std::pow(time_step,2)) * idv( u ),id( u ) ) ); // acceleration elastic
+                r += integrate( _range = elements(mesh), _expr = -cst( density )/J * inner( cst(1.0)/(cst(beta)*time_step) * idv( dt_u_old ), id( u ) ) ); // acceleration elastic
+                r += integrate( _range = elements(mesh), _expr = -cst( density )/J * inner(  (cst(1.0)/(cst(2.0)*cst(beta)) - cst(1.0)) * idv( dtt_u_old ), id( u ) ) ); // acceleration elastic
+                r += integrate( _range = elements(mesh), _expr =  cst( density )/J * inner(vec(cst(dtt_u_trans_old[0]),cst(dtt_u_trans_old[1])), id( u ) )); // acceleration translation
+                r += integrate( _range = elements(mesh), _expr = cst(1.)/J * inner( val(sigma_v * trans(F)), grad(u) )); // elastic term
+                r += integrate( _range = elements(mesh), _expr = cst(1.)/J * inner( val(sigma_mix * trans(F)), grad(u) )); // elastic term
+                r += integrate( _range = elements(mesh), _expr = cst(1.)/J * inner( sigma_tot * trans(F), grad(u) ) ); // elastic term
+                
+                R->close();
+            };
+
+            backend()->nlSolver()->residual = Residual;
+            backend()->nlSolver()->jacobian = Jacobian;
+            backend()->nlSolve( _solution=u_curr,_jacobian=Jac,_residual=Res );
+
 */
-
-}
