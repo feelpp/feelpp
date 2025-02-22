@@ -572,7 +572,6 @@ class nirbOffline(ToolboxModel):
         Args:
         -----
             tolerance(float), optional : tolerance of the eigen value problem target accuracy of the data compression
-            regulParam(float), optional : the regularization parameter for rectification
         """
         self.reducedBasis, RIC = self.PODReducedBasis(tolerance=tolerance)
         self.N = len(self.reducedBasis)

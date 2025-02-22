@@ -11,7 +11,7 @@ from feelpp.core.timing import tic, toc
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 
-def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
+def offline(nirb, RESPATH, doGreedy, N, Xi_train=None):
     """Run the offline phase of the NIRB method
 
     Args:
@@ -20,7 +20,6 @@ def offline(nirb, RESPATH, doGreedy, N, Xi_train=None, regulParam=1e-10):
         doGreedy (bool): if True, the greedy algorithm is used to generate the reduced basis
         N (int): number of snapshots (limit number if greedy algo is used)
         Xi_train (list, optional): Set of parameters to train. Defaults to None.
-        regulParam (_type_, optional): _description_. Defaults to 1e-10.
     """
 
     tic()
@@ -240,7 +239,7 @@ if __name__ == '__main__':
     full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
     nirb_off.initModel(model=full_model)
 
-    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train, regulParam=lambda_regul)
+    resOffline = offline(nirb_off, RESPATH, doGreedy, baseList[-1], Xi_train=Xi_train)
     nirb_on = nirbOnline(**config_nirb)
     nirb_on.initModel(model=full_model)
 
