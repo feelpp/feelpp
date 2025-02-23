@@ -52,9 +52,13 @@ MORModels::MORModels( fs::path const& fpp )
     }
     if ( fs::is_directory(fpp) && fs::exists(fpp/"mormodels.json") )
     {
+        // if there is a cfg file in the directory, use it
+        fs::path cfg = fs::path(fpp.filename())/fs::path(fpp.stem().string() + ".cfg");
+        Environment::setConfigFile( cfg.string() );
+        VLOG(1) << fmt::format("-- MORModels::MORModels: setConfigFile : {} done", cfg.string() ) << std::endl;
         _load( fpp );
     }
-    if ( fpp.extension() != ".fpp")
+    else if ( fpp.extension() != ".fpp")
     {
         throw std::invalid_argument( fmt::format( "[MORModels::MORModels] the zip file should have a .fpp extension", fpp.string() ) );
     }

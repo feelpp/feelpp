@@ -1,11 +1,11 @@
 import sys
 import feelpp.core as fppc
 from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling
+from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, generatedAndSaveSampling, merge_JsonFiles
 import time
 import json
 import argparse
-import pandas as pd 
+import pandas as pd
 
 
 if __name__ == "__main__":
@@ -24,10 +24,10 @@ if __name__ == "__main__":
     outdir = args.outdir
 
     cfg = fppc.readCfg(config_file)
-    toolboxType = cfg['nirb']['toolboxType']
+    toolboxType = cfg['nirb']['toolboxType'][0]
     e = init_feelpp_environment(toolboxType, config_file)
 
-    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'])
+    nirb_file = fppc.Environment.expand(cfg['nirb']['filename'][0])
     config_nirb = fppc.readJson(nirb_file)['nirb']
 
     greedy = args.greedy
@@ -51,20 +51,21 @@ if __name__ == "__main__":
         RESPATH = f"results/{rectPath}/{greedyPath}"
     else:
         RESPATH = outdir
-    
+
     ### Initializa the nirb object
     nirb_off = nirbOffline(initCoarse=True, **config_nirb)
-    nirb_off.initModel()
+    full_model = merge_JsonFiles(cfg[toolboxType]["json.filename"])
+    nirb_off.initModel(model=full_model)
 
     start = time.time()
 
-    Xi_train_path = RESPATH +"/sampling_train.sample"
+    Xi_train_path = RESPATH + "/sampling_train.sample"
     # if os.path.isfile(Xi_train_path):
     #     s = nirb_off.Dmu.sampling()
     #     N = s.readFromFile(Xi_train_path)
-    #     Xi_train = s.getVector()    
+    #     Xi_train = s.getVector()
     #     if nirb_off.worldcomm.isMasterRank():
-    #         print(f"[NIRB] Xi_train loaded from {Xi_train_path}") 
+    #         print(f"[NIRB] Xi_train loaded from {Xi_train_path}")
     # else :
     #     Xi_train = generatedAndSaveSampling(nirb_off.Dmu, 200, path=Xi_train_path, samplingMode="log-random")
 
@@ -73,17 +74,14 @@ if __name__ == "__main__":
     nirb_off.generateOperators(coarse=True)
 
     if doGreedy:
-        _, Xi_train, _ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
+        _, Xi_train, _ = nirb_off.initProblemGreedy(500, 1e-5, Nmax=config_nirb['nbSnapshots'], Xi_train=Xi_train, computeCoarse=True, samplingMode="random")
     else:
         Xi_train = nirb_off.initProblem(nbSnap, Xi_train=Xi_train)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10, tolerance=1.e-12)
+    RIC = nirb_off.generateReducedBasis(tolerance=1.e-12)
 
+    N = len(nirb_off.fineSnapShotList)
 
     tolortho = 1.e-8
-
-    # nirb_off.orthonormalizeL2(tol=tolortho)
-    # nirb_off.orthonormalizeH1(tol=tolortho)
-    # nirb_off.orthonormalizeL2(tol=tolortho)
 
     nirb_off.saveData(RESPATH, force=True)
 
@@ -92,23 +90,28 @@ if __name__ == "__main__":
     print(f"proc {nirb_off.worldcomm.localRank()} Is L2 orthonormalized ?", nirb_off.checkL2Orthonormalized(tol=tolortho))
     print(f"proc {nirb_off.worldcomm.localRank()} Is H1 orthonormalized ? ", nirb_off.checkH1Orthonormalized())
 
-    if convergence :
-        Xi_test_path = RESPATH + f"/sampling_test.sample"
+    if convergence:
+        Xi_test_path = RESPATH + "/sampling_test.sample"
         if os.path.isfile(Xi_test_path):
             s = nirb_off.Dmu.sampling()
-            N = s.readFromFile(Xi_test_path)
-            Xi_test = s.getVector()  
+            Ns = int(s.readFromFile(Xi_test_path))
+            Xi_test = s.getVector()
             if nirb_off.worldcomm.isMasterRank():
-                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")  
-        else :
+                print(f"[NIRB] Xi_test loaded from {Xi_test_path}")
+        else:
             Ns = 30
             Xi_test = generatedAndSaveSampling(nirb_off.Dmu, Ns, path=Xi_test_path, samplingMode="log-random")
-            
-        Err = nirb_off.checkConvergence(Ns=30, Xi_test=Xi_test)
+
+        nirb_on = nirbOnline(**config_nirb)
+        nirb_on.initModel()
+        nirb_on.loadData(nbSnap=N, path=RESPATH)
+
+        Err = nirb_off.checkConvergence(nirb_on, Ns=30, Xi_test=Xi_test)
         df = pd.DataFrame(Err)
-        file =RESPATH +f"/offlineError.csv"  
+        file = RESPATH + "/offlineError.csv"
         df.to_csv(file, index=False)
-        print(f"[NIRB] Offline error saved in {file}")
+
+        if nirb_off.worldcomm.isMasterRank(): print(f"[NIRB] Offline error saved in {file}")
 
 
     perf = []
@@ -116,9 +119,9 @@ if __name__ == "__main__":
     perf.append(finish-start)
 
     if doRectification:
-        file=RESPATH+f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat'
-    else :
-        file=RESPATH+f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat'
+        file = RESPATH + f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}_rectif.dat'
+    else:
+        file = RESPATH + f'/nirbOffline_time_exec_np{nirb_off.worldcomm.globalSize()}.dat'
     WriteVecAppend(file, perf)
 
     info = nirb_off.getOfflineInfos()
@@ -128,3 +131,5 @@ if __name__ == "__main__":
         print(f"[NIRB] Offline Elapsed time = ", finish-start)
         print(f"[NIRB] doRectification : {nirb_off.doRectification}, doGreedy : {nirb_off.doGreedy}")
         print(f"[NIRB] Offline part Done !")
+
+    fppc.Environment.saveTimers(display=True)
