@@ -289,9 +289,9 @@ endif()
 
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(LibZip REQUIRED libzip)
-add_library(LibZip::LibZip UNKNOWN IMPORTED)
-set_target_properties(LibZip::LibZip PROPERTIES
+pkg_check_modules(LibZip  libzip REQUIRED IMPORTED_TARGET)
+add_library(LibZip::LibZip ALIAS PkgConfig::LibZip)
+set_target_properties(PkgConfig::LibZip PROPERTIES
     IMPORTED_LOCATION "${LibZip_LIBRARIES}"
     INTERFACE_INCLUDE_DIRECTORIES "${LibZip_INCLUDE_DIRS}"
 )
