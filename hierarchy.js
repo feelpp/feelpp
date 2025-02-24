@@ -328,6 +328,7 @@ var hierarchy =
       [ "Feel::RangeBase< IndexT >", "classFeel_1_1RangeBase.html", null ],
       [ "Feel::vf::details::EvaluatorContext< CTX, ExprT, CTX2 >", "classFeel_1_1vf_1_1details_1_1EvaluatorContext.html", null ]
     ] ],
+    [ "Feel::Configuration", "structFeel_1_1Configuration.html", null ],
     [ "Feel::ContextGeometricBase", "structFeel_1_1ContextGeometricBase.html", [
       [ "Feel::GeometricSpace< MeshType >::ContextGeometric", "classFeel_1_1GeometricSpace_1_1ContextGeometric.html", null ]
     ] ],
@@ -361,6 +362,7 @@ var hierarchy =
       [ "Feel::Convex< Dim, Order, RDim >", "classFeel_1_1Convex.html", null ]
     ] ],
     [ "Feel::DataByMeshEntity< MeshType >", "classFeel_1_1DataByMeshEntity.html", null ],
+    [ "Feel::Dataset", "structFeel_1_1Dataset.html", null ],
     [ "Feel::DebugStream::Private", "structFeel_1_1DebugStream_1_1Private.html", null ],
     [ "Feel::detail::AdvancedConcatOfTupleContainerType< FeelppTagOfTupleType, FeelppTagOfContainerType >", "structFeel_1_1detail_1_1AdvancedConcatOfTupleContainerType.html", null ],
     [ "Feel::detail::bases_base", "classFeel_1_1detail_1_1bases__base.html", [

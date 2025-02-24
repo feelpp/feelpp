@@ -12,10 +12,10 @@
 <!-- Node0 -->
 <g id="node1" class="node">
 <title>Node0</title>
-<g id="a_node1"><a xlink:href="structFeel_1_1FeelModels_1_1SelectorModelFieldFeelppTag.html" target="_top" xlink:title=" ">
+<g id="a_node1"><a xlink:href="classFeel_1_1FeelModels_1_1RemeshInterpolation.html" target="_top" xlink:title="Interpolation Helper class for remeshing.">
 <polygon fill="white" stroke="black" points="0,-0.5 0,-30.5 144,-30.5 144,-0.5 0,-0.5"/>
-<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Selector</text>
-<text text-anchor="middle" x="72" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">ModelFieldFeelppTag</text>
+<text text-anchor="start" x="8" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::FeelModels::Remesh</text>
+<text text-anchor="middle" x="72" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Interpolation</text>
 </a>
 </g>
 </g>
