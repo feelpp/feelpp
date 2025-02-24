@@ -7,7 +7,11 @@
         "h_top":"1.0/0.06",
         "h_bottom":"1.0/0.11",
         "T0_top":0,
-        "T0_bottom":20
+        "T0_bottom":20,
+        "k_concrete": 1.15,
+        "k_wood": 0.12,
+        "k_insulation": 0.029,
+        "k_alu": 230
     },
     "Meshes":
     {
@@ -25,28 +29,28 @@
         "Concrete":
         {
             "markers":"mat1",
-            "k":"1.15",//[ W/(m*K) ]
+            "k":"k_concrete:k_concrete",//[ W/(m*K) ]
             "Cp":"880", //[ J/(kg*K) ]
             "rho":"2300" //[ kg/(m^3) ]
         },
         "Wood":
         {
             "markers":"mat2",
-            "k":"0.12",//[ W/(m*K) ]
+            "k":"k_wood:k_wood",//[ W/(m*K) ]
             "Cp":"2500", //[ J/(kg*K) ]
             "rho":"500" //[ kg/(m^3) ]
         },
         "Insulation":
         {
             "markers":"mat3",
-            "k":"0.029",//[ W/(m*K) ]
+            "k":"k_insulation:k_insulation",//[ W/(m*K) ]
             "Cp":"1000", //[ J/(kg*K) ]
             "rho":"150" //[ kg/(m^3) ]
         },
         "Aluminium":
         {
             "markers":"mat4",
-            "k":"230",//[ W/(m*K) ]
+            "k":"k_alu:k_alu",//[ W/(m*K) ]
             "Cp":"900", //[ J/(kg*K) ]
             "rho":"2700" //[ kg/(m^3) ]
         }

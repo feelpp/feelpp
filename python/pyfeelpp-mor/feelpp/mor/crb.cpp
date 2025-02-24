@@ -45,8 +45,6 @@
 #include <feel/feelmor/options.hpp>
 #include <feel/feelmor/crbmodelproperties.hpp>
 #include <feel/feelmor/mormodels.hpp>
-#include <feel/feelmor/zip.hpp>
-
 
 namespace py = pybind11;
 PYBIND11_DECLARE_HOLDER_TYPE(T, std::shared_ptr<T>);
@@ -215,8 +213,6 @@ class PyMORObserver : public MORObserver
 namespace py = pybind11;
 PYBIND11_MODULE( _mor, m )
 {
-    m.def("extractZipFile", &extractZipFile, "extract zip file", py::arg("file"), py::arg("dir") );
-    m.def("cleanupTemporaryDirectory", &cleanupTemporaryDirectory, "cleanup temporary directory", py::arg("dir") );
     m.def("makeCRBOptions", &makeCRBOptions, "Create CRB Options" );
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
           py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir().string() );

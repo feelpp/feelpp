@@ -154,10 +154,22 @@ message(STATUS "Configuring CLN")
 option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
 
 if(FEELPP_USE_EXTERNAL_CLN)
-  find_package(CLN REQUIRED)
-  message(STATUS "[feelpp] CLN Includes: ${CLN_INCLUDE_DIRS}")
-  message(STATUS "[feelpp] CLN Libraries: ${CLN_LIBRARIES}")
-  target_link_libraries(feelpp_contrib INTERFACE ${CLN_LIBRARIES})
+  pkg_search_module(CLN REQUIRED IMPORTED_TARGET "cln>=1.3.6")
+  message(STATUS "[feelpp] External CLN Includes: ${CLN_INCLUDE_DIRS}")
+  message(STATUS "[feelpp] External CLN Libraries: ${CLN_LIBRARIES}, ${CLN_LINK_LIBRARIES}")
+
+  if(NOT TARGET cln::cln)
+    add_library(cln::cln INTERFACE IMPORTED)
+
+    set_target_properties(cln::cln PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${CLN_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${CLN_LIBRARIES}"
+    )
+  endif()
+  if (TARGET cln::cln)
+    message(STATUS "[feelpp] External CLN target found")
+  endif()
+  target_link_libraries(feelpp_contrib INTERFACE cln::cln)
 else()
   set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
   message(STATUS)

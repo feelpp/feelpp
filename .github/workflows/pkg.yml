@@ -24,6 +24,7 @@ on:
         type: choice
         options:
         - 'all'
+        - 'trixie'
         - 'bookworm'
         - 'testing'
         - 'sid'

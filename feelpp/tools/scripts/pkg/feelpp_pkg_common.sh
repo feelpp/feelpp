@@ -17,7 +17,7 @@ fi
 DIST=${DIST:-focal}
 if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal" -o "$DIST" = "jammy" -o "$DIST" = "noble" -o "$DIST" = "lunar" ]; then
    FLAVOR=ubuntu
-elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "bookworm" -o "$DIST" = "testing" -o "$DIST" = "sid" ]; then
+elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "bookworm" -o "$DIST" = "trixie" -o "$DIST" = "testing" -o "$DIST" = "sid" ]; then
     FLAVOR=debian
 fi
 
