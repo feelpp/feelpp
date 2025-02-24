@@ -63,6 +63,7 @@ set(SRC
   utility.cpp
   worldcomm.cpp
   xmlparser.hpp
+  zip.cpp
   )
 
 if(FEELPP_HAS_MONGOCXX)

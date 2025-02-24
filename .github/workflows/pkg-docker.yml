@@ -19,6 +19,7 @@ on:
           default: 'jammy'
           type: choice
           options:
+          - 'trixie'
           - 'jammy'
           - 'focal'
           - 'noble'
@@ -78,8 +79,15 @@ on:
 
 jobs:
 
+  version:
+    uses: ./.github/workflows/version.yml
+    with:
+        continue-on-error: "false"
+    secrets: inherit
+
   docker:
-#    if: ${{ !contains( inputs.skip, 'skip docker' ) && inputs.docker == 'true'}}
+    if: ${{ !contains( inputs.skip, 'skip docker' ) && inputs.docker == 'true'}}
+    needs: version
     runs-on: self-docker
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     outputs:
@@ -93,8 +101,8 @@ jobs:
               service: "feelpp",
               flavor: "${{ inputs.flavor }}",
               dist: "${{ inputs.dist }}",
-              version: "${{ inputs.version }}",
-              tag: "v${{ inputs.version }}-${{ inputs.dist }}",
+              version: "${{ inputs.version || needs.version.outputs.version }}",
+              tag: "v${{ inputs.version || needs.version.outputs.version  }}-${{ inputs.dist }}",
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }

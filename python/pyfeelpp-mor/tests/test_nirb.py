@@ -16,7 +16,7 @@ casesNirb = [
         # (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', False, False), 'thermal-fin-3d w/o rect wogreedy'),
          (('testcase/nirb/thermal-fin-3d', 'thermal-fin.cfg', 'thermal-fin.json', True, False) , 'thermal-fin-3d rect wogreedy'),
         ]
-# NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy" 
+# NB: for the name of the test, wogreedy is a keyword standing for "without greedy", and egreedy for "enable greedy"
 cases_params_nirb, cases_ids_nirb = list(zip(*casesNirb))
 
 casesInit = [
@@ -38,11 +38,11 @@ def run_offline(model_path, rect, greedy):
         _,_,_ = nirb_off.initProblemGreedy(100, 1e-5, Nmax=nbSnap, computeCoarse=True, samplingMode="random")
     else:
         _ = nirb_off.initProblem(nbSnap)
-    RIC = nirb_off.generateReducedBasis(regulParam=1.e-10)
+    RIC = nirb_off.generateReducedBasis()
 
-    tolortho =1.e-8
+    tolortho = 1.e-8
     nirb_off.orthonormalizeL2(tol=tolortho)
-    
+
     assert nirb_off.checkL2Orthonormalized(tol=tolortho), "L2 orthonormalization failed"
     # assert nirb_off.checkH1Orthonormalized(), "H1 orthonormalization failed"
 
@@ -67,8 +67,8 @@ def run_online(model_path, rect):
     errorNirb = nirb_on.normMat(uHh - uh)
     errorInterp = nirb_on.normMat(uH - uh)
 
-    # assert errorNirb<0.08, f"higher nirb error value"
-    # assert errorInterp<0.05, f"higher interp error value"
+    assert errorNirb < 0.08, "higher nirb error value"
+    assert errorInterp < 0.05, "higher interp error value"
 
 @pytest.mark.parametrize("dir,cfg,json,rect,greedy", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):

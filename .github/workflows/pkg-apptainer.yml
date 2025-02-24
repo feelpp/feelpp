@@ -94,7 +94,7 @@ on:
                 description: 'Build apptainer image'
                 required: false
                 type: string
-                default: "1.3.3"
+                default: "1.3.5"
             skip:
                 description: 'Skip apptainer build'
                 required: false
@@ -114,7 +114,7 @@ jobs:
     secrets: inherit
 
   apptainer:
-#    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false'}}
+    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false'}}
     runs-on: self-apptainer
     needs: version
     name: Build and Push apptainer image

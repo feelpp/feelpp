@@ -1,22 +1,20 @@
-import sys
 import pandas as pd
+pd.options.plotting.backend = "plotly"
 import numpy as np
 import matplotlib.pyplot as plt
 import tikzplotlib
 import os
-from os.path import dirname, basename, isfile, join
-import glob
-import feelpp.core as fppc
+import tikzplotly
 
 ## Functions to vizualise dataFrame
 
 def plotRIC(RIC):
-    """plot the RIC value in respect to basis function 
+    """plot the RIC value in respect to basis function
 
     Parameters
     ----------
     RIC : list or numpy.array
-        tab of ric value 
+        tab of ric value
     """
     plt.plot(np.arange(RIC.size), RIC)
     plt.title("RIC")
@@ -101,7 +99,7 @@ def getDataStat(df, h1norm=True):
     dfmean = df.pivot_table(values=lkeys, index='N', aggfunc=np.mean)
     dfmin = df.pivot_table(values=lkeys, index='N', aggfunc=np.min)
     dfmax = df.pivot_table(values=lkeys, index='N', aggfunc=np.max)
-    
+
     l2 = 'l2(uh-uHn)'
     l2rec = 'l2(uh-uHn)rec'
     l2uh = 'l2(uh-uhn)'
@@ -110,47 +108,52 @@ def getDataStat(df, h1norm=True):
     h1 = 'h1(uh-uHn)'
     h1uh = 'h1(uh-uhn)'
 
-    
-    ## L2 norm 
+
+    ## L2 norm
     l2df = pd.DataFrame()
 
-    l2df['Min'] = dfmin[l2]
-    l2df['Min_rec'] = dfmin[l2rec]
-    l2df['Min_uh'] = dfmin[l2uh]
+    l2df['l2NirbMin'] = dfmin[l2]
+    l2df['l2NirbMean'] = dfmean[l2]
+    l2df['l2NirbMax'] = dfmax[l2]
 
-    l2df['Max'] = dfmax[l2]
-    l2df['Max_rec'] = dfmax[l2rec]
-    l2df['Max_uh'] = dfmax[l2uh]
-    
-    l2df['Mean'] = dfmean[l2]
-    l2df['Mean_rec'] = dfmean[l2rec]
-    l2df['Mean_uh'] = dfmean[l2uh]
+    l2df['l2NirbRectMin'] = dfmin[l2rec]
+    l2df['l2NirbRectMean'] = dfmean[l2rec]
+    l2df['l2NirbRectMax'] = dfmax[l2rec]
 
-    l2df['l2(uh-uH)'] = dfmean['l2(uh-uH)']
+    l2df['l2ProjMin'] = dfmin[l2uh]
+    l2df['l2ProjMean'] = dfmean[l2uh]
+    l2df['l2ProjMax'] = dfmax[l2uh]
+
+    l2df['l2IntMin'] = dfmin['l2(uh-uH)']
+    l2df['l2IntMean'] = dfmean['l2(uh-uH)']
+    l2df['l2IntMax'] = dfmax['l2(uh-uH)']
+
 
     ## H1 norm
     if h1norm:
 
-        h1df = pd.DataFrame() 
+        h1df = pd.DataFrame()
 
-        h1df['Min'] = dfmin[h1]
-        h1df['Min_rec'] = dfmin[h1rec]
-        h1df['Min_uh'] = dfmin[h1uh]
+        h1df['h1NirbMin'] = dfmin[h1]
+        h1df['h1NirbMean'] = dfmean[h1]
+        h1df['h1NirbMax'] = dfmax[h1]
 
-        h1df['Max'] = dfmax[h1]
-        h1df['Max_rec'] = dfmax[h1rec]
-        h1df['Max_uh'] = dfmax[h1uh]
-        
-        h1df['Mean'] = dfmean[h1]
-        h1df['Mean_rec'] = dfmean[h1rec]
-        h1df['Mean_uh'] = dfmean[h1uh]
+        h1df['h1NirbRectMin'] = dfmin[h1rec]
+        h1df['h1NirbRectMean'] = dfmean[h1rec]
+        h1df['h1NirbRectMax'] = dfmax[h1rec]
 
-        h1df['h1(uh-uH)'] = dfmean['h1(uh-uH)']
+        h1df['h1ProjMin'] = dfmin[h1uh]
+        h1df['h1ProjMean'] = dfmean[h1uh]
+        h1df['h1ProjMax'] = dfmax[h1uh]
 
-        return l2df, h1df 
+        h1df['h1IntMin'] = dfmin['h1(uh-uH)']
+        h1df['h1IntMean'] = dfmean['h1(uh-uH)']
+        h1df['h1IntMax'] = dfmax['h1(uh-uH)']
+
+        return l2df, h1df
     else :
-        return l2df 
-        
+        return l2df
+
 
 def getRelativeErrors(df,h1=True):
     """Compute the relative error on a given data Frame
@@ -162,10 +165,10 @@ def getRelativeErrors(df,h1=True):
 
     l2keys = ['l2(uh-uHn)', 'l2(uh-uHn)rec', 'l2(uh-uhn)', 'l2(uh-uH)']
     h1keys = ['h1(uh-uHn)', 'h1(uh-uHn)rec', 'h1(uh-uhn)', 'h1(uh-uH)']
-    keys = l2keys.copy() 
-    if h1: keys = l2keys + h1keys 
+    keys = l2keys.copy()
+    if h1: keys = l2keys + h1keys
 
-    dfRel = df[keys].copy() 
+    dfRel = df[keys].copy()
     dfRel['N']=df['N']
 
     for key in l2keys:
@@ -198,7 +201,7 @@ def troncateNparam(df, Nparam=1, start='first'):
     dg = df.iloc[ind,:]
     dg = dg[listkeys]
     dk = pd.DataFrame(dict(dg))
-    
+
     for i in listN[1:]:
         ind = np.where(df['N']==i)[0][:Nparam]
         dg =  df.iloc[ind,:]
@@ -207,7 +210,7 @@ def troncateNparam(df, Nparam=1, start='first'):
 
     # dk.sort_values('N', inplace=True)
     dk.index = range(dk.shape[0])
-    return dk 
+    return dk
 
 
 ### Functions to vizualise data Frame
@@ -229,10 +232,10 @@ def plotDataFrame(df, norm='l2', texSave=False):
         nm = f"$L^2$"
 
     for i in range(df.shape[1]-1):
-        plt.scatter(x,df[keys[i]], label=str(keys[i]))
-        plt.plot(x,df[keys[i]])
-    
-    plt.legend() 
+        plt.scatter(x, df[keys[i]], label=str(keys[i]))
+        plt.plot(x, df[keys[i]])
+
+    plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
     plt.ylabel(f"{nm} norm of Errors (in log)")
@@ -250,7 +253,7 @@ def compareListOfDataFrams(listdf, keys='Mean', norm='l2'):
         norm (str, optional): type of norm to compare. Defaults to 'l2'.
     """
 
-    labels =["$\lambda = 1.e^{-1}$", "$\lambda = 1.e^{-3}$", "$\lambda = 1.e^{-6}$", "$\lambda = 1.e^{-10}$", "$\lambda = 0$"]
+    labels =[r"$\lambda = 1.e^{-1}$", r"$\lambda = 1.e^{-3}$", r"$\lambda = 1.e^{-6}$", r"$\lambda = 1.e^{-10}$", r"$\lambda = 0$"]
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
 
@@ -300,7 +303,7 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
     normUHn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{Hh}\Vert_{H^1}$"}
     normUhn = {'l2':r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^N_{h}\Vert_{H^1}$"}
     normUh = {'l2':r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{L^2}$" , 'h1': r"$\Vert u^\mathcal{N}_h - u^\mathcal{N}_{Hh}\Vert_{H^1}$"}
-  
+
     keyUh = {'l2': 'l2(uh-uH)', 'h1':'h1(uh-uH)'}
 
     if norm=='h1':
@@ -316,11 +319,11 @@ def plotErrors(df, keys='Mean', norm='l2', texSave=False, name="plot.tex"):
     plt.plot(xf, df[key_list[keys][1]], c='blue')
     plt.plot(xf, df[key_list[keys][2]], c='green')
 
-    # interpolate norm 
+    # interpolate norm
     plt.scatter(xf, df[keyUh[norm]], label=normUh[norm])
     plt.plot(xf, df[keyUh[norm]])
 
-    
+
     plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
@@ -360,7 +363,7 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
     key_list = {'Mean':['Mean', 'Mean_rec', 'Mean_uh'], 'Max':['Max', 'Max_rec','Max_uh'],
              'Min':['Min', 'Min_rec', 'Min_uh'] }
 
-    
+
     if labellist==None :
         if dataLabel=='greedy' :
             labeldf = ' w/ greedy'
@@ -369,15 +372,15 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
             labeldf = ' Nested'
             labeldg = ' noNested'
         else :
-            labeldf = '$\mathbb{P}_1$'
-            labeldg = '$\mathbb{P}_2$'
+            labeldf = r'$\mathbb{P}_1$'
+            labeldg = r'$\mathbb{P}_2$'
     else :
         labeldf = labellist[0]
         labeldg = labellist[1]
 
 
     order = df[key_list[keys][0]]/dg[key_list[keys][0]]
-    
+
     # plt.scatter(xf, df[key_list[keys][0]], marker='o', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldf)
     # plt.scatter(xg, dg[key_list[keys][0]], marker='x', c='red', label=normUHn[norm] + ' w/o rect -'+ labeldg)
 
@@ -391,7 +394,7 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
 
     plt.plot(xf, df[key_list[keys][1]], c='blue', label=labeldf + ' & w/ rect' )
     plt.plot(xg, dg[key_list[keys][1]],'--', c='blue', label=labeldg + ' & w/ rect')
-    
+
     plt.legend()
     plt.yscale('log')
     plt.xlabel("Number of basis function (N)")
@@ -401,3 +404,25 @@ def compare2dataFrame(df,dg, keys='Mean', norm='l2', dataLabel='pk', labellist=N
         tikzplotlib.save(f"compareError{keys}.tex")
     # tikzplotlib.save(f"compareError{keys}.tex")
     plt.show()
+
+
+
+if __name__ == "__main__":
+
+    # path to csv file
+    df_path = "errors20Params.csv"
+
+    l2, h1 = getDataStat(pd.read_csv(df_path))
+
+    l2.to_csv("l2.csv")
+    h1.to_csv("h1.csv")
+
+    # fig_l2 = l2.plot()
+    # fig_l2.update_yaxes(type="log")
+    # fig_l2.show()
+    # tikzplotly.save("l2.tex", fig_l2)
+
+    fig_h1 = h1.plot()
+    # fig_h1.update_yaxes(type="log")
+    # fig_h1.show()
+    # tikzplotly.save("h1.tex", fig_h1)

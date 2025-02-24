@@ -210,6 +210,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   find_dependency(MPI REQUIRED)
   find_dependency(PkgConfig REQUIRED)
   pkg_search_module(PETSC REQUIRED IMPORTED_TARGET "PETSc>=3.7.0")
+  pkg_search_module(LibZip REQUIRED IMPORTED_TARGET libzip)
 
   if ( FEELPP_HAS_HDF5 )
     if ( FEELPP_HDF5_PKGCONFIG )
