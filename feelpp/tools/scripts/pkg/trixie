@@ -17,8 +17,8 @@ petsc-dev
 slepc-dev
 python3-petsc4py-real
 python3-slepc4py-real
-python3-petsc4py-real3.18
-python3-slepc4py-real3.18
+python3-petsc4py-real3.20
+python3-slepc4py-real3.20
 libhdf5-openmpi-dev
 libnlopt-dev
 libgsl-dev
@@ -45,7 +45,6 @@ libglpk-dev
 libbz2-dev
 libbson-dev
 libmongoc-dev
-libmongoclient-dev
 python3-pymongo
 ruby-progressbar
 ruby-tilt

@@ -35,7 +35,7 @@
 #include <pybind11/stl/filesystem.h>
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
-
+#include <feel/feelcore/zip.hpp>
 
 namespace py = pybind11;
 
@@ -49,6 +49,8 @@ PYBIND11_MODULE(_core, m )
     namespace fs = Feel::fs;
     if (import_mpi4py()<0) return ;
 
+    m.def("extractZipFile", &extractZipFile, "extract zip file", py::arg("file"), py::arg("dir") );
+    m.def("cleanupTemporaryDirectory", &cleanupTemporaryDirectory, "cleanup temporary directory", py::arg("dir") );
     /**
      * @brief bind std filesystem
      *
