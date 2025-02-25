@@ -2456,7 +2456,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     for ( ; __face_it != __face_en; ++__face_it )
     {
         face_type const& curFace = boost::unwrap_ref(*__face_it);
-
+#if 0
         __face_id = curFace.pos_first();
         uint16_type faceConnectionId = 0;
         if ( hasMeshSupportPartial )
@@ -2479,6 +2479,50 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
             __face_id = curFace.pos_second();
             faceConnectionId = 1;
         }
+#else
+        uint16_type faceConnectionId = invalid_v<uint16_type>;
+        if ( curFace.isConnectedTo1() )
+        {
+            if ( hasMeshSupportPartial )
+            {
+                bool hasElt0 = __dof->meshSupport()->hasElement( curFace.element( 0 ).id() );
+                bool hasElt1 = __dof->meshSupport()->hasElement( curFace.element( 1 ).id() );
+                if ( hasElt0 && hasElt1 )
+                {
+                    // prefer non ghost element if possible
+                    if ( curFace.element( 0 ).isGhostCell() && !curFace.element( 1 ).isGhostCell() )
+                        faceConnectionId = 1;
+                    else
+                        faceConnectionId = 0;
+                }
+                else if ( hasElt0 )
+                    faceConnectionId = 0;
+                else if ( hasElt1 )
+                    faceConnectionId = 1;
+            }
+            else
+            {
+                // prefer non ghost element if possible
+                if ( curFace.element( 0 ).isGhostCell() && !curFace.element( 1 ).isGhostCell() )
+                    faceConnectionId = 1;
+                else
+                    faceConnectionId = 0;
+            }
+        }
+        else
+        {
+            if ( hasMeshSupportPartial )
+            {
+                if ( __dof->meshSupport()->hasElement( curFace.element( 0 ).id() ) )
+                    faceConnectionId = 0;
+            }
+            else
+                faceConnectionId = 0;
+        }
+        if ( faceConnectionId == invalid_v<uint16_type> )
+            continue;
+        __face_id = faceConnectionId == 0 ? curFace.pos_first() : curFace.pos_second();
+#endif
 
         DVLOG(2) << "[projector] FACE_ID = " << curFace.id()
                  << " element id= " << ((faceConnectionId == 0)? curFace.ad_first() : curFace.ad_second() )
