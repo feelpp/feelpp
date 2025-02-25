@@ -613,16 +613,18 @@ class Points
         M_needToOrderPoints = false;
     }
 
-protected:
+    //! return true if the point id is interprocess of current partition
     bool isInterprocessPoints( index_type pointId ) const
         {
             return this->findInterprocessPoints( pointId ).first;
         }
+    //! try to find data of interprocess of current partition point id and return pair(bool,iterator)
     std::pair<bool,typename point_interprocess_map_type::const_iterator> findInterprocessPoints( index_type pointId ) const
         {
             auto itFind = M_interprocessPoints.find( pointId );
             return std::make_pair( itFind != M_interprocessPoints.end(), itFind );
         }
+protected:
     //! update interprocess points from mapping ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
     void updateInterprocessPoints( std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> const& pointsInterprocessDetection )
         {
