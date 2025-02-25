@@ -275,7 +275,6 @@ std::vector<BVHRayType> generateRays( const std::vector<std::vector<double>>& al
     return rays;
 }
 
-// Goal: to be able to visualize things later with camera
 template <typename BVHRayType>
 std::vector<BVHRayType> generateCameraRays(
     const Eigen::Vector3d& cameraPosition, // Camera position in world space
@@ -285,35 +284,42 @@ std::vector<BVHRayType> generateCameraRays(
     double fieldOfViewDegrees )            // Vertical field of view in degrees
 {
     std::vector<BVHRayType> rays;
-    rays.reserve( imageWidth * imageHeight );
+    rays.reserve(imageWidth * imageHeight);
 
-    Eigen::Vector3d cameraDirection = ( cameraLookAt - cameraPosition ).normalized();
-    Eigen::Vector3d cameraRight = cameraDirection.unitOrthogonal().normalized();
-    Eigen::Vector3d cameraUp = cameraRight.cross( cameraDirection ).normalized();
+    Eigen::Vector3d cameraDirection = (cameraLookAt - cameraPosition).normalized();
+    Eigen::Vector3d cameraRight = cameraDirection.cross(Eigen::Vector3d::UnitY()).normalized();
+    Eigen::Vector3d cameraUp = cameraRight.cross(cameraDirection).normalized();
+
+    double aspectRatio = static_cast<double>(imageWidth) / static_cast<double>(imageHeight);
     double fieldOfViewRadians = fieldOfViewDegrees * M_PI / 180.0;
-    double viewportHeight = 2.0 * tan( fieldOfViewRadians / 2.0 );
-    double viewportWidth = viewportHeight * ( static_cast<double>( imageWidth ) / static_cast<double>( imageHeight ) );
+    double viewportHeight = 2.0 * std::tan(fieldOfViewRadians / 2.0);
+    double viewportWidth = aspectRatio * viewportHeight;
 
-    Eigen::Vector3d viewportRight = viewportWidth * cameraRight;
-    Eigen::Vector3d viewportUp = viewportHeight * cameraUp;
+    Eigen::Vector3d viewportHorizontal = viewportWidth * cameraRight;
+    Eigen::Vector3d viewportVertical = viewportHeight * cameraUp;
 
-    Eigen::Vector3d pixelDeltaU = viewportRight / static_cast<double>( imageWidth );
-    Eigen::Vector3d pixelDeltaV = viewportUp / static_cast<double>( imageHeight );
+    Eigen::Vector3d viewportUpperLeft = cameraPosition + cameraDirection
+                                        - viewportHorizontal / 2.0
+                                        + viewportVertical / 2.0;
 
-    Eigen::Vector3d viewportUpperLeft = cameraPosition + cameraDirection - viewportRight / 2.0 + viewportUp / 2.0;
+    Eigen::Vector3d pixelDeltaU = viewportHorizontal / static_cast<double>(imageWidth);
+    Eigen::Vector3d pixelDeltaV = viewportVertical / static_cast<double>(imageHeight);
 
     // Generate rays
     int rayId = 0;
-    for ( int y = 0; y < imageHeight; ++y )
+    for (int y = 0; y < imageHeight; ++y)
     {
-        for ( int x = 0; x < imageWidth; ++x )
+        for (int x = 0; x < imageWidth; ++x)
         {
-            Eigen::Vector3d pixelPosition = viewportUpperLeft + ( static_cast<double>( x ) * pixelDeltaU ) - ( static_cast<double>( y ) * pixelDeltaV );
-            Eigen::Vector3d rayDirection = ( pixelPosition - cameraPosition ).normalized();
-            rays.push_back( BVHRayType( cameraPosition, rayDirection ) );
+            Eigen::Vector3d pixelCenter = viewportUpperLeft
+                                          + (x + 0.5) * pixelDeltaU
+                                          - (y + 0.5) * pixelDeltaV;
+            Eigen::Vector3d rayDirection = (pixelCenter - cameraPosition).normalized();
+            rays.emplace_back(cameraPosition, rayDirection);
             rays.back().id = rayId++;
         }
     }
+
     return rays;
 }
 
@@ -483,8 +489,8 @@ void distToBoundaryBVHpuSendAllNode(
     // BEGIN::Build BVH GPU
     t_begin_gpu = std::chrono::steady_clock::now();
     tic();
-    auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-    // auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
+    auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
     auto timeBVHGPUDuration = toc( "timeBVHGPUDuration" );
     t_end_bvh_gpu = std::chrono::steady_clock::now();
     // END::Build BVH GPU
@@ -892,6 +898,7 @@ std::shared_ptr<MeshType> gatherMeshes( const std::shared_ptr<MeshType>& local_m
     return global_mesh;
 }
 
+
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
 BOOST_AUTO_TEST_CASE( all_distance )
@@ -1072,25 +1079,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
         gatheredDataTimeLaps.resize( world.size() );
         mpi::gather( world, allDataPU, gatheredDataTimeLaps, 0 );
 
-        // Debriefing part.
-        // we display the collected data
-        if ( isViewInfo )
-        {
-            std::cout << "Data rank 0:" << std::endl;
-            for ( const auto& data : gatheredData )
-            {
-                std::cout << "Rank: " << data.rank << ", ID: " << data.id
-                          << ", distanceMinREAL: " << data.distanceMinREAL << std::endl;
-                // ...
-            }
-            for ( const auto& data : gatheredDataTimeLaps )
-            {
-                std::cout << "Rank: " << data.rank << ", nbRays: " << data.nbRays
-                          << ", hsize: " << data.hsize << std::endl;
-            }
-        }
         //... Save all data
-
         saveAllDataDebriefing( "debriefing_results", gatheredData, gatheredDataTimeLaps );
         saveAllDataDebriefingJSON( "debriefing_results", gatheredData, gatheredDataTimeLaps );
         // saveAllDataDebriefing( "debriefing_results",gatheredData);
