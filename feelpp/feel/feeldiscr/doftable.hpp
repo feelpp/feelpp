@@ -1121,8 +1121,12 @@ public:
     void buildGhostDofMapExtended( mesh_type& mesh );
     void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange );
     void buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh );
-    void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
-                                                                           std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend );
+    // void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
+    //                                                                        std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend );
+    void buildGlobalProcessToGlobalClusterInterprocessDofs( mesh_type& mesh,
+                                                            std::map<rank_type, std::map<size_type,std::vector<uint16_type> > > & dataToSend,
+                                                            std::map<rank_type, std::map<size_type,std::vector<size_type> > > & dataMemory );
+
 
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
