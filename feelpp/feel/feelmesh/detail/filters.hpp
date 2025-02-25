@@ -84,7 +84,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
 markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangeElements = Feel::unwrap_ptr( mesh ).template elemntsFilter<entity_filter_t::MARKER>( ept, markerType, invalid_flag_type_value, pid );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).template elementsFilter<entity_filter_t::MARKER>( ept, markerType, invalid_flag_type_value, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
 
