@@ -1201,21 +1201,25 @@ public:
             return l;
         }
 
-    BilinearForm& operator+=( super const& a )
+    BilinearForm& operator+=( BilinearForm const& a )
     {
-        return BilinearFormBase<value_type>::operator+=(a);
+        static_cast<super&>(*this) += static_cast<const super&>(a);
+        return *this;
     }
     BilinearForm& operator-=( BilinearForm const& a )
     {
-        return BilinearFormBase<value_type>::operator-=(a);
+         static_cast<super&>(*this) -= static_cast<const super&>(a);
+        return *this;
     }
     BilinearForm& operator*=( value_type const& a )
     {
-        return BilinearFormBase<value_type>::operator*=(a);
+        static_cast<super&>(*this) *= a;
+        return *this;
     }
     BilinearForm& operator/=( value_type const& a )
     {
-        return BilinearFormBase<value_type>::operator/=(a);
+        static_cast<super&>(*this) /= a;
+        return *this;
     }
     /**
      * @brief unary minus operator
@@ -1713,7 +1717,6 @@ template <typename T>
 struct form_test_mesh< T, std::enable_if_t<is_bilinear_form_v<T>> > : mp11::mp_identity<typename std::decay_t<T>::mesh_1_type> {};
 template <typename T>
 using form_test_mesh_t = typename form_test_mesh<T>::type;
-
 
 } // feel
 

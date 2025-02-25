@@ -4,7 +4,7 @@
 #include <zip.h>
 #include <fmt/core.h>
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelmor/zip.hpp>
+#include <feel/feelcore/zip.hpp>
 
 namespace Feel
 {

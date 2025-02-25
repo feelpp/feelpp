@@ -49,7 +49,7 @@ if ( (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR) OR (FEELPP_COMPONENT S
     # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
     SET(CMAKE_SKIP_RPATH ON)
   endif()
-  
+
   message(STATUS "[install] ${CMAKE_INSTALL_PREFIX}")
 endif()
 
@@ -74,7 +74,7 @@ ENDMACRO()
 MESSAGE(STATUS "[feelpp] Feel++ projects :")
 project_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR})
 foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${project}/README.md OR 
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${project}/README.md OR
       EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${project}/README.adoc  )
     string(TOUPPER ${project} PROJECT)
     if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "BRAIN" OR ${PROJECT} STREQUAL "SWIMMER"  )
