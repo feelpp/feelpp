@@ -50,6 +50,8 @@ public :
     using range_faces_type = Range<mesh_type,MESH_FACES>;
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
+    using point_interprocess_map_type = typename mesh_type::point_interprocess_map_type;
+
     static constexpr int nDim = mesh_type::nDim;
 
     MeshSupport() = default;
@@ -167,6 +169,19 @@ public :
                 }
             }
         }
+
+    //! return true if the point id is interprocess of current partition
+    bool isInterprocessPoints( index_type pointId ) const
+        {
+            return this->findInterprocessPoints( pointId ).first;
+        }
+    //! try to find data of interprocess of current partition point id and return pair(bool,iterator)
+    std::pair<bool,typename point_interprocess_map_type::const_iterator> findInterprocessPoints( index_type pointId ) const
+        {
+            auto itFind = M_interprocessPoints.find( pointId );
+            return std::make_pair( itFind != M_interprocessPoints.end(), itFind );
+        }
+
 private :
     void updateForUse();
     void updateParallelDataPartialSupport();
@@ -184,6 +199,8 @@ private :
     std::vector< std::reference_wrapper<const element_type> > M_orderedElements;
     std::vector< std::tuple<std::reference_wrapper<const face_type>, _face_attributes > > M_orderedFaces;
     std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
+    point_interprocess_map_type M_interprocessPoints;
+
     bool M_isFullSupport;
 };
 
@@ -350,6 +367,77 @@ MeshSupport<MeshType>::updateForUse()
             continue;
         M_orderedFaces.push_back( std::make_tuple(std::cref(face), std::get<1>( itFind->second ) ) );
     }
+
+
+
+
+
+
+
+    // update interprocess entties
+    // TODO optimisation if we have interprocessfaces
+
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> pointsInterprocessDetection; // ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> edgesInterprocessDetection; // ( edge id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+#if 0
+    pointsInterprocessDetection.reserve( std::distance( this->beginOrderedPoint(),
+                                                        this->endOrderedPoint() ) );
+    if constexpr ( nDim == 3 )
+        edgesInterprocessDetection.reserve( std::distance( this->beginOrderedEdge(),
+                                                           this->endOrderedEdge() ) );
+#endif
+    auto itPointIpDetect = pointsInterprocessDetection.begin();
+    auto itEdgeIpDetect = edgesInterprocessDetection.begin();
+    for ( auto const& eltWrap : M_orderedElements ) // TODO get end index of active elements
+    {
+        auto const& elt = eltWrap.get();
+
+        // nothing to do if no neighbor process
+        if ( elt.idInOthersPartitions().empty() )
+            continue;
+
+        for ( uint16_type n=0; n < elt.nPoints(); n++ )
+        {
+            auto const& point = elt.point( n );
+            std::tie( itPointIpDetect,std::ignore ) = pointsInterprocessDetection.try_emplace( point.id(), false, std::set<rank_type>{} );
+            if ( elt.isGhostCell() )
+                std::get<1>( itPointIpDetect->second ).insert( elt.processId() );
+            else
+                std::get<0>( itPointIpDetect->second ) = true;
+        }
+#if 0
+        if constexpr ( nDim == 3 )
+        {
+            for ( size_type j = 0; j < elt.nEdges(); j++ )
+            {
+                if ( !elt.edgePtr( j ) )
+                    continue;
+                auto const& edge = elt.edge( j );
+                std::tie( itEdgeIpDetect,std::ignore ) = edgesInterprocessDetection.try_emplace( edge.id(), false, std::set<rank_type>{} );
+                if ( elt.isGhostCell() )
+                    std::get<1>( itEdgeIpDetect->second ).insert( elt.processId() );
+                else
+                    std::get<0>( itEdgeIpDetect->second ) = true;
+            }
+        }
+#endif
+    }
+
+    M_interprocessPoints.clear();
+    for ( auto const& [pointId,ipData] : pointsInterprocessDetection )
+    {
+        if ( !std::get<0>( ipData ) ) // not on current process
+            continue;
+        if ( std::get<1>( ipData ).empty() ) // not on neighbor process
+            continue;
+        //M_interprocessPoints.try_emplace( pointId, std::move( std::get<1>( ipData ) ) );
+        M_interprocessPoints.try_emplace( pointId, std::get<1>( ipData ) );
+    }
+
+
+
+
+
 }
 
 
