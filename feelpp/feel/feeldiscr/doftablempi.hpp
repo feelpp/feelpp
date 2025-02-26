@@ -1825,8 +1825,10 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 size_type dofIdGlobalProcess = tmpIndicesSet.at( localDofIds[k] );
                 dataToSendStep2AtElt[k] = this->mapGlobalProcessToGlobalCluster()[ dofIdGlobalProcess ];
                 auto ababab = this->localDof( eltId );
+#if 0
                 std::cout << fmt::format( "SEND M_mapGlobalProcessToGlobalCluster {} = {} with ldof {} and look size:{} eltId:{}",
                                           dofIdGlobalProcess,  dataToSendStep2AtElt[k], localDofIds[k], std::distance(ababab.first,ababab.second),eltId ) << std::endl;
+#endif
                 this->M_activeDofSharedOnCluster[dofIdGlobalProcess].insert(rankRecv);
             }
             // dataToSendStep2AtRank.push_back( this->getIndicesOnGlobalCluster( eltId ) );
@@ -1861,7 +1863,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 size_type dofGlobalClusterId = dofGlobalClusterIds[k];
                 CHECK( dofGlobalClusterId != invalid_v<size_type> ) << "invalid global cluster dof id";
                 //update data map
-                std::cout << fmt::format( "M_mapGlobalProcessToGlobalCluster {} = {}", dofGlobalProcessId, dofGlobalClusterId ) << std::endl;
+                //std::cout << fmt::format( "M_mapGlobalProcessToGlobalCluster {} = {}", dofGlobalProcessId, dofGlobalClusterId ) << std::endl;
                 this->M_mapGlobalProcessToGlobalCluster[dofGlobalProcessId] = dofGlobalClusterId;
             }
         }

@@ -1978,6 +1978,13 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                    0 );
     }
 
+    if ( !is_mortar )
+    {
+        VLOG(2) << "[build] call buildBoundaryDofMap()\n";
+        this->buildBoundaryDofMap( M );
+    }
+
+
     toc("DofTable::sequential map", FLAGS_v>1);
     tic();
     // reordoring of global process id in doftable (active dofs before and ghost dofs after)
@@ -2609,11 +2616,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     DVLOG(2) << "number of Dof on an Element Face : " << nDofF << "\n";
 
     if ( nDofF == 0 ) return;
-
     //
     // Face dof
     //
     DofFromBoundary<self_type, fe_type> dfb( this, *M_fe );
+#if 0
     if ( this->hasMeshSupport() && this->meshSupport()->isPartialSupport() )
     {
         std::unordered_map<size_type,std::pair<const face_type*,uint8_type> > facesInRangeElt;
@@ -2680,7 +2687,39 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
         }
     }
 
+#else
+
+    auto rangeFaces = this->hasMeshSupport() && this->meshSupport()->isPartialSupport()?
+        faces( this->meshSupport(), entity_process_t::ALL ) : faces( M, entity_process_t::ALL );
+    for ( auto const& faceWrap : rangeFaces )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        LOG_IF(WARNING, !face.isConnectedTo0() )
+            << "face " << face.id() << " not connected"
+            << " hasMarker : " << face.hasMarker()
+            << " connectedTo0 : " << face.isConnectedTo0()
+            << " connectedTo1 : " << face.isConnectedTo1();
+
+        if ( !face.isConnectedTo0() ) continue;
+
+#if !defined(NDEBUG)
+
+        if (  face.isOnBoundary() )
+            DVLOG(4) << "[buildBoundaryDofMap] boundary global face id : " << face.id()
+                     << " hasMarker: " << face.hasMarker()<< "\n";
+
+        else
+            DVLOG(4) << "[buildBoundaryDofMap] global face id : " << face.id() << "\n";
+
+#endif
+        int ncdof = is_product ? nComponents : 1 ;
+        M_face_l2g[ face.id()].resize( nDofF*ncdof );
+        dfb.add( face );
+    }
+
+#endif
     toc( "DofTable::buildBoundaryDofMap", FLAGS_v>1 );
+
 }    // updateBoundaryDof
 
 #if 0
