@@ -511,7 +511,6 @@ public:
         }
     //@}
 
-protected:
     bool isInterprocessEdges( index_type edgeId ) const
         {
             return this->findInterprocessEdges( edgeId ).first;
@@ -521,6 +520,8 @@ protected:
             auto itFind = M_interprocessEdges.find( edgeId );
             return std::make_pair( itFind != M_interprocessEdges.end(), itFind );
         }
+
+protected:
     //! update interprocess edges from mapping ( edge id -> ( isOnActiveElt, isOnGhostEltRanks ) )
     void updateInterprocessEdges( std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> const& edgesInterprocessDetection )
         {
