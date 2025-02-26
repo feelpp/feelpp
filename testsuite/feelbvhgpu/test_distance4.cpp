@@ -277,44 +277,37 @@ std::vector<BVHRayType> generateRays( const std::vector<std::vector<double>>& al
 
 template <typename BVHRayType>
 std::vector<BVHRayType> generateCameraRays(
-    const Eigen::Vector3d& cameraPosition, // Camera position in world space
-    const Eigen::Vector3d& cameraLookAt,   // Point the camera is looking at
-    int imageWidth,                        // Image width in pixels
-    int imageHeight,                       // Image height in pixels
-    double fieldOfViewDegrees )            // Vertical field of view in degrees
+    const Eigen::Vector3d& cameraPosition,
+    const Eigen::Vector3d& cameraTarget,
+    const Eigen::Vector3d& cameraUp,
+    int imageWidth,
+    int imageHeight,
+    double fieldOfViewDegrees)
 {
     std::vector<BVHRayType> rays;
     rays.reserve(imageWidth * imageHeight);
-
-    Eigen::Vector3d cameraDirection = (cameraLookAt - cameraPosition).normalized();
-    Eigen::Vector3d cameraRight = cameraDirection.cross(Eigen::Vector3d::UnitY()).normalized();
-    Eigen::Vector3d cameraUp = cameraRight.cross(cameraDirection).normalized();
-
-    double aspectRatio = static_cast<double>(imageWidth) / static_cast<double>(imageHeight);
     double fieldOfViewRadians = fieldOfViewDegrees * M_PI / 180.0;
-    double viewportHeight = 2.0 * std::tan(fieldOfViewRadians / 2.0);
-    double viewportWidth = aspectRatio * viewportHeight;
 
-    Eigen::Vector3d viewportHorizontal = viewportWidth * cameraRight;
-    Eigen::Vector3d viewportVertical = viewportHeight * cameraUp;
+    Eigen::Vector3d forward = (cameraTarget - cameraPosition).normalized();
+    Eigen::Vector3d right = forward.cross(cameraUp).normalized();
+    Eigen::Vector3d up = right.cross(forward);
 
-    Eigen::Vector3d viewportUpperLeft = cameraPosition + cameraDirection
-                                        - viewportHorizontal / 2.0
-                                        + viewportVertical / 2.0;
+    double aspectRatio = static_cast<double>(imageWidth) / imageHeight;
+    double halfFovTan = std::tan(fieldOfViewRadians / 2.0);
+    Eigen::Vector3d horizontal = right * (2.0 * halfFovTan * aspectRatio);
+    Eigen::Vector3d vertical = up * (2.0 * halfFovTan);
+    Eigen::Vector3d viewportUpperLeft = forward - horizontal / 2.0 + vertical / 2.0;
 
-    Eigen::Vector3d pixelDeltaU = viewportHorizontal / static_cast<double>(imageWidth);
-    Eigen::Vector3d pixelDeltaV = viewportVertical / static_cast<double>(imageHeight);
-
-    // Generate rays
     int rayId = 0;
     for (int y = 0; y < imageHeight; ++y)
     {
         for (int x = 0; x < imageWidth; ++x)
         {
-            Eigen::Vector3d pixelCenter = viewportUpperLeft
-                                          + (x + 0.5) * pixelDeltaU
-                                          - (y + 0.5) * pixelDeltaV;
-            Eigen::Vector3d rayDirection = (pixelCenter - cameraPosition).normalized();
+            double ndcX = (2.0 * (x + 0.5) / imageWidth - 1.0) * aspectRatio;
+            double ndcY = 1.0 - 2.0 * (y + 0.5) / imageHeight;
+
+            Eigen::Vector3d rayDirection = viewportUpperLeft + horizontal * ((x + 0.5) / imageWidth) - vertical * ((y + 0.5) / imageHeight);
+            rayDirection.normalize();
             rays.emplace_back(cameraPosition, rayDirection);
             rays.back().id = rayId++;
         }
@@ -389,16 +382,17 @@ std::vector<double> calculateDistanceMinPU(
     return distanceMinPU;
 }
 
-void barrierAlpha()
+void barrierAlpha(int numFlag)
 {
     mpi::environment env;
     mpi::communicator world;
-    for ( int r = 0; r < world.size(); ++r )
+    for (int r = 0; r < world.size(); ++r)
     {
         world.barrier();
-        if ( r == world.rank() )
+        if (r == world.rank())
         {
-            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" << r << "] BARRIER RRRRRRRRRRRRRRRRRRRRR\n";
+            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" <<r<<"] BARRIER "<< world.size()<<" numFlag ["<<numFlag<<"] RRRRRRRRRRRRRRRRRRRRR"<<"\n";
+
         }
     }
 }
@@ -459,7 +453,7 @@ void distToBoundaryBVHpuSendAllNode(
                                 << "\n";
     //******************************************************************************************************************/
 
-    barrierAlpha();
+    barrierAlpha(1);
 
     //******************************************************************************************************************/
     //==================================================================================================================/
@@ -489,8 +483,8 @@ void distToBoundaryBVHpuSendAllNode(
     // BEGIN::Build BVH GPU
     t_begin_gpu = std::chrono::steady_clock::now();
     tic();
-    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-    auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+    auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
+    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
     auto timeBVHGPUDuration = toc( "timeBVHGPUDuration" );
     t_end_bvh_gpu = std::chrono::steady_clock::now();
     // END::Build BVH GPU
@@ -564,11 +558,12 @@ void distToBoundaryBVHpuSendAllNode(
     // CALCULATE DISTANCE MIN TO SURFACE CUBE CPU AND GPU
     if ( isViewInfo ) std::cout << "\n\n";
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist CPU\n";
+    bool isViewInfoLevel2 = false; isViewInfoLevel2 = true;
     std::vector<double> distanceMinCPU;
-    distanceMinCPU = calculateDistanceMinPU( id_CPU, distance_CPU_mode, kblock, allNodeCoordinates, true );
+    distanceMinCPU = calculateDistanceMinPU( id_CPU, distance_CPU_mode, kblock, allNodeCoordinates, isViewInfoLevel2 );
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist GPU\n";
     std::vector<double> distanceMinGPU;
-    distanceMinGPU = calculateDistanceMinPU( id_GPU, distance_GPU_mode, kblock, allNodeCoordinates, true );
+    distanceMinGPU = calculateDistanceMinPU( id_GPU, distance_GPU_mode, kblock, allNodeCoordinates, isViewInfoLevel2 );
     //******************************************************************************************************************/
 #endif
 
@@ -899,6 +894,126 @@ std::shared_ptr<MeshType> gatherMeshes( const std::shared_ptr<MeshType>& local_m
 }
 
 
+template <typename RangeType2>
+void builtPicture(
+    RangeType2 const& range)
+{
+    bool isViewInfo = true;
+    int numRank = 0;
+    using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType2>>;
+    using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
+
+    // BUILD RAYS
+    const double epsilon = 0.00001f;
+    int nbValues = 0;
+
+    std::vector<bvh_ray_type> rays;
+    std::vector<double> distance_Real_mode;
+    BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
+
+    Eigen::Vector3d cameraPosition(2.0, 2.0, 2.0);
+    Eigen::Vector3d cameraLookAt(0.5, 0.5, 0.5);
+
+    Eigen::Vector3d cameraUp(0.0, 1.0, 0.0); // Assuming Y is up
+
+
+    int imageWidth = 800;
+    int imageHeight = 800;
+    double fieldOfViewDegrees = 60.0;
+    rays = generateCameraRays<bvh_ray_type>(cameraPosition, cameraLookAt, cameraUp, imageWidth, imageHeight, fieldOfViewDegrees);
+    for ( size_t k = 0; k < rays.size(); ++k )
+    {
+        raysDistributed.push_back( rays[k] );
+    }
+
+    if ( isViewInfo ) std::cout << "[INFO] Generate " << rays.size() << " Rays Done"<< "\n";
+
+
+    barrierAlpha(0);
+
+#if 1
+    //******************************************************************************************************************/
+    auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
+    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+
+    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "third-party", _quality = BVHEnum::Quality::High );
+
+    numRank = bvhHIPParty->worldComm().rank();
+    sleep( 1 );
+    //******************************************************************************************************************/
+#endif
+
+    //******************************************************************************************************************/
+    //==================================================================================================================/
+    //******************************************************************************************************************/
+    std::vector<double> dist;
+    std::vector<double> distance_GPU_mode;
+    std::vector<size_t> id;
+    std::vector<size_t> id_GPU;
+
+#if 1
+    //******************************************************************************************************************/
+    // BUILD GPU RAY TRACKING
+    auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed, _parallel = false );
+
+    //auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed );
+
+
+    for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
+    {
+        dist = getAllDistanceRayIntersections( bvhHIPParty, rayIntersectionResult );
+        distance_GPU_mode.insert( distance_GPU_mode.end(), dist.begin(), dist.end() );
+        id = getId( bvhHIPParty, rayIntersectionResult );
+        id_GPU.insert( id_GPU.end(), id.begin(), id.end() );
+    }
+
+     if ( isViewInfo ) std::cout << "[INFO] id_GPU " << id_GPU.size() << "\n";
+
+    //******************************************************************************************************************/
+#endif
+
+
+    {
+    // Normalize distances to the range [0, 1]
+        double max_distance = 0.0;
+        for (const auto& d : distance_GPU_mode) {
+            max_distance = std::max(max_distance, d);
+        }
+
+        double min_distance = max_distance ;
+        for (const auto& d : distance_GPU_mode) {
+            min_distance = std::min(min_distance, d);
+        }
+
+        // Create image data (RGB)
+        unsigned char* image_data = new unsigned char[imageWidth * imageHeight * 3];
+        for (int i = 0; i < imageWidth * imageHeight; ++i) {
+            unsigned char r, g, b;
+            image_data[i * 3 + 0] = 0;
+            image_data[i * 3 + 1] = 0;
+            image_data[i * 3 + 2] = 0;
+        }
+
+        for (int k = 0; k <distance_GPU_mode.size() ; ++k) {
+            unsigned char r, g, b;
+            double distance = (distance_GPU_mode[k]- min_distance) / (max_distance-min_distance);
+            g = static_cast<unsigned char>(distance * 255.0);
+            r = static_cast<unsigned char>((1.0 - distance) * 255.0);
+            b = 0;
+            int i=id_GPU[k];
+            image_data[i * 3 + 0] = r;
+            image_data[i * 3 + 1] = g;
+            image_data[i * 3 + 2] = b;
+        }
+
+        savePPM("distance_image.ppm", image_data, imageWidth, imageHeight);
+        delete[] image_data;
+    }
+
+}
+
+
+
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
 BOOST_AUTO_TEST_CASE( all_distance )
@@ -988,7 +1103,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     if ( isOn )
     {
-
+        builtPicture(rangeFaces);
         // We calculate the distances from the edge of the cube and the intersection points.
         distToBoundaryBVHpuSendAllNode( rangeFaces, allDataPU, allNodeCoordinates, allDataDistanceBVHRTAll, true );
 
@@ -1047,7 +1162,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     //******************************************************************************************************************/
     // Gathering results from all MPI CPUs. Then synthesis of the results...  Will see if it works properly ;-)
 
-    barrierAlpha();
+    barrierAlpha(2);
 
     // We collect the sizes of the local vectors.
     std::vector<int> sizes( world.size() );
