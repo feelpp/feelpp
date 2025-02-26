@@ -51,6 +51,8 @@ public :
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
     using point_interprocess_map_type = typename mesh_type::point_interprocess_map_type;
+    //using edges_interprocess_map_type = typename mesh_type::edges_interprocess_map_type; // NOT COMPILE (only available for 3D)
+    using edges_interprocess_map_type = std::unordered_map<index_type,std::set<rank_type>>;
 
     static constexpr int nDim = mesh_type::nDim;
 
@@ -170,7 +172,7 @@ public :
             }
         }
 
-    //! return true if the point id is interprocess of current partition
+    //! return true if the point id on interprocess of current partition
     bool isInterprocessPoints( index_type pointId ) const
         {
             return this->findInterprocessPoints( pointId ).first;
@@ -180,6 +182,17 @@ public :
         {
             auto itFind = M_interprocessPoints.find( pointId );
             return std::make_pair( itFind != M_interprocessPoints.end(), itFind );
+        }
+    //! return true if the edge id is on interprocess of current partition
+    bool isInterprocessEdges( index_type edgeId ) const
+        {
+            return this->findInterprocessEdges( edgeId ).first;
+        }
+    //! try to find data of interprocess of current partition edge id and return pair(bool,iterator)
+    std::pair<bool,typename edges_interprocess_map_type::const_iterator> findInterprocessEdges( index_type edgeId ) const
+        {
+            auto itFind = M_interprocessEdges.find( edgeId );
+            return std::make_pair( itFind != M_interprocessEdges.end(), itFind );
         }
 
 private :
@@ -200,6 +213,7 @@ private :
     std::vector< std::tuple<std::reference_wrapper<const face_type>, _face_attributes > > M_orderedFaces;
     std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
     point_interprocess_map_type M_interprocessPoints;
+    edges_interprocess_map_type M_interprocessEdges;
 
     bool M_isFullSupport;
 };
@@ -405,7 +419,7 @@ MeshSupport<MeshType>::updateForUse()
             else
                 std::get<0>( itPointIpDetect->second ) = true;
         }
-#if 0
+#if 1
         if constexpr ( nDim == 3 )
         {
             for ( size_type j = 0; j < elt.nEdges(); j++ )
@@ -434,9 +448,16 @@ MeshSupport<MeshType>::updateForUse()
         M_interprocessPoints.try_emplace( pointId, std::get<1>( ipData ) );
     }
 
-
-
-
+    M_interprocessEdges.clear();
+    for ( auto const& [edgeId,ipData] : edgesInterprocessDetection )
+    {
+        if ( !std::get<0>( ipData ) ) // not on current process
+            continue;
+        if ( std::get<1>( ipData ).empty() ) // not on neighbor process
+            continue;
+        //M_interprocessEdges.try_emplace( edgeId, std::move( std::get<1>( ipData ) ) );
+        M_interprocessEdges.try_emplace( edgeId, std::get<1>( ipData ) );
+    }
 
 }
 
