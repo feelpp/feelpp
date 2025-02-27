@@ -574,6 +574,8 @@ public:
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
+        if ( pid == this->pidInPartition() )
+            return this->id();
         DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOtherPartitions.find( pid )->second;
