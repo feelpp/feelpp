@@ -950,7 +950,7 @@ void builtPicture(
     t_begin_BVH = std::chrono::steady_clock::now();
     auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
     //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
-    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "third-party", _quality = BVHEnum::Quality::High );
+    //BVH::CPU auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "third-party", _quality = BVHEnum::Quality::High );
     t_end_BVH = std::chrono::steady_clock::now();
     t_laps_BVH = std::chrono::duration_cast<std::chrono::microseconds>( t_end_BVH - t_begin_BVH ).count();
 
@@ -972,7 +972,6 @@ void builtPicture(
     // BUILD GPU RAY TRACKING
     t_begin_RT = std::chrono::steady_clock::now();
     auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed, _parallel = false );
-    //auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed );
     t_end_RT = std::chrono::steady_clock::now();
     t_laps_RT = std::chrono::duration_cast<std::chrono::microseconds>( t_end_RT - t_begin_RT ).count();
 
@@ -1127,7 +1126,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     //******************************************************************************************************************/
 
     bool isOn = true; // isOn = false;
-    bool isBuildPictureOn = true; //isBuildPictureOn = false; 
+    bool isBuildPictureOn = true; isBuildPictureOn = false; 
 
     // In this part all data is sent at once from CPU to GPU.
     std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;

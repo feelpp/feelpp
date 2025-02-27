@@ -2855,7 +2855,7 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             std::vector<size_t> hostHipHitTriangles( numRays );
             std::vector<bvhHip::Vec3> hostHipIntersectionPoint( numRays );
             std::vector<float> hostHipDistanceResults( numRays );
-            std::vector<size_t> hostHipIdResults( numRays );
+            std::vector<int> hostHipIdResults( numRays );
 
             HIP_ASSERT( hipMemcpy( hostHipHitTriangles.data(), deviceHipHitTriangles, numRays * sizeof( size_t ), hipMemcpyDeviceToHost ) );
             HIP_ASSERT( hipMemcpy( hostHipIntersectionPoint.data(), deviceHipIntersectionPoint, numRays * sizeof( bvhHip::Vec3 ), hipMemcpyDeviceToHost ) );
