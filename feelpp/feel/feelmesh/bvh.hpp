@@ -890,55 +890,6 @@ __global__ void initializeLeaves( Triangle* triangles, BVHNode* nodes, size_t nu
     }
 }
 
-/*
-void buildBVH_GPU_Version2BB( Triangle* d_triangles, BVHNode* d_nodes, size_t numTriangles )
-{
-    size_t totalNodes = 2 * numTriangles - 1;
-    // size_t blockSize = 512;
-    size_t blockSize = 1024;
-    size_t numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
-    hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
-
-    printf("OK1+++++++++++++++++++++++++++++++++++++++++++\n");
-
-    //BVHNode* h_nodes = new BVHNode[2 * numTriangles - 1];
-
-    BVHNode* h_nodes = new BVHNode[totalNodes];
-
-
-    printf("OK2+++++++++++++++++++++++++++++++++++++++++++\n");
-    //hipMemcpy( h_nodes, d_nodes, ( 2 * numTriangles - 1 ) * sizeof( BVHNode ), hipMemcpyDeviceToHost );
-
-    hipMemcpy(h_nodes, d_nodes, totalNodes * sizeof(BVHNode), hipMemcpyDeviceToHost);
-
-
-
-    printf("OK3+++++++++++++++++++++++++++++++++++++++++++\n");
-
-    for ( size_t i = numTriangles - 2; i >= 0; --i )
-    {
-        BVHNode& node = h_nodes[i];
-        size_t leftChild = 2 * i + 1;
-        size_t rightChild = 2 * i + 2;
-        node.leftChild = leftChild;
-        node.rightChild = rightChild;
-        node.triangleIndex = -1;
-
-        BVHNode& leftNode = h_nodes[leftChild];
-        BVHNode& rightNode = h_nodes[rightChild];
-        node.bounds.min = min( leftNode.bounds.min, rightNode.bounds.min );
-        node.bounds.max = max( leftNode.bounds.max, rightNode.bounds.max );
-    }
-
-    printf("OK4+++++++++++++++++++++++++++++++++++++++++++\n");
-
-    hipMemcpy( d_nodes, h_nodes, ( 2 * numTriangles - 1 ) * sizeof( BVHNode ), hipMemcpyHostToDevice );
-    printf("OK5+++++++++++++++++++++++++++++++++++++++++++\n");
-    delete[] h_nodes;
-    printf("OK6+++++++++++++++++++++++++++++++++++++++++++\n");
-}
-*/
-
 
 void buildBVH_GPU_Version2(Triangle *d_triangles, BVHNode *d_nodes,
                            int numTriangles) {
@@ -971,26 +922,6 @@ void buildBVH_GPU_Version2(Triangle *d_triangles, BVHNode *d_nodes,
                        hipMemcpyHostToDevice));
   delete[] h_nodes;
 }
-
-/*
-__global__ void buildEvaluationNodes( BVHNode* nodes, size_t numTriangles )
-{
-    for ( size_t i = numTriangles - 2; i >= 0; --i )
-    {
-        BVHNode& node = nodes[i];
-        size_t leftChild = 2 * i + 1;
-        size_t rightChild = 2 * i + 2;
-        node.leftChild = leftChild;
-        node.rightChild = rightChild;
-        node.triangleIndex = -1;
-        BVHNode& leftNode = nodes[leftChild];
-        BVHNode& rightNode = nodes[rightChild];
-        node.bounds.min = min( leftNode.bounds.min, rightNode.bounds.min );
-        node.bounds.max = max( leftNode.bounds.max, rightNode.bounds.max );
-    }
-    //__syncthreads();
-}
-*/
 
 
 __global__ void buildEvaluationNodes( BVHNode* nodes, int numTriangles )

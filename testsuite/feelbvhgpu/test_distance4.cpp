@@ -903,6 +903,21 @@ void builtPicture(
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType2>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
+    std::chrono::steady_clock::time_point t_begin_BuildCameraRays,t_end_BuildCameraRays;
+    std::chrono::steady_clock::time_point t_begin_BVH, t_end_BVH;
+    std::chrono::steady_clock::time_point t_begin_RT, t_end_RT;
+    std::chrono::steady_clock::time_point t_begin_BuildPicture, t_end_BuildPicture;
+    std::chrono::steady_clock::time_point t_begin_AllProcess, t_end_AllProcess;
+
+    long int t_laps_BuildCameraRays = 0;
+    long int t_laps_BVH = 0;
+    long int t_laps_RT = 0;
+    long int t_laps_BuildPicture = 0;
+    long int t_laps_AllProcess = 0;
+
+
+    t_begin_AllProcess = std::chrono::steady_clock::now();
+
     // BUILD RAYS
     const double epsilon = 0.00001f;
     int nbValues = 0;
@@ -911,11 +926,10 @@ void builtPicture(
     std::vector<double> distance_Real_mode;
     BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
 
+    t_begin_BuildCameraRays = std::chrono::steady_clock::now();
     Eigen::Vector3d cameraPosition(2.0, 2.0, 2.0);
     Eigen::Vector3d cameraLookAt(0.5, 0.5, 0.5);
-
     Eigen::Vector3d cameraUp(0.0, 1.0, 0.0); // Assuming Y is up
-
 
     int imageWidth = 800;
     int imageHeight = 800;
@@ -925,18 +939,20 @@ void builtPicture(
     {
         raysDistributed.push_back( rays[k] );
     }
+    t_end_BuildCameraRays = std::chrono::steady_clock::now();
+    t_laps_BuildCameraRays = std::chrono::duration_cast<std::chrono::microseconds>( t_end_BuildCameraRays - t_begin_BuildCameraRays ).count();
 
     if ( isViewInfo ) std::cout << "[INFO] Generate " << rays.size() << " Rays Done"<< "\n";
-
-
     barrierAlpha(0);
 
 #if 1
     //******************************************************************************************************************/
+    t_begin_BVH = std::chrono::steady_clock::now();
     auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
     //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
-
     //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "third-party", _quality = BVHEnum::Quality::High );
+    t_end_BVH = std::chrono::steady_clock::now();
+    t_laps_BVH = std::chrono::duration_cast<std::chrono::microseconds>( t_end_BVH - t_begin_BVH ).count();
 
     numRank = bvhHIPParty->worldComm().rank();
     sleep( 1 );
@@ -954,9 +970,13 @@ void builtPicture(
 #if 1
     //******************************************************************************************************************/
     // BUILD GPU RAY TRACKING
+    t_begin_RT = std::chrono::steady_clock::now();
     auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed, _parallel = false );
-
     //auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed );
+    t_end_RT = std::chrono::steady_clock::now();
+    t_laps_RT = std::chrono::duration_cast<std::chrono::microseconds>( t_end_RT - t_begin_RT ).count();
+
+    
 
 
     for ( auto const& rayIntersectionResult : multiRayDistributedIntersectionHipResult )
@@ -972,7 +992,7 @@ void builtPicture(
     //******************************************************************************************************************/
 #endif
 
-
+    t_begin_BuildPicture = std::chrono::steady_clock::now();
     {
     // Normalize distances to the range [0, 1]
         double max_distance = 0.0;
@@ -1009,6 +1029,16 @@ void builtPicture(
         savePPM("distance_image.ppm", image_data, imageWidth, imageHeight);
         delete[] image_data;
     }
+    t_end_BuildPicture = std::chrono::steady_clock::now();
+    t_laps_BuildPicture = std::chrono::duration_cast<std::chrono::microseconds>( t_end_BuildPicture - t_begin_BuildPicture ).count();
+    t_end_AllProcess = std::chrono::steady_clock::now();
+    t_laps_AllProcess = std::chrono::duration_cast<std::chrono::microseconds>( t_end_AllProcess - t_begin_AllProcess ).count();
+
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside Build Camera Rays : " << t_laps_BuildCameraRays << " us"<< " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH : " << t_laps_BVH << " us"<< " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside RT : " << t_laps_RT << " us"<< " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside Build Picture : " << t_laps_BuildPicture << " us"<< " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside All Process : " << t_laps_AllProcess << " us"<< " rank=[" << numRank << "]\n";
 
 }
 
@@ -1097,13 +1127,15 @@ BOOST_AUTO_TEST_CASE( all_distance )
     //******************************************************************************************************************/
 
     bool isOn = true; // isOn = false;
+    bool isBuildPictureOn = true; //isBuildPictureOn = false; 
 
     // In this part all data is sent at once from CPU to GPU.
     std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
 
     if ( isOn )
     {
-        builtPicture(rangeFaces);
+        // 3D rendering
+        if (isBuildPictureOn) builtPicture(rangeFaces);
         // We calculate the distances from the edge of the cube and the intersection points.
         distToBoundaryBVHpuSendAllNode( rangeFaces, allDataPU, allNodeCoordinates, allDataDistanceBVHRTAll, true );
 
