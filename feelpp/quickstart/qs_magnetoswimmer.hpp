@@ -56,19 +56,23 @@ private:
 
     double H_; //Mesh step
     std::shared_ptr<mesh_t> mesh_; //Mesh 
-    std::shared_ptr<mesh_t> mesh_init; //Mesh 
 
     spacev_ptr_t Vh_disp_; //Displacement space
-    spacev_ptr_t Vh_disp_current;
+    spacev_ptr_t Vh_r_; 
+    spacev_ptr_t Vh_;
 
     double rho_; // density
     double lambda_;
     double mu_;
+    double lambda_tail;
+    double mu_tail;
+    double rho_tail;
     double rescale_;
     double freq_;
     double bx_;
     double by_;
     double initial_time, final_time, time_step;
+    std::string externalforce_;
 
     exporter_ptrtype e_r; // exporter
     exporter_ptrtype e_e; // exporter
@@ -78,6 +82,7 @@ private:
     double theta_; //Angle
     elementv_t u_r; //Rotation displacement
     elementv_t u_e; //Rotation displacement
+    elementv_t u_tot;
 
 };
 
@@ -94,15 +99,23 @@ void MagnetoSwimmer<Dim>::initialize()
     // Get mesh parameters
     H_ = specs_["/Meshes/Rigid/Import/h"_json_pointer].get<double>();
     mesh_ = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/Rigid/Import/filename"_json_pointer].get<std::string>(), _h = H_);
-    mesh_init = loadMesh( _mesh = new mesh_t, _filename = specs_["/Meshes/Rigid/Import/filename"_json_pointer].get<std::string>(), _h = H_);
 
     // Define space
-    Vh_disp_ = Pchv<1>( mesh_init);
-    Vh_disp_current = Pchv<1> (mesh_);
+    Vh_disp_ = Pchv<1>( mesh_, markedelements( mesh_, "tail" ) );
+    //Vh_r_ =  Pchv<1>( mesh_, markedelements( mesh_, "head" ) );
+    Vh_ =  Pchv<1>( mesh_ );
+
     
     // Get density
     std::string matRho = fmt::format( "/Materials/MagnetoObject/parameters/rho/value");
     rho_ = std::stod(specs_[nl::json::json_pointer( matRho )].get<std::string>());
+
+    std::string matRho_tail = fmt::format( "/Materials/MagnetoObject/parameters/rho_tail/value");
+    rho_tail = std::stod(specs_[nl::json::json_pointer( matRho_tail )].get<std::string>());
+
+    std::string matExt = fmt::format( "/Materials/MagnetoObject/parameters/ext/value");
+    externalforce_ = specs_[nl::json::json_pointer( matExt )].get<std::string>();
+
 
     std::string matE = fmt::format( "/Materials/MagnetoObject/parameters/E/value" );
     double E_ = std::stod(specs_[nl::json::json_pointer( matE )].get<std::string>());
@@ -112,6 +125,18 @@ void MagnetoSwimmer<Dim>::initialize()
     
     lambda_ = E_*nu_/( (1+nu_)*(1-2*nu_) );
     mu_ = E_/(2*(1+nu_));
+
+    std::string matE_tail = fmt::format( "/Materials/MagnetoObject/parameters/E_tail/value" );
+    double E_tail = std::stod(specs_[nl::json::json_pointer( matE_tail )].get<std::string>());
+    
+    std::string matNu_tail = fmt::format( "/Materials/MagnetoObject/parameters/nu_tail/value" );
+    double nu_tail = std::stod(specs_[nl::json::json_pointer( matNu_tail )].get<std::string>());
+    
+    lambda_tail = E_tail*nu_tail/( (1+nu_tail)*(1-2*nu_tail) );
+    mu_tail = E_tail/(2*(1+nu_tail));
+
+    std::cout << "head : " << rho_ << ", " << lambda_ << ", " << mu_ << std::endl;
+    std::cout << "tail : " << rho_tail << ", " << lambda_tail << ", " << mu_tail << std::endl;
     
     // Get param
     std::string matRescale = fmt::format( "/Materials/MagnetoObject/parameters/rescale/value");
@@ -127,7 +152,6 @@ void MagnetoSwimmer<Dim>::initialize()
     by_ = std::stod(specs_[nl::json::json_pointer( matBy )].get<std::string>());
 
     // Initialize exporter
-    e_r = Feel::exporter(_mesh = mesh_init, _name = "rigid", _geo="change" ); 
     e_e = Feel::exporter(_mesh = mesh_, _name = "elastic", _geo="change" );
     
     // Time scheme
@@ -139,11 +163,22 @@ void MagnetoSwimmer<Dim>::initialize()
     omega_ = 0.;
     theta_ = 0.;
 
-    u_r = Vh_disp_->element();
-    u_r.on(_range=elements(mesh_init), _expr=vec(cst(0.),cst(0.)));
+    //u_r = Vh_r_->element();
+    //u_r.on(_range=elements(support(Vh_r_)), _expr=vec(cst(0.),cst(0.)));
 
-    u_e =  Vh_disp_current->element();
-    u_e.on(_range=elements(mesh_), _expr=vec(cst(0.),cst(0.)));
+    u_e =  Vh_disp_->element();
+    u_e.on(_range=elements(support(Vh_disp_)), _expr=vec(cst(0.),cst(0.)));
+
+    u_tot = Vh_->element();
+    u_tot.on(_range=elements(mesh_), _expr=vec(cst(0.),cst(0.)));
+    
+    double beta = 0.25;
+    double gamma = 0.5;
+
+    ts_ =  newmark(_space = Vh_disp_, _initial_time=initial_time, _final_time=final_time, _time_step=time_step, _gamma=gamma, _beta=beta );
+    ts_->start();
+    ts_->initialize( u_e );    
+    ts_->updateFromDisp(u_e);
 }
 
 
@@ -213,6 +248,7 @@ void MagnetoSwimmer<Dim>::timeloop_rigid()
 }
 
 // Time loop
+/*
 template <int Dim>
 void MagnetoSwimmer<Dim>::timeloop_elastic()
 {
@@ -225,6 +261,299 @@ void MagnetoSwimmer<Dim>::timeloop_elastic()
     // Magnetic momentum 
     double Mx = std::cos(0);
     double My = std::sin(0);
+
+    // Compute moment of inertia J
+    auto massCenter = mean( _range = elements(mesh_), _expr = P());
+    auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+    std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+
+    auto momentOfInertia = integrate(_range=elements(mesh_),_expr=cst(rho_)*( inner(P()-massCenterVec) ) ).evaluate()(0,0);
+    std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
+   
+
+    auto Id = eye<2,2>();
+    auto Res = backend()->newVector(Vh_disp_);
+    auto Jac = backend()->newMatrix( _test=Vh_disp_, _trial=Vh_disp_ );
+    
+    int iter = 0;
+
+    std::ofstream ofs("res_elastic_hyper.csv");
+    ofs << fmt::format("time,theta,error") << std::endl;
+    
+
+    while (time_step * iter < final_time)
+    {
+        std::cout << "time : " << time_step * iter << std::endl;
+        ////////////////////////////////////////////////////
+        //          Newmark beta-model for dttun          //
+        ////////////////////////////////////////////////////
+
+        //hx = 0.75 * (Mx*by - My*bx);
+        hx = (Mx*by - My*bx)/0.75;
+        std::cout << "hx : " << hx << std::endl;
+
+        std::cout << "Solve elasticity" << std::endl;
+        // Initialize linear and bilinear forms
+    
+        auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+        {
+            auto u = Vh_disp_->element();
+            u = *X;
+            auto Fv = Id + gradv(u);
+            auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+            auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+            auto Sv_tail = lambda_tail*trace(Ev)*Id + 2*mu_tail*Ev;
+
+            
+            auto dF = gradt(u);
+            auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+            auto dS = lambda_*trace(dE)*Id + 2*mu_*dE;
+            auto dS_tail = lambda_tail*trace(dE)*Id + 2*mu_tail*dE;
+
+            
+            auto a = form2( _test=Vh_disp_, _trial=Vh_disp_, _matrix=J );
+
+            a = integrate( _range=markedelements(mesh_,"head"),
+                           _expr= inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
+            a = integrate( _range=markedelements(mesh_,"tail"),
+                           _expr= inner( dF*val(Sv_tail) + val(Fv)*dS_tail , grad(u) ) );
+            a += integrate( _range=markedelements(mesh_,"head"),
+                           _expr= cst(rho_)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) );
+            a += integrate( _range=markedelements(mesh_,"tail"),
+                            _expr= cst(rho_tail)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) );
+
+        };
+    
+        auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+        {
+            auto u = Vh_disp_->element();
+            u = *X;
+            
+            auto Fv = Id + gradv(u);
+            auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+            auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+            auto Sv_tail = lambda_tail*trace(Ev)*Id + 2*mu_tail*Ev;
+
+
+            auto r = form1( _test=Vh_disp_, _vector=R );
+            r = integrate( _range=markedelements(mesh_,"head"),
+                           _expr= inner( val(Fv*Sv) , grad(u) ) );
+            r = integrate( _range=markedelements(mesh_,"tail"),
+                           _expr= inner( val(Fv*Sv_tail) , grad(u) ) );
+
+            r += integrate( _range=markedelements(mesh_,"head"),
+                            _expr= cst(rho_)*inner( ts_->polyDerivCoefficient()*idv(u) -idv(ts_->polyDeriv()),id( u ) ) );
+            r += integrate( _range=markedelements(mesh_,"tail"),
+                            _expr= cst(rho_tail)*inner( ts_->polyDerivCoefficient()*idv(u) -idv(ts_->polyDeriv()),id( u ) ) );
+            
+            r += integrate( _range = markedfaces(mesh_, "Upper"), _expr = trans(vec(cst(0.),cst(-hx)))*id(u));
+            r += integrate( _range = markedfaces(mesh_, "Lower"), _expr = trans(vec(cst(0.),cst(hx)))*id(u));
+
+            R->close();
+            
+        };
+        
+        backend()->nlSolver()->residual = Residual;
+        backend()->nlSolver()->jacobian = Jacobian;
+        backend()->nlSolve( _solution=u_e,_jacobian=Jac,_residual=Res );
+
+
+        ts_->updateFromDisp(u_e);
+        ts_->next(u_e);
+        
+        std::cout << "Export" << std::endl;
+        this->exportResults_elastic(time_step*iter);
+
+        //Update
+        omega_ = omega_ + time_step * (0.75*hx/momentOfInertia);
+        //std::cout << "Angular velocity : " << omega_ << std::endl;
+        theta_ = theta_ + omega_*time_step;
+        //std::cout << "Rotation angle : " << theta_ << std::endl;
+        
+        auto rot = vec(
+            cos(theta_) * (Px() - massCenter(0,0)) - sin(theta_) * (Py() - massCenter(1,0)) - Px() + massCenter(0,0),
+            sin(theta_) * (Px() - massCenter(0,0)) + cos(theta_) * (Py() - massCenter(1,0)) - Py() + massCenter(1,0)
+        );
+
+        u_r.on(_range = elements(mesh_), _expr = rot);
+
+        
+        // Export results
+        this->exportResults_rigid(time_step*iter);
+
+        // Check
+        auto l2err = normL2( _range=elements(mesh_), _expr=idv(u_r) - idv(u_e) );
+        std::cout << "Error : " << l2err << std::endl;
+
+        ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",time_step*iter, theta_, l2err) << std::endl;
+        iter++;
+    } 
+       
+}
+*/
+
+template <int Dim>
+void MagnetoSwimmer<Dim>::timeloop_elastic()
+{
+    // External magnetic field
+    double bx = bx_/rescale_;
+    double by = by_/rescale_;
+    double By = 0;
+    double hx = 0;
+    
+    // Magnetic momentum 
+    double Mx = std::cos(0);
+    double My = std::sin(0);
+
+    // Compute moment of inertia J
+    //auto massCenter = mean( _range = markedelements(mesh_,"head"), _expr = P());
+    //auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+    //std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+
+    //auto momentOfInertia = integrate(_range = markedelements(mesh_,"head"),_expr=cst(rho_)*( inner(P()-massCenterVec) ) ).evaluate()(0,0);
+    double momentOfInertia = 0.15625;
+    std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
+    
+
+    auto Id = eye<2,2>();
+    auto Res = backend()->newVector(Vh_disp_);
+    auto Jac = backend()->newMatrix( _test=Vh_disp_, _trial=Vh_disp_ );
+    
+    int iter = 0;
+
+    std::ofstream ofs("res_elastic_hyper.csv");
+    ofs << fmt::format("time,theta") << std::endl;
+    
+
+    while (time_step * iter < final_time)
+    {
+        std::cout << "time : " << time_step * iter << std::endl;
+        ////////////////////////////////////////////////////
+        //          Newmark beta-model for dttun          //
+        ////////////////////////////////////////////////////
+        hx = (Mx*by - My*bx);
+        
+        //Update
+        omega_ = omega_ + time_step * (hx/momentOfInertia);
+        std::cout << "Angular velocity : " << omega_ << std::endl;
+        theta_ = theta_ + omega_*time_step;
+        std::cout << "Rotation angle : " << theta_ << std::endl;
+                
+        auto rot = vec(
+            cos(theta_) * (Px() -  cst(0.25)) - sin(theta_) * (Py() - cst(0.75)) - Px() + cst(0.25),
+            sin(theta_) * (Px() -  cst(0.25)) + cos(theta_) * (Py() - cst(0.75)) - Py() + cst(0.75)
+        );
+
+        //u_r.on(_range = elements(support(Vh_r_)), _expr = rot);
+    
+
+        std::cout << "Solve elasticity" << std::endl;
+        // Initialize linear and bilinear forms
+    
+        auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+        {
+            auto u = Vh_disp_->element();
+            u = *X;
+            auto Fv = Id + gradv(u);
+            auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+            auto Sv_tail = lambda_tail*trace(Ev)*Id + 2*mu_tail*Ev;
+
+            
+            auto dF = gradt(u);
+            auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+            auto dS_tail = lambda_tail*trace(dE)*Id + 2*mu_tail*dE;
+
+            
+            auto a = form2( _test=Vh_disp_, _trial=Vh_disp_, _matrix=J );
+
+
+            a = integrate( _range=elements(support(Vh_disp_)),
+                           _expr= inner( dF*val(Sv_tail) + val(Fv)*dS_tail , grad(u) ) );
+
+            a += integrate( _range=elements(support(Vh_disp_)),
+                            _expr= cst(rho_tail)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) );
+            
+            auto RR = backend()->newVector( Vh_disp_ );
+            a += on( _range=markedfaces(mesh_,"fsi"),
+                        _element=u, _rhs=RR,
+                        _expr=cst(0)*rot );
+
+        };
+    
+        auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+        {
+            auto u = Vh_disp_->element();
+            u = *X;
+            
+            auto Fv = Id + gradv(u);
+            auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+            auto Sv_tail = lambda_tail*trace(Ev)*Id + 2*mu_tail*Ev;
+
+
+            auto r = form1( _test=Vh_disp_, _vector=R );
+  
+            r = integrate( _range=elements(support(Vh_disp_)),
+                           _expr= inner( val(Fv*Sv_tail) , grad(u) ) );
+
+            r += integrate( _range=elements(support(Vh_disp_)),
+                            _expr= cst(rho_tail)*inner( ts_->polyDerivCoefficient()*idv(u) -idv(ts_->polyDeriv()),id( u ) ) );
+            r += integrate( _range = elements(support(Vh_disp_)), _expr = -trans(expr<Dim,1>( externalforce_ ))*id( u ));
+
+            R->close();
+            auto temp = Vh_disp_->element();
+            temp = *R;
+            temp.on( _range=markedfaces(mesh_,"fsi"),_expr=cst(0)*rot );
+                            
+            *R = temp;
+            
+        };
+        u_e.zero();
+        u_e.on( _range=markedfaces(mesh_,"fsi"),_expr=rot );
+
+        backend()->nlSolver()->residual = Residual;
+        backend()->nlSolver()->jacobian = Jacobian;
+        backend()->nlSolve( _solution=u_e,_jacobian=Jac,_residual=Res );
+
+
+        ts_->updateFromDisp(u_e);
+        ts_->next(u_e);
+
+        //u_tot.on(_range= elements(support(Vh_r_)), _expr=idv(u_r));
+        //u_tot.on(_range= elements(support(Vh_disp_)), _expr=idv(u_e));
+
+        
+        std::cout << "Export" << std::endl;
+        this->exportResults_elastic(time_step*iter);
+
+        ofs << fmt::format( "{:.6f}, {:.6f}",time_step*iter, theta_) << std::endl;
+        iter++;
+    } 
+       
+}
+
+/*
+// Time loop
+template <int Dim>
+void MagnetoSwimmer<Dim>::timeloop_elastic()
+{
+    // External magnetic field
+    double bx = bx_/rescale_;
+    double by = by_/rescale_;
+    double By = 0;
+    double hx = 0;
+    
+    // Magnetic momentum 
+    double Mx = std::cos(0);
+    double My = std::sin(0);
+
+    // Compute moment of inertia J
+    auto massCenter = mean( _range = elements(mesh_), _expr = P());
+    auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+    std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+
+    auto momentOfInertia = integrate(_range=elements(mesh_),_expr=cst(rho_)*( inner(P()-massCenterVec) ) ).evaluate()(0,0);
+    std::cout << "momentOfInertia : " << momentOfInertia << std::endl;
+   
 
     // define fields
     auto utot = Vh_disp_->element(); 
@@ -253,6 +582,11 @@ void MagnetoSwimmer<Dim>::timeloop_elastic()
     double gamma = 0.5;
 
     int iter = 0;
+
+    std::ofstream ofs("res_elastic.csv");
+    ofs << fmt::format("time,theta,error") << std::endl;
+    
+
     while (time_step * iter < final_time)
     {
         std::cout << "time : " << time_step * iter << std::endl;
@@ -313,10 +647,33 @@ void MagnetoSwimmer<Dim>::timeloop_elastic()
         std::cout << "Update current" << std::endl;
         meshMove( mesh_, u_e );
 
+        //Update
+        omega_ = omega_ + time_step * (0.75*hx/momentOfInertia);
+        //std::cout << "Angular velocity : " << omega_ << std::endl;
+        theta_ = theta_ + omega_*time_step;
+        //std::cout << "Rotation angle : " << theta_ << std::endl;
+        
+        auto rot = vec(
+            cos(theta_) * (Px() - massCenter(0,0)) - sin(theta_) * (Py() - massCenter(1,0)) - Px() + massCenter(0,0),
+            sin(theta_) * (Px() - massCenter(0,0)) + cos(theta_) * (Py() - massCenter(1,0)) - Py() + massCenter(1,0)
+        );
+
+        u_r.on(_range = elements(mesh_), _expr = rot);
+
+        
+        // Export results
+        this->exportResults_rigid(time_step*iter);
+
+        // Check
+        auto l2err = normL2( _range=elements(mesh_), _expr=idv(u_r) - idv(utot) );
+        std::cout << "Error : " << l2err << std::endl;
+
+        ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}",time_step*iter, theta_, l2err) << std::endl;
         iter++;
     } 
        
 }
+*/
 
 // Run method 
 template <int Dim>
@@ -362,6 +719,8 @@ MagnetoSwimmer<Dim>::exportResults_elastic(double t)
 {
     e_e->step(t)->setMesh(mesh_);
     e_e->step(t)->add( "disp", u_e );
+    //e_e->step(t)->add( "u_r", u_r);
+    //e_e->step(t)->add( "u_tot", u_tot);
     e_e->save();
 }
 }
