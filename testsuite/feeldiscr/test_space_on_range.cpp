@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
     auto u = VhPS->element("u");
     auto v = VhPS->element("v");
     auto g = VhPS->element();
-    g.on(_range=therange,_expr=cst(1.));
+    g.on(_range=therange,_expr=cst(1.),_close=true);
     BOOST_CHECK( VhPS->dof()->hasMeshSupport() );
     auto myboundaryfaces = boundaryfaces( support(VhPS) );
     auto l = form1( _test=VhPS );
