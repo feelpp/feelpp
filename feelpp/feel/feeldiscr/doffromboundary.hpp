@@ -130,21 +130,14 @@ public:
 
     void add( face_type const& face )
         {
-            // check connection in case of interprocess or ghost face
-            bool useConnection0 = true;
-            if ( face.isInterProcessDomain() || face.isGhostCell() )
-            {
-                if ( !M_doftable->isElementDone( face.ad_first() ) && face.isConnectedTo1() )
-                    useConnection0 = !M_doftable->isElementDone( face.ad_second() );
-            }
-
-            uint16_type lcVertex = 0;
-            uint16_type lcEdge = 0;
-            uint16_type lcFace = 0;
-
-            addVertexBoundaryDof( face, useConnection0, lcVertex );
-            addEdgeBoundaryDof( face, useConnection0, lcEdge );
-            addFaceBoundaryDof( face, useConnection0, lcFace );
+            uint8_type connectionId = invalid_v<uint8_type>;
+            if ( face.isConnectedTo0() && M_doftable->isElementDone( face.ad_first() ) )
+                connectionId = 0;
+            else if ( face.isConnectedTo1() && M_doftable->isElementDone( face.ad_second() ) )
+                connectionId = 1;
+            if ( connectionId == invalid_v<uint8_type> )
+                return;
+            this->add( face, connectionId );
         }
 
     void add( face_type const& face, uint8_type connectionId )

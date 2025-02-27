@@ -2014,7 +2014,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         for ( auto const& activeDof : this->M_activeDofSharedOnCluster )
         {
             DCHECK( activeDof.first < previousGlobalIdToNewGlobalId.size() ) << fmt::format("activeDof.first {} vs size{}",activeDof.first,previousGlobalIdToNewGlobalId.size());
-            DCHECK( previousGlobalIdToNewGlobalId[activeDof.first] < newActiveDofSharedOnCluster.size()) << fmt::format("previousGlobalIdToNewGlobalId {} vs size{}",previousGlobalIdToNewGlobalId[activeDof.first], newActiveDofSharedOnCluster.size());
             newActiveDofSharedOnCluster.emplace( std::make_pair( previousGlobalIdToNewGlobalId[activeDof.first], activeDof.second ) );
         }
         this->M_activeDofSharedOnCluster = std::move( newActiveDofSharedOnCluster );

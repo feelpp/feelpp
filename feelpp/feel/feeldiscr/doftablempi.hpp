@@ -1542,13 +1542,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     if ( is_continuous )
     {
         std::map<size_type, std::tuple<rank_type,size_type,uint16_type>> mapPtIdToDofOwnerElt; //( ptId ->( rank, eltId, ptIdInElt  ))
-        std::map<size_type, std::tuple<rank_type,size_type,uint16_type,typename edge_permutation_type::value_type>> mapEdgeIdToDofOwnerElt; //( ptId ->( rank, eltId, edgeIdInElt, edge permutation ))
-        std::map<size_type, std::tuple<rank_type,size_type,uint16_type,typename face_permutation_type::value_type>> mapFaceIdToDofOwnerElt; //( faceId ->( rank, eltId, faceIdInElt, face permutation))
+        std::map<size_type, std::tuple<rank_type,size_type,uint16_type,edge_permutation_type>> mapEdgeIdToDofOwnerElt; //( ptId ->( rank, eltId, edgeIdInElt, edge permutation ))
+        std::map<size_type, std::tuple<rank_type,size_type,uint16_type,face_permutation_type>> mapFaceIdToDofOwnerElt; //( faceId ->( rank, eltId, faceIdInElt, face permutation))
         std::vector< std::reference_wrapper<const typename mesh_type::element_type> > activeEltTouchInterprocess;
         auto rangeElements = hasMeshSupportPartial? elements( this->meshSupport(), entity_process_t::ALL ) : elements( mesh, entity_process_t::ALL );
         for ( auto const& eltWrap : rangeElements )
         {
             auto const& elt = unwrap_ref( eltWrap );
+            rank_type eltPid = elt.processId();
+            size_type eltIdOtherPart = elt.idInOthersPartitions( eltPid );
             bool currentEltTouchInterprocess = false;
             for ( uint16_type n=0; n < elt.nVertices(); n++ )
             {
@@ -1559,12 +1561,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                     currentEltTouchInterprocess = true;
                     auto itFind = mapPtIdToDofOwnerElt.find( point.id() );
                     if ( itFind == mapPtIdToDofOwnerElt.end() )
-                        mapPtIdToDofOwnerElt.emplace( point.id(), std::make_tuple( elt.processId(), elt.idInOthersPartitions( elt.processId() )/*elt.id()*/, n ) );
+                        mapPtIdToDofOwnerElt.emplace( point.id(), std::make_tuple( eltPid, eltIdOtherPart, n ) );
                     else
                     {
                         auto & currentData = itFind->second;
                         if ( elt.processId() < std::get<0>( currentData ) )
-                            currentData = std::make_tuple( elt.processId(), elt.idInOthersPartitions( elt.processId() ) /*elt.id()*/, n );
+                            currentData = std::make_tuple( eltPid, eltIdOtherPart, n );
                     }
                 }
             }
@@ -1581,15 +1583,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                         bool isInterprocessEdge = hasMeshSupportPartial? this->meshSupport()->isInterprocessEdges( edge.id() ) : mesh.isInterprocessEdges( edge.id() );
                         if ( isInterprocessEdge )
                         {
-                            // TODO check if  elt.idInOthersPartitions( elt.processId() ) always valid
                             auto itFind = mapEdgeIdToDofOwnerElt.find( edge.id() );
                             if ( itFind == mapEdgeIdToDofOwnerElt.end() )
-                                mapEdgeIdToDofOwnerElt.emplace( edge.id(), std::make_tuple( elt.processId(), elt.idInOthersPartitions( elt.processId() ), j, elt.edgePermutation( j ).value() ) );
+                                mapEdgeIdToDofOwnerElt.emplace( edge.id(), std::make_tuple( eltPid, eltIdOtherPart, j, elt.edgePermutation( j ).value() ) );
                             else
                             {
                                 auto & currentData = itFind->second;
                                 if ( elt.processId() < std::get<0>( currentData ) )
-                                    currentData = std::make_tuple( elt.processId(), elt.idInOthersPartitions( elt.processId() ), j, elt.edgePermutation( j ).value() );
+                                    currentData = std::make_tuple( eltPid, eltIdOtherPart, j, elt.edgePermutation( j ).value() );
                             }
                         }
                     }
@@ -1605,25 +1606,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                         continue;
                     auto const& face = elt.face( j );
 
-                    // uint16_type connectionId = invalid_v<uint16_type>;
-                    // if ( face.isConnectedTo0() && face.element(0).id() == elt.id() )
-                    //     connectionId = 0;
-                    // else if ( face.isConnectedTo1() && face.element(1).id() == elt.id() )
-                    //     connectionId = 1;
-
-                    // if ( connectionId == invalid_v<uint16_type> )
-                    //     continue;
-
                     // TODO: maybe ignore face that don't touch interprocess??
 
                     auto itFind = mapFaceIdToDofOwnerElt.find( face.id() );
                     if ( itFind == mapFaceIdToDofOwnerElt.end() )
-                        mapFaceIdToDofOwnerElt.emplace( face.id(), std::make_tuple( elt.processId(), elt.idInOthersPartitions( elt.processId() ), j, elt.facePermutation( j ).value() ) );
+                        mapFaceIdToDofOwnerElt.emplace( face.id(), std::make_tuple( eltPid, eltIdOtherPart, j, elt.facePermutation( j ).value() ) );
                     else
                     {
                         auto & currentData = itFind->second;
                         if ( elt.processId() < std::get<0>( currentData ) )
-                            currentData = std::make_tuple( elt.processId(), elt.idInOthersPartitions( elt.processId() ), j, elt.facePermutation( j ).value() );
+                            currentData = std::make_tuple( eltPid, eltIdOtherPart, j, elt.facePermutation( j ).value() );
                     }
                 }
             }
@@ -1690,7 +1682,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                         if ( itFind == mapEdgeIdToDofOwnerElt.end() )
                             continue;
 
-                        typename edge_permutation_type::value_type edgePermutationOwnerDof = edge_permutation_type::NO_PERMUTATION;
+                        edge_permutation_type edgePermutationOwnerDof;
                         uint16_type edgeIdInEltOwnerDof = invalid_v<uint16_type>;
                         std::tie( eltPidOwnerDof, eltIdOwnerDof, edgeIdInEltOwnerDof, edgePermutationOwnerDof ) = itFind->second;
                         // do nothing if owner is on curent process id
@@ -1710,7 +1702,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                     uint16_type locDofInTopologicalFaces = locDof - nLocalDofBeforeDofsOfTopologicalFaces;
                     uint16_type faceIdInElt = locDofInTopologicalFaces / nDofPerTopologicalFaceForDivision;
                     uint16_type locDofInTopologicalFace = locDofInTopologicalFaces % nDofPerTopologicalFaceForDivision;
-                    CHECK(  nDim == 2 ) << "TODO faces nDim=3";
 
                     auto facePtr = elt.facePtr( faceIdInElt );
                     if ( !facePtr )
@@ -1721,7 +1712,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                     if ( itFind == mapFaceIdToDofOwnerElt.end() )
                         continue;
 
-                    typename face_permutation_type::value_type facePermutationOwnerDof = face_permutation_type::NO_PERMUTATION;
+                    face_permutation_type facePermutationOwnerDof;
                     uint16_type faceIdInEltOwnerDof = invalid_v<uint16_type>;
                     std::tie( eltPidOwnerDof, eltIdOwnerDof, faceIdInEltOwnerDof, facePermutationOwnerDof ) = itFind->second;
 
@@ -1732,9 +1723,36 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                     // shift local dof to relative dof face numbering
                     localDofOwnerDof = nLocalDofBeforeDofsOfTopologicalFaces + faceIdInEltOwnerDof*nDofPerTopologicalFace;
 
-                    auto facePermutation = elt.facePermutation( faceIdInElt );
-                    if constexpr ( nDim == 2)
-                        localDofOwnerDof += ( facePermutation == facePermutationOwnerDof )? locDofInTopologicalFace : nDofPerTopologicalFace-1-locDofInTopologicalFace;
+                    if constexpr ( fe_type::nDofPerFace > 1 )
+                    {
+                        auto facePermutation = elt.facePermutation( faceIdInElt );
+                        if constexpr ( nDim <= 2)
+                            localDofOwnerDof += ( facePermutation == facePermutationOwnerDof )? locDofInTopologicalFace : nDofPerTopologicalFace-1-locDofInTopologicalFace;
+                        else
+                        {
+                            if ( facePermutation == facePermutationOwnerDof )
+                                localDofOwnerDof += locDofInTopologicalFace;
+                            else if ( facePermutation.value() == face_permutation_type::IDENTITY )
+                                localDofOwnerDof += this->vector_permutation[facePermutationOwnerDof][locDofInTopologicalFace];
+                            else
+                            {
+                                // search local dof in face frame
+                                uint16_type locFaceDof = invalid_v<uint16_type>;
+                                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
+                                {
+                                    if ( this->vector_permutation[facePermutation][l] == locDofInTopologicalFace )
+                                    {
+                                        locFaceDof = l;
+                                        break;
+                                    }
+                                }
+                                CHECK( locFaceDof != invalid_v<uint16_type> ) << "not found a compatible dof";
+                                localDofOwnerDof += this->vector_permutation[facePermutationOwnerDof][locFaceDof];
+                            }
+                        }
+
+                        // TODO : add debug check that verify dof point are identical!
+                    }
                 }
 
                 if ( eltPidOwnerDof == invalid_v<rank_type> )
@@ -2296,6 +2314,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
         // elements doftable
         if ( !this->isElementDone( ghostElt.id() ) )
             dfe.add( ghostEltWrap, next_free_dof, myRank );
+#if 0
         // faces doftable
         for ( size_type f = 0; f < ghostElt.nTopologicalFaces(); f++ )
         {
@@ -2309,6 +2328,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                 faceGhostDone.insert( theface.id() );
             }
         }
+#endif
     }
     //------------------------------------------------------------------------------//
     // update local datamap
