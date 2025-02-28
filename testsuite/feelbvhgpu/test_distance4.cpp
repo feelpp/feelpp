@@ -40,6 +40,7 @@
 #include <feel/feells/distancetorange.hpp>
 
 #include <boost/math/distributions/students_t.hpp>
+#include <boost/math/distributions/chi_squared.hpp>
 //#include <boost/math/statistics/shapiro_wilk.hpp>
 
 #include "hip/hip_runtime.h"
@@ -394,7 +395,7 @@ void barrierAlpha(int numFlag)
         world.barrier();
         if (r == world.rank())
         {
-            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" <<r<<"] BARRIER "<< world.size()<<" numFlag ["<<numFlag<<"] RRRRRRRRRRRRRRRRRRRRR"<<"\n";
+            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" <<r<<"] BARRIER "<< world.size()<<" numFlag ["<<numFlag<<"] RRRRRRRRRRRRRRRRRRRRR"<<std::endl;
 
         }
     }
@@ -561,7 +562,7 @@ void distToBoundaryBVHpuSendAllNode(
     // CALCULATE DISTANCE MIN TO SURFACE CUBE CPU AND GPU
     if ( isViewInfo ) std::cout << "\n\n";
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist CPU\n";
-    bool isViewInfoLevel2 = false; isViewInfoLevel2 = true;
+    bool isViewInfoLevel2 = false; //isViewInfoLevel2 = true;
     std::vector<double> distanceMinCPU;
     distanceMinCPU = calculateDistanceMinPU( id_CPU, distance_CPU_mode, kblock, allNodeCoordinates, isViewInfoLevel2 );
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist GPU\n";
@@ -1060,6 +1061,22 @@ double calculateStandardDeviation(const std::vector<double>& vec, double mean) {
     return std::sqrt(sumSquares / (vec.size() - 1));
 }
 
+double calculateStandardDeviation(const std::vector<double>& values) {
+    double mean = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
+    double variance = std::accumulate(values.begin(), values.end(), 0.0,
+        [mean](double acc, double val) { return acc + std::pow(val - mean, 2); });
+    return std::sqrt(variance / (values.size() - 1));
+}
+
+std::pair<double, double> calculateConfidenceInterval(const std::vector<double>& data, double mean, double stdDev, double confidenceLevel = 0.95) {
+    if (data.empty()) return std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
+
+    boost::math::students_t_distribution<> t_dist(data.size() - 1);
+    double t_value = boost::math::quantile(boost::math::complement(t_dist, (1.0 - confidenceLevel) / 2.0));
+    double marginOfError = t_value * (stdDev / std::sqrt(data.size()));
+
+    return std::make_pair(mean - marginOfError, mean + marginOfError);
+}
 
 double calculateMeanRelativeError(const std::vector<double>& exact, const std::vector<double>& calculated) {
     double errorSum = 0.0;
@@ -1119,8 +1136,55 @@ std::pair<double, double> shapiro_wilk(std::vector<double>& x) {
 }
 
 
-void analyzeMethod(const std::vector<double>& exactDistances, 
-                   const std::vector<double>& calculatedDistances, 
+void chiSquaredTest(const std::vector<double>& exactDistances, const std::vector<double>& calculatedDistances) {
+    const int numCategories = 5; 
+    std::vector<int> exactCounts(numCategories, 0);
+    std::vector<int> calculatedCounts(numCategories, 0);
+
+    double minDistance = std::min(*std::min_element(exactDistances.begin(), exactDistances.end()), *std::min_element(calculatedDistances.begin(), calculatedDistances.end()));
+    double maxDistance = std::max(*std::max_element(exactDistances.begin(), exactDistances.end()), *std::max_element(calculatedDistances.begin(), calculatedDistances.end()));
+
+    double intervalSize = (maxDistance - minDistance) / numCategories;
+
+    for (double distance : exactDistances) {
+        int category = std::min(static_cast<int>((distance - minDistance) / intervalSize), numCategories - 1);
+        exactCounts[category]++;
+    }
+
+    for (double distance : calculatedDistances) {
+        int category = std::min(static_cast<int>((distance - minDistance) / intervalSize), numCategories - 1);
+        calculatedCounts[category]++;
+    }
+
+    double chi2 = 0.0;
+    for (int i = 0; i < numCategories; ++i) {
+        double expectedCount = (exactCounts[i] + calculatedCounts[i]) / 2.0; 
+        if (expectedCount > 0) {
+            chi2 += ((exactCounts[i] - expectedCount) * (exactCounts[i] - expectedCount)) / expectedCount;
+            chi2 += ((calculatedCounts[i] - expectedCount) * (calculatedCounts[i] - expectedCount)) / expectedCount;
+        }
+    }
+
+    int degreesOfFreedom = numCategories - 1;
+
+    boost::math::chi_squared_distribution<> chi2_dist(degreesOfFreedom);
+    double p_value = 1 - boost::math::cdf(chi2_dist, chi2);
+
+    std::cout << "Chi-squared test:" << std::endl;
+    std::cout << "  Chi-squared statistic: " << chi2 << std::endl;
+    std::cout << "  Degrees of freedom: " << degreesOfFreedom << std::endl;
+    std::cout << "  p-value: " << p_value << std::endl;
+
+    if (p_value < 0.05) {
+        std::cout << "  The distributions are likely different." << std::endl;
+    } else {
+        std::cout << "  There is not enough evidence to reject the hypothesis that the distributions are equal." << std::endl;
+    }
+}
+
+
+void analyzeMethod(const std::vector<double>& exactDistances,
+                   const std::vector<double>& calculatedDistances,
                    const std::string& methodName) {
     std::vector<double> differences;
     for (size_t i = 0; i < exactDistances.size(); ++i) {
@@ -1131,24 +1195,35 @@ void analyzeMethod(const std::vector<double>& exactDistances,
     double stdDevDifference = calculateStandardDeviation(differences, meanDifference);
     double meanRelativeError = calculateMeanRelativeError(exactDistances, calculatedDistances);
 
-    std::cout << "Analysis for " << methodName << ":\n";
+    std::cout << "[INFO STAT]: Analysis for " << methodName << ":\n";
     std::cout << "  Mean of differences: " << meanDifference << std::endl;
     std::cout << "  Standard deviation of differences: " << stdDevDifference << std::endl;
     std::cout << "  Mean relative error: " << meanRelativeError << std::endl;
+
+    // Confidence Interval
+    auto confidenceInterval = calculateConfidenceInterval(differences, meanDifference, stdDevDifference);
+    std::cout << "  Confidence Interval (95%): [" << confidenceInterval.first << ", " << confidenceInterval.second << "]" << std::endl;
 
     // Normality test (Shapiro-Wilk)
     auto result_shapiro = shapiro_wilk(differences);
     double w_shapiro = result_shapiro.first;
     double p_value_shapiro = result_shapiro.second;
-    if (p_value_shapiro < 0.05) { std::cout << "The data probably do not follow a normal distribution." << std::endl;} 
-    else { std::cout << "There is not enough evidence to reject the normality of the data." << std::endl; }
+    if (p_value_shapiro < 0.05) {
+        std::cout << "  The data probably do not follow a normal distribution." << std::endl;
+    } else {
+        std::cout << "  There is not enough evidence to reject the normality of the data." << std::endl;
+    }
 
     // Student's t-test
     double t_stat = meanDifference / (stdDevDifference / std::sqrt(differences.size()));
     boost::math::students_t_distribution<> t_dist(differences.size() - 1);
     double p_value = 2 * (1 - boost::math::cdf(t_dist, std::abs(t_stat)));
     std::cout << "  Student's t-test: p-value = " << p_value << std::endl;
+
+    // Chi-squared test
+    chiSquaredTest(exactDistances, calculatedDistances);
 }
+
 
 
 void compareMethods(const std::vector<double>& exactDistances, 
@@ -1156,15 +1231,15 @@ void compareMethods(const std::vector<double>& exactDistances,
                     const std::vector<double>& calculatedDistances2) {
 
 
-    std::cout<<"\n";
+    std::cout<<std::endl;
 
     if (exactDistances.size() != calculatedDistances1.size() || 
         exactDistances.size() != calculatedDistances2.size()) {
-        std::cerr << "Error: Distance vectors do not have the same size." << std::endl;
+        std::cerr << "[INFO STAT]: Error: Distance vectors do not have the same size." << std::endl;
         return;
     }
 
-    std::cout << "Comparison of the two methods:\n\n";
+    std::cout << "[INFO STAT]: Comparison of the two methods:\n\n";
 
     analyzeMethod(exactDistances, calculatedDistances1, "Method 1");
     std::cout << std::endl;
@@ -1181,7 +1256,7 @@ void compareMethods(const std::vector<double>& exactDistances,
     double meanErrorDifference = calculateMean(errorDifferences);
     double stdDevErrorDifference = calculateStandardDeviation(errorDifferences, meanErrorDifference);
 
-    std::cout << "\nDirect comparison of errors (Method 1 - Method 2):\n";
+    std::cout << "\n[INFO STAT]: Direct comparison of errors (Method 1 - Method 2):\n";
     std::cout << "  Mean of error differences: " << meanErrorDifference << std::endl;
     std::cout << "  Standard deviation of error differences: " << stdDevErrorDifference << std::endl;
 
@@ -1191,7 +1266,7 @@ void compareMethods(const std::vector<double>& exactDistances,
     double p_value = 2 * (1 - boost::math::cdf(t_dist, std::abs(t_stat)));
     std::cout << "  Paired t-test: p-value = " << p_value << std::endl;
 
-    std::cout << "\nConclusion: ";
+    std::cout << "\n[INFO STAT]: Conclusion: ";
     if (p_value < 0.05) {
         if (meanErrorDifference < 0) {
             std::cout << "Method 2 is statistically better than Method 1." << std::endl;
@@ -1202,6 +1277,71 @@ void compareMethods(const std::vector<double>& exactDistances,
         std::cout << "There is no statistically significant difference between the two methods." << std::endl;
     }
 }
+
+// Monte Carlo Part
+
+struct PointDistance {
+    double x, y, z;
+    double exactDistance;
+    double calculatedDistance;
+};
+
+double calculateConvergenceRate(const std::vector<int>& numRays, const std::vector<double>& errors) {
+    if (numRays.size() != errors.size() || numRays.size() < 2) {
+        return 0.0; 
+    }
+    double sumXY = 0.0, sumX = 0.0, sumY = 0.0, sumX2 = 0.0;
+    int n = numRays.size();
+    for (int i = 0; i < n; ++i) {
+        double x = std::log(numRays[i]);
+        double y = std::log(errors[i]);
+        sumXY += x * y;
+        sumX += x;
+        sumY += y;
+        sumX2 += x * x;
+    }
+    double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    return -slope; 
+}
+
+void analyzeDistanceCalculationEfficiency(const std::vector<PointDistance>& points, const std::vector<int>& numRaysList) {
+    std::vector<double> convergenceErrors;
+
+    for (int numRays : numRaysList) {
+        std::vector<double> exactDistances;
+        std::vector<double> calculatedDistances;
+        std::vector<double> errors;
+
+        for (const auto& point : points) {
+            exactDistances.push_back(point.exactDistance);
+            // add test ...
+            calculatedDistances.push_back(point.calculatedDistance);
+            errors.push_back(std::abs(point.exactDistance - point.calculatedDistance));
+        }
+
+        double meanError = std::accumulate(errors.begin(), errors.end(), 0.0) / errors.size();
+        double maxError = *std::max_element(errors.begin(), errors.end());
+        double stdDevError = calculateStandardDeviation(errors);
+        double meanRelativeError = calculateMeanRelativeError(exactDistances, calculatedDistances);
+
+        std::cout << "Analysis for " << numRays << " rays per point:\n";
+        std::cout << "Number of points: " << points.size() << std::endl;
+        std::cout << "Mean error: " << meanError << std::endl;
+        std::cout << "Maximum error: " << maxError << std::endl;
+        std::cout << "Error standard deviation: " << stdDevError << std::endl;
+        std::cout << "Mean relative error: " << meanRelativeError << std::endl;
+        std::cout << std::endl;
+
+        convergenceErrors.push_back(meanRelativeError);
+    }
+
+    // Calculate convergence rate
+    double convergenceRate = calculateConvergenceRate(numRaysList, convergenceErrors);
+    std::cout << "Estimated convergence rate: " << convergenceRate << std::endl;
+    std::cout << "Theoretical convergence rate for Monte Carlo: 0.5" << std::endl;
+}
+
+
 
 
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
@@ -1288,6 +1428,8 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     bool isOn = true; // isOn = false;
     bool isBuildPictureOn = true; isBuildPictureOn = false; 
+    bool isStatisticalAnalysisOn = true; // isStatisticalAnalysisOn  = false; 
+    bool isSaveTicTocTime  = true; //isSaveTicTocTime  = false;
 
     // In this part all data is sent at once from CPU to GPU.
     std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
@@ -1309,21 +1451,34 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         //******************************************************************************************************************/
         // Statistical analysis
-        std::vector<double> distancesMinREAL;
-        std::vector<double> distancesMinCPU;
-        std::vector<double> distancesMinGPU;
+        if (isStatisticalAnalysisOn)
+        {
+            std::vector<double> distancesMinREAL;
+            std::vector<double> distancesMinCPU;
+            std::vector<double> distancesMinGPU;
 
-        for (const auto& data : allDataDistanceBVHRTAll) {
-            std::cout<<"data.distanceMinREAL="<<data.distanceMinREAL<<" data.distanceMinCPU="<<data.distanceMinCPU<<" data.distanceMinGPU="<<data.distanceMinGPU<<"\n";
-            distancesMinREAL.push_back(data.distanceMinREAL);
-            distancesMinCPU.push_back(data.distanceMinCPU);
-            distancesMinGPU.push_back(data.distanceMinGPU);
+            for (const auto& data : allDataDistanceBVHRTAll) {
+                //std::cout<<"data.distanceMinREAL="<<data.distanceMinREAL<<" data.distanceMinCPU="<<data.distanceMinCPU<<" data.distanceMinGPU="<<data.distanceMinGPU<<std::endl;
+                distancesMinREAL.push_back(data.distanceMinREAL);
+                distancesMinCPU.push_back(data.distanceMinCPU);
+                distancesMinGPU.push_back(data.distanceMinGPU);
+            }
+
+            //analyzeMethod(distancesMinREAL, distancesMinCPU, "BVH CPU comparison");
+            //analyzeMethod(distancesMinREAL, distancesMinGPU, "BVH GPU comparison");
+            compareMethods(distancesMinREAL,distancesMinCPU,distancesMinGPU);
         }
 
-        //analyzeMethod(distancesMinREAL, distancesMinCPU, "BVH CPU comparison");
-        //analyzeMethod(distancesMinREAL, distancesMinGPU, "BVH GPU comparison");
-        compareMethods(distancesMinREAL,distancesMinCPU,distancesMinGPU);
+        //******************************************************************************************************************/
 
+
+        //******************************************************************************************************************/
+        // Save All tic toc time information
+        if (isSaveTicTocTime)
+        {
+            std::ofstream os ( "tictoc.md" );
+            Environment::saveTimersMD(os);
+        }
         //******************************************************************************************************************/
 
         //******************************************************************************************************************/
@@ -1437,9 +1592,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     }
 #endif
 
-// TODO: A activer
-//std::ofstream os ( "timers.md" );
-//Environment::saveTimersMD(os);
+
 
 
 }
