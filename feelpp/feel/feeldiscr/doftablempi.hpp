@@ -1747,7 +1747,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                                     }
                                 }
                                 CHECK( locFaceDof != invalid_v<uint16_type> ) << "not found a compatible dof";
-                                localDofOwnerDof += this->vector_permutation[facePermutationOwnerDof][locFaceDof];
+                                if ( facePermutationOwnerDof.value() == face_permutation_type::IDENTITY )
+                                    localDofOwnerDof += locFaceDof;
+                                else
+                                    localDofOwnerDof += this->vector_permutation[facePermutationOwnerDof][locFaceDof];
                             }
                         }
 
