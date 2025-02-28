@@ -1355,6 +1355,7 @@ class BVH : public CommObject
               M_distance( dist )
         {
             M_id = -1;
+            //M_id = 0;
         }
         BVHRayIntersectionResult( BVHRayIntersectionResult&& ) = default;
         BVHRayIntersectionResult( BVHRayIntersectionResult const& ) = default;
@@ -1955,6 +1956,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         //isView = true; isViewDataRT = true; isUnifiedMemory = false; numVersion = 0; 
         //isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 1; 
         //isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 2; 
+        //isView = true; isViewDataRT = true;
     }
 
     ~BVH_HIP_Party()
