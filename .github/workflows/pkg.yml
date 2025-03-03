@@ -1,4 +1,5 @@
 name: Feelpp PKG CI
+run-name: "Feelpp PKG CI | debian: ${{ inputs.enable-debian}} | ubuntu: ${{ inputs.enable-ubuntu}} | skip: ${{ inputs.skip}}"
 
 on:
   push:
