@@ -39,8 +39,8 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feells/distancetorange.hpp>
 
-#include <boost/math/distributions/students_t.hpp>
 #include <boost/math/distributions/chi_squared.hpp>
+#include <boost/math/distributions/students_t.hpp>
 //#include <boost/math/statistics/shapiro_wilk.hpp>
 
 #include "hip/hip_runtime.h"
@@ -286,33 +286,33 @@ std::vector<BVHRayType> generateCameraRays(
     const Eigen::Vector3d& cameraUp,
     int imageWidth,
     int imageHeight,
-    double fieldOfViewDegrees)
+    double fieldOfViewDegrees )
 {
     std::vector<BVHRayType> rays;
-    rays.reserve(imageWidth * imageHeight);
+    rays.reserve( imageWidth * imageHeight );
     double fieldOfViewRadians = fieldOfViewDegrees * M_PI / 180.0;
 
-    Eigen::Vector3d forward = (cameraTarget - cameraPosition).normalized();
-    Eigen::Vector3d right = forward.cross(cameraUp).normalized();
-    Eigen::Vector3d up = right.cross(forward);
+    Eigen::Vector3d forward = ( cameraTarget - cameraPosition ).normalized();
+    Eigen::Vector3d right = forward.cross( cameraUp ).normalized();
+    Eigen::Vector3d up = right.cross( forward );
 
-    double aspectRatio = static_cast<double>(imageWidth) / imageHeight;
-    double halfFovTan = std::tan(fieldOfViewRadians / 2.0);
-    Eigen::Vector3d horizontal = right * (2.0 * halfFovTan * aspectRatio);
-    Eigen::Vector3d vertical = up * (2.0 * halfFovTan);
+    double aspectRatio = static_cast<double>( imageWidth ) / imageHeight;
+    double halfFovTan = std::tan( fieldOfViewRadians / 2.0 );
+    Eigen::Vector3d horizontal = right * ( 2.0 * halfFovTan * aspectRatio );
+    Eigen::Vector3d vertical = up * ( 2.0 * halfFovTan );
     Eigen::Vector3d viewportUpperLeft = forward - horizontal / 2.0 + vertical / 2.0;
 
     int rayId = 0;
-    for (int y = 0; y < imageHeight; ++y)
+    for ( int y = 0; y < imageHeight; ++y )
     {
-        for (int x = 0; x < imageWidth; ++x)
+        for ( int x = 0; x < imageWidth; ++x )
         {
-            double ndcX = (2.0 * (x + 0.5) / imageWidth - 1.0) * aspectRatio;
-            double ndcY = 1.0 - 2.0 * (y + 0.5) / imageHeight;
+            double ndcX = ( 2.0 * ( x + 0.5 ) / imageWidth - 1.0 ) * aspectRatio;
+            double ndcY = 1.0 - 2.0 * ( y + 0.5 ) / imageHeight;
 
-            Eigen::Vector3d rayDirection = viewportUpperLeft + horizontal * ((x + 0.5) / imageWidth) - vertical * ((y + 0.5) / imageHeight);
+            Eigen::Vector3d rayDirection = viewportUpperLeft + horizontal * ( ( x + 0.5 ) / imageWidth ) - vertical * ( ( y + 0.5 ) / imageHeight );
             rayDirection.normalize();
-            rays.emplace_back(cameraPosition, rayDirection);
+            rays.emplace_back( cameraPosition, rayDirection );
             rays.back().id = rayId++;
         }
     }
@@ -386,17 +386,16 @@ std::vector<double> calculateDistanceMinPU(
     return distanceMinPU;
 }
 
-void barrierAlpha(int numFlag)
+void barrierAlpha( int numFlag )
 {
     mpi::environment env;
     mpi::communicator world;
-    for (int r = 0; r < world.size(); ++r)
+    for ( int r = 0; r < world.size(); ++r )
     {
         world.barrier();
-        if (r == world.rank())
+        if ( r == world.rank() )
         {
-            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" <<r<<"] BARRIER "<< world.size()<<" numFlag ["<<numFlag<<"] RRRRRRRRRRRRRRRRRRRRR"<<std::endl;
-
+            std::cout << "RRRRRRRRRRRRRRRRRRRRR ALPhA Rank [" << r << "] BARRIER " << world.size() << " numFlag [" << numFlag << "] RRRRRRRRRRRRRRRRRRRRR" << std::endl;
         }
     }
 }
@@ -457,7 +456,7 @@ void distToBoundaryBVHpuSendAllNode(
                                 << "\n";
     //******************************************************************************************************************/
 
-    barrierAlpha(1);
+    barrierAlpha( 1 );
 
     //******************************************************************************************************************/
     //==================================================================================================================/
@@ -488,7 +487,7 @@ void distToBoundaryBVHpuSendAllNode(
     t_begin_gpu = std::chrono::steady_clock::now();
     tic();
     auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+    // auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
     auto timeBVHGPUDuration = toc( "timeBVHGPUDuration" );
     t_end_bvh_gpu = std::chrono::steady_clock::now();
     // END::Build BVH GPU
@@ -562,7 +561,7 @@ void distToBoundaryBVHpuSendAllNode(
     // CALCULATE DISTANCE MIN TO SURFACE CUBE CPU AND GPU
     if ( isViewInfo ) std::cout << "\n\n";
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist CPU\n";
-    bool isViewInfoLevel2 = false; //isViewInfoLevel2 = true;
+    bool isViewInfoLevel2 = false; // isViewInfoLevel2 = true;
     std::vector<double> distanceMinCPU;
     distanceMinCPU = calculateDistanceMinPU( id_CPU, distance_CPU_mode, kblock, allNodeCoordinates, isViewInfoLevel2 );
     if ( isViewInfo ) std::cout << "[INFO] Calul MinDist GPU\n";
@@ -610,7 +609,6 @@ void distToBoundaryBVHpuSendAllNode(
 
     printf( "FINISHED\n" );
 }
-
 
 // ===============
 // Debriefing part
@@ -819,7 +817,6 @@ void saveAllDataDebriefingJSON(
     file.close();
 }
 
-
 // =================
 // Meshs fusion part
 // =================
@@ -913,14 +910,14 @@ std::shared_ptr<MeshType> gatherMeshes( const std::shared_ptr<MeshType>& local_m
 
 template <typename RangeType2>
 void builtPicture(
-    RangeType2 const& range)
+    RangeType2 const& range )
 {
     bool isViewInfo = true;
     int numRank = 0;
     using mesh_entity_type = std::remove_const_t<entity_range_t<RangeType2>>;
     using bvh_ray_type = BVHRay<mesh_entity_type::nRealDim>;
 
-    std::chrono::steady_clock::time_point t_begin_BuildCameraRays,t_end_BuildCameraRays;
+    std::chrono::steady_clock::time_point t_begin_BuildCameraRays, t_end_BuildCameraRays;
     std::chrono::steady_clock::time_point t_begin_BVH, t_end_BVH;
     std::chrono::steady_clock::time_point t_begin_RT, t_end_RT;
     std::chrono::steady_clock::time_point t_begin_BuildPicture, t_end_BuildPicture;
@@ -932,26 +929,25 @@ void builtPicture(
     long int t_laps_BuildPicture = 0;
     long int t_laps_AllProcess = 0;
 
-
     t_begin_AllProcess = std::chrono::steady_clock::now();
     //******************************************************************************************************************/
     // Build Rays Camera
-    //const double epsilon = 0.00001f;
-    //int nbValues = 0;
+    // const double epsilon = 0.00001f;
+    // int nbValues = 0;
 
     std::vector<bvh_ray_type> rays;
     std::vector<double> distance_Real_mode;
     BVHRaysDistributed<mesh_entity_type::nRealDim> raysDistributed;
 
     t_begin_BuildCameraRays = std::chrono::steady_clock::now();
-    Eigen::Vector3d cameraPosition(2.0, 2.0, 2.0);
-    Eigen::Vector3d cameraLookAt(0.5, 0.5, 0.5);
-    Eigen::Vector3d cameraUp(0.0, 1.0, 0.0); // Assuming Y is up
+    Eigen::Vector3d cameraPosition( 2.0, 2.0, 2.0 );
+    Eigen::Vector3d cameraLookAt( 0.5, 0.5, 0.5 );
+    Eigen::Vector3d cameraUp( 0.0, 1.0, 0.0 ); // Assuming Y is up
 
     int imageWidth = 800;
     int imageHeight = 800;
     double fieldOfViewDegrees = 60.0;
-    rays = generateCameraRays<bvh_ray_type>(cameraPosition, cameraLookAt, cameraUp, imageWidth, imageHeight, fieldOfViewDegrees);
+    rays = generateCameraRays<bvh_ray_type>( cameraPosition, cameraLookAt, cameraUp, imageWidth, imageHeight, fieldOfViewDegrees );
     for ( size_t k = 0; k < rays.size(); ++k )
     {
         raysDistributed.push_back( rays[k] );
@@ -959,15 +955,16 @@ void builtPicture(
     t_end_BuildCameraRays = std::chrono::steady_clock::now();
     t_laps_BuildCameraRays = std::chrono::duration_cast<std::chrono::microseconds>( t_end_BuildCameraRays - t_begin_BuildCameraRays ).count();
 
-    if ( isViewInfo ) std::cout << "[INFO] Generate " << rays.size() << " Rays Done"<< "\n";
-    barrierAlpha(0);
+    if ( isViewInfo ) std::cout << "[INFO] Generate " << rays.size() << " Rays Done"
+                                << "\n";
+    barrierAlpha( 0 );
 
     //******************************************************************************************************************/
-    // Build BVH GPU 
+    // Build BVH GPU
     t_begin_BVH = std::chrono::steady_clock::now();
     auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
-    //BVH::CPU auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "third-party", _quality = BVHEnum::Quality::High );
+    // auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+    // BVH::CPU auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "third-party", _quality = BVHEnum::Quality::High );
     t_end_BVH = std::chrono::steady_clock::now();
     t_laps_BVH = std::chrono::duration_cast<std::chrono::microseconds>( t_end_BVH - t_begin_BVH ).count();
     numRank = bvhHIPParty->worldComm().rank();
@@ -975,11 +972,11 @@ void builtPicture(
     //******************************************************************************************************************/
 
     //******************************************************************************************************************/
-    // Build GPU Rays Tracing 
+    // Build GPU Rays Tracing
     std::vector<double> dist;
     std::vector<double> distance_GPU_mode;
     std::vector<size_t> id;
-    std::vector<size_t> id_GPU;   
+    std::vector<size_t> id_GPU;
     t_begin_RT = std::chrono::steady_clock::now();
     auto multiRayDistributedIntersectionHipResult = bvhHIPParty->intersect( _ray = raysDistributed, _parallel = false );
     t_end_RT = std::chrono::steady_clock::now();
@@ -992,46 +989,50 @@ void builtPicture(
         id = getId( bvhHIPParty, rayIntersectionResult );
         id_GPU.insert( id_GPU.end(), id.begin(), id.end() );
     }
-     if ( isViewInfo ) std::cout << "[INFO] id_GPU " << id_GPU.size() << "\n";
+    if ( isViewInfo ) std::cout << "[INFO] id_GPU " << id_GPU.size() << "\n";
     //******************************************************************************************************************/
 
     //******************************************************************************************************************/
     // Build Picture
     t_begin_BuildPicture = std::chrono::steady_clock::now();
     {
-    // Normalize distances to the range [0, 1]
+        // Normalize distances to the range [0, 1]
         double max_distance = 0.0;
-        for (const auto& d : distance_GPU_mode) {
-            max_distance = std::max(max_distance, d);
+        for ( const auto& d : distance_GPU_mode )
+        {
+            max_distance = std::max( max_distance, d );
         }
 
-        double min_distance = max_distance ;
-        for (const auto& d : distance_GPU_mode) {
-            min_distance = std::min(min_distance, d);
+        double min_distance = max_distance;
+        for ( const auto& d : distance_GPU_mode )
+        {
+            min_distance = std::min( min_distance, d );
         }
 
         // Create image data (RGB)
         unsigned char* image_data = new unsigned char[imageWidth * imageHeight * 3];
-        for (int i = 0; i < imageWidth * imageHeight; ++i) {
+        for ( int i = 0; i < imageWidth * imageHeight; ++i )
+        {
             unsigned char r, g, b;
             image_data[i * 3 + 0] = 0;
             image_data[i * 3 + 1] = 0;
             image_data[i * 3 + 2] = 0;
         }
 
-        for (int k = 0; k <distance_GPU_mode.size() ; ++k) {
+        for ( int k = 0; k < distance_GPU_mode.size(); ++k )
+        {
             unsigned char r, g, b;
-            double distance = (distance_GPU_mode[k]- min_distance) / (max_distance-min_distance);
-            g = static_cast<unsigned char>(distance * 255.0);
-            r = static_cast<unsigned char>((1.0 - distance) * 255.0);
+            double distance = ( distance_GPU_mode[k] - min_distance ) / ( max_distance - min_distance );
+            g = static_cast<unsigned char>( distance * 255.0 );
+            r = static_cast<unsigned char>( ( 1.0 - distance ) * 255.0 );
             b = 0;
-            int i=id_GPU[k];
+            int i = id_GPU[k];
             image_data[i * 3 + 0] = r;
             image_data[i * 3 + 1] = g;
             image_data[i * 3 + 2] = b;
         }
 
-        savePPM("distance_image.ppm", image_data, imageWidth, imageHeight);
+        savePPM( "distance_image.ppm", image_data, imageWidth, imageHeight );
         delete[] image_data;
     }
     t_end_BuildPicture = std::chrono::steady_clock::now();
@@ -1039,161 +1040,191 @@ void builtPicture(
     t_end_AllProcess = std::chrono::steady_clock::now();
     t_laps_AllProcess = std::chrono::duration_cast<std::chrono::microseconds>( t_end_AllProcess - t_begin_AllProcess ).count();
 
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside Build Camera Rays : " << t_laps_BuildCameraRays << " us"<< " rank=[" << numRank << "]\n";
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH : " << t_laps_BVH << " us"<< " rank=[" << numRank << "]\n";
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside RT : " << t_laps_RT << " us"<< " rank=[" << numRank << "]\n";
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside Build Picture : " << t_laps_BuildPicture << " us"<< " rank=[" << numRank << "]\n";
-    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside All Process : " << t_laps_AllProcess << " us"<< " rank=[" << numRank << "]\n";
-
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside Build Camera Rays : " << t_laps_BuildCameraRays << " us"
+                                << " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside BVH : " << t_laps_BVH << " us"
+                                << " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside RT : " << t_laps_RT << " us"
+                                << " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside Build Picture : " << t_laps_BuildPicture << " us"
+                                << " rank=[" << numRank << "]\n";
+    if ( isViewInfo ) std::cout << "[INFO] Elapsed microseconds inside All Process : " << t_laps_AllProcess << " us"
+                                << " rank=[" << numRank << "]\n";
 }
 
 // =========================
 // Statistical analysis part
 // =========================
 
-double calculateMean(const std::vector<double>& vec) {
-    return std::accumulate(vec.begin(), vec.end(), 0.0) / vec.size();
+double calculateMean( const std::vector<double>& vec )
+{
+    return std::accumulate( vec.begin(), vec.end(), 0.0 ) / vec.size();
 }
 
-double calculateStandardDeviation(const std::vector<double>& vec, double mean) {
-    double sumSquares = std::accumulate(vec.begin(), vec.end(), 0.0,
-        [mean](double acc, double val) { return acc + std::pow(val - mean, 2); });
-    return std::sqrt(sumSquares / (vec.size() - 1));
+double calculateStandardDeviation( const std::vector<double>& vec, double mean )
+{
+    double sumSquares = std::accumulate( vec.begin(), vec.end(), 0.0,
+                                         [mean]( double acc, double val )
+                                         { return acc + std::pow( val - mean, 2 ); } );
+    return std::sqrt( sumSquares / ( vec.size() - 1 ) );
 }
 
-double calculateStandardDeviation(const std::vector<double>& values) {
-    double mean = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
-    double variance = std::accumulate(values.begin(), values.end(), 0.0,
-        [mean](double acc, double val) { return acc + std::pow(val - mean, 2); });
-    return std::sqrt(variance / (values.size() - 1));
+double calculateStandardDeviation( const std::vector<double>& values )
+{
+    double mean = std::accumulate( values.begin(), values.end(), 0.0 ) / values.size();
+    double variance = std::accumulate( values.begin(), values.end(), 0.0,
+                                       [mean]( double acc, double val )
+                                       { return acc + std::pow( val - mean, 2 ); } );
+    return std::sqrt( variance / ( values.size() - 1 ) );
 }
 
-std::pair<double, double> calculateConfidenceInterval(const std::vector<double>& data, double mean, double stdDev, double confidenceLevel = 0.95) {
-    if (data.empty()) return std::make_pair(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
+std::pair<double, double> calculateConfidenceInterval( const std::vector<double>& data, double mean, double stdDev, double confidenceLevel = 0.95 )
+{
+    if ( data.empty() ) return std::make_pair( std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() );
 
-    boost::math::students_t_distribution<> t_dist(data.size() - 1);
-    double t_value = boost::math::quantile(boost::math::complement(t_dist, (1.0 - confidenceLevel) / 2.0));
-    double marginOfError = t_value * (stdDev / std::sqrt(data.size()));
+    boost::math::students_t_distribution<> t_dist( data.size() - 1 );
+    double t_value = boost::math::quantile( boost::math::complement( t_dist, ( 1.0 - confidenceLevel ) / 2.0 ) );
+    double marginOfError = t_value * ( stdDev / std::sqrt( data.size() ) );
 
-    return std::make_pair(mean - marginOfError, mean + marginOfError);
+    return std::make_pair( mean - marginOfError, mean + marginOfError );
 }
 
-double calculateMeanRelativeError(const std::vector<double>& exact, const std::vector<double>& calculated) {
+double calculateMeanRelativeError( const std::vector<double>& exact, const std::vector<double>& calculated )
+{
     double errorSum = 0.0;
     int validCount = 0;
-    for (size_t i = 0; i < exact.size(); ++i) {
-        if (exact[i] != 0.0) {
-            errorSum += std::abs(exact[i] - calculated[i]) / exact[i];
+    for ( size_t i = 0; i < exact.size(); ++i )
+    {
+        if ( exact[i] != 0.0 )
+        {
+            errorSum += std::abs( exact[i] - calculated[i] ) / exact[i];
             validCount++;
         }
     }
     return validCount > 0 ? errorSum / validCount : 0.0;
 }
 
-std::pair<double, double> shapiro_wilk(std::vector<double>& x) {
+std::pair<double, double> shapiro_wilk( std::vector<double>& x )
+{
     int n = x.size();
-    std::sort(x.begin(), x.end());
-    
-    std::vector<double> a(n);
+    std::sort( x.begin(), x.end() );
+
+    std::vector<double> a( n );
     double m = 0.0, s = 0.0;
-    
-    for (int i = 0; i < n; i++) {
+
+    for ( int i = 0; i < n; i++ )
+    {
         m += x[i];
     }
     m /= n;
-    
-    for (int i = 0; i < n; i++) {
-        s += (x[i] - m) * (x[i] - m);
+
+    for ( int i = 0; i < n; i++ )
+    {
+        s += ( x[i] - m ) * ( x[i] - m );
     }
-    
-    if (n == 3) {
-        a[0] = 0.7071; a[1] = 0;
-    } else {
-        double an = 0.5641896 * (n - 3.0) / (n + 1.0);
-        a[n-1] = -an;
-        a[0] = -a[n-1];
-        double alpha = (a[0] - an) * (a[0] - an);
+
+    if ( n == 3 )
+    {
+        a[0] = 0.7071;
+        a[1] = 0;
+    }
+    else
+    {
+        double an = 0.5641896 * ( n - 3.0 ) / ( n + 1.0 );
+        a[n - 1] = -an;
+        a[0] = -a[n - 1];
+        double alpha = ( a[0] - an ) * ( a[0] - an );
         double nn2 = n * n;
-        for (int i = 1; i < (n-1)/2; i++) {
-            a[i] = a[0] - (alpha / nn2) * (nn2 - 1 - 2 * (n - 1 - i) * (n - i));
-            a[n-1-i] = -a[i];
+        for ( int i = 1; i < ( n - 1 ) / 2; i++ )
+        {
+            a[i] = a[0] - ( alpha / nn2 ) * ( nn2 - 1 - 2 * ( n - 1 - i ) * ( n - i ) );
+            a[n - 1 - i] = -a[i];
         }
     }
-    
+
     double w = 0.0;
-    for (int i = 0; i < n; i++) {
+    for ( int i = 0; i < n; i++ )
+    {
         w += a[i] * x[i];
     }
     w = w * w / s;
-    
-    double mu = 0.0038915 * std::log(n) * std::log(n) * std::log(n) - 0.083751 * std::log(n) * std::log(n) + 0.31082 * std::log(n) - 1.5861;
-    double sigma = std::exp(0.0030302 * std::log(n) * std::log(n) - 0.082676 * std::log(n) - 0.4803);
-    
-    double z = (std::log(1 - w) - mu) / sigma;
-    double p = 1 - 0.5 * (1 + std::erf(z / std::sqrt(2)));
-    
-    return std::make_pair(w, p);
+
+    double mu = 0.0038915 * std::log( n ) * std::log( n ) * std::log( n ) - 0.083751 * std::log( n ) * std::log( n ) + 0.31082 * std::log( n ) - 1.5861;
+    double sigma = std::exp( 0.0030302 * std::log( n ) * std::log( n ) - 0.082676 * std::log( n ) - 0.4803 );
+
+    double z = ( std::log( 1 - w ) - mu ) / sigma;
+    double p = 1 - 0.5 * ( 1 + std::erf( z / std::sqrt( 2 ) ) );
+
+    return std::make_pair( w, p );
 }
 
+void chiSquaredTest( const std::vector<double>& exactDistances, const std::vector<double>& calculatedDistances )
+{
+    const int numCategories = 5;
+    std::vector<int> exactCounts( numCategories, 0 );
+    std::vector<int> calculatedCounts( numCategories, 0 );
 
-void chiSquaredTest(const std::vector<double>& exactDistances, const std::vector<double>& calculatedDistances) {
-    const int numCategories = 5; 
-    std::vector<int> exactCounts(numCategories, 0);
-    std::vector<int> calculatedCounts(numCategories, 0);
+    double minDistance = std::min( *std::min_element( exactDistances.begin(), exactDistances.end() ), *std::min_element( calculatedDistances.begin(), calculatedDistances.end() ) );
+    double maxDistance = std::max( *std::max_element( exactDistances.begin(), exactDistances.end() ), *std::max_element( calculatedDistances.begin(), calculatedDistances.end() ) );
 
-    double minDistance = std::min(*std::min_element(exactDistances.begin(), exactDistances.end()), *std::min_element(calculatedDistances.begin(), calculatedDistances.end()));
-    double maxDistance = std::max(*std::max_element(exactDistances.begin(), exactDistances.end()), *std::max_element(calculatedDistances.begin(), calculatedDistances.end()));
+    double intervalSize = ( maxDistance - minDistance ) / numCategories;
 
-    double intervalSize = (maxDistance - minDistance) / numCategories;
-
-    for (double distance : exactDistances) {
-        int category = std::min(static_cast<int>((distance - minDistance) / intervalSize), numCategories - 1);
+    for ( double distance : exactDistances )
+    {
+        int category = std::min( static_cast<int>( ( distance - minDistance ) / intervalSize ), numCategories - 1 );
         exactCounts[category]++;
     }
 
-    for (double distance : calculatedDistances) {
-        int category = std::min(static_cast<int>((distance - minDistance) / intervalSize), numCategories - 1);
+    for ( double distance : calculatedDistances )
+    {
+        int category = std::min( static_cast<int>( ( distance - minDistance ) / intervalSize ), numCategories - 1 );
         calculatedCounts[category]++;
     }
 
     double chi2 = 0.0;
-    for (int i = 0; i < numCategories; ++i) {
-        double expectedCount = (exactCounts[i] + calculatedCounts[i]) / 2.0; 
-        if (expectedCount > 0) {
-            chi2 += ((exactCounts[i] - expectedCount) * (exactCounts[i] - expectedCount)) / expectedCount;
-            chi2 += ((calculatedCounts[i] - expectedCount) * (calculatedCounts[i] - expectedCount)) / expectedCount;
+    for ( int i = 0; i < numCategories; ++i )
+    {
+        double expectedCount = ( exactCounts[i] + calculatedCounts[i] ) / 2.0;
+        if ( expectedCount > 0 )
+        {
+            chi2 += ( ( exactCounts[i] - expectedCount ) * ( exactCounts[i] - expectedCount ) ) / expectedCount;
+            chi2 += ( ( calculatedCounts[i] - expectedCount ) * ( calculatedCounts[i] - expectedCount ) ) / expectedCount;
         }
     }
 
     int degreesOfFreedom = numCategories - 1;
 
-    boost::math::chi_squared_distribution<> chi2_dist(degreesOfFreedom);
-    double p_value = 1 - boost::math::cdf(chi2_dist, chi2);
+    boost::math::chi_squared_distribution<> chi2_dist( degreesOfFreedom );
+    double p_value = 1 - boost::math::cdf( chi2_dist, chi2 );
 
     std::cout << "Chi-squared test:" << std::endl;
     std::cout << "  Chi-squared statistic: " << chi2 << std::endl;
     std::cout << "  Degrees of freedom: " << degreesOfFreedom << std::endl;
     std::cout << "  p-value: " << p_value << std::endl;
 
-    if (p_value < 0.05) {
+    if ( p_value < 0.05 )
+    {
         std::cout << "  The distributions are likely different." << std::endl;
-    } else {
+    }
+    else
+    {
         std::cout << "  There is not enough evidence to reject the hypothesis that the distributions are equal." << std::endl;
     }
 }
 
-
-void analyzeMethod(const std::vector<double>& exactDistances,
-                   const std::vector<double>& calculatedDistances,
-                   const std::string& methodName) {
+void analyzeMethod( const std::vector<double>& exactDistances,
+                    const std::vector<double>& calculatedDistances,
+                    const std::string& methodName )
+{
     std::vector<double> differences;
-    for (size_t i = 0; i < exactDistances.size(); ++i) {
-        differences.push_back(calculatedDistances[i] - exactDistances[i]);
+    for ( size_t i = 0; i < exactDistances.size(); ++i )
+    {
+        differences.push_back( calculatedDistances[i] - exactDistances[i] );
     }
 
-    double meanDifference = calculateMean(differences);
-    double stdDevDifference = calculateStandardDeviation(differences, meanDifference);
-    double meanRelativeError = calculateMeanRelativeError(exactDistances, calculatedDistances);
+    double meanDifference = calculateMean( differences );
+    double stdDevDifference = calculateStandardDeviation( differences, meanDifference );
+    double meanRelativeError = calculateMeanRelativeError( exactDistances, calculatedDistances );
 
     std::cout << "[INFO STAT]: Analysis for " << methodName << ":\n";
     std::cout << "  Mean of differences: " << meanDifference << std::endl;
@@ -1201,152 +1232,174 @@ void analyzeMethod(const std::vector<double>& exactDistances,
     std::cout << "  Mean relative error: " << meanRelativeError << std::endl;
 
     // Confidence Interval
-    auto confidenceInterval = calculateConfidenceInterval(differences, meanDifference, stdDevDifference);
+    auto confidenceInterval = calculateConfidenceInterval( differences, meanDifference, stdDevDifference );
     std::cout << "  Confidence Interval (95%): [" << confidenceInterval.first << ", " << confidenceInterval.second << "]" << std::endl;
 
     // Normality test (Shapiro-Wilk)
-    auto result_shapiro = shapiro_wilk(differences);
+    auto result_shapiro = shapiro_wilk( differences );
     double w_shapiro = result_shapiro.first;
     double p_value_shapiro = result_shapiro.second;
-    if (p_value_shapiro < 0.05) {
+    if ( p_value_shapiro < 0.05 )
+    {
         std::cout << "  The data probably do not follow a normal distribution." << std::endl;
-    } else {
+    }
+    else
+    {
         std::cout << "  There is not enough evidence to reject the normality of the data." << std::endl;
     }
 
     // Student's t-test
-    double t_stat = meanDifference / (stdDevDifference / std::sqrt(differences.size()));
-    boost::math::students_t_distribution<> t_dist(differences.size() - 1);
-    double p_value = 2 * (1 - boost::math::cdf(t_dist, std::abs(t_stat)));
+    double t_stat = meanDifference / ( stdDevDifference / std::sqrt( differences.size() ) );
+    boost::math::students_t_distribution<> t_dist( differences.size() - 1 );
+    double p_value = 2 * ( 1 - boost::math::cdf( t_dist, std::abs( t_stat ) ) );
     std::cout << "  Student's t-test: p-value = " << p_value << std::endl;
 
     // Chi-squared test
-    chiSquaredTest(exactDistances, calculatedDistances);
+    chiSquaredTest( exactDistances, calculatedDistances );
 }
 
+void compareMethods( const std::vector<double>& exactDistances,
+                     const std::vector<double>& calculatedDistances1,
+                     const std::vector<double>& calculatedDistances2 )
+{
 
+    std::cout << std::endl;
 
-void compareMethods(const std::vector<double>& exactDistances, 
-                    const std::vector<double>& calculatedDistances1, 
-                    const std::vector<double>& calculatedDistances2) {
-
-
-    std::cout<<std::endl;
-
-    if (exactDistances.size() != calculatedDistances1.size() || 
-        exactDistances.size() != calculatedDistances2.size()) {
+    if ( exactDistances.size() != calculatedDistances1.size() ||
+         exactDistances.size() != calculatedDistances2.size() )
+    {
         std::cerr << "[INFO STAT]: Error: Distance vectors do not have the same size." << std::endl;
         return;
     }
 
     std::cout << "[INFO STAT]: Comparison of the two methods:\n\n";
 
-    analyzeMethod(exactDistances, calculatedDistances1, "Method 1");
+    analyzeMethod( exactDistances, calculatedDistances1, "Method 1" );
     std::cout << std::endl;
-    analyzeMethod(exactDistances, calculatedDistances2, "Method 2");
+    analyzeMethod( exactDistances, calculatedDistances2, "Method 2" );
 
     // Direct comparison of errors from both methods
     std::vector<double> errorDifferences;
-    for (size_t i = 0; i < exactDistances.size(); ++i) {
-        double error1 = std::abs(calculatedDistances1[i] - exactDistances[i]);
-        double error2 = std::abs(calculatedDistances2[i] - exactDistances[i]);
-        errorDifferences.push_back(error1 - error2);
+    for ( size_t i = 0; i < exactDistances.size(); ++i )
+    {
+        double error1 = std::abs( calculatedDistances1[i] - exactDistances[i] );
+        double error2 = std::abs( calculatedDistances2[i] - exactDistances[i] );
+        errorDifferences.push_back( error1 - error2 );
     }
 
-    double meanErrorDifference = calculateMean(errorDifferences);
-    double stdDevErrorDifference = calculateStandardDeviation(errorDifferences, meanErrorDifference);
+    double meanErrorDifference = calculateMean( errorDifferences );
+    double stdDevErrorDifference = calculateStandardDeviation( errorDifferences, meanErrorDifference );
 
     std::cout << "\n[INFO STAT]: Direct comparison of errors (Method 1 - Method 2):\n";
     std::cout << "  Mean of error differences: " << meanErrorDifference << std::endl;
     std::cout << "  Standard deviation of error differences: " << stdDevErrorDifference << std::endl;
 
     // Paired t-test
-    double t_stat = meanErrorDifference / (stdDevErrorDifference / std::sqrt(errorDifferences.size()));
-    boost::math::students_t_distribution<> t_dist(errorDifferences.size() - 1);
-    double p_value = 2 * (1 - boost::math::cdf(t_dist, std::abs(t_stat)));
+    double t_stat = meanErrorDifference / ( stdDevErrorDifference / std::sqrt( errorDifferences.size() ) );
+    boost::math::students_t_distribution<> t_dist( errorDifferences.size() - 1 );
+    double p_value = 2 * ( 1 - boost::math::cdf( t_dist, std::abs( t_stat ) ) );
     std::cout << "  Paired t-test: p-value = " << p_value << std::endl;
 
     std::cout << "\n[INFO STAT]: Conclusion: ";
-    if (p_value < 0.05) {
-        if (meanErrorDifference < 0) {
+    if ( p_value < 0.05 )
+    {
+        if ( meanErrorDifference < 0 )
+        {
             std::cout << "Method 2 is statistically better than Method 1." << std::endl;
-        } else {
+        }
+        else
+        {
             std::cout << "Method 1 is statistically better than Method 2." << std::endl;
         }
-    } else {
+    }
+    else
+    {
         std::cout << "There is no statistically significant difference between the two methods." << std::endl;
     }
 }
 
 // Monte Carlo Part
 
-struct PointDistance {
-    double x, y, z;
-    double exactDistance;
-    double calculatedDistance;
-};
+std::pair<double, double> calculateConfidenceInterval( const std::vector<double>& data, double confidenceLevel = 0.95 )
+{
+    if ( data.empty() ) return std::make_pair( std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN() );
 
-double calculateConvergenceRate(const std::vector<int>& numRays, const std::vector<double>& errors) {
-    if (numRays.size() != errors.size() || numRays.size() < 2) {
-        return 0.0; 
-    }
-    double sumXY = 0.0, sumX = 0.0, sumY = 0.0, sumX2 = 0.0;
-    int n = numRays.size();
-    for (int i = 0; i < n; ++i) {
-        double x = std::log(numRays[i]);
-        double y = std::log(errors[i]);
-        sumXY += x * y;
-        sumX += x;
-        sumY += y;
-        sumX2 += x * x;
-    }
-    double slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    return -slope; 
+    double mean = calculateMean( data );
+    double stdDev = calculateStandardDeviation( data );
+    boost::math::students_t_distribution<> t_dist( data.size() - 1 );
+    double t_value = boost::math::quantile( boost::math::complement( t_dist, ( 1.0 - confidenceLevel ) / 2.0 ) );
+    double marginOfError = t_value * ( stdDev / std::sqrt( data.size() ) );
+
+    return std::make_pair( mean - marginOfError, mean + marginOfError );
 }
 
-void analyzeDistanceCalculationEfficiency(const std::vector<PointDistance>& points, const std::vector<int>& numRaysList) {
-    std::vector<double> convergenceErrors;
+double calculateConvergenceRate( const std::vector<int>& numSamples, const std::vector<double>& errors )
+{
+    std::vector<double> logSamples, logErrors;
+    for ( size_t i = 0; i < numSamples.size(); ++i )
+    {
+        logSamples.push_back( std::log( numSamples[i] ) );
+        logErrors.push_back( std::log( errors[i] ) );
+    }
 
-    for (int numRays : numRaysList) {
-        std::vector<double> exactDistances;
-        std::vector<double> calculatedDistances;
-        std::vector<double> errors;
+    double n = logSamples.size();
+    double sumX = std::accumulate( logSamples.begin(), logSamples.end(), 0.0 );
+    double sumY = std::accumulate( logErrors.begin(), logErrors.end(), 0.0 );
+    double sumXY = std::inner_product( logSamples.begin(), logSamples.end(), logErrors.begin(), 0.0 );
+    double sumX2 = std::inner_product( logSamples.begin(), logSamples.end(), logSamples.begin(), 0.0 );
 
-        for (const auto& point : points) {
-            exactDistances.push_back(point.exactDistance);
-            // add test ...
-            calculatedDistances.push_back(point.calculatedDistance);
-            errors.push_back(std::abs(point.exactDistance - point.calculatedDistance));
+    double slope = ( n * sumXY - sumX * sumY ) / ( n * sumX2 - sumX * sumX );
+    return -slope; // <=== The rate of convergence is the opposite of the slope
+}
+
+template <typename RangeType2>
+void analyzeMonteCarloMethodConvergenceRate(
+    RangeType2 const& range,
+    std::vector<std::vector<double>>& allNodeCoordinates,
+    DataTimeLapsConfig& allDataPU,
+    const std::vector<int>& numRaysList )
+{
+    std::vector<double> convergenceErrorsCPU;
+    std::vector<double> convergenceErrorsGPU;
+
+    for ( const auto& nbRay : numRaysList )
+    {
+        std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAlltmp;
+        allDataPU.nbRaysDesired = nbRay;
+        distToBoundaryBVHpuSendAllNode( range, allDataPU, allNodeCoordinates, allDataDistanceBVHRTAlltmp, true );
+
+        std::vector<double> distancesMinREAL, distancesMinCPU, distancesMinGPU;
+        for ( const auto& data : allDataDistanceBVHRTAlltmp )
+        {
+            distancesMinREAL.push_back( data.distanceMinREAL );
+            distancesMinCPU.push_back( data.distanceMinCPU );
+            distancesMinGPU.push_back( data.distanceMinGPU );
         }
 
-        double meanError = std::accumulate(errors.begin(), errors.end(), 0.0) / errors.size();
-        double maxError = *std::max_element(errors.begin(), errors.end());
-        double stdDevError = calculateStandardDeviation(errors);
-        double meanRelativeError = calculateMeanRelativeError(exactDistances, calculatedDistances);
-
-        std::cout << "Analysis for " << numRays << " rays per point:\n";
-        std::cout << "Number of points: " << points.size() << std::endl;
-        std::cout << "Mean error: " << meanError << std::endl;
-        std::cout << "Maximum error: " << maxError << std::endl;
-        std::cout << "Error standard deviation: " << stdDevError << std::endl;
-        std::cout << "Mean relative error: " << meanRelativeError << std::endl;
-        std::cout << std::endl;
-
-        convergenceErrors.push_back(meanRelativeError);
+        convergenceErrorsCPU.push_back( calculateMeanRelativeError( distancesMinREAL, distancesMinCPU ) );
+        convergenceErrorsGPU.push_back( calculateMeanRelativeError( distancesMinREAL, distancesMinGPU ) );
     }
 
-    // Calculate convergence rate
-    double convergenceRate = calculateConvergenceRate(numRaysList, convergenceErrors);
-    std::cout << "Estimated convergence rate: " << convergenceRate << std::endl;
-    std::cout << "Theoretical convergence rate for Monte Carlo: 0.5" << std::endl;
-}
+    double convergenceRateCPU = calculateConvergenceRate( numRaysList, convergenceErrorsCPU );
+    double convergenceRateGPU = calculateConvergenceRate( numRaysList, convergenceErrorsGPU );
 
+    std::cout << "Estimated convergence rate CPU: " << convergenceRateCPU << std::endl;
+    std::cout << "Estimated convergence rate GPU: " << convergenceRateGPU << std::endl;
+    std::cout << "Theoretical convergence rate for Monte Carlo: 0.5" << std::endl;
+
+    auto ciCPU = calculateConfidenceInterval( convergenceErrorsCPU );
+    auto ciGPU = calculateConfidenceInterval( convergenceErrorsGPU );
+
+    std::cout << "95% Confidence Interval for CPU errors: [" << ciCPU.first << ", " << ciCPU.second << "]" << std::endl;
+    std::cout << "95% Confidence Interval for GPU errors: [" << ciGPU.first << ", " << ciGPU.second << "]" << std::endl;
+}
 
 // ==========================
 // Read TicToc Time file part
 // ==========================
 
-struct Data {
+struct Data
+{
     double count;
     double total;
     double max;
@@ -1355,46 +1408,51 @@ struct Data {
     double stddev;
 };
 
-std::map<std::string, Data> loadData(const std::string& file) {
+std::map<std::string, Data> loadData( const std::string& file )
+{
     std::map<std::string, Data> data;
-    std::ifstream fileStream(file);
-    if (!fileStream) {
+    std::ifstream fileStream( file );
+    if ( !fileStream )
+    {
         std::cerr << "Error opening file." << std::endl;
         return data;
     }
 
     std::string line;
     // Skip the first two lines (header)
-    std::getline(fileStream, line);
-    std::getline(fileStream, line);
+    std::getline( fileStream, line );
+    std::getline( fileStream, line );
 
-    while (std::getline(fileStream, line)) {
-        std::istringstream iss(line);
+    while ( std::getline( fileStream, line ) )
+    {
+        std::istringstream iss( line );
         std::string name;
         Data dataItem;
-        std::getline(iss, name, '|'); 
-        std::getline(iss, line, '|'); 
-        std::getline(iss, line, '|'); 
-        iss >> dataItem.count; 
-        iss.ignore(); 
-        iss >> dataItem.total; 
-        iss.ignore(); 
-        iss >> dataItem.max; 
-        iss.ignore(); 
-        iss >> dataItem.min; 
-        iss.ignore(); 
-        iss >> dataItem.mean; 
-        iss.ignore(); 
-        iss >> dataItem.stddev; 
+        std::getline( iss, name, '|' );
+        std::getline( iss, line, '|' );
+        std::getline( iss, line, '|' );
+        iss >> dataItem.count;
+        iss.ignore();
+        iss >> dataItem.total;
+        iss.ignore();
+        iss >> dataItem.max;
+        iss.ignore();
+        iss >> dataItem.min;
+        iss.ignore();
+        iss >> dataItem.mean;
+        iss.ignore();
+        iss >> dataItem.stddev;
         data[name] = dataItem;
     }
     fileStream.close();
     return data;
 }
 
-void query(const std::map<std::string, Data>& data, const std::string& name) {
-    if (data.find(name) != data.end()) {
-        const Data& dataItem = data.at(name);
+void query( const std::map<std::string, Data>& data, const std::string& name )
+{
+    if ( data.find( name ) != data.end() )
+    {
+        const Data& dataItem = data.at( name );
         std::cout << "Name: " << name << std::endl;
         std::cout << "Count: " << dataItem.count << std::endl;
         std::cout << "Total: " << dataItem.total << std::endl;
@@ -1402,13 +1460,12 @@ void query(const std::map<std::string, Data>& data, const std::string& name) {
         std::cout << "Min: " << dataItem.min << std::endl;
         std::cout << "Mean: " << dataItem.mean << std::endl;
         std::cout << "StdDev: " << dataItem.stddev << std::endl;
-    } else {
+    }
+    else
+    {
         std::cout << "Name not found." << std::endl;
     }
 }
-
-
-
 
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
@@ -1493,9 +1550,13 @@ BOOST_AUTO_TEST_CASE( all_distance )
     //******************************************************************************************************************/
 
     bool isOn = true; // isOn = false;
-    bool isBuildPictureOn = true; isBuildPictureOn = false; 
-    bool isStatisticalAnalysisOn = true; isStatisticalAnalysisOn  = false;   //add limit inf
-    bool isSaveTicTocTime  = true; //isSaveTicTocTime  = false;
+    bool isBuildPictureOn = true;
+    isBuildPictureOn = false;
+    bool isStatisticalAnalysisOn = true;
+    isStatisticalAnalysisOn = false; // add limit inf
+    bool isSaveTicTocTime = true;    // isSaveTicTocTime  = false;
+    bool isStatisticalAnalysisConvergenceRateMonteCarloOn = true;
+    isStatisticalAnalysisConvergenceRateMonteCarloOn = false;
 
     // In this part all data is sent at once from CPU to GPU.
     std::vector<DataDistanceErrTimeAll> allDataDistanceBVHRTAll;
@@ -1503,7 +1564,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     if ( isOn )
     {
         // 3D rendering
-        if (isBuildPictureOn) builtPicture(rangeFaces);
+        if ( isBuildPictureOn ) builtPicture( rangeFaces );
         // We calculate the distances from the edge of the cube and the intersection points.
         distToBoundaryBVHpuSendAllNode( rangeFaces, allDataPU, allNodeCoordinates, allDataDistanceBVHRTAll, true );
 
@@ -1517,39 +1578,47 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         //******************************************************************************************************************/
         // Statistical analysis
-        if (isStatisticalAnalysisOn)
+        if ( isStatisticalAnalysisOn )
         {
             std::vector<double> distancesMinREAL;
             std::vector<double> distancesMinCPU;
             std::vector<double> distancesMinGPU;
 
-            for (const auto& data : allDataDistanceBVHRTAll) {
-                //std::cout<<"data.distanceMinREAL="<<data.distanceMinREAL<<" data.distanceMinCPU="<<data.distanceMinCPU<<" data.distanceMinGPU="<<data.distanceMinGPU<<std::endl;
-                distancesMinREAL.push_back(data.distanceMinREAL);
-                distancesMinCPU.push_back(data.distanceMinCPU);
-                distancesMinGPU.push_back(data.distanceMinGPU);
+            for ( const auto& data : allDataDistanceBVHRTAll )
+            {
+                // std::cout<<"data.distanceMinREAL="<<data.distanceMinREAL<<" data.distanceMinCPU="<<data.distanceMinCPU<<" data.distanceMinGPU="<<data.distanceMinGPU<<std::endl;
+                distancesMinREAL.push_back( data.distanceMinREAL );
+                distancesMinCPU.push_back( data.distanceMinCPU );
+                distancesMinGPU.push_back( data.distanceMinGPU );
             }
 
-            //analyzeMethod(distancesMinREAL, distancesMinCPU, "BVH CPU comparison");
-            //analyzeMethod(distancesMinREAL, distancesMinGPU, "BVH GPU comparison");
-            compareMethods(distancesMinREAL,distancesMinCPU,distancesMinGPU);
+            // analyzeMethod(distancesMinREAL, distancesMinCPU, "BVH CPU comparison");
+            // analyzeMethod(distancesMinREAL, distancesMinGPU, "BVH GPU comparison");
+            compareMethods( distancesMinREAL, distancesMinCPU, distancesMinGPU );
         }
-
         //******************************************************************************************************************/
 
+        //******************************************************************************************************************/
+        // Statistical analysis Convergence Rate Monte Carlo
+        if ( isStatisticalAnalysisConvergenceRateMonteCarloOn )
+        {
+            std::vector<int> numRaysList = { 100, 1000, 10000, 100000 };
+            analyzeMonteCarloMethodConvergenceRate( rangeFaces, allNodeCoordinates, allDataPU, numRaysList );
+        }
+        //******************************************************************************************************************/
 
         //******************************************************************************************************************/
         // Save All tic toc time information
-        if (isSaveTicTocTime)
+        if ( isSaveTicTocTime )
         {
-            std::ofstream os ( "tictoc.md" );
-            Environment::saveTimersMD(os);
+            std::ofstream os( "tictoc.md" );
+            Environment::saveTimersMD( os );
         }
         //******************************************************************************************************************/
 
         //******************************************************************************************************************/
         /*
-            Todo: define the parameters I will recover to put it in the debriefing.
+            Todo: define the parameters that I will recover to put it in the debriefing.
             std::map<std::string, Data> data = loadData("tictoc.md");
                 std::string name;
                 std::cout << "Enter the query name: ";
@@ -1605,7 +1674,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     //******************************************************************************************************************/
     // Gathering results from all MPI CPUs. Then synthesis of the results...  Will see if it works properly ;-)
 
-    barrierAlpha(2);
+    barrierAlpha( 2 );
 
     // We collect the sizes of the local vectors.
     std::vector<int> sizes( world.size() );
@@ -1668,10 +1737,6 @@ BOOST_AUTO_TEST_CASE( all_distance )
         auto e = exporter(_mesh=global_mesh, _name="my_global_mesh");
     }
 #endif
-
-
-
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()
