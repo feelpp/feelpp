@@ -1342,6 +1342,72 @@ void analyzeDistanceCalculationEfficiency(const std::vector<PointDistance>& poin
 }
 
 
+// ==========================
+// Read TicToc Time file part
+// ==========================
+
+struct Data {
+    double count;
+    double total;
+    double max;
+    double min;
+    double mean;
+    double stddev;
+};
+
+std::map<std::string, Data> loadData(const std::string& file) {
+    std::map<std::string, Data> data;
+    std::ifstream fileStream(file);
+    if (!fileStream) {
+        std::cerr << "Error opening file." << std::endl;
+        return data;
+    }
+
+    std::string line;
+    // Skip the first two lines (header)
+    std::getline(fileStream, line);
+    std::getline(fileStream, line);
+
+    while (std::getline(fileStream, line)) {
+        std::istringstream iss(line);
+        std::string name;
+        Data dataItem;
+        std::getline(iss, name, '|'); 
+        std::getline(iss, line, '|'); 
+        std::getline(iss, line, '|'); 
+        iss >> dataItem.count; 
+        iss.ignore(); 
+        iss >> dataItem.total; 
+        iss.ignore(); 
+        iss >> dataItem.max; 
+        iss.ignore(); 
+        iss >> dataItem.min; 
+        iss.ignore(); 
+        iss >> dataItem.mean; 
+        iss.ignore(); 
+        iss >> dataItem.stddev; 
+        data[name] = dataItem;
+    }
+    fileStream.close();
+    return data;
+}
+
+void query(const std::map<std::string, Data>& data, const std::string& name) {
+    if (data.find(name) != data.end()) {
+        const Data& dataItem = data.at(name);
+        std::cout << "Name: " << name << std::endl;
+        std::cout << "Count: " << dataItem.count << std::endl;
+        std::cout << "Total: " << dataItem.total << std::endl;
+        std::cout << "Max: " << dataItem.max << std::endl;
+        std::cout << "Min: " << dataItem.min << std::endl;
+        std::cout << "Mean: " << dataItem.mean << std::endl;
+        std::cout << "StdDev: " << dataItem.stddev << std::endl;
+    } else {
+        std::cout << "Name not found." << std::endl;
+    }
+}
+
+
 
 
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
@@ -1428,7 +1494,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     bool isOn = true; // isOn = false;
     bool isBuildPictureOn = true; isBuildPictureOn = false; 
-    bool isStatisticalAnalysisOn = true; // isStatisticalAnalysisOn  = false; 
+    bool isStatisticalAnalysisOn = true; isStatisticalAnalysisOn  = false;   //add limit inf
     bool isSaveTicTocTime  = true; //isSaveTicTocTime  = false;
 
     // In this part all data is sent at once from CPU to GPU.
@@ -1479,6 +1545,17 @@ BOOST_AUTO_TEST_CASE( all_distance )
             std::ofstream os ( "tictoc.md" );
             Environment::saveTimersMD(os);
         }
+        //******************************************************************************************************************/
+
+        //******************************************************************************************************************/
+        /*
+            Todo: define the parameters I will recover to put it in the debriefing.
+            std::map<std::string, Data> data = loadData("tictoc.md");
+                std::string name;
+                std::cout << "Enter the query name: ";
+                std::getline(std::cin, name);
+                query(data, name);
+        */
         //******************************************************************************************************************/
 
         //******************************************************************************************************************/
