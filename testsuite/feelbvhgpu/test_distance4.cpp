@@ -39,6 +39,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feells/distancetorange.hpp>
 
+
 #include <boost/math/distributions/chi_squared.hpp>
 #include <boost/math/distributions/students_t.hpp>
 //#include <boost/math/statistics/shapiro_wilk.hpp>
@@ -203,15 +204,11 @@ struct BoundingBoxMesh {
 
 
 BoundingBoxMesh calculateBoundingBoxMesh(const Mesh<Simplex<3, 1, 3>>& mesh) {
+    // This will be useful later ...
     BoundingBoxMesh bbox;
-
-    // Initialisation des valeurs minimales et maximales
     bbox.min = Point(std::numeric_limits<double>::max());
     bbox.max = Point(std::numeric_limits<double>::lowest());
-
-    // Vérifiez si le maillage a des points
     if (mesh.maxNumPoints() > 0) {
-        // Itération sur tous les points du maillage
         for (auto pointIndex = 0; pointIndex < mesh.maxNumPoints(); ++pointIndex) {
             auto point = mesh.point(pointIndex);
             bbox.min[0] = std::min(bbox.min[0], point[0]);
@@ -227,6 +224,40 @@ BoundingBoxMesh calculateBoundingBoxMesh(const Mesh<Simplex<3, 1, 3>>& mesh) {
 
     return bbox;
 }
+
+template <typename MeshEntityType>
+struct MeshPrimitiveInfo
+{
+    // For more information and to establish a ray tracing strategy according to the box cpu meshs.
+    using mesh_entity_type = std::decay_t<typename MeshEntityType::type>;
+    static constexpr uint16_type nDim = mesh_entity_type::nDim;
+    static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
+    using vector_realdim_type = Eigen::Matrix<double, nRealDim, 1>;
+
+    MeshPrimitiveInfo(MeshEntityType const& meshEntity)
+        : M_meshEntity(meshEntity.get()) 
+    {
+        auto verticesUblas = M_meshEntity.vertices();
+        auto G = Feel::em_cmatrix_col_type<double>(verticesUblas.data().begin(), nRealDim, mesh_entity_type::numVertices);
+        M_bound_min = G.rowwise().minCoeff();
+        M_bound_max = G.rowwise().maxCoeff();
+        M_bound_min.array() -= 2 * Feel::type_traits<double>::epsilon();
+        M_bound_max.array() += 2 * Feel::type_traits<double>::epsilon();
+        auto bary = M_meshEntity.barycenter();
+        M_centroid = Eigen::Map<vector_realdim_type>(bary.data().begin(), nRealDim);
+    }
+
+    mesh_entity_type const& meshEntity() const { return M_meshEntity; }
+    vector_realdim_type const& boundMin() const noexcept { return M_bound_min; }
+    vector_realdim_type const& boundMax() const noexcept { return M_bound_max; }
+    vector_realdim_type const& centroid() const noexcept { return M_centroid; }
+
+private:
+    vector_realdim_type M_bound_min;
+    vector_realdim_type M_bound_max;
+    vector_realdim_type M_centroid;
+    mesh_entity_type const& M_meshEntity;
+};
 
 
 template <typename BvhType, typename RayIntersectionResultType>
@@ -1500,6 +1531,11 @@ void query( const std::map<std::string, Data>& data, const std::string& name )
     }
 }
 
+
+
+
+
+
 BOOST_AUTO_TEST_SUITE( distance_bvh_cpu_gpu_gpu_tests )
 
 BOOST_AUTO_TEST_CASE( all_distance )
@@ -1544,15 +1580,27 @@ BOOST_AUTO_TEST_CASE( all_distance )
         std::cout << "[INFO] maxNumVerices : " << mesh->maxNumVertices() << std::endl;
     }
 
+
+    // Just to CTRL if it works for instance
     /*
     if ( isViewInfo )
     {
-        BoundingBoxMesh bbox = calculateBoundingBoxMesh(*mesh);
-        std::cout << "[INFO] Bounding Box Mesh:" << std::endl;
-        std::cout << "         Min: (" << bbox.min[0] << ", " << bbox.min[1] << ", " << bbox.min[2] << ")" << std::endl;
-        std::cout << "         Max: (" << bbox.max[0] << ", " << bbox.max[1] << ", " << bbox.max[2] << ")" << std::endl;
+        Eigen::Matrix<double, 3, 1> global_min = Eigen::Matrix<double, 3, 1>::Constant(std::numeric_limits<double>::max());
+        Eigen::Matrix<double, 3, 1> global_max = Eigen::Matrix<double, 3, 1>::Constant(std::numeric_limits<double>::lowest());
+
+        for (auto const& element : elements(mesh))
+        {
+            MeshPrimitiveInfo<std::decay_t<decltype(element)>> element_info(element);
+            global_min = global_min.cwiseMin(element_info.boundMin());
+            global_max = global_max.cwiseMax(element_info.boundMax());
+        }
+
+        // Afficher la bounding box globale
+        std::cout << "Bounding Box Min: " << global_min.transpose() << std::endl;
+        std::cout << "Bounding Box Max: " << global_max.transpose() << std::endl;
     }
     */
+
 
     // Selecting what you want to process
     auto rangeFaces = markedfaces( mesh );
