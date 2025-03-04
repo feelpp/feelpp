@@ -1582,65 +1582,7 @@ class BVH : public CommObject
             return res;
 #endif
 
-#if 0
-        // Une nouvelle version on découpe le vecteur
-        
-        int worldSize = this->worldComm().size(); // Nombre de processus
-        int worldRank = this->worldComm().rank(); // Rang du processus actuel
 
-
-        printf("IIIIIIIIIIIIIIIIIII worldSize=%i worldRank=%i\n",worldSize,worldRank);
-
-        // Récupération des rayons locaux
-        auto const& allRays = ray.rays();
-        int totalRays = allRays.size();
-
-        // Calcul de la répartition des rayons entre les processus
-        int raysPerProcess = totalRays / worldSize;
-        int remainingRays = totalRays % worldSize;
-
-        // On détermine l'intervalle de rayons pour ce processus
-        int startRayIndex = raysPerProcess * worldRank + std::min(worldRank, remainingRays);
-        int endRayIndex = startRayIndex + raysPerProcess + (worldRank < remainingRays ? 1 : 0);
-
-        //std::vector<ray_type> localRays(allRays.begin() + startRayIndex, allRays.begin() + endRayIndex);
-        std::vector<ray_type> localRays;
-        localRays.reserve(endRayIndex - startRayIndex); // Pré-allocation
-        localRays.insert(localRays.end(), allRays.begin() + startRayIndex, allRays.begin() + endRayIndex);
-
-        // On effectue l'intersection pour les rayons locaux en appelant `this->intersect`
-        auto localResults = this->intersect(
-            _ray = localRays,
-            _robust = useRobustTraversal,
-            _context = ctx,
-            _parallel = true 
-        );
-
-        // On rassemble les résultats sur le processus maître
-        std::vector<std::vector<std::vector<rayintersection_result_type>>> gatheredResults;
-        if (worldRank == 0) {
-            gatheredResults.resize(worldSize);
-        }
-
-        mpi::gather(this->worldComm(), localResults, gatheredResults, 0);
-
-        // On combiner tous les résultats sur le maître
-        std::vector<std::vector<rayintersection_result_type>> finalResults;
-        if (worldRank == 0) {
-            finalResults.resize(totalRays);
-            int currentIndex = 0;
-            for (int p = 0; p < worldSize; ++p) {
-                for (auto& result : gatheredResults[p]) {
-                    finalResults[currentIndex++] = std::move(result);
-                }
-            }
-        }
-
-        // On diffuse le résultat final à tous les processus
-        //mpi::broadcast(this->worldComm(), finalResults, 0);
-
-        return finalResults;
-#endif
         }
         else if constexpr ( is_iterable_v<std::decay_t<decltype( ray )>> ) // case rays container are identical all on process (TODO: internal case)
         {

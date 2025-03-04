@@ -1581,7 +1581,8 @@ BOOST_AUTO_TEST_CASE( all_distance )
     }
 
 
-    // Just to CTRL if it works for instance
+    // Just to CTRL if it works for instance... stored for MPI CPU boxes
+    // après on fera du lancé de rayons dessus pour optiniser et résuire les temps
     /*
     if ( isViewInfo )
     {
@@ -1595,9 +1596,8 @@ BOOST_AUTO_TEST_CASE( all_distance )
             global_max = global_max.cwiseMax(element_info.boundMax());
         }
 
-        // Afficher la bounding box globale
-        std::cout << "Bounding Box Min: " << global_min.transpose() << std::endl;
-        std::cout << "Bounding Box Max: " << global_max.transpose() << std::endl;
+        std::cout << "[INFO] Bounding Box Min: " << global_min.transpose() << std::endl;
+        std::cout << "[INFO] Bounding Box Max: " << global_max.transpose() << std::endl;
     }
     */
 
