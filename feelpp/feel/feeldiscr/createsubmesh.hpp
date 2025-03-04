@@ -398,7 +398,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                     // get elt ordering for ghost cells (identity for ELEMENTS case because ghosts are supposed to be identical)
                     std::vector<index_type> oldElementOrdering;
                     for ( auto const&[neighborPid,neighborEltId] : oldElem.idInOthersPartitions() )
-                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid,neighborEltId,std::move(oldElementOrdering) ) );
+                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid, neighborEltId, oldElementOrdering ) );
                 }
             } //  for( ; it != en; ++ it )
         } // for (auto& itList : M_listRange)
@@ -520,7 +520,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                         oldElementOrdering[n] = oldPoint.id();
                     }
                     for ( auto const&[neighborPid,neighborEltId] : oldElem.idInOthersPartitions() )
-                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid,neighborEltId,std::move(oldElementOrdering) ) );
+                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid, neighborEltId, oldElementOrdering ) );
                 }
             } // end for it
         } // for (auto& itList : M_listRange)
@@ -631,7 +631,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                         oldElementOrdering[n] = oldPoint.id();
                     }
                     for ( auto const&[neighborPid,neighborEltId] : oldElem.idInOthersPartitions() )
-                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid,neighborEltId,std::move(oldElementOrdering) ) );
+                        requireGhostCells[neighborPid].push_back( std::make_tuple( eid, neighborEltId, oldElementOrdering ) );
                 }
             } // end for it
         } // for ( ; itListRange!=enListRange ; ++itListRange)

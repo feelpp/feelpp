@@ -3620,7 +3620,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             auto const& faceCur = boost::unwrap_ref( *elt_it );
 
             auto eltsTrialTestRelated = mrdmt.eltsRelatedToRange( faceCur );
-            std::cout << fmt::format("eltsTrialTestRelated size:",eltsTrialTestRelated.size()) << std::endl;
+            //std::cout << fmt::format("eltsTrialTestRelated size:",eltsTrialTestRelated.size()) << std::endl;
             if ( eltsTrialTestRelated.empty() )
                 continue;
 
