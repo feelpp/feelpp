@@ -955,6 +955,37 @@ void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTria
     hipDeviceSynchronize();
 }
 
+
+__global__ void buildEvaluationNodes4(BVHNode* nodes, int numTriangles) {
+    // Must be tested if it goes faster
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numTriangles - 1) {
+        int nodeIndex = numTriangles - 2 - idx; 
+        BVHNode& node = nodes[nodeIndex];
+        int leftChild = 2 * nodeIndex + 1;
+        int rightChild = 2 * nodeIndex + 2;
+        node.leftChild = leftChild;
+        node.rightChild = rightChild;
+        node.triangleIndex = -1;
+        BVHNode& leftNode = nodes[leftChild];
+        BVHNode& rightNode = nodes[rightChild];
+        node.bounds.min = min(leftNode.bounds.min, rightNode.bounds.min);
+        node.bounds.max = max(leftNode.bounds.max, rightNode.bounds.max);
+    }
+}
+
+void buildBVH_GPU_Version4(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles) {
+    // Must be tested if it goes faster
+    int blockSize = 1024;
+    int numBlocks = (numTriangles + blockSize - 1) / blockSize;
+    hipLaunchKernelGGL(initializeLeaves, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_nodes, numTriangles);
+    int evaluationBlockSize = 512; 
+    int evaluationNumBlocks = (numTriangles - 1 + evaluationBlockSize - 1) / evaluationBlockSize;
+    hipLaunchKernelGGL(buildEvaluationNodes4, dim3(evaluationNumBlocks), dim3(evaluationBlockSize), 0, 0, d_nodes, numTriangles);
+    hipDeviceSynchronize(); 
+}
+
+
 // Bellow new versions...
 
 __device__ __inline__ bool compareTriangles( const TriangleInfo& a, const TriangleInfo& b, size_t axis )
@@ -1484,6 +1515,59 @@ class BVH : public CommObject
             auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx, _parallel = true );
             // auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx);
             auto timeDuration_intersect_block1_5 = toc( "timeDuration_intersect_block1_5 : intersect" );
+
+            tic();
+            std::vector<std::vector<rayintersection_result_type>> res;
+            res.resize( ray.numberOfLocalRay() );
+            std::size_t startRayIndexInThisProcess = 0;
+            for ( int p = 0; p < this->worldComm().rank(); ++p )
+                startRayIndexInThisProcess += resLocalSize[p];
+            std::copy_n( intersectGlobal.cbegin() + startRayIndexInThisProcess, localRays.size(), res.begin() );
+            auto timeDuration_intersect_block1_6 = toc( "timeDuration_intersect_block1_6 : add all intersection" );
+
+            auto timeDuration_intersect_block1 = toc( "timeDuration_intersect_block1 : all block in function" );
+            return res;
+#endif
+
+#if 0
+       
+            // Old Version
+            int worldSize = this->worldComm().size(); // Nombre de processus
+            int worldRank = this->worldComm().rank(); // Rang du processus actuel
+            printf( "IIIIIIIIIIIIIIIIIII worldSize=%i worldRank=%i\n", worldSize, worldRank );
+
+            tic();
+            // WARNING: this algo is not good (all_gather of rays then all run bvh), just a quick version for test
+            tic();
+            auto const& localRays = ray.rays();
+            std::vector<int> resLocalSize( this->worldComm().size() );
+            mpi::all_gather( this->worldComm(), (int)localRays.size(), resLocalSize );
+            auto timeDuration_intersect_block1_1 = toc( "timeDuration_intersect_block1_1 : all_gather" );
+
+            tic();
+            std::vector<ray_type> raysGathered;
+            if ( this->worldComm().isMasterRank() )
+            {
+                int gatherRaySize = std::accumulate( resLocalSize.begin(), resLocalSize.end(), 0 );
+                raysGathered.resize( gatherRaySize );
+            }
+            auto timeDuration_intersect_block1_2 = toc( "timeDuration_intersect_block1_2 : accumulation" );
+
+            tic();
+            mpi::gatherv( this->worldComm(), localRays, raysGathered.data(), resLocalSize, this->worldComm().masterRank() );
+            auto timeDuration_intersect_block1_3 = toc( "timeDuration_intersect_block1_3 : gatherv" );
+
+            tic();
+            mpi::broadcast( this->worldComm(), raysGathered, this->worldComm().masterRank() );
+            auto timeDuration_intersect_block1_4 = toc( "timeDuration_intersect_block1_4 : broacast" );
+
+            tic();
+            auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx, _parallel = true );
+            // auto intersectGlobal = this->intersect( _ray = raysGathered, _robust = useRobustTraversal, _context = ctx);
+            auto timeDuration_intersect_block1_5 = toc( "timeDuration_intersect_block1_5 : intersect" );
+
+
+            this->worldComm().barrier();
 
             tic();
             std::vector<std::vector<rayintersection_result_type>> res;

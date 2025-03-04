@@ -196,6 +196,39 @@ void runScanPreheatingGPU()
     }
 }
 
+struct BoundingBoxMesh {
+    Point min;
+    Point max;
+};
+
+
+BoundingBoxMesh calculateBoundingBoxMesh(const Mesh<Simplex<3, 1, 3>>& mesh) {
+    BoundingBoxMesh bbox;
+
+    // Initialisation des valeurs minimales et maximales
+    bbox.min = Point(std::numeric_limits<double>::max());
+    bbox.max = Point(std::numeric_limits<double>::lowest());
+
+    // Vérifiez si le maillage a des points
+    if (mesh.maxNumPoints() > 0) {
+        // Itération sur tous les points du maillage
+        for (auto pointIndex = 0; pointIndex < mesh.maxNumPoints(); ++pointIndex) {
+            auto point = mesh.point(pointIndex);
+            bbox.min[0] = std::min(bbox.min[0], point[0]);
+            bbox.min[1] = std::min(bbox.min[1], point[1]);
+            bbox.min[2] = std::min(bbox.min[2], point[2]);
+            bbox.max[0] = std::max(bbox.max[0], point[0]);
+            bbox.max[1] = std::max(bbox.max[1], point[1]);
+            bbox.max[2] = std::max(bbox.max[2], point[2]);
+        }
+    } else {
+        std::cout << "No points in the mesh." << std::endl;
+    }
+
+    return bbox;
+}
+
+
 template <typename BvhType, typename RayIntersectionResultType>
 std::vector<double> getAllDistanceRayIntersections( BvhType const& bvh, std::vector<RayIntersectionResultType> const& rirs )
 {
@@ -1497,6 +1530,8 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
     auto mesh = unitCube( hsize );
 
+    
+
     // Small information about the structure
     if ( isViewInfo )
     {
@@ -1508,6 +1543,16 @@ BOOST_AUTO_TEST_CASE( all_distance )
         std::cout << "[INFO] maxNumPoints  : " << mesh->maxNumPoints() << std::endl;
         std::cout << "[INFO] maxNumVerices : " << mesh->maxNumVertices() << std::endl;
     }
+
+    /*
+    if ( isViewInfo )
+    {
+        BoundingBoxMesh bbox = calculateBoundingBoxMesh(*mesh);
+        std::cout << "[INFO] Bounding Box Mesh:" << std::endl;
+        std::cout << "         Min: (" << bbox.min[0] << ", " << bbox.min[1] << ", " << bbox.min[2] << ")" << std::endl;
+        std::cout << "         Max: (" << bbox.max[0] << ", " << bbox.max[1] << ", " << bbox.max[2] << ")" << std::endl;
+    }
+    */
 
     // Selecting what you want to process
     auto rangeFaces = markedfaces( mesh );
