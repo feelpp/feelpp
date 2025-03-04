@@ -528,7 +528,7 @@ public:
      */
     void showMe( bool showAll=false, std::ostream& __out = std::cout ) const;
 
-    
+
 
     /**
      * \return the number of mapping (from functionspace id to container id with global process numbering)
@@ -729,7 +729,7 @@ protected:
      */
     std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
 
-    
+
     /**
      * Index split ( differentiate multiphysic )
      */

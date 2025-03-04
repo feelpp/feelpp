@@ -128,7 +128,7 @@ public:
      */
     //@{
 
-    void add( face_type const& face )
+    bool add( face_type const& face )
         {
             uint8_type connectionId = invalid_v<uint8_type>;
             if ( face.isConnectedTo0() && M_doftable->isElementDone( face.ad_first() ) )
@@ -136,8 +136,10 @@ public:
             else if ( face.isConnectedTo1() && M_doftable->isElementDone( face.ad_second() ) )
                 connectionId = 1;
             if ( connectionId == invalid_v<uint8_type> )
-                return;
+                return false;
+
             this->add( face, connectionId );
+            return true;
         }
 
     void add( face_type const& face, uint8_type connectionId )
