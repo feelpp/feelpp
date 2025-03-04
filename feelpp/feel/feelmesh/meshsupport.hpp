@@ -195,6 +195,10 @@ public :
             return std::make_pair( itFind != M_interprocessEdges.end(), itFind );
         }
 
+    //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
+    //! WARNING, we use the full mesh, maybe only on this support (but required collective mpi operation)
+    bool hasAnyMarker( std::initializer_list<std::string> l ) { return M_mesh->hasAnyMarker( l ); }
+
 private :
     void updateForUse();
     void updateParallelDataPartialSupport();
