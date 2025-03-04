@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
 #include <feel/feelmodels/solid/solidmechanics.hpp>
@@ -703,6 +703,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
             int nConsecutiveSave = std::max( 2, bdfOrder ); // at least 2 is required by fsi when restart
             M_timeStepBdfDisplacement = this->createBdf( M_XhDisplacement,"displacement", bdfOrder, nConsecutiveSave, myFileFormat );
             M_timeStepBdfVelocity = this->createBdf( M_XhDisplacement,"velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+            M_fieldAcceleration = M_XhDisplacement->elementPtr();
         }
 
         if ( this->hasDisplacementPressureFormulation() )
@@ -742,38 +743,45 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         }
         else // do a restart
         {
+            double tir = 0;
             if ( M_timeStepping == "Newmark" )
             {
                 // restart time step
-                double tir = M_timeStepNewmark->restart();
-
+                tir = M_timeStepNewmark->restart();
                 // load a previous solution as current solution
                 *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
-                // up initial time
-                this->setTimeInitial( tir );
-                // up current time
-                this->updateTime( tir );
             }
             else
             {
-                double tir = M_timeStepBdfDisplacement->restart();
+                tir = M_timeStepBdfDisplacement->restart();
                 *M_fieldDisplacement = M_timeStepBdfDisplacement->unknown(0);
-                M_timeStepBdfVelocity->restart();
+                double tir2 = M_timeStepBdfVelocity->restart();
+                CHECK( tir == tir2 ) << fmt::format("incompatible initial time after restart : {} vs {} ",tir, tir2 );
                 *M_fieldVelocity = M_timeStepBdfVelocity->unknown(0);
-                this->setTimeInitial( tir );
-                this->updateTime( tir );
             }
+            // restart pressure
             if ( this->hasDisplacementPressureFormulation() )
             {
-                M_savetsPressure->restart();
+                double tir2 = M_savetsPressure->restart();
+                CHECK( tir == tir2 ) << fmt::format("incompatible initial time after restart : {} vs {} ",tir, tir2 );
                 *M_fieldPressure = M_savetsPressure->unknown(0);
             }
+
+            // TODO: update acceleration from velocity derivative
+            //this->updateVelocity();
+
+            // up initial time
+            this->setTimeInitial( tir );
+            // up current time
+            this->updateTime( tir );
         }
 
     }
     else // if (this->is1dReducedModel())
     {
     }
+
+
 
     this->timerTool("Constructor").stop("initTimeStep");
     this->log("SolidMechanics","initTimeStep", "finish" );
@@ -791,7 +799,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterion", "tresca-criterion", "principal-stresses" };
     if ( !this->isStationary() )
+    {
         fieldsAvailable.insert( "velocity" );
+        fieldsAvailable.insert( "acceleration" );
+    }
     if ( this->hasDisplacementPressureFormulation() )
         fieldsAvailable.insert( "pressure" );
     this->setPostProcessExportsAllFieldsAvailable( fieldsAvailable );
@@ -883,7 +894,3 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::restartExporters( double time )
 } //FeelModels
 
 } // Feel
-
-
-
-
