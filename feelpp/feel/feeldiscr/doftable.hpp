@@ -2553,8 +2553,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 #endif
     tic();
     // the dof points are necessary to build the parallel dof table
-    if ( this->worldComm().localSize() > 1 )
-        this->generateDofPoints( M, true );
+    // if ( this->worldComm().localSize() > 1 )
+    //     this->generateDofPoints( M, true );
     toc("DofTable generateDofPoints", FLAGS_v>1);
 
     toc( "DofTable buildDofMap done", FLAGS_v>1);
@@ -2888,172 +2888,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
 }
 
 
-#if 0
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
-{
-    tic();
-    generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
-    toc("DofTable::generateDofPoints",FLAGS_v>1);
-
-}
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const
-{
-    if ( hasDofPoints() )
-        return;
-
-    if ( fe_type::is_modal )
-        return;
-
-    DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates\n";
-    typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
-    typedef std::shared_ptr<gm_context_type> gm_context_ptrtype;
-
-    typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
-    typedef typename fe_type::template Context<vm::POINT, mortar_fe_type, gm_type, element_type> mfecontext_type;
-
-    gm_ptrtype gm( new gm_type );
-    fe_type fe;
-    mortar_fe_type mfe;
-
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, fe.points() ) );
-    typename gm_type::precompute_ptrtype __mgeopc( new typename gm_type::precompute_type( gm, mfe.points() ) );
-    DVLOG(2) << "fe pts : " << fe.points();
-    DVLOG(2) << "mortar fe pts : " << mfe.points();
-
-    //const uint16_type ndofv = fe_type::nDof;
-
-#if 0
-    auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
-    auto it_elt = std::get<0>( rangeElements );
-    auto en_elt = std::get<1>( rangeElements );
-#else
-    auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
-    auto it_elt = rangeElements.begin();
-    auto en_elt = rangeElements.end();
-#endif
-
-    if ( it_elt == en_elt )
-        return;
-
-    gm_context_ptrtype __c( new gm_context_type( gm, boost::unwrap_ref( *it_elt ), __geopc ) );
-    gm_context_ptrtype __mc( new gm_context_type( gm, boost::unwrap_ref( *it_elt ), __mgeopc ) );
-
-    std::vector<bool> dof_done( this->nLocalDofWithGhost() );
-    //M_dof_points.resize( nLocalDofWithGhost() );
-    std::fill( dof_done.begin(), dof_done.end(), false );
-
-    for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
-    {
-        auto const& elt = boost::unwrap_ref( *it_elt );
-        if ( elt.isOnBoundary() )
-            __mc->update( elt );
-        else
-            __c->update( elt );
-
-#if 1
-        for( auto const& dof : this->localDof( elt.id() ) )
-        {
-            size_type thedof = dof.second.index();
-            if ( ( thedof >= this->firstDof() ) && ( thedof <= this->lastDof() ) )
-            {
-                const uint16_type l = dof.first.localDof();
-                // TODO: FIX component c1
-                int c1 = 0;
-                // get only the local dof
-                //size_type thedofonproc = thedof - firstDof();
-                thedof -= this->firstDof();
-                DCHECK( thedof < this->nLocalDofWithGhost() )
-                    << "invalid local dof index "
-                    <<  thedof << ", " << this->nLocalDofWithGhost() << "," << this->firstDof()  << ","
-                    <<  this->lastDof() << "," << elt.id() << "," << l;
-
-                if ( dof_done[ thedof ] == false )
-                {
-                    //M_dof_points[dof_id] = boost::make_tuple( thedof, __c->xReal( l ) );
-                    if ( elt.isOnBoundary() )
-                    {
-                        if ( mfe.nOrder > 0 )
-                        {
-                            M_dof_points[thedof] = boost::make_tuple( __mc->xReal( dof.first.localDofPerComponent() ), this->firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
-                            dof_done[thedof] = true;
-                            ++dof_id;
-                        }
-
-                    }
-                    else
-                    {
-                        M_dof_points[thedof] = boost::make_tuple( __c->xReal( dof.first.localDofPerComponent() ), this->firstDof()+thedof, dof.first.component(FEType::nLocalDof) );
-                        dof_done[thedof] = true;
-                        ++dof_id;
-                    }
-                }
-            }
-        }
-#else
-        for ( uint16_type l =0; l < fe_type::nLocalDof; ++l )
-        {
-            int ncdof  = is_product?nComponents:1;
-
-            for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-            {
-                size_type thedof = boost::get<0>( localToGlobal( elt.id(), l, c1 ) );
-
-                if ( ( thedof >= firstDof() ) && ( thedof <= lastDof() ) )
-                {
-                    // get only the local dof
-                    //size_type thedofonproc = thedof - firstDof();
-                    thedof -= firstDof();
-                    DCHECK( thedof < nLocalDofWithGhost() )
-                        << "invalid local dof index "
-                        <<  thedof << ", " << nLocalDofWithGhost() << "," << firstDof()  << ","
-                        <<  lastDof() << "," << elt.id() << "," << l << "," <<  c1;
-
-                    if ( dof_done[ thedof ] == false )
-                    {
-                        //M_dof_points[dof_id] = boost::make_tuple( thedof, __c->xReal( l ) );
-                        if ( elt.isOnBoundary() )
-                            M_dof_points[thedof] = boost::make_tuple( __mc->xReal( l ), firstDof()+thedof, c1 );
-                        else
-                            M_dof_points[thedof] = boost::make_tuple( __c->xReal( l ), firstDof()+thedof, c1 );
-
-                        dof_done[thedof] = true;
-                        ++dof_id;
-                    }
-                }
-            }
-        }
-#endif
-    }
-
-    M_hasBuiltDofPoints = true;
-    for ( size_type dof_id = 0; dof_id < this->nLocalDofWithGhost() ; ++dof_id )
-    {
-        CHECK( boost::get<1>( M_dof_points[dof_id] ) >= this->firstDof() &&
-               boost::get<1>( M_dof_points[dof_id] ) <= this->lastDof() )
-            <<  "invalid dof point "
-            <<  dof_id << ", " <<  this->firstDof() << ", " << this->lastDof() << ", " <<  this->nLocalDofWithGhost()
-            << ", " << boost::get<1>( M_dof_points[dof_id] )
-            << ", " <<  boost::get<0>( M_dof_points[dof_id] ) ;
-        if ( !buildDofTableMPIExtended() )
-            CHECK( dof_done[dof_id] == true )
-                << "invalid dof point"
-                << dof_id << ", " <<  this->nLocalDofWithGhost() << ", " <<  this->firstDof() << ", "
-                <<  this->lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
-    }
-
-    DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates done\n";
-
-}
-#endif
-
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel/*, mpl::bool_<false>*/ ) const
@@ -3066,15 +2900,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
 
-#if 0
-    auto rangeElements = M.elementsWithProcessId( M.worldComm().localRank() );
+    auto rangeElements = (this->hasMeshSupport())? elements( this->meshSupport(), entity_process_t::ALL ) : elements( M, entity_process_t::ALL );
     auto it_elt = rangeElements.begin();
     auto en_elt = rangeElements.end();
-#else
-    auto rangeElements = (this->hasMeshSupport())? elements(this->meshSupport()) : elements(M);
-    auto it_elt = rangeElements.begin();
-    auto en_elt = rangeElements.end();
-#endif
 
     if ( it_elt == en_elt )
         return;

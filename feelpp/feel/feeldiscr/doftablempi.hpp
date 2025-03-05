@@ -1389,6 +1389,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
         }
     }
 
+
+    // create inverse mapping of vector_permutation (vector_permutation map elt ordering to face ordering)
+    // thus, this mapping will map face ordering to elt ordering with respect to permutation
+    std::map<face_permutation_type, permutation_vector_type> mapLocalDofFaceToFaceInElement;
+    if ( nDim == 3 && nDofPerTopologicalFace > 1 )
+    {
+        for ( auto const& [perm,dofsMapping] : this->vector_permutation )
+        {
+            mapLocalDofFaceToFaceInElement[perm].resize(dofsMapping.size());
+            for (int k=0;k<dofsMapping.size();++k)
+                mapLocalDofFaceToFaceInElement[perm][dofsMapping[k]] = k;
+        }
+    }
+
+
     size_type nLocalDofWithGhost = this->M_n_localWithGhost_df[myRank];
     std::vector<bool> dofdone( nLocalDofWithGhost,false);
     std::vector<bool> dofIsGhost( nLocalDofWithGhost,false);
@@ -1599,25 +1614,18 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
                         {
                             if ( facePermutation == facePermutationOwnerDof )
                                 localDofOwnerDof += locDofInTopologicalFace;
-                            else if ( facePermutation.value() == face_permutation_type::IDENTITY )
-                                localDofOwnerDof += this->vector_permutation[facePermutationOwnerDof][locDofInTopologicalFace];
                             else
                             {
-                                // search local dof in face frame
                                 uint16_type locFaceDof = invalid_v<uint16_type>;
-                                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
-                                {
-                                    if ( this->vector_permutation[facePermutation][l] == locDofInTopologicalFace )
-                                    {
-                                        locFaceDof = l;
-                                        break;
-                                    }
-                                }
-                                CHECK( locFaceDof != invalid_v<uint16_type> ) << "not found a compatible dof";
+                                if ( facePermutation.value() == face_permutation_type::IDENTITY )
+                                    locFaceDof = locDofInTopologicalFace;
+                                else
+                                    locFaceDof = this->vector_permutation.at(facePermutation)[locDofInTopologicalFace];
+
                                 if ( facePermutationOwnerDof.value() == face_permutation_type::IDENTITY )
                                     localDofOwnerDof += locFaceDof;
                                 else
-                                    localDofOwnerDof += this->vector_permutation[facePermutationOwnerDof][locFaceDof];
+                                    localDofOwnerDof += mapLocalDofFaceToFaceInElement.at(facePermutationOwnerDof)[locFaceDof];
                             }
                         }
 
