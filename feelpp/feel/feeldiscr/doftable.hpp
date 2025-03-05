@@ -2369,7 +2369,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     tic();
 
     // compute the number of dof on current processor
-    Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? elements(this->meshSupport()) : elements(M);
+    //Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? elements(this->meshSupport()) : elements(M);
+    entity_process_t ept = isP0Continuous<fe_type>::result? entity_process_t::ALL : entity_process_t::LOCAL_ONLY; // WARNING, special case with P0 continuous
+    Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? elements(this->meshSupport(),ept) : elements(M,ept);
+
+
+
     auto it_elt = rangeElements.begin();
     auto en_elt = rangeElements.end();
     bool hasNoElt = ( it_elt == en_elt );
@@ -2422,6 +2427,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     } // elements loop
     toc("DofTable buildDofMap element loop", FLAGS_v>1);
     // update extended doftable for P0 continuous
+#if 0
     if ( isP0Continuous<fe_type>::result && this->buildDofTableMPIExtended() )
     {
         for (auto const& ghostEltWrap : elements(M,EntityProcessType::GHOST_ONLY ) )
@@ -2430,6 +2436,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
             dfe.add( ghostElt, next_free_dof, this->worldComm().localRank() );
         }
     }
+#endif
 
     toc( "DofTable buildDofMap dof generation", FLAGS_v > 1 );
     const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
@@ -2461,7 +2468,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 #endif
 
 
-    if ( isP0Continuous<fe_type>::result || !is_continuous )
+    if ( isP0Continuous<fe_type>::result /*|| !is_continuous*/ )
     {
         wc(this)->print(fmt::format("[builddofmap - {}] gather discontinuous dof info hasNoElt : {} theFirstDF: {} thelastDof: {}",
                                   myrank, hasNoElt, theFirstDf, thelastDof ), FLAGS_v>1, FLAGS_v>0, FLAGS_v>1);
@@ -2773,6 +2780,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
     {
         auto const& previousGDof=it->second;
         Dof newGDof( previousGDof );
+        CHECK( previousGDof.index() < previousGlobalIdToNewGlobalId.size() ) << fmt::format("index out of range index: {}  size: {}",
+                                                                                            previousGDof.index(), previousGlobalIdToNewGlobalId.size() );
         newGDof.setIndex( previousGlobalIdToNewGlobalId[previousGDof.index()] );
         bool successfulModify = M_el_l2g.left.modify_data( it, boost::bimaps::_data = newGDof );
         CHECK( successfulModify ) << "modify global dof id fails";
@@ -2797,75 +2806,85 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
     M_dof_marker.clear();
     M_dof_marker.swap( newDofMarker );
 
-
     // ---------------------------------
     // update activeDofSharedOnCluster
-
-    this->M_activeDofSharedOnCluster.clear();
-
-    const rank_type myRank = this->worldComm().localRank();
-    const rank_type nProc = this->worldComm().localSize();
-
-    int nbMaxRequest = 2*this->neighborSubdomains().size();
-    std::vector<mpi::request> reqs( nbMaxRequest );
-    int countRequest = 0;
-
-    // send global process cluster
-    std::map<rank_type, std::vector<size_type> > dataToSend;
-    std::map<rank_type, std::vector<size_type> > dataToRecv;
-
-    // size_type _nLocalDofWithGhost = this->nLocalDofWithGhost();
-    // size_type _nLocalDofWithoutGhost = this->nLocalDofWithoutGhost();
-    for ( size_type k=_nLocalDofWithoutGhost;k<_nLocalDofWithGhost;++k )
+    if constexpr ( isP0Continuous<fe_type>::result )
     {
-        size_type gcdof = this->M_mapGlobalProcessToGlobalCluster[k];
-        rank_type activeProcId = this->procOnGlobalCluster( gcdof );
-        DCHECK( activeProcId != myRank ) << "should be a ghost dof";
-        dataToSend[activeProcId].push_back( gcdof );
-    }
-
-    std::map<size_type,size_type> mapActiveGcToGp;
-    for ( size_type k=0;k<_nLocalDofWithoutGhost;++k )
-        mapActiveGcToGp.emplace( this->M_mapGlobalProcessToGlobalCluster[k], k );
-
-    // get size of data to transfer
-    std::map<rank_type,std::size_t> sizeRecv;
-    std::map<rank_type,std::size_t> sizeSend;
-    for ( rank_type neighborRank : this->neighborSubdomains() )
-    {
-        sizeSend[neighborRank] = dataToSend[neighborRank].size();
-        reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
-        reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
-    }
-    // wait all requests
-    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
-    countRequest = 0;
-
-
-    // step 1 :send/recv of data
-    for ( rank_type neighborRank : this->neighborSubdomains() )
-    {
-        std::size_t nSendData = dataToSend[neighborRank].size();
-        if ( nSendData > 0 )
-            reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
-        std::size_t nRecvData = sizeRecv[neighborRank];
-        dataToRecv[neighborRank].resize( nRecvData );
-        if ( nRecvData > 0 )
-            reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
-    }
-    // step 1 :wait all requests
-    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
-    countRequest = 0;
-
-    for ( auto const& [rank,gcDofs] : dataToRecv )
-    {
-        for ( size_type gcDofIndex : gcDofs )
+        // in that case, activeDofSharedOnCluster is already built, just apply reordering
+        std::map<size_type, std::set<rank_type> > newActiveDofSharedOnCluster;
+        for ( auto const& activeDof : this->M_activeDofSharedOnCluster )
         {
-            //this->addNeighborSubdomain( rank );
-            size_type dofIndex = mapActiveGcToGp.at( gcDofIndex );
-            this->M_activeDofSharedOnCluster[dofIndex].insert(rank);
+            DCHECK( activeDof.first < previousGlobalIdToNewGlobalId.size() ) << fmt::format("activeDof.first {} vs size{}",activeDof.first,previousGlobalIdToNewGlobalId.size());
+            newActiveDofSharedOnCluster.emplace( std::make_pair( previousGlobalIdToNewGlobalId[activeDof.first], activeDof.second ) );
         }
+        this->M_activeDofSharedOnCluster = std::move( newActiveDofSharedOnCluster );
     }
+    else
+    {
+        // clear
+        this->M_activeDofSharedOnCluster.clear();
+
+        const rank_type myRank = this->worldComm().localRank();
+        const rank_type nProc = this->worldComm().localSize();
+
+        int nbMaxRequest = 2*this->neighborSubdomains().size();
+        std::vector<mpi::request> reqs( nbMaxRequest );
+        int countRequest = 0;
+
+        // send global process cluster
+        std::map<rank_type, std::vector<size_type> > dataToSend;
+        std::map<rank_type, std::vector<size_type> > dataToRecv;
+
+        for ( size_type k=_nLocalDofWithoutGhost;k<_nLocalDofWithGhost;++k )
+        {
+            size_type gcdof = this->M_mapGlobalProcessToGlobalCluster[k];
+            rank_type activeProcId = this->procOnGlobalCluster( gcdof );
+            DCHECK( activeProcId != myRank ) << "should be a ghost dof";
+            dataToSend[activeProcId].push_back( gcdof );
+        }
+
+        std::map<size_type,size_type> mapActiveGcToGp;
+        for ( size_type k=0;k<_nLocalDofWithoutGhost;++k )
+            mapActiveGcToGp.emplace( this->M_mapGlobalProcessToGlobalCluster[k], k );
+
+        // get size of data to transfer
+        std::map<rank_type,std::size_t> sizeRecv;
+        std::map<rank_type,std::size_t> sizeSend;
+        for ( rank_type neighborRank : this->neighborSubdomains() )
+        {
+            sizeSend[neighborRank] = dataToSend[neighborRank].size();
+            reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
+            reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
+        }
+        // wait all requests
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
+
+        // step 1 :send/recv of data
+        for ( rank_type neighborRank : this->neighborSubdomains() )
+        {
+            std::size_t nSendData = dataToSend[neighborRank].size();
+            if ( nSendData > 0 )
+                reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+            std::size_t nRecvData = sizeRecv[neighborRank];
+            dataToRecv[neighborRank].resize( nRecvData );
+            if ( nRecvData > 0 )
+                reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
+        }
+        // step 1 :wait all requests
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
+
+        for ( auto const& [rank,gcDofs] : dataToRecv )
+        {
+            for ( size_type gcDofIndex : gcDofs )
+            {
+                //this->addNeighborSubdomain( rank );
+                size_type dofIndex = mapActiveGcToGp.at( gcDofIndex );
+                this->M_activeDofSharedOnCluster[dofIndex].insert(rank);
+            }
+        }
+    } // !isP0continuous
 }
 
 
