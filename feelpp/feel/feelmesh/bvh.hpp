@@ -955,12 +955,28 @@ void buildBVH_GPU_Version3( Triangle* d_triangles, BVHNode* d_nodes, int numTria
     hipDeviceSynchronize();
 }
 
-__global__ void buildEvaluationNodes4( BVHNode* nodes, int numTriangles )
-{
-    // Must be tested if it goes faster
+
+
+__global__ void initializeLeaves4(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( idx < numTriangles - 1 )
-    {
+    if (idx < numTriangles) {
+        BVHNode& node = d_nodes[idx + numTriangles - 1]; 
+        node.bounds.min = d_triangles[idx].v0; 
+        node.bounds.max = d_triangles[idx].v0;
+        node.bounds.min = min(node.bounds.min, d_triangles[idx].v1);
+        node.bounds.max = max(node.bounds.max, d_triangles[idx].v1);
+        node.bounds.min = min(node.bounds.min, d_triangles[idx].v2);
+        node.bounds.max = max(node.bounds.max, d_triangles[idx].v2);
+        node.triangleIndex = idx;
+        node.leftChild = -1; 
+        node.rightChild = -1;
+    }
+}
+
+
+__global__ void buildEvaluationNodes4(BVHNode* nodes, int numTriangles) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < numTriangles - 1) {
         int nodeIndex = numTriangles - 2 - idx;
         BVHNode& node = nodes[nodeIndex];
         int leftChild = 2 * nodeIndex + 1;
@@ -970,22 +986,33 @@ __global__ void buildEvaluationNodes4( BVHNode* nodes, int numTriangles )
         node.triangleIndex = -1;
         BVHNode& leftNode = nodes[leftChild];
         BVHNode& rightNode = nodes[rightChild];
-        node.bounds.min = min( leftNode.bounds.min, rightNode.bounds.min );
-        node.bounds.max = max( leftNode.bounds.max, rightNode.bounds.max );
+        node.bounds.min = min(leftNode.bounds.min, rightNode.bounds.min);
+        node.bounds.max = max(leftNode.bounds.max, rightNode.bounds.max);
     }
 }
 
-void buildBVH_GPU_Version4( Triangle* d_triangles, BVHNode* d_nodes, int numTriangles )
-{
-    // Must be tested if it goes faster
-    int blockSize = 1024;
-    int numBlocks = ( numTriangles + blockSize - 1 ) / blockSize;
-    hipLaunchKernelGGL( initializeLeaves, dim3( numBlocks ), dim3( blockSize ), 0, 0, d_triangles, d_nodes, numTriangles );
-    int evaluationBlockSize = 512;
-    int evaluationNumBlocks = ( numTriangles - 1 + evaluationBlockSize - 1 ) / evaluationBlockSize;
-    hipLaunchKernelGGL( buildEvaluationNodes4, dim3( evaluationNumBlocks ), dim3( evaluationBlockSize ), 0, 0, d_nodes, numTriangles );
-    hipDeviceSynchronize();
+
+void buildBVH_GPU_Version4(Triangle* d_triangles, BVHNode* d_nodes, int numTriangles) {
+    if (numTriangles <= 0) return; 
+
+    int blockSize = 256; 
+    int numBlocks = (numTriangles + blockSize - 1) / blockSize;
+
+
+    hipLaunchKernelGGL(initializeLeaves4, dim3(numBlocks), dim3(blockSize), 0, 0, d_triangles, d_nodes, numTriangles);
+    HIP_CHECK(hipGetLastError());
+
+    if (numTriangles > 1) { 
+        int evaluationBlockSize = 256;
+        int evaluationNumBlocks = (numTriangles - 1 + evaluationBlockSize - 1) / evaluationBlockSize;
+        hipLaunchKernelGGL(buildEvaluationNodes4, dim3(evaluationNumBlocks), dim3(evaluationBlockSize), 0, 0, d_nodes, numTriangles);
+        HIP_CHECK(hipGetLastError());
+    }
+    HIP_CHECK(hipDeviceSynchronize()); 
 }
+
+
+
 
 // Bellow new versions...
 
@@ -2746,7 +2773,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
     int numDevice;
     int numVersion;
-    int modeGPU; // 1 - HIP
+    int modeGPU; // 1 - HIP 4 - LBVH Explorer
     bool isUnifiedMemory;
     int rank;
     bool isView;
@@ -2773,6 +2800,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 1;
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 2;
         // isView = true; isViewDataRT = true;
+
+        //modeGPU = 4;
+        //numVersion = 4;
     }
 
     ~BVH_HIP_Party()
@@ -2853,6 +2883,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 t_begin_bvh_gpu = std::chrono::steady_clock::now();
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                if ( numVersion == 4 ) bvhHip::buildBVH_GPU_Version4( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 t_end_bvh_gpu = std::chrono::steady_clock::now();
 
@@ -2937,6 +2968,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 t_begin_bvh_gpu = std::chrono::steady_clock::now();
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                if ( numVersion == 4 ) bvhHip::buildBVH_GPU_Version4( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 t_end_bvh_gpu = std::chrono::steady_clock::now();
 
@@ -3093,24 +3125,9 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             size_t blockSize = 1024;
             size_t numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
-            if ( numVersion == 0 )
+            if (( numVersion == 0 ) || ( numVersion == 1 )  || ( numVersion == 4 ))
             {
                 hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
-                                    // hipLaunchKernelGGL( bvhHip::raytraceKernel2, dim3( numBlocks ), dim3( blockSize ), 0, 0,
-                                    deviceHipRays,
-                                    numRays,
-                                    devicebvhHipNodes,
-                                    deviceHipTriangles,
-                                    deviceHipHitTriangles,
-                                    deviceHipDistanceResults,
-                                    deviceHipIntersectionPoint,
-                                    deviceHipIdResults );
-            }
-
-            if ( numVersion == 1 )
-            {
-                hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
-                                    // hipLaunchKernelGGL( bvhHip::raytraceKernel2, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                     deviceHipRays,
                                     numRays,
                                     devicebvhHipNodes,
@@ -3765,22 +3782,15 @@ class BVH_HIP_CPU_GPUs_Party : public BVH<MeshEntityType>
             size_t blockSize = 1024;
             size_t numBlocks = ( numRays + blockSize - 1 ) / blockSize;
 
-            if ( numVersion == 0 )
+            if (( numVersion == 0 ) || ( numVersion == 1 )  || ( numVersion == 4 ))
             {
                 hipLaunchKernelGGL( bvhHip::raytraceKernel, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                     deviceHipRays, numRays, devicebvhHipNodes, deviceHipTriangles,
                                     deviceHipHitTriangles, deviceHipDistanceResults,
                                     deviceHipIntersectionPoint, deviceHipIdResults );
             }
-
-            if ( numVersion == 1 )
-            {
-                hipLaunchKernelGGL( bvhHip::raytraceKernel2, dim3( numBlocks ), dim3( blockSize ), 0, 0,
-                                    deviceHipRays, numRays, devicebvhHipNodes, deviceHipTriangles,
-                                    deviceHipHitTriangles, deviceHipDistanceResults,
-                                    deviceHipIntersectionPoint, deviceHipIdResults );
-            }
-            else if ( numVersion == 2 )
+            
+            if ( numVersion == 2 )
             {
                 hipLaunchKernelGGL( bvhHip::raytraceKernel_Parallel3, dim3( numBlocks ), dim3( blockSize ), 0, 0,
                                     deviceHipRays, numRays, devicebvhHipNodes, nbNodes,

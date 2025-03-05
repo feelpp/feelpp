@@ -85,7 +85,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2024 Feel++ Consortium" );
 
-    about.addAuthor( "Noname", "developer", "Noname@cemosis.fr", "" );
+    about.addAuthor( "Patrick Lemoine", "developer", "Noname@cemosis.fr", "" );
     return about;
 }
 
