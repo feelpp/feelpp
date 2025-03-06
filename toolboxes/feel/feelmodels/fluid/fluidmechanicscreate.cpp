@@ -285,20 +285,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->timerTool("Constructor").start();
 
     // maybe build extended dof table
-    std::vector<bool> extendedDT( 2,false );
-    bool hasExtendedDofTable = false;
-    if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
-    {
-        this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity" );
-        extendedDT[0] = true;
-        hasExtendedDofTable = true;
-    }
-    if ( this->doCIPStabPressure() )
-    {
-        this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure" );
-        extendedDT[1] = true;
-        hasExtendedDofTable = true;
-    }
+    std::vector<bool> extendedDT( 2,true );
+    // bool hasExtendedDofTable = false;
+    // if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
+    // {
+    //     this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity" );
+    //     extendedDT[0] = true;
+    //     hasExtendedDofTable = true;
+    // }
+    // if ( this->doCIPStabPressure() )
+    // {
+    //     this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure" );
+    //     extendedDT[1] = true;
+    //     hasExtendedDofTable = true;
+    // }
 
     // fluid spaces : velocity and pressure
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
@@ -624,7 +624,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
         typename boundary_conditions_type::Inlet::Shape shape = bcData->shape();
         auto rangeFaces = markedfaces(this->mesh(),markers);
         auto meshinlet = createSubmesh( _mesh=this->mesh(),_range=rangeFaces, _view=true );
-        auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet,_worldscomm=this->localNonCompositeWorldsComm() );
+        auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet );//,_worldscomm=this->localNonCompositeWorldsComm() );
         auto velinlet = spaceinlet->elementPtr();
         auto velinletInterpolated = functionSpaceVelocity()->compSpace()->elementPtr();
         auto opIfluidinlet = opInterpolation(_domainSpace=spaceinlet,
@@ -644,8 +644,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
         {
         case boundary_conditions_type::Inlet::Shape::constant :
             maxVelRef = areainlet;
-            velinletRef->on(_range=elements(meshinlet),_expr=cst(areainlet) );
-            velinletRef->on(_range=boundaryfaces(meshinlet),_expr=cst(0.) );
+            //velinletRef->on(_range=elements(meshinlet),_expr=cst(areainlet) );
+            velinletRef->setConstant( areainlet );
+            velinletRef->on(_range=boundaryfaces(meshinlet),_expr=cst(0.), _close=true );
             break;
         case boundary_conditions_type::Inlet::Shape::parabolic :
             auto l = form1( _test=spaceinlet );
@@ -1819,18 +1820,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initDist2Wall()
     space_dist2wall_ptrtype M_spaceDist2Wall;
     M_spaceDist2Wall = space_dist2wall_type::New(_mesh=this->mesh() );
     M_fieldDist2Wall = M_spaceDist2Wall->elementPtr();
+    auto tmpField = M_spaceDist2Wall->elementPtr();
 
     auto thefms = fms( M_spaceDist2Wall );
 
     //auto phio = Xh->element();
     //phio = vf::project(Xh, elements(mesh), h() );
-    M_fieldDist2Wall->on(_range=elements(this->mesh()),_expr=h() );
+    M_fieldDist2Wall->on(_range=elements(this->mesh(),entity_process_t::ALL),_expr=h() );
 
     auto rangeWall = M_dist2WallMarkers.empty()? boundaryfaces(this->mesh()) : markedfaces(this->mesh(), M_dist2WallMarkers );
 
-    (*M_fieldDist2Wall) +=vf::project(_space=M_spaceDist2Wall,
-                                      _range=rangeWall,
-                                      _expr= -idv(M_fieldDist2Wall) - h()/100. );
+    // (*M_fieldDist2Wall) +=vf::project(_space=M_spaceDist2Wall,
+    //                                   _range=rangeWall,
+    //                                   _expr= -idv(M_fieldDist2Wall) - h()/100. );
+    //
+    tmpField->on(_range=rangeWall, _expr= -idv(M_fieldDist2Wall) - h()/100.,_close=true );
+    *M_fieldDist2Wall += *tmpField;
     *M_fieldDist2Wall = thefms->march(*M_fieldDist2Wall);
     M_fieldDist2Wall->on(_range=rangeWall,_expr=cst(0.),_close=true);
 }

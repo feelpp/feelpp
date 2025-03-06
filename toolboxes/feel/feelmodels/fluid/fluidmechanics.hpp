@@ -2357,19 +2357,19 @@ public :
     template < typename ExprT >
     void updateVelocity(vf::Expr<ExprT> const& __expr)
     {
-        M_fieldVelocity->on(_range=M_rangeMeshElements,_expr=__expr );
+        M_fieldVelocity->on(_range=M_rangeMeshElements,_expr=__expr,_close=true );
     }
     template < typename ExprT >
     void updatePressure(vf::Expr<ExprT> const& __expr)
     {
-        M_fieldPressure->on(_range=M_rangeMeshElements,_expr=__expr );
+        M_fieldPressure->on(_range=M_rangeMeshElements,_expr=__expr,_close=true );
     }
 
     template < typename ExprT >
     void updateSourceAdded(vf::Expr<ExprT> const& __expr)
     {
         if (!M_XhSourceAdded) this->createFunctionSpacesSourceAdded();
-        M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr );
+        M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr,_close=true );
         M_haveSourceAdded=true;
     }
     template < typename ExprT >
