@@ -466,6 +466,9 @@ Environment::Environment( int argc, char** argv,
     S_argc = argc;
     S_argv = argv;
 
+    //
+    // setup worldcomm
+    //
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
@@ -473,46 +476,17 @@ Environment::Environment( int argc, char** argv,
     cerr.attachWorldComm( S_worldcomm );
     clog.attachWorldComm( S_worldcomm );
 
-#if 0
-    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
-    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
-    {
-        char * senv = ::getenv( var.first.c_str() );
-        if ( senv != NULL && senv[0] != '\0' )
-        {
-            fs::path p{ senv };
-            if ( !var.second.empty() )
-                p /= var.second;
-            if ( S_worldcomm->isMasterRank() )
-            {
-                if ( !fs::exists( p ) )
-                {
-                    try {
-                        fs::create_directories( p );
-                    }
-                    catch (...) {}
-                }
-            }
-            S_worldcomm->barrier();
-
-            if ( !fs::exists( p ) )
-                continue;
-            else if ( !fs::is_directory( p ) )
-                continue;
-            S_rootdir = p;
-            break;
-        }
-    }
-#else
+    //
+    // setup repository
+    //
     S_repository = Repository( config );
     S_rootdir = S_repository.root();
     S_appdir = S_repository.directory();
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-#endif
 
-
-
-
+    //
+    // setup options
+    //
     S_desc_app = std::make_shared<po::options_description>( desc );
     S_desc_lib = std::make_shared<po::options_description>( desc_lib );
     S_desc = std::make_shared<po::options_description>();
@@ -539,9 +513,16 @@ Environment::Environment( int argc, char** argv,
     // rearrange them and it screws badly the flags for PETSc/SLEPc
     char** envargv = dupargv( argv );
 
+    //
+    // Initialize PETSc
+    //
 #if defined ( FEELPP_HAS_PETSC_H )
     initPetsc( &argc, &envargv );
 #endif
+
+    //
+    // Initialize Gmsh
+    //
 #if defined( FEELPP_HAS_GMSH_H )
 #if defined( FEELPP_HAS_GMSH_API )
     gmsh::initialize();
@@ -557,7 +538,9 @@ Environment::Environment( int argc, char** argv,
     else
         S_init_python = false;
 
+    //
     // parse options
+    //
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
 
     // Enable auto mode for all observers.
@@ -574,44 +557,26 @@ Environment::Environment( int argc, char** argv,
     cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
          <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
 
-#if 0
-    if ( S_vm.count( "nochdir" ) == 0 )
-    {
-        if ( changedir )
-        {
-            if ( S_vm.count( "directory" ) )
-                directory = S_vm["directory"].as<std::string>();
-            if ( S_vm.count( "repository.prefix" ) )
-                directory = S_vm["repository.prefix"].as<std::string>();
-            if ( S_vm.count( "repository.case" ) )
-            {
-                fs::path d( directory );
-                d /= S_vm["repository.case"].as<std::string>();
-                directory = d.string();
-            }
-
-            boost::format f( directory );
-            bool createSubdir = add_subdir_np &&
-                                ( S_vm["repository.npdir"].as<bool>() || S_vm["npdir"].as<bool>() );
-            changeRepository( _directory = f, _subdir = createSubdir );
-        }
-    }
-#else
+    //
+    // setup work directory
+    //
     fs::path directory;
     if ( S_vm.count( "directory" ) )
-        directory = S_vm["directory"].as<std::string>();
+        directory = expand(S_vm["directory"].as<std::string>());
     if ( S_vm.count( "repository.prefix" ) )
-        directory = S_vm["repository.prefix"].as<std::string>();
+        directory = expand(S_vm["repository.prefix"].as<std::string>());
     if ( S_vm.count( "repository.case" ) )
     {
         fs::path d{ directory };
-        d /= S_vm["repository.case"].as<std::string>();
+        d /= expand(S_vm["repository.case"].as<std::string>());
         directory = d.string();
     }
 
     changeRepository( _directory = boost::format{ directory.string() } );
-#endif
 
+    //
+    // use --dirs to check the directories of Feel++ environment
+    //
     if ( S_vm.count( "dirs" ) == 1 )
     {
         cout<< "- root: " << rootRepository() << std::endl
@@ -630,6 +595,10 @@ Environment::Environment( int argc, char** argv,
 #endif
         exit( 0 );
     }
+
+    //
+    // setup journal
+    //
     if( S_vm.count( "journal.filename" ) )
     {
         // TODO relative or absolute path
@@ -638,6 +607,9 @@ Environment::Environment( int argc, char** argv,
     else
         Environment::setJournalFilename( (fs::path( Environment::appRepository() )/fs::path("journal.json")).string() );
 
+    //
+    // setup MongoDB
+    //
 #if defined(FEELPP_HAS_MONGOCXX )
     MongoConfig journaldbconf;
     if( S_vm.count( "journal.database.name" ) )

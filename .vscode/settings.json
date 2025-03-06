@@ -169,7 +169,7 @@
         "mixinvector": "cpp",
         "fast_back_stack": "cpp"
     },
-    "jupyter.notebookFileRoot": "${workspaceFolder}/build/python/install/lib/python3/dist-packages",
+    "jupyter.notebookFileRoot": "${workspaceFolder}/install/default/lib/python3.10/site-packages/",
     "C_Cpp.configurationWarnings": "disabled",
     "C_Cpp.loggingLevel": "Debug",
     "C_Cpp.default.compilerPath" : "/usr/bin/clang++",
@@ -177,10 +177,9 @@
     "cmake.configureOnOpen": false,
     "cmake.configureArgs": [
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-    
     ],
     "cmake.parallelJobs": 5,
     "autoDocstring.docstringFormat": "numpy",
     "svg.preview.background": "transparent"
-    
+
 }

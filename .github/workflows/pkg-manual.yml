@@ -20,8 +20,8 @@ on:
         - 'jammy'
         - 'focal'
         - 'noble'
-        - 'bullseye'
         - 'bookworm'
+        - 'trixie'
         - 'testing'
         - 'sid'
       parallel:

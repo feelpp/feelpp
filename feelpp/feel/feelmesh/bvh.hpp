@@ -427,8 +427,10 @@ public:
             case BVHEnum::Quality::Medium: config.quality = bvh::v2::DefaultBuilder<node_type>::Quality::Medium; break;
             case BVHEnum::Quality::Low: config.quality = bvh::v2::DefaultBuilder<node_type>::Quality::Low; break;
             }
-            M_bvh = std::make_unique<backend_bvh_type>( bvh::v2::DefaultBuilder<node_type>::build(/*thread_pool,*/ bboxes, centers, config) );
-
+            if ( !bboxes.empty() )
+                M_bvh = std::make_unique<backend_bvh_type>( bvh::v2::DefaultBuilder<node_type>::build(/*thread_pool,*/ bboxes, centers, config) );
+            else
+                M_bvh.reset();
 
             // Permuting the primitive data allows to remove indirections during traversal, which makes it faster.
             static constexpr bool should_permute = true;
@@ -473,6 +475,8 @@ private:
     template <bool UseRobustTraversal>
     std::vector<rayintersection_result_type> intersectImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend )
         {
+            if (  !M_bvh )
+                return {};
             static constexpr size_t stack_size = 64;
             static constexpr bool should_permute = true;
             static constexpr bool isAnyHit = false;

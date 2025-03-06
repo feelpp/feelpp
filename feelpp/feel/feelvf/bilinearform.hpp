@@ -1199,21 +1199,25 @@ public:
             return l;
         }
 
-    BilinearForm& operator+=( super const& a )
+    BilinearForm& operator+=( BilinearForm const& a )
     {
-        return BilinearFormBase<value_type>::operator+=(a);
+        static_cast<super&>(*this) += static_cast<const super&>(a);
+        return *this;
     }
     BilinearForm& operator-=( BilinearForm const& a )
     {
-        return BilinearFormBase<value_type>::operator-=(a);
+         static_cast<super&>(*this) -= static_cast<const super&>(a);   
+        return *this;
     }
     BilinearForm& operator*=( value_type const& a )
     {
-        return BilinearFormBase<value_type>::operator*=(a);
+        static_cast<super&>(*this) *= a;
+        return *this;
     }
     BilinearForm& operator/=( value_type const& a )
     {
-        return BilinearFormBase<value_type>::operator/=(a);
+        static_cast<super&>(*this) /= a;
+        return *this;
     }
     /**
      * @brief unary minus operator
@@ -1697,6 +1701,8 @@ template<typename FE1,
          typename FE2,
          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
 using form2_t = form2_type<FE1,FE2,ElemContType>;
+
+
 
 } // feel
 
