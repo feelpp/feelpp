@@ -11,7 +11,9 @@ enum MixedPoissonPhysics{
     None = 0,
     Electric,
     Heat,
-    Elasticity
+    Elasticity,
+    Concentration,
+    Chemoattractant
 };
 
 extern std::map<MixedPoissonPhysics,std::map<std::string,std::string> > MixedPoissonPhysicsMap;
