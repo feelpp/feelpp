@@ -552,7 +552,7 @@ public :
             mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
             if constexpr ( std::is_same_v<DisplacementFieldType,VelocityFieldType> )
                 mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
-            //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
+            mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
             auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", field_p, "p", this->keyword() );
 
             return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure, this->template modelFieldsMeshes<mesh_type>( prefix ) );
