@@ -2767,15 +2767,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
         newMapGlobalProcessToGlobalCluster[previousGlobalIdToNewGlobalId[k]] = gcdof;
     }
     this->M_mapGlobalProcessToGlobalCluster = std::move( newMapGlobalProcessToGlobalCluster );
-#if 0
-    std::map<size_type, std::set<rank_type> > newActiveDofSharedOnCluster;
-    for ( auto const& activeDof : this->M_activeDofSharedOnCluster )
-    {
-        DCHECK( activeDof.first < previousGlobalIdToNewGlobalId.size() ) << fmt::format("activeDof.first {} vs size{}",activeDof.first,previousGlobalIdToNewGlobalId.size());
-        newActiveDofSharedOnCluster.emplace( std::make_pair( previousGlobalIdToNewGlobalId[activeDof.first], activeDof.second ) );
-    }
-    this->M_activeDofSharedOnCluster = std::move( newActiveDofSharedOnCluster );
-#endif
+    this->updateWorldIndexForUse();
+
     for( auto it = M_el_l2g.left.begin(), en = M_el_l2g.left.end(); it != en; ++it )
     {
         auto const& previousGDof=it->second;

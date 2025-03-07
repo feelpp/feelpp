@@ -682,9 +682,7 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
         {
             size_type gcdof = boost::get<0>( dataRfromproc );
             T valRecv = boost::get<1>( dataRfromproc );
-            auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "dof not found: " << gcdof << " rank:" <<currentProcId;
-            size_type gpdof = boost::get<1>( resSearchDof );
+            size_type gpdof = dataMap->worldIndexToProcessIndex( gcdof );
             DCHECK( dataMap->dofGlobalProcessIsGhost(gpdof) ) << "dof is not ghost : " << gcdof << " and " << gpdof;
             v.set( gpdof, valRecv );
         }

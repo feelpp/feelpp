@@ -620,107 +620,6 @@ struct InitializeSpace
     PeriodicityType M_periodicity;
     std::vector<bool> M_extendedDofTable;
 };
-
-template<typename DofType>
-struct updateDataMapProcess
-{
-    updateDataMapProcess( worldscomm_ptr_t const & worldsComm,
-                          worldcomm_ptr_t const& worldCommFusion,
-                          uint16_type lastCursor )
-        :
-        M_cursor( 0 ),
-        M_start_index( 0 ),
-        M_lastCursor( lastCursor ),
-        M_worldsComm( worldsComm ),
-        M_dm( new DofType( worldCommFusion ) ),
-        M_dmOnOff( new DofType( worldCommFusion ) )
-    {}
-
-    template <typename T>
-    void operator()( std::shared_ptr<T> & x ) const
-    {
-
-        if ( M_worldsComm[M_cursor]->isActive() )
-        {
-            size_type nLocWithGhost=x->nLocalDofWithGhost();
-            size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
-            M_dm->setFirstDof( M_dm->worldComm().globalRank(), x->dof()->firstDof() );
-            M_dm->setLastDof( M_dm->worldComm().globalRank(), x->dof()->lastDof() );
-            M_dm->setFirstDofGlobalCluster( M_dm->worldComm().globalRank(), M_start_index + x->dof()->firstDofGlobalCluster() );
-            M_dm->setLastDofGlobalCluster( M_dm->worldComm().globalRank(), M_start_index + x->dof()->lastDofGlobalCluster() );
-            M_dm->setNLocalDofWithoutGhost( M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithoutGhost() );
-            M_dm->setNLocalDofWithGhost( M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithGhost() );
-
-            M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
-
-            for ( size_type i=0; i<nLocWithGhost; ++i )
-                M_dm->setMapGlobalProcessToGlobalCluster( i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
-
-        }
-
-
-        if ( M_cursor==0 )
-        {
-            M_dmOnOff->setFirstDof( M_dmOnOff->worldComm().globalRank(), x->dof()->firstDof() );
-            M_dmOnOff->setFirstDofGlobalCluster( M_dmOnOff->worldComm().globalRank(),
-                                                  M_start_index + x->dof()->firstDofGlobalCluster() );
-            M_dmOnOff->setNLocalDofWithoutGhost( M_dmOnOff->worldComm().globalRank(),
-                                                  0 );
-            M_dmOnOff->setNLocalDofWithGhost( M_dmOnOff->worldComm().globalRank(),
-                                               0 );
-        }
-
-        if ( M_cursor==M_lastCursor )
-        {
-            M_dmOnOff->setLastDof( M_dmOnOff->worldComm().globalRank(),
-                                    M_start_index + x->dof()->lastDof() );
-            M_dmOnOff->setLastDofGlobalCluster( M_dmOnOff->worldComm().globalRank(),
-                                                 M_start_index + x->dof()->lastDofGlobalCluster() );
-        }
-
-        // update nLoc
-        size_type nLocWithoutGhostOnOff= M_dmOnOff->nLocalDofWithoutGhost() + x->dof()->nLocalDofWithoutGhost();
-        size_type nLocWithGhostOnOff= M_dmOnOff->nLocalDofWithGhost() + x->dof()->nLocalDofWithGhost();
-
-        M_dmOnOff->setNLocalDofWithoutGhost( M_dmOnOff->worldComm().globalRank(),
-                                              nLocWithoutGhostOnOff );
-        M_dmOnOff->setNLocalDofWithGhost( M_dmOnOff->worldComm().globalRank(),
-                                           nLocWithGhostOnOff );
-
-        // update map
-        M_dmOnOff->resizeMapGlobalProcessToGlobalCluster( nLocWithGhostOnOff );
-
-        size_type startGlobClusterDof = M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
-        size_type startGlobProcessDof = M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
-
-        for ( size_type i=0; i<x->dof()->nLocalDofWithGhost(); ++i )
-        {
-            M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
-        }
-
-
-        M_start_index+=x->nDof();
-
-        ++M_cursor;// warning M_cursor < nb color
-    }
-
-    std::shared_ptr<DofType> dataMap() const
-    {
-        return M_dm;
-    }
-    std::shared_ptr<DofType> dataMapOnOff() const
-    {
-        return M_dmOnOff;
-    }
-
-    mutable uint16_type M_cursor;
-    mutable size_type M_start_index;
-    uint16_type M_lastCursor;
-    worldscomm_ptr_t M_worldsComm;
-    mutable std::shared_ptr<DofType> M_dm;
-    mutable std::shared_ptr<DofType> M_dmOnOff;
-}; // updateDataMapProcess
-
 template<typename DofType>
 struct updateDataMapProcessStandard
 {
@@ -6085,53 +5984,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList()
         if ( !this->hasWorldComm() )
             this->setWorldComm( M_worldsComm[0] );
 
-        if ( true )// this->worldComm().globalSize()>1 )
-        {
-            if ( this->hasEntriesForAllSpaces() )
-                {
-                    // construction with same partionment for all subspaces
-                    // and each processors has entries for all subspaces
-                    DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
+        // construction with same partionment for all subspaces
+        // and each processors has entries for all subspaces
+        DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
 
-                    // build datamap
-                    auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
-                                                                                        this->nSubFunctionSpace() );
-                    M_dof = fusion::fold( M_functionspaces, M_dof, dofInitTool );
-                    // finish update datamap
-                    M_dof->setNDof( this->nDof() );
-                    M_dofOnOff = M_dof;
-                }
-            else
-                {
-                    CHECK( false ) << "deprecated";
-                    // construction with same partionment for all subspaces
-                    // and one processor has entries for only one subspace
-                    DVLOG(2) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
+        // build datamap
+        auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
+                                                                               this->nSubFunctionSpace() );
+        M_dof = fusion::fold( M_functionspaces, M_dof, dofInitTool );
+        // finish update datamap
+        M_dof->setNDof( this->nDof() );
+        M_dofOnOff = M_dof;
 
-                    // build the WorldComm associated to mix space
-                    worldcomm_ptr_t mixSpaceWorldComm = this->worldsComm()[0]->clone();
-
-                    if ( this->worldsComm().size()>1 )
-                        for ( int i=1; i<( int )this->worldsComm().size(); ++i )
-                            {
-                                mixSpaceWorldComm = *mixSpaceWorldComm + *this->worldsComm()[i];
-                            }
-
-                    this->setWorldComm( mixSpaceWorldComm );
-                    //mixSpaceWorldComm.showMe();
-
-                    // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
-                    auto dofInitTool=Feel::detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
-                    fusion::for_each( M_functionspaces, dofInitTool );
-                    // finish update datamap
-                    M_dof = dofInitTool.dataMap();
-                    M_dof->setNDof( this->nDof() );
-                    M_dof->updateDataInWorld();
-                    M_dofOnOff = dofInitTool.dataMapOnOff();
-                    M_dofOnOff->setNDof( this->nDof() );
-                    M_dofOnOff->updateDataInWorld();
-                }
-        }
     #if 0
         M_dof->setIndexSplit( this->buildDofIndexSplit() );
         M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
