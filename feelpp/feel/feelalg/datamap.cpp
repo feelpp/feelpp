@@ -44,7 +44,6 @@ DataMap<SizeT>::DataMap( worldcomm_ptr_t const& _worldComm )
     M_last_df( _worldComm->globalSize(),0 ),
     M_first_df_globalcluster( _worldComm->globalSize(),0 ),
     M_last_df_globalcluster( _worldComm->globalSize(),0 ),
-    M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_indexSplit()
 {}
@@ -61,7 +60,6 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
     M_last_df( _worldComm->globalSize(),0 ),
     M_first_df_globalcluster( _worldComm->globalSize(),0 ),
     M_last_df_globalcluster( _worldComm->globalSize(),0 ),
-    M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_indexSplit()
 {
@@ -239,6 +237,9 @@ DataMap<SizeT>::DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm,
         startNewTag+=nTag;
     }
 
+    // update world index mapping
+    this->updateWorldIndexForUse();
+
     // index split
     bool computeIndexSplit = true;
     if ( computeIndexSplit )
@@ -289,6 +290,7 @@ DataMap<SizeT>::isCompatible( DataMap const& dm ) const
      */
 }
 
+#if 0
 template<typename SizeT>
 void
 DataMap<SizeT>::close() const
@@ -313,7 +315,7 @@ DataMap<SizeT>::myGlobalElements() const
 
     return M_myglobalelements;
 }
-
+#endif
 template<typename SizeT>
 void
 DataMap<SizeT>::setNDof( size_type ndof )
@@ -388,6 +390,24 @@ DataMap<SizeT>::resizeMapGlobalProcessToGlobalCluster( size_type n )
     M_mapGlobalProcessToGlobalCluster.resize( n );
 }
 
+
+template<typename SizeT>
+void
+DataMap<SizeT>::updateWorldIndexForUse()
+{
+    // clear previous mapping
+    M_ghostWorldIndexToProcessIndex.clear();
+
+    // WARNING: We guess that active indices in process are in first, ghosts at the end
+    size_type _nLocalDofWithGhost = this->nLocalDofWithGhost();
+    size_type _nLocalDofWithoutGhost = this->nLocalDofWithoutGhost();
+    for ( size_type k=_nLocalDofWithoutGhost;k<_nLocalDofWithGhost;++k )
+        M_ghostWorldIndexToProcessIndex.emplace( M_mapGlobalProcessToGlobalCluster[k], k );
+}
+
+
+
+
 template<typename SizeT>
 void
 DataMap<SizeT>::updateDataInWorld()
@@ -435,6 +455,18 @@ DataMap<SizeT>::procOnGlobalCluster( size_type globDof ) const
     return res;
 }
 
+
+template<typename SizeT>
+SizeT
+DataMap<SizeT>::worldIndexToProcessIndex( size_type worldIndex ) const
+{
+    if ( this->dofGlobalClusterIsOnProc( worldIndex ) )
+        return worldIndex - this->firstDofGlobalCluster();
+    else
+        return M_ghostWorldIndexToProcessIndex.at( worldIndex );
+}
+
+#if O
 template<typename SizeT>
 boost::tuple<bool,SizeT>
 DataMap<SizeT>::searchGlobalProcessDof( size_type gcdof ) const
@@ -445,6 +477,9 @@ DataMap<SizeT>::searchGlobalProcessDof( size_type gcdof ) const
         gpdof = gcdof - this->firstDofGlobalCluster();
         return boost::make_tuple( true, gpdof );
     }
+    else
+        return boost::make_tuple( true, M_ghostWorldIndexToProcessIndex.at( gcdof ) );
+
 
     bool find=false;
     const size_type startLoc = this->firstDof();
@@ -458,7 +493,7 @@ DataMap<SizeT>::searchGlobalProcessDof( size_type gcdof ) const
 
     return boost::make_tuple( find,gpdof );
 }
-
+#endif
 template<typename SizeT>
 std::vector<SizeT>
 DataMap<SizeT>::buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const
@@ -538,9 +573,10 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
         rank_type theproc = dataR.first;
         for ( size_type dataRfromproc : dataR.second )
         {
-            auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
-            CHECK( thelocdof.template get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
-            size_type gpdof = thelocdof.template get<1>();
+            // auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
+            // CHECK( thelocdof.template get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
+            // size_type gpdof = thelocdof.template get<1>();
+            size_type gpdof = this->worldIndexToProcessIndex( dataRfromproc );
             //indexSet.push_back( gpdof );
             indexSet.insert( gpdof );
             auto itFindDofShared = this->activeDofSharedOnCluster().find( gpdof ) ;
@@ -585,10 +621,10 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     {
         for ( size_type dataRfromproc : dataR.second )
         {
-            auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
-            CHECK( thelocdof.template get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
-            size_type gpdof = thelocdof.template get<1>();
-            //indexSet.push_back( gpdof );
+            size_type gpdof = this->worldIndexToProcessIndex( dataRfromproc );
+            // auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
+            // CHECK( thelocdof.template get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
+            // size_type gpdof = thelocdof.template get<1>();
             indexSet.insert( gpdof );
         }
     }
@@ -664,9 +700,10 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
         rank_type theproc = dataR.first;
         for ( size_type gcdof : dataR.second )
         {
-            auto resSearchDof = this->searchGlobalProcessDof( gcdof );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "local dof not find with global cluster id : " << gcdof;
-            size_type gpdof = boost::get<1>( resSearchDof );
+            size_type gpdof = this->worldIndexToProcessIndex( gcdof );
+            // auto resSearchDof = this->searchGlobalProcessDof( gcdof );
+            // DCHECK( boost::get<0>( resSearchDof ) ) << "local dof not find with global cluster id : " << gcdof;
+            // size_type gpdof = boost::get<1>( resSearchDof );
             DCHECK( !this->dofGlobalProcessIsGhost( gpdof ) ) << "gpdof " << gpdof <<" must be active";
             res[gcdof].insert( theproc );
         }

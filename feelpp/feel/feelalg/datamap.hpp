@@ -264,21 +264,21 @@ public:
     /**
      * @return the number of degrees of freedom on this processor.
      */
-    size_type nMyDof () const
-    {
-        return this->nDofOnProcessor ( this->worldComm().rank() );
-    }
+    // size_type nMyDof () const
+    // {
+    //     return this->nDofOnProcessor ( this->worldComm().rank() );
+    // }
 
     /**
      * @return the number of degrees of freedom on subdomain \p proc.
      */
-    size_type nDofOnProcessor( const rank_type proc ) const
-    {
-        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
-                                           <<  proc << ", first dof : " <<  M_first_df.size();
-        return M_n_localWithoutGhost_df[proc];
-        //return ( M_last_df[proc] - M_first_df[proc]+1);
-    }
+    // size_type nDofOnProcessor( const rank_type proc ) const
+    // {
+    //     DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
+    //                                        <<  proc << ", first dof : " <<  M_first_df.size();
+    //     return M_n_localWithoutGhost_df[proc];
+    //     //return ( M_last_df[proc] - M_first_df[proc]+1);
+    // }
 
     rank_type nProcessors() const
     {
@@ -373,79 +373,81 @@ public:
         return !this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
     }
 
-    //! return global process id from global cluster id if available
-    boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
+    //! return process index from world index
+    size_type worldIndexToProcessIndex( size_type index ) const;
+    //! return process index from a ghost world index
+    size_type ghostWorldIndexToProcessIndex( size_type index ) const { return M_ghostWorldIndexToProcessIndex.at( index ); }
 
-    //! Returns local ID of global ID, return invalid_v<size_type> if not found on this processor.
-    size_type  lid( size_type GID ) const
-    {
-        uint16_type pid = this->worldComm().rank();
+    // //! Returns local ID of global ID, return invalid_v<size_type> if not found on this processor.
+    // size_type  lid( size_type GID ) const
+    // {
+    //     uint16_type pid = this->worldComm().rank();
 
-        if ( GID >= firstDof( pid ) &&
-                GID <= lastDof( pid ) )
-            return GID - firstDof( pid );
+    //     if ( GID >= firstDof( pid ) &&
+    //             GID <= lastDof( pid ) )
+    //         return GID - firstDof( pid );
 
-        return invalid_v<size_type>;
-    }
+    //     return invalid_v<size_type>;
+    // }
 
-    //! Returns global ID of local ID, return -1 if not found on this processor.
-    size_type gid( size_type LID ) const
-    {
-        uint16_type pid = this->worldComm().rank();
+    // //! Returns global ID of local ID, return -1 if not found on this processor.
+    // size_type gid( size_type LID ) const
+    // {
+    //     uint16_type pid = this->worldComm().rank();
 
-        if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
-            return firstDof( pid ) + LID;
+    //     if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
+    //         return firstDof( pid ) + LID;
 
-        return invalid_v<size_type>;
-    }
+    //     return invalid_v<size_type>;
+    // }
 
-    //! Returns true if the GID passed in belongs to the calling processor in this map, otherwise returns false.
-    bool  myGID( size_type GID ) const
-    {
-        return( lid( GID )!=invalid_v<size_type> );
-    }
+    // //! Returns true if the GID passed in belongs to the calling processor in this map, otherwise returns false.
+    // bool  myGID( size_type GID ) const
+    // {
+    //     return( lid( GID )!=invalid_v<size_type> );
+    // }
 
-    //! Returns true if the LID passed in belongs to the calling processor in this map, otherwise returns false.
-    bool  myLID( size_type LID ) const
-    {
-        return( gid( LID )!=invalid_v<size_type> );
-    }
+    // //! Returns true if the LID passed in belongs to the calling processor in this map, otherwise returns false.
+    // bool  myLID( size_type LID ) const
+    // {
+    //     return( gid( LID )!=invalid_v<size_type> );
+    // }
 
-    //!Returns the minimum global ID across the entire map.
-    size_type  minAllGID() const
-    {
-        return( firstDof( 0 ) );
-    }
+    // //!Returns the minimum global ID across the entire map.
+    // size_type  minAllGID() const
+    // {
+    //     return( firstDof( 0 ) );
+    // }
 
-    //! Returns the maximum global ID across the entire map.
-    size_type  maxAllGID() const
-    {
-        return( lastDof( this->worldComm().size()-1 ) );
-    }
+    // //! Returns the maximum global ID across the entire map.
+    // size_type  maxAllGID() const
+    // {
+    //     return( lastDof( this->worldComm().size()-1 ) );
+    // }
 
-    //! Returns the maximum global ID owned by this processor.
-    size_type  minMyGID() const
-    {
-        return firstDof( this->worldComm().rank() );
-    }
+    // //! Returns the maximum global ID owned by this processor.
+    // size_type  minMyGID() const
+    // {
+    //     return firstDof( this->worldComm().rank() );
+    // }
 
-    //! Returns the maximum global ID owned by this processor.
-    size_type  maxMyGID() const
-    {
-        return lastDof( this->worldComm().rank() );
-    };
+    // //! Returns the maximum global ID owned by this processor.
+    // size_type  maxMyGID() const
+    // {
+    //     return lastDof( this->worldComm().rank() );
+    // };
 
-    //!  The minimum local index value on the calling processor.
-    size_type  minLID() const
-    {
-        return 0;
-    };
+    // //!  The minimum local index value on the calling processor.
+    // size_type  minLID() const
+    // {
+    //     return 0;
+    // };
 
-    //! The maximum local index value on the calling processor.
-    size_type  maxLID() const
-    {
-        return lastDof( this->worldComm().rank() )-firstDof( this->worldComm().rank() );
-    };
+    // //! The maximum local index value on the calling processor.
+    // size_type  maxLID() const
+    // {
+    //     return lastDof( this->worldComm().rank() )-firstDof( this->worldComm().rank() );
+    // };
 
     //! number of elements across all processors.
     size_type nGlobalElements() const
@@ -455,13 +457,13 @@ public:
 
     //! number of elements on the calling processor.
     //size_type nMyElements() const {return nLocalDofWithGhost();};
-    size_type nMyElements() const
-    {
-        return nLocalDof();
-    };
+    // size_type nMyElements() const
+    // {
+    //     return nLocalDof();
+    // };
 
-    //! Puts list of global elements on this processor size_typeo the user-provided array.
-    std::vector<size_type> const& myGlobalElements() const;
+    // //! Puts list of global elements on this processor size_typeo the user-provided array.
+    // std::vector<size_type> const& myGlobalElements() const;
 
     //! processor numbering to world numbering
     std::vector<size_type> const& mapGlobalProcessToGlobalCluster() const
@@ -473,12 +475,6 @@ public:
     size_type mapGlobalProcessToGlobalCluster( size_type i ) const
     {
         return M_mapGlobalProcessToGlobalCluster[i];
-    }
-
-    FEELPP_DEPRECATED
-    size_type mapGlobalClusterToGlobalProcess( size_type i ) const
-    {
-        return i;
     }
 
     void setNDof( size_type ndof );
@@ -493,6 +489,8 @@ public:
     void setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map );
     void setMapGlobalProcessToGlobalCluster( size_type i, size_type j );
     void resizeMapGlobalProcessToGlobalCluster( size_type n );
+
+    void updateWorldIndexForUse();
 
     void updateDataInWorld();
 
@@ -663,7 +661,6 @@ public:
         ar & BOOST_SERIALIZATION_NVP( M_last_df );
         ar & BOOST_SERIALIZATION_NVP( M_first_df_globalcluster );
         ar & BOOST_SERIALIZATION_NVP( M_last_df_globalcluster );
-        ar & BOOST_SERIALIZATION_NVP( M_myglobalelements );
         ar & BOOST_SERIALIZATION_NVP( M_mapGlobalProcessToGlobalCluster );
         ar & BOOST_SERIALIZATION_NVP( M_neighbor_processors );
         ar & BOOST_SERIALIZATION_NVP( M_activeDofSharedOnCluster );
@@ -711,9 +708,6 @@ protected:
      */
     std::vector<size_type> M_last_df_globalcluster;
 
-    // ??
-    mutable std::vector<size_type> M_myglobalelements;
-
     /**
      * Map between Global Process To Global Cluster.
      */
@@ -729,6 +723,8 @@ protected:
      */
     std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
 
+
+    std::map<size_type,size_type> M_ghostWorldIndexToProcessIndex;
 
     /**
      * Index split ( differentiate multiphysic )
