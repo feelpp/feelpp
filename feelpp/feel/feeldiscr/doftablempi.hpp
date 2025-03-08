@@ -1664,21 +1664,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     //------------------------------------------------------------------------------//
 
     // update datamap info
-    CHECK( this->M_n_localWithGhost_df[myRank] >= nDofNotPresent ) << "invalid data\n" << std::endl;
+    CHECK( this->M_n_localWithGhost_df[myRank] >= nDofNotPresent ) << "invalid data";
     this->M_n_localWithoutGhost_df[myRank] = this->M_n_localWithGhost_df[myRank] - nDofNotPresent;
 
-    std::vector<boost::tuple<size_type,size_type,size_type> > dataRecvFromGather;
-    auto dataSendToGather = boost::make_tuple(this->M_first_df[myRank],this->M_n_localWithGhost_df[myRank],this->M_n_localWithoutGhost_df[myRank]);
+    // std::vector<boost::tuple<size_type,size_type,size_type> > dataRecvFromGather;
+    // auto dataSendToGather = boost::make_tuple(this->M_first_df[myRank],this->M_n_localWithGhost_df[myRank],this->M_n_localWithoutGhost_df[myRank]);
+    std::vector<std::tuple<size_type,size_type> > dataRecvFromGather;
+    auto dataSendToGather = std::make_tuple(this->M_n_localWithGhost_df[myRank],this->M_n_localWithoutGhost_df[myRank]);
     mpi::all_gather( this->worldComm(),
                      dataSendToGather,
                      dataRecvFromGather );
 
     for (int p=0;p<this->worldComm().localSize();++p)
     {
-        this->M_first_df[p] = dataRecvFromGather[p].template get<0>();
-        this->M_n_localWithGhost_df[p] = dataRecvFromGather[p].template get<1>();
-        this->M_last_df[p] = (this->M_n_localWithGhost_df[p] > 0)? this->M_first_df[p] + this->M_n_localWithGhost_df[p] - 1 : this->M_first_df[p];
-        this->M_n_localWithoutGhost_df[p] = dataRecvFromGather[p].template get<2>();
+        this->M_n_localWithGhost_df[p] = std::get<0>( dataRecvFromGather[p] );
+        this->M_n_localWithoutGhost_df[p] = std::get<1>( dataRecvFromGather[p] );
     }
     // update global nDof
     this->M_n_dofs=0;
@@ -1917,7 +1917,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMapExtende
                      dataRecvFromGather );
     for (rank_type p=0;p<nProc;++p)
     {
-        this->M_last_df[p] += dataRecvFromGather[p];
         this->M_n_localWithGhost_df[p] += dataRecvFromGather[p];
     }
     this->M_mapGlobalProcessToGlobalCluster.resize( this->M_n_localWithGhost_df[myRank],invalid_v<size_type> );
