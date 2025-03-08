@@ -2872,7 +2872,6 @@ aggregateParallelSupport( std::vector<std::shared_ptr<datamap_t<>>> const& datam
         {
             auto const& mapUsed = *itMapUsed;
             mapNew->setNLocalDofWithGhost( p, mapUsed->nLocalDofWithGhost(p) );
-            mapNew->setLastDof( p, mapUsed->nLocalDofWithGhost(p) - 1 );
         }
         if ( mapRef->nLocalDofWithoutGhost(p) > 0 )
         {
