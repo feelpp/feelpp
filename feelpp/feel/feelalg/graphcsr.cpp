@@ -67,18 +67,6 @@ GraphCSR::GraphCSR( size_type n,
         M_mapCol->setNLocalDofWithoutGhost( proc, _size2 );
         M_mapCol->setNLocalDofWithGhost( proc, _size2 );
 
-        M_mapRow->setFirstDof( proc, 0 );
-        M_mapCol->setFirstDof( proc, 0 );
-        if (_size2==0)
-            M_mapCol->setLastDof( proc, 0 );
-        else
-            M_mapCol->setLastDof( proc, _size2-1 );
-
-        if ( _size1==0 )
-            M_mapRow->setLastDof( proc, 0 );
-        else
-            M_mapRow->setLastDof( proc, _size1-1 );
-
         if ( proc==myrank )
         {
             M_mapRow->setNDof( _size1 );

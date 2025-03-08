@@ -5929,7 +5929,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         toc("FunctionSpace dof-2", FLAGS_v>0);
         DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
         tic();
-        M_dof->setDofIndices( dofindices );
+        CHECK( dofindices.empty() ) << "NOT GO HERE";
+        //M_dof->setDofIndices( dofindices );
         toc("FunctionSpace dof-3", FLAGS_v>0);
         DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
         tic();

@@ -40,8 +40,6 @@ DataMap<SizeT>::DataMap( worldcomm_ptr_t const& _worldComm )
     M_n_dofs( 0 ),
     M_n_localWithoutGhost_df( _worldComm->globalSize(),0 ),
     M_n_localWithGhost_df( _worldComm->globalSize(),0 ),
-    M_first_df( _worldComm->globalSize(),0 ),
-    M_last_df( _worldComm->globalSize(),0 ),
     M_first_df_globalcluster( _worldComm->globalSize(),0 ),
     M_last_df_globalcluster( _worldComm->globalSize(),0 ),
     M_mapGlobalProcessToGlobalCluster(),
@@ -56,8 +54,6 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
     M_n_dofs( n ),
     M_n_localWithoutGhost_df( _worldComm->globalSize(),0 ),
     M_n_localWithGhost_df( _worldComm->globalSize(),0 ),
-    M_first_df( _worldComm->globalSize(),0 ),
-    M_last_df( _worldComm->globalSize(),0 ),
     M_first_df_globalcluster( _worldComm->globalSize(),0 ),
     M_last_df_globalcluster( _worldComm->globalSize(),0 ),
     M_mapGlobalProcessToGlobalCluster(),
@@ -80,8 +76,6 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
     }
     else // sequential
     {
-        M_first_df[this->worldComm().rank()] = 0;
-        M_last_df[this->worldComm().rank()] = n_local-1;
         // mpi
         M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
         M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
@@ -100,11 +94,10 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
     this->buildIndexSplit();
 
-#  ifdef DEBUG
+#if !defined( NDEBUG )
     // Make sure all the local sizes sum up to the global
     // size, otherwise there is big trouble!
     int sum=0;
-
     for ( int p=0; p< this->worldComm().size(); p++ )
         sum += M_n_localWithoutGhost_df[p];
 
@@ -114,7 +107,7 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
         ( this->worldComm().rank() )
         ( this->worldComm().size() ).warn( "invalid distributed vector construction" );
 
-#  endif
+#endif
 
 
     /*
@@ -151,8 +144,6 @@ DataMap<SizeT>::DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm,
         }
         this->setNLocalDofWithoutGhost( proc, sizeWithoutGhost );
         this->setNLocalDofWithGhost( proc, sizeWithGhost );
-        this->setFirstDof( proc, 0 );
-        this->setLastDof( proc, (sizeWithGhost == 0)?0:sizeWithGhost-1 );
         this->setLastDofGlobalCluster(proc,  (sizeWithoutGhost ==0)? firstDofGlobalCluster : ( firstDofGlobalCluster +sizeWithoutGhost-1 ));
         if ( proc==myrank )
             this->setNDof( sizeGlobalCluster );
@@ -290,32 +281,6 @@ DataMap<SizeT>::isCompatible( DataMap const& dm ) const
      */
 }
 
-#if 0
-template<typename SizeT>
-void
-DataMap<SizeT>::close() const
-{
-    // we assume here that the data is contiguous
-    M_myglobalelements.resize( nMyElements() );
-
-    for ( size_type i = 0; i < nMyElements(); ++i )
-    {
-        M_myglobalelements[i] = minMyGID() + i;
-    }
-
-    M_closed = true;
-}
-
-template<typename SizeT>
-std::vector<SizeT> const&
-DataMap<SizeT>::myGlobalElements() const
-{
-    if ( !this->closed() )
-        this->close();
-
-    return M_myglobalelements;
-}
-#endif
 template<typename SizeT>
 void
 DataMap<SizeT>::setNDof( size_type ndof )
@@ -335,22 +300,6 @@ void
 DataMap<SizeT>::setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithGhost_df[proc]=n;
-}
-
-template<typename SizeT>
-void
-DataMap<SizeT>::setFirstDof( const rank_type proc, const size_type df, bool inWorld )
-{
-    FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
-    M_first_df[proc]=df;
-}
-
-template<typename SizeT>
-void
-DataMap<SizeT>::setLastDof( const rank_type proc, const size_type df, bool inWorld )
-{
-    FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
-    M_last_df[proc]=df;
 }
 
 template<typename SizeT>
@@ -419,12 +368,6 @@ DataMap<SizeT>::updateDataInWorld()
                      this->M_n_localWithGhost_df[this->worldComm().globalRank()],
                      this->M_n_localWithGhost_df );
 
-    mpi::all_gather( this->worldComm().globalComm(),
-                     this->M_first_df[this->worldComm().globalRank()],
-                     this->M_first_df );
-    mpi::all_gather( this->worldComm().globalComm(),
-                     this->M_last_df[this->worldComm().globalRank()],
-                     this->M_last_df );
     mpi::all_gather( this->worldComm().globalComm(),
                      this->M_first_df_globalcluster[this->worldComm().globalRank()],
                      this->M_first_df_globalcluster );
@@ -754,8 +697,6 @@ DataMap<SizeT>::createSubDataMap( std::vector<size_type> const& _idExtract, bool
     for (rank_type p=0;p<this->worldComm().localSize();++p)
     {
         const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].template get<0>();
-        dataMapRes->setFirstDof( p, 0 );
-        dataMapRes->setLastDof( p, (nLocalDofWithGhostOnProc > 0)? nLocalDofWithGhostOnProc-1 :0  );
         dataMapRes->setNLocalDofWithGhost( p, nLocalDofWithGhostOnProc );
 
         const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].template get<1>();
@@ -957,22 +898,6 @@ DataMap<SizeT>::showMe( bool showAll, std::ostream& __out2 ) const
 #endif
             }
 #if 1
-            __out << " M_first_df : ";
-
-            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
-            {
-                __out << this-> M_first_df[i] << " ";
-            }
-
-            __out << "\n";
-            __out << " M_last_df : ";
-
-            for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
-            {
-                __out << this-> M_last_df[i] << " ";
-            }
-
-            __out << "\n";
             __out << " M_first_df_globalcluster : ";
 
             for ( rank_type i=0; i<this->worldComm().globalSize(); ++i )
