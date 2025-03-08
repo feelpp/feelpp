@@ -340,10 +340,14 @@ public:
         return !this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
     }
 
-    //! return process index from world index
+    //! return process index from world index (if index is not present, return an invalid value)
     size_type worldIndexToProcessIndex( size_type index ) const;
-    //! return process index from a ghost world index
-    size_type ghostWorldIndexToProcessIndex( size_type index ) const { return M_ghostWorldIndexToProcessIndex.at( index ); }
+    //! return process index from a ghost world index (if index a ghost index, return an invalid value)
+    size_type ghostWorldIndexToProcessIndex( size_type index ) const
+    {
+        auto itFind = M_ghostWorldIndexToProcessIndex.find( index );
+        return itFind != M_ghostWorldIndexToProcessIndex.end()? itFind->second : invalid_v<size_type>;
+    }
 
     //! number of elements across all processors.
     size_type nGlobalElements() const
