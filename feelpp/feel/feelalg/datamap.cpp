@@ -406,7 +406,7 @@ DataMap<SizeT>::worldIndexToProcessIndex( size_type worldIndex ) const
     if ( this->dofGlobalClusterIsOnProc( worldIndex ) )
         return worldIndex - this->firstDofGlobalCluster();
     else
-        return M_ghostWorldIndexToProcessIndex.at( worldIndex );
+        return this->ghostWorldIndexToProcessIndex( worldIndex );
 }
 
 #if O
