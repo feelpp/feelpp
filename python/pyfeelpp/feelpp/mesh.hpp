@@ -323,13 +323,13 @@ void defMesh(py::module &m)
     }
     m.def(
         "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_ELEMENTS> const& range )
-        { return createSubmesh( _mesh = m, _range = range ); },
+        { return createSubmesh( _range = range ); },
         py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of elements" ).c_str() );
     if constexpr ( mesh_t::nDim >= 2 )
     {
         m.def(
             "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_FACES> const& range )
-            { return createSubmesh( _mesh = m, _range = range ); },
+            { return createSubmesh( _range = range ); },
             py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of facets" ).c_str() );
     }
 }
