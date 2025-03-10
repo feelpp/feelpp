@@ -196,8 +196,8 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
     auto rangeElt1 = elements( M_Xh1->mesh(), entityProcess );
     auto rangeElt2 = elements( M_Xh2->mesh(), entityProcess );
 #else
-    auto rangeElt1 = elements(M_Xh1->template meshSupport<0>());
-    auto rangeElt2 = elements(M_Xh2->template meshSupport<0>());
+    auto rangeElt1 = elements(M_Xh1->template meshSupport<0>(), entity_process_t::ALL );
+    auto rangeElt2 = elements(M_Xh2->template meshSupport<0>(), entity_process_t::ALL );
 #endif
 
     auto dof1 = M_Xh1->dof();
