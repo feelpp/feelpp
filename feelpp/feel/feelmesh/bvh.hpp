@@ -1848,6 +1848,19 @@ __global__ void rayTracingKernelExplorationOptimized(
     }
 }
 
+
+__device__ __inline__ void updateHitResults(HitRay &hitRay,
+                                            unsigned int triangleIndex, float t,
+                                            const Ray &ray,
+                                            const Triangle &hitTriangle) {
+  float4 hit_point = ray.origin + ray.direction * t;
+  hitRay.hitResults = triangleIndex;
+  hitRay.distanceResults = t;
+  hitRay.intersectionPoint = make_float3(hit_point.x, hit_point.y, hit_point.z);
+  hitRay.idResults = hitTriangle.id;
+}
+
+
 __device__ __inline__ bool
 checkOverlap( const float4& observer, const float4& obj1, const float& radius1,
               const float4& obj2, const float& radius2 )
@@ -1868,7 +1881,7 @@ checkOverlap( const float4& observer, const float4& obj1, const float& radius1,
 }
 
 template <typename T, typename U>
-__global__ void rayTracingKernelExplorationOptimized2(
+__global__ void rayTracingKernelExplorationOptimizedWithchackOverlap(
     lbvh::bvh_device<T, U> bvh_dev, Ray* rays, HitRay* d_HitRays, int numRays,
     float4* directions, const CenterGlobalSpaceBox* d_gBox )
 {
@@ -2057,6 +2070,37 @@ __global__ void rayTracingKernelExplorationOptimized2(
             delta += epsilon;
         }
     }
+}
+
+
+template <typename T, typename U>
+__global__ void process_single_point_new(lbvh::bvh_device<T, U> bvh_dev,
+                                         float4 pos) {
+  const auto calc = distance_calculator();
+  const auto nest = lbvh::query_device(bvh_dev, lbvh::nearest(pos), calc);
+
+  // This function allows you to determine the closest triangle as quickly as possible. 
+  // If you want more functionality please contact me.
+
+  if (nest.first != 0xFFFFFFFF) {
+    printf("Nearest object index: %u\n", nest.first);
+    printf("Distance to nearest object: %f\n", nest.second);
+
+    // Display the coordinates of the nearest object
+    const auto &nearest_object = bvh_dev.objects[nest.first];
+    printf("Nearest object coordinates:\n");
+    printf("  v1: (%f, %f, %f)\n", nearest_object.v1.x, nearest_object.v1.y,
+           nearest_object.v1.z);
+    printf("  v2: (%f, %f, %f)\n", nearest_object.v2.x, nearest_object.v2.y,
+           nearest_object.v2.z);
+    printf("  v3: (%f, %f, %f)\n", nearest_object.v3.x, nearest_object.v3.y,
+           nearest_object.v3.z);
+
+    // Display the coordinates of the query point
+    printf("Query point coordinates: (%f, %f, %f)\n", pos.x, pos.y, pos.z);
+  } else {
+    printf("No nearest object found (BVH might be empty)\n");
+  }
 }
 
 } // END namespace bvhLinearExplorer
@@ -2801,8 +2845,8 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 2;
         // isView = true; isViewDataRT = true;
 
-        //modeGPU = 4;
-        //numVersion = 4;
+        // modeGPU = 4; numVersion = 1;
+        // modeGPU = 4; numVersion = 2;
     }
 
     ~BVH_HIP_Party()
@@ -3302,8 +3346,17 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
             hipMalloc( &d_directions, numDirections * sizeof( float4 ) );
             bvhLinearExplorer::initializeDirectionsKernel<<<1, 1>>>( d_directions );
 
+            if ( numVersion == 1 )
+            {
             bvhLinearExplorer::rayTracingKernelExplorationOptimized<float, bvhLinearExplorer::Triangle>
                 <<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays, d_directions, d_gBox );
+            }
+
+            if ( numVersion == 2 )
+            {
+            bvhLinearExplorer::rayTracingKernelExplorationOptimizedWithchackOverlap<float, bvhLinearExplorer::Triangle>
+                <<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays, d_directions, d_gBox );
+            }
 
             hipFree( d_directions );
             delete[] h_directions;

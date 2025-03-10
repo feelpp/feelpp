@@ -1646,7 +1646,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
     bool isBuildPictureOn = true;
     isBuildPictureOn = false;
     bool isStatisticalAnalysisOn = true;
-    isStatisticalAnalysisOn = false; // add limit inf
+    //isStatisticalAnalysisOn = false; // add limit inf
     bool isSaveTicTocTime = true;    // isSaveTicTocTime  = false;
     bool isStatisticalAnalysisConvergenceRateMonteCarloOn = true;
     isStatisticalAnalysisConvergenceRateMonteCarloOn = false;
@@ -1671,7 +1671,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         //******************************************************************************************************************/
         // Statistical analysis
-        if ( isStatisticalAnalysisOn )
+        if ( (isStatisticalAnalysisOn)  && (number_rays_desired>16) )
         {
             std::vector<double> distancesMinREAL;
             std::vector<double> distancesMinCPU;
@@ -1693,7 +1693,7 @@ BOOST_AUTO_TEST_CASE( all_distance )
 
         //******************************************************************************************************************/
         // Statistical analysis Convergence Rate Monte Carlo
-        if ( isStatisticalAnalysisConvergenceRateMonteCarloOn )
+        if (isStatisticalAnalysisConvergenceRateMonteCarloOn)
         {
             std::vector<int> numRaysList = { 100, 1000, 10000, 100000 };
             analyzeMonteCarloMethodConvergenceRate( rangeFaces, allNodeCoordinates, allDataPU, numRaysList );
