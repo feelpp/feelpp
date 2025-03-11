@@ -1080,6 +1080,7 @@ public:
      */
     size_type buildPeriodicDofMap( mesh_type& M );
 
+private :
     /**
      * build dof associated to local discontinuities
      */
@@ -1107,35 +1108,20 @@ public:
     /**
      * subroutines
      */
-#if 0
-    void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
-    void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
-                                                                    std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
-                                                                    std::set<rank_type> & procRecvData );
-    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
-                                                                                std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                std::set<rank_type> const& procRecvData );
-    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
-                                                                                   std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                   std::set<rank_type> const& procRecvData );
-    void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
-#endif
-    void buildGhostDofMapExtended( mesh_type& mesh );
-    void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange );
     void buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh );
-    // void buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
-    //                                                                        std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend );
     void buildGlobalProcessToGlobalClusterInterprocessDofs( mesh_type& mesh,
                                                             std::map<rank_type, std::map<size_type,std::vector<uint16_type> > > & dataToSend,
                                                             std::map<rank_type, std::map<size_type,std::vector<size_type> > > & dataMemory );
+    void buildGhostDofMapExtended( mesh_type& mesh, Range<mesh_type,MESH_ELEMENTS> const& ghostEltRange );
 
+    void updateMultiprocessDofForUse();
 
+public:
     bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
     void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
     size_type nGhostDofAddedInExtendedDofTable() const { return M_nGhostDofAddedInExtendedDofTable; }
 
 
-    void updateMultiprocessDofForUse();
 
 
     /**
