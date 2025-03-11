@@ -2,7 +2,7 @@
 //!
 //! This file is part of the Feel++ library
 //!
-//! Author(s) : 
+//! Author(s) :
 //!     Thibaut Metivet <thibaut.metivet@inria.fr>
 //!
 //! This library is free software; you can redistribute it and/or
@@ -88,9 +88,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::FastMarching(
             size_type const dofGCId = dofGCIdPids.first;
             size_type const dofId = M_mapSharedDofGlobalClusterToGlobalProcess[dofGCId];
 #if !defined(NDEBUG)
-            auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
-            size_type const dofId2 = boost::get<1>( resSearchDof );
+            size_type const dofId2 = dofTable->worldIndexToProcessIndex( dofGCId );
             CHECK( dofId == dofId2 ) << "[" << localPid << "]" << "dof id must be the same : " << dofId << " vs " << dofId2 << "(" << dofGCId << "," << dofTable->firstDofGlobalCluster() << ")" << std::endl;
 #endif
             M_dofSharedOnCluster[dofId].insert( dataR.first );
@@ -140,7 +138,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
         auto const eltDone = boost::unwrap_ref( *itEltDone );
         size_type const eltDoneId = eltDone.id();
 #ifdef DEBUG_FM_COUT
-        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
+        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]"
             << "fixing elt " << eltDoneId << " with dofs { ";
 #endif
         for( auto const& lDof: this->functionSpace()->dof()->localDof( eltDoneId ) )
@@ -148,7 +146,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
             size_type dofId = lDof.second.index();
             M_dofStatus[dofId] = FastMarchingDofStatus::DONE_FIX;
 #ifdef DEBUG_FM_COUT
-            std::cout << "(" 
+            std::cout << "("
                 << lDof.first.localDof() << ","
                 << dofId << ","
                 << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( dofId ) << "; "
@@ -160,7 +158,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
 #endif
     }
     Feel::syncDofs( M_dofStatus, *sol.dof(), rangeDone,
-            []( FastMarchingDofStatus curStatus, std::set<FastMarchingDofStatus> ghostVals ) 
+            []( FastMarchingDofStatus curStatus, std::set<FastMarchingDofStatus> ghostVals )
             -> FastMarchingDofStatus
             {
                 if( curStatus == FastMarchingDofStatus::DONE_FIX )
@@ -271,8 +269,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
             }
             else
             {
-                if( ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth ) 
-                        && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth ) 
+                if( ( minPositiveAbsGlobalValue >= M_positiveNarrowBandWidth )
+                        && ( minNegativeAbsGlobalValue >= M_negativeNarrowBandWidth )
                         && maxNumberOfNewDofsOnAllProc == 0 )
                     break;
             }
@@ -297,8 +295,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
     int dofDoneSgn = (0. < dofDoneVal) - (dofDoneVal < 0.);
     // Process elements containing dofDoneId
 #ifdef DEBUG_FM_COUT
-    std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
-        << "processing neighbors of dof(" << dofDoneId << "," 
+    std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]"
+        << "processing neighbors of dof(" << dofDoneId << ","
         << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( dofDoneId ) << "; "
         << dofDoneVal
         << ") : ";
@@ -328,14 +326,14 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
                     && !(M_dofStatus[dofId] & FastMarchingDofStatus::FAR) )
                 continue;
 #ifdef DEBUG_FM_COUT
-            std::cout << "(" << dofId << "," 
+            std::cout << "(" << dofId << ","
                 << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster(dofId) << "; "
                 << int(M_dofStatus[dofId]) << ", "
                 << sol(dofId) << ", "
                 << int(less_abs<value_type>()( dofDoneVal, sol(dofId) ))
                 << "); ";
 #endif
-            if( M_dofStatus[dofId] != FastMarchingDofStatus::DONE_FIX 
+            if( M_dofStatus[dofId] != FastMarchingDofStatus::DONE_FIX
                     && less_abs<value_type>()( dofDoneVal, sol(dofId) ) )
             {
                 if( M_dofStatus[dofId] & FastMarchingDofStatus::DONE )
@@ -378,15 +376,15 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
     {
 #ifdef DEBUG_FM_COUT
         int dofDoneSgn = (0. < sol(dofDoneIds[0])) - (sol(dofDoneIds[0]) < 0.);
-        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
-            << "updating dof(" << closeDofId << "," 
+        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]"
+            << "updating dof(" << closeDofId << ","
             << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( closeDofId ) << ")"
             << " with value " << sol(closeDofId)
             //<< " to value " << closeDofVal << "(" << ( (sol(dofDoneIds[0]) > 0.) ? "+":"-" ) << ")"
             << " to value " << closeDofVal << "(" << dofDoneSgn << ")"
             << " using dofs {";
         for( auto dofId: dofDoneIds )
-            std::cout << "(" << dofId << "," 
+            std::cout << "(" << dofId << ","
                 << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster(dofId) << "; "
                 << sol(dofId) << "); ";
         std::cout << "} ";
@@ -464,8 +462,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchLocalSignedNarrowBan
         if( M_dofStatus[nextDofDoneId] != FastMarchingDofStatus::DONE_OLD )
             M_dofStatus[nextDofDoneId] = FastMarchingDofStatus::DONE_NEW;
 #ifdef DEBUG_FM_COUT
-        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
-            << "updating dof(" << nextDofDoneId << "," 
+        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]"
+            << "updating dof(" << nextDofDoneId << ","
             << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( nextDofDoneId ) << ")"
             << " with value " << sol(nextDofDoneId)
             << " and status " << int(M_dofStatus[nextDofDoneId])
@@ -516,7 +514,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
     cntRequests = 0;
     for( rank_type p: dofTable->neighborSubdomains() )
     {
-#ifdef DEBUG_FM_COUT 
+#ifdef DEBUG_FM_COUT
         std::cout << "["<<localPid<<"]" << "sending to " << p << ": ";
         for( auto const& dataS: dataToSend[p] )
         {
@@ -537,9 +535,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
             size_type const dofGCId = dofGCIdVal.first;
             size_type const dofId = M_mapSharedDofGlobalClusterToGlobalProcess[dofGCId];
 #if !defined(NDEBUG)
-            auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
-            size_type const dofId2 = boost::get<1>( resSearchDof );
+            size_type const dofId2 = dofTable->worldIndexToProcessIndex( dofGCId );
             CHECK( dofId == dofId2 ) << "[" << localPid << "]" << "dof id must be the same : " << dofId << " vs " << dofId2 << "(" << dofGCId << "," << dofTable->firstDofGlobalCluster() << ")" << std::endl;
 #endif
             // Update current value with received ghost values if needed
@@ -556,7 +552,7 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
                 else
                     M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
 #ifdef DEBUG_FM_COUT
-                std::cout << "["<<localPid<<"]" << "updating active dof(" << dofId << "," << dofGCId << ")" 
+                std::cout << "["<<localPid<<"]" << "updating active dof(" << dofId << "," << dofGCId << ")"
                     << std::endl;
 #endif
             }
@@ -568,4 +564,3 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
 }
 
 } // namespace Feel
-
