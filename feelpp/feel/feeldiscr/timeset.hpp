@@ -921,7 +921,7 @@ public:
                         {
                             if constexpr (std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
                                 {
-                                    if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->extendedDofTable() && support( func.functionSpace() )->isFullSupport() )
+                                    if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->dof()->hasDofTableExtended() && support( func.functionSpace() )->isFullSupport() )
                                         M_ts->M_scalar_p1 = func.functionSpace();
                                 }
                         }
@@ -951,7 +951,7 @@ public:
                     {
                         if constexpr ( std::is_same_v<scalar_p0_space_type,typename FunctionType::functionspace_type> )
                         {
-                            if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->extendedDofTable() && support( func.functionSpace() )->isFullSupport() )
+                            if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->dof()->hasDofTableExtended() && support( func.functionSpace() )->isFullSupport() )
                                 M_ts->M_scalar_p0 = func.functionSpace();
                         }
                     }

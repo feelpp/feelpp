@@ -1650,8 +1650,8 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
                                         const auto* neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
 
                                         if ( neighbor->processId() != proc_id )
-                                            CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
-                                                     _M_X2->dof()->buildDofTableMPIExtended() ) )
+                                            CHECK( ( _M_X1->dof()->hasDofTableExtended() &&
+                                                     _M_X2->dof()->hasDofTableExtended() ) )
                                                 << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
 
                                         if ( neighbor_id == neighbor->id() )
@@ -1714,12 +1714,12 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
                 if ( !faceExtended.isConnectedTo0() || !faceExtended.isConnectedTo1() ) continue;
 
                 if ( faceExtended.isInterProcessDomain() )
-                    CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
-                             _M_X2->dof()->buildDofTableMPIExtended() ) )
+                    CHECK( ( _M_X1->dof()->hasDofTableExtended() &&
+                             _M_X2->dof()->hasDofTableExtended() ) )
                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
 #if 0
-                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
-                           _M_X2->dof()->buildDofTableMPIExtended() )
+                CHECK( _M_X1->dof()->hasDofTableExtended() &&
+                       _M_X2->dof()->hasDofTableExtended() )
                         << "DofTableMPIExtended is not built!";
 #endif
 

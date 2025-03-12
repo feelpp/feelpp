@@ -561,7 +561,7 @@ struct InitializeSpace
                      PeriodicityType const& periodicity,
                      std::vector<globaldof_type> const& dofindices,
                      worldscomm_ptr_t const & worldsComm,
-                     std::vector<bool> extendedDofTable )
+                     std::vector<DofTableExtendedType> extendedDofTable )
         :
         M_functionspaces( functionspaces ),
         M_cursor( 0 ),
@@ -586,7 +586,7 @@ struct InitializeSpace
                 auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
                 subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices, p,
                                                                 makeWorldsComm( 1,M_worldsComm[M_cursor] ),
-                                                                std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
+                                                                std::vector<DofTableExtendedType>( 1,M_extendedDofTable[M_cursor] ) ) );
                 FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
                 ++M_cursor;// warning M_cursor < nb color
@@ -605,7 +605,7 @@ struct InitializeSpace
                 auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
                 subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices, p,
                                                                 makeWorldsComm( 1,M_worldsComm[M_cursor] ),
-                                                                std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
+                                                                std::vector<DofTableExtendedType>( 1,M_extendedDofTable[M_cursor] ) ) );
                 FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
                 ++M_cursor;// warning M_cursor < nb color
@@ -618,7 +618,7 @@ struct InitializeSpace
     mesh_support_vector_type const& M_meshSupport;
     std::vector<globaldof_type> const& M_dofindices;
     PeriodicityType M_periodicity;
-    std::vector<bool> M_extendedDofTable;
+    std::vector<DofTableExtendedType> M_extendedDofTable;
 };
 template<typename DofType>
 struct updateDataMapProcessStandard
@@ -1226,14 +1226,14 @@ struct createWorldsComm
 };
 
 template<typename SpaceType>
-std::vector<bool>
-createInfoExtendedDofTable( bool b )
+std::vector<DofTableExtendedType>
+createInfoExtendedDofTable( DofTableExtendedType b )
 {
-    return std::vector<bool>( SpaceType::nSpaces,b );
+    return std::vector<DofTableExtendedType>( SpaceType::nSpaces,b );
 }
 template<typename SpaceType>
-std::vector<bool>
-createInfoExtendedDofTable( std::vector<bool> const& b )
+std::vector<DofTableExtendedType>
+createInfoExtendedDofTable( std::vector<DofTableExtendedType> const& b )
 {
     CHECK( b.size() == SpaceType::nSpaces ) << "invalid extended doftable info vector size : " << b.size() << " should be : " << SpaceType::nSpaces;
     return b;
@@ -4370,13 +4370,12 @@ public:
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
-                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,true),
+                   std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT),
                    const std::string& name = "" )
         :
         super( name, _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_extendedDofTableComposite( extendedDofTable ),
-        M_extendedDofTable( extendedDofTable[0] )
+        M_extendedDofTableComposite( extendedDofTable )
     {
         this->init( mesh, meshSupport, mesh_components, periodicity );
     }
@@ -4387,13 +4386,12 @@ public:
                    std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
-                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,true),
+                   std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT),
                    const std::string& name = "" )
         :
         super( name, _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_extendedDofTableComposite( extendedDofTable ),
-        M_extendedDofTable( extendedDofTable[0] )
+        M_extendedDofTableComposite( extendedDofTable )
     {
         this->init( mesh, meshSupport, 0, dofindices, periodicity );
     }
@@ -4403,8 +4401,7 @@ public:
         :
         super( name, worldcomm ),
         M_worldsComm( makeWorldsComm( nSpaces, worldcomm ) ),
-        M_extendedDofTableComposite( std::vector<bool>(nSpaces,true) ),
-        M_extendedDofTable( false )
+        M_extendedDofTableComposite( std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT) )
     {}
 
     /**
@@ -4419,11 +4416,11 @@ public:
         worldscomm_ptr_t worldscomm = args.get_else_invocable(_worldscomm,[&mesh](){ return Feel::detail::createWorldsComm<functionspace_type>(mesh).worldsComm(); } );
         size_type components = args.get_else(_components, MESH_RENUMBER | MESH_CHECK);
         auto && periodicity = args.get_else(_periodicity,periodicity_type());
-        auto && extended_doftable = args.get_else(_extended_doftable,std::vector<bool>(nSpaces,true) );
+        auto && extended_doftable = args.get_else(_extended_doftable,std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT ) );
         auto && range = args.get_else(_range,mesh_support_vector_type());
 
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
-        std::vector<bool> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
+        std::vector<DofTableExtendedType> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
         return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, edt );
     }
 
@@ -4434,7 +4431,7 @@ public:
                                  worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
-                                 std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,true) )
+                                 std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT) )
     {
 
         return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldscomm, extendedDofTable ) );
@@ -4473,7 +4470,6 @@ public:
             M_dof = simSpace->dof();
             M_dofOnOff = simSpace->dofOnOff();
             M_extendedDofTableComposite = simSpace->extendedDofTableComposite();
-            M_extendedDofTable = simSpace->extendedDofTable();
             M_functionspaces = simSpace->functionSpaces();
             if ( simSpace->hasRegionTree() )
                 M_rt = simSpace->regionTree();
@@ -4985,8 +4981,8 @@ public:
     /**
      * \return true if need to build extended DofTable
      */
-    std::vector<bool> const& extendedDofTableComposite() const { return M_extendedDofTableComposite; }
-    bool extendedDofTable() const { return M_extendedDofTable; }
+    std::vector<DofTableExtendedType> const& extendedDofTableComposite() const { return M_extendedDofTableComposite; }
+    DofTableExtendedType extendedDofTable() const { return M_extendedDofTableComposite.front(); }
 
 
     //! \return true if mortar, false otherwise
@@ -5057,9 +5053,7 @@ public:
              typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = 0 )
     {
         element_type u( this->shared_from_this(), name, desc );
-        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        u.on( _range=elements(M_mesh,entityProcess), _expr=e );
+        u.on( _range=elements(M_mesh), _expr=e,_close=true );
         return u;
     }
 
@@ -5067,9 +5061,7 @@ public:
     elementFromExpr( std::string const& e, std::string const& name, std::string const& desc = "u" )
     {
         element_type u( this->shared_from_this(), name, desc );
-        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        u.on( _range=elements(M_mesh,entityProcess), _expr=expr<nComponents1,nComponents2>(e) );
+        u.on( _range=elements(M_mesh), _expr=expr<nComponents1,nComponents2>(e),_close=true );
         return u;
     }
 
@@ -5094,9 +5086,7 @@ public:
     {
         //return std::make_shared<element_type>( e, name, desc );
         element_ptrtype u = this->elementPtr(name,desc);
-        bool addExtendedElt = this->dof()->buildDofTableMPIExtended();
-        EntityProcessType entityProcess = (addExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        u->on( _range=elements(M_mesh,entityProcess), _expr=e );
+        u->on( _range=elements(M_mesh), _expr=e,_close=true );
         return u;
     }
 
@@ -5554,7 +5544,6 @@ public:
         M_dof( __fe.M_dof ),
         M_dofOnOff( __fe.M_dofOnOff ),
         M_extendedDofTableComposite( __fe.M_extendedDofTableComposite ),
-        M_extendedDofTable( __fe.M_extendedDofTable ),
         M_rt( __fe.M_rt )
     {
         DVLOG(2) << "copying FunctionSpace\n";
@@ -5850,8 +5839,7 @@ protected:
     dof_ptrtype M_dofOnOff;
 
     //! build the extended dof table in //
-    std::vector<bool> M_extendedDofTableComposite;
-    bool M_extendedDofTable;
+    std::vector<DofTableExtendedType> M_extendedDofTableComposite;
 
     /** region tree associated with the mesh */
     mutable boost::optional<region_tree_ptrtype> M_rt;
@@ -5925,7 +5913,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
         toc("FunctionSpace dof-1", FLAGS_v>0);
         tic();
-        M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
+        M_dof->setDofTableExtended( this->extendedDofTable() );
         toc("FunctionSpace dof-2", FLAGS_v>0);
         DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
         tic();
@@ -6015,8 +6003,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initHead( FSpaceHead& head )
     M_mesh = head->mesh();
     M_worldsComm.push_back( head->worldComm() );
     M_extendedDofTableComposite.push_back( head->M_extendedDofTable );
-    M_extendedDofTable = head->M_extendedDofTable;
-}
+ }
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename FSpaceHead, typename... FSpaceTail>
 void
@@ -6265,7 +6252,7 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
                 subPt.emplace( "nLocalDofWithGhost", subPt1 );
                 subPt.emplace( "nLocalDofWithoutGhost", subPt2 );
                 subPt.emplace( "nLocalGhost", subPt3 );
-                subPt.emplace( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
+                subPt.emplace( "extended-doftable", static_cast<int>( this->dof()->dofTableExtended() ) );
             }
             p.emplace( "doftable", std::move( subPt ) );
         }

@@ -57,10 +57,9 @@ enum class DofTableExtendedType
     NONE = 0,
     // FACES,
     // EDGES,
-    VERTICES
+    VERTICES,
+    DEFAULT
 };
-
-
 
 }
 

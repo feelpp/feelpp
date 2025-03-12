@@ -76,11 +76,11 @@ template<int Order,
          int Tag = 0>
 inline
 NChv_ptrtype<MeshType,Order,Pts,T,Tag>
-NChv( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=true  )
+NChv( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
     return NChv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                   _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                                   _extended_doftable=dte );
 }
 
 }

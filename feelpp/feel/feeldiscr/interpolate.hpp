@@ -155,8 +155,8 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     geopc_ptrtype __geopc( new geopc_type( __gm, __basis->dual().points() ) );
 
 
-    bool inputUseDofTableMPIExtended = f.functionSpace()->dof()->buildDofTableMPIExtended();
-    bool outputUseDofTableMPIExtended = space->dof()->buildDofTableMPIExtended();
+    bool inputUseDofTableMPIExtended = f.functionSpace()->dof()->hasDofTableExtended();
+    bool outputUseDofTableMPIExtended = space->dof()->hasDofTableExtended();
     bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && inputUseDofTableMPIExtended && outputUseDofTableMPIExtended );
 
     bool applyVectorSync = !upExtendedElt && outputUseDofTableMPIExtended;

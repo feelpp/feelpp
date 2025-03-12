@@ -103,12 +103,12 @@ template<int Order,typename MeshType>
 inline
 THch_ptrtype<Order,MeshType>
 THch( std::shared_ptr<MeshType> mesh,
-      std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,true ) )
+      std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2,DofTableExtendedType::DEFAULT ) )
 {
-    CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
+    CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
     return THch_type<Order,MeshType>::New( _mesh=mesh,
                                            _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
-                                           _extended_doftable=buildExtendedDofTable );
+                                           _extended_doftable=dte );
 }
 
 
