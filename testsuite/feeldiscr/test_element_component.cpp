@@ -105,8 +105,7 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2symm_continuous_basic )
     auto m1 = getReferenceTriangleMesh();
     test_tensor2symm_basic( "tensor2_cs_basic", Pchms<2>(  m1 ) );
     auto m2 = getTriangleMesh();
-    test_tensor2symm_basic( "tensor2_cs_basic", Pchms<2>(  m2, false ) );
-    test_tensor2symm_basic( "tensor2_cs_basic_edt", Pchms<2>(  m2, true ) );
+    test_tensor2symm_basic( "tensor2_cs_basic", Pchms<2>(  m2 ) );
 }
 
 template</*typename MeshT,*/ typename SpaceT>
@@ -125,8 +124,7 @@ test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type
                                               _xmin=0,_xmax=4,
                                               _ymin=0,_ymax=1 ) );
 #endif
-    auto VhTensor2 = SpaceT::New( _mesh=mesh, _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                  _extended_doftable=std::vector<bool>( 1,true ));
+    auto VhTensor2 = SpaceT::New( _mesh=mesh );
     auto uTensor2 = VhTensor2->element();
     uTensor2.on(_range=elements(mesh),_expr= mat<2,2>( cst(1.),cst(2.),cst(3.),cst(4.) ) );
     auto uxx = uTensor2.comp( Component::X,Component::X );
@@ -200,7 +198,7 @@ test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type
      * Test bilinear forms for HDG linear elasticity
      */
 
-    auto Wh = Pdhv<1>( mesh, true );
+    auto Wh = Pdhv<1>( mesh );
     auto w = Wh->element();
     auto w1 = Wh->element();
 
@@ -282,7 +280,7 @@ test_tensor2(std::string const& name, std::shared_ptr<typename SpaceT::mesh_type
     using Mh_ptr_t = Pdhv_ptrtype<face_mesh_type, 2>;
 
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh),_update=0 );
-    Mh_ptr_t Mh = Pdhv<2>( face_mesh, true );
+    Mh_ptr_t Mh = Pdhv<2>( face_mesh );
     auto l = Mh->element();
     l.on( _range=elements(face_mesh), _expr=ones<2,1>());
 
