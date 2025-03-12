@@ -1881,7 +1881,7 @@ checkOverlap( const float4& observer, const float4& obj1, const float& radius1,
 }
 
 template <typename T, typename U>
-__global__ void rayTracingKernelExplorationOptimizedWithchackOverlap(
+__global__ void rayTracingKernelExplorationOptimizedWithcheckOverlap(
     lbvh::bvh_device<T, U> bvh_dev, Ray* rays, HitRay* d_HitRays, int numRays,
     float4* directions, const CenterGlobalSpaceBox* d_gBox )
 {
@@ -2839,7 +2839,6 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
         isView = false;         // isView = true;
         isViewDataRT = false;   // isViewDataRT = true;
 
-        numVersion = 2;
         // isView = true; isViewDataRT = true; isUnifiedMemory = false; numVersion = 0;
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 1;
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 2;
@@ -2927,7 +2926,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 t_begin_bvh_gpu = std::chrono::steady_clock::now();
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
-                if ( numVersion == 4 ) bvhHip::buildBVH_GPU_Version4( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //if ( numVersion == 4 ) bvhHip::buildBVH_GPU_Version4( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 t_end_bvh_gpu = std::chrono::steady_clock::now();
 
@@ -3012,7 +3011,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
                 t_begin_bvh_gpu = std::chrono::steady_clock::now();
                 if ( numVersion == 0 ) bvhHip::buildBVH_GPU_Version2( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 1 ) bvhHip::buildBVH_GPU_Version3( deviceHipTriangles, devicebvhHipNodes, numTriangles );
-                if ( numVersion == 4 ) bvhHip::buildBVH_GPU_Version4( deviceHipTriangles, devicebvhHipNodes, numTriangles );
+                //if ( numVersion == 4 ) bvhHip::buildBVH_GPU_Version4( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 if ( numVersion == 2 ) bvhHip::buildBVH_GPU_Parallel_Best_Axis( deviceHipTriangles, devicebvhHipNodes, numTriangles );
                 t_end_bvh_gpu = std::chrono::steady_clock::now();
 
@@ -3354,7 +3353,7 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
             if ( numVersion == 2 )
             {
-            bvhLinearExplorer::rayTracingKernelExplorationOptimizedWithchackOverlap<float, bvhLinearExplorer::Triangle>
+            bvhLinearExplorer::rayTracingKernelExplorationOptimizedWithcheckOverlap<float, bvhLinearExplorer::Triangle>
                 <<<blocksPerGrid, threadsPerBlock>>>( bvhl_dev, deviceRays, deviceHitRays, numRays, d_directions, d_gBox );
             }
 
