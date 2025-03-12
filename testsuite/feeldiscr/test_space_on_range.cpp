@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE( test_extended_2d )
     auto r2 = elements(mesh, pow(Px()-0.7,2)+pow(Py()-0.5,2)/*+pow(Pz()-0.6,2)*/ < pow(cst(0.15),2), _selector=select_elements_from_expression::with_value, _value=1 );
     auto therange = concatenate(r1,r2);
     typedef FunctionSpace<mesh_type,bases<Lagrange<1,Scalar,Discontinuous> > > space_type;
-    auto Vh = space_type::New(_mesh=mesh,_extended_doftable=true,_range=therange);
+    auto Vh = space_type::New(_mesh=mesh,_range=therange);
 
     auto u = Vh->element();
     auto v = Vh->element();
@@ -301,12 +301,12 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     //wc(mesh)->print( fmt::format("number of selected elements global: {} local: {}", nelements(selected, true),nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
 
     BOOST_TEST_MESSAGE(fmt::format("elements selected"));
-    auto Vh = Pdhv<1>(mesh, selected , true );
+    auto Vh = Pdhv<1>(mesh, selected );
     BOOST_TEST_MESSAGE(fmt::format("Vh built"));
     //auto Vh = Pdhv<1>(mesh);
     auto submesh = createSubmesh(_mesh=mesh, _range=faces(support(Vh)),_update=0);
     //auto submesh = createSubmesh(_mesh=mesh, _range=boundaryfaces(support(Vh)));
-    auto Xh = Pdh<1>(submesh,true);
+    auto Xh = Pdh<1>(submesh);
     BOOST_TEST_MESSAGE(fmt::format("Xh built"));
     auto u = Vh->element();
     auto v = Xh->element();

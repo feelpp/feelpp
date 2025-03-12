@@ -446,7 +446,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh_view, T, dim2_types )
     }
 
     auto submeshFace = createSubmesh( _mesh=mesh,_range=faces(mesh),_view=true,_update=0 );
-    auto VhF = Pchv<1>( submeshFace, false ); // TODO: bug with extended dof table
+    auto VhF = Pchv<1>( submeshFace );
     auto uDispF = VhF->element();
 
     //uDispF.on(_range=elements(submeshFace),_expr= -idv(uDisp) ); // use localization, not mesh relation

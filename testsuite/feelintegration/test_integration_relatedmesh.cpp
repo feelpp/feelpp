@@ -72,9 +72,9 @@ void run( bool useSMD )
     auto mesh3 = createSubmesh( _mesh=mesh1,_range=markedelements(mesh1,listMarkers),_context=ctxRelationLoc );
 
     // function space
-    auto Xh1 = Pch<2>(mesh1,true);
-    auto Xh2 = Pch<3>(mesh2,true);
-    auto Xh3 = Pch<2>(mesh3,true);
+    auto Xh1 = Pch<2>(mesh1);
+    auto Xh2 = Pch<3>(mesh2);
+    auto Xh3 = Pch<2>(mesh3);
     auto u1 = Xh1->element(cst(1.));
     auto u2 = Xh2->element(cst(1.));
     auto u3 = Xh3->element(cst(1.));
