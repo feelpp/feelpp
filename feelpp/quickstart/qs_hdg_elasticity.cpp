@@ -109,8 +109,8 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto displ_exact = expr<Dim,1>( locals.at("displ") );
     auto grad_displ_exact = expr<Dim,1>( locals.at("grad_displ") );
     auto sigma_exact = expr<Dim,Dim>( locals.at("stress") );
-    
-    
+
+
     auto c1 = expr( locals.at("c1") );
     auto c2 = expr( locals.at("c2") );
 #else
@@ -122,7 +122,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 #endif
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
-    
+
     tic();
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
@@ -131,10 +131,10 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhms<OrderP>( mesh, true );
-    auto Wh = Pdhv<OrderP>( mesh, true );
+    auto Vh = Pdhms<OrderP>( mesh );
+    auto Wh = Pdhv<OrderP>( mesh );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
-    auto Mh = Pdhv<OrderP>( face_mesh,true );
+    auto Mh = Pdhv<OrderP>( face_mesh );
 
     toc("spaces",true);
 
@@ -162,12 +162,12 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
     tic();
     auto ps = product( Vh, Wh, Mh );
-	auto a = blockform2( ps, strategy , backend() );
-	auto rhs = blockform1( ps, strategy , backend() );
+    auto a = blockform2( ps, strategy , backend() );
+    auto rhs = blockform1( ps, strategy , backend() );
 
 
     // Building the RHS
-    auto M0h = Pdh<0>( face_mesh,true );
+    auto M0h = Pdh<0>( face_mesh );
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=pow(mesh->hMax(),tau_order) );
@@ -205,7 +205,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     for( auto mat : c1 )
     {
         a( 0_c, 0_c ) +=  integrate(_range=markedelements(mesh,mat.first),_expr=expr(mat.second)*inner(idt(sigma),id(v)));
-    
+
         toc("a(0,0).1", true);
         tic();
         a( 0_c, 0_c ) += integrate(_range=markedelements(mesh,mat.first),_expr=expr(c2.at(mat.first))*tracet(sigma)*trace(v) );
@@ -213,7 +213,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     }
 #else
     a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=expr(c1)*inner(idt(sigma),id(v)));
-    
+
     toc("a(0,0).1", true);
     tic();
     a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=expr(c2)*tracet(sigma)*trace(v));
@@ -296,7 +296,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         if ( boption( "use-null-space" ) )
             b->attachNullSpace( myNullSpace );
     }
-    
+
     auto U = ps.element();
     auto Ue = ps.element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
@@ -316,18 +316,18 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( sigma_exact ) );
         Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( displ_exact ) );
         Ue(2_c).on( _range=faces(mesh), _expr=expr<Dim,1>( displ_exact ) );
-        
+
         auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
         Feel::cout << "L2 Error sigma: " << l2err_sigma << std::endl;
         toc("error");
-                    
+
         // CHECKER
         auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
                 double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
                 toc("L2 stress error norm");
-                
+
                 return { { "L2", l2 } };
             };
         // compute l2 and h1 norm of u-u_h where u=solution
@@ -365,7 +365,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     e->add( "vonmises", vonmises(idv(sigmap)), reps );
     e->add( "principal_stress", eig(idv(sigmap)), reps );
     e->add( "magnitude_stress", sqrt(inner(idv(sigmap))), reps );
-    
+
     if ( boption("exact" ) )
     {
         e->add( sigma_exName, v, "nodal" );
@@ -386,7 +386,7 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
-    try 
+    try
     {
 	    Environment env( _argc=argc, _argv=argv,
                          _desc=makeOptions(),
@@ -398,7 +398,7 @@ int main( int argc, char** argv )
         // Exact solutions
         std::map<std::string,std::string> locals{
             {"dim",std::to_string(FEELPP_DIM)},
-            {"exact",std::to_string(boption("exact"))}, 
+            {"exact",std::to_string(boption("exact"))},
             {"lam1",soption("Mu")},
             {"lam2",soption("Lambda")},
             {"displ", soption("displ")},
