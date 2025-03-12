@@ -1074,13 +1074,14 @@ public:
      */
     void build( mesh_type& M );
 
+private :
+
     /**
      * build dof map associated to the periodic dof, must be called
      * before buildDofMap
      */
     size_type buildPeriodicDofMap( mesh_type& M );
 
-private :
     /**
      * build dof associated to local discontinuities
      */
@@ -1117,8 +1118,16 @@ private :
     void updateMultiprocessDofForUse();
 
 public:
-    bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
-    void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
+    DofTableExtendedType dofTableExtended() const noexcept { return M_buildDofTableMPIExtended; }
+    bool hasDofTableExtended() const { return M_buildDofTableMPIExtended == DofTableExtendedType::VERTICES; }
+    void setDofTableExtended( DofTableExtendedType b )
+        {
+            if ( b == DofTableExtendedType::DEFAULT )
+                b = DofTableExtendedType::VERTICES;
+            M_buildDofTableMPIExtended = b;
+        }
+
+
     size_type nGhostDofAddedInExtendedDofTable() const { return M_nGhostDofAddedInExtendedDofTable; }
 
 
@@ -1343,7 +1352,7 @@ public:
             M_hasBuiltDofPoints = false;
             this->generateDofPoints(M);
 
-            if ( this->worldComm().localSize()>1 && this->buildDofTableMPIExtended() )
+            if ( this->worldComm().localSize()>1 && this->hasDofTableExtended() )
             {
                 Range<mesh_type,MESH_ELEMENTS> rangeExtendedElements;
                 if (this->hasMeshSupport())
@@ -1569,7 +1578,7 @@ private:
     vector_indices_type M_locglob_signs;
     localglobal_indices_type M_locglob_nosigns;
 
-    bool M_buildDofTableMPIExtended;
+    DofTableExtendedType M_buildDofTableMPIExtended = DofTableExtendedType::VERTICES;
     size_type M_nGhostDofAddedInExtendedDofTable;
 
     std::vector<uint16_type> M_localIndicesPerm, M_localIndicesIdentity;
@@ -1598,7 +1607,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_hasBuiltDofPoints( false ),
     M_dof_indices(),
     M_periodicity( periodicity ),
-    M_buildDofTableMPIExtended( false ),
+    M_buildDofTableMPIExtended( DofTableExtendedType::VERTICES ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement ),
@@ -1633,7 +1642,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_hasBuiltDofPoints( false ),
     M_dof_indices(),
     M_periodicity( periodicity ),
-    M_buildDofTableMPIExtended( false ),
+    M_buildDofTableMPIExtended( DofTableExtendedType::VERTICES ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( nDofPerElement ),
     M_localIndicesIdentity( nDofPerElement ),
@@ -1988,7 +1997,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
     toc("DofTable::reordering global id in doftable", FLAGS_v>1);
     tic();
-    EntityProcessType entityProcess = (this->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+    EntityProcessType entityProcess = this->hasDofTableExtended()? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
     Range<mesh_type,MESH_ELEMENTS> rangeMeshElt;
     if ( this->hasMeshSupport() )
         rangeMeshElt = elements(this->meshSupport(), entityProcess );
@@ -2415,7 +2424,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     toc("DofTable buildDofMap element loop", FLAGS_v>1);
     // update extended doftable for P0 continuous
 #if 0
-    if ( isP0Continuous<fe_type>::result && this->buildDofTableMPIExtended() )
+    if ( isP0Continuous<fe_type>::result && this->hasDofTableExtended() )
     {
         for (auto const& ghostEltWrap : elements(M,EntityProcessType::GHOST_ONLY ) )
         {
@@ -2965,7 +2974,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     {
         M_hasBuiltDofPoints = true;
 #if !defined( NDEBUG )
-        if ( !buildDofTableMPIExtended() )
+        if ( !hasDofTableExtended() )
             for ( size_type dof_id = 0; dof_id < this->nLocalDofWithGhost() ; ++dof_id )
             {
                 CHECK( M_dof_points.find(dof_id ) != M_dof_points.end() )

@@ -174,7 +174,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
     //typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype myActiveEltsTouchInterProcess( new typename MeshTraits<mesh_type>::elements_reference_wrapper_type );
 
     bool hasMeshSupportPartial = this->hasMeshSupport() && this->meshSupport()->isPartialSupport();
-    //bool storeRangeActiveEltsTouchInterProcess = this->buildDofTableMPIExtended() && !mesh.components().test( MESH_UPDATE_FACES ) && !mesh.components().test( MESH_UPDATE_FACES_MINIMAL );
 
     std::map<rank_type, std::map<size_type,std::vector<size_type> > > dataMemory;
     if ( is_continuous )
@@ -492,7 +491,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlo
    //------------------------------------------------------------------------------//
 
     // extended dof table
-    if ( this->buildDofTableMPIExtended() )
+    if ( this->hasDofTableExtended() )
     {
         //this->buildGhostDofMapExtended( mesh );
         if ( this->hasMeshSupport() && this->meshSupport()->isPartialSupport() )

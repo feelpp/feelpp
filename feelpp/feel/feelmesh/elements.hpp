@@ -894,7 +894,7 @@ public:
     template<typename ElementVecType>
     void updateMarker( uint16_type markerType, ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->hasDofTableExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();

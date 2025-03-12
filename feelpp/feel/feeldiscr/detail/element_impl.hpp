@@ -2437,7 +2437,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 
     bool hasMeshSupportPartial = __dof->hasMeshSupport() && __dof->meshSupport()->isPartialSupport();
-    bool hasDofTableMPIExtended = __dof->buildDofTableMPIExtended();
+    bool hasDofTableMPIExtended = __dof->hasDofTableExtended();
 
 #if 0
     size_type nbFaceDof = invalid_v<size_type>;

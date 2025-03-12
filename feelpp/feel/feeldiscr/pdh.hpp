@@ -51,11 +51,11 @@ using Pdh_element_type=Pdh_element_t<MeshType,Order,Pts>;
 template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=true )
+Pdh( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                              _extended_doftable=buildExtendedDofTable );
+                                              _extended_doftable=dte );
 }
 
 /**
@@ -65,12 +65,12 @@ Pdh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=true )
 template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,typename RangeType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=true )
+Pdh( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _range=std::forward<RangeType>(rangeElt),
                                               _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                              _extended_doftable=buildExtendedDofTable );
+                                              _extended_doftable=dte );
 }
 
 }

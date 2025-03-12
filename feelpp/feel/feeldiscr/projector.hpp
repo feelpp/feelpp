@@ -158,7 +158,7 @@ public :
 
     {
         if ( M_proj_type == CIP && domainSpace->dof()->worldComm().localSize() > 1 )
-            CHECK( domainSpace->dof()->buildDofTableMPIExtended() && dualImageSpace->dof()->buildDofTableMPIExtended() ) << "functionspaces must have extended dof table";
+            CHECK( domainSpace->dof()->hasDofTableExtended() && dualImageSpace->dof()->hasDofTableExtended() ) << "functionspaces must have extended dof table";
 
         size_type thepattern = ( M_proj_type == CIP )? size_type(Pattern::EXTENDED) : size_type(Pattern::COUPLED);
         M_matrixFull = this->backend()->newMatrix( _trial=this->dualImageSpace(), _test=this->domainSpace(),_pattern=thepattern );

@@ -104,11 +104,11 @@ template<int Order,
          int Tag = 0>
 inline
 Pchm_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchm( std::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=true )
+Pchm( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pchm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                    _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                                    _extended_doftable=dte );
 }
 
 /**
@@ -122,11 +122,11 @@ template<int Order,
          int Tag = 0>
 inline
 Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchms( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=true )
+Pchms( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pchms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                       _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                      _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                                      _extended_doftable=dte );
 }
 
 

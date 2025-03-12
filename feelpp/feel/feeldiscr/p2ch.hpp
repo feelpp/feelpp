@@ -79,12 +79,12 @@ template<typename Base1, typename Base2, typename MeshType>
 inline
 P2ch_ptrtype<Base1, Base2, MeshType>
 P2ch( std::shared_ptr<MeshType> mesh,
-      std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,true ) )
+      std::vector<DofTableExtendedType> dte = std::vector<bool>( 2, DofTableExtendedType::DEFAULT ) )
 {
-    CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
+    CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
     return P2ch_type<Base1,Base2,MeshType>::New( _mesh=mesh,
                                                  _worldscomm=makeWorldsComm( 2,mesh->worldCommPtr() ),
-                                                 _extended_doftable=buildExtendedDofTable );
+                                                 _extended_doftable=dte );
 }
 
 
