@@ -284,40 +284,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("FluidMechanics","initFunctionSpaces","start");
     this->timerTool("Constructor").start();
 
-    // maybe build extended dof table
-    std::vector<bool> extendedDT( 2,true );
-    // bool hasExtendedDofTable = false;
-    // if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
-    // {
-    //     this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity" );
-    //     extendedDT[0] = true;
-    //     hasExtendedDofTable = true;
-    // }
-    // if ( this->doCIPStabPressure() )
-    // {
-    //     this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure" );
-    //     extendedDT[1] = true;
-    //     hasExtendedDofTable = true;
-    // }
-
     // fluid spaces : velocity and pressure
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_XhVelocity = space_velocity_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[0] );
-        M_XhPressure = space_pressure_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[1] );
+        M_XhVelocity = space_velocity_type::New( _mesh=this->mesh() );
+        M_XhPressure = space_pressure_type::New( _mesh=this->mesh() );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_XhVelocity = space_velocity_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[0],
                                                  _range=M_rangeMeshElements );
         M_XhPressure = space_pressure_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[1],
                                                  _range=M_rangeMeshElements );
     }
 

@@ -367,7 +367,7 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-nitsche-family.alpha").c_str(), Feel::po::value<double>()->default_value( 1 ), "nitsche parameters")
         (prefixvm(prefix,"coupling-nitsche-family.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
         // coupling-robin-neumann-generalized
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-mass-matrix-lumped-in-solid").c_str(), Feel::po::value<bool>()->default_value( true ),"use-mass-matrix-lumped-in-solid") 
+        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-mass-matrix-lumped-in-solid").c_str(), Feel::po::value<bool>()->default_value( true ),"use-mass-matrix-lumped-in-solid")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-constant").c_str(), Feel::po::value<double>(),"use-operator-constant")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-proportional-to-identity").c_str(), Feel::po::value<bool>()->default_value( false ),"use-operator-proportional-to-identity")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
@@ -393,7 +393,7 @@ heat_options(std::string const& prefix)
         // (prefixvm(prefix,"velocity-convection").c_str(), Feel::po::value<std::string>(), "math expression")
         (prefixvm(prefix,"initial-solution.temperature").c_str(), Feel::po::value<std::string>(), "math expression")
 
-        (prefixvm(prefix,"use-extended-doftable").c_str(), Feel::po::value<bool>()->default_value( false ), "use-extended-doftable")
+        (prefixvm(prefix,"use-extended-doftable").c_str(), Feel::po::value<bool>()->default_value( true ), "use-extended-doftable")
 
         (prefixvm(prefix,"stabilization-gls").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
         (prefixvm(prefix,"stabilization-gls.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
