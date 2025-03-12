@@ -189,16 +189,8 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
     std::vector<bool> findPtInElem(mesh1_type::element_type::numVertices);
     std::set<size_type> elt1Done;
 
-    CHECK ( M_Xh1->dof()->buildDofTableMPIExtended() == M_Xh2->dof()->buildDofTableMPIExtended() ) << "buildDofTableMPIExtended between space must be equal \n";
-#if 0
-    bool upExtendedElt = M_Xh1->dof()->buildDofTableMPIExtended();
-    EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    auto rangeElt1 = elements( M_Xh1->mesh(), entityProcess );
-    auto rangeElt2 = elements( M_Xh2->mesh(), entityProcess );
-#else
     auto rangeElt1 = elements(M_Xh1->template meshSupport<0>(), entity_process_t::ALL );
     auto rangeElt2 = elements(M_Xh2->template meshSupport<0>(), entity_process_t::ALL );
-#endif
 
     auto dof1 = M_Xh1->dof();
     auto dof2 = M_Xh2->dof();
@@ -256,48 +248,6 @@ DofRelationshipMap<SpaceType1,SpaceType2>::buidGeoElementMap()
         }
     } // end for it
 
-
-#if 0
-    // add also some ghost elt if has extended dof table
-    if ( M_Xh1->dof()->buildDofTableMPIExtended() )
-    {
-        auto face_it = M_Xh2->mesh()->interProcessFaces().first;
-        auto const face_en = M_Xh2->mesh()->interProcessFaces().second;
-        for ( ; face_it!=face_en ; ++face_it )
-        {
-            auto const& elt0 = face_it->element0();
-            auto const& elt1 = face_it->element1();
-            const bool elt0isGhost = elt0.isGhostCell();
-            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
-
-
-            auto it1 = M_Xh1->mesh()->beginGhostElement();
-            auto en1 = M_Xh1->mesh()->endGhostElement();
-            bool find=false;
-            while (it1!=en1 && !find )
-            {
-                std::fill ( findPtInElem.begin(), findPtInElem.end(),false);
-
-                for (uint16_type n=0 ; n<numVertices ; ++n)
-                    for (uint16_type m=0 ; m<numVertices ; ++m)
-                        if (isIdenticalPoints(it1->point(n),eltOffProc.point(m))) findPtInElem[n]=true;
-
-                // All points of faces are the same?
-                find=true;
-                auto itbool=findPtInElem.begin();
-                auto itbool_end=findPtInElem.end();
-                for (  ; itbool != itbool_end; ++itbool )
-                    find = (find && *itbool);
-
-                if (find) M_geoElementMap[it1->id()]=std::make_pair(eltOffProc.id(),eltOffProc.processId());
-                //if (find) M_geoElementMap[it->id()]=itP1->id();
-                ++it1;
-
-            }
-            CHECK( find ) <<"\nProbleme!!!!!!!!!\n";
-        }
-    }
-#endif
 
 
 }

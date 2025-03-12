@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
 #include <feel/feelmodels/heat/heat.hpp>
@@ -45,7 +45,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix(),_vm=this->clovm());
+    M_useExtendedDoftable = boption(_name="use-extended-doftable",_prefix=this->prefix(),_vm=this->clovm()) ? DofTableExtendedType::VERTICES : DofTableExtendedType::NONE;
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix(),_vm=this->clovm());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix(),_vm=this->clovm());

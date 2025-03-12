@@ -75,7 +75,7 @@ public :
     HarmonicExtension(mesh_ptrtype mesh, backend_ptrtype const& backend,
                       std::string const& prefix="",
                       worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-                      bool useGhostEltFromExtendedStencil=false,
+                      DofTableExtendedType dte = DofTableExtendedType::DEFAULT,
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     HarmonicExtension(space_ptrtype space, backend_ptrtype const& backend,

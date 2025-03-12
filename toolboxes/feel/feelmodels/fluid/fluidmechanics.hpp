@@ -1855,9 +1855,6 @@ public :
     vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorPreviousVelocityExtrapolated; }
 
 
-    bool useExtendedDofTable() const;
-
-
     //___________________________________________________________________________________//
     // algebraic data
     typename super_type::block_pattern_type blockPattern() const override;
