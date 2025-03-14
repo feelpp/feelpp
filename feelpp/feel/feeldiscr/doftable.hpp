@@ -2864,7 +2864,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel/*, mpl::bool_<false>*/ ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool __buildMinimalParallel/*, mpl::bool_<false>*/ ) const
 {
     if ( M_hasBuiltDofPoints )// !M_dof_points.empty() )
         return;
@@ -2902,21 +2902,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
         auto const& elt = boost::unwrap_ref( *it_elt );
-        if ( buildMinimalParallel )
-        {
-            // generate dofpoint only for active elements which touch the interprocess boundary
-            bool connectedToInterProcess = false;
-            for (uint16_type p = 0; p < element_type::numVertices; ++p)
-            {
-                if ( elt.point(p).numberOfProcGhost() > 0 )
-                {
-                    connectedToInterProcess = true;
-                    break;
-                }
-            }
-            if ( !connectedToInterProcess )
-                continue;
-        }
 
         if constexpr( is_mortar )
         {
@@ -2935,11 +2920,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
             size_type thedof = ldof.second.index();
             uint16_type ldofId = ldof.first.localDof();
             uint16_type ldofParentId = this->fe().dofParent( ldofId );
-            if ( buildMinimalParallel )
-            {
-                if ( ldofId != ldofParentId )
-                    continue;
-            }
             if ( ( thedof >= this->firstDof() ) && ( thedof <= this->lastDof() ) )
             {
                 DCHECK( thedof < this->nLocalDofWithGhost() )
@@ -2970,9 +2950,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
         }
     }
 
-    if ( !buildMinimalParallel )
-    {
-        M_hasBuiltDofPoints = true;
+    M_hasBuiltDofPoints = true;
 #if !defined( NDEBUG )
         if ( !hasDofTableExtended() )
             for ( size_type dof_id = 0; dof_id < this->nLocalDofWithGhost() ; ++dof_id )
@@ -2989,7 +2967,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                     << ", " <<  boost::get<0>( M_dof_points[dof_id] ) ;
             }
 #endif
-    }
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>

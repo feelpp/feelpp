@@ -534,7 +534,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
             elt.setProcessIdInPartition( curelt.pidInPartition() );
             elt.setProcessId( curelt.processId() );
             if ( doParallelBuild )
-                elt.setNeighborPartitionIds( curelt.neighborPartitionIds() );
+                elt.setNeighborProcessIds( curelt.neighborProcessIds() );
 
             // accumulate the points
             for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
@@ -685,7 +685,9 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 elt.setProcessIdInPartition( procId );
                 elt.setProcessId( pid );
                 elt.setIdInOtherPartitions( pid, eltId );
-                elt.setNeighborPartitionIds( parentElt.neighborPartitionIds() );
+                //elt.setNeighborPartitionIds( parentElt.neighborPartitionIds() );
+                //elt.setNeighborProcessIds( parentElt.neighborProcessIds() );
+
 
                 if ( !M_gmc )
                     M_gmc = meshDomain->gm()->template context<gmc_context_v>( parentElt, M_gmpc );
