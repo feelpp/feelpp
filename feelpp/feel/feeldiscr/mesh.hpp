@@ -512,47 +512,47 @@ class Mesh
 
             size_type numFaceGlobalCounter = nf, numEdgeGlobalCounter = ned, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
-            for ( auto it = std::get<0>( rangeFaces ), en = std::get<1>( rangeFaces ); it != en; ++it )
-            {
-                auto const& face = unwrap_ref( *it );
-                if ( !face.isInterProcessDomain() )
-                    continue;
-                if ( face.partition1() < face.partition2() )
-                    continue;
-                --numFaceGlobalCounter;
-            }
-            for ( auto it = std::get<0>( rangeEdges ), en = std::get<1>( rangeEdges ); it != en; ++it )
-            {
-                auto const& edge = unwrap_ref( *it );
-                bool countThisEntity = true;
-                for ( auto const& ghostData : edge.elementsGhost() )
-                {
-                    if ( ghostData.first < currentRank )
-                    {
-                        countThisEntity = false;
-                        break;
-                    }
-                }
-                if ( countThisEntity )
-                    continue;
-                --numEdgeGlobalCounter;
-            }
-            for ( auto it = std::get<0>( rangePoints ), en = std::get<1>( rangePoints ); it != en; ++it )
-            {
-                auto const& point = unwrap_ref( *it );
-                bool countThisEntity = true;
-                for ( auto const& ghostData : point.elementsGhost() )
-                {
-                    if ( ghostData.first < currentRank )
-                    {
-                        countThisEntity = false;
-                        break;
-                    }
-                }
-                if ( countThisEntity )
-                    continue;
-                --numPointGlobalCounter;
-            }
+            // for ( auto it = std::get<0>( rangeFaces ), en = std::get<1>( rangeFaces ); it != en; ++it )
+            // {
+            //     auto const& face = unwrap_ref( *it );
+            //     if ( !face.isInterProcessDomain() )
+            //         continue;
+            //     if ( face.partition1() < face.partition2() )
+            //         continue;
+            //     --numFaceGlobalCounter;
+            // }
+            // for ( auto it = std::get<0>( rangeEdges ), en = std::get<1>( rangeEdges ); it != en; ++it )
+            // {
+            //     auto const& edge = unwrap_ref( *it );
+            //     bool countThisEntity = true;
+            //     for ( auto const& ghostData : edge.elementsGhost() )
+            //     {
+            //         if ( ghostData.first < currentRank )
+            //         {
+            //             countThisEntity = false;
+            //             break;
+            //         }
+            //     }
+            //     if ( countThisEntity )
+            //         continue;
+            //     --numEdgeGlobalCounter;
+            // }
+            // for ( auto it = std::get<0>( rangePoints ), en = std::get<1>( rangePoints ); it != en; ++it )
+            // {
+            //     auto const& point = unwrap_ref( *it );
+            //     bool countThisEntity = true;
+            //     for ( auto const& ghostData : point.elementsGhost() )
+            //     {
+            //         if ( ghostData.first < currentRank )
+            //         {
+            //             countThisEntity = false;
+            //             break;
+            //         }
+            //     }
+            //     if ( countThisEntity )
+            //         continue;
+            //     --numPointGlobalCounter;
+            // }
 
             std::vector<size_type> numEntitiesGlobalCounter = {numFaceGlobalCounter, numEdgeGlobalCounter, numPointGlobalCounter};
             if ( nOrder > 1 )
@@ -561,6 +561,7 @@ class Mesh
             if ( nOrder > 1 )
                 maxNumEntities.push_back( nvall );
 
+            // TODO: we don't need to make a all_reduce now!
             auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
             mpi::all_reduce( MeshBase<>::worldComm(), mpi::inplace( dataAllReduce ), UpdateNumGlobalEntitiesForAllReduce() );
             auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
@@ -657,31 +658,31 @@ class Mesh
 
             size_type numFaceGlobalCounter = nf, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
-            for ( auto it = std::get<0>( rangeFaces ), en = std::get<1>( rangeFaces ); it != en; ++it )
-            {
-                auto const& face = unwrap_ref( *it );
-                if ( !face.isInterProcessDomain() )
-                    continue;
-                if ( face.partition1() < face.partition2() )
-                    continue;
-                --numFaceGlobalCounter;
-            }
-            for ( auto it = std::get<0>( rangePoints ), en = std::get<1>( rangePoints ); it != en; ++it )
-            {
-                auto const& point = unwrap_ref( *it );
-                bool countThisEntity = true;
-                for ( auto const& ghostData : point.elementsGhost() )
-                {
-                    if ( ghostData.first < currentRank )
-                    {
-                        countThisEntity = false;
-                        break;
-                    }
-                }
-                if ( countThisEntity )
-                    continue;
-                --numPointGlobalCounter;
-            }
+            // for ( auto it = std::get<0>( rangeFaces ), en = std::get<1>( rangeFaces ); it != en; ++it )
+            // {
+            //     auto const& face = unwrap_ref( *it );
+            //     if ( !face.isInterProcessDomain() )
+            //         continue;
+            //     if ( face.partition1() < face.partition2() )
+            //         continue;
+            //     --numFaceGlobalCounter;
+            // }
+            // for ( auto it = std::get<0>( rangePoints ), en = std::get<1>( rangePoints ); it != en; ++it )
+            // {
+            //     auto const& point = unwrap_ref( *it );
+            //     bool countThisEntity = true;
+            //     for ( auto const& ghostData : point.elementsGhost() )
+            //     {
+            //         if ( ghostData.first < currentRank )
+            //         {
+            //             countThisEntity = false;
+            //             break;
+            //         }
+            //     }
+            //     if ( countThisEntity )
+            //         continue;
+            //     --numPointGlobalCounter;
+            // }
 
             std::vector<size_type> numEntitiesGlobalCounter = {numFaceGlobalCounter, numPointGlobalCounter};
             if ( nOrder > 1 )
@@ -690,6 +691,7 @@ class Mesh
             if ( nOrder > 1 )
                 maxNumEntities.push_back( nvall );
 
+            // TODO: we don't need to make a all_reduce now!
             auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
             mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( dataAllReduce ), UpdateNumGlobalEntitiesForAllReduce() );
             auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );

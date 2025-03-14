@@ -2436,9 +2436,6 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     static constexpr int tuple_id_info_edges = 2;
     static constexpr int tuple_id_info_points = 3;
 
-    typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
-    typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
-
     bool meshHasUpdateFaces = this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL );
     bool meshHasUpdateEdges = nDim == 3 && this->components().test( MESH_UPDATE_EDGES );
     auto initialNeighborSubdomains = this->neighborSubdomains();
@@ -2512,10 +2509,6 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         if ( !ghostelt.isGhostCell() )
             continue;
         const rank_type ghosteltPid = ghostelt.processId();
-        // update info for parallelism (TODO try to remove this data)
-        elementGhostConnectPointToElement( ghostelt );
-        if constexpr ( nDim == 3 )
-            elementGhostConnectEdgeToElement( ghostelt );
 
         // elements
         const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
@@ -3286,8 +3279,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
         faces.push_back( curface.hasMarker2() ? curface.marker2().value() : 0 );
         faces.push_back( curface.numberOfPartitions() );
         faces.push_back( curface.processId() );
-        for ( size_type i = 0; i < curface.numberOfNeighborPartitions(); ++i )
-            faces.push_back( -( curface.neighborPartitionIds()[i] ) );
+        for ( auto const& [pid,eid] : curface.neighborProcessIds() )
+            faces.push_back(-pid);
         for ( uint16_type p = 0; p < face_type::numPoints; ++p )
             faces.push_back( curface.point( ordering_face.fromGmshId( p ) ).id() + 1 );
 
@@ -3307,8 +3300,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
         elts.push_back( curelt.hasMarker2() ? curelt.marker2().value() : 0 );
         elts.push_back( curelt.numberOfPartitions() );
         elts.push_back( curelt.processId() );
-        for ( size_type i = 0; i < curelt.numberOfNeighborPartitions(); ++i )
-            elts.push_back( -( curelt.neighborPartitionIds()[i] ) );
+        for ( auto const& [pid,eid] : curelt.neighborProcessIds() )
+            elts.push_back(-pid);
         for ( uint16_type p = 0; p < element_type::numPoints; ++p )
             elts.push_back( curelt.point( ordering.fromGmshId( p ) ).id() + 1 );
 

@@ -349,8 +349,6 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
 
                 } // for (unsigned int n=0 ... )
 
-                // update neighbor partitions (TODO : not necessary internally, we can just use idInOtherpartitions map)
-                newElem.setNeighborPartitionIds( oldElem.neighborPartitionIds() );
                 // init process connection, indices will be set in updateForUse
                 for ( auto const&[pid,eltIdInPartition] : oldElem.idInOthersPartitions() )
                     newElem.setIdInOtherPartitions(pid, invalid_v<index_type> );
@@ -493,8 +491,6 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
 
                 } // end for n
 
-                // update neighbor partitions (TODO : not necessary internally, we can just use idInOtherpartitions map)
-                newElem.setNeighborPartitionIds( oldElem.neighborPartitionIds() );
                 // init process connection, indices will be set in updateForUse
                 for ( auto const&[pid,eltIdInPartition] : oldElem.idInOthersPartitions() )
                     newElem.setIdInOtherPartitions(pid, invalid_v<index_type> );
@@ -607,8 +603,6 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                 } // end for n
                 DCHECK( newElem.pointPtr(0) ) << "invalid point 0 in edge";
                 DCHECK( newElem.pointPtr(1) ) << "invalid point 1 in edge";
-                // update neighbor partitions (TODO : not necessary internally, we can just use idInOtherpartitions map)
-                newElem.setNeighborPartitionIds( oldElem.neighborPartitionIds() );
                 // init process connection, indices will be set in updateForUse
                 for ( auto const&[pid,eltIdInPartition] : oldElem.idInOthersPartitions() )
                     newElem.setIdInOtherPartitions(pid, invalid_v<index_type> );
@@ -721,8 +715,6 @@ CreateSubmeshTool<MeshType,IteratorRange>::updateParallelSubMeshGhost( mesh_type
                 newElem.setProcessIdInPartition( proc_id );
                 newElem.setProcessId( rankRecv );
                 newElem.addNeighborPartitionId( rankRecv );
-                // update neighbor partitions (TODO : not necessary internally, we can just use idInOtherpartitions map)
-                // newElem.setNeighborPartitionIds( oldElem.neighborPartitionIds() );
 
                 // Loop over the nodes on this element.
                 for ( uint16_type n=0; n < newElem.nPoints(); n++ )

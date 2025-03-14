@@ -42,25 +42,6 @@ namespace Feel
 
 /// \cond detail
 
-namespace detail
-{
-    template <typename EltType >
-    void
-    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<1> /**/)
-    {}
-    template <typename EltType >
-    void
-    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<2> /**/)
-    {}
-    template <typename EltType >
-    void
-    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<3> /**/)
-    {
-        if ( e.edgePtr(i) )
-            e.edge( i ).addElementGhost( e.processId(),e.id() );
-    }
-}
-
 
 /*!
   \class Elements
@@ -180,41 +161,6 @@ public:
         {
             for ( uint16_type i = 0; i < e.numPoints; ++i )
                 e.point( i ).addElement( e.id() );
-        }
-    };
-
-    /**
-     * @class ElementConnectPointToElement
-     * @brief connect point to element
-     *
-     */
-    struct ElementGhostConnectPointToElement
-    {
-        void operator()( element_type& e )
-        {
-            for ( uint16_type i = 0; i < e.numPoints; ++i )
-            {
-                e.point( i ).addElementGhost( e.processId(),e.id() );
-#if 0
-                // only if point is on interprocess
-                if ( e.point( i ).processId()!=invalid_rank_type_value )
-                    e.point( i ).addNeighborPartitionId( e.processId() );
-#endif
-            }
-        }
-    };
-
-    /**
-     * @class ElementGhostConnectEdgeToElement
-     * @brief connect edge to element
-     *
-     */
-    struct ElementGhostConnectEdgeToElement
-    {
-        void operator()( element_type& e )
-        {
-            for ( uint16_type i = 0; i < e.numEdges; ++i )
-                Feel::detail::updateElementGhostConnectEdgeToElement(e,i,mpl::int_<element_type::nDim>());
         }
     };
 
