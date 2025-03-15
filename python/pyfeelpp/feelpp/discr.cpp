@@ -43,6 +43,7 @@ namespace py = pybind11;
 using namespace Feel;
 
 //PYBIND11_MAKE_OPAQUE(Feel::worldscomm_ptr_t);
+PYBIND11_MAKE_OPAQUE(std::vector<DofTableExtendedType>);
 
 template<typename MeshT, int Order = 1>
 class MyElement: public Pch_type<MeshT,Order,double,PointSetFekete>::element_type
@@ -114,7 +115,8 @@ void defDiscr(py::module &m, std::string const& suffix = "")
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
              py::arg("periodicity")=periodicity_t(),
              py::arg("worldsComm"),
-             py::arg("extendedDofTable") = std::vector<DofTableExtendedType>(space_t::nSpaces,DofTableExtendedType::DEFAULT) )
+             py::arg("extendedDofTable") = std::vector<DofTableExtendedType>(space_t::nSpaces,DofTableExtendedType::DEFAULT)
+             )
         .def("nDof",static_cast<size_type(space_t::*)() const>(&space_t::nDof), "get the number of degrees of freedom over the whole domain")
         .def("nLocalDof",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDof), "get the number of degrees of freedom over the current subdomain")
         .def("nLocalDofWithGhost",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDofWithGhost), "get the number of degrees of freedom over the current subdomain withthe ghost")
@@ -218,6 +220,14 @@ PYBIND11_MODULE(_discr, m )
         .value("TY", ComponentType::TY )
         .value("TZ", ComponentType::TZ )
         .export_values();
+
+    pyclass_name = std::string("DofTableExtendedType");
+    py::enum_<DofTableExtendedType>(m,pyclass_name.c_str())
+        .value("NONE", DofTableExtendedType::NONE )
+        .value("VERTICES", DofTableExtendedType::VERTICES )
+        .value("DEFAULT", DofTableExtendedType::DEFAULT )
+        .export_values();
+    py::bind_vector<std::vector<DofTableExtendedType>>(m, "VectorDofTableExtendedType");
 
     pyclass_name = std::string("Periodic");
     py::class_<Periodic<double>>(m,pyclass_name.c_str()).def(py::init<>());
