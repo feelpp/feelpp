@@ -229,9 +229,9 @@ def gmshGenerate(dim, fname):
     if Environment.isMasterRank():
         import gmsh
         gmsh.model.mesh.generate(dim)
-        gmsh.option.setNumber("Mesh.PartitionCreateGhostCells", 1)
+        #gmsh.option.setNumber("Mesh.PartitionCreateGhostCells", 1)
         gmsh.option.setNumber("Mesh.PartitionCreatePhysicals", 1)
-        gmsh.model.mesh.partition(Environment.numberOfProcessors())
+        #gmsh.model.mesh.partition(Environment.numberOfProcessors())
         gmsh.write(mshname)
     Environment.worldComm().to_comm().barrier()
     return mshname
