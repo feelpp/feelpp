@@ -1641,11 +1641,6 @@ public:
     std::set<rank_type> const& neighborSubdomains() const { return M_neighbor_processors; }
     void addNeighborSubdomain( rank_type p ) { M_neighbor_processors.insert( p ); }
 
-    typename std::set<rank_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
-    typename std::set<rank_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
-    std::set<rank_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
-    void addFaceNeighborSubdomain( rank_type p ) { M_face_neighbor_processors.insert( p ); }
-
     //! @}
 
   protected:
@@ -1660,15 +1655,11 @@ public:
     void updateEntitiesCoDimensionOne() override;
     void updateEntitiesCoDimensionOne( mpl::bool_<true> );
     void updateEntitiesCoDimensionOne( mpl::bool_<false> );
-
-    //!
     //!  Update in ghost cells of entities of codimension 1. Done only for marked entities and ghost faces
-    //!
     void updateEntitiesCoDimensionOneMinimal();
-    /**
-     * Update in ghost cells of entities of codimension 1
-     */
-    void updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
+
+    //!  Update parallel data
+    void updateParallelData();
 
     //!
     //!  check mesh connectivity
@@ -1765,11 +1756,7 @@ public:
     //!  The processors who neighbor the current
     //!  processor
     //!
-    //! std::vector<uint16_type> M_neighboring_processors;
     std::set<rank_type> M_neighbor_processors;
-    std::set<rank_type> M_face_neighbor_processors;
-
-    //! partitioner_ptrtype M_part;
 
     //!
     //!  Arrays containing the global ids of Faces of each element

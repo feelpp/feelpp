@@ -182,17 +182,6 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         }
 
         element_iterator iv, en;
-#if 0
-
-        // partition mesh
-        if ( this->components().test( MESH_PARTITION ) || ( MeshBase::worldComm().localSize() > 1 ) )
-        {
-            boost::timer ti1;
-            this->partition();
-            VLOG(2) << "[Mesh::updateForUse] partition time : " << ti1.elapsed() << "\n";
-        }
-
-#endif
 
         if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
         {
@@ -225,33 +214,9 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         if ( MeshBase<IndexT>::worldComm().localSize() > 1 )
         {
             tic();
-            auto rangeGhostElement = this->ghostElements();
-            auto itghost = std::get<0>( rangeGhostElement );
-            auto const enghost = std::get<1>( rangeGhostElement );
-            for ( ; itghost != enghost; ++itghost )
-                this->addNeighborSubdomain( boost::unwrap_ref( *itghost ).processId() );
-            // look also over all elements with idInOthersPartitions mapping
-            boost::tie( iv, en ) = this->elementsRange();
-            for ( ; iv != en; ++iv )
-            {
-                auto const& elt = iv->second;
-                for ( auto const& [partitionId,eltIdInPartition] : elt.idInOthersPartitions() )
-                    this->addNeighborSubdomain( partitionId );
-            }
-
             // update mesh entities with parallel data
-            this->updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm();
-
-            // TODO: check the usefulness of this step
-            if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
-            {
-                auto rangeInterProcessFaces = this->interProcessFaces();
-                auto itf = std::get<0>( rangeInterProcessFaces );
-                auto enf = std::get<1>( rangeInterProcessFaces );
-                for ( ; itf != enf; ++itf )
-                    this->addFaceNeighborSubdomain( boost::unwrap_ref( *itf ).partition2() );
-            }
-            toc( "Mesh::updateForUse update ghost data", FLAGS_v > 0 );
+            this->updateParallelData();
+            toc( "Mesh::updateForUse update parallel data", FLAGS_v > 0 );
         }
 
         if ( ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ) &&
@@ -2001,423 +1966,12 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::removeFacesFromBoundary
 }
 
 
-#if 0
-namespace detail
-{
-template<typename ElementType>
-using resultghost_edge_type =  std::vector<boost::tuple<typename ElementType::size_type, bool, std::vector<double>>> ;
 
-template <typename ElementType>
-void updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type<ElementType>& idEdgesWithBary, mpl::false_ /**/ )
-{
-}
-template <typename ElementType>
-void updateEntitiesCoDimensionTwoGhostCell_step1( ElementType const& theelt, resultghost_edge_type<ElementType>& idEdgesWithBary, mpl::true_ /**/ )
-{
-    typedef typename ElementType::value_type value_type;
-    typedef typename ElementType::size_type size_type;
-    // get edges id and bary
-    idEdgesWithBary.resize( ElementType::numLocalEdges, boost::make_tuple( invalid_v<size_type>, false, std::vector<double>( ElementType::nRealDim ) ) );
-    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
-    {
-        if ( !theelt.edgePtr( j ) ) continue;
-        auto const& theedge = theelt.edge( j );
-        idEdgesWithBary[j].template get<0>() = theedge.id();
-        idEdgesWithBary[j].template get<1>() = theedge.isOnBoundary();
-
-        //compute edge barycenter
-        auto const& theGj = theedge.vertices();
-        typename ElementType::matrix_node_type v( theGj.size1(), 1 );
-        ublas::scalar_vector<value_type> avg( theGj.size2(), value_type( 1 ) );
-        value_type n_val = int( theGj.size2() );
-        for ( size_type i = 0; i < theGj.size1(); ++i )
-            v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg ) / n_val;
-        auto baryEdge = ublas::column( v, 0 );
-
-        // save edgebarycenter by components
-        for ( uint16_type comp = 0; comp < ElementType::nRealDim; ++comp )
-        {
-            idEdgesWithBary[j].template get<2>()[comp] = baryEdge[comp];
-        }
-    }
-}
-
-template <typename MeshType>
-void updateEntitiesCoDimensionTwoGhostCell_step2( MeshType& mesh, typename MeshType::element_type& theelt, resultghost_edge_type<MeshType> const& idEdgesWithBaryRecv, double vertexCompareTol, mpl::false_ /**/ )
-{
-}
-template <typename MeshType>
-void updateEntitiesCoDimensionTwoGhostCell_step2( MeshType& mesh, typename MeshType::element_type& theelt, resultghost_edge_type<MeshType> const& idEdgesWithBaryRecv, double vertexCompareTol, mpl::true_ /**/ )
-{
-    typedef typename MeshType::element_type ElementType;
-    typedef typename MeshType::edge_type edge_type;
-    typedef typename ElementType::value_type value_type;
-    typedef typename ElementType::size_type size_type;
-    const rank_type idProc = theelt.processId();
-
-    //update edges data
-    for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
-    {
-        auto const& idEdgeRecv = idEdgesWithBaryRecv[j].template get<0>();
-        if ( idEdgeRecv == invalid_v<size_type> )
-            continue;
-        const bool edgeOnBoundaryRecv = idEdgesWithBaryRecv[j].template get<1>();
-        auto const& baryEdgeRecv = idEdgesWithBaryRecv[j].template get<2>();
-
-        // find edge relation by comparing barycenters
-        uint16_type jBis = invalid_uint16_type_value;
-        bool hasFind = false;
-        for ( uint16_type j2 = 0; j2 < ElementType::numLocalEdges && !hasFind; j2++ )
-        {
-            if ( !theelt.edgePtr( j2 ) ) continue;
-            auto const& theedgej2 = theelt.edge( j2 );
-            auto const& theGj2 = theedgej2.vertices();
-            //compute edge barycenter
-            typename ElementType::matrix_node_type v( theGj2.size1(), 1 );
-            ublas::scalar_vector<value_type> avg( theGj2.size2(), value_type( 1 ) );
-            value_type n_val = int( theGj2.size2() );
-            for ( size_type i = 0; i < theGj2.size1(); ++i )
-                v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg ) / n_val;
-            auto baryEdge = ublas::column( v, 0 );
-            // compare barycenter
-            bool find2 = true;
-            for ( uint16_type d = 0; d < MeshType::nRealDim; ++d )
-                find2 = find2 && ( std::abs( baryEdge[d] - baryEdgeRecv[d] ) < vertexCompareTol );
-            if ( find2 )
-            {
-                hasFind = true;
-                jBis = j2;
-            }
-        }
-        CHECK( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost edge cells are not available\n";
-
-        // get the good edge
-        //auto & edgeModified = mesh.edgeIterator( theelt.edge( jBis ).id() )->second;
-        auto& edgeModified = theelt.edge( jBis );
-        // update id edge in other partition
-        edgeModified.addNeighborPartitionId( idProc );
-        edgeModified.setIdInOtherPartitions( idProc, idEdgeRecv );
-
-        // maybe the edge is not really on boundary
-        if ( edgeModified.isOnBoundary() && !edgeOnBoundaryRecv )
-            edgeModified.setOnBoundary( false );
-
-    } // for ( size_type j = 0; j < ElementType::numLocalEdges; j++ )
-}
-
-} // namespace detail
-template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
-{
-    typedef std::vector<boost::tuple<size_type, std::vector<double>>> resultghost_point_type;
-    typedef std::vector<boost::tuple<size_type, bool, std::vector<double>>> resultghost_edge_type;
-    typedef std::vector<boost::tuple<size_type, bool, std::vector<double>, uint16_type>> resultghost_face_type;
-
-    DVLOG( 1 ) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : start on rank " << MeshBase<IndexT>::worldComm().localRank() << "\n";
-
-    const rank_type nProc = MeshBase<IndexT>::worldComm().localSize();
-
-    typename super_elements::ElementGhostConnectPointToElement elementGhostConnectPointToElement;
-    typename super_elements::ElementGhostConnectEdgeToElement elementGhostConnectEdgeToElement;
-    //------------------------------------------------------------------------------------------------//
-
-    std::map<rank_type, std::vector<element_type*>> memoryMsgToSend;
-    std::map<rank_type, std::vector<size_type>> dataToSend;
-
-    auto iv = this->beginOrderedElement();     // std::get<0>( rangeGhostElement );
-    auto const en = this->endOrderedElement(); //std::get<1>( rangeGhostElement );
-    for ( ; iv != en; ++iv )
-    {
-        auto& ghostelt = boost::unwrap_ref( *iv );
-        if ( !ghostelt.isGhostCell() )
-            continue;
-        const rank_type ghosteltPid = ghostelt.processId();
-        // update info for parallelism
-        elementGhostConnectPointToElement( ghostelt );
-        if ( nDim == 3 )
-            elementGhostConnectEdgeToElement( ghostelt );
-
-        const size_type idEltInOtherPartition = ghostelt.idInOthersPartitions( ghosteltPid );
-
-        memoryMsgToSend[ghosteltPid].push_back( std::addressof( ghostelt ) );
-        // update container
-        dataToSend[ghosteltPid].push_back( ghostelt.id() );
-        dataToSend[ghosteltPid].push_back( idEltInOtherPartition );
-
-    }
-    //------------------------------------------------------------------------------------------------//
-    //------------------------------------------------------------------------------------------------//
-    std::map<rank_type, std::vector<size_type>> dataToRecv;
-    int neighborSubdomains = this->neighborSubdomains().size();
-    int nbRequest = 2 * neighborSubdomains;
-
-    std::vector<mpi::request> reqs( nbRequest );
-    int cptRequest = 0;
-
-    // get size of data to transfer
-    std::map<rank_type,std::size_t> sizeRecv;
-    std::map<rank_type,std::size_t> sizeSended;
-    for ( rank_type neighborRank : this->neighborSubdomains() )
-    {
-        sizeSended[neighborRank] = dataToSend[neighborRank].size();
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, sizeSended[neighborRank] );
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
-    }
-    // wait all requests
-    mpi::wait_all(std::begin(reqs), std::end(reqs));
-
-    cptRequest = 0;
-    for ( rank_type neighborRank : this->neighborSubdomains() )
-    {
-        std::size_t nRecvData = sizeRecv[neighborRank];
-        dataToRecv[neighborRank].resize( nRecvData );
-        if ( nRecvData > 0 )
-            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
-
-        std::size_t nSendData = dataToSend[neighborRank].size();
-        if ( nSendData > 0 )
-            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
-    }
-    //------------------------------------------------------------------------------------------------//
-    // wait all requests
-    mpi::wait_all( std::begin(reqs), std::begin(reqs) + cptRequest );
-
-    //------------------------------------------------------------------------------------------------//
-    // build the container to ReSend
-    std::map<rank_type, std::vector<boost::tuple<resultghost_point_type, resultghost_edge_type, resultghost_face_type>>> dataToReSend;
-    auto itDataRecv = dataToRecv.begin();
-    auto const enDataRecv = dataToRecv.end();
-    for ( ; itDataRecv != enDataRecv; ++itDataRecv )
-    {
-        const rank_type idProc = itDataRecv->first;
-        const int nDataRecv = itDataRecv->second.size();
-        dataToReSend[idProc].resize( nDataRecv/2 );
-        for ( int k = 0; k < nDataRecv/2; ++k )
-        {
-            size_type idEltOtherProcess = itDataRecv->second[2*k];//.first;
-            size_type idEltOnProcess = itDataRecv->second[2*k+1];//.second;
-            if ( !this->hasElement( idEltOnProcess ) )
-                continue;
-
-            auto& theelt = this->elementIterator( idEltOnProcess )->second;
-            theelt.setIdInOtherPartitions( idProc, idEltOtherProcess );
-
-            //---------------------------//
-            // get faces id and bary
-            resultghost_face_type idFacesWithBary( this->numLocalFaces(), boost::make_tuple( invalid_v<size_type>, false, std::vector<double>( nRealDim, 0. ), invalid_v<uint16_type> ) );
-            for ( uint16_type j = 0; j < theelt.nTopologicalFaces() /*this->numLocalFaces()*/; j++ )
-            {
-                if ( !theelt.facePtr( j ) )
-                    continue;
-                auto const& theface = theelt.face( j );
-                idFacesWithBary[j].template get<0>() = theface.id();
-                idFacesWithBary[j].template get<1>() = theface.isOnBoundary();
-
-                auto const& theGj = theface.vertices(); //theface.G();
-#if 1
-                //compute face barycenter
-                typename Localization<self_type>::matrix_node_type v( theGj.size1(), 1 );
-                ublas::scalar_vector<T> avg( theGj.size2(), T( 1 ) );
-                T n_val = int( theGj.size2() );
-
-                for ( size_type i = 0; i < theGj.size1(); ++i )
-                    v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg ) / n_val;
-
-                auto baryFace = ublas::column( v, 0 );
-#else // doesn't work
-                /*auto GLASbaryFace =*/ //Feel::glas::average(jkj);
-                auto baryFace = ublas::column( glas::average( theface.G() ), 0 );
-#endif
-                // save facebarycenter by components
-                for ( uint16_type comp = 0; comp < nRealDim; ++comp )
-                {
-                    idFacesWithBary[j].template get<2>()[comp] = baryFace[comp];
-                }
-
-                // face permutation
-                if constexpr ( nDim > 1 )
-                   idFacesWithBary[j].template get<3>() = theelt.facePermutation( j ).value();
-            }
-            //---------------------------//
-            // get edges id and bary
-            resultghost_edge_type idEdgesWithBary;
-            Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step1( theelt, idEdgesWithBary, mpl::bool_<element_type::nDim == 3>() );
-            //---------------------------//
-            // get points id and nodes
-            resultghost_point_type idPointsWithNode( element_type::numLocalVertices, boost::make_tuple( 0, std::vector<double>( nRealDim ) ) );
-            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
-            {
-                auto const& thepoint = theelt.point( j );
-                idPointsWithNode[j].template get<0>() = thepoint.id();
-                for ( uint16_type comp = 0; comp < nRealDim; ++comp )
-                {
-                    idPointsWithNode[j].template get<1>()[comp] = thepoint( comp );
-                }
-            }
-            //---------------------------//
-            // update container to ReSend
-            dataToReSend[idProc][k] = boost::make_tuple( idPointsWithNode, idEdgesWithBary, idFacesWithBary );
-
-        } // for ( int k=0; k<nDataRecv; ++k )
-    }
-    //------------------------------------------------------------------------------------------------//
-    //------------------------------------------------------------------------------------------------//
-    std::map<rank_type, std::vector<boost::tuple<resultghost_point_type, resultghost_edge_type, resultghost_face_type>>> finalDataToRecv;
-    cptRequest = 0;
-    // second send/recv
-    for ( rank_type neighborRank : this->neighborSubdomains() )
-    {
-        std::size_t nSendData = dataToReSend[neighborRank].size();
-        if ( nSendData > 0 )
-            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 1, &(dataToReSend[neighborRank][0]), nSendData );
-
-        std::size_t nRecvData = dataToSend[neighborRank].size()/2;
-        finalDataToRecv[neighborRank].resize( nRecvData );
-        if ( nRecvData > 0 )
-            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 1, &(finalDataToRecv[neighborRank][0]), nRecvData );
-    }
-    // wait all requests
-    mpi::wait_all( std::begin(reqs), std::begin(reqs) + cptRequest );
-    // delete reqs because finish comm
-    reqs.clear();
-
-    //------------------------------------------------------------------------------------------------//
-    // update mesh : id in other partitions for the ghost cells
-    auto itFinalDataToRecv = finalDataToRecv.begin();
-    auto const enFinalDataToRecv = finalDataToRecv.end();
-    for ( ; itFinalDataToRecv != enFinalDataToRecv; ++itFinalDataToRecv )
-    {
-        const rank_type idProc = itFinalDataToRecv->first;
-        const int nDataRecv = itFinalDataToRecv->second.size();
-        DCHECK( nDataRecv == memoryMsgToSend[idProc].size() ) << "invalid data size to send/recv, got " << nDataRecv << " expected:" << memoryMsgToSend[idProc].size();
-        for ( int k = 0; k < nDataRecv; ++k )
-        {
-            auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k].template get<0>();
-            auto const& idEdgesWithBaryRecv = itFinalDataToRecv->second[k].template get<1>();
-            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k].template get<2>();
-            DCHECK( k < memoryMsgToSend[idProc].size() ) << "invalid data index : " << k << " must be less than " << memoryMsgToSend[idProc].size();
-            auto& theelt = *memoryMsgToSend.at( idProc ).at( k );
-            double vertexCompareTol = std::max( 1e-15, theelt.hMin() * 1e-5 );
-
-            //update faces data
-            if ( !idFacesWithBaryRecv.empty() )
-                for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-                {
-                    auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
-                    if ( idFaceRecv == invalid_v<size_type> )
-                        continue;
-                    const bool faceOnBoundaryRecv = idFacesWithBaryRecv[j].template get<1>();
-                    auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<2>();
-                    uint16_type facePermutation = idFacesWithBaryRecv[j].template get<3>();
-
-                    //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
-                    uint16_type jBis = invalid_uint16_type_value;
-                    bool hasFind = false;
-                    for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
-                    {
-                        if ( !theelt.hasFace( j2 ) )
-                            continue;
-                        auto const& thefacej2 = theelt.face( j2 );
-                        //auto const& theGj2 = thefacej2.G();
-                        auto const& theGj2 = thefacej2.vertices();
-#if 1
-                        //compute face barycenter
-                        typename Localization<self_type>::matrix_node_type v( theGj2.size1(), 1 );
-                        ublas::scalar_vector<T> avg( theGj2.size2(), T( 1 ) );
-                        T n_val = int( theGj2.size2() );
-
-                        for ( size_type i = 0; i < theGj2.size1(); ++i )
-                            v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg ) / n_val;
-
-                        auto baryFace = ublas::column( v, 0 );
-#else // doesn't compile (I don't now why)
-                        auto const& thefacej2 = theelt.face( j2 );
-                        auto baryFace = ublas::column( glas::average( thefacej2.G() ), 0 );
-#endif
-                        // compare barycenters
-                        bool find2 = true;
-                        for ( uint16_type d = 0; d < nRealDim; ++d )
-                        {
-                            find2 = find2 && ( std::abs( baryFace[d] - baryFaceRecv[d] ) < vertexCompareTol );
-                        }
-                        if ( find2 )
-                        {
-                            hasFind = true;
-                            jBis = j2;
-                        }
-
-                    } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
-
-                    CHECK( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost face cells are not available\n";
-
-                    // get the good face
-                    //auto face_it = this->faceIterator( theelt.face( jBis ).id() );
-                    auto& faceModified = theelt.face( jBis ); //face_it->second;
-                    // update id face in other partition
-                    faceModified.addNeighborPartitionId( idProc );
-                    faceModified.setIdInOtherPartitions( idProc, idFaceRecv );
-
-                    // maybe the face is not really on boundary
-                    if ( faceModified.isOnBoundary() && !faceOnBoundaryRecv )
-                        faceModified.setOnBoundary( false );
-
-                    // face permutation in the ghost element
-                    if constexpr ( nDim > 1 )
-                        theelt.setFacePermutation( jBis, typename element_type::face_permutation_type( facePermutation ) );
-
-                } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-
-            // edges
-            if ( !idEdgesWithBaryRecv.empty() )
-                Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2( *this, theelt, idEdgesWithBaryRecv, vertexCompareTol, mpl::bool_<element_type::nDim == 3>() );
-
-            // vertices
-            if ( !idPointsWithNodeRecv.empty() )
-                for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
-                {
-                    auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
-                    auto const& nodePointRecv = idPointsWithNodeRecv[j].template get<1>();
-
-                    uint16_type jBis = invalid_uint16_type_value;
-                    bool hasFind = false;
-                    for ( uint16_type j2 = 0; j2 < element_type::numLocalVertices && !hasFind; j2++ )
-                    {
-                        auto const& thepointj2 = theelt.point( j2 );
-                        // compare barycentersOA
-                        bool find2 = true;
-                        for ( uint16_type d = 0; d < nRealDim; ++d )
-                        {
-                            find2 = find2 && ( std::abs( thepointj2( d ) - nodePointRecv[d] ) < vertexCompareTol );
-                        }
-                        if ( find2 )
-                        {
-                            hasFind = true;
-                            jBis = j2;
-                        }
-                    }
-
-                    CHECK( hasFind ) << "[mesh::updateEntitiesCoDimensionGhostCell] : invalid partitioning data, ghost point cells are not available\n";
-                    // get the good face
-                    //auto point_it = this->pointIterator( theelt.point( jBis ).id() );
-                    auto& pointModified = theelt.point( jBis );
-                    //update the face
-                    pointModified.addNeighborPartitionId( idProc );
-                    pointModified.setIdInOtherPartitions( idProc, idPointRecv );
-                } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
-        }         // for ( int k=0; k<nDataRecv; ++k )
-    }             // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
-    //------------------------------------------------------------------------------------------------//
-
-    DVLOG( 1 ) << "updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm : finish on rank " << MeshBase<IndexT>::worldComm().localRank() << "\n";
-}
-
-
-#else
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void
-Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm()
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
 {
-
+    // some contexts and data used in update
     using container_elements_type = std::vector<std::tuple<size_type,size_type>>; // (id of ghost elt, id of active element)
     using container_faces_type = std::map<size_type,std::tuple<std::tuple<size_type,uint16_type>,
                                                                std::map<uint16_type, typename face_type::marker_type>,
@@ -2438,12 +1992,9 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
 
     bool meshHasUpdateFaces = this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL );
     bool meshHasUpdateEdges = nDim == 3 && this->components().test( MESH_UPDATE_EDGES );
-    auto initialNeighborSubdomains = this->neighborSubdomains();
-    rank_type currentProcessId = MeshBase<IndexT>::worldComm().localRank();
 
 
-    //------------------------------------------------------------------------------------------------//
-    // update interprocess entties
+    // update interprocess entities and neighbor subdomains
     // TODO optimisation if we have interprocessfaces
 
     std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> pointsInterprocessDetection; // ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
@@ -2464,6 +2015,9 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         // nothing to do if no neighbor process
         if ( elt.idInOthersPartitions().empty() )
             continue;
+        // update neighbor subdomains
+        for ( auto const& [pid,eid] : elt.idInOthersPartitions() )
+            this->addNeighborSubdomain( pid );
 
         for ( uint16_type n=0; n < elt.nPoints(); n++ )
         {
@@ -2500,6 +2054,9 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
     }
     //------------------------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------------------------//
+
+    auto initialNeighborSubdomains = this->neighborSubdomains();
+    rank_type currentProcessId = MeshBase<IndexT>::worldComm().localRank();
 
     auto iv = this->beginOrderedElement();
     auto const en = this->endOrderedElement();
@@ -2890,24 +2447,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensionGhos
         }
     }
 
-
-
 }
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
