@@ -72,6 +72,12 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
                     auto coeff_alpha = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
                     auto coeff_alpha_expr = expr( coeff_alpha.template expr<nDim, 1>(), symbolsExpr );
                     bbf( 0_c, 1_c ) += integrate( _range = range, _expr = inner( -coeff_alpha_expr * idt( p ), id( u ) ) );
+
+                    // upwind terms for the convection term
+                    // outflow terms
+                    bbf( 1_c, 1_c ) += integrate( _range = internalfaces(support(M_Wh)), _expr = (inner(coeff_alpha_expr,N()) > 0 )*inner(coeff_alpha_expr, N())*idt( p )*id( p ) );
+                    // inflow terms
+                    bbf( 1_c, 2_c ) += integrate( _range = internalfaces(support(M_Wh)), _expr = (inner(coeff_alpha_expr,N()) <= 0 )*inner(coeff_alpha_expr, N())*idt( phat )*id( p ) );
                 }
             }
         }
