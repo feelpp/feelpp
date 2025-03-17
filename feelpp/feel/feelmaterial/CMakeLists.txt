@@ -26,6 +26,4 @@ SET( SRC
   materiallib.cpp )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelmaterial "${SRC};${HDR}")
-
-
+feel_append_src(feelmaterial "${SRC}")
