@@ -14,6 +14,7 @@
 #endif
 namespace Feel
 {
+
 template <int Dim, int Order>
 class ElasticRigid
 {
@@ -80,6 +81,7 @@ private:
     // Spaces
     spacev_ptr_t_E Xv_;
     space_ptr_t_E X_;
+    spacev_ptr_t_R XvR_;
     
     // Param Solid
     double density_, mass_;
@@ -95,19 +97,24 @@ private:
     Eigen::Vector2d dt_u_trans;
     Eigen::Vector2d dtt_u_trans;
     Eigen::Vector2d dtt_u_trans_old;
+    elementv_t_R u_trans_true;
+
 
     // Rotation
     double omega;
     double theta;
+    double acceleration;
 
     // Fields
     elementv_t_E u_elastic;
     elementv_t_E u_theta;
     elementv_t_E dt_u_theta;
     elementv_t_E dtt_u_theta;
+    elementv_t_E rot_a;
     elementv_t_E dtt_u_theta_old;
     elementv_t_E u_rigid;
     elementv_t_E u_total;
+    elementv_t_E u_true;
 
     // Newmark schemes
     double initial_time_, final_time_, time_step_;
@@ -116,6 +123,10 @@ private:
     // Exporter
     exporter_ptrtype e_;
     ts_ptrtype_E ts_;
+    ts_ptrtype_E ts_true;
+    ts_ptrtype_Translation ts_translation;
+    
+
 
     // Contact param
     double epsilon_,tolContactRegion_,tolDistance_;
@@ -148,6 +159,7 @@ void ElasticRigid<Dim, Order>::initializeMesh()
     // Spaces
     Xv_  = Pchv<Order>( mesh_, markedelements( mesh_, "Solid" ) );
     X_ = Pch<Order>(mesh_, markedelements( mesh_, "Solid" ) );
+    XvR_ = Pchv<0>(mesh_, markedelements( mesh_, "Solid" ) );
 }
 
 
@@ -278,21 +290,38 @@ void ElasticRigid<Dim, Order>::initializeTs_Exp()
     ts_->start();
     ts_->initialize( u_elastic );    
     ts_->updateFromDisp(u_elastic);
+
+    ts_true =  newmark(_space = Xv_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_, _gamma=gamma_, _beta=beta_ );
+    ts_true->start();
+    ts_true->initialize( u_true );    
+    ts_true->updateFromDisp(u_true);
+
+    ts_translation = newmark(_space = XvR_, _initial_time=initial_time_, _final_time=final_time_, _time_step=time_step_, _gamma=gamma_, _beta=beta_ );
+    ts_translation->start();
+    ts_translation->initialize( u_trans_true );    
+    ts_translation->updateFromDisp(u_trans_true);
+
+    
 }
 
 // Initialization displacement fields
 template <int Dim, int Order>
 void ElasticRigid<Dim, Order>::initializeFields()
 {
+    std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
+
+
     u_trans.setZero();
     dt_u_trans.setZero();
     dtt_u_trans.setZero();
     dtt_u_trans_old.setZero();
 
+    u_trans_true = XvR_->element();
+    u_trans_true.on(_range=elements(support(XvR_)), _expr= expr<Dim,1>(default_displ));  
+
     omega = 0.;
     theta = 0;
-
-    std::string default_displ = (Dim==2)?std::string("{0.,0.}"):std::string("{0.,0.,0.}");
+    acceleration = 0;
 
     u_elastic = Xv_->element();
     u_elastic.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>(default_displ));  
@@ -306,6 +335,9 @@ void ElasticRigid<Dim, Order>::initializeFields()
     dtt_u_theta = Xv_->element(); 
     dtt_u_theta.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>(default_displ));  
 
+    rot_a = Xv_ -> element();
+    rot_a.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>(default_displ));  
+
     dtt_u_theta_old = Xv_->element();
     dtt_u_theta_old.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>(default_displ));   
 
@@ -314,6 +346,9 @@ void ElasticRigid<Dim, Order>::initializeFields()
 
     u_total = Xv_->element(); 
     u_total.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>(default_displ));    
+
+    u_true = Xv_->element();
+    u_true.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>(default_displ));
 }
 
 template <int Dim, int Order>
@@ -321,7 +356,8 @@ Range<typename ElasticRigid<Dim, Order>::mesh_t, MESH_FACES>
 ElasticRigid<Dim, Order>::getContactRegion(elementv_t_E const& u)
 {
     Range<mesh_t,MESH_FACES> myelts(mesh_);
-    
+
+    contactFaces_ = project(_space=X_, _range=elements(support(X_)), _expr = cst(0.));
     contactRegion_ = project(_space = X_,  _range = elements(support(X_)), _expr = trans(expr<Dim,1>(direction_))*idv(u) - idv(g_));
     
     nbrFaces_ = 0;
@@ -443,6 +479,10 @@ ElasticRigid<Dim, Order>::exportResults(double t)
     e_->step(t)->add("u_rigid", idv(u_rigid) );
     e_->step(t)->add("u_theta", idv(u_theta) );
     e_->step(t)->add("u_elastic",u_elastic);
+    e_->step(t)->add("u_true",u_true);
+    e_->step(t)->add("u_trans_true", u_trans_true);
+    e_->step(t)->add( "dtt_u_theta", idv(dtt_u_theta) );
+    e_->step(t)->add("rot_a", rot_a);
     // Contact
     e_->step(t)->add("g_",g_);
     e_->step(t)->add("contactRegion_",contactRegion_);
@@ -453,6 +493,7 @@ ElasticRigid<Dim, Order>::exportResults(double t)
 template <int Dim, int Order>
 void ElasticRigid<Dim, Order>::run()
 {
+    
     if constexpr(Dim == 2)
     {
         // Init
@@ -477,22 +518,52 @@ void ElasticRigid<Dim, Order>::run()
         int iter = 1;
         auto Id = eye<Dim,Dim>();
         
-        auto Res = backend()->newVector(Xv_);
-        auto Jac = backend()->newMatrix( _test=Xv_, _trial=Xv_ );
-    
+        // Construct backend
+        auto backendElastic = backend( _name="elastic", _worldcomm = Xv_->worldCommPtr() );
+        auto backendRigid = backend( _name="rigid", _worldcomm = Xv_->worldCommPtr() );
+        
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backendElastic,qsNullSpace(Xv_,mpl::int_<Dim>())) );
+        backendElastic->attachNearNullSpace( myNullSpace );
+        
+        auto Res = backendElastic->newVector(Xv_);
+        auto Jac = backendElastic->newMatrix( _test=Xv_, _trial=Xv_ );
 
+        auto ResTrue = backendRigid->newVector(Xv_);
+        auto JacTrue = backendRigid->newMatrix( _test=Xv_, _trial=Xv_ );
+
+        std::ofstream ofs("res.csv");
+        ofs << fmt::format("time, errorL2, errorH1") << std::endl;
+
+        // Translation
+        auto a_translation_ = form2( _test = XvR_, _trial = XvR_ );
+        auto l_translation_ = form1( _test = XvR_ );
+        auto lt_translation_ = form1( _test = XvR_ );
+    
+        a_translation_.zero();
+        l_translation_.zero();
+        lt_translation_.zero();
+
+        l_translation_ = integrate( _range = elements(support(XvR_)), _expr = cst(density_)*trans(expr<Dim,1>( externalforce_ ))*id(u_trans_true));
+        a_translation_ = integrate( _range = elements(support(XvR_)), _expr = cst(density_)*inner( ts_translation->polyDerivCoefficient()*idt(u_trans_true),id( u_trans_true ) ) );
         
         while (time_step_ * iter < final_time_)
         {
             if (Environment::isMasterRank())
                 std::cout << "Time step : " << iter*time_step_ << std::endl;
             
+            // Solve contact
+            //u_total = project(_space = Xv_, _range =  elements(support(Xv_)), _expr = idv(u_rigid) + idv(u_elastic));
+            myelts_ = getContactRegion(u_total);
+            //myelts_ = getContactRegion(u_true);
+            std::cout << "Faces in contact : " << nbrFaces_ << std::endl;
+
+            
             /*
                 Solve translation 
             */
             std::cout << "Solve translation" << std::endl;
             std::cout << "ForceContact : " << ForceContact[0] << ", " <<  ForceContact[1] << std::endl;
-            auto u_trans_iter = time_step_ * dt_u_trans + time_step_*time_step_*(1.-2*beta_)/2. * dtt_u_trans + beta_*time_step_*time_step_ * (Force + ForceContact/mass_);
+            auto u_trans_iter = time_step_ * dt_u_trans + time_step_*time_step_*(1.-2*beta_)/2. * dtt_u_trans + beta_*time_step_*time_step_ * (Force + ForceContact);
             u_trans += u_trans_iter;
 
             // Update Newmark scheme
@@ -500,9 +571,30 @@ void ElasticRigid<Dim, Order>::run()
             dtt_u_trans = 1. / (beta_ *std::pow(time_step_,2)) * u_trans_iter - 1. / (beta_ * time_step_) *  dt_u_trans -  (1./(2.*beta_) - 1.) *  dtt_u_trans;
             dt_u_trans = dt_u_trans + time_step_ * ((1. - gamma_) * dtt_u_trans_old + gamma_ * dtt_u_trans) ;
             
-            std::cout << "utrans : " << u_trans << std::endl;
-            std::cout << "dtt_u_trans : " << dtt_u_trans << std::endl;
-            std::cout << "dt_u_trans : " << dt_u_trans << std::endl;
+            //std::cout << "utrans : " << u_trans << std::endl;
+            //std::cout << "dtt_u_trans : " << dtt_u_trans << std::endl;
+            //std::cout << "dt_u_trans : " << dt_u_trans << std::endl;
+            
+            lt_translation_.zero();
+            lt_translation_ = l_translation_;
+            lt_translation_ += integrate( _range = elements(support(XvR_)), _expr = cst( density_ ) * inner( idv( ts_translation->polyDeriv() ), id( u_trans_true ) ) );
+            if (nbrFaces_ > 0)//Add contact terms
+            {
+                auto F = Id + gradv(u_elastic);
+                auto epsv = sym(gradv(u_elastic)) + 0.5*trans(gradv(u_elastic))*gradv(u_elastic);
+                auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv);
+                
+                //lt_translation_ += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u_elastic),  id(u_trans_true))) ;
+                //lt_translation_ += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_elastic)) * id(u_trans_true)) ;
+                //lt_translation_ += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_elastic)) * id(u_trans_true)) ;
+                
+                
+	            lt_translation_ += integrate( _range = myelts_, _expr = cst(1)/det(F) * inner(val(F*sigmav*trans(F))*N(), id( u_trans_true ) ) );
+            }
+        
+            a_translation_.solve( _rhs = lt_translation_, _solution = u_trans_true, _name="translation" );
+            ts_translation->updateFromDisp(u_trans_true);
+            ts_translation->next(u_trans_true);
 
             /*
                 Solve rotation
@@ -511,16 +603,16 @@ void ElasticRigid<Dim, Order>::run()
             auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
             auto momentOfInertia = integrate(_range=elements(support(Xv_)),_expr=cst(density_)*( (Px()-massCenter(0,0))*(Px()-massCenter(0,0)) + (Py()-massCenter(1,0))*(Py()-massCenter(1,0)) ) ).evaluate()(0,0);
 
-            double T = integrate(_range= markedfaces(mesh_, "Upper"), _expr= -(Py()-massCenter(1,0))*cst(Upper_x)).evaluate()(0,0);
+            double T = 0.;
+            T += integrate(_range= markedfaces(mesh_, "Upper"), _expr= -(Py()-massCenter(1,0))*cst(Upper_x)).evaluate()(0,0);
             T += integrate(_range= markedfaces(mesh_, "Lower"), _expr= -(Py()-massCenter(1,0))*cst(Lower_x)).evaluate()(0,0);
 
-            std::cout << "T : " << T << std::endl;
-
+            //std::cout << "T : " << T << std::endl;
+            acceleration = (T/momentOfInertia);
             omega = omega + time_step_ * (T/momentOfInertia);
             theta += time_step_ * omega;
-            
+
             auto theta_iter = time_step_ * omega;
-            
 
             auto rot = vec(
                 cos(theta) * (Px() - massCenter(0,0)) - sin(theta) * (Py() - massCenter(1,0)) - Px() + massCenter(0,0),
@@ -537,23 +629,46 @@ void ElasticRigid<Dim, Order>::run()
             dtt_u_theta_old = project(_space = Xv_, _range =  elements(support(Xv_)), _expr= idv(dtt_u_theta));   
             dtt_u_theta = project(_space = Xv_, _range =  elements(support(Xv_)), _expr = cst(1.0) / (cst(beta_)*std::pow(time_step_,2)) * idv(u_theta_iter) - cst(1.0) / (cst(beta_)*cst(time_step_)) * idv( dt_u_theta ) -  (cst(1.0)/(cst(2.0)*cst(beta_)) - cst(1.0)) * idv( dtt_u_theta ));
             dt_u_theta = project(_space = Xv_, _range =  elements(support(Xv_)), _expr = idv(dt_u_theta) + cst(1.0)*cst(time_step_) * ((cst(1.0) - cst(gamma_)) * idv(dtt_u_theta_old) + cst(gamma_) * idv(dtt_u_theta)) ); 
-                        
+            
+            auto coef_1 = (- cst(acceleration) * sin(theta) - cst(omega)*cst(omega) * cos(theta));
+            auto coef_2 = (- cst(acceleration) * cos(theta) + cst(omega)*cst(omega) * sin(theta));
+            auto coef_3 = (cst(acceleration) * cos(theta) - cst(omega)*cst(omega) * sin(theta));
+            auto coef_4 = (- cst(acceleration) * sin(theta) - cst(omega)*cst(omega) * cos(theta));
+            rot_a = project(_space = Xv_, _range =  elements(support(Xv_)), _expr =  vec(coef_1*(Px() - massCenter(0,0)) + coef_2*(Py() - massCenter(1,0)), coef_3*(Px() - massCenter(0,0)) + coef_4*(Py() - massCenter(1,0))));
+            
             u_rigid.on(_range=elements(support(Xv_)), _expr=  idv(u_theta) + vec(cst(u_trans[0]),cst(u_trans[1])));
-
-            // Solve contact
+            //u_rigid.on(_range=elements(support(Xv_)), _expr=  idv(u_theta) + idv(u_trans_true));
             u_total = project(_space = Xv_, _range =  elements(support(Xv_)), _expr = idv(u_rigid) + idv(u_elastic));
-            myelts_ = getContactRegion(u_total);
-            std::cout << "Faces in contact : " << nbrFaces_ << std::endl;
 
             /*
                 Solve elasticity
             */
+
             auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
             {
                 auto u = Xv_->element();
                 u = *X;
 
-                auto Fv = Id + gradv(u) + gradv(u_rigid);
+                //auto Fv = Id + gradv(u) + gradv(u_rigid);
+                //auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*(gradv(u));
+                //auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+
+                //auto dF = gradt(u);
+                //auto dE = sym(gradt(u)) + 0.5*trans(gradt(u))*(gradv(u)) + 0.5*trans(gradv(u))*(gradt(u));
+                //auto dS = lambda_*trace(dE)*Id + 2*mu_*dE;
+
+                //auto Emixte = 0.5*trans(gradv(u))*gradv(u_rigid) + 0.5*trans(gradv(u_rigid))*gradv(u);
+                //auto Smixte = lambda_*trace(Emixte)*Id + 2*mu_*Emixte;
+                //auto dEmixte = 0.5*trans(gradt(u))*gradv(u_rigid) + 0.5*trans(gradv(u_rigid))*gradt(u);
+                //auto dSmixte = lambda_*trace(dEmixte)*Id + 2*mu_*dEmixte;
+
+                //auto Erigid = 0.5*trans(gradv(u_rigid))*gradv(u_rigid);
+                //auto Srigid = lambda_*trace(Erigid)*Id + 2*mu_*Erigid;
+            
+            
+                auto a = form2( _test=Xv_, _trial=Xv_, _matrix=J );
+
+                auto Fv = Id + gradv(u);
                 auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
                 auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
 
@@ -561,74 +676,128 @@ void ElasticRigid<Dim, Order>::run()
                 auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
                 auto dS = lambda_*trace(dE)*Id + 2*mu_*dE;
 
-                auto Emixte = 0.5*trans(gradv(u))*gradv(u_rigid) + 0.5*trans(gradv(u_rigid))*gradv(u);
-                auto Smixte = lambda_*trace(Emixte)*Id + 2*mu_*Emixte;
-                auto dEmixte = 0.5*trans(gradt(u))*gradv(u_rigid) + 0.5*trans(gradv(u_rigid))*gradt(u);
-                auto dSmixte = lambda_*trace(dEmixte)*Id + 2*mu_*dEmixte;
-
-                auto Erigid = 0.5*trans(gradv(u_rigid))*gradv(u_rigid);
-                auto Srigid = lambda_*trace(Erigid)*Id + 2*mu_*Erigid;
-            
-            
-                auto a = form2( _test=Xv_, _trial=Xv_, _matrix=J );
    
-                a = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) );
+                a = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_true->polyDerivCoefficient()*idt(u),id( u ) ) );
                 a += integrate( _range=elements(support(Xv_)), _expr = inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
-                a += integrate( _range=elements(support(Xv_)), _expr = inner( dF*val(Smixte) + val(Fv)*dSmixte , grad(u) ) );
-                a += integrate( _range=elements(support(Xv_)), _expr =  inner( gradt(u)*val(Srigid),grad(u) ) );
+
+   
+                //a = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_->polyDerivCoefficient()*idt(u),id( u ) ) );
+                //a += integrate( _range=elements(support(Xv_)), _expr = inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
+                //a += integrate( _range=elements(support(Xv_)), _expr = inner( dF*val(Smixte) + val(Fv)*dSmixte , grad(u) ) );
+                //a += integrate( _range=elements(support(Xv_)), _expr =  inner( dF*val(Srigid),grad(u) ) );
+
+                //if (nbrFaces_ > 0)
+                //    a += integrate(_range=myelts_, _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
 
                 if (nbrFaces_ > 0)
-                    a += integrate(_range=myelts_, _expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)));
-                
+                {
+                    a += integrate (_range=myelts_,_expr= cst(gamma_contact) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)));
+                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),trans(expr<Dim,1>(direction_))*id(u)));
+                }
             
-
             };
        
             auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
             {
-               auto u = Xv_->element();
-               u = *X;
+                auto u = Xv_->element();
+                u = *X;
                
-               auto Fv = Id + gradv(u) + gradv(u_rigid);
-               auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
-               auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+                //auto Fv = Id + gradv(u) + gradv(u_rigid);
+                //auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*(gradv(u));
+                //auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
 
-               auto Emixte = 0.5*trans(gradv(u))*gradv(u_rigid) + 0.5*trans(gradv(u_rigid))*gradv(u);
-               auto Smixte = lambda_*trace(Emixte)*Id + 2*mu_*Emixte;
+                //auto Emixte = 0.5*trans(gradv(u))*gradv(u_rigid) + 0.5*trans(gradv(u_rigid))*gradv(u);
+                //auto Smixte = lambda_*trace(Emixte)*Id + 2*mu_*Emixte;
 
-               auto Erigid = 0.5*trans(gradv(u_rigid))*gradv(u_rigid);
-               auto Srigid = lambda_*trace(Erigid)*Id + 2*mu_*Erigid;
+                //auto Erigid = 0.5*trans(gradv(u_rigid))*gradv(u_rigid);
+                //auto Srigid = lambda_*trace(Erigid)*Id + 2*mu_*Erigid;
+
+                auto Fv = Id + gradv(u);
+                auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+                auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
    
-               auto r = form1( _test=Xv_, _vector=R );
+                auto r = form1( _test=Xv_, _vector=R );
 
-               r = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_->polyDerivCoefficient()*idv(u) -idv(ts_->polyDeriv()),id( u ) ) );
-               r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Sv) , grad(u) ) );
-               r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Smixte) , grad(u) ) );
-               r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Srigid) , grad(u) ) );
-               r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner(idv(dtt_u_theta), id(u)) ) ;
-               r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)*(trans(vec(cst(dtt_u_trans[0]),cst(dtt_u_trans[1]))) - trans(expr<Dim,1>( externalforce_ )))*id( u ) ) ;
-               r += integrate( _range = markedfaces(mesh_, "Upper"), _expr = - trans(expr<Dim,1>( neumannUpper_ ))*id(u));
-               r += integrate( _range = markedfaces(mesh_, "Lower"), _expr = - trans(expr<Dim,1>( neumannLower_ ))*id(u));
+                r = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_->polyDerivCoefficient()*idv(u) -idv(ts_->polyDeriv()),id( u ) ) );
+                //r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Sv) , grad(u) ) );
+                //r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Smixte) , grad(u) ) );
+                //r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Srigid) , grad(u) ) );
+                //r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner(idv(dtt_u_theta), id(u)) ) ;
+               
+               
+                r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Sv) , grad(u) ) );
+                r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)* trans(vec(-cst(acceleration)*(Py() - massCenter(1,0))-cst(omega)*cst(omega)*(Px() - massCenter(0,0)), cst(acceleration)*(Px() - massCenter(0,0)) -cst(omega)*cst(omega)*(Py() - massCenter(1,0)) ))*id(u) ) ;
+                //r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)* inner(idv(dtt_u_theta),id(u)) ) ;
+
+                r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)*(trans(vec(cst(dtt_u_trans[0]),cst(dtt_u_trans[1]))) - trans(expr<Dim,1>( externalforce_ )))*id( u ) ) ;
+                
+                //r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner(idv(ts_translation->currentAcceleration()),id( u ) ));
+                //r += integrate( _range=elements(support(Xv_)), _expr= cst(density_)*(inner(idv(ts_translation->currentAcceleration()),id( u ) ) - trans( expr<Dim, 1>( externalforce_ ) )*id( u ))  );
+                r += integrate( _range = markedfaces(mesh_, "Upper"), _expr = - trans(expr<Dim,1>( neumannUpper_ ))*id(u));
+                r += integrate( _range = markedfaces(mesh_, "Lower"), _expr = - trans(expr<Dim,1>( neumannLower_ ))*id(u));
+
+                //if (nbrFaces_ > 0)
+                //{
+                //    r += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                //    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_rigid),trans(expr<Dim,1>(direction_))*id(u)) );
+                //}   
 
                 if (nbrFaces_ > 0)
                 {
-                    r += integrate (_range=myelts_,_expr= cst(1.)/cst(epsilon_) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
-                    r += integrate (_range=myelts_,_expr= - cst(1.)/cst(epsilon_) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_rigid),trans(expr<Dim,1>(direction_))*id(u)) );
-                }   
+                    r += integrate (_range=myelts_,_expr= cst(gamma_contact) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(gamma_contact) * inner(idv(g_) - trans(expr<Dim,1>(direction_))*idv(u_rigid),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) );
+                } 
             
-               R->close();
+                R->close();
             };
-            std::cout << "solve elastiity" << std::endl;
-            backend()->nlSolver()->residual = Residual;
-            backend()->nlSolver()->jacobian = Jacobian;
-            backend()->nlSolve( _solution=u_elastic,_jacobian=Jac,_residual=Res );
+            std::cout << "solve elasticity" << std::endl;
+            backendElastic->nlSolver()->residual = Residual;
+            backendElastic->nlSolver()->jacobian = Jacobian;
+            backendElastic->nlSolve( _solution=u_elastic,_jacobian=Jac,_residual=Res );
    
             ts_->updateFromDisp(u_elastic);
             ts_->next(u_elastic);
+
+            // Update contact force 
+            if (nbrFaces_ > 0)//Add contact terms
+            {
+                auto F = Id + gradv(u_elastic);
+                auto epsv = sym(gradv(u_elastic)) + 0.5*trans(gradv(u_elastic))*gradv(u_elastic);
+                auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
+                auto J = det(F);
+                
+                auto trac = Xv_->element();
+                trac.on(_range=elements(support(Xv_)), _expr= expr<Dim,1>("{0.,0.}"));
+                trac.on(_range=myelts_, _expr = cst(density_) * val(F*sigmav));
+
+                auto force_C = integrate( _range = elements(support(Xv_)), _expr = divv(trac)/det(F) ).evaluate();
+                //auto force_C = integrate( _range = myelts_, _expr = trans(expr<Dim,1>(direction_))*val(F*sigmav) ).evaluate();
+                //auto force_C = integrate( _range = myelts_, _expr = - cst(1.)/cst(epsilon_) * (trans(expr<Dim,1>(direction_))*idv(u_total) - idv(g_) )).evaluate();
+                //ForceContact[0] = ddirection_[0]*force_C(0,0);
+                //ForceContact[1] = ddirection_[1]*force_C(0,0);
+                std::cout << "force_C : " << force_C(0,0) << std::endl;
+                
+                
+                auto volume = integrate( _range = elements(support(X_)), _expr = J ).evaluate()(0,0);
+                mass_ = volume*density_;
+                
+                std::cout << "mass _ " << mass_ << std::endl;
+                ForceContact[0] = ddirection_[0]*force_C(0,0)/mass_;
+                ForceContact[1] = ddirection_[1]*force_C(0,0)/mass_;
+
+            } 
+            else  // on remet la force à 0
+            {
+                ForceContact[0] = 0;
+                ForceContact[1] = 0;
+            }
             
             u_total = project(_space = Xv_, _range =  elements(support(Xv_)), _expr = idv(u_rigid) + idv(u_elastic));
-            myelts_ = getContactRegion(u_total);
-            std::cout << "Faces in contact : " << nbrFaces_ << std::endl;
+
+            //myelts_ = getContactRegion(u_total);
+            //std::cout << "Faces in contact : " << nbrFaces_ << std::endl;
 
             // Checks
             auto meanDisp = mean(_range=elements(support(Xv_)), _expr=idv(u_elastic));
@@ -639,21 +808,88 @@ void ElasticRigid<Dim, Order>::run()
             std::cout << "Mean curl y : " << meanCurl(1,0) << std::endl;
             std::cout << "Mean curl z : " << meanCurl(2,0) << std::endl;
 
-            // Update contact force 
-            if (nbrFaces_ > 0)//Add contact terms
+            // True solution
+            
+            auto JacobianTrue = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
             {
-                auto F = Id + gradv(u_total);
-                auto epsv = sym(gradv(u_total)) + 0.5*trans(gradv(u_total))*gradv(u_total);
-                auto sigmav = (lambda_*trace(epsv)*Id + 2*mu_*epsv)*N();
-                auto force_C = integrate( _range = myelts_, _expr = trans(expr<Dim,1>(direction_))*sigmav ).evaluate();
-                ForceContact[0] = ddirection_[0]*force_C(0,0);
-                ForceContact[1] = ddirection_[1]*force_C(0,0);
-            }
+                auto u = Xv_->element();
+                u = *X;
 
+                auto Fv = Id + gradv(u);
+                auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+                auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+
+                auto dF = gradt(u);
+                auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+                auto dS = lambda_*trace(dE)*Id + 2*mu_*dE;
+
+                auto a = form2( _test=Xv_, _trial=Xv_, _matrix=J );
+   
+                a = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_true->polyDerivCoefficient()*idt(u),id( u ) ) );
+                a += integrate( _range=elements(support(Xv_)), _expr = inner( dF*val(Sv) + val(Fv)*dS , grad(u) ) );
+
+                if (nbrFaces_ > 0)
+                {
+                    a += integrate (_range=myelts_,_expr= cst(gamma_contact) * inner(trans(expr<Dim,1>(direction_))*idt(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*dF*val(Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)));
+                    a += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv)*dS*N(),trans(expr<Dim,1>(direction_))*id(u)));
+                }
+                
+
+            };
+       
+            auto ResidualTrue = [=](const vector_ptrtype& X, vector_ptrtype& R)
+            {
+               auto u = Xv_->element();
+               u = *X;
+               
+               auto Fv = Id + gradv(u);
+               auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+               auto Sv = lambda_*trace(Ev)*Id + 2*mu_*Ev;
+
+               auto r = form1( _test=Xv_, _vector=R );
+
+               r = integrate( _range=elements(support(Xv_)), _expr = cst(density_)*inner( ts_true->polyDerivCoefficient()*idv(u) -idv(ts_true->polyDeriv()),id( u ) ) );
+               r += integrate( _range=elements(support(Xv_)), _expr = inner( val(Fv*Sv) , grad(u) ) );
+               r += integrate( _range = markedfaces(mesh_, "Upper"), _expr = - trans(expr<Dim,1>( neumannUpper_ ))*id(u));
+               r += integrate( _range = markedfaces(mesh_, "Lower"), _expr = - trans(expr<Dim,1>( neumannLower_ ))*id(u));
+               r += integrate( _range=elements(support(Xv_)), _expr = cst(density_)*(- trans(expr<Dim,1>( externalforce_ )))*id( u ) ) ;
+
+                if (nbrFaces_ > 0)
+                {
+                    r += integrate (_range=myelts_,_expr= cst(gamma_contact) * inner(trans(expr<Dim,1>(direction_))*idv(u),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - cst(gamma_contact) * inner(idv(g_),trans(expr<Dim,1>(direction_))*id(u)) );
+                    r += integrate (_range=myelts_,_expr= - inner(trans(expr<Dim,1>(direction_))*val(Fv*Sv)*N(),trans(expr<Dim,1>(direction_))*id(u)) );
+                }   
+            
+               R->close();
+            };
+            std::cout << "solve elasticity true" << std::endl;
+            backendRigid->nlSolver()->residual = ResidualTrue;
+            backendRigid->nlSolver()->jacobian = JacobianTrue;
+            backendRigid->nlSolve( _solution=u_true,_jacobian=JacTrue,_residual=ResTrue );
+   
+            ts_true->updateFromDisp(u_true);
+            ts_true->next(u_true);
+            
+            
+            // Compute errors
+            auto l2err_u = normL2( _range=elements(support(Xv_)), _expr=idv(u_true) - idv(u_total) );
+            auto h1err_u = normH1( _range=elements(support(Xv_)), _expr=idv(u_true) - idv(u_total) , _grad_expr=gradv(u_true) - gradv(u_total) );
+            //ofs << fmt::format( "{:.6f}, {:.6f}, {:.6f}, {:.6f}", time_step_*iter, l2err_u, h1err_u) << std::endl;
+
+            if ( Environment::isMasterRank() )
+            {
+                std::cout << " l2err_u = " << l2err_u << std::endl;
+                std::cout << " h1err_u = " << h1err_u << std::endl;
+            }
+            
             // Export 
             this->exportResults(iter*time_step_);
             iter++;
         }   
+        ofs.close();
     }
+    
 }
 }
