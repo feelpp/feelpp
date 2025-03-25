@@ -2062,7 +2062,7 @@ __global__ void rayTracingKernelExplorationOptimizedWithcheckOverlap(
             }
 
             delta += ( angleToTriangle > angleToTriangleLim )
-                         ? ( distanceToTriangle * 0.75f + epsilon )
+                         ? ( distanceToTriangle * 0.85f + epsilon )
                          : epsilon;
         }
         else
@@ -2841,11 +2841,13 @@ class BVH_HIP_Party : public BVH<MeshEntityType>
 
         // isView = true; isViewDataRT = true; isUnifiedMemory = false; numVersion = 0;
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 1;
+        //isView = false; isViewDataRT = false; isUnifiedMemory = true; numVersion = 1;
+        // isView = false; isViewDataRT = false; isUnifiedMemory = true; numVersion = 2;
         // isView = true; isViewDataRT = true; isUnifiedMemory = true; numVersion = 2;
         // isView = true; isViewDataRT = true;
 
-        // modeGPU = 4; numVersion = 1;
-        // modeGPU = 4; numVersion = 2;
+        //modeGPU = 4; numVersion = 1;
+        //modeGPU = 4; numVersion = 2;
     }
 
     ~BVH_HIP_Party()

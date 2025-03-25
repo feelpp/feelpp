@@ -551,7 +551,7 @@ void distToBoundaryBVHpuSendAllNode(
     t_begin_gpu = std::chrono::steady_clock::now();
     tic();
     auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-party" );
-    // auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
+    //auto bvhHIPParty = boundingVolumeHierarchy( _range = range, _kind = "hip-multi-gpu-party" );
     auto timeBVHGPUDuration = toc( "timeBVHGPUDuration" );
     t_end_bvh_gpu = std::chrono::steady_clock::now();
     // END::Build BVH GPU

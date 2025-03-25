@@ -159,12 +159,17 @@ BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
 BOOST_AUTO_TEST_CASE( intersection_bvh_3D )
 {
     using mesh_type = Mesh<Simplex<3,1,3>>;
-    auto mesh = loadMesh(_mesh = new mesh_type, _filename=soption(_name="mesh3D.filename" ) );
+    //auto mesh = loadMesh(_mesh = new mesh_type, _filename=soption(_name="mesh3D.filename" ) );
+
+auto mesh = loadMesh(_mesh = new mesh_type, _filename="/nvme0/lemoinep/feelppGPUGamma/feelpp/testsuite/feelmesh/cubic_cavity.geo");
+
     auto rangeFaces = markedfaces(mesh,{"CavityBottom","CavitySides","CavityTop"});
     auto submesh = createSubmesh(_mesh=mesh,_range=rangeFaces);
 
     test3D( rangeFaces );
     test3D( elements(submesh) );
+
+    std::cout << "************************************************************" << std::endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
