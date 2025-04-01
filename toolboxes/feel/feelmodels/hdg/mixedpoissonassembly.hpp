@@ -159,15 +159,41 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     bbf( 2_c, 0_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=inner( id(phat), leftfacet(normalt(u))+rightfacet(normalt(u)) ) );
 
+    auto tau_D = cst(tau_constant)/h();
     // <tau p, mu>_Omega/Gamma
     bbf( 2_c, 1_c ) += integrate(_range=internalfaces(support(M_Wh)),
-                                 _expr=el_param*tau_constant * inner(id(phat),
+                                 _expr=el_param*tau_D * inner(id(phat),
                                                             leftfacet( idt(p) )+
                                                             rightfacet( idt(p) )) );
 
     // <-tau phat, mu>_Omega/Gamma
     bbf( 2_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
-                                 _expr=-sc_param*el_param*tau_constant * inner(idt(phat), id(phat) ) );
+                                 _expr=-sc_param*el_param*tau_D * inner(idt(phat), id(phat) ) );
+
+    if constexpr ( is_scalar )
+    {
+        for ( auto const& [physicName, physicData] : this->physicsFromCurrentType() )
+        {
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+                if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+                {
+                    auto coeff_alpha = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
+                    auto coeff_alpha_expr = expr( coeff_alpha.template expr<nDim, 1>(), symbolsExpr );
+                    auto tau_C = max(trans(coeff_alpha_expr)*N(), cst(0.));
+                    // <tau p, mu>_Omega/Gamma
+                    bbf( 2_c, 1_c ) += integrate(_range=internalfaces(support(M_Wh)),
+                                                 _expr=el_param* tau_C * inner(id(phat),
+                                                                            leftfacet( idt(p) )+
+                                                                            rightfacet( idt(p) )) );
+                    // <-tau phat, mu>_Omega/Gamma
+                    bbf( 2_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
+                                                 _expr=-sc_param*el_param* tau_C * inner(idt(phat), id(phat) ) );
+                }
+            }
+        }
+    }
 
     if( !this->isStationary() )
     {
