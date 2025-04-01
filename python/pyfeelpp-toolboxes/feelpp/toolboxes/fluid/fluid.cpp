@@ -29,6 +29,8 @@
 #include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 #include <feel/feelcore/pybind11_json.hpp>
 #include "contactforce.hpp"
+#include "magnetotorque.hpp"
+#include "squirmermotion.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
@@ -93,13 +95,15 @@ void defFM(py::module &m)
         .def("exportResults",static_cast<void (fm_t::*)( double )>(&fm_t::exportResults), "export the results of the fluid mechanics problem", py::arg("time"))
 
         // remesh
-        .def("applyRemesh",
-        []( std::shared_ptr<fm_t>& self,typename fm_t::mesh_ptrtype meshOld, typename fm_t::mesh_ptrtype meshNew ) 
+
+        .def("applyRemesh",[]( std::shared_ptr<fm_t>& self,typename fm_t::mesh_ptrtype meshOld, typename fm_t::mesh_ptrtype meshNew ) 
         {
             std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>();
             self->applyRemesh(meshOld,meshNew,remeshInterp);            
-        }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
+        }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh")
+        )
         
+
         .def(
             "addContactForceModel",[](const fm_t& t)
             {
@@ -129,13 +133,65 @@ void defFM(py::module &m)
         )
 
         .def(
-            "reset_executionTime",[](const fm_t& t)
+            "addMagnetoTorque",[](fm_t &t)
             {
-                reset_executionTime(t);
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    magnetoTorqueModel<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+
             },
-            "Initialization of execution time"
+            "add function linear assembly"
         ) 
         
+        .def(
+            "addMagnetoTorqueRes",[](fm_t &t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    magnetoTorqueModel<1>(t, data);
+                };  
+
+                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
+
+            },
+            "add function residual assembly"
+        )
+
+        .def(
+            "reset_Data",[](fm_t &t)
+            {
+                reset_Data(t);
+            },
+            "reset_Data"
+        ) 
+
+        .def(
+            "write_Data",[](fm_t &t)
+            {
+                write_Data(t);
+            },
+            "write_Data"
+        )
+
+        .def(
+            "squirmer",[](fm_t &t)
+            {
+                squirmer(t);
+            },
+            "squirmer"
+        )
+        
+        .def(
+            "twosquirmers",[](fm_t &t)
+            {
+                twosquirmers(t);
+            },
+            "twosquirmers"
+        )
+
         ;
         
 }
