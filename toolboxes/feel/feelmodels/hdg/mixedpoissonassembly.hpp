@@ -159,7 +159,7 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
     bbf( 2_c, 0_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=inner( id(phat), leftfacet(normalt(u))+rightfacet(normalt(u)) ) );
 
-    auto tau_D = cst(tau_constant)/h();
+    auto tau_D = tau_constant/h();
     // <tau p, mu>_Omega/Gamma
     bbf( 2_c, 1_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=el_param*tau_D * inner(id(phat),
