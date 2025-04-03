@@ -81,7 +81,6 @@ void addGinacMatrix( py::module& m )
                 return y; },
             "evaluate the expression for an array of values for one parameter", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true )
         .def(
-            // "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::vector<std::string> const& s_vct, std::vector<Eigen::VectorXd> const& x_vct, bool parallel )
             "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::map<std::string, Eigen::VectorXd> const& m, bool parallel )
             {
                 std::cout << "evaluate with map" << std::endl;
@@ -104,7 +103,7 @@ void addGinacMatrix( py::module& m )
                 }
                 return y;
             },
-            "evaluate the expression", py::arg( "mp" ), py::arg( "parallel" ) = true )
+            "evaluate the expression for arrays of parameters", py::arg( "mp" ), py::arg( "parallel" ) = true )
         .def(
             "diff", []( Expr<GinacMatrix<M, N, Order>>& e, std::string const& s )
             { return e.template diff<1>( s ); },
