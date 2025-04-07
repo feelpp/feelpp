@@ -1902,6 +1902,7 @@ __global__ void rayTracingKernelExplorationOptimizedWithcheckOverlap(
     constexpr int maxIterations = 50;
     constexpr float epsilonC = 0.01f;
     constexpr float angleToTriangleLim = 0.2f;
+    constexpr float c1s3 = 1.0f / 3.0f;
 
     bool isViewInfo = true;
     isViewInfo = false;
@@ -1999,7 +2000,7 @@ __global__ void rayTracingKernelExplorationOptimizedWithcheckOverlap(
             //     printf("in step2 num triangle=%i\n",nearestTriangleIndex.first);
 
             float4 positionToTriangle =
-                ( hitTriangle.v1 + hitTriangle.v2 + hitTriangle.v3 ) / 3.0f;
+                ( hitTriangle.v1 + hitTriangle.v2 + hitTriangle.v3 ) * c1s3;
             float4 directionToTriangle = positionToTriangle - currentPosition;
             distanceToTriangle = length( directionToTriangle );
 
@@ -2067,7 +2068,7 @@ __global__ void rayTracingKernelExplorationOptimizedWithcheckOverlap(
         }
         else
         {
-            delta += epsilon+1.0*distanceToTriangle * 0.85f; //optimized param
+            delta += epsilon+distanceToTriangle * 0.85f; //optimized param
         }
     }
 }
