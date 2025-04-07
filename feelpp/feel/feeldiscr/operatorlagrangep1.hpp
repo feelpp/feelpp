@@ -474,6 +474,24 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     typedef typename image_mesh_type::element_type element_type;
     typedef typename image_mesh_type::face_type face_type;
 
+    static constexpr uint16_type nLocalDofUpToVertices = domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex;
+    static constexpr uint16_type nDofPerVertexForDivision = domain_fe_type::nDofPerVertex == 0? 1 : domain_fe_type::nDofPerVertex;
+
+    static constexpr uint16_type nLocalDofUpToEdges = domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge;
+    static constexpr uint16_type nDofPerEdgeForDivision = domain_fe_type::nDofPerEdge == 0 ? 1 : domain_fe_type::nDofPerEdge;
+
+    static constexpr uint16_type nLocalDofUpToFaces =
+        (domain_mesh_type::nDim==1)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex :
+        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge :
+        domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge + domain_mesh_type::element_type::numGeometricFaces*domain_fe_type::nDofPerFace;
+    static const uint16_type nLocalDofBeforeDofsOfTopologicalFaces =
+        (domain_mesh_type::nDim==1)? 0 :
+        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex :
+        domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge;
+    static constexpr uint16_type nDofPerTopologicalFace = (domain_mesh_type::nDim==1)?domain_fe_type::nDofPerVertex : (domain_mesh_type::nDim==2)?domain_fe_type::nDofPerEdge : domain_fe_type::nDofPerFace;
+    static constexpr uint16_type nDofPerTopologicalFaceForDivision = nDofPerTopologicalFace == 0? 1 : nDofPerTopologicalFace;
+
+
     // inherit the table of markersName
     for( auto itMark : this->domainSpace( )->mesh()->markerNames() )
     {
@@ -486,11 +504,6 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
 
     auto meshDomain = this->domainSpace()->mesh();
     auto dofDomain = this->domainSpace()->dof();
-
-    // iterate over active element on process
-    auto rangeElements = meshDomain->elementsWithProcessId();
-    auto it = std::get<0>( rangeElements );
-    auto en = std::get<1>( rangeElements );
 
     // memory nodes
     std::vector<bool> dofDone( this->domainSpace()->nLocalDof(), false );
@@ -505,9 +518,9 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     boost::tuple<size_type,size_type,std::vector<boost::tuple<size_type,uint16_type>>> tmpGhostData;
     boost::get<2>( tmpGhostData ).resize( image_mesh_type::element_type::numVertices );
 
-    for ( ; it != en ; ++it )
+    for ( auto const& eltWrap : elements(meshDomain) )
     {
-        auto const& curelt = unwrap_ref( *it );
+        auto const& curelt = unwrap_ref( eltWrap  );
         DVLOG(2) << "=========================================\n";
         DVLOG(2) << "global element " << curelt.id() << " oriented ok ? : " << curelt.isAnticlockwiseOriented() << "\n";
         DVLOG(2) << "global element G=" << curelt.G() << "\n";
@@ -533,8 +546,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
             elt.setMarkers( curelt.markers() );
             elt.setProcessIdInPartition( curelt.pidInPartition() );
             elt.setProcessId( curelt.processId() );
-            if ( doParallelBuild )
-                elt.setNeighborProcessIds( curelt.neighborProcessIds() );
+
+            std::set<rank_type> ghostRanks;
 
             // accumulate the points
             for ( int p = 0; p < image_mesh_type::element_type::numVertices; ++p )
@@ -548,15 +561,44 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 if ( doParallelBuild )
                     boost::get<2>( tmpGhostData )[p] = boost::make_tuple( newPtId,localptid );
 
+
+                if ( localptid_dof < nLocalDofUpToVertices )
+                {
+                    uint16_type pointIdInElt = localptid_dof / nDofPerVertexForDivision;
+                    auto const& point = curelt.point( pointIdInElt );
+                    auto [isInter,neighborRanks] = meshDomain->findInterprocessPoints( point.id() );
+                    if ( isInter )
+                        ghostRanks.insert( neighborRanks->second.begin(), neighborRanks->second.end() );
+                }
+                else if ( domain_mesh_type::nDim == 3 && localptid_dof < nLocalDofUpToEdges )
+                {
+                    if constexpr (domain_mesh_type::nDim == 3)
+                    {
+                        uint16_type locDofInEgdes = localptid_dof - nLocalDofUpToVertices;
+                        uint16_type edgeIdInElt = locDofInEgdes / nDofPerEdgeForDivision;
+                        auto edgePtr = curelt.edgePtr( edgeIdInElt );
+                        if ( edgePtr )
+                        {
+                            auto [isInter,neighborRanks] = meshDomain->findInterprocessEdges( edgePtr->id() );
+                            if ( isInter )
+                                ghostRanks.insert( neighborRanks->second.begin(), neighborRanks->second.end() );
+                        }
+                    }
+                }
+                else if ( localptid_dof < nLocalDofUpToFaces )
+                {
+                    uint16_type locDofInTopologicalFaces = localptid_dof - nLocalDofBeforeDofsOfTopologicalFaces;
+                    uint16_type faceIdInElt = locDofInTopologicalFaces / nDofPerTopologicalFaceForDivision;
+                    auto facePtr = curelt.facePtr( faceIdInElt );
+                    if ( facePtr && facePtr->isInterProcessDomain( procId ) )
+                        ghostRanks.insert( procId == facePtr->proc_first() ? facePtr->proc_second() : facePtr->proc_first() );
+                }
+
                 // add new node if not inserted before
                 if ( !dofDone[gpdof] )
                     {
                         dofDone[gpdof] = true;
-#if 0
-                        point_type __pt( newPtId, boost::get<0>( dofDomain->dofPoint( gpdof ) )  );
-#else
                         point_type __pt( newPtId, M_gmc->xReal( localptid_dof ) );
-#endif
                         __pt.setProcessId( curelt.processId() );
                         __pt.setProcessIdInPartition( curelt.pidInPartition() );
 
@@ -576,6 +618,12 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 elt.setPoint( p, M_mesh->point( newPtId ) );
             }
 
+            if ( doParallelBuild )
+            {
+                for ( auto pid : ghostRanks )
+                    elt.addNeighborPartitionId( pid );
+            }
+
             // add element in mesh
             auto [eit,inserted] = M_mesh->addElement ( elt );
             auto const& [eid,theNewElt] = *eit;
@@ -586,6 +634,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 boost::get<0>( tmpGhostData ) = theNewElt.id();
                 for ( auto const& [ gpid, idiop ] : curelt.idInOthersPartitions() )
                 {
+                    if (  ghostRanks.find( gpid ) == ghostRanks.end() )
+                        continue;
                     boost::get<1>( tmpGhostData ) = idiop;
                     dataToSend[gpid].push_back( tmpGhostData );
                 }
@@ -657,26 +707,29 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     if ( doParallelBuild )
     {
         VLOG(2) << "[P1 Lagrange] start build of ghost elements \n";
-        int neighborSubdomains = meshDomain->neighborSubdomains().size();
-        int nbRequest = 2 * neighborSubdomains;
-        mpi::request* reqs = new mpi::request[nbRequest];
-        int cptRequest = 0;
+        int nbMaxRequest = 2*meshDomain->neighborSubdomains().size();
+        std::vector<mpi::request> reqs( nbMaxRequest );
+        int countRequest = 0;
+
         // first send/recv
         for ( rank_type neighborRank : meshDomain->neighborSubdomains() )
         {
-            reqs[cptRequest++] = meshDomain->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
-            reqs[cptRequest++] = meshDomain->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
+            reqs[countRequest++] = meshDomain->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
+            reqs[countRequest++] = meshDomain->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
         }
         // wait all requests
-        mpi::wait_all( reqs, reqs + nbRequest );
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
 
         // add ghost elements
         for ( auto const& [pid,data] : dataToRecv )
         {
+            CHECK( procId != pid )<< "something wrong";
             for ( auto const& dataByElt : data )
             {
                 size_type eltId = boost::get<0>( dataByElt );
                 size_type parentEltId = boost::get<1>( dataByElt );
+                CHECK(meshDomain->hasElement( parentEltId ) ) << fmt::format("element id: {} is not in meshDomain",parentEltId);
                 auto const& parentElt = meshDomain->element( parentEltId );
 
                 element_type elt;
@@ -685,9 +738,6 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                 elt.setProcessIdInPartition( procId );
                 elt.setProcessId( pid );
                 elt.setIdInOtherPartitions( pid, eltId );
-                //elt.setNeighborPartitionIds( parentElt.neighborPartitionIds() );
-                //elt.setNeighborProcessIds( parentElt.neighborProcessIds() );
-
 
                 if ( !M_gmc )
                     M_gmc = meshDomain->gm()->template context<gmc_context_v>( parentElt, M_gmpc );
@@ -695,7 +745,6 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                     M_gmc->template update<gmc_context_v>( parentElt );
 
                 auto const& pointData = boost::get<2>( dataByElt );
-                bool isConnectedToActiveAnElement = false;
                 for ( uint16_type p = 0; p<pointData.size(); ++p )
                 {
                     size_type ptId = boost::get<0>( pointData[p] );
@@ -705,21 +754,19 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
                     {
                         point_type __pt( ptId, M_gmc->xReal( this->localDof( ptIdInRef ) ) );
                         __pt.setProcessIdInPartition( procId );
+                        __pt.setProcessId( procId );
                         ptIterator = M_mesh->addPoint( __pt ).first;
                     }
-                    else if ( ptIterator->second.processId() != invalid_v<rank_type> )
-                        isConnectedToActiveAnElement = true;
                     elt.setPoint( p, ptIterator->second );
                 }
-                if ( isConnectedToActiveAnElement )
-                    M_mesh->addElement( elt );
+                M_mesh->addElement( elt );
             }
         }
     }
 
     DVLOG(2) << "[P1 Lagrange] Number of points in mesh: " << M_mesh->numPoints() << "\n";
 
-    M_mesh->setNumVertices( M_mesh->numPoints() );
+    //M_mesh->setNumVertices( M_mesh->numPoints() );
     M_mesh->components().reset();
     M_mesh->components().set ( meshUpdate );
     M_mesh->updateForUse();
