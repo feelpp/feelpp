@@ -2067,7 +2067,7 @@ __global__ void rayTracingKernelExplorationOptimizedWithcheckOverlap(
         }
         else
         {
-            delta += epsilon;
+            delta += epsilon+1.0*distanceToTriangle * 0.85f; //optimized param
         }
     }
 }
