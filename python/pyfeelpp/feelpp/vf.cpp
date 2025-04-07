@@ -83,7 +83,6 @@ void addGinacMatrix( py::module& m )
         .def(
             "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::map<std::string, Eigen::VectorXd> const& m, bool parallel )
             {
-                std::cout << "evaluate with map" << std::endl;
                 if (m.empty())
                     throw std::runtime_error("[expr:evaluate] map is empty");
 
