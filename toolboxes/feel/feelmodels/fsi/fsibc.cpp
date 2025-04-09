@@ -8,6 +8,136 @@ namespace FeelModels
 {
 
 
+// Rotation magneto swimmer
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Magneto( DataUpdateLinear & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        this->log("FSI","updateLinearPDEDofElimination_Magneto", "start" );
+
+        sparse_matrix_ptrtype& A = data.matrix();
+        vector_ptrtype& F = data.rhs();
+
+        auto mesh = M_solidModel->mesh();
+        auto Xh = M_solidModel->functionSpaceDisplacement();
+        auto const& u = M_solidModel->fieldDisplacement();
+
+        auto massCenter = mean( _range=markedelements(mesh,"Head"), _expr = P());
+        auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+        std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+
+        // on fixe theta pour l'instant
+        double theta_ = 0.;
+        if (this->timeStepBase()->time() <= 0.2)
+            theta_ = this->timeStepBase()->time();
+        
+        else if (this->timeStepBase()->time() <= 0.6)
+            theta_ = 0.4 - this->timeStepBase()->time();
+        
+        else 
+            theta_ = - 0.8 + this->timeStepBase()->time();
+        // idem pour la translation
+        double translation_x = -this->timeStepBase()->time()/100.;
+        double translation_y = 0;
+
+        auto rot = vec(
+            cos(theta_) * (Px() -  cst(massCenter(0,0))) - sin(theta_) * (Py() - cst(massCenter(1,0))) - Px() + cst(massCenter(0,0)) + cst(translation_x),
+            sin(theta_) * (Px() -  cst(massCenter(0,0))) + cos(theta_) * (Py() - cst(massCenter(1,0))) - Py() + cst(massCenter(1,0)) + cst(translation_y)
+        );
+
+    
+        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A, 
+                                _pattern=size_type(Pattern::COUPLED),
+                                _rowstart=M_solidModel->rowStartInMatrix(),
+                                _colstart=M_solidModel->colStartInMatrix() );
+
+        bilinearForm +=on( _range=markedfaces(mesh,"magneto"),_element=u, _rhs=F,_expr=rot);
+        bilinearForm +=on( _range=markedelements(mesh,"Head"),_element=u, _rhs=F,_expr=rot);
+
+
+        this->log("FSI","updateLinearPDEDofElimination_magneto", "finish" );
+    }
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateNewtonInitialGuess_Magneto( DataNewtonInitialGuess & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        this->log("FSI","updateNewtonInitialGuess_Magneto", "start" );
+
+        vector_ptrtype& U = data.initialGuess();
+
+        auto mesh = M_solidModel->mesh();
+        auto Xh = M_solidModel->functionSpaceDisplacement();
+        auto u = Xh->element( U, M_solidModel->rowStartInVector() );
+
+        auto massCenter = mean( _range=markedelements(mesh,"Head"), _expr = P());
+        auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
+        std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+        
+        // on fixe theta pour l'instant
+        double theta_ = 0.;
+        if (this->timeStepBase()->time() <= 0.2)
+            theta_ = this->timeStepBase()->time();
+        
+        else if (this->timeStepBase()->time() <= 0.6)
+            theta_ = 0.4 - this->timeStepBase()->time();
+        
+        else 
+            theta_ = - 0.8 + this->timeStepBase()->time();
+        
+        // idem pour la translation
+        double translation_x = - this->timeStepBase()->time()/100.;;
+        double translation_y = 0.;
+
+        auto rot = vec(
+            cos(theta_) * (Px() -  cst(massCenter(0,0))) - sin(theta_) * (Py() - cst(massCenter(1,0))) - Px() + cst(massCenter(0,0)) + cst(translation_x),
+            sin(theta_) * (Px() -  cst(massCenter(0,0))) + cos(theta_) * (Py() - cst(massCenter(1,0))) - Py() + cst(massCenter(1,0)) + cst(translation_y)
+        );
+
+        
+        u.on(_range=markedfaces(mesh,"magneto"), _expr= rot);
+        u.on( _range=markedelements(mesh,"Head"), _expr= rot);
+
+
+        // update info for synchronization
+        M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );
+
+        this->log("FSI","updateNewtonInitialGuess_Magneto", "finish" );
+    }
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateJacobianDofElimination_Magneto( DataUpdateJacobian & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() != "dirichlet-neumann" )
+        return;
+
+    this->log("FSI","updateJacobianDofElimination_Magneto", "start" );
+    
+    M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );
+
+    this->log("FSI","updateJacobianDofElimination_Magneto", "finish" );
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateResidualDofElimination_Magneto( DataUpdateResidual & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() != "dirichlet-neumann" )
+        return;
+
+    this->log("FSI","updateResidualDofElimination_Magneto", "start" );
+    M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );
+
+    this->log("FSI","updateResidualDofElimination_Magneto", "finish" );
+}
+
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const

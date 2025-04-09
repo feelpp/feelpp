@@ -484,6 +484,21 @@ FSI<FluidType,SolidType>::init()
         this->dofEliminationIdsAll("fluid.velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         //auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( M_dofsMultiProcessVelocitySpaceOnFSI_fluid/*dofsMultiProcessToAdd*/.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_fluid/*dofsMultiProcessToAdd*/.end() );
+
+        // Magneto
+        auto XhSolidDisplacement = this->solidModel()->functionSpaceDisplacement();
+        //auto range_magneto = markedfaces( this->solidModel()->mesh(),"magneto" );
+        auto range_magneto = markedelements( this->solidModel()->mesh(),"Head" );
+        auto M_dofsMultiProcessVelocitySpaceOnFSI_magneto = XhSolidDisplacement->dofs( range_magneto, ComponentType::NO_COMPONENT, true );
+
+        auto dofsToAdd_magneto = XhSolidDisplacement->dofs(  range_magneto );
+        XhSolidDisplacement->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd_magneto );
+        this->dofEliminationIdsAll("solid.displacement",MESH_ELEMENTS).insert( dofsToAdd_magneto.begin(), dofsToAdd_magneto.end() );
+        this->dofEliminationIdsMultiProcess("solid.displacement",MESH_ELEMENTS).insert( M_dofsMultiProcessVelocitySpaceOnFSI_magneto.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_magneto.end() );
+
+        //this->dofEliminationIdsAll("solid.displacement",MESH_FACES).insert( dofsToAdd_magneto.begin(), dofsToAdd_magneto.end() );
+        //this->dofEliminationIdsMultiProcess("solid.displacement",MESH_FACES).insert( M_dofsMultiProcessVelocitySpaceOnFSI_magneto.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_magneto.end() );
+
     }
 
     if ( ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
@@ -528,6 +543,17 @@ FSI<FluidType,SolidType>::init()
                                                                                   std::ref( *this ), std::placeholders::_1 ) );
         M_solidModel->algebraicFactory()->addFunctionResidualAssembly( std::bind( &self_type::updateResidual_Solid,
                                                                                   std::ref( *this ), std::placeholders::_1 ) );
+
+        // Magneto 
+        M_solidModel->algebraicFactory()->addFunctionLinearDofElimination( std::bind( &self_type::updateLinearPDEDofElimination_Magneto,
+            std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionNewtonInitialGuess( std::bind( &self_type::updateNewtonInitialGuess_Magneto,
+          std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionJacobianDofElimination( std::bind( &self_type::updateJacobianDofElimination_Magneto,
+              std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionResidualDofElimination( std::bind( &self_type::updateResidualDofElimination_Magneto,
+              std::ref( *this ), std::placeholders::_1 ) );
+
     }
     else if ( M_solidModel->is1dReducedModel() )
     {
@@ -992,6 +1018,103 @@ FSI<FluidType,SolidType>::setParameterValues( std::map<std::string,double> const
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+
+// Implicit Dirichlet-Neumann scheme for magneto-swimmer
+template< class FluidType, class SolidType >
+void 
+FSI<FluidType, SolidType>::solveMagneto()
+{
+    // Timer 
+    boost::mpi::timer mytimer;
+
+    // Predict the solid displacement and update solid velocity and acceleration
+    M_solidModel->predictorDispl();
+    M_solidModel->updateVelocity();
+
+    // Restart relaxation
+    bool useAitken = true;
+    if ( useAitken )
+        this->aitkenRelaxTool()->restart();
+    
+    // Set convergence parameters
+    bool hasConverged = false;
+    int cptFSI=0;
+    double residualRelativeConvergence=1;
+    boost::mpi::timer timerCur,timerIter;
+
+    while ( (!this->aitkenRelaxTool()->isFinished() || cptFSI < this->fixPointMinItConvergence() ) && cptFSI < this->fixPointMaxIt() )
+    {
+        timerIter.restart();
+        timerCur.restart();
+
+        // Set relaxation tool to previous solid displacement
+        this->aitkenRelaxTool()->saveOldSolution();
+        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
+
+
+        // Compute the ALE map according to the solid displacement, move the mesh, and interpolate the solid displacement onto the fsi interface of the fluid
+        timerCur.restart();
+        this->transfertDisplacementAndApplyMeshMoving();
+        double tALE = timerCur.elapsed();
+        this->log("FSI","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
+        
+
+        // Solve the fluid problem, with plug-in of the dirichlet condition using the interpolated solid displacement
+        M_fluidModel->solve();
+
+        // To change -> fluid-rigid toolbox
+        // To change -> recompute ALE map
+
+        // Interpolate the fluid stress onto the fsi interface of the solid
+        timerCur.restart();
+        this->transfertStress();
+        double t3 = timerCur.elapsed();
+        this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
+
+        // Solve the solid problem with a plug-in of the Neumann condition using the interpolated fluid stress
+
+        // To change -> plug-in head rotation, dirichlet condition
+        //M_solid->fieldDisplacement() 
+        M_solidModel->solve();
+
+        // Apply relaxation to compute new solid displacement and update solid velocity and acceleration
+        timerCur.restart();
+        this->aitkenRelaxTool()->applyRelaxation();
+        M_solidModel->updateVelocity();
+        if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
+            this->aitkenRelaxTool()->printInfo();
+        this->aitkenRelaxTool()->shiftRight();
+
+        // Compute convergence
+        hasConverged = this->aitkenRelaxTool()->isFinished();
+        residualRelativeConvergence = this->aitkenRelaxTool()->residualNorm();
+        double t4 = timerCur.elapsed();
+        this->log("FSI","apply relax and up vel/acc struct","finish in "+(boost::format("%1% s") % t4).str() );
+
+        //--------------------------------------------------------------//
+        double timeElapsedIter = timerIter.elapsed();
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        this->log("FSI","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
+        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
+        ++cptFSI;
+    }
+
+    // Compute the ALE map according to the final solid displacement, move the mesh
+    timerCur.restart();
+    this->transfertDisplacementAndApplyMeshMoving();
+    double tALE = timerCur.elapsed();
+    this->log("FSI","update final ale ","finish in "+(boost::format("%1% s") % tALE).str() );
+
+    // Compute final fluid solution
+    M_fluidModel->solve();
+        
+    
+    double timeElapsed = mytimer.elapsed();
+    if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
+        std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] finish fsi solve in " << timeElapsed << "\n";
+} 
+
 
 template< class FluidType, class SolidType >
 void

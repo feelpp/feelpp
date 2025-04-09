@@ -262,6 +262,7 @@ public :
     void createMesh();
     void init();
     void solve();
+    void solveMagneto();
 private :
     void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
@@ -345,6 +346,11 @@ public :
     void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
     void updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const;
     void updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const;
+    void updateLinearPDEDofElimination_Magneto( DataUpdateLinear & data ) const;
+    void updateNewtonInitialGuess_Magneto( DataNewtonInitialGuess & data ) const;
+    void updateJacobianDofElimination_Magneto( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination_Magneto( DataUpdateResidual & data ) const;
+
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 
