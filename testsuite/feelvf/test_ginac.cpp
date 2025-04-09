@@ -206,7 +206,7 @@ void runTest0()
     std::cout << std::flush;
 
     //not working because ex is not mutable
-    //boost::for_each(exact_parsed, [](GiNaC::ex const& e) 
+    //boost::for_each(exact_parsed, [](GiNaC::ex const& e)
     //{
     //if (GiNaC::is_a<symbol>(e)) std::cout << "Found Symbol : " <<  GiNaC::ex_to<symbol>(e).get_name() << "\n";
     //});
@@ -942,6 +942,30 @@ BOOST_AUTO_TEST_CASE( test_triangle )
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
 }
 
+BOOST_AUTO_TEST_CASE( test_triangle_neg )
+{
+    auto a1b = expr("triangle(t,-1,2):t");
+    std::vector<std::pair<double, double>> testCases = {
+        { -2, 0 },
+        { 3, 0 },
+        { 0.5, 1 },
+        { 1.5, 1./3 },
+        { 1, 2./3 },
+        { 2, 0 },
+        { 1.75, 1./6 },
+        { 1.25, 0.5 }
+    };
+
+    for (const auto& [t, expected] : testCases) {
+        a1b.setParameterValues( { { "t", t } } );
+        if (expected == 0) {
+            BOOST_CHECK_SMALL(a1b.evaluate()(0, 0), 1e-12);
+        } else {
+            BOOST_CHECK_CLOSE(a1b.evaluate()(0, 0), expected, 1e-12);
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE( test_mapabcd )
 {
     auto a1b = expr("mapabcd(t,1,2,-1,1):t");
@@ -960,4 +984,54 @@ BOOST_AUTO_TEST_CASE( test_mapabcd )
     a1b.setParameterValues( { { "t", 1.75 } } );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
 }
+
+BOOST_AUTO_TEST_CASE( test_smoothstep )
+{
+    auto a1b = expr("smoothstep(t,0,2):t");
+    std::vector<std::pair<double, double>> testCases = {
+        { -2, 0 },
+        { 3, 1 },
+        { 0.5, 0.15625 },
+        { 1.5, 0.84375 },
+        { 1, 0.5 },
+        { 2, 1 },
+        { 1.75, 0.95703125 },
+        { 1.25, 0.68359375 }
+    };
+
+    for (const auto& [t, expected] : testCases) {
+        a1b.setParameterValues( { { "t", t } } );
+        if (expected == 0) {
+            BOOST_CHECK_SMALL(a1b.evaluate()(0, 0), 1e-12);
+        } else {
+            BOOST_CHECK_CLOSE(a1b.evaluate()(0, 0), expected, 1e-12);
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_smoothstep_neg )
+{
+    auto a1b = expr("smoothstep(t,-1,2):t");
+    std::vector<std::pair<double, double>> testCases = {
+        { -2, 0 },
+        { 3, 1 },
+        { 0.5, 0.5 },
+        { 1.5, 0.9259259259 },
+        { 1, 0.7407407407 },
+        { 2, 1 },
+        { 1.75, 0.9803240741 },
+        { 1.25, 0.84375 }
+    };
+
+    for (const auto& [t, expected] : testCases) {
+        a1b.setParameterValues( { { "t", t } } );
+        if (expected == 0) {
+            BOOST_CHECK_SMALL(a1b.evaluate()(0, 0), 1e-8);
+        } else {
+            BOOST_CHECK_CLOSE(a1b.evaluate()(0, 0), expected, 1e-8);
+        }
+    }
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
