@@ -36,7 +36,11 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
     if ( !this->isStationary() )
     {
         if ( M_timeStepping == "Theta" )
+        {
             timeSteppingScaling = M_timeStepThetaValue;
+            if ( !M_timeSteppingUseMixedFormulation )
+                timeSteppingScaling *= M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep();
+        }
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
@@ -187,41 +191,55 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                 auto const& densityProp = this->materialsProperties()->density( matName );
                 auto densityExpr = expr( densityProp.expr(), se );
 
-                if ( M_timeStepping == "Newmark" )
+                if ( !M_timeSteppingUseMixedFormulation )// M_timeStepping == "Newmark" )
                 {
                     if ( BuildNonCstPart_TransientForm2Term )
                     {
+                        double coeffTimeScheme = 0;
+                        if ( M_timeStepping == "Newmark" )
+                            coeffTimeScheme = this->timeStepNewmark()->polySecondDerivCoefficient();
+                        else if ( M_timeStepping == "Theta" )
+                            coeffTimeScheme = 1./M_timeStepBdfDisplacement->timeStep();
+                        else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
                         if ( !this->useMassMatrixLumped() )
                         {
                             form2( _test=Xh, _trial=Xh, _matrix=A )  +=
                                 integrate( _range=range,
-                                           _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*densityExpr*inner(idt(u),id(v)),
+                                           _expr= coeffTimeScheme*densityExpr*inner(idt(u),id(v)),
                                            _geomap=this->geomap() );
                         }
                         else
                         {
                             A->close();
-                            double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
                             if ( this->massMatrixLumped()->size1() == A->size1() )
-                                A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                                A->addMatrix( coeffTimeScheme, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
                             else
                             {
                                 auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
                                 auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
                                 uAddDiagA = *M_vecDiagMassMatrixLumped;
-                                uAddDiagA.scale( thecoeff );
+                                uAddDiagA.scale( coeffTimeScheme );
                                 A->addDiagonal( vecAddDiagA );
                             }
                         }
                     }
                     if ( BuildNonCstPart_TransientForm1Term )
                     {
-                        auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
+                        element_displacement_ptrtype rhsTimeScheme = M_XhDisplacement->elementPtr();
+                        if ( M_timeStepping == "Newmark" )
+                            rhsTimeScheme->add( 1., this->timeStepNewmark()->polySecondDeriv() );
+                        else if ( M_timeStepping == "Theta" )
+                        {
+                            rhsTimeScheme->add( 1./M_timeStepBdfDisplacement->timeStep(),  M_timeStepBdfDisplacement->unknown(0) );
+                            rhsTimeScheme->add( 1., M_timeStepBdfVelocity->unknown(0) );
+                        }
+                        else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
+
                         if ( !this->useMassMatrixLumped() )
                         {
                             form1( _test=Xh, _vector=F ) +=
                                 integrate( _range=range,
-                                           _expr= densityExpr*inner(idv(polySecondDerivDisp),id(v)),
+                                           _expr= densityExpr*inner(idv(rhsTimeScheme/*polySecondDerivDisp*/),id(v)),
                                            _geomap=this->geomap() );
                         }
                         else
@@ -229,7 +247,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                             if ( this->massMatrixLumped()->size1() == F->size() )
                             {
                                 auto myvec = this->backend()->newVector(M_XhDisplacement);
-                                *myvec = polySecondDerivDisp;
+                                *myvec = *rhsTimeScheme;//polySecondDerivDisp;
                                 F->close();
                                 F->addVector( myvec, this->massMatrixLumped() );
                             }
@@ -238,7 +256,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                                 F->close();
                                 auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
                                 auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                                uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                                uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, *rhsTimeScheme/*polySecondDerivDisp*/ ) );
                             }
                         }
                     }
@@ -481,7 +499,11 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
     if ( !this->isStationary() )
     {
         if ( M_timeStepping == "Theta" )
+        {
             timeSteppingScaling = M_timeStepThetaValue;
+            if ( !M_timeSteppingUseMixedFormulation )
+                timeSteppingScaling *= M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep();
+        }
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
     //--------------------------------------------------------------------------------------------------//
@@ -598,29 +620,35 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                 auto const& densityProp = this->materialsProperties()->density( matName );
                 auto densityExpr = expr( densityProp.expr(), se );
 
-                if ( M_timeStepping == "Newmark" )
+                if ( !M_timeSteppingUseMixedFormulation )// M_timeStepping == "Newmark" )
                 {
                     if ( buildCstPart )
                     {
+                        double coeffTimeScheme = 0;
+                        if ( M_timeStepping == "Newmark" )
+                            coeffTimeScheme = this->timeStepNewmark()->polySecondDerivCoefficient();
+                        else if ( M_timeStepping == "Theta" )
+                            coeffTimeScheme = 1./M_timeStepBdfDisplacement->timeStep();
+                        else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
+
                         if ( !this->useMassMatrixLumped() )
                         {
                             bilinearForm_PatternDefault +=
                                 integrate( _range=range,
-                                           _expr= M_timeStepNewmark->polyDerivCoefficient()*densityExpr*inner( idt(u),id(v) ),
+                                           _expr= coeffTimeScheme*densityExpr*inner( idt(u),id(v) ),
                                            _geomap=this->geomap() );
                         }
                         else
                         {
                             J->close();
-                            double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
                             if ( this->massMatrixLumped()->size1() == J->size1() )
-                                J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                                J->addMatrix( coeffTimeScheme, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
                             else
                             {
                                 auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
                                 auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
                                 uAddDiagJ = *M_vecDiagMassMatrixLumped;
-                                uAddDiagJ.scale( thecoeff );
+                                uAddDiagJ.scale( coeffTimeScheme );
                                 J->addDiagonal( vecAddDiagJ );
                             }
                         }
@@ -767,12 +795,14 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
     if ( !this->isStationary() )
     {
         timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
-        if ( M_timeStepping == "Theta" )
+        if ( M_timeStepping == "Theta" && !timeSteppingEvaluateResidualWithoutTimeDerivative )
         {
-            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
-                timeSteppingScaling = 1. - M_timeStepThetaValue;
-            else
-                timeSteppingScaling = M_timeStepThetaValue;
+            // if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
+            //     timeSteppingScaling = 1. - M_timeStepThetaValue;
+            // else
+            timeSteppingScaling = M_timeStepThetaValue;
+            if ( !M_timeSteppingUseMixedFormulation )
+                timeSteppingScaling *= M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep();
         }
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
@@ -907,15 +937,22 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                 auto const& densityProp = this->materialsProperties()->density( matName );
                 auto densityExpr = expr( densityProp.expr(), se );
 
-                if ( M_timeStepping == "Newmark" )
+                if ( !M_timeSteppingUseMixedFormulation )// M_timeStepping == "Newmark" )
                 {
-                    if (buildNonCstPart && !UseJacobianLinearTerms)
+                    if ( buildNonCstPart && !UseJacobianLinearTerms && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                     {
+                        double coeffTimeScheme = 0;
+                        if ( M_timeStepping == "Newmark" )
+                            coeffTimeScheme = this->timeStepNewmark()->polySecondDerivCoefficient();
+                        else if ( M_timeStepping == "Theta" )
+                            coeffTimeScheme = 1./M_timeStepBdfDisplacement->timeStep();
+                        else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
+
                         if ( !this->useMassMatrixLumped() )
                         {
                             linearFormDisplacement +=
                                 integrate( _range=range,
-                                           _expr= M_timeStepNewmark->polySecondDerivCoefficient()*densityExpr*inner(idv(u),id(v)),
+                                           _expr= coeffTimeScheme*densityExpr*inner(idv(u),id(v)),
                                            _geomap=this->geomap() );
                         }
                         else
@@ -924,7 +961,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                             {
                                 auto myvec = this->backend()->newVector(M_XhDisplacement);
                                 *myvec = unwrap_ptr(u);
-                                myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
+                                myvec->scale( coeffTimeScheme );
                                 R->close();
                                 R->addVector( myvec, this->massMatrixLumped() );
                             }
@@ -934,14 +971,26 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                             }
                         }
                     }
-                    if (buildCstPart)
+                    if ( buildCstPart && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                     {
-                        auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
+                        element_displacement_ptrtype rhsTimeScheme = M_XhDisplacement->elementPtr();
+                        if ( M_timeStepping == "Newmark" )
+                            rhsTimeScheme->add( 1., this->timeStepNewmark()->polySecondDeriv() );
+                        else if ( M_timeStepping == "Theta" )
+                        {
+                            rhsTimeScheme->add( 1./M_timeStepBdfDisplacement->timeStep(),  M_timeStepBdfDisplacement->unknown(0) );
+                            rhsTimeScheme->add( 1., M_timeStepBdfVelocity->unknown(0) );
+
+                            // rhsTimeScheme->add( 1./std::pow(M_timeStepBdfDisplacement->timeStep(),2),  M_timeStepBdfDisplacement->unknown(0) );
+                            // rhsTimeScheme->add( 1./M_timeStepBdfDisplacement->timeStep(),  M_timeStepBdfVelocity->unknown(0) );
+                        }
+                        else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
+
                         if ( !this->useMassMatrixLumped() )
                         {
                             linearFormDisplacement +=
                                 integrate( _range=range,
-                                           _expr= -densityExpr*inner(idv(polySecondDerivDisp),id(v)),
+                                           _expr= -densityExpr*inner(idv(rhsTimeScheme),id(v)),
                                            _geomap=this->geomap() );
                         }
                         else
@@ -949,7 +998,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                             if ( this->massMatrixLumped()->size1() == R->size() )
                             {
                                 auto myvec = this->backend()->newVector(M_XhDisplacement);
-                                *myvec = polySecondDerivDisp;
+                                *myvec = *rhsTimeScheme;//polySecondDerivDisp;
                                 myvec->scale(-1.0);
                                 R->close();
                                 R->addVector( myvec, this->massMatrixLumped() );
@@ -959,7 +1008,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                                 R->close();
                                 auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
                                 auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                                uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                                uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, *rhsTimeScheme/*polySecondDerivDisp*/ ) );
                             }
                         }
                     }

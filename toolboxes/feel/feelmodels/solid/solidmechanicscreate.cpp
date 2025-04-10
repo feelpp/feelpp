@@ -103,7 +103,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     }
     else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
     {
-        M_timeSteppingUseMixedFormulation = true;
+        M_timeSteppingUseMixedFormulation = false;//true;
         M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
     }
     else CHECK( false ) << "time stepping not supported : " << M_timeStepping << "\n";
@@ -648,8 +648,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             if ( M_timeStepping == "Theta" )
             {
                 M_timeStepThetaSchemePreviousContrib = this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() );
-                algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-                algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+                double timeSchemeCoeff = M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep()*(1-M_timeStepThetaValue);
+                algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, timeSchemeCoeff, "Theta-Time-Stepping-Previous-Contrib", true );
+                algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -timeSchemeCoeff, "Theta-Time-Stepping-Previous-Contrib", false );
             }
         }
     }
@@ -703,7 +704,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
             int nConsecutiveSave = std::max( 2, bdfOrder ); // at least 2 is required by fsi when restart
             M_timeStepBdfDisplacement = this->createBdf( M_XhDisplacement,"displacement", bdfOrder, nConsecutiveSave, myFileFormat );
             M_timeStepBdfVelocity = this->createBdf( M_XhDisplacement,"velocity", bdfOrder, nConsecutiveSave, myFileFormat );
-            M_fieldAcceleration = M_XhDisplacement->elementPtr();
+            if ( !M_fieldAcceleration )
+                M_fieldAcceleration = M_XhDisplacement->elementPtr();
+            if ( !M_fieldVelocity )
+                M_fieldVelocity = M_XhDisplacement->elementPtr();
         }
 
         if ( this->hasDisplacementPressureFormulation() )
