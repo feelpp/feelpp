@@ -1127,7 +1127,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
                 M_fieldVelocity->add( -1./(M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep()), M_timeStepBdfDisplacement->unknown(0) );
                 M_fieldVelocity->add( -(1-M_timeStepThetaValue)/M_timeStepThetaValue, M_timeStepBdfVelocity->unknown(0) );
             }
-
             M_fieldAcceleration->zero();
             M_fieldAcceleration->add( 1./(std::pow(M_timeStepThetaValue,2)*std::pow(M_timeStepBdfDisplacement->timeStep(),2)), *M_fieldDisplacement );
             M_fieldAcceleration->add( -1./(std::pow(M_timeStepThetaValue,2)*std::pow(M_timeStepBdfDisplacement->timeStep(),2)), M_timeStepBdfDisplacement->unknown(0) );
@@ -1138,12 +1137,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
         {
             if ( !M_timeSteppingUseMixedFormulation )
             {
-                CHECK( false ) << "TODO";
+                M_fieldVelocity->zero();
+                M_fieldVelocity->add( M_timeStepBdfDisplacement->polyDerivCoefficient(0), *M_fieldDisplacement );
+                M_fieldVelocity->add( -1., M_timeStepBdfDisplacement->polyDeriv() );
             }
-
             M_fieldAcceleration->zero();
             M_fieldAcceleration->add( M_timeStepBdfVelocity->polyDerivCoefficient(0), *M_fieldVelocity );
-            M_fieldAcceleration->add( -1.,  M_timeStepBdfVelocity->polyDeriv() );
+            M_fieldAcceleration->add( -1., M_timeStepBdfVelocity->polyDeriv() );
         }
     }
 

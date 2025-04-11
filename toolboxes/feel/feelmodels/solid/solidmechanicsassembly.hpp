@@ -24,7 +24,6 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
         return;
     }
 
-    //const vector_ptrtype& X = data.
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _buildCstPart = data.buildCstPart();
@@ -72,15 +71,8 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
     size_type rowStartInVector = this->rowStartInVector();
-#if 0
-    auto u = Xh->element("u");//u = *X;
-    auto v = Xh->element("v");
-    for ( size_type k=0;k<M_Xh->nLocalDofWithGhost();++k )
-        u(k) = X->operator()(rowStartInVector+k);
-#else
     auto const& u = this->fieldDisplacement();
     auto const& v = this->fieldDisplacement();
-#endif
 
     auto const& se = mctx.symbolsExpr();
 
@@ -95,20 +87,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
     // deformation tensor
     auto epst = sym(gradt(u));//0.5*(gradt(u)+trans(gradt(u)));
     auto eps = sym(grad(u));
-    //---------------------------------------------------------------------------------------//
-    // stress tensor
-#if 0
-    //#if (SOLIDMECHANICS_DIM==2) // cas plan
-    double lll = 2*idv(coeffLame1)*idv(coeffLame2)/(idv(coeffLame1)+2*idv(coeffLame2));
-    auto sigmat = lll*trace(epst)*Id + 2*idv(coeffLame2)*epst;
-    auto sigmaold = lll*trace(epsold)*Id + 2*idv(coeffLame2)*epsold;
-    //#endif
-#endif
-    //#if (SOLIDMECHANICS_DIM==3)  // cas 3d
-    // auto sigmat = idv(coeffLame1)*trace(epst)*Id + 2*idv(coeffLame2)*epst;
-    //auto sigmaold = idv(coeffLame1)*trace(epsold)*Id + 2*idv(coeffLame2)*epsold;
-    //#endif
-    //---------------------------------------------------------------------------------------//
+
     //---------------------------------------------------------------------------------------//
 
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -200,6 +179,8 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                             coeffTimeScheme = this->timeStepNewmark()->polySecondDerivCoefficient();
                         else if ( M_timeStepping == "Theta" )
                             coeffTimeScheme = 1./M_timeStepBdfDisplacement->timeStep();
+                        else if ( M_timeStepping == "BDF" )
+                            coeffTimeScheme = M_timeStepBdfDisplacement->polyDerivCoefficient(0)*M_timeStepBdfVelocity->polyDerivCoefficient(0);
                         else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
                         if ( !this->useMassMatrixLumped() )
                         {
@@ -233,6 +214,11 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                             rhsTimeScheme->add( 1./M_timeStepBdfDisplacement->timeStep(),  M_timeStepBdfDisplacement->unknown(0) );
                             rhsTimeScheme->add( 1., M_timeStepBdfVelocity->unknown(0) );
                         }
+                        else if ( M_timeStepping == "BDF" )
+                        {
+                            rhsTimeScheme->add( 1., M_timeStepBdfVelocity->polyDeriv() );
+                            rhsTimeScheme->add( M_timeStepBdfVelocity->polyDerivCoefficient(0), M_timeStepBdfDisplacement->polyDeriv() );
+                        }
                         else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
 
                         if ( !this->useMassMatrixLumped() )
@@ -261,7 +247,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                         }
                     }
                 }
-                else // if BDF
+                else // mixed formulation
                 {
                     CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
                     size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
@@ -629,6 +615,8 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                             coeffTimeScheme = this->timeStepNewmark()->polySecondDerivCoefficient();
                         else if ( M_timeStepping == "Theta" )
                             coeffTimeScheme = 1./M_timeStepBdfDisplacement->timeStep();
+                        else if ( M_timeStepping == "BDF" )
+                            coeffTimeScheme = M_timeStepBdfDisplacement->polyDerivCoefficient(0)*M_timeStepBdfVelocity->polyDerivCoefficient(0);
                         else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
 
                         if ( !this->useMassMatrixLumped() )
@@ -653,8 +641,8 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                             }
                         }
                     }
-                } // Newmark
-                else // bdf
+                }
+                else
                 {
                     if ( buildCstPart )
                     {
@@ -946,6 +934,8 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                             coeffTimeScheme = this->timeStepNewmark()->polySecondDerivCoefficient();
                         else if ( M_timeStepping == "Theta" )
                             coeffTimeScheme = 1./M_timeStepBdfDisplacement->timeStep();
+                        else if ( M_timeStepping == "BDF" )
+                            coeffTimeScheme = M_timeStepBdfDisplacement->polyDerivCoefficient(0)*M_timeStepBdfVelocity->polyDerivCoefficient(0);
                         else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
 
                         if ( !this->useMassMatrixLumped() )
@@ -980,9 +970,11 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                         {
                             rhsTimeScheme->add( 1./M_timeStepBdfDisplacement->timeStep(),  M_timeStepBdfDisplacement->unknown(0) );
                             rhsTimeScheme->add( 1., M_timeStepBdfVelocity->unknown(0) );
-
-                            // rhsTimeScheme->add( 1./std::pow(M_timeStepBdfDisplacement->timeStep(),2),  M_timeStepBdfDisplacement->unknown(0) );
-                            // rhsTimeScheme->add( 1./M_timeStepBdfDisplacement->timeStep(),  M_timeStepBdfVelocity->unknown(0) );
+                        }
+                        else if ( M_timeStepping == "BDF" )
+                        {
+                            rhsTimeScheme->add( 1., M_timeStepBdfVelocity->polyDeriv() );
+                            rhsTimeScheme->add( M_timeStepBdfVelocity->polyDerivCoefficient(0), M_timeStepBdfDisplacement->polyDeriv() );
                         }
                         else CHECK( false ) << "not implemented time scheme: " << M_timeStepping;
 
