@@ -105,6 +105,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     {
         M_timeSteppingUseMixedFormulation = false;//true;
         M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+        // if ( std::abs( M_timeStepThetaValue ) < 1e-12 )
+        //     M_timeSteppingUseMixedFormulation = true;
     }
     else CHECK( false ) << "time stepping not supported : " << M_timeStepping << "\n";
 
@@ -708,6 +710,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                 M_fieldAcceleration = M_XhDisplacement->elementPtr();
             if ( !M_fieldVelocity )
                 M_fieldVelocity = M_XhDisplacement->elementPtr();
+            if ( M_timeStepping == "Theta" )
+                M_saveTsAcceleration = this->createBdf( M_XhDisplacement,"acceleration", bdfOrder, nConsecutiveSave, myFileFormat );
         }
 
         if ( this->hasDisplacementPressureFormulation() )

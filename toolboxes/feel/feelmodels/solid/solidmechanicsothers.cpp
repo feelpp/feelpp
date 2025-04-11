@@ -912,6 +912,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
             {
                 M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
                 M_timeStepBdfVelocity->start( *M_fieldVelocity );
+                if ( M_timeStepping == "Theta" )
+                    M_saveTsAcceleration->start( *M_fieldAcceleration );
             }
         }
         // start save pressure
@@ -953,6 +955,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         {
             M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
             M_timeStepBdfVelocity->next( *M_fieldVelocity );
+            if ( M_timeStepping == "Theta" )
+                M_saveTsAcceleration->next( *M_fieldAcceleration );
         }
 
         if ( this->hasDisplacementPressureFormulation() )
@@ -1114,15 +1118,27 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
     {
         if ( M_timeStepping == "Newmark" )
             M_timeStepNewmark->updateFromDisp(*M_fieldDisplacement);
-        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        else if ( M_timeStepping == "Theta" )
         {
-            CHECK( M_timeStepping != "BDF" ) << "TODO";
             if ( !M_timeSteppingUseMixedFormulation )
             {
                 M_fieldVelocity->zero();
                 M_fieldVelocity->add( 1./(M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep()), *M_fieldDisplacement );
                 M_fieldVelocity->add( -1./(M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep()), M_timeStepBdfDisplacement->unknown(0) );
                 M_fieldVelocity->add( -(1-M_timeStepThetaValue)/M_timeStepThetaValue, M_timeStepBdfVelocity->unknown(0) );
+            }
+
+            M_fieldAcceleration->zero();
+            M_fieldAcceleration->add( 1./(std::pow(M_timeStepThetaValue,2)*std::pow(M_timeStepBdfDisplacement->timeStep(),2)), *M_fieldDisplacement );
+            M_fieldAcceleration->add( -1./(std::pow(M_timeStepThetaValue,2)*std::pow(M_timeStepBdfDisplacement->timeStep(),2)), M_timeStepBdfDisplacement->unknown(0) );
+            M_fieldAcceleration->add( -1./(std::pow(M_timeStepThetaValue,2)*M_timeStepBdfDisplacement->timeStep()), M_timeStepBdfVelocity->unknown(0) );
+            M_fieldAcceleration->add( -(1-M_timeStepThetaValue)/M_timeStepThetaValue, M_saveTsAcceleration->unknown(0) );
+        }
+        else if ( M_timeStepping == "BDF" )
+        {
+            if ( !M_timeSteppingUseMixedFormulation )
+            {
+                CHECK( false ) << "TODO";
             }
 
             M_fieldAcceleration->zero();
