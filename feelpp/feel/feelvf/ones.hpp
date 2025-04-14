@@ -29,15 +29,14 @@
 #ifndef FEELPP_VF_ONES_H
 #define FEELPP_VF_ONES_H 1
 
-//#include <blitz/array.h>
+// #include <blitz/array.h>
 #include <boost/multi_array.hpp>
-
 
 namespace Feel
 {
 namespace vf
 {
-    /// \cond DETAIL
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -53,12 +52,10 @@ namespace detail
  *
  * @author Christophe Prud'homme
  */
-template<int M, int N>
+template <int M, int N>
 class Ones
 {
-public:
-
-
+  public:
     /** @name Typedefs
      */
     //@{
@@ -66,28 +63,28 @@ public:
 
     static const bool is_terminal = true;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = false;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    typedef Ones<M,N> this_type;
+    typedef Ones<M, N> this_type;
     typedef double value_type;
-    using evaluate_type = Eigen::Matrix<value_type,M,N>;
+    using evaluate_type = Eigen::Matrix<value_type, M, N>;
 
     //@}
 
@@ -95,20 +92,19 @@ public:
      */
     //@{
 
-    template<typename EigenMatrix>
+    template <typename EigenMatrix>
     Ones( EigenMatrix const& m )
-        :
-        M_values( m )
+        : M_values( m )
     {
-
     }
 
-    Ones( Ones const & eig )
-        :
-        M_values( eig.M_values )
-    {}
+    Ones( Ones const& eig )
+        : M_values( eig.M_values )
+    {
+    }
     ~Ones()
-    {}
+    {
+    }
 
     //@}
 
@@ -116,20 +112,17 @@ public:
      */
     //@{
 
-
     //@}
 
     /** @name Accessors
      */
     //@{
 
-
     //@}
 
     /** @name  Mutators
      */
     //@{
-
 
     //@}
 
@@ -143,8 +136,8 @@ public:
     //! expression is polynomial?
     constexpr bool isPolynomial() const { return true; }
 
-    //blitz::Array<value_type,2> ones() const { return M_values; }
-    Eigen::Matrix<double,M,N> const& ones() const
+    // blitz::Array<value_type,2> ones() const { return M_values; }
+    Eigen::Matrix<double, M, N> const& ones() const
     {
         return M_values;
     }
@@ -155,46 +148,48 @@ public:
 
     template <typename SymbolsExprType>
     this_type applySymbolsExpr( SymbolsExprType const& se ) const
-        {
-            return *this;
-        }
+    {
+        return *this;
+    }
 
     template <int diffOrder, typename TheSymbolExprType>
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
-        {
-            return vf::detail::Ones<M, N>( Eigen::Matrix<value_type,M,N>::Zero() );
-        }
-
+    {
+        return vf::detail::Ones<M, N>( Eigen::Matrix<value_type, M, N>::Zero() );
+    }
 
     //@}
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
         typedef this_type expression_type;
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
+        
+        struct INVALID_SHAPE
+        {
+        };
+        using shape = mp11::mp_if_c<
+            ( M == 1 && N == 1 ),
+            Shape<gmc_type::nDim, Scalar, false, false>,
+            mp11::mp_if_c<
+                ( M == gmc_type::nDim && N == 1 ),
+                Shape<gmc_type::nDim, Vectorial, false, false>,
+                mp11::mp_if_c<
+                    ( M == 1 && N == gmc_type::nDim ),
+                    Shape<gmc_type::nDim, Vectorial, true, false>,
+                    mp11::mp_if_c<
+                        ( M == gmc_type::nDim && N == gmc_type::nDim ),
+                        Shape<gmc_type::nDim, Tensor2, false, false>,
+                        INVALID_SHAPE>>>>;
 
-        struct INVALID_SHAPE {};
-        static const bool eq11 = ( M==1 )&&( N==1 );
-        static const bool eqD1 = ( M==gmc_type::nDim )&&( N==1 );
-        static const bool eq1D = ( M==1 )&&( N==gmc_type::nDim );
-        static const bool eqDD = ( M==gmc_type::nDim )&&( N==gmc_type::nDim );
-        typedef typename mpl::if_< mpl::bool_<eq11>,
-                mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
-                typename mpl::if_< mpl::bool_<eqD1>,
-                mpl::identity<Shape<gmc_type::nDim, Vectorial, false, false> >,
-                typename mpl::if_< mpl::bool_<eq1D>,
-                mpl::identity<Shape<gmc_type::nDim, Vectorial, true, false> >,
-                typename mpl::if_< mpl::bool_<eqDD>,
-                mpl::identity<Shape<gmc_type::nDim, Tensor2, false, false> >,
-                mpl::identity<INVALID_SHAPE> >::type>::type>::type>::type::type shape;
-
-
-        template <class Args> struct sig
+        using matrix_type = Eigen::Matrix<value_type, shape::M, shape::N>;
+        template <class Args>
+        struct sig
         {
             typedef value_type type;
         };
@@ -204,33 +199,30 @@ public:
             static const bool value = false;
         };
 
-        tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )
-            :
-            M_expr( expr ),
-            M_values( expr.ones() )
+        tensor( this_type const& expr, Geo_t const&, Basis_i_t const&, Basis_j_t const& )
+            : M_expr( expr ),
+              M_values( expr.ones() )
         {
-            //std::cout << "tensor::ones = " << M_expr.ones() << "\n";
+            // std::cout << "tensor::ones = " << M_expr.ones() << "\n";
         }
 
-        tensor( this_type const& expr,Geo_t const&, Basis_i_t const& )
-            :
-            M_expr( expr ),
-            M_values( expr.ones() )
+        tensor( this_type const& expr, Geo_t const&, Basis_i_t const& )
+            : M_expr( expr ),
+              M_values( expr.ones() )
         {
         }
 
-        tensor( this_type const& expr, Geo_t const&  )
-            :
-            M_expr( expr ),
-            M_values( expr.ones() )
+        tensor( this_type const& expr, Geo_t const& )
+            : M_expr( expr ),
+              M_values( expr.ones() )
         {
         }
-        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
-        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+        template <typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType& ttse,
                 expression_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
-            :
-            tensor( expr, geom, theInitArgs... )
-            {}
+            : tensor( expr, geom, theInitArgs... )
+        {
+        }
 
         void update( Geo_t const&, Basis_i_t const&, Basis_j_t const& )
         {
@@ -241,74 +233,77 @@ public:
         void update( Geo_t const& )
         {
         }
-        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
-        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+        template <typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType& ttse,
                      Geo_t const& geom, const TheArgsType&... theUpdateArgs )
-            {}
-
+        {
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
             Feel::detail::ignore_unused_variable_warning( j );
-            Feel::detail::ignore_unused_variable_warning( q );
-            return eval( c1, c2, mpl::int_<shape::rank>() );
+            return evalq( c1, c2, q );
         }
 
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
             Feel::detail::ignore_unused_variable_warning( j );
-            Feel::detail::ignore_unused_variable_warning( q );
-            return eval( c1, c2, mpl::int_<shape::rank>() );
+            return evalq( c1, c2, q );
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( i );
-            Feel::detail::ignore_unused_variable_warning( q );
-            return eval( c1, c2, mpl::int_<shape::rank>() );
+            return evalq( c1, c2, q );
         }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( q );
-            return eval( c1, c2, mpl::int_<shape::rank>() );
+            if constexpr ( shape::rank == 0 )
+                return M_values( 0, 0 );
+            else if constexpr ( shape::rank == 1 )
+            {
+                if constexpr ( shape::is_transposed )
+                    return M_values( 0, c2 );
+                else
+                    return M_values( c1, 0 );
+            }
+            else
+                return M_values( c1, c2 );
         }
-    private:
-        value_type
-        eval( int c1, int c2, mpl::int_<0> ) const
+        FEELPP_STRONG_INLINE Eigen::Map<const matrix_type>
+        evalijq( uint16_type i, uint16_type j, uint16_type /*q*/ ) const
         {
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            return M_values(0,0);
+            return Eigen::Map<const matrix_type>( M_values.data() );
         }
-        value_type
-        eval( int c1, int c2, mpl::int_<1> ) const
+        FEELPP_STRONG_INLINE Eigen::Map<const matrix_type>
+        evaliq( uint16_type i, uint16_type /*q*/ ) const
         {
-            if ( shape::is_transposed )
-                return M_values(0,c2);
+            return Eigen::Map<const matrix_type>( M_values.data() );
+        }
+        FEELPP_STRONG_INLINE Eigen::Map<const matrix_type>
+        evalq( uint16_type /*q*/ ) const
+        {
+            return Eigen::Map<const matrix_type>( M_values.data() );
+        }
 
-            return M_values(c1,0);
-        }
-        value_type
-        eval( int c1, int c2, mpl::int_<2> ) const
-        {
-            return M_values(c1,c2);
-        }
+      private:
         this_type M_expr;
-        Eigen::Matrix<double,M,N> M_values;
+        Eigen::Matrix<double, M, N> M_values;
     };
-private:
-    Eigen::Matrix<double,M,N> M_values;
 
+  private:
+    Eigen::Matrix<double, M, N> M_values;
 };
-} // detail
+} // namespace detail
 /// \endcond
 
 /**
@@ -324,46 +319,41 @@ private:
  *
  * @author Christophe
  */
-template<int M, int N=M>
-inline
-Expr<vf::detail::Ones<M,N> >
+template <int M, int N = M>
+inline Expr<vf::detail::Ones<M, N>>
 ones()
 {
-    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Ones()) );
+    return Expr<vf::detail::Ones<M, N>>( vf::detail::Ones<M, N>( Eigen::Matrix<double, M, N>::Ones() ) );
 }
 
-template<int M, int N=M>
-inline
-Expr<vf::detail::Ones<M,N> >
+template <int M, int N = M>
+inline Expr<vf::detail::Ones<M, N>>
 zero()
 {
-    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Zero()) );
+    return Expr<vf::detail::Ones<M, N>>( vf::detail::Ones<M, N>( Eigen::Matrix<double, M, N>::Zero() ) );
 }
 
-template<int M, int N=M>
-inline
-Expr<vf::detail::Ones<M,N> >
+template <int M, int N = M>
+inline Expr<vf::detail::Ones<M, N>>
 eye()
 {
-    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Identity()) );
+    return Expr<vf::detail::Ones<M, N>>( vf::detail::Ones<M, N>( Eigen::Matrix<double, M, N>::Identity() ) );
 }
 
-template<int M, int N=M>
-inline
-Expr<vf::detail::Ones<M,N> >
+template <int M, int N = M>
+inline Expr<vf::detail::Ones<M, N>>
 Id()
 {
-    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Identity()) );
+    return Expr<vf::detail::Ones<M, N>>( vf::detail::Ones<M, N>( Eigen::Matrix<double, M, N>::Identity() ) );
 }
 
-template<int M, int N=M>
-inline
-Expr<vf::detail::Ones<M,N> >
+template <int M, int N = M>
+inline Expr<vf::detail::Ones<M, N>>
 constant( double value )
 {
-    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Constant( value )) );
+    return Expr<vf::detail::Ones<M, N>>( vf::detail::Ones<M, N>( Eigen::Matrix<double, M, N>::Constant( value ) ) );
 }
 
-} // vf
-} // Feel
+} // namespace vf
+} // namespace Feel
 #endif /* FEELPP_VF_ONES_H */

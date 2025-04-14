@@ -168,9 +168,9 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         sc_param = 0.5;
     }
 	tic();
-    auto ps = product( Vh, Wh, Ph, Mh, Phm );
-	auto a = blockform2( ps, strategy , backend() );
-	auto rhs = blockform1( ps, strategy , backend() );
+    auto ps = productPtr( Vh, Wh, Ph, Mh, Phm );
+	auto a = blockform2( _test=ps, _strategy=strategy , _backend=backend() );
+	auto rhs = blockform1( _test=ps, _strategy=strategy , _backend=backend() );
 
 
     // Building the RHS
@@ -309,8 +309,8 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     }
 #endif
 
-    auto U = ps.element();
-    auto Ue = ps.element();
+    auto U = ps->element();
+    auto Ue = ps->element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _condenser=condenser_stokes() );
     toc("solve",true);

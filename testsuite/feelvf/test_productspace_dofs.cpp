@@ -21,6 +21,9 @@
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#define BOOST_TEST_MODULE test_productspace_dofs
+
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/options.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -33,19 +36,14 @@
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
-int main(int argc, char**argv )
+BOOST_AUTO_TEST_SUITE( productspace_suite )
+
+BOOST_AUTO_TEST_CASE( test_productspace_dofs )
 {
     using namespace Feel;
     using Feel::cout;
-    // initialize feel++
-    Environment env( _argc=argc, _argv=argv,
-                     _desc_lib=feel_options().add( backend_options( "u" ) ).add ( backend_options( "gradu" ) ),
-                     _about=about(_name="productspace_dofs",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
-
-    
 
     std::string geofile = soption("gmsh.filename");
     cout << "geofile: " << geofile << std::endl;
@@ -60,15 +58,18 @@ int main(int argc, char**argv )
                              _h = meshSize,
                              _force_rebuild = true,
                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-        typedef FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1, Scalar>, Lagrange<0, Scalar> > > space_type;
 
-        auto Vh = space_type::New( mesh );
+        auto P1h = Pch<1>( mesh );
+        auto P0h = Pch<0>( mesh );
+        auto Vh = productPtr( P1h, P0h );
+
         auto U = Vh->element();
-        auto u = U.element<0>() ;
-        auto l = U.element<1>() ;
+        auto u = U(0_c);
+        auto l = U(1_c);
         
-        cout << "Vh Dofs(level " << i << "): " << Vh->nDof() << "["
-             << u.functionSpace()->nDof() << "," << l.functionSpace()->nDof() <<"]"
-             << std::endl;
+
+        BOOST_TEST_MESSAGE( fmt::format("Vh Dofs(level {} ): {} [{}+{}]",i,Vh->nDof(),u.functionSpace()->nDof(),l.functionSpace()->nDof()) );
+        BOOST_CHECK( Vh->nDof() == u.functionSpace()->nDof() + l.functionSpace()->nDof() );
     }
 }
+BOOST_AUTO_TEST_SUITE_END()

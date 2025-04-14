@@ -18,6 +18,7 @@
 #ifndef FEELPP_VF_BLOCKFORMS_H
 #define FEELPP_VF_BLOCKFORMS_H
 
+#include <boost/hana/cartesian_product.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/matrixcondensed.hpp>
@@ -34,7 +35,13 @@ namespace Feel {
 template<typename PS>
 class BlockBilinearForm;
 
+//!
+//! forward declarations of @c BlockLinearForm and @c blockform1()
+//!
+template<typename PS>
+class BlockLinearForm;
 
+#if 0
 template<typename PS>
 BlockBilinearForm<PS>
 blockform2( PS&& ps );
@@ -71,11 +78,7 @@ template<typename PS,typename T>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, condensed_matrix_ptr_t<T> & m );
 
-//!
-//! forward declarations of @c BlockLinearForm and @c blockform1()
-//!
-template<typename PS>
-class BlockLinearForm;
+
 
 template<typename PS>
 BlockLinearForm<PS>
@@ -93,8 +96,7 @@ blockform1( PS&& ps, solve::strategy s, BackendT&& b );
 template<typename PS,typename T>
 BlockLinearForm<PS>
 blockform1( PS&& ps, condensed_vector_ptr_t<T> v );
-
-
+#endif
 /**
  * Handles bilinear form over a product of spaces
  */
@@ -107,11 +109,13 @@ public :
     using size_type = typename condensed_matrix_type::size_type;
     using condensed_matrix_ptrtype = std::shared_ptr<condensed_matrix_type>;
     using product_space_t = decay_type<PS>;
+    using product_space_ptrtype = std::shared_ptr<product_space_t>;
+    using element_t = typename product_space_t::element_type;
 
     BlockBilinearForm() = default;
     BlockBilinearForm( BlockBilinearForm const& ) = default;
     BlockBilinearForm( BlockBilinearForm && ) = default;
-    
+
     template<typename T>
     BlockBilinearForm( T&& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
         :
@@ -124,26 +128,33 @@ public :
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
-        {}    
-    
+        {
+            init();
+        }
+
     template<typename T,typename BackendT, typename RangeMapT>
     BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap(),
-                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
+                       std::enable_if_t<std::is_base_of_v<ProductSpacesBase,decay_type<T>> && std::is_base_of_v<BackendBase,decay_type<BackendT>>>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
-        {}
+        {
+            init();
+        }
 
     template<typename T, typename BackendT, typename RangeMapT>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap(),
-                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
+                       std::enable_if_t<std::is_base_of_v<ProductSpacesBase,decay_type<T>> && std::is_base_of_v<BackendBase,decay_type<BackendT>>>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern,r),
                                                              std::forward<BackendT>(b),
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
-        {}
+        {
+            init();
+        }
+
     template<typename T, typename BackendT>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns,
                        std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
@@ -153,49 +164,174 @@ public :
                                                              csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?pattern::toZero(patterns):patterns),
                                                              std::forward<BackendT>(b),
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
-        {}
+        {
+            init();
+        }
 
     BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype & m)
         :
         M_ps(ps),
         M_matrix(m)
-        {}
+        {
+            init();
+        }
 
     BlockBilinearForm(product_space_t const& ps, condensed_matrix_ptrtype & m)
         :
         M_ps(ps),
         M_matrix(m)
-        {}
-    BlockBilinearForm& operator=( BlockBilinearForm const& a )
         {
-            if ( this == &a )
-                return *this;
-
-            bool same_spaces = (M_ps == a.M_ps);
-            M_ps = a.M_ps;
-            if ( !this->isMatrixAllocated() || !same_spaces )
-            {
-                this->allocateMatrix( a.M_matrix->solveStrategy(), a.M_matrix->backend() );
-                M_matrix->setBackend( a.M_matrix->backend()->clone() );
-            }
-            M_matrix->zero();
-            M_matrix->addMatrix( 1.,(MatrixSparse<value_type> const&)*a.M_matrix->getSparseMatrix() );
-            
-            return *this;
+            init();
         }
+    template <typename T, typename BackendT>
+    BlockBilinearForm( std::shared_ptr<T> const& ps, solve::strategy s, BackendT&& b, condensed_matrix_ptrtype& m,
+                        std::enable_if_t<std::is_base_of_v<ProductSpacesBase, decay_type<T>> && std::is_base_of_v<BackendBase, decay_type<BackendT>>>* = nullptr )
+        : M_ps( *ps ),
+          M_ps_ptr( ps ),
+          M_matrix( m )
+    {
+        init();
+    }
+    private:
+    void init()
+    {
+        auto dmTest = M_matrix->mapRowPtr();
+        auto dmTrial = M_matrix->mapColPtr();
+        this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( 0 ) );
+        this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( 0 ) );
+        // this->setDofIdToContainerIdTest( M_matrix->mapRowPtr()->dofIdToContainerId( M_row_startInMatrix ) );
+        // this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
+    }
+    public:
+    BlockBilinearForm& operator=( BlockBilinearForm const& a )
+    {
+        if ( this == &a )
+            return *this;
+
+        bool same_spaces = (M_ps == a.M_ps);
+        M_ps = a.M_ps;
+        if ( !this->isMatrixAllocated() || !same_spaces )
+        {
+            this->allocateMatrix( a.M_matrix->solveStrategy(), a.M_matrix->backend() );
+            M_matrix->setBackend( a.M_matrix->backend()->clone() );
+        }
+        M_matrix->zero();
+        M_matrix->addMatrix( 1.,(MatrixSparse<value_type> const&)*a.M_matrix->getSparseMatrix() );
+
+        return *this;
+    }
     BlockBilinearForm& operator=( BlockBilinearForm && a ) = default;
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
+    {
+        if ( this == &a )
         {
-            if ( this == &a )
-            {
-                M_matrix->scale( 2.0 );
-                return *this;
-            }
-
-            M_matrix->addMatrix( 1.0, a.M_matrix );
-
+            M_matrix->scale( 2.0 );
             return *this;
         }
+
+        M_matrix->addMatrix( 1.0, a.M_matrix );
+
+        return *this;
+    }
+    template <typename ExprT>
+    BlockBilinearForm& operator=( Expr<ExprT> const& theexpr )
+    {
+        auto rtest = hana::make_range( hana::int_c<0>, hana::int_c<product_space_t::nSpaces> ); // hana::size(M_ps)>);
+        auto rtrial = rtest;
+        using trial_fe_type = typename decltype(rtrial)::reference_element_type;
+        using test_fe_type = typename decltype(rtest)::reference_element_type;
+
+        auto cp = hana::cartesian_product( hana::make_tuple( rtest, rtrial ) );
+        hana::for_each( cp, [&]( auto index )
+                        {
+                            auto test_space = M_ps[index[0_c]];
+                            auto trial_space = M_ps[index[1_c]];
+                            if constexpr ( !ExprT::template HasTrialFunction<trial_fe_type>::result )
+                            {
+                                VLOG( 1 ) << fmt::format("skipping blockform( {}, {} ) [test dim:{},trial dim:{}] because trial function is not in the expression",
+                                                         index[0_c], index[1_c], test_space->mesh()->dimension(), trial_space->mesh()->dimension());
+                                return;
+                            }
+                            else
+                            {
+                                //if ( test_space->worldsComm()[int(index[0_c])]->isActive() )
+                                {
+                                    
+                                    VLOG( 1 ) << fmt::format("blockform( {}, {} ) [test dim:{},trial dim:{}]",
+                                                             index[0_c], index[1_c], test_space->mesh()->dimension(), trial_space->mesh()->dimension());
+                                    this->operator()( index[0_c], index[1_c] ) = theexpr;
+                                }
+                            }
+                        } );
+        return *this;
+    }
+    template <typename ExprT>
+    BlockBilinearForm& operator+=( Expr<ExprT> const& theexpr )
+    {
+        auto rtest = hana::make_range( hana::int_c<0>, hana::int_c<product_space_t::nSpaces> ); // hana::size(M_ps)>);
+        auto rtrial = rtest;
+        
+        auto cp = hana::cartesian_product( hana::make_tuple( rtest, rtrial ) );
+        hana::for_each( cp, [&]( auto index )
+                        {
+                            auto test_space = M_ps[index[0_c]];
+                            auto trial_space = M_ps[index[1_c]];
+                            using trial_fe_type = typename decay_type<decltype( trial_space )>::reference_element_type;
+                            using test_fe_type = typename decay_type<decltype( test_space )>::reference_element_type;
+                            if constexpr ( !ExprT::template HasTrialFunction<trial_fe_type>::result )
+                            {
+                                VLOG( 1 ) << fmt::format("skipping blockform( {}, {} ) [test dim:{},trial dim:{}] because trial function is not in the expression",
+                                                         index[0_c], index[1_c], test_space->mesh()->dimension(), trial_space->mesh()->dimension());
+                                return;
+                            }
+                            else
+                            {
+                                //if ( test_space->worldsComm()[int(index[0_c])]->isActive() )
+                                {
+                                    VLOG( 1 ) << fmt::format("blockform( {}, {} ) [test dim:{},trial dim:{}]",index[0_c], index[1_c], test_space->mesh()->dimension(), trial_space->mesh()->dimension());
+                                    this->operator()( index[0_c], index[1_c] ) += theexpr;
+                                }
+                            }
+                        } );
+        return *this;
+    }
+
+    template <typename ... Ts>
+    BlockBilinearForm& on( Ts && ... v )
+    {
+        LOG(INFO) << fmt::format("BlockBilinearForm::operator+= ...Ts, n parameters: {}", sizeof...(Ts));
+        auto args = NA::make_arguments( std::forward<Ts>(v)... );
+        auto && range = args.get(_range);
+        //auto && element = args.get(_element);
+        // NOTE : the line below allows to defined element as an lvalue or rvalue (as given when called the function) : TODO : add api in NApp
+        auto && element = std::move(args.template getArgument<na::element>()).value();
+        auto && rhs = args.get(_rhs);
+        auto && expr = args.get(_expr);
+        auto && test = args.get(_test);
+        po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+        std::string const& prefix = args.get_else(_prefix,"");
+        std::string const& type = args.get_else_invocable(_type,[&prefix,&vm](){ return soption(_prefix=prefix,_name="on.type",_vm=vm); } );
+        bool verbose = args.get_else_invocable(_verbose,[&prefix,&vm](){ return boption(_prefix=prefix,_name="on.verbose",_vm=vm); } );
+        double value_on_diagonal = args.get_else_invocable(_value_on_diagonal,[&prefix,&vm](){ return doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm); } );
+
+        this->close();
+        using integratoron_helper_type = vf::detail::integratoron_type<decltype(range),decltype(rhs.vector().getVector()),decltype(element),decltype(expr)>;
+
+        typename integratoron_helper_type::type ion( range,
+                                                     std::forward<decltype(element)>( element ),
+                                                     Feel::vf::detail::getRhsVector(rhs.vector()),
+                                                     expr,
+                                                     size_type(ContextOnMap[type]),
+                                                     value_on_diagonal );
+        auto r = typename integratoron_helper_type::expr_type( std::move(ion) );
+        auto&& spaces=remove_shared_ptr_f( M_ps );
+        auto test_space = hana::at( spaces.tupleSpaces(), test );
+        r.assemble( test_space, test_space, *this );
+
+        LOG(INFO) << fmt::format("BlockBilinearForm::operator+= done\n");
+
+        return *this;
+    }
 
     //!
     //! allocate algebraic representation of the bilinear form
@@ -212,6 +348,11 @@ public :
     bool isMatrixAllocated() const
         {
             return (bool)M_matrix;
+        }
+
+    auto operator()( element_t const& u, element_t const& v )
+        {
+            return M_matrix->energy( *u.vector(), *v.vector() );
         }
 #if 0
     template<typename N1,typename N2>
@@ -274,12 +415,14 @@ public :
     template<typename T>
     void setFunctionSpace( T&& ps )
         {
-            M_ps = std::forward<T>(ps);
+            M_ps_ptr = std::forward<T>( ps );
+            M_ps = *M_ps_ptr;
+
         }
     template<typename BackendT>
     void setStrategy( BackendT&& b )
         {
-            
+
             M_matrix = std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false );
         }
     template<typename BackendT>
@@ -308,17 +451,41 @@ public :
         }
     void zero(int n1, int n2 )
         {
-            M_matrix->zero( n1, n2 );
+            //M_matrix->zero( n1, n2 );
         }
     void transpose(int n1, int n2 )
         {
             M_matrix->transposeBlock( n1, n2 );
         }
+    void zeroRows( std::vector<int> const& __dofs,
+                   Vector<value_type> const&__values,
+                   Vector<value_type>& rhs,
+                   Feel::Context const& on_context,
+                   double value_on_diagonal )
+        {
+            M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
+        }
+    /**
+     * \return the mapping from test dof id to container id with global process numbering
+     */
+    std::vector<size_type> const& dofIdToContainerIdTest() const { return *M_dofIdToContainerIdTest; }
+    /**
+     * \return the mapping from trial dof id to container id with global process numbering
+     */
+    std::vector<size_type> const& dofIdToContainerIdTrial() const { return *M_dofIdToContainerIdTrial; }
+    /**
+     * set mapping from test dof id to container id with global process numbering
+     */
+    void setDofIdToContainerIdTest( std::vector<size_type> const& gpmap ) { M_dofIdToContainerIdTest = std::addressof( gpmap ); }
+    /**
+     * set mapping from trial dof id to container id with global process numbering
+     */
+    void setDofIdToContainerIdTrial( std::vector<size_type> const& gpmap ) { M_dofIdToContainerIdTrial = std::addressof( gpmap ); }
     //!
     //! @return the number of non-zero entries in matrix representation
     //!
     std::size_t nnz() const { return M_matrix->nnz(); }
-    
+
     void syncLocalMatrix()
         {
             int s = M_ps.numberOfSpaces();
@@ -339,6 +506,8 @@ public :
                                 ++n;
                             });
         }
+    d_sparse_matrix_type& matrix() { return *M_matrix; }
+    d_sparse_matrix_type const& matrix() const { return *M_matrix; }
     sparse_matrix_ptrtype matrixPtr() const { return M_matrix; }
     sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
@@ -434,7 +603,7 @@ public :
             {
                 M_matrix->getSparseMatrix()->printMatlab("A.m");
                 rhs.vectorPtr()->getVector()->printMatlab("b.m");
-            } 
+            }
             solution.localize(U);
             return r1;
         }
@@ -446,7 +615,7 @@ public :
         {
             return typename Backend<double>::solve_return_type{};
         }
-    template <typename PS_t, typename Solution_t, typename Rhs_t> 
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,2>,
@@ -467,14 +636,14 @@ public :
 
             auto sc = M_matrix->sc();
             tic();
-            auto psS = product( e3.functionSpace() );
+            auto psS = productPtr( e3.functionSpace() );
             toc("blockform.sc.space",FLAGS_v>0);
             tic();
-            auto S = blockform2( psS, solve::strategy::monolithic, backend(), Pattern::HDG  );
+            auto S = blockform2( _test=psS, _strategy=solve::strategy::monolithic, _backend=backend(), _pattern=Pattern::HDG  );
             toc("blockform.sc.bilinearform",FLAGS_v>0);
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
-            auto V = blockform1( psS, solve::strategy::monolithic, backend() );
-            
+            auto V = blockform1( _test=psS, _strategy=solve::strategy::monolithic, _backend=backend() );
+
             tic();
             this->syncLocalMatrix();
             toc("blockform.sc.sync", FLAGS_v>0);
@@ -485,7 +654,7 @@ public :
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
-            auto U = psS.element();
+            auto U = psS->element();
 
             auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
             //auto r = backend(_name=prefixvm(name,"sc"),_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
@@ -533,11 +702,11 @@ public :
 
             auto sc = M_matrix->sc();
 
-            auto Th = product2( M_ps[3_c], M_ps[2_c] );
-            auto S = blockform2(Th, solve::strategy::monolithic, backend(), Pattern::HDG);
-            auto V = blockform1(Th, solve::strategy::monolithic, backend() );
+            auto Th = product2Ptr( M_ps[3_c], M_ps[2_c] );
+            auto S = blockform2(_test=Th, _strategy=solve::strategy::monolithic, _backend=backend(), _pattern=Pattern::HDG);
+            auto V = blockform1(_test=Th, _strategy=solve::strategy::monolithic, _backend=backend() );
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
-            auto U = Th.element();
+            auto U = Th->element();
             //e3.printMatlab("phat.m");
             tic();
             this->syncLocalMatrix();
@@ -554,7 +723,7 @@ public :
             toc("blockform.sc.solve", FLAGS_v>0);
 
             solution(2_c)=U(0_c);
-            for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
+            for( int i = 0; i < (*Th)[1_c]->numberOfSpaces(); ++i )
                 solution(3_c,i)=U(1_c,i);
 #if 0
             S.matrixPtr()->printMatlab("S.m");
@@ -571,12 +740,12 @@ public :
             toc("blockform.sc.localsolve",FLAGS_v>0);
 #if 0
             e1.printMatlab("u1.m");
-            e2.printMatlab("p1.m"); 
+            e2.printMatlab("p1.m");
 #endif
 
             return r;
         }
- 
+
     //!
     //! solve using static condensation in the case of 2 trace spaces
     //!
@@ -617,9 +786,9 @@ public :
             toc("blockform.sc.solve", FLAGS_v>0);
 
             solution(2_c)=U(0_c);
-            for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
+            for( int i = 0; i < (*Th)[1_c]->numberOfSpaces(); ++i )
                 solution(3_c,i)=U(1_c,i);
-            for( int i = 0; i < Th[2_c]->numberOfSpaces(); ++i )
+            for( int i = 0; i < (*Th)[2_c]->numberOfSpaces(); ++i )
                 solution(4_c,i) = U(2_c,i);
 #if 0
             S.matrixPtr()->printMatlab("S.m");
@@ -636,7 +805,7 @@ public :
             toc("blockform.sc.localsolve",FLAGS_v>0);
 #if 0
             e1.printMatlab("u1.m");
-            e2.printMatlab("p1.m"); 
+            e2.printMatlab("p1.m");
 #endif
 
             return r;
@@ -651,7 +820,7 @@ public :
                            bool rebuild, pre_solve_type pre, post_solve_type post, hana::integral_constant<int, 3*5>,
                            std::enable_if_t<!std::is_base_of<ProductSpaceBase, decay_type<PS_t>>::value>* = nullptr )
         {
-#if 0            
+#if 0
             //auto& e4 = solution(3_c,0);
             auto& e3 = solution( 2_c );
             auto& e2 = solution( 1_c );
@@ -711,10 +880,41 @@ public :
             return typename Backend<double>::solve_return_type{};
 #endif
         }
-        product_space_t M_ps;
+        product_space_t& M_ps;
+        product_space_ptrtype M_ps_ptr;
+
         condensed_matrix_ptrtype M_matrix;
+        std::vector<size_type> const* M_dofIdToContainerIdTest;
+        std::vector<size_type> const* M_dofIdToContainerIdTrial;
+
 };
 
+template<typename ... Ts>
+auto
+blockform2( Ts&& ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto&& test = args.get( _test );
+    auto&& trial = args.get_else( _trial, test );
+    auto&& b = args.get_else( _backend, backend() );
+//    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    auto&& s = args.get_else( _strategy, solve::strategy::monolithic );
+    auto&& pattern = args.get_else( _pattern, Pattern::COUPLED );
+    //auto&& r = args.get_else( _range, stencilRangeMap() );
+    auto r = stencilRangeMap();
+    using ps_t = std::remove_reference_t<remove_shared_ptr_t<std::decay_t<decltype(test)>>>;
+    static_assert( !is_shared_ptr_v<ps_t> );
+    using value_t = typename ps_t::value_type;
+    auto&& matrix = args.get_else_invocable(_matrix,
+                                            [&b,&test,&trial,&pattern,&r,&s](){
+                                                return std::make_shared<typename BlockBilinearForm<ps_t>::condensed_matrix_type>( s,
+                                                            csrGraphBlocks( *test, ( s >= solve::strategy::static_condensation ) ? Pattern::ZERO : pattern, r ),
+                                                            b ,
+                                                            ( s >= solve::strategy::static_condensation ) ? false : true );
+                                            });
+    return BlockBilinearForm<ps_t>( test, s, b, matrix );
+}
+#if 0
 template<typename PS>
 BlockBilinearForm<PS>
 blockform2( PS&& ps )
@@ -763,6 +963,7 @@ blockform2( PS&& ps, condensed_matrix_ptr_t<T> & m )
 {
     return BlockBilinearForm<PS>( std::forward<PS>(ps), m );
 }
+#endif
 /**
  * Handles linear form over a product of spaces
  */
@@ -772,41 +973,47 @@ class BlockLinearForm
 public :
     using value_type = typename decay_type<PS>::value_type;
     using product_space_t = decay_type<PS>;
+    using product_space_ptrtype = std::shared_ptr<product_space_t>;
     using condensed_vector_type = VectorCondensed<value_type>;
     using condensed_vector_ptrtype = std::shared_ptr<condensed_vector_type>;
     using vector_ptrtype = condensed_vector_ptrtype;
-    
+
     BlockLinearForm() = default;
     BlockLinearForm( BlockLinearForm const& ) = default;
 
     template<typename T, typename BackendT>
-    BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
+    BlockLinearForm( std::shared_ptr<T> const& ps, solve::strategy s, BackendT&& b, condensed_vector_ptrtype v, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
         :
-        M_ps(std::forward<T>(ps)),
-        M_vector(std::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
+        M_ps_ptr(ps),
+        M_ps(*ps),
+        M_vector(v)
         {}
     template<typename T>
-    BlockLinearForm(T&& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
+    BlockLinearForm(std::shared_ptr<T> const& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps_ptr(ps),
+        M_ps(*M_ps_ptr),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T>
-    BlockLinearForm(T&& ps, std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<T>>::value>* = nullptr)
+    BlockLinearForm(std::shared_ptr<T> const& ps, std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<T>>::value>* = nullptr)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps_ptr(ps),
+        M_ps(*M_ps_ptr),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
-        {}    
+        {}
     template<typename T, typename BackendT>
-    BlockLinearForm(T&& ps, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
+    BlockLinearForm(std::shared_ptr<T> const& ps, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps_ptr(ps),
+        M_ps(*M_ps_ptr),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
-    BlockLinearForm(T&& ps, condensed_vector_ptrtype v )
+    BlockLinearForm(std::shared_ptr<T> const& ps, condensed_vector_ptrtype v )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps_ptr(ps),
+        M_ps(*M_ps_ptr),
         M_vector(v)
         {}
     BlockLinearForm( BlockLinearForm&& ) = default;
@@ -825,7 +1032,36 @@ public :
             }
             M_vector->zero();
             M_vector->add( 1., *lf.M_vector->getVector() );
-            
+
+            return *this;
+        }
+
+        template <typename ExprT>
+        BlockLinearForm& operator=( Expr<ExprT> const& theexpr )
+        {
+            auto rtest = hana::make_range( hana::int_c<0>, hana::int_c<product_space_t::nSpaces> );
+            hana::for_each( rtest, [&]( auto index )
+                            {
+                                auto test_space = M_ps[index];
+                                //if ( test_space->worldsComm()[int(index[0_c])]->isActive() )
+                                {
+                                    VLOG( 1 ) << fmt::format("blockform( {} ) [test dim:{}]",index, test_space->mesh()->dimension());
+                                    this->operator()( index ) = theexpr;
+                                } } );
+            return *this;
+        }
+        template <typename ExprT>
+        BlockLinearForm& operator+=( Expr<ExprT> const& theexpr )
+        {
+            auto rtest = hana::make_range( hana::int_c<0>, hana::int_c<product_space_t::nSpaces> );
+            hana::for_each( rtest, [&]( auto index )
+                            {
+                                auto test_space = M_ps[index];
+                                //if ( test_space->worldsComm()[int(index[0_c])]->isActive() )
+                                {
+                                    VLOG( 1 ) << fmt::format("blockform( {} ) [test dim:{}]",index, test_space->mesh()->dimension());
+                                    this->operator()( index ) += theexpr;
+                                } } );
             return *this;
         }
 
@@ -863,16 +1099,17 @@ public :
             return form1(_test=M_ps[n1],_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
         }
     template<typename T>
-    void setFunctionSpace( T&& ps )
+    void setFunctionSpace( std::shared_ptr<T> const& ps )
         {
-            M_ps = std::forward<T>(ps);
+            M_ps_ptr = ps;
+            M_ps = *M_ps_ptr;
         }
     template<typename BackendT>
     void setStrategy( BackendT&& b )
         {
             M_vector = std::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false);
-            
-            
+
+
         }
     template<typename BackendT>
     void setStrategy( solve::strategy s, BackendT&& b )
@@ -884,6 +1121,9 @@ public :
             M_vector->close();
         }
     product_space_t functionSpace() const { return M_ps; }
+
+    condensed_vector_type const& vector() const { return *M_vector; }
+    condensed_vector_type& vector() { return *M_vector; }
 
     condensed_vector_ptrtype const& vectorPtr() const { return M_vector; }
     condensed_vector_ptrtype vectorPtr() { return M_vector; }
@@ -910,7 +1150,9 @@ public :
 
             return *this;
         }
-    product_space_t M_ps;
+
+    product_space_ptrtype M_ps_ptr;
+    product_space_t& M_ps;
     condensed_vector_ptrtype M_vector;
 };
 
@@ -920,6 +1162,24 @@ template<typename PS>
 using blockform2_t = BlockBilinearForm<PS>;
 
 
+template<typename ... Ts>
+auto
+blockform1( Ts&& ... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto&& test = args.get( _test );
+    auto&& b = args.get_else( _backend, backend() );
+//    po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
+    auto s = args.get_else( _strategy, solve::strategy::monolithic );
+    auto r = args.get_else( _range, stencilRangeMap() );
+    using ps_t = std::remove_reference_t<remove_shared_ptr_t<std::decay_t<decltype(test)>>>;
+    static_assert( !is_shared_ptr_v<ps_t> );
+    using value_t = typename ps_t::value_type;
+    auto && vector= args.get_else_invocable(_vector, [&test,&b,&s](){ return std::make_shared<typename BlockLinearForm<ps_t>::condensed_vector_type>( s, blockVector(test), b, false ); });
+
+    return BlockLinearForm<ps_t>( test, s, b, vector );
+}
+#if 0
 template<typename PS>
 BlockLinearForm<PS>
 blockform1( PS&& ps )
@@ -947,7 +1207,7 @@ blockform1( PS&& ps, condensed_vector_ptr_t<T> v )
 {
     return BlockLinearForm<PS>( std::forward<PS>(ps), v );
 }
-
+#endif
 
 }
 #endif

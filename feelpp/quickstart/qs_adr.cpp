@@ -100,7 +100,7 @@ int main(int argc, char**argv )
         a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
         //! if no markers Robin Neumann or Dirichlet are present in the mesh then
         //! impose Dirichlet boundary conditions over the entire boundary
-        if ( !mesh->hasAnyMarker({"Robin", "Neumann","Dirichlet"}) )
+        if ( !mesh->hasAnyMarker(std::vector<std::string>{"Robin", "Neumann","Dirichlet"}) )
             a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
         toc("a");
 

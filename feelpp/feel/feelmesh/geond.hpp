@@ -26,6 +26,7 @@
 #ifndef _GEOND_HH_
 #define _GEOND_HH_
 
+#include <boost/mp11/utility.hpp>
 #include <boost/numeric/ublas/storage.hpp>
 
 #include <feel/feelmesh/geo0d.hpp>
@@ -51,6 +52,13 @@ template <int IMORDER,
           template <class Convex, uint16_type O, typename T2> class QPS,
           typename T>
 struct IMGeneric;
+
+template <int IMORDER,
+          int DIM,
+          template <uint16_type, uint16_type, uint16_type> class Entity,
+          template <class Convex, uint16_type O, typename T2> class QPS,
+          typename T>
+using imgeneric_t = typename IMGeneric<IMORDER, DIM, Entity, QPS, T>::type;
 
 /// \cond detail
 namespace detail
@@ -235,19 +243,14 @@ class GeoND
     static inline const uint16_type nRealDim = super::nRealDim;
 
     template <int GmOrder>
-    struct GetGm
-    {
+    using GetGm = boost::mp11::mp_if_c<GeoShape::is_hypercube,
+                                       GT_Lagrange<nDim, GmOrder, nRealDim, Hypercube, T>,
+                                       GT_Lagrange<nDim, GmOrder, nRealDim, Simplex, T>>;
 
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Hypercube, T>>,
-                                  mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Simplex, T>>>::type::type type;
-        typedef std::shared_ptr<type> ptrtype;
-    };
-    typedef typename GetGm<nOrder>::type gm_type;
-    typedef typename GetGm<nOrder>::ptrtype gm_ptrtype;
-
-    typedef typename GetGm<1>::type gm1_type;
-    typedef typename GetGm<1>::ptrtype gm1_ptrtype;
+    using gm_type = GetGm<nOrder>;
+    using gm_ptrtype = std::shared_ptr<gm_type>;
+    using gm1_type = GetGm<1>;
+    using gm1_ptrtype = std::shared_ptr<gm1_type>;
 
     typedef typename gm_type::super::reference_convex_type reference_convex_type;
     typedef typename gm1_type::super::reference_convex_type reference_convex1_type;
@@ -255,27 +258,23 @@ class GeoND
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
     typedef typename super::face_permutation_type face_permutation_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,
-                                            mpl::int_<1>>,
-                              mpl::identity<vertex_permutation_type>,
-                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,
-                                                              mpl::int_<2>>,
-                                                mpl::identity<edge_permutation_type>,
-                                                mpl::identity<face_permutation_type>>::type>::type::type permutation_type;
-
-    static inline constexpr uint16_type meas_quad_order = ( nOrder - 1 ) * nDim;
+    using permutation_type = boost::mp11::mp_if_c < (nDim == 1),
+                                                    vertex_permutation_type,
+                                                    boost::mp11::mp_if_c < (nDim == 2),
+                                                                            edge_permutation_type,
+                                                                            face_permutation_type> >;
 
     template <int GeoOrder>
-    struct GetImMeasure
-    {
-        // quadrature formula used in entity measure (for ho geo, need to check)
-        static inline const uint16_type quad_order = ( nOrder - 1 ) * nDim;
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<typename IMGeneric<quad_order, Dim, Hypercube, Gauss, value_type /*double*/>::type>,
-                                  mpl::identity<typename IMGeneric<quad_order, Dim, Simplex, Gauss, value_type /*double*/>::type>>::type::type type;
-    };
-    typedef typename GetImMeasure<nOrder>::type quad_meas_type;
-    typedef typename GetImMeasure<1>::type quad_meas1_type;
+    static inline constexpr uint16_type GetImMeasureOrder = (GeoOrder>0)?( GeoOrder - 1 ) * nDim:0;
+    static inline constexpr uint16_type meas_quad_order = GetImMeasureOrder<nOrder>;
+    static inline constexpr uint16_type quad_meas_order = GetImMeasureOrder<nOrder>;
+    static inline constexpr uint16_type quad_meas1_order = GetImMeasureOrder<1>;
+    template <int GeoOrder>
+    using GetImMeasure = boost::mp11::mp_if_c<GeoShape::is_hypercube,
+                                              imgeneric_t<GetImMeasureOrder<GeoOrder>, nDim, Hypercube, Gauss, value_type /*double*/>,
+                                              imgeneric_t<GetImMeasureOrder<GeoOrder>, nDim, Simplex, Gauss, value_type /*double*/>>;
+    using quad_meas_type = GetImMeasure<nOrder>;
+    using quad_meas1_type = GetImMeasure<1>;
 
 
     /**
@@ -952,7 +951,7 @@ class GeoND
 
                 quad_meas_type thequad( meas_quad_order );
                 auto pc = gm->preCompute( gm, thequad.points() );
-                auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
+                auto ctx = gm->template context <vm::JACOBIAN> ( *this, pc );
                 return this->computeMeasureImpl( thequad, ctx );
             }
         }
@@ -1150,17 +1149,14 @@ typename GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::value_t
 GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::computeMeasureImpl( QuadType const& thequad,
                                                                                     std::shared_ptr<CtxType>& ctx ) const
 {
-    value_type meas = 0.;
     if constexpr ( CtxType::is_linear )
     {
-        meas = thequad.weightsSum() * ctx->J( 0 );
+        return thequad.weightsSum() * ctx->J( 0 );
     }
     else
     {
-        for ( int q = 0; q < thequad.nPoints(); ++q )
-            meas += thequad.weight( q ) * ctx->J( q );
+        return ctx->J().dot( em(thequad.weights() ) );
     }
-    return meas;
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
@@ -1170,13 +1166,13 @@ GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::computeFaceMeasu
                                                                                         std::shared_ptr<CtxFaceType>& ctxf,
                                                                                         uint16_type f ) const
 {
-    value_type measFace = 0.;
     if constexpr ( nDim == nRealDim )
     {
-        for ( int q = 0; q < thequad.nPointsOnFace( f ); ++q )
-            measFace += thequad.weight( f, q ) * ctxf->J( q ) * ctxf->normalNorm( q );
+        if constexpr ( CtxFaceType::is_linear )
+            return (em(thequad.weights(f)).array()*ctxf->J(0)*ctxf->normalNorm(0)).sum();
+        else
+            return (em(thequad.weights(f)).array()*ctxf->J().array()*ctxf->normalNorms().array()).sum();
     }
-    return measFace;
 }
 
 

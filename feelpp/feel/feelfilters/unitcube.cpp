@@ -50,4 +50,18 @@ unitCube( double h )
 #endif
 }
 
+std::shared_ptr<Mesh<Simplex<2,1,3>>>
+unitCubeSurface( double h )
+{
+#ifdef FEELPP_HAS_GMSH
+    return createGMSHMesh( _mesh = new Mesh<Simplex<2,1,3>>,
+                           _desc = domain( _name = "cube",
+                                           _shape = "hypercube",
+                                           _dim = 3,
+                                           _h = h ) );
+#else
+    LOG( WARNING ) << "unitCube: Feel++ was not built with Gmsh. This function will return a empty mesh.";
+    return std::make_shared<Mesh<Simplex<3>>>();
+#endif
+}
 }

@@ -34,6 +34,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/blockforms.hpp>
 
 int main( int argc, char** argv)
 {
@@ -41,41 +43,39 @@ int main( int argc, char** argv)
     Environment env( _argc=argc,
                      _argv=argv );
 
-    typedef Lagrange<2,Vectorial> b1_type;
-    typedef Lagrange<1,Scalar> b2_type;
-    typedef Lagrange<0,Scalar,Continuous> b3_type;
-    typedef Lagrange<1,Scalar> b4_type;
-    //typedef bases<b1_type,b2_type,b3_type,b4_type> basis_type;
-    typedef bases<b1_type,b2_type,b3_type> basis_type;
     typedef Mesh<Simplex<2>> mesh_type;
-    typedef FunctionSpace<mesh_type,basis_type> fspace_type;
+    //typedef FunctionSpace<mesh_type,basis_type> fspace_type;
+    
     auto mesh = loadMesh( _mesh = new mesh_type );
-    auto Xh = fspace_type::New( mesh );
-    auto v = backend()->newVector( Xh );
-    auto M = backend()->newMatrix( _test=Xh, _trial=Xh );
-    M->graph()->showMe( std::cout );
+    auto P2v = Pchv<2>( mesh );
+    auto P1 = Pch<1>( mesh );
+    auto P0c =  Pch<0>( mesh );
+    auto Xh = productPtr( P2v, P1, P0c );
+    //auto Xh = fspace_type::New( mesh );
+    auto u = P2v->element();
+    auto p = P1->element();
+    auto l = P0c->element();
 
-    auto U = Xh->element();
-    auto u = U.element<0>();
-    auto p = U.element<1>();
-    auto l = U.element<2>();
     //auto t = U.element<3>();
-    auto a = form2( _test=Xh, _trial=Xh );
-    a  = integrate( _range=elements(mesh), _expr=trans(idt(u))*id(u) );
-    a += integrate( _range=elements(mesh), _expr=trans(idt(p))*id(p) );
-    a += integrate( _range=elements(mesh), _expr=trans(idt(l))*id(l) );
+    auto a = blockform2( _test=Xh, _strategy=solve::strategy::monolithic, _backend=backend() );
+    auto b = blockform1( _test=Xh, _strategy=solve::strategy::monolithic, _backend=backend() );
+
+    a(0_c,0_c)  = integrate( _range=elements(mesh), _expr=trans(idt(u))*id(u) );
+    a(1_c,1_c) += integrate( _range=elements(mesh), _expr=trans(idt(p))*id(p) );
+    a(2_c,2_c) += integrate( _range=elements(mesh), _expr=trans(idt(l))*id(l) );
     //a += integrate( elements(mesh), trans(idt(t))*id(t) );
-    auto b = form1( _test=Xh );
-    b  = integrate( _range=elements(mesh), _expr=trans(vec(cst(1.),cst(1.)))*id(u) );
-    b += integrate( _range=elements(mesh), _expr=id(p) );
-    b += integrate( _range=elements(mesh), _expr=id(l) );
+
+    b(0_c)  = integrate( _range=elements(mesh), _expr=trans(vec(cst(1.),cst(1.)))*id(u) );
+    b(1_c) += integrate( _range=elements(mesh), _expr=id(p) );
+    b(2_c) += integrate( _range=elements(mesh), _expr=id(l) );
     //b += integrate( elements(mesh), id(t) );
+    auto U = Xh->element();
     a.solve( _solution=U, _rhs=b );
 #if 0
     a.matrixPtr()->printMatlab( "a.m" );
     b.vectorPtr()->printMatlab( "b.m" );
     U.printMatlab( "U.m" );
 #endif
-    U.setOnes();
+    U.vector()->setOnes();
     CHECK( math::abs(a(U,U)- 4)< 1e-10 ) << "invalid result a(1,1)=" << a(U,U) << " != " << 4;
 }
