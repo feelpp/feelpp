@@ -36,26 +36,43 @@ using namespace Feel;
  * @param login the remote user name to synchronize with
  * @param server the host to synchronize with
  * @param local_dir the local directory where file will be synchronized
- * 
+ * @param skip_h5 If non-zero, excludes files with the `.h5` extension from synchronization.
+ *                Defaults to 0 (include `.h5` files).
+ * @param rsync_opt Additional options to pass to the rsync command.
+ *                  Defaults to an empty string (no additional options).
+ *
  * @return the exit status of the rsync command
  */
 int sync(const std::string dir, const std::string login, const std::string server, const std::string local_dir,
-         int verbose = 0)
+         int verbose = 0, int skip_h5 = 0)
 {
-    LOG(INFO) << "Sync from " << login << "@" << server << ":" << dir << " to " << local_dir << std::endl; 
+    LOG(INFO) << "Sync from " << login << "@" << server << ":" << dir << " to " << local_dir << std::endl;
 
-    std::string remote;
-    const std::string opts = (verbose != 0) ? "-avzP" : "-azP";
+    std::vector<const char *> args;
+    args.push_back( "rsync" );
+
+    std::string opts = (verbose != 0) ? "-ravzP" : "-razP";
+    args.push_back( opts.c_str() );
+
+    if (skip_h5 != 0)
+    {
+        args.push_back( "--exclude" );
+        args.push_back( "*.h5" );
+    }
+    std::string remote = login + "@" + server + ":" + dir;
+    args.push_back( remote.c_str() );
+    args.push_back( local_dir.c_str() );
+    args.push_back( nullptr );
 
     switch (fork())
     {
         case -1:
-            Feel::cerr << "fork() failed" << std::endl;
+            LOG(ERROR) << "fork() failed" << std::endl;
             break;
         case 0:
-            remote = login + "@" + server + ":" + dir;
-            execlp("rsync", "rsync", opts.c_str(), remote.c_str(), local_dir.c_str(), NULL);
-            exit(0);
+            execvp("rsync", const_cast<char* const*>(args.data()));
+            LOG(ERROR) << "execvp failed" << std::endl;
+            exit(EXIT_FAILURE);
             break;
         default:
             break;
@@ -84,7 +101,7 @@ int sync(const std::string dir, const std::string login, const std::string serve
     summary.add_row({data});
     cout << summary << std::endl;
 
-    return e;
+    return 0;
 }
 
 int main( int argc, char** argv )
@@ -99,6 +116,7 @@ int main( int argc, char** argv )
                 "local path where files are copied (default to ${feeldir}/${name})" )
         ( "casename", po::value<std::string>()->default_value( "" ), "name of the case to synchronize" )
         ( "vb", po::value<int>()->default_value( 0 ), "verbose mode" )
+        ( "skip-h5", po::value<int>()->default_value( 0 ), "skip h5 files")
 		;
 
     fs::path initialCurrentPath = fs::current_path();
@@ -130,10 +148,8 @@ int main( int argc, char** argv )
         Feel::cout << tc::bold << tc::red << "server or login not set" << tc::reset << std::endl;
         return -1;
     }
-    
-    int res = sync( soption( "dir" ), login, server, local_dir, ioption( "vb" ) );
+
+    int res = sync( soption( "dir" ), login, server, local_dir, ioption( "vb" ), ioption( "skip-h5" ) );
 
     return res;
-
 }
-
