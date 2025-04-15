@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-2/_work/feelpp/feelpp/feelpp/feel/feeldiscr/doftablempi.hpp File Reference</title>
+<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-5/_work/feelpp/feelpp/feelpp/feel/feeldiscr/doftablempi.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -101,8 +101,7 @@ $(document).ready(function(){initNavTree('doftablempi_8hpp.html',''); initResiza
 
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle"><div class="title">doftablempi.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -112,33 +111,6 @@ Namespaces</h2></td></tr>
 <tr class="memitem:namespaceFeel"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html">Feel</a></td></tr>
 <tr class="memdesc:namespaceFeel"><td class="mdescLeft">&#160;</td><td class="mdescRight">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ad6b4dd530423e5b8c486c8724a9356b4"><td class="memTemplParams" colspan="2"><a id="ad6b4dd530423e5b8c486c8724a9356b4" name="ad6b4dd530423e5b8c486c8724a9356b4"></a>
-template&lt;typename DofTableType &gt; </td></tr>
-<tr class="memitem:ad6b4dd530423e5b8c486c8724a9356b4"><td class="memTemplItemLeft" align="right" valign="top">boost::tuple&lt; rank_type, size_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateDofOnEdges</b> (DofTableType const &amp;doftable, typename DofTableType::mesh_type::element_type const &amp;theelt, const uint16_type edgeIdInElt, typename std::enable_if&lt; is_3d&lt; typename DofTableType::mesh_type &gt;::value &gt;::type *=nullptr)</td></tr>
-<tr class="separator:ad6b4dd530423e5b8c486c8724a9356b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6307b0d8e53c7ae5fdb7fd97705d47a6"><td class="memTemplParams" colspan="2"><a id="a6307b0d8e53c7ae5fdb7fd97705d47a6" name="a6307b0d8e53c7ae5fdb7fd97705d47a6"></a>
-template&lt;typename DofTableType &gt; </td></tr>
-<tr class="memitem:a6307b0d8e53c7ae5fdb7fd97705d47a6"><td class="memTemplItemLeft" align="right" valign="top">boost::tuple&lt; rank_type, size_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateDofOnEdges</b> (DofTableType const &amp;doftable, typename DofTableType::mesh_type::element_type const &amp;theelt, const uint16_type edgeIdInElt, typename std::enable_if&lt; mpl::not_&lt; is_3d&lt; typename DofTableType::mesh_type &gt; &gt;::value &gt;::type *=nullptr)</td></tr>
-<tr class="separator:a6307b0d8e53c7ae5fdb7fd97705d47a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d4e05928f80952543652d4ee564197e"><td class="memTemplParams" colspan="2"><a id="a2d4e05928f80952543652d4ee564197e" name="a2d4e05928f80952543652d4ee564197e"></a>
-template&lt;typename DofTableType &gt; </td></tr>
-<tr class="memitem:a2d4e05928f80952543652d4ee564197e"><td class="memTemplItemLeft" align="right" valign="top">boost::tuple&lt; rank_type, size_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateDofOnEdges</b> (DofTableType const &amp;doftable, typename DofTableType::mesh_type::face_type const &amp;theface, const rank_type myIdProcess, const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename DofTableType::mesh_type::element_type const &amp;eltOnProc, const uint16_type idEdgesInFace, std::set&lt; rank_type &gt; &amp;procRecvData, typename std::enable_if&lt; is_3d&lt; typename DofTableType::mesh_type &gt;::value &gt;::type *=nullptr)</td></tr>
-<tr class="separator:a2d4e05928f80952543652d4ee564197e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84744c65f7ba7a00e0d280115004e5e4"><td class="memTemplParams" colspan="2"><a id="a84744c65f7ba7a00e0d280115004e5e4" name="a84744c65f7ba7a00e0d280115004e5e4"></a>
-template&lt;typename DofTableType &gt; </td></tr>
-<tr class="memitem:a84744c65f7ba7a00e0d280115004e5e4"><td class="memTemplItemLeft" align="right" valign="top">boost::tuple&lt; rank_type, size_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateDofOnEdges</b> (DofTableType const &amp;doftable, typename DofTableType::mesh_type::face_type const &amp;theface, const rank_type myIdProcess, const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename DofTableType::mesh_type::element_type const &amp;eltOnProc, const uint16_type idEdgesInFace, std::set&lt; rank_type &gt; &amp;procRecvData, typename std::enable_if&lt; mpl::not_&lt; is_3d&lt; typename DofTableType::mesh_type &gt; &gt;::value &gt;::type *=nullptr)</td></tr>
-<tr class="separator:a84744c65f7ba7a00e0d280115004e5e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afdff3a2eebbc9397bfdf2dc073296d24"><td class="memTemplParams" colspan="2"><a id="afdff3a2eebbc9397bfdf2dc073296d24" name="afdff3a2eebbc9397bfdf2dc073296d24"></a>
-template&lt;typename DofTableType &gt; </td></tr>
-<tr class="memitem:afdff3a2eebbc9397bfdf2dc073296d24"><td class="memTemplItemLeft" align="right" valign="top">boost::tuple&lt; rank_type, size_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateDofOnVertices</b> (DofTableType const &amp;doftable, typename DofTableType::mesh_type::element_type const &amp;theelt, const uint16_type ptIdInElt)</td></tr>
-<tr class="separator:afdff3a2eebbc9397bfdf2dc073296d24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae20147e395dc287a1220ec64e9f6932d"><td class="memTemplParams" colspan="2"><a id="ae20147e395dc287a1220ec64e9f6932d" name="ae20147e395dc287a1220ec64e9f6932d"></a>
-template&lt;typename DofTableType &gt; </td></tr>
-<tr class="memitem:ae20147e395dc287a1220ec64e9f6932d"><td class="memTemplItemLeft" align="right" valign="top">boost::tuple&lt; rank_type, size_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateDofOnVertices</b> (DofTableType const &amp;doftable, typename DofTableType::mesh_type::face_type const &amp;theface, const rank_type myIdProcess, const rank_type IdProcessOfGhost, const size_type idFaceInPartition, typename DofTableType::mesh_type::element_type const &amp;eltOnProc, const uint16_type locDof, std::set&lt; rank_type &gt; &amp;procRecvData)</td></tr>
-<tr class="separator:ae20147e395dc287a1220ec64e9f6932d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Vincent Chabannes </dd></dl>

@@ -243,19 +243,6 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>boost::serialization
 <tr class="memitem:ac7a3fbcadb6b41c69f620063c4992fdc"><td class="memItemLeft" align="right" valign="top"><a id="ac7a3fbcadb6b41c69f620063c4992fdc" name="ac7a3fbcadb6b41c69f620063c4992fdc"></a>
 std::set&lt; std::pair&lt; size_type, uint16_type &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>elements</b> ()</td></tr>
 <tr class="separator:ac7a3fbcadb6b41c69f620063c4992fdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af35d47e15497eb99753fa13c06f21286"><td class="memItemLeft" align="right" valign="top"><a id="af35d47e15497eb99753fa13c06f21286" name="af35d47e15497eb99753fa13c06f21286"></a>
-<a class="el" href="classFeel_1_1GeoEntity.html">self_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>addElementGhost</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> proc, size_type e)</td></tr>
-<tr class="memdesc:af35d47e15497eb99753fa13c06f21286"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a new ghost element to which the point belongs <br /></td></tr>
-<tr class="separator:af35d47e15497eb99753fa13c06f21286"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70eb577756f509f06305d8c900527891"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a70eb577756f509f06305d8c900527891">numberOfProcGhost</a> () const</td></tr>
-<tr class="separator:a70eb577756f509f06305d8c900527891"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8f25054e0e46a7f3bf6b4ed0ffb7815"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, std::set&lt; size_type &gt; &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#ad8f25054e0e46a7f3bf6b4ed0ffb7815">elementsGhost</a> () const</td></tr>
-<tr class="separator:ad8f25054e0e46a7f3bf6b4ed0ffb7815"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac7eadff3c6249e2b9fe62582afd3d951"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#ac7eadff3c6249e2b9fe62582afd3d951">isSubEntityOfGhostElement</a> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
-<tr class="separator:ac7eadff3c6249e2b9fe62582afd3d951"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ef1925d93428763db630de135c4a079"><td class="memItemLeft" align="right" valign="top"><a id="a0ef1925d93428763db630de135c4a079" name="a0ef1925d93428763db630de135c4a079"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clearElementsGhost</b> ()</td></tr>
-<tr class="separator:a0ef1925d93428763db630de135c4a079"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4db12deecd2b8e9f7561d1f3ccf5e6f5"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a4db12deecd2b8e9f7561d1f3ccf5e6f5">setTags</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;tags)</td></tr>
 <tr class="memdesc:a4db12deecd2b8e9f7561d1f3ccf5e6f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the tags associated to the points  <a href="classFeel_1_1GeoEntity.html#a4db12deecd2b8e9f7561d1f3ccf5e6f5">More...</a><br /></td></tr>
 <tr class="separator:a4db12deecd2b8e9f7561d1f3ccf5e6f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -467,33 +454,13 @@ uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>boundaryEntity
 <tr class="separator:ad70c74e76365881b70c636557448ccc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a841b8c437c0e05661d0940a6e543b158"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a841b8c437c0e05661d0940a6e543b158">isLinkedToOtherPartitions</a> () const</td></tr>
 <tr class="separator:a841b8c437c0e05661d0940a6e543b158"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a340024a908c4c16845cdcf6596c9373d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a340024a908c4c16845cdcf6596c9373d">neighborPartitionIds</a> () const</td></tr>
-<tr class="separator:a340024a908c4c16845cdcf6596c9373d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a403b382418c2743cd51644641a3f05cb"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a403b382418c2743cd51644641a3f05cb">neighborPartitionIds</a> ()</td></tr>
-<tr class="separator:a403b382418c2743cd51644641a3f05cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3bc7be225ea962cc24f70f0c6277917"><td class="memItemLeft" align="right" valign="top"><a id="ad3bc7be225ea962cc24f70f0c6277917" name="ad3bc7be225ea962cc24f70f0c6277917"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clearNeighborPartitionIds</b> ()</td></tr>
-<tr class="memdesc:ad3bc7be225ea962cc24f70f0c6277917"><td class="mdescLeft">&#160;</td><td class="mdescRight">clear the neighbor partition ids container <br /></td></tr>
-<tr class="separator:ad3bc7be225ea962cc24f70f0c6277917"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1826fbf9d2d0cc411e8b009eab783f6c"><td class="memItemLeft" align="right" valign="top"><a id="a1826fbf9d2d0cc411e8b009eab783f6c" name="a1826fbf9d2d0cc411e8b009eab783f6c"></a>
-FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOthersPartitions</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> pid, size_type id)</td></tr>
-<tr class="memdesc:a1826fbf9d2d0cc411e8b009eab783f6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">set id in a partition pid of the entity <br /></td></tr>
-<tr class="separator:a1826fbf9d2d0cc411e8b009eab783f6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad785d53717f7db00b463bb15ed9bed0f"><td class="memItemLeft" align="right" valign="top"><a id="ad785d53717f7db00b463bb15ed9bed0f" name="ad785d53717f7db00b463bb15ed9bed0f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOtherPartitions</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> pid, size_type id)</td></tr>
-<tr class="separator:ad785d53717f7db00b463bb15ed9bed0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85d3b1af2b16c52b5f8b2b8e79ad9f60"><td class="memItemLeft" align="right" valign="top"><a id="a85d3b1af2b16c52b5f8b2b8e79ad9f60" name="a85d3b1af2b16c52b5f8b2b8e79ad9f60"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOtherPartitions</b> (std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; const &amp;iop)</td></tr>
-<tr class="memdesc:a85d3b1af2b16c52b5f8b2b8e79ad9f60"><td class="mdescLeft">&#160;</td><td class="mdescRight">set (partition,id) in other partitions of the entity <br /></td></tr>
-<tr class="separator:a85d3b1af2b16c52b5f8b2b8e79ad9f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7eda5aa9e068ee37a2d1e60fb1383dea"><td class="memItemLeft" align="right" valign="top"><a id="a7eda5aa9e068ee37a2d1e60fb1383dea" name="a7eda5aa9e068ee37a2d1e60fb1383dea"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOtherPartitions</b> (std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; &amp;&amp;iop)</td></tr>
-<tr class="memdesc:a7eda5aa9e068ee37a2d1e60fb1383dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">set (partition,id) in other partitions of the entity <br /></td></tr>
-<tr class="separator:a7eda5aa9e068ee37a2d1e60fb1383dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97e16d2eb6c01b1e536c8a695a8604eb"><td class="memItemLeft" align="right" valign="top">size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a97e16d2eb6c01b1e536c8a695a8604eb">idInOthersPartitions</a> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> pid) const</td></tr>
 <tr class="separator:a97e16d2eb6c01b1e536c8a695a8604eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a068c39923b3b59c69aecff00b3ba00d6"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a068c39923b3b59c69aecff00b3ba00d6">idInOthersPartitions</a> () const</td></tr>
-<tr class="separator:a068c39923b3b59c69aecff00b3ba00d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53b2144ba312c931d76b8633e3662503"><td class="memItemLeft" align="right" valign="top">std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a53b2144ba312c931d76b8633e3662503">idInOthersPartitions</a> () const noexcept</td></tr>
+<tr class="separator:a53b2144ba312c931d76b8633e3662503"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3db60e279413d057314b4b0e67ab4eba"><td class="memItemLeft" align="right" valign="top"><a id="a3db60e279413d057314b4b0e67ab4eba" name="a3db60e279413d057314b4b0e67ab4eba"></a>
+std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>neighborProcessIds</b> () const noexcept</td></tr>
+<tr class="separator:a3db60e279413d057314b4b0e67ab4eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace652b54b24499260ae651ff5413d8cd"><td class="memItemLeft" align="right" valign="top"><a id="ace652b54b24499260ae651ff5413d8cd" name="ace652b54b24499260ae651ff5413d8cd"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clearIdInOthersPartitions</b> ()</td></tr>
 <tr class="memdesc:ace652b54b24499260ae651ff5413d8cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">clear id in others partitions container <br /></td></tr>
@@ -510,12 +477,22 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setId</b> (size_type 
 <tr class="memitem:a69a41f9986085a604611eae85de6b51a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a69a41f9986085a604611eae85de6b51a">setOnBoundary</a> (<a class="el" href="classbool.html">bool</a> b, uint16_type ent_d=<a class="el" href="namespaceFeel.html#a74681da1036cc5b236aabef05d8a8f87">invalid_uint16_type_value</a>)</td></tr>
 <tr class="memdesc:a69a41f9986085a604611eae85de6b51a"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the boundary flag  <a href="classFeel_1_1GeoEntity.html#a69a41f9986085a604611eae85de6b51a">More...</a><br /></td></tr>
 <tr class="separator:a69a41f9986085a604611eae85de6b51a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d9a654333a9c2b542f44aff9cdd3664"><td class="memItemLeft" align="right" valign="top">FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#a6d9a654333a9c2b542f44aff9cdd3664">setNumberOfPartitions</a> (uint16_type np)</td></tr>
-<tr class="separator:a6d9a654333a9c2b542f44aff9cdd3664"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae048478012512c63ce8414fb7ba45816"><td class="memItemLeft" align="right" valign="top"><a id="ae048478012512c63ce8414fb7ba45816" name="ae048478012512c63ce8414fb7ba45816"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setNumberOfNeighborPartitions</b> (uint16_type nep)</td></tr>
-<tr class="memdesc:ae048478012512c63ce8414fb7ba45816"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the number of partition the element is linked to <br /></td></tr>
-<tr class="separator:ae048478012512c63ce8414fb7ba45816"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad785d53717f7db00b463bb15ed9bed0f"><td class="memItemLeft" align="right" valign="top"><a id="ad785d53717f7db00b463bb15ed9bed0f" name="ad785d53717f7db00b463bb15ed9bed0f"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOtherPartitions</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> pid, size_type id)</td></tr>
+<tr class="memdesc:ad785d53717f7db00b463bb15ed9bed0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">set id in a partition pid of the entity <br /></td></tr>
+<tr class="separator:ad785d53717f7db00b463bb15ed9bed0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85d3b1af2b16c52b5f8b2b8e79ad9f60"><td class="memItemLeft" align="right" valign="top"><a id="a85d3b1af2b16c52b5f8b2b8e79ad9f60" name="a85d3b1af2b16c52b5f8b2b8e79ad9f60"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOtherPartitions</b> (std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; const &amp;iop)</td></tr>
+<tr class="memdesc:a85d3b1af2b16c52b5f8b2b8e79ad9f60"><td class="mdescLeft">&#160;</td><td class="mdescRight">set (partition,id) in other partitions of the entity <br /></td></tr>
+<tr class="separator:a85d3b1af2b16c52b5f8b2b8e79ad9f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7eda5aa9e068ee37a2d1e60fb1383dea"><td class="memItemLeft" align="right" valign="top"><a id="a7eda5aa9e068ee37a2d1e60fb1383dea" name="a7eda5aa9e068ee37a2d1e60fb1383dea"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setIdInOtherPartitions</b> (std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; &amp;&amp;iop)</td></tr>
+<tr class="memdesc:a7eda5aa9e068ee37a2d1e60fb1383dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">set (partition,id) in other partitions of the entity <br /></td></tr>
+<tr class="separator:a7eda5aa9e068ee37a2d1e60fb1383dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5c98856fa5f3a33cb3ecfbe9067e03e"><td class="memTemplParams" colspan="2"><a id="af5c98856fa5f3a33cb3ecfbe9067e03e" name="af5c98856fa5f3a33cb3ecfbe9067e03e"></a>
+template&lt;typename Q &gt; </td></tr>
+<tr class="memitem:af5c98856fa5f3a33cb3ecfbe9067e03e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>setNeighborProcessIds</b> (Q &amp;&amp;pids)</td></tr>
+<tr class="separator:af5c98856fa5f3a33cb3ecfbe9067e03e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9e073b757d3acbfabc48a076f4a6336"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1GeoEntity.html#ad9e073b757d3acbfabc48a076f4a6336">setNeighborPartitionIds</a> (std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const &amp;npids)</td></tr>
 <tr class="separator:ad9e073b757d3acbfabc48a076f4a6336"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31d1cd4ed160c9a91d124187337a23f6"><td class="memItemLeft" align="right" valign="top"><a id="a31d1cd4ed160c9a91d124187337a23f6" name="a31d1cd4ed160c9a91d124187337a23f6"></a>
@@ -569,26 +546,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 
 </div>
 </div>
-<a id="ad8f25054e0e46a7f3bf6b4ed0ffb7815" name="ad8f25054e0e46a7f3bf6b4ed0ffb7815"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8f25054e0e46a7f3bf6b4ed0ffb7815">&#9670;&nbsp;</a></span>elementsGhost()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, std::set&lt; size_type &gt; &gt; const  &amp; <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::elementsGhost </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the set of ids of ghost elements whom the point belongs to </dd></dl>
-
-</div>
-</div>
 <a id="ac3184b29cca70bd3becb6d48ba5e0030" name="ac3184b29cca70bd3becb6d48ba5e0030"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac3184b29cca70bd3becb6d48ba5e0030">&#9670;&nbsp;</a></span>hasShape()</h2>
 
@@ -610,13 +567,16 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 
 </div>
 </div>
-<a id="a068c39923b3b59c69aecff00b3ba00d6" name="a068c39923b3b59c69aecff00b3ba00d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a068c39923b3b59c69aecff00b3ba00d6">&#9670;&nbsp;</a></span>idInOthersPartitions() <span class="overload">[1/2]</span></h2>
+<a id="a53b2144ba312c931d76b8633e3662503" name="a53b2144ba312c931d76b8633e3662503"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53b2144ba312c931d76b8633e3662503">&#9670;&nbsp;</a></span>idInOthersPartitions() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">std::map&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>, size_type &gt; const  &amp; <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::idInOthersPartitions </td>
@@ -625,6 +585,11 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
           <td> const</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>idInOthersPartitions map </dd></dl>
 
@@ -1021,27 +986,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 
 </div>
 </div>
-<a id="ac7eadff3c6249e2b9fe62582afd3d951" name="ac7eadff3c6249e2b9fe62582afd3d951"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac7eadff3c6249e2b9fe62582afd3d951">&#9670;&nbsp;</a></span>isSubEntityOfGhostElement()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::isSubEntityOfGhostElement </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td>
-          <td class="paramname"><em>p</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>true if geoentity is a subentity of a ghost elt belongs to partition p </dd></dl>
-
-</div>
-</div>
 <a id="abbd6ba41fc8fcb9c6b9aae3cba9d0bee" name="abbd6ba41fc8fcb9c6b9aae3cba9d0bee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abbd6ba41fc8fcb9c6b9aae3cba9d0bee">&#9670;&nbsp;</a></span>measure()</h2>
 
@@ -1099,46 +1043,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 
 <p>number of edges on the reference shape </p>
 <dl class="section return"><dt>Returns</dt><dd>the number of edges on the reference shape </dd></dl>
-
-</div>
-</div>
-<a id="a403b382418c2743cd51644641a3f05cb" name="a403b382418c2743cd51644641a3f05cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a403b382418c2743cd51644641a3f05cb">&#9670;&nbsp;</a></span>neighborPartitionIds() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; &amp; <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::neighborPartitionIds </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the number of partition the element is linked to </dd></dl>
-
-</div>
-</div>
-<a id="a340024a908c4c16845cdcf6596c9373d" name="a340024a908c4c16845cdcf6596c9373d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a340024a908c4c16845cdcf6596c9373d">&#9670;&nbsp;</a></span>neighborPartitionIds() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const  &amp; <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::neighborPartitionIds </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the number of partition the element is linked to </dd></dl>
 
 </div>
 </div>
@@ -1360,26 +1264,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 
 </div>
 </div>
-<a id="a70eb577756f509f06305d8c900527891" name="a70eb577756f509f06305d8c900527891"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70eb577756f509f06305d8c900527891">&#9670;&nbsp;</a></span>numberOfProcGhost()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::numberOfProcGhost </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the number of ghost elements whom the point belongs to </dd></dl>
-
-</div>
-</div>
 <a id="a3873bd3e5ca9b65e49eadd4774b79eff" name="a3873bd3e5ca9b65e49eadd4774b79eff"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3873bd3e5ca9b65e49eadd4774b79eff">&#9670;&nbsp;</a></span>nVertices()</h2>
 
@@ -1464,6 +1348,8 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the processor id of the entity </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoEntity.html#ad9e073b757d3acbfabc48a076f4a6336">Feel::GeoEntity&lt; Entity, T, IndexT &gt;::setNeighborPartitionIds()</a>.</p>
+
 </div>
 </div>
 <a id="a99e704e32aae12ed505b812861c7b5d8" name="a99e704e32aae12ed505b812861c7b5d8"></a>
@@ -1543,28 +1429,9 @@ template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , 
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the number of partition the element is linked to </dd></dl>
 
+<p class="reference">References <a class="el" href="classFeel_1_1GeoEntity.html#a537d810dc8100384febe8318bb1c8fea">Feel::GeoEntity&lt; Entity, T, IndexT &gt;::pidInPartition()</a>.</p>
+
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1GeoEntity.html#a4db12deecd2b8e9f7561d1f3ccf5e6f5">Feel::GeoEntity&lt; Entity, T, IndexT &gt;::setTags()</a>.</p>
-
-</div>
-</div>
-<a id="a6d9a654333a9c2b542f44aff9cdd3664" name="a6d9a654333a9c2b542f44aff9cdd3664"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d9a654333a9c2b542f44aff9cdd3664">&#9670;&nbsp;</a></span>setNumberOfPartitions()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Entity.html">Entity</a> , typename T  = double, typename IndexT  = uint32_type&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">FEELPP_DEPRECATED void <a class="el" href="classFeel_1_1GeoEntity.html">Feel::GeoEntity</a>&lt; <a class="el" href="classFeel_1_1Entity.html">Entity</a>, T, IndexT &gt;::setNumberOfPartitions </td>
-          <td>(</td>
-          <td class="paramtype">uint16_type&#160;</td>
-          <td class="paramname"><em>np</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the number of partition the element is linked to including the partition to which it belongs </dd></dl>
 
 </div>
 </div>

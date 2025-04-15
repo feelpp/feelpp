@@ -405,60 +405,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>build</b> (<a class="
 void&#160;</td><td class="memItemRight" valign="bottom"><b>build</b> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &gt; &amp;M)</td></tr>
 <tr class="memdesc:a5e111776af979f6bd7d183dfff036674"><td class="mdescLeft">&#160;</td><td class="mdescRight">build the dof map <br /></td></tr>
 <tr class="separator:a5e111776af979f6bd7d183dfff036674"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac427f4b6daaaab6c5adc348aea8d9e12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#ac427f4b6daaaab6c5adc348aea8d9e12">buildBoundaryDofMap</a> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh)</td></tr>
-<tr class="memdesc:ac427f4b6daaaab6c5adc348aea8d9e12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build the localToGlobal table for the boundary.  <a href="classFeel_1_1DofTable.html#ac427f4b6daaaab6c5adc348aea8d9e12">More...</a><br /></td></tr>
-<tr class="separator:ac427f4b6daaaab6c5adc348aea8d9e12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03400321ff5ef14d9bdc12b516480304"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a03400321ff5ef14d9bdc12b516480304">buildDofMap</a> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh, size_type start_next_free_dof=0)</td></tr>
-<tr class="memdesc:a03400321ff5ef14d9bdc12b516480304"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build the localToGlobal table.  <a href="classFeel_1_1DofTable.html#a03400321ff5ef14d9bdc12b516480304">More...</a><br /></td></tr>
-<tr class="separator:a03400321ff5ef14d9bdc12b516480304"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d5d3d9abec187c756bc775ed222bb81"><td class="memItemLeft" align="right" valign="top"><a id="a3d5d3d9abec187c756bc775ed222bb81" name="a3d5d3d9abec187c756bc775ed222bb81"></a>
-<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>buildDofTableMPIExtended</b> () const</td></tr>
-<tr class="separator:a3d5d3d9abec187c756bc775ed222bb81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4cb22d8e41e47eb01d6797d2bfcaff8"><td class="memItemLeft" align="right" valign="top"><a id="ae4cb22d8e41e47eb01d6797d2bfcaff8" name="ae4cb22d8e41e47eb01d6797d2bfcaff8"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGhostDofMap</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh)</td></tr>
-<tr class="memdesc:ae4cb22d8e41e47eb01d6797d2bfcaff8"><td class="mdescLeft">&#160;</td><td class="mdescRight">build the GlobalProcessToGlobalClusterDof table <br /></td></tr>
-<tr class="separator:ae4cb22d8e41e47eb01d6797d2bfcaff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e41c608c7c472160f350769bb1591c6"><td class="memItemLeft" align="right" valign="top"><a id="a9e41c608c7c472160f350769bb1591c6" name="a9e41c608c7c472160f350769bb1591c6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGhostDofMapExtended</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh)</td></tr>
-<tr class="separator:a9e41c608c7c472160f350769bb1591c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57f6029f3ec7a34816096e3a623f8500"><td class="memItemLeft" align="right" valign="top"><a id="a57f6029f3ec7a34816096e3a623f8500" name="a57f6029f3ec7a34816096e3a623f8500"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGhostDofMapExtended</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh, <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; <a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a>, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt; const &amp;ghostEltRange, <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; <a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a>, <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt; const &amp;activeEltTouchInterProcessRange)</td></tr>
-<tr class="separator:a57f6029f3ec7a34816096e3a623f8500"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cc51c6f43bc27c670bb43969d2464f8"><td class="memItemLeft" align="right" valign="top"><a id="a4cc51c6f43bc27c670bb43969d2464f8" name="a4cc51c6f43bc27c670bb43969d2464f8"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapContinuous</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh)</td></tr>
-<tr class="memdesc:a4cc51c6f43bc27c670bb43969d2464f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">subroutines <br /></td></tr>
-<tr class="separator:a4cc51c6f43bc27c670bb43969d2464f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a984a2bd5e3d5d723eda6d2b2101e3703"><td class="memItemLeft" align="right" valign="top"><a id="a984a2bd5e3d5d723eda6d2b2101e3703" name="a984a2bd5e3d5d723eda6d2b2101e3703"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapContinuousActifDof</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh, std::vector&lt; std::map&lt; size_type, std::set&lt; std::vector&lt; size_type &gt; &gt; &gt; &gt; &amp;listToSend, std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; &amp;procRecvData)</td></tr>
-<tr class="separator:a984a2bd5e3d5d723eda6d2b2101e3703"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7da78ae911cc66963b7dda9d80bf8f3e"><td class="memItemLeft" align="right" valign="top"><a id="a7da78ae911cc66963b7dda9d80bf8f3e" name="a7da78ae911cc66963b7dda9d80bf8f3e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh, std::vector&lt; std::map&lt; size_type, std::set&lt; std::vector&lt; size_type &gt; &gt; &gt; &gt; const &amp;listToSend, std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const &amp;procRecvData)</td></tr>
-<tr class="separator:a7da78ae911cc66963b7dda9d80bf8f3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad240bf0db55d3fa4391bfa6fe69c0181"><td class="memItemLeft" align="right" valign="top"><a id="ad240bf0db55d3fa4391bfa6fe69c0181" name="ad240bf0db55d3fa4391bfa6fe69c0181"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh, std::vector&lt; std::map&lt; size_type, std::set&lt; std::vector&lt; size_type &gt; &gt; &gt; &gt; const &amp;listToSend, std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const &amp;procRecvData)</td></tr>
-<tr class="separator:ad240bf0db55d3fa4391bfa6fe69c0181"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afecbe9703c2c3ffd53dd0ebe1e1d4474"><td class="memItemLeft" align="right" valign="top"><a id="afecbe9703c2c3ffd53dd0ebe1e1d4474" name="afecbe9703c2c3ffd53dd0ebe1e1d4474"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapDiscontinuous</b> ()</td></tr>
-<tr class="separator:afecbe9703c2c3ffd53dd0ebe1e1d4474"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88dc86e2c7a6c3cf439ad75d6458b2f9"><td class="memItemLeft" align="right" valign="top"><a id="a88dc86e2c7a6c3cf439ad75d6458b2f9" name="a88dc86e2c7a6c3cf439ad75d6458b2f9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapOthersMesh</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh)</td></tr>
-<tr class="separator:a88dc86e2c7a6c3cf439ad75d6458b2f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f0fbcaaa030f6af6c41a4797334cbc2"><td class="memItemLeft" align="right" valign="top"><a id="a1f0fbcaaa030f6af6c41a4797334cbc2" name="a1f0fbcaaa030f6af6c41a4797334cbc2"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;mesh, std::vector&lt; std::map&lt; size_type, std::vector&lt; std::vector&lt; std::pair&lt; uint16_type, size_type &gt; &gt; &gt; &gt; &gt; const &amp;listToSend)</td></tr>
-<tr class="separator:a1f0fbcaaa030f6af6c41a4797334cbc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39bf3b51de6e39f6a53336cf935d497e"><td class="memItemLeft" align="right" valign="top"><a id="a39bf3b51de6e39f6a53336cf935d497e" name="a39bf3b51de6e39f6a53336cf935d497e"></a>
-size_type&#160;</td><td class="memItemRight" valign="bottom"><b>buildLocallyDiscontinuousDofMap</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;M, size_type start_next_free_dof)</td></tr>
-<tr class="memdesc:a39bf3b51de6e39f6a53336cf935d497e"><td class="mdescLeft">&#160;</td><td class="mdescRight">build dof associated to local discontinuities <br /></td></tr>
-<tr class="separator:a39bf3b51de6e39f6a53336cf935d497e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4394232be2dd756cc581bb556fc564c"><td class="memItemLeft" align="right" valign="top"><a id="ac4394232be2dd756cc581bb556fc564c" name="ac4394232be2dd756cc581bb556fc564c"></a>
-size_type&#160;</td><td class="memItemRight" valign="bottom"><b>buildPeriodicDofMap</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;M)</td></tr>
-<tr class="memdesc:ac4394232be2dd756cc581bb556fc564c"><td class="mdescLeft">&#160;</td><td class="mdescRight">build dof map associated to the periodic dof, must be called before buildDofMap <br /></td></tr>
-<tr class="separator:ac4394232be2dd756cc581bb556fc564c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb55fd5c758b7dd75d46aa993da03191"><td class="memItemLeft" align="right" valign="top"><a id="adb55fd5c758b7dd75d46aa993da03191" name="adb55fd5c758b7dd75d46aa993da03191"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clearMapGDof</b> ()</td></tr>
 <tr class="memdesc:adb55fd5c758b7dd75d46aa993da03191"><td class="mdescLeft">&#160;</td><td class="mdescRight">clear the dictionary <br /></td></tr>
 <tr class="separator:adb55fd5c758b7dd75d46aa993da03191"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a447b09f562a54564254a9c5d902bdea0"><td class="memItemLeft" align="right" valign="top">size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a447b09f562a54564254a9c5d902bdea0">dofIndex</a> (size_type dof) const</td></tr>
+<tr class="memdesc:a447b09f562a54564254a9c5d902bdea0"><td class="mdescLeft">&#160;</td><td class="mdescRight">insted of creating the dof indices on the fly, get them from a vector.  <a href="classFeel_1_1DofTable.html#a447b09f562a54564254a9c5d902bdea0">More...</a><br /></td></tr>
 <tr class="separator:a447b09f562a54564254a9c5d902bdea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9924cfeeba932de7437dbbfcfb0594d8"><td class="memItemLeft" align="right" valign="top">const dof_point_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a9924cfeeba932de7437dbbfcfb0594d8">dofPoint</a> (size_type i) const</td></tr>
 <tr class="separator:a9924cfeeba932de7437dbbfcfb0594d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -484,6 +436,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>clearMapGDof</b> ()</
 <tr class="memitem:a3d490bde93b4ad924222445663645317"><td class="memItemLeft" align="right" valign="top"><a id="a3d490bde93b4ad924222445663645317" name="a3d490bde93b4ad924222445663645317"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>DofTable</b> (<a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;_worldComm)</td></tr>
 <tr class="separator:a3d490bde93b4ad924222445663645317"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62c0d5d97791a177e726653d39af011b"><td class="memItemLeft" align="right" valign="top"><a id="a62c0d5d97791a177e726653d39af011b" name="a62c0d5d97791a177e726653d39af011b"></a>
+DofTableExtendedType&#160;</td><td class="memItemRight" valign="bottom"><b>dofTableExtended</b> () const noexcept</td></tr>
+<tr class="separator:a62c0d5d97791a177e726653d39af011b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9362ffa1d3f7b8d26c64c3a3120415a"><td class="memItemLeft" align="right" valign="top"><a id="aa9362ffa1d3f7b8d26c64c3a3120415a" name="aa9362ffa1d3f7b8d26c64c3a3120415a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>dump</b> () const</td></tr>
 <tr class="separator:aa9362ffa1d3f7b8d26c64c3a3120415a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -541,6 +496,9 @@ std::set&lt; <a class="el" href="classFeel_1_1Dof.html">globaldof_type</a> &gt;&
 <tr class="separator:ac6bdf0c96dc9ee4fbe2f971671c66e72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2116c54d2185858f2b38da37c007aca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1DofTable.html#a1b5a5523e7f7976431e219e2e3b41d4d">localdof_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#ab2116c54d2185858f2b38da37c007aca">globalToLocal</a> (size_type dof) const</td></tr>
 <tr class="separator:ab2116c54d2185858f2b38da37c007aca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a862a59169186fac7ff2afd827b07c88a"><td class="memItemLeft" align="right" valign="top"><a id="a862a59169186fac7ff2afd827b07c88a" name="a862a59169186fac7ff2afd827b07c88a"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasDofTableExtended</b> () const</td></tr>
+<tr class="separator:a862a59169186fac7ff2afd827b07c88a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed177fab7ab992c7d17ae4118ebe85ef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#aed177fab7ab992c7d17ae4118ebe85ef">hasMeshSupport</a> () const</td></tr>
 <tr class="separator:aed177fab7ab992c7d17ae4118ebe85ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af84735c6805c31215dfa1af19ca6b808"><td class="memItemLeft" align="right" valign="top"><a id="af84735c6805c31215dfa1af19ca6b808" name="af84735c6805c31215dfa1af19ca6b808"></a>
@@ -678,12 +636,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>printDofMarker</b> (s
 void&#160;</td><td class="memItemRight" valign="bottom"><b>rebuildDofPoints</b> (<a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;M)</td></tr>
 <tr class="memdesc:ad6403572157a04f0313d3f825199accf"><td class="mdescLeft">&#160;</td><td class="mdescRight">rebuild dof points <br /></td></tr>
 <tr class="separator:ad6403572157a04f0313d3f825199accf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f38c7a2495eca3a241f1595ac415fe3"><td class="memItemLeft" align="right" valign="top"><a id="a0f38c7a2495eca3a241f1595ac415fe3" name="a0f38c7a2495eca3a241f1595ac415fe3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setBuildDofTableMPIExtended</b> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
-<tr class="separator:a0f38c7a2495eca3a241f1595ac415fe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8fea5b9b41e6c466eabc1b88cce12e3f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1DofTable.html#a8fea5b9b41e6c466eabc1b88cce12e3f">setDofIndices</a> (std::vector&lt; <a class="el" href="classFeel_1_1Dof.html">globaldof_type</a> &gt; const &amp;dof)</td></tr>
-<tr class="memdesc:a8fea5b9b41e6c466eabc1b88cce12e3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">insted of creating the dof indices on the fly, get them from a vector.  <a href="classFeel_1_1DofTable.html#a8fea5b9b41e6c466eabc1b88cce12e3f">More...</a><br /></td></tr>
-<tr class="separator:a8fea5b9b41e6c466eabc1b88cce12e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fe4cb035db461bac2d94062ced4bf19"><td class="memItemLeft" align="right" valign="top"><a id="a1fe4cb035db461bac2d94062ced4bf19" name="a1fe4cb035db461bac2d94062ced4bf19"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setDofTableExtended</b> (DofTableExtendedType b)</td></tr>
+<tr class="separator:a1fe4cb035db461bac2d94062ced4bf19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7efd7320dbf8927a7ef416a6fa4fdb3a"><td class="memItemLeft" align="right" valign="top"><a id="a7efd7320dbf8927a7ef416a6fa4fdb3a" name="a7efd7320dbf8927a7ef416a6fa4fdb3a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMapGDof</b> (dof_map_type const &amp;mapdof)</td></tr>
 <tr class="memdesc:a7efd7320dbf8927a7ef416a6fa4fdb3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the dictionary for the dictionary of the global dof <br /></td></tr>
@@ -969,72 +924,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac427f4b6daaaab6c5adc348aea8d9e12" name="ac427f4b6daaaab6c5adc348aea8d9e12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac427f4b6daaaab6c5adc348aea8d9e12">&#9670;&nbsp;</a></span>buildBoundaryDofMap()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;::buildBoundaryDofMap </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Build the localToGlobal table for the boundary. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">mesh</td><td><a class="el" href="classA.html">A</a> mesh </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a03400321ff5ef14d9bdc12b516480304" name="a03400321ff5ef14d9bdc12b516480304"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03400321ff5ef14d9bdc12b516480304">&#9670;&nbsp;</a></span>buildDofMap()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;::buildDofMap </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1">mesh_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_type&#160;</td>
-          <td class="paramname"><em>start_next_free_dof</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Build the localToGlobal table. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">mesh</td><td>mesh </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="a447b09f562a54564254a9c5d902bdea0" name="a447b09f562a54564254a9c5d902bdea0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a447b09f562a54564254a9c5d902bdea0">&#9670;&nbsp;</a></span>dofIndex()</h2>
 
@@ -1052,6 +941,10 @@ template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , 
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>insted of creating the dof indices on the fly, get them from a vector. </p>
+<p >The situation typically arises when we want to have dof correspondence between two spaces</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1OperatorLagrangeP1.html">OperatorLagrangeP1</a> </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>the dof index </dd></dl>
 
 </div>
@@ -1628,30 +1521,6 @@ template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , 
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the number of dof for faces on the boundary </dd></dl>
-
-</div>
-</div>
-<a id="a8fea5b9b41e6c466eabc1b88cce12e3f" name="a8fea5b9b41e6c466eabc1b88cce12e3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8fea5b9b41e6c466eabc1b88cce12e3f">&#9670;&nbsp;</a></span>setDofIndices()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> , typename FEType , typename PeriodicityType , typename MortarType &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="classFeel_1_1DofTable.html">Feel::DofTable</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>, FEType, PeriodicityType, MortarType &gt;::setDofIndices </td>
-          <td>(</td>
-          <td class="paramtype">std::vector&lt; <a class="el" href="classFeel_1_1Dof.html">globaldof_type</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>dof</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>insted of creating the dof indices on the fly, get them from a vector. </p>
-<p >The situation typically arises when we want to have dof correspondence between two spaces</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1OperatorLagrangeP1.html">OperatorLagrangeP1</a> </dd></dl>
 
 </div>
 </div>

@@ -4,7 +4,7 @@ var searchData=
   ['tangent_1',['tangent',['../classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a24937e3ed40cdad6ebd11ba9a1cc3f13',1,'Feel::Reference&lt; Hypercube&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt;::tangent()'],['../classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#a46334cd0dbb44677ab5354c4b5323205',1,'Feel::Reference&lt; Simplex&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt;::tangent()']]],
   ['task_2',['task',['../classFeel_1_1AboutPerson.html#ac11b01ec30ca230dd7c734ecbeac62ca',1,'Feel::AboutPerson']]],
   ['temperatureimposed_3',['temperatureImposed',['../classFeel_1_1FeelModels_1_1HeatBoundaryConditions.html#a054d0083e9999d7196c2db8e9e3f6c5a',1,'Feel::FeelModels::HeatBoundaryConditions']]],
-  ['thch_4',['THch',['../namespaceFeel.html#a73e36a4ea35a4ae5470ea057398e609b',1,'Feel']]],
+  ['thch_4',['THch',['../namespaceFeel.html#af351bd6e1748a4a7b8bcb3e7aded00d9',1,'Feel']]],
   ['threadlevel_5',['threadLevel',['../classFeel_1_1Environment.html#ac069d8bd28f382ed6db571caf548ec70',1,'Feel::Environment']]],
   ['threshold_6',['threshold',['../classFeel_1_1BilinearFormBase.html#a9bc15456f96d18dffe0e99e49fa97c45',1,'Feel::BilinearFormBase']]],
   ['throw_5fwith_5ftrace_7',['throw_with_trace',['../namespaceFeel.html#a26ca933b206555fce305e6bd89ae72b4',1,'Feel']]],

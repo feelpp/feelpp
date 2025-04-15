@@ -77,7 +77,7 @@ var sectionId = 'dynsection-1';
 <text text-anchor="start" x="320" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* faces()</text>
 <text text-anchor="start" x="320" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* hasFace()</text>
 <text text-anchor="start" x="320" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* face()</text>
-<text text-anchor="start" x="320" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
+<text text-anchor="start" x="320" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 30 more...</text>
 <text text-anchor="start" x="320" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
 <text text-anchor="start" x="320" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
 <text text-anchor="start" x="320" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh1D()</text>

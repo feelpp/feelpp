@@ -11,6 +11,7 @@ var classFeel_1_1GeoElement1D =
     [ "id", "classFeel_1_1GeoElement1D.html#a4c8922a43d9fd9f7df672b366cd43b78", null ],
     [ "isGhostCell", "classFeel_1_1GeoElement1D.html#a35824d79cb82990013b76947d6dc4d85", null ],
     [ "isInterProcessDomain", "classFeel_1_1GeoElement1D.html#a0a7dd5c17d2d896f89a9f8f3becf4f30", null ],
+    [ "isInterProcessDomain", "classFeel_1_1GeoElement1D.html#ad273aba98c3b3bc08f40e33d7d3dba9a", null ],
     [ "isOnBoundary", "classFeel_1_1GeoElement1D.html#aaebb774eddaab509eebc7449a0161c63", null ],
     [ "operator=", "classFeel_1_1GeoElement1D.html#ac8c21cda5e9a7199a92bba54be0f1666", null ],
     [ "partition1", "classFeel_1_1GeoElement1D.html#ac675904907a55b2912eda8da8244d584", null ],

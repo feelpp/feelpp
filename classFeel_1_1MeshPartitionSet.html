@@ -136,11 +136,14 @@ typedef face_container_type::const_iterator&#160;</td><td class="memItemRight" v
 <tr class="memitem:ab549ad5387d772492a3e1a5f8b73e6ee"><td class="memItemLeft" align="right" valign="top"><a id="ab549ad5387d772492a3e1a5f8b73e6ee" name="ab549ad5387d772492a3e1a5f8b73e6ee"></a>
 typedef std::vector&lt; boost::reference_wrapper&lt; typename <a class="el" href="structFeel_1_1MeshTraits.html">MeshTraits</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;::face_type const  &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_container_type</b></td></tr>
 <tr class="separator:ab549ad5387d772492a3e1a5f8b73e6ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6576c23250897617e3312bad9e0edac"><td class="memItemLeft" align="right" valign="top"><a id="ad6576c23250897617e3312bad9e0edac" name="ad6576c23250897617e3312bad9e0edac"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>index_type</b> = typename mesh_type::index_type</td></tr>
+<tr class="separator:ad6576c23250897617e3312bad9e0edac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeaa7ac49f7074df785001804b222f3e9"><td class="memItemLeft" align="right" valign="top"><a id="aeaa7ac49f7074df785001804b222f3e9" name="aeaa7ac49f7074df785001804b222f3e9"></a>
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b></td></tr>
 <tr class="separator:aeaa7ac49f7074df785001804b222f3e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4e8306cb89f37adae147dc1c741d065"><td class="memItemLeft" align="right" valign="top"><a id="aa4e8306cb89f37adae147dc1c741d065" name="aa4e8306cb89f37adae147dc1c741d065"></a>
-typedef <a class="el" href="classFeel_1_1Mesh.html">MeshType</a>&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b></td></tr>
+typedef MeshType&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_type</b></td></tr>
 <tr class="separator:aa4e8306cb89f37adae147dc1c741d065"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a1484a3b41dee9f2d86493a833983f2"><td class="memItemLeft" align="right" valign="top"><a id="a2a1484a3b41dee9f2d86493a833983f2" name="a2a1484a3b41dee9f2d86493a833983f2"></a>
 typedef point_container_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>point_const_iterator</b></td></tr>
@@ -148,6 +151,9 @@ typedef point_container_type::const_iterator&#160;</td><td class="memItemRight" 
 <tr class="memitem:a49f015f8bf51a61d856caa180432a8b1"><td class="memItemLeft" align="right" valign="top"><a id="a49f015f8bf51a61d856caa180432a8b1" name="a49f015f8bf51a61d856caa180432a8b1"></a>
 typedef std::vector&lt; boost::reference_wrapper&lt; typename <a class="el" href="structFeel_1_1MeshTraits.html">MeshTraits</a>&lt; <a class="el" href="classFeel_1_1Mesh.html">mesh_type</a> &gt;::point_type const  &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>point_container_type</b></td></tr>
 <tr class="separator:a49f015f8bf51a61d856caa180432a8b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32195d4c5a748d3014f9352f5e099a39"><td class="memItemLeft" align="right" valign="top"><a id="a32195d4c5a748d3014f9352f5e099a39" name="a32195d4c5a748d3014f9352f5e099a39"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename mesh_type::size_type</td></tr>
+<tr class="separator:a32195d4c5a748d3014f9352f5e099a39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -230,22 +236,22 @@ mesh_ptrtype const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m
 <a class="el" href="classFeel_1_1MeshPartitionSet.html">MeshPartitionSet</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1MeshPartitionSet.html">MeshPartitionSet</a> const &amp;)=default</td></tr>
 <tr class="separator:a5f48dafb8b68ca145f4ae33417167a22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae1b15ecc4b7ab204c5f2da19d090349"><td class="memItemLeft" align="right" valign="top"><a id="aae1b15ecc4b7ab204c5f2da19d090349" name="aae1b15ecc4b7ab204c5f2da19d090349"></a>
-<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>statNumEdgesMarkedAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>statNumEdgesMarkedAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
 <tr class="separator:aae1b15ecc4b7ab204c5f2da19d090349"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71186851eca30b8996ccc392bca12bb7"><td class="memItemLeft" align="right" valign="top"><a id="a71186851eca30b8996ccc392bca12bb7" name="a71186851eca30b8996ccc392bca12bb7"></a>
-<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>statNumElementsActive</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>statNumElementsActive</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
 <tr class="separator:a71186851eca30b8996ccc392bca12bb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76e95569e4e1e792954815bb1e6fc55f"><td class="memItemLeft" align="right" valign="top"><a id="a76e95569e4e1e792954815bb1e6fc55f" name="a76e95569e4e1e792954815bb1e6fc55f"></a>
-<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>statNumElementsAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>statNumElementsAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
 <tr class="separator:a76e95569e4e1e792954815bb1e6fc55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9eb6e5b7da1ec4c5189db53697b38207"><td class="memItemLeft" align="right" valign="top"><a id="a9eb6e5b7da1ec4c5189db53697b38207" name="a9eb6e5b7da1ec4c5189db53697b38207"></a>
-<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>statNumFacesMarkedAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>statNumFacesMarkedAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
 <tr class="separator:a9eb6e5b7da1ec4c5189db53697b38207"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af363010a1df0963c00c2ccc1b68d7020"><td class="memItemLeft" align="right" valign="top"><a id="af363010a1df0963c00c2ccc1b68d7020" name="af363010a1df0963c00c2ccc1b68d7020"></a>
-<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>statNumPointsAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>statNumPointsAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
 <tr class="separator:af363010a1df0963c00c2ccc1b68d7020"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff0c6d43d13673b714c339e16662ca90"><td class="memItemLeft" align="right" valign="top"><a id="aff0c6d43d13673b714c339e16662ca90" name="aff0c6d43d13673b714c339e16662ca90"></a>
-<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>statNumPointsMarkedAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
+size_type&#160;</td><td class="memItemRight" valign="bottom"><b>statNumPointsMarkedAll</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p) const</td></tr>
 <tr class="separator:aff0c6d43d13673b714c339e16662ca90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-2/_work/feelpp/feelpp/feelpp/feel/feelmesh/enums.hpp File Reference</title>
+<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-5/_work/feelpp/feelpp/feelpp/feel/feelmesh/enums.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -116,12 +116,15 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:abb6df99bcfeaf0d62e9cb74dc412fca0"><td class="memItemLeft" align="right" valign="top"><a id="abb6df99bcfeaf0d62e9cb74dc412fca0" name="abb6df99bcfeaf0d62e9cb74dc412fca0"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::entity_filter_t</b> = EntityFilterType</td></tr>
+<tr class="separator:abb6df99bcfeaf0d62e9cb74dc412fca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad16a1dc0a4e67972233a286cadd4b088"><td class="memItemLeft" align="right" valign="top"><a id="ad16a1dc0a4e67972233a286cadd4b088" name="ad16a1dc0a4e67972233a286cadd4b088"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::entity_process_t</b> = EntityProcessType</td></tr>
 <tr class="separator:ad16a1dc0a4e67972233a286cadd4b088"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20c4223697c0dd2c4d02306ffc862fda"><td class="memItemLeft" align="right" valign="top"><a id="a20c4223697c0dd2c4d02306ffc862fda" name="a20c4223697c0dd2c4d02306ffc862fda"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::on_edges_t</b> = boost::mp11::mp_int&lt; MESH_FACES &gt;</td></tr>
-<tr class="separator:a20c4223697c0dd2c4d02306ffc862fda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2a5a6298d72acdbe95d556f097b3162"><td class="memItemLeft" align="right" valign="top"><a id="ae2a5a6298d72acdbe95d556f097b3162" name="ae2a5a6298d72acdbe95d556f097b3162"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::on_edges_t</b> = boost::mp11::mp_int&lt; MESH_EDGES &gt;</td></tr>
+<tr class="separator:ae2a5a6298d72acdbe95d556f097b3162"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac40f0043ed63701c555e34130235284b"><td class="memItemLeft" align="right" valign="top"><a id="ac40f0043ed63701c555e34130235284b" name="ac40f0043ed63701c555e34130235284b"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::on_elements_t</b> = boost::mp11::mp_int&lt; MESH_ELEMENTS &gt;</td></tr>
 <tr class="separator:ac40f0043ed63701c555e34130235284b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,10 +152,20 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a9e8a34e55922ab08cf593c8f9addd590"><td class="mdescLeft">&#160;</td><td class="mdescRight">entity identifier for mesh iterators  <a href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590">More...</a><br /></td></tr>
 <tr class="separator:a9e8a34e55922ab08cf593c8f9addd590"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4fea5b976a753d5b1a8d1d3177045880"><td class="memItemLeft" align="right" valign="top"><a id="a4fea5b976a753d5b1a8d1d3177045880" name="a4fea5b976a753d5b1a8d1d3177045880"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EntityProcessType</b> { <b>LOCAL_ONLY</b>
+<tr class="memitem:ae1bbc9877848cb81d36a1a803c4fa085"><td class="memItemLeft" align="right" valign="top"><a id="ae1bbc9877848cb81d36a1a803c4fa085" name="ae1bbc9877848cb81d36a1a803c4fa085"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EntityFilterType</b> { <b>PROCESS_ID</b>
+, <b>MARKER</b>
+, <b>ON_BOUNDARY</b>
+, <b>INTERNAL</b>
+ }</td></tr>
+<tr class="separator:ae1bbc9877848cb81d36a1a803c4fa085"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fea5b976a753d5b1a8d1d3177045880"><td class="memItemLeft" align="right" valign="top"><a id="a4fea5b976a753d5b1a8d1d3177045880" name="a4fea5b976a753d5b1a8d1d3177045880"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EntityProcessType</b> { <br />
+&#160;&#160;<b>LOCAL_ONLY</b>
+, <b>LOCAL_AND_INTERPROCESS_ONLY</b>
 , <b>GHOST_ONLY</b>
 , <b>ALL</b>
-, <b>IGNORE_ENTITY_ON_INTERPROCESS_FACE</b>
+, <br />
+&#160;&#160;<b>IGNORE_ENTITY_ON_INTERPROCESS_FACE</b>
+<br />
  }</td></tr>
 <tr class="separator:a4fea5b976a753d5b1a8d1d3177045880"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86d6720b17f0a621eee82a15eca321cd"><td class="memItemLeft" align="right" valign="top"><a id="a86d6720b17f0a621eee82a15eca321cd" name="a86d6720b17f0a621eee82a15eca321cd"></a>enum &#160;</td><td class="memItemRight" valign="bottom"><b>MESH_CHANGES</b> { <b>MESH_CHANGES_POINTS_COORDINATES</b> = 0

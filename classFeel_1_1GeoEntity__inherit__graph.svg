@@ -59,47 +59,47 @@ var sectionId = 'dynsection-0';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="base class for all geometric entities">
-<polygon fill="#bfbfbf" stroke="black" points="251,-0.5 251,-442.5 439,-442.5 439,-0.5 251,-0.5"/>
-<text text-anchor="start" x="259" y="-430.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::GeoEntity&lt; Entity,</text>
+<polygon fill="#bfbfbf" stroke="black" points="262,-0.5 262,-442.5 428,-442.5 428,-0.5 262,-0.5"/>
+<text text-anchor="start" x="270" y="-430.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::GeoEntity&lt; Entity,</text>
 <text text-anchor="middle" x="345" y="-419.5" font-family="Helvetica,sans-Serif" font-size="10.00"> T, IndexT &gt;</text>
-<polyline fill="none" stroke="black" points="251,-412.5 439,-412.5 "/>
+<polyline fill="none" stroke="black" points="262,-412.5 428,-412.5 "/>
 <text text-anchor="middle" x="345" y="-400.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="251,-393.5 439,-393.5 "/>
-<text text-anchor="start" x="259" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
-<text text-anchor="start" x="259" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoShape</text>
-<text text-anchor="start" x="259" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* self_type</text>
-<text text-anchor="start" x="259" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">* value_type</text>
-<text text-anchor="start" x="259" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
-<text text-anchor="start" x="259" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 26 more...</text>
-<text text-anchor="start" x="259" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
-<text text-anchor="start" x="259" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
-<text text-anchor="start" x="259" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_id</text>
-<text text-anchor="start" x="259" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_entity</text>
-<text text-anchor="start" x="259" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_boundaryEntityDimension</text>
-<text text-anchor="start" x="259" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_pid</text>
-<text text-anchor="start" x="259" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 41 more...</text>
-<text text-anchor="start" x="259" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
-<text text-anchor="start" x="259" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
-<text text-anchor="start" x="259" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
-<text text-anchor="start" x="259" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
-<text text-anchor="start" x="259" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="259" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
-<text text-anchor="start" x="259" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~GeoEntity()</text>
-<text text-anchor="start" x="259" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==()</text>
-<text text-anchor="start" x="259" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator&lt;()</text>
-<text text-anchor="start" x="259" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator&lt;()</text>
-<text text-anchor="start" x="259" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* id()</text>
-<text text-anchor="start" x="259" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* refDim()</text>
-<text text-anchor="start" x="259" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nPoints()</text>
-<text text-anchor="start" x="259" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nVertices()</text>
-<text text-anchor="start" x="259" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nEdges()</text>
-<text text-anchor="start" x="259" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 42 more...</text>
-<text text-anchor="start" x="259" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setId()</text>
-<text text-anchor="start" x="259" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setOnBoundary()</text>
-<text text-anchor="start" x="259" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setNumberOfPartitions()</text>
-<text text-anchor="start" x="259" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setNumberOfNeighborPartitions()</text>
-<text text-anchor="start" x="259" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setNeighborPartitionIds()</text>
-<text text-anchor="start" x="259" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">* addNeighborPartitionId()</text>
+<polyline fill="none" stroke="black" points="262,-393.5 428,-393.5 "/>
+<text text-anchor="start" x="270" y="-381.5" font-family="Helvetica,sans-Serif" font-size="10.00">* super</text>
+<text text-anchor="start" x="270" y="-370.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoShape</text>
+<text text-anchor="start" x="270" y="-359.5" font-family="Helvetica,sans-Serif" font-size="10.00">* self_type</text>
+<text text-anchor="start" x="270" y="-348.5" font-family="Helvetica,sans-Serif" font-size="10.00">* value_type</text>
+<text text-anchor="start" x="270" y="-337.5" font-family="Helvetica,sans-Serif" font-size="10.00">* index_type</text>
+<text text-anchor="start" x="270" y="-326.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 26 more...</text>
+<text text-anchor="start" x="270" y="-315.5" font-family="Helvetica,sans-Serif" font-size="10.00">* boost::serialization</text>
+<text text-anchor="start" x="270" y="-304.5" font-family="Helvetica,sans-Serif" font-size="10.00">::access</text>
+<text text-anchor="start" x="270" y="-293.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_id</text>
+<text text-anchor="start" x="270" y="-282.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_entity</text>
+<text text-anchor="start" x="270" y="-271.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_boundaryEntityDimension</text>
+<text text-anchor="start" x="270" y="-260.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_pid</text>
+<text text-anchor="start" x="270" y="-249.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 34 more...</text>
+<text text-anchor="start" x="270" y="-238.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
+<text text-anchor="start" x="270" y="-227.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
+<text text-anchor="start" x="270" y="-216.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
+<text text-anchor="start" x="270" y="-205.5" font-family="Helvetica,sans-Serif" font-size="10.00">* GeoEntity()</text>
+<text text-anchor="start" x="270" y="-194.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="270" y="-183.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator=()</text>
+<text text-anchor="start" x="270" y="-172.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ~GeoEntity()</text>
+<text text-anchor="start" x="270" y="-161.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator==()</text>
+<text text-anchor="start" x="270" y="-150.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator&lt;()</text>
+<text text-anchor="start" x="270" y="-139.5" font-family="Helvetica,sans-Serif" font-size="10.00">* operator&lt;()</text>
+<text text-anchor="start" x="270" y="-128.5" font-family="Helvetica,sans-Serif" font-size="10.00">* id()</text>
+<text text-anchor="start" x="270" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">* refDim()</text>
+<text text-anchor="start" x="270" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nPoints()</text>
+<text text-anchor="start" x="270" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nVertices()</text>
+<text text-anchor="start" x="270" y="-84.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nEdges()</text>
+<text text-anchor="start" x="270" y="-73.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 36 more...</text>
+<text text-anchor="start" x="270" y="-62.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setId()</text>
+<text text-anchor="start" x="270" y="-51.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setOnBoundary()</text>
+<text text-anchor="start" x="270" y="-40.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setIdInOtherPartitions()</text>
+<text text-anchor="start" x="270" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setIdInOtherPartitions()</text>
+<text text-anchor="start" x="270" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">* setIdInOtherPartitions()</text>
+<text text-anchor="start" x="270" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 3 more...</text>
 </a>
 </g>
 </g>
@@ -121,7 +121,7 @@ var sectionId = 'dynsection-0';
 <!-- Node2&#45;&gt;Node1 -->
 <g id="edge1" class="edge">
 <title>Node2&#45;&gt;Node1</title>
-<path fill="none" stroke="#8b1a1a" d="M120.51,-471.88C155.32,-433.22 206.35,-376.53 250.96,-326.97"/>
+<path fill="none" stroke="#8b1a1a" d="M120.58,-471.81C158.25,-429.96 214.87,-367.06 261.82,-314.91"/>
 <polygon fill="none" stroke="#8b1a1a" points="117.86,-469.59 113.77,-479.37 123.07,-474.28 117.86,-469.59"/>
 </g>
 <!-- Node3 -->
@@ -182,7 +182,7 @@ var sectionId = 'dynsection-0';
 <!-- Node5&#45;&gt;Node1 -->
 <g id="edge4" class="edge">
 <title>Node5&#45;&gt;Node1</title>
-<path fill="none" stroke="midnightblue" d="M574.88,-482.77C541.46,-444.93 486.72,-382.96 439.04,-328.97"/>
+<path fill="none" stroke="midnightblue" d="M575.04,-482.95C539.05,-442.2 478.19,-373.3 428.11,-316.6"/>
 <polygon fill="none" stroke="midnightblue" points="572.44,-485.29 581.68,-490.47 577.68,-480.65 572.44,-485.29"/>
 </g>
 </g>

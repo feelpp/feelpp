@@ -547,7 +547,7 @@
 <text text-anchor="start" x="8" y="-999" font-family="Helvetica,sans-Serif" font-size="10.00">* faces()</text>
 <text text-anchor="start" x="8" y="-988" font-family="Helvetica,sans-Serif" font-size="10.00">* hasFace()</text>
 <text text-anchor="start" x="8" y="-977" font-family="Helvetica,sans-Serif" font-size="10.00">* face()</text>
-<text text-anchor="start" x="8" y="-966" font-family="Helvetica,sans-Serif" font-size="10.00">and 27 more...</text>
+<text text-anchor="start" x="8" y="-966" font-family="Helvetica,sans-Serif" font-size="10.00">and 30 more...</text>
 <text text-anchor="start" x="8" y="-955" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
 <text text-anchor="start" x="8" y="-944" font-family="Helvetica,sans-Serif" font-size="10.00">* Mesh1D()</text>
 <text text-anchor="start" x="8" y="-933" font-family="Helvetica,sans-Serif" font-size="10.00">* ~Mesh1D()</text>
@@ -1066,7 +1066,7 @@
 <text text-anchor="start" x="842.5" y="-288.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyCIPStabOnlyOnBoundary</text>
 <text text-anchor="start" x="842.5" y="-277.5" font-family="Helvetica,sans-Serif" font-size="10.00">Faces()</text>
 <text text-anchor="start" x="842.5" y="-266.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ applyMovingMeshBeforeSolve()</text>
-<text text-anchor="start" x="842.5" y="-255.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 196 more...</text>
+<text text-anchor="start" x="842.5" y="-255.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 195 more...</text>
 <text text-anchor="start" x="842.5" y="-244.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ New()</text>
 </a>
 </g>
@@ -1575,7 +1575,7 @@
 <text text-anchor="start" x="3551" y="-916.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_mesh</text>
 <text text-anchor="start" x="3551" y="-905.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_periodicity</text>
 <text text-anchor="start" x="3551" y="-894.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_ref_fe</text>
-<text text-anchor="start" x="3551" y="-883.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 23 more...</text>
+<text text-anchor="start" x="3551" y="-883.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 22 more...</text>
 <text text-anchor="start" x="3551" y="-872.5" font-family="Helvetica,sans-Serif" font-size="10.00">* context()</text>
 <text text-anchor="start" x="3551" y="-861.5" font-family="Helvetica,sans-Serif" font-size="10.00">* contextBasis()</text>
 <text text-anchor="start" x="3551" y="-850.5" font-family="Helvetica,sans-Serif" font-size="10.00">* FunctionSpace()</text>

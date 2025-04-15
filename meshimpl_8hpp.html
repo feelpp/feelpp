@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-2/_work/feelpp/feelpp/feelpp/feel/feeldiscr/meshimpl.hpp File Reference</title>
+<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-5/_work/feelpp/feelpp/feelpp/feel/feeldiscr/meshimpl.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -103,7 +103,6 @@ $(document).ready(function(){initNavTree('meshimpl_8hpp.html',''); initResizable
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a> &#124;
-<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">meshimpl.hpp File Reference</div></div>
 </div><!--header-->
@@ -128,13 +127,6 @@ Namespaces</h2></td></tr>
 <tr class="memdesc:namespaceFeel"><td class="mdescLeft">&#160;</td><td class="mdescRight">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:a07fb9e6eed2d371a3073038ae3d6bdd4"><td class="memTemplParams" colspan="2"><a id="a07fb9e6eed2d371a3073038ae3d6bdd4" name="a07fb9e6eed2d371a3073038ae3d6bdd4"></a>
-template&lt;typename ElementType &gt; </td></tr>
-<tr class="memitem:a07fb9e6eed2d371a3073038ae3d6bdd4"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::resultghost_edge_type</b> = std::vector&lt; boost::tuple&lt; typename ElementType::size_type, <a class="el" href="classbool.html">bool</a>, std::vector&lt; double &gt; &gt; &gt;</td></tr>
-<tr class="separator:a07fb9e6eed2d371a3073038ae3d6bdd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a9948f2079e9afd95c9e7206a9cd01514"><td class="memTemplParams" colspan="2"><a id="a9948f2079e9afd95c9e7206a9cd01514" name="a9948f2079e9afd95c9e7206a9cd01514"></a>
@@ -153,22 +145,6 @@ template&lt;typename Shape , typename T , <a class="el" href="classint.html">int
 template&lt;typename MeshT &gt; </td></tr>
 <tr class="memitem:a527e0de93d0413a5f89385f959189354"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::print</b> (MeshT *m)</td></tr>
 <tr class="separator:a527e0de93d0413a5f89385f959189354"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa93ef29b720ed85d17c4b1da1a022e0"><td class="memTemplParams" colspan="2"><a id="aaa93ef29b720ed85d17c4b1da1a022e0" name="aaa93ef29b720ed85d17c4b1da1a022e0"></a>
-template&lt;typename ElementType &gt; </td></tr>
-<tr class="memitem:aaa93ef29b720ed85d17c4b1da1a022e0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step1</b> (ElementType const &amp;theelt, resultghost_edge_type&lt; ElementType &gt; &amp;idEdgesWithBary, mpl::false_)</td></tr>
-<tr class="separator:aaa93ef29b720ed85d17c4b1da1a022e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1650b5d0deb3609e23eda8cfb66be85"><td class="memTemplParams" colspan="2"><a id="ab1650b5d0deb3609e23eda8cfb66be85" name="ab1650b5d0deb3609e23eda8cfb66be85"></a>
-template&lt;typename ElementType &gt; </td></tr>
-<tr class="memitem:ab1650b5d0deb3609e23eda8cfb66be85"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step1</b> (ElementType const &amp;theelt, resultghost_edge_type&lt; ElementType &gt; &amp;idEdgesWithBary, mpl::true_)</td></tr>
-<tr class="separator:ab1650b5d0deb3609e23eda8cfb66be85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace8878246d2d0b2de3af010124bc7094"><td class="memTemplParams" colspan="2"><a id="ace8878246d2d0b2de3af010124bc7094" name="ace8878246d2d0b2de3af010124bc7094"></a>
-template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:ace8878246d2d0b2de3af010124bc7094"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2</b> (MeshType &amp;mesh, typename MeshType::element_type &amp;theelt, resultghost_edge_type&lt; MeshType &gt; const &amp;idEdgesWithBaryRecv, double vertexCompareTol, mpl::false_)</td></tr>
-<tr class="separator:ace8878246d2d0b2de3af010124bc7094"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb0b86769a79716cd1314c074a4fc63a"><td class="memTemplParams" colspan="2"><a id="afb0b86769a79716cd1314c074a4fc63a" name="afb0b86769a79716cd1314c074a4fc63a"></a>
-template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:afb0b86769a79716cd1314c074a4fc63a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::updateEntitiesCoDimensionTwoGhostCell_step2</b> (MeshType &amp;mesh, typename MeshType::element_type &amp;theelt, resultghost_edge_type&lt; MeshType &gt; const &amp;idEdgesWithBaryRecv, double vertexCompareTol, mpl::true_)</td></tr>
-<tr class="separator:afb0b86769a79716cd1314c074a4fc63a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-2/_work/feelpp/feelpp/feelpp/feel/feelmesh/geoentity.hpp File Reference</title>
+<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-5/_work/feelpp/feelpp/feelpp/feel/feelmesh/geoentity.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -103,7 +103,8 @@ $(document).ready(function(){initNavTree('geoentity_8hpp.html',''); initResizabl
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a> &#124;
-<a href="#typedef-members">Typedefs</a>  </div>
+<a href="#typedef-members">Typedefs</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">geoentity.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -158,6 +159,19 @@ typedef GeoEntity&lt; Simplex&lt; 3, 2 &gt; &gt;&#160;</td><td class="memItemRig
 <tr class="memitem:a8b25ed1719bf35fde9411f4646a82f45"><td class="memItemLeft" align="right" valign="top"><a id="a8b25ed1719bf35fde9411f4646a82f45" name="a8b25ed1719bf35fde9411f4646a82f45"></a>
 typedef GeoEntity&lt; Simplex&lt; 2, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>Feel::QuadraticTriangle</b></td></tr>
 <tr class="separator:a8b25ed1719bf35fde9411f4646a82f45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:af86d39afa035518fceedc14765667563"><td class="memTemplParams" colspan="2"><a id="af86d39afa035518fceedc14765667563" name="af86d39afa035518fceedc14765667563"></a>
+template&lt;entity_process_t EPT, typename EntityType &gt; </td></tr>
+<tr class="memitem:af86d39afa035518fceedc14765667563"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::checkPartitionPredicate</b> (EntityType const &amp;entity, rank_type part)</td></tr>
+<tr class="memdesc:af86d39afa035518fceedc14765667563"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if the entity satisfy the predicate partitions defined by EPT and part <br /></td></tr>
+<tr class="separator:af86d39afa035518fceedc14765667563"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebad2876d1b34df6d88cdc4cd9f09567"><td class="memTemplParams" colspan="2"><a id="aebad2876d1b34df6d88cdc4cd9f09567" name="aebad2876d1b34df6d88cdc4cd9f09567"></a>
+template&lt;entity_process_t EPT, typename EntityType , typename InterprocessMappingType &gt; </td></tr>
+<tr class="memitem:aebad2876d1b34df6d88cdc4cd9f09567"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::checkPartitionPredicate</b> (EntityType const &amp;entity, rank_type part, InterprocessMappingType const &amp;interprocessMapping)</td></tr>
+<tr class="memdesc:aebad2876d1b34df6d88cdc4cd9f09567"><td class="mdescLeft">&#160;</td><td class="mdescRight">return true if the entity satisfy the predicate partitions defined by EPT and part <br /></td></tr>
+<tr class="separator:aebad2876d1b34df6d88cdc4cd9f09567"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>

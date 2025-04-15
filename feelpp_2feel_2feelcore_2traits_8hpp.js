@@ -9,6 +9,8 @@ var feelpp_2feel_2feelcore_2traits_8hpp =
     [ "Feel::is_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1is__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
     [ "Feel::is_std_vector< T >", "structFeel_1_1is__std__vector.html", null ],
     [ "Feel::is_std_vector< std::vector< T > >", "structFeel_1_1is__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html", null ],
+    [ "Feel::is_tuple< typename >", "structFeel_1_1is__tuple.html", null ],
+    [ "Feel::is_tuple< std::tuple< T... > >", "structFeel_1_1is__tuple_3_01std_1_1tuple_3_01T_8_8_8_01_4_01_4.html", null ],
     [ "Feel::remove_shared_ptr< T >", "structFeel_1_1remove__shared__ptr.html", null ],
     [ "Feel::remove_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
     [ "Feel::remove_std_vector< T >", "structFeel_1_1remove__std__vector.html", null ],

@@ -63,7 +63,6 @@ var classFeel_1_1Mesh =
     [ "trace", "classFeel_1_1Mesh.html#ab30ce5bf3ec138df33105b9ba8a352a5", null ],
     [ "trace", "classFeel_1_1Mesh.html#a9e2f35558116b28d9b49ff1374c0c228", null ],
     [ "updateAdjacencyElements", "classFeel_1_1Mesh.html#a317af22eb28cc516789bfcd7139e18b0", null ],
-    [ "updateEntitiesCoDimensionGhostCellByUsingBlockingComm", "classFeel_1_1Mesh.html#ae78af99213e8b00af15f7e8bcad31785", null ],
     [ "updateEntitiesCoDimensionOne", "classFeel_1_1Mesh.html#ae5a9f9f488ace544f18bb4f1975de530", null ],
     [ "updateEntitiesCoDimensionOneMinimal", "classFeel_1_1Mesh.html#a9f55bdfd99074d1dd1b2304771001b9f", null ],
     [ "updateForUse", "classFeel_1_1Mesh.html#a31aaf06e2e73073e8adbf48f9a731682", null ],
@@ -76,5 +75,6 @@ var classFeel_1_1Mesh =
     [ "updateMarker3WithRange", "classFeel_1_1Mesh.html#a7a9a0ee8c0dc7e3ba9fa2642bb1d72e5", null ],
     [ "updateMeasures", "classFeel_1_1Mesh.html#abe0497ded69c43c24ba96ac471eb644e", null ],
     [ "updateNumGlobalElements", "classFeel_1_1Mesh.html#ade35df0e3b8771d728ab88b0ebb6a839", null ],
+    [ "updateParallelData", "classFeel_1_1Mesh.html#a2a2e0dc8fa44d326ca7b1cdb22f62686", null ],
     [ "meshChanged", "classFeel_1_1Mesh.html#a37bc5960956e42b2e005047a1884868b", null ]
 ];

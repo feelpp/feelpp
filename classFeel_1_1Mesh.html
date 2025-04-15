@@ -230,13 +230,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>check</b> () const ov
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateAdjacencyElements</b> ()</td></tr>
 <tr class="memdesc:a317af22eb28cc516789bfcd7139e18b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the adjacency graph elements (useful if coDimensionOne not updated) <br /></td></tr>
 <tr class="separator:a317af22eb28cc516789bfcd7139e18b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae78af99213e8b00af15f7e8bcad31785"><td class="memItemLeft" align="right" valign="top"><a id="ae78af99213e8b00af15f7e8bcad31785" name="ae78af99213e8b00af15f7e8bcad31785"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionGhostCellByUsingBlockingComm</b> ()</td></tr>
-<tr class="memdesc:ae78af99213e8b00af15f7e8bcad31785"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update in ghost cells of entities of codimension 1. <br /></td></tr>
-<tr class="separator:ae78af99213e8b00af15f7e8bcad31785"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a8bd709ff7a4f14342254cbaf8a5139"><td class="memItemLeft" align="right" valign="top"><a id="a4a8bd709ff7a4f14342254cbaf8a5139" name="a4a8bd709ff7a4f14342254cbaf8a5139"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionGhostCellByUsingNonBlockingComm</b> ()</td></tr>
-<tr class="separator:a4a8bd709ff7a4f14342254cbaf8a5139"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5a9f9f488ace544f18bb4f1975de530"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#ae5a9f9f488ace544f18bb4f1975de530">updateEntitiesCoDimensionOne</a> () override</td></tr>
 <tr class="memdesc:ae5a9f9f488ace544f18bb4f1975de530"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update connectivity of entities of codimension 1.  <a href="classFeel_1_1Mesh.html#ae5a9f9f488ace544f18bb4f1975de530">More...</a><br /></td></tr>
 <tr class="separator:ae5a9f9f488ace544f18bb4f1975de530"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -250,6 +243,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimen
 void&#160;</td><td class="memItemRight" valign="bottom"><b>updateEntitiesCoDimensionOneMinimal</b> ()</td></tr>
 <tr class="memdesc:a9f55bdfd99074d1dd1b2304771001b9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update in ghost cells of entities of codimension 1. Done only for marked entities and ghost faces. <br /></td></tr>
 <tr class="separator:a9f55bdfd99074d1dd1b2304771001b9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a2e0dc8fa44d326ca7b1cdb22f62686"><td class="memItemLeft" align="right" valign="top"><a id="a2a2e0dc8fa44d326ca7b1cdb22f62686" name="a2a2e0dc8fa44d326ca7b1cdb22f62686"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>updateParallelData</b> ()</td></tr>
+<tr class="memdesc:a2a2e0dc8fa44d326ca7b1cdb22f62686"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update parallel data. <br /></td></tr>
+<tr class="separator:a2a2e0dc8fa44d326ca7b1cdb22f62686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -463,18 +460,6 @@ std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033e
 <tr class="memitem:af7b60a15a0243d16d758c8b1280b6cf2"><td class="memItemLeft" align="right" valign="top"><a id="af7b60a15a0243d16d758c8b1280b6cf2" name="af7b60a15a0243d16d758c8b1280b6cf2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addNeighborSubdomain</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p)</td></tr>
 <tr class="separator:af7b60a15a0243d16d758c8b1280b6cf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe08ce3f50eee544bed326c80717dc87"><td class="memItemLeft" align="right" valign="top"><a id="abe08ce3f50eee544bed326c80717dc87" name="abe08ce3f50eee544bed326c80717dc87"></a>
-std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt;::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>beginFaceNeighborSubdomains</b> () const</td></tr>
-<tr class="separator:abe08ce3f50eee544bed326c80717dc87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a993dd5e2bc501fec02d74d49343dd771"><td class="memItemLeft" align="right" valign="top"><a id="a993dd5e2bc501fec02d74d49343dd771" name="a993dd5e2bc501fec02d74d49343dd771"></a>
-std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt;::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>endFaceNeighborSubdomains</b> () const</td></tr>
-<tr class="separator:a993dd5e2bc501fec02d74d49343dd771"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20211425418c407fb7c9e60e8a05fbff"><td class="memItemLeft" align="right" valign="top"><a id="a20211425418c407fb7c9e60e8a05fbff" name="a20211425418c407fb7c9e60e8a05fbff"></a>
-std::set&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>faceNeighborSubdomains</b> () const</td></tr>
-<tr class="separator:a20211425418c407fb7c9e60e8a05fbff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab91d027ae3d7bb52460c165e6baafb02"><td class="memItemLeft" align="right" valign="top"><a id="ab91d027ae3d7bb52460c165e6baafb02" name="ab91d027ae3d7bb52460c165e6baafb02"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>addFaceNeighborSubdomain</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p)</td></tr>
-<tr class="separator:ab91d027ae3d7bb52460c165e6baafb02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Accessors</h2></td></tr>
 <tr class="memitem:a1b882b99de14ecee8764d3213c9c3386"><td class="memItemLeft" align="right" valign="top">size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh.html#a1b882b99de14ecee8764d3213c9c3386">statNumElementsActive</a> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> p=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>

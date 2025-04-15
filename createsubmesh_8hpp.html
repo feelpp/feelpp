@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.3"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-2/_work/feelpp/feelpp/feelpp/feel/feeldiscr/createsubmesh.hpp File Reference</title>
+<title>Feel++: /data/cemosis/github-actions-runner/actions-runner-5/_work/feelpp/feelpp/feelpp/feel/feeldiscr/createsubmesh.hpp File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -110,9 +110,7 @@ $(document).ready(function(){initNavTree('createsubmesh_8hpp.html',''); initResi
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CreateSubmeshTool.html">Feel::CreateSubmeshTool&lt; MeshType, IteratorRange, TheTag &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1detail_1_1CreateSubmeshTrait.html">Feel::detail::CreateSubmeshTrait&lt; MeshArgType, RangeArgType &gt;</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CreateSubmeshTool.html">Feel::CreateSubmeshTool&lt; MeshType, IteratorRange &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
@@ -123,22 +121,18 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a270bb177c47850e7fc465ac2168383c5"><td class="memTemplParams" colspan="2"><a id="a270bb177c47850e7fc465ac2168383c5" name="a270bb177c47850e7fc465ac2168383c5"></a>
-template&lt;typename MeshType , typename SubMeshType , typename IndexT  = typename MeshType::index_type&gt; </td></tr>
-<tr class="memitem:a270bb177c47850e7fc465ac2168383c5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::addMarkedEdgesInSubMesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, typename MeshType::element_type const &amp;oldElt, std::map&lt; IndexT, IndexT &gt; const &amp;new_node_numbers, IndexT &amp;n_new_edges, std::shared_ptr&lt; SubMeshType &gt; &amp;newMesh, std::set&lt; IndexT &gt; &amp;oldEdgeIdsDone)</td></tr>
-<tr class="separator:a270bb177c47850e7fc465ac2168383c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ac483470299f33c851668f37b601926"><td class="memTemplParams" colspan="2"><a id="a5ac483470299f33c851668f37b601926" name="a5ac483470299f33c851668f37b601926"></a>
-template&lt;typename MeshType , typename SubMeshType , typename IndexT  = typename MeshType::index_type&gt; </td></tr>
-<tr class="memitem:a5ac483470299f33c851668f37b601926"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::addMarkedEdgesInSubMesh</b> (std::shared_ptr&lt; MeshType &gt; const &amp;mesh, typename MeshType::face_type const &amp;oldFace, std::map&lt; IndexT, IndexT &gt; const &amp;new_node_numbers, IndexT &amp;n_new_faces, std::shared_ptr&lt; SubMeshType &gt; &amp;newMesh, std::set&lt; IndexT &gt; &amp;oldEdgeIdsDone)</td></tr>
-<tr class="separator:a5ac483470299f33c851668f37b601926"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5134473f449a9625be5bfe17c668fce"><td class="memTemplParams" colspan="2"><a id="ab5134473f449a9625be5bfe17c668fce" name="ab5134473f449a9625be5bfe17c668fce"></a>
-template&lt;typename MeshArgType , typename RangeArgType &gt; </td></tr>
-<tr class="memitem:ab5134473f449a9625be5bfe17c668fce"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1detail_1_1CreateSubmeshTrait.html">Feel::detail::CreateSubmeshTrait</a>&lt; MeshArgType, RangeArgType &gt;::ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::createSubmesh</b> (NA::arguments&lt; typename na::mesh::template required_as_t&lt; MeshArgType &gt;, typename na::range::template required_as_t&lt; RangeArgType &gt;, typename na::worldcomm::template required_as_t&lt; worldcomm_ptr_t &gt;, typename na::context::template required_as_t&lt; size_type &gt;, typename na::update::template required_as_t&lt; size_type &gt;, typename na::only_on_boundary_faces::template required_as_t&lt; <a class="el" href="classbool.html">bool</a> &gt;, typename na::view::template required_as_t&lt; <a class="el" href="classbool.html">bool</a> &gt; &gt; &amp;&amp;args)</td></tr>
-<tr class="separator:ab5134473f449a9625be5bfe17c668fce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46fb605fa19e0bedd0fc98a74a6d3f3c"><td class="memTemplParams" colspan="2"><a id="a46fb605fa19e0bedd0fc98a74a6d3f3c" name="a46fb605fa19e0bedd0fc98a74a6d3f3c"></a>
+template&lt;<a class="el" href="classint.html">int</a> Mode, typename ... Ts&gt; </td></tr>
+<tr class="memitem:a46fb605fa19e0bedd0fc98a74a6d3f3c"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::detail::createSubmesh</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:a46fb605fa19e0bedd0fc98a74a6d3f3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab68be7fbc8c5e67ad358f939dc86bdba"><td class="memTemplParams" colspan="2"><a id="ab68be7fbc8c5e67ad358f939dc86bdba" name="ab68be7fbc8c5e67ad358f939dc86bdba"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:ab68be7fbc8c5e67ad358f939dc86bdba"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::createSubmesh</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:ab68be7fbc8c5e67ad358f939dc86bdba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac82c931e41bbcb2f89b922bd310a9f40"><td class="memTemplParams" colspan="2"><a id="ac82c931e41bbcb2f89b922bd310a9f40" name="ac82c931e41bbcb2f89b922bd310a9f40"></a>
+template&lt;typename ... Ts&gt; </td></tr>
+<tr class="memitem:ac82c931e41bbcb2f89b922bd310a9f40"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::createSubmeshP1</b> (Ts &amp;&amp;... v)</td></tr>
+<tr class="separator:ac82c931e41bbcb2f89b922bd310a9f40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Vincent Chabannes <a href="#" onclick="location.href='mai'+'lto:'+'vin'+'ce'+'nt.'+'ch'+'aba'+'nn'+'es@'+'im'+'ag.'+'fr'; return false;">vince<span class="obfuscator">.nosp@m.</span>nt.c<span class="obfuscator">.nosp@m.</span>haban<span class="obfuscator">.nosp@m.</span>nes@<span class="obfuscator">.nosp@m.</span>imag.<span class="obfuscator">.nosp@m.</span>fr</a> </dd></dl>

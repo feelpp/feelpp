@@ -1,10 +1,10 @@
 <map id="Feel::GeoElement0D&lt; Dim, SubFace, T, IndexT &gt;" name="Feel::GeoElement0D&lt; Dim, SubFace, T, IndexT &gt;">
 <area shape="rect" id="node1" title="Class for Points and Vertices." alt="" coords="1699,1792,1915,1957"/>
-<area shape="rect" id="node2" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="1041,1564,1240,1729"/>
-<area shape="rect" id="node3" title=" " alt="" coords="786,1166,991,1258"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="1040,1564,1239,1729"/>
+<area shape="rect" id="node3" title=" " alt="" coords="799,1166,1005,1258"/>
 <area shape="rect" id="node4" title=" " alt="" coords="5,1166,217,1258"/>
 <area shape="rect" id="node5" title=" " alt="" coords="1485,1159,1697,1265"/>
-<area shape="rect" id="node6" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="1015,909,1266,1515"/>
+<area shape="rect" id="node6" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="1029,909,1250,1515"/>
 <area shape="rect" id="node7" title=" " alt="" coords="1149,623,1351,744"/>
 <area shape="rect" id="node8" title=" " alt="" coords="463,623,675,744"/>
 <area shape="rect" id="node9" title=" " alt="" coords="699,623,911,744"/>

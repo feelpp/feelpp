@@ -19,7 +19,6 @@ var annotated_dup =
         [ "computeStartOfFieldSplit", "structFeel_1_1detail_1_1computeStartOfFieldSplit.html", null ],
         [ "CreateElementVector", "structFeel_1_1detail_1_1CreateElementVector.html", "structFeel_1_1detail_1_1CreateElementVector" ],
         [ "createMeshSupport", "structFeel_1_1detail_1_1createMeshSupport.html", "structFeel_1_1detail_1_1createMeshSupport" ],
-        [ "CreateSubmeshTrait", "structFeel_1_1detail_1_1CreateSubmeshTrait.html", null ],
         [ "createWorldsComm", "structFeel_1_1detail_1_1createWorldsComm.html", "structFeel_1_1detail_1_1createWorldsComm" ],
         [ "Curl", "structFeel_1_1detail_1_1Curl.html", "structFeel_1_1detail_1_1Curl" ],
         [ "D", "structFeel_1_1detail_1_1D.html", "structFeel_1_1detail_1_1D" ],
@@ -54,7 +53,6 @@ var annotated_dup =
         [ "submeshrangetype", "structFeel_1_1detail_1_1submeshrangetype.html", null ],
         [ "SymmetricDD", "structFeel_1_1detail_1_1SymmetricDD.html", "structFeel_1_1detail_1_1SymmetricDD" ],
         [ "TimeSet", "classFeel_1_1detail_1_1TimeSet.html", "classFeel_1_1detail_1_1TimeSet" ],
-        [ "updateDataMapProcess", "structFeel_1_1detail_1_1updateDataMapProcess.html", null ],
         [ "updateDataMapProcessStandard", "structFeel_1_1detail_1_1updateDataMapProcessStandard.html", null ],
         [ "zip_with_impl", "structFeel_1_1detail_1_1zip__with__impl.html", null ]
       ] ],

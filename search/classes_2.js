@@ -69,9 +69,8 @@ var searchData=
   ['createelementvector_66',['CreateElementVector',['../structFeel_1_1detail_1_1CreateElementVector.html',1,'Feel::detail']]],
   ['createmeshsupport_67',['createMeshSupport',['../structFeel_1_1detail_1_1createMeshSupport.html',1,'Feel::detail']]],
   ['createsubmeshtool_68',['CreateSubmeshTool',['../classFeel_1_1CreateSubmeshTool.html',1,'Feel']]],
-  ['createsubmeshtrait_69',['CreateSubmeshTrait',['../structFeel_1_1detail_1_1CreateSubmeshTrait.html',1,'Feel::detail']]],
-  ['createworldscomm_70',['createWorldsComm',['../structFeel_1_1detail_1_1createWorldsComm.html',1,'Feel::detail']]],
-  ['cst_71',['Cst',['../classFeel_1_1vf_1_1Cst.html',1,'Feel::vf']]],
-  ['cstbase_72',['CstBase',['../classFeel_1_1vf_1_1CstBase.html',1,'Feel::vf']]],
-  ['curl_73',['Curl',['../structFeel_1_1detail_1_1Curl.html',1,'Feel::detail']]]
+  ['createworldscomm_69',['createWorldsComm',['../structFeel_1_1detail_1_1createWorldsComm.html',1,'Feel::detail']]],
+  ['cst_70',['Cst',['../classFeel_1_1vf_1_1Cst.html',1,'Feel::vf']]],
+  ['cstbase_71',['CstBase',['../classFeel_1_1vf_1_1CstBase.html',1,'Feel::vf']]],
+  ['curl_72',['Curl',['../structFeel_1_1detail_1_1Curl.html',1,'Feel::detail']]]
 ];

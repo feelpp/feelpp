@@ -319,7 +319,7 @@ var hierarchy =
         [ "Feel::BVH_ThirdParty< MeshEntityType >", "classFeel_1_1BVH__ThirdParty.html", null ]
       ] ],
       [ "Feel::BilinearFormBase< T >", "classFeel_1_1BilinearFormBase.html", null ],
-      [ "Feel::CreateSubmeshTool< MeshType, IteratorRange, TheTag >", "classFeel_1_1CreateSubmeshTool.html", null ],
+      [ "Feel::CreateSubmeshTool< MeshType, IteratorRange >", "classFeel_1_1CreateSubmeshTool.html", null ],
       [ "Feel::FunctionSpaceBase", "classFeel_1_1FunctionSpaceBase.html", null ],
       [ "Feel::GeometricSpaceBase", "structFeel_1_1GeometricSpaceBase.html", [
         [ "Feel::GeometricSpace< MeshType >", "classFeel_1_1GeometricSpace.html", null ]
@@ -382,7 +382,6 @@ var hierarchy =
     [ "Feel::detail::createMeshSupport< SpaceType >", "structFeel_1_1detail_1_1createMeshSupport.html", null ],
     [ "Feel::detail::createMeshSupport< SpaceType >::HasAllMeshSupportDefined", "structFeel_1_1detail_1_1createMeshSupport_1_1HasAllMeshSupportDefined.html", null ],
     [ "Feel::detail::createMeshSupport< SpaceType >::UpdateMeshSupport", "structFeel_1_1detail_1_1createMeshSupport_1_1UpdateMeshSupport.html", null ],
-    [ "Feel::detail::CreateSubmeshTrait< MeshArgType, RangeArgType >", "structFeel_1_1detail_1_1CreateSubmeshTrait.html", null ],
     [ "Feel::detail::createWorldsComm< SpaceType >", "structFeel_1_1detail_1_1createWorldsComm.html", null ],
     [ "Feel::detail::createWorldsComm< SpaceType >::UpdateWorldsComm", "structFeel_1_1detail_1_1createWorldsComm_1_1UpdateWorldsComm.html", null ],
     [ "Feel::detail::Curl< T, N, D >", "structFeel_1_1detail_1_1Curl.html", null ],
@@ -449,7 +448,6 @@ var hierarchy =
     [ "Feel::detail::SymmetricDD< T, M >::result", "structFeel_1_1detail_1_1SymmetricDD_1_1result.html", null ],
     [ "Feel::detail::TimeSet< MeshType, N >", "classFeel_1_1detail_1_1TimeSet.html", null ],
     [ "Feel::detail::TimeSet< MeshType, N >::ltstep", "structFeel_1_1detail_1_1TimeSet_1_1ltstep.html", null ],
-    [ "Feel::detail::updateDataMapProcess< DofType >", "structFeel_1_1detail_1_1updateDataMapProcess.html", null ],
     [ "Feel::detail::updateDataMapProcessStandard< DofType >", "structFeel_1_1detail_1_1updateDataMapProcessStandard.html", null ],
     [ "Feel::detail::zip_with_impl< S >", "structFeel_1_1detail_1_1zip__with__impl.html", null ],
     [ "Feel::detailOpLagP1::SpaceToLagrangeP1Space< SpaceType >", "structFeel_1_1detailOpLagP1_1_1SpaceToLagrangeP1Space.html", null ],

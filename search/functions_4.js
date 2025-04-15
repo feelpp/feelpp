@@ -12,7 +12,7 @@ var searchData=
   ['description_9',['description',['../classFeel_1_1FunctionSpace_1_1Element.html#a4617feeebe632916a8ce2330b71b3fc7',1,'Feel::FunctionSpace::Element']]],
   ['det_10',['det',['../det_8hpp.html#a99e4cdcfdc221e381005ebfa29e62b53',1,'Feel::vf']]],
   ['detachmeshsupport_11',['detachMeshSupport',['../classFeel_1_1MeshBase.html#a45c2e3552981134c219e6c16a50a2115',1,'Feel::MeshBase']]],
-  ['dhpdh_12',['DhPdh',['../namespaceFeel.html#a08f5e5fbf9a0d1b56ee8a91ac82f4673',1,'Feel']]],
+  ['dhpdh_12',['DhPdh',['../namespaceFeel.html#ad1c24c6c12e809a6c8ffd831993ba0ab',1,'Feel']]],
   ['diff_13',['diff',['../ginac_8hpp.html#a3650d458dc699b0a352661a51dd2f2fa',1,'Feel::vf']]],
   ['dimension_14',['dimension',['../classFeel_1_1Mesh.html#aa7d197306618a06218a0b60593927d51',1,'Feel::Mesh::dimension()'],['../classFeel_1_1Simplex.html#abe7ce7a2bfefcf7609288a1ae7acd8e2',1,'Feel::Simplex::dimension()'],['../namespaceFeel.html#af5c2ee4c05c1dcd72e48264fe5bcff5e',1,'Feel::dimension()'],['../classFeel_1_1Hypercube.html#ab10128fb3a571cb7a5a47d06a231ffbc',1,'Feel::Hypercube::dimension()']]],
   ['dirac_15',['dirac',['../integratordirac_8hpp.html#a89e1ac2f51c0e0ba61b0884b82d3a6eb',1,'Feel::vf']]],

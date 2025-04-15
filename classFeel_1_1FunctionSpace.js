@@ -18,7 +18,7 @@ var classFeel_1_1FunctionSpace =
     [ "nodim", "structFeel_1_1FunctionSpace_1_1nodim.html", null ],
     [ "sub_functionspace", "structFeel_1_1FunctionSpace_1_1sub__functionspace.html", null ],
     [ "local_interpolant_type", "classFeel_1_1FunctionSpace.html#aa74b1f32e5c5f4364c46066a58da9089", null ],
-    [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#ace71adf437990f8d0f2f693bb8ed3be1", null ],
+    [ "FunctionSpace", "classFeel_1_1FunctionSpace.html#ace0d618daf01de48095ab05ecb561576", null ],
     [ "~FunctionSpace", "classFeel_1_1FunctionSpace.html#a5ac1b6230637601d8a96e5f8027dc47e", null ],
     [ "basis", "classFeel_1_1FunctionSpace.html#a58d019a29cf8dab5bcac5a8bccc1d0a3", null ],
     [ "basisName", "classFeel_1_1FunctionSpace.html#a93f714dff48b36d717ac165a1587a1f1", null ],
@@ -43,7 +43,7 @@ var classFeel_1_1FunctionSpace =
     [ "elementPtr", "classFeel_1_1FunctionSpace.html#a418ca820cd908c16178bf4ed0c865f0e", null ],
     [ "elementsMap", "classFeel_1_1FunctionSpace.html#a6a446a2d42334b929e98a4d7b3915194", null ],
     [ "elementsPtr", "classFeel_1_1FunctionSpace.html#a4f17dde0dc3da5a88915781d8d8d62cb", null ],
-    [ "extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#a58c798f40fcd484bc47a58a5a413d892", null ],
+    [ "extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#a12378d7ad2f2330f6ec9f91cabc950ef", null ],
     [ "fe", "classFeel_1_1FunctionSpace.html#a45e850c916f45ec6d96bc62bbaec9023", null ],
     [ "findPoint", "classFeel_1_1FunctionSpace.html#a4c03b29733e01ebf5b718a9f9a0d015d", null ],
     [ "functionSpace", "classFeel_1_1FunctionSpace.html#a7da42fb02766941c0d95bb4fad42d55b", null ],
@@ -86,7 +86,7 @@ var classFeel_1_1FunctionSpace =
     [ "M_comp_space", "classFeel_1_1FunctionSpace.html#a66f3ae650f3677582082b459e1e4a555", null ],
     [ "M_dof", "classFeel_1_1FunctionSpace.html#a989be1f25c7648a33ea18581224b561e", null ],
     [ "M_dofOnOff", "classFeel_1_1FunctionSpace.html#a206f93eb4d7dffe6ce0c76f730c84039", null ],
-    [ "M_extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#ae57450e970df618f3a6a8c8956f48fbc", null ],
+    [ "M_extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#a21f9c95a4e577d2e2d0adfb5561b7750", null ],
     [ "M_ref_fe", "classFeel_1_1FunctionSpace.html#a06fe1fd1a2a1ae8774f1b8e0bae28b2d", null ],
     [ "M_rt", "classFeel_1_1FunctionSpace.html#a3f7a87a4c5db02e20b557a421f6d7473", null ]
 ];

@@ -107,7 +107,8 @@ $(document).ready(function(){initNavTree('functions_i.html',''); initResizable()
 <li>id_()&#160;:&#160;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#aaa0d64462b48360b52a781eb2e46a489">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;</a></li>
 <li>id_type&#160;:&#160;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a6fcaa38cf5050675e5eea1964fd8a2f5">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;</a></li>
 <li>idExtents()&#160;:&#160;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a38cc42778cb78968bf30fab2e9c4481a">Feel::FunctionSpace&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::Element&lt; TT, Cont &gt;</a></li>
-<li>idInOthersPartitions()&#160;:&#160;<a class="el" href="classFeel_1_1GeoEntity.html#a97e16d2eb6c01b1e536c8a695a8604eb">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a></li>
+<li>idInElement()&#160;:&#160;<a class="el" href="classFeel_1_1SubFaceOf.html#ac85ecec7c9516d5931bba055c4265fff">Feel::SubFaceOf&lt; ElementType &gt;</a></li>
+<li>idInOthersPartitions()&#160;:&#160;<a class="el" href="classFeel_1_1GeoEntity.html#a53b2144ba312c931d76b8633e3662503">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a></li>
 <li>im()&#160;:&#160;<a class="el" href="classFeel_1_1QuadPtLocalization.html#a8274107654058271efb69be67c613012">Feel::QuadPtLocalization&lt; IteratorRange, Im, Expr &gt;</a></li>
 <li>imMeasure()&#160;:&#160;<a class="el" href="classFeel_1_1GeoND.html#ac43363c0dcd3f4ed8575d6aee2fe6793">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;</a></li>
 <li>imMeasureOrder1()&#160;:&#160;<a class="el" href="classFeel_1_1GeoND.html#ae291977cf4b6633b958856fbbb1b8241">Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;</a></li>
@@ -164,6 +165,8 @@ $(document).ready(function(){initNavTree('functions_i.html',''); initResizable()
 <li>isInNBodyArticulated()&#160;:&#160;<a class="el" href="classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a0cb54e3b79eb18c41769b9c583b55ec3">Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodyBoundaryCondition</a></li>
 <li>isInternal()&#160;:&#160;<a class="el" href="classFeel_1_1GeoEntity.html#ae9d9fa3ee094f12c563c8b58ef65674a">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a></li>
 <li>isInterProcessDomain()&#160;:&#160;<a class="el" href="classFeel_1_1GeoElement0D.html#a697d393bde8aa42f9742b2cd971f399f">Feel::GeoElement0D&lt; Dim, SubFace, T, IndexT &gt;</a>, <a class="el" href="classFeel_1_1GeoElement1D.html#a0a7dd5c17d2d896f89a9f8f3becf4f30">Feel::GeoElement1D&lt; Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage &gt;</a>, <a class="el" href="classFeel_1_1GeoElement2D.html#a68863effdd9f05b9f790bed8fb54e3ea">Feel::GeoElement2D&lt; Dim, GEOSHAPE, SubFace, T, IndexT, UseMeasuresStorage &gt;</a>, <a class="el" href="classFeel_1_1GeoElement3D.html#a840a5062661ab2a466d3c7813c1f7b40">Feel::GeoElement3D&lt; Dim, GEOSHAPE, T, IndexT, UseMeasuresStorage &gt;</a></li>
+<li>isInterprocessEdges()&#160;:&#160;<a class="el" href="classFeel_1_1MeshSupport.html#a193799e3456006dcddd50b666e3116dc">Feel::MeshSupport&lt; MeshType &gt;</a></li>
+<li>isInterprocessPoints()&#160;:&#160;<a class="el" href="classFeel_1_1MeshSupport.html#a808fdd66e0f7f31cbd58e0966c9bf48b">Feel::MeshSupport&lt; MeshType &gt;</a></li>
 <li>isLinear()&#160;:&#160;<a class="el" href="classFeel_1_1GeoEntity.html#a3aff2ae24e71fb551beb97250d197f1d">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a></li>
 <li>isLinkedToOtherPartitions()&#160;:&#160;<a class="el" href="classFeel_1_1GeoEntity.html#a841b8c437c0e05661d0940a6e543b158">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a></li>
 <li>isLocal()&#160;:&#160;<a class="el" href="classFeel_1_1Repository.html#a076dbbe2c1fc7fdc2f7cfe194326fa41">Feel::Repository</a></li>
@@ -199,9 +202,8 @@ $(document).ready(function(){initNavTree('functions_i.html',''); initResizable()
 <li>isSequential()&#160;:&#160;<a class="el" href="classFeel_1_1Environment.html#a96961fdf3db909c2d190554e557fb997">Feel::Environment</a></li>
 <li>isSiblingOf()&#160;:&#160;<a class="el" href="classFeel_1_1MeshBase.html#ac63a2e41193671448117b04e026b9f2f">Feel::MeshBase&lt; IndexT &gt;</a></li>
 <li>isStructured()&#160;:&#160;<a class="el" href="classFeel_1_1Mesh.html#a041467edba2fbf7ac6ae440617652db0">Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;</a></li>
-<li>isSubEntityOfGhostElement()&#160;:&#160;<a class="el" href="classFeel_1_1GeoEntity.html#ac7eadff3c6249e2b9fe62582afd3d951">Feel::GeoEntity&lt; Entity, T, IndexT &gt;</a></li>
 <li>isSubMesh()&#160;:&#160;<a class="el" href="classFeel_1_1MeshBase.html#a5c05bd4d2fa3bd1325339830adb9d630">Feel::MeshBase&lt; IndexT &gt;</a></li>
-<li>isSubMeshFrom()&#160;:&#160;<a class="el" href="classFeel_1_1MeshBase.html#a326441741dac7bf4768282931ecc3299">Feel::MeshBase&lt; IndexT &gt;</a></li>
+<li>isSubMeshFrom()&#160;:&#160;<a class="el" href="classFeel_1_1MeshBase.html#ac3f1cb4adf4fc3d2fb3cd9d11cd1bf59">Feel::MeshBase&lt; IndexT &gt;</a></li>
 <li>isUnstructured()&#160;:&#160;<a class="el" href="classFeel_1_1Mesh.html#aaec6e4695f05a541ad40686170735f74">Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;</a></li>
 <li>isUpdated()&#160;:&#160;<a class="el" href="classFeel_1_1FeelModels_1_1ModelMeasuresStorage.html#ace7d1914d06bd4093ae1484006164fc9">Feel::FeelModels::ModelMeasuresStorage</a></li>
 <li>isUpdatedForUse()&#160;:&#160;<a class="el" href="classFeel_1_1MeshBase.html#ac82acf40cd47e00f399cf189af29ae61">Feel::MeshBase&lt; IndexT &gt;</a></li>
