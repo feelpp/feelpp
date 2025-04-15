@@ -621,9 +621,7 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
             size_type gcdof = ghostDofVal.first;
             size_type gpdof = gcdof - dataMap->firstDofGlobalCluster();
 #if !defined(NDEBUG)
-            auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
-            CHECK( boost::get<0>( resSearchDof ) ) << "dof not found";
-            size_type gpdof2 = boost::get<1>( resSearchDof );
+            size_type gpdof2 = dataMap->worldIndexToProcessIndex( gcdof );
             CHECK( gpdof == gpdof2 ) << "dof id must be the same : " << gpdof << " vs " << gpdof2;
             CHECK( dataMap->activeDofSharedOnCluster().find( gpdof ) != dataMap->activeDofSharedOnCluster().end() ) << "not an active dof shared";
 #endif
@@ -682,9 +680,7 @@ sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
         {
             size_type gcdof = boost::get<0>( dataRfromproc );
             T valRecv = boost::get<1>( dataRfromproc );
-            auto resSearchDof = dataMap->searchGlobalProcessDof( gcdof );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "dof not found";
-            size_type gpdof = boost::get<1>( resSearchDof );
+            size_type gpdof = dataMap->worldIndexToProcessIndex( gcdof );
             DCHECK( dataMap->dofGlobalProcessIsGhost(gpdof) ) << "dof is not ghost : " << gcdof << " and " << gpdof;
             v.set( gpdof, valRecv );
         }

@@ -519,9 +519,8 @@ private:
     void addStructuredPoint( std::array<index_type,nDim> const& indexes, rank_type partId, bool isGhost );
     std::pair<size_type,size_type> addStructuredElement( std::array<index_type,nDim> const& indexes, rank_type processId, rank_type partId,
                                                          std::vector<rank_type> const& neighborPartitionIds );
-   void updateGhostCellInfoByUsingNonBlockingComm(
-        std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
-        std::unordered_map<size_type, boost::tuple<size_type, rank_type>> const& mapGhostElt );
+    void updateGhostCellInfo( std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
+                              std::unordered_map<size_type, std::tuple<size_type, rank_type>> const& mapGhostElt );
 
 private:
     std::shared_ptr<setup_type> M_setup;
@@ -529,7 +528,7 @@ private:
 
 /**
  * @brief trait type to detect a @p MeshStructured mesh
- * 
+ *
  * @tparam MeshT mesh type
  */
 template<typename MeshT>
@@ -537,7 +536,7 @@ using is_mesh_structured = std::conditional_t<std::is_base_of_v<MeshStructuredBa
 
 /**
  * @brief boolean to detect a @p MeshStructured mesh
- * 
+ *
  * @tparam MeshT mesh type
  */
 template<typename MeshT>

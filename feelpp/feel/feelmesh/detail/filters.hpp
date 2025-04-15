@@ -38,19 +38,10 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-allelements( MeshType const& mesh )
+elements( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype myelements( new typename MeshTraits<MeshType>::elements_reference_wrapper_type );
-    auto it = Feel::unwrap_ptr( mesh ).beginOrderedElement();
-    auto en = Feel::unwrap_ptr( mesh ).endOrderedElement();
-    for ( ; it!=en;++it )
-    {
-        auto const& elt = unwrap_ref( *it );
-        myelements->push_back(boost::cref(elt));
-    }
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              myelements->begin(), myelements->end(),
-                              myelements );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).template elementsFilter<entity_filter_t::PROCESS_ID>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
@@ -58,13 +49,10 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-elements( MeshType const& mesh, rank_type pid )
+boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid, entity_process_t ept )
 {
-    auto rangeElements = Feel::unwrap_ptr( mesh ).elementsWithProcessId( pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              std::get<0>( rangeElements ),
-                              std::get<1>( rangeElements ),
-                              std::get<2>( rangeElements ) );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).template elementsFilter<entity_filter_t::ON_BOUNDARY>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
@@ -72,13 +60,10 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type pid )
+internalelements( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeElements = Feel::unwrap_ptr( mesh ).boundaryElements( entity_min_dim,entity_max_dim,pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              std::get<0>( rangeElements ),
-                              std::get<1>( rangeElements ),
-                              std::get<2>( rangeElements ) );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).template elementsFilter<entity_filter_t::INTERNAL>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
@@ -86,13 +71,10 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-internalelements( MeshType const& mesh, rank_type pid )
+markedelements( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, entity_process_t ept )
 {
-    auto rangeElements = Feel::unwrap_ptr( mesh ).internalElements( pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              std::get<0>( rangeElements ),
-                              std::get<1>( rangeElements ),
-                              std::get<2>( rangeElements ) );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).template elementsFilter<entity_filter_t::MARKER>( ept, markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
@@ -100,27 +82,12 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-markedelements( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid  )
+markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangeElementsWithMarker = Feel::unwrap_ptr( mesh ).elementsWithMarkerByType( markerType, markersFlag, pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              std::get<0>( rangeElementsWithMarker ),
-                              std::get<1>( rangeElementsWithMarker ),
-                              std::get<2>( rangeElementsWithMarker ) );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).template elementsFilter<entity_filter_t::MARKER>( ept, markerType, invalid_flag_type_value, pid );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::element_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
-markedelements( MeshType const& mesh, uint16_type markerType, rank_type pid  )
-{
-    auto rangeElementsWithMarker = Feel::unwrap_ptr( mesh ).elementsWithMarkerByType( markerType, pid );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              std::get<0>( rangeElementsWithMarker ),
-                              std::get<1>( rangeElementsWithMarker ),
-                              std::get<2>( rangeElementsWithMarker ) );
-}
+
 #if 0
 template<int TheType,typename MeshType>
 auto//std::map<int,markedelements_t<MeshType> >
@@ -175,13 +142,13 @@ collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMa
 }
 #else
 template<int TheType, typename MeshType>
-using CollectionOfMarkedElementsResultType 
-                = std::conditional_t<TheType == 0 || TheType == 1, 
-                                     std::map<int, Range<MeshType,ElementsType::MESH_ELEMENTS>>, 
+using CollectionOfMarkedElementsResultType
+                = std::conditional_t<TheType == 0 || TheType == 1,
+                                     std::map<int, Range<MeshType,ElementsType::MESH_ELEMENTS>>,
                                      std::map<int, std::tuple<Range<MeshType,ElementsType::MESH_ELEMENTS>, Range<MeshType,ElementsType::MESH_ELEMENTS>>>>;
 
 template<typename MeshType,typename TupleRange>
-Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshType> const& mesh, TupleRange && r ) 
+Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshType> const& mesh, TupleRange && r )
 {
     auto&& meshRange = std::forward<TupleRange>(r);
     wc( mesh )->print( fmt::format( "makeResultRange: mesh count={}", mesh.use_count() ), FLAGS_v > 0, FLAGS_v > 0, FLAGS_v > 0 );
@@ -197,16 +164,16 @@ Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshT
 
 template<int TheType, typename MeshType>
 CollectionOfMarkedElementsResultType<TheType, MeshType>
-collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMarkersFlag) 
+collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMarkersFlag)
 {
     std::map<int, std::set<flag_type>> collectionOfMarkerFlagSet;
 
-    if (auto argCasted = std::any_cast<std::map<int, int>>(&collectionOfMarkersFlag)) 
+    if (auto argCasted = std::any_cast<std::map<int, int>>(&collectionOfMarkersFlag))
     {
         for (auto const& [part, markersFlag] : *argCasted)
             collectionOfMarkerFlagSet[part] = { Feel::unwrap_ptr(mesh).markerId(markersFlag) };
     }
-    else if (auto argCasted = std::any_cast<std::map<int, std::set<std::string>>>(&collectionOfMarkersFlag)) 
+    else if (auto argCasted = std::any_cast<std::map<int, std::set<std::string>>>(&collectionOfMarkersFlag))
     {
         for (auto const& [part, markerNames] : *argCasted)
             collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr(mesh).markersId(markerNames);
@@ -219,13 +186,13 @@ collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMar
     auto collectionOfRangeElement = Feel::unwrap_ptr(mesh).template collectionOfElementsWithMarkerByType<TheType>(1, collectionOfMarkerFlagSet, rank(mesh));
 
     CollectionOfMarkedElementsResultType<TheType, MeshType> res;
-    for (auto const& [part, rangeElementsWithMarker] : collectionOfRangeElement) 
+    for (auto const& [part, rangeElementsWithMarker] : collectionOfRangeElement)
     {
-        if constexpr (TheType == 0 || TheType == 1) 
+        if constexpr (TheType == 0 || TheType == 1)
         {
             res[part] = makeResultRange(mesh,rangeElementsWithMarker);
-        } 
-        else 
+        }
+        else
         {
             auto const& [rangeActive, rangeGhost] = rangeElementsWithMarker;
             res[part] = std::make_tuple( makeResultRange( mesh, rangeActive ), makeResultRange(mesh,rangeGhost) );
@@ -234,7 +201,7 @@ collectionOfMarkedelements(MeshType const& mesh, std::any const& collectionOfMar
             CHECK( std::get<0>(res[part]).mesh() == std::get<1>(res[part]).mesh() );
         }
     }
-    
+
     return res;
 }
 #endif
@@ -248,11 +215,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
              typename MeshTraits<MeshType>::elements_reference_wrapper_ptrtype >
 idedelements( MeshType const& mesh, size_type id )
 {
-    auto rangeElementsWithId = Feel::unwrap_ptr( mesh ).elementsWithId( id );
-    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                              std::get<0>( rangeElementsWithId ),
-                              std::get<1>( rangeElementsWithId ),
-                              std::get<2>( rangeElementsWithId ) );
+    auto rangeElements = Feel::unwrap_ptr( mesh ).elementsWithId( id );
+    return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), std::get<0>( rangeElements ), std::get<1>( rangeElements ), std::get<2>( rangeElements ) );
 }
 
 template<typename MeshType>
@@ -260,13 +224,10 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-faces( MeshType const& mesh, rank_type __pid )
+faces( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeFaces = Feel::unwrap_ptr( mesh ).facesWithProcessId( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeFaces ),
-                              std::get<1>( rangeFaces ),
-                              std::get<2>( rangeFaces ) );
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).template facesFilter<entity_filter_t::PROCESS_ID>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeFaces ), std::get<1>( rangeFaces ), std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
@@ -277,10 +238,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 idedfaces( MeshType const& mesh, size_type id )
 {
     auto rangeFaces = Feel::unwrap_ptr( mesh ).facesWithId( id );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeFaces ),
-                              std::get<1>( rangeFaces ),
-                              std::get<2>( rangeFaces ) );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeFaces ), std::get<1>( rangeFaces ), std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
@@ -288,14 +246,10 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-markedfaces( MeshType const& mesh, uint16_type markerType, rank_type pid )
+markedfaces( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangeMarkedFaces = Feel::unwrap_ptr( mesh ).facesWithMarkerByType( markerType, pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeMarkedFaces ),
-                              std::get<1>( rangeMarkedFaces ),
-                              std::get<2>( rangeMarkedFaces ) );
-
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).template facesFilter<entity_filter_t::MARKER>( ept, markerType, invalid_flag_type_value, pid );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeFaces ), std::get<1>( rangeFaces ), std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
@@ -303,13 +257,10 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
+markedfaces( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, entity_process_t ept )
 {
-    auto rangeMarkedFaces = Feel::unwrap_ptr( mesh ).facesWithMarkerByType( markerType, markersFlag, pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeMarkedFaces ),
-                              std::get<1>( rangeMarkedFaces ),
-                              std::get<2>( rangeMarkedFaces ) );
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).template facesFilter<entity_filter_t::MARKER>( ept, markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeFaces ), std::get<1>( rangeFaces ), std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
@@ -317,13 +268,10 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-boundaryfaces( MeshType const& mesh, rank_type __pid  )
+boundaryfaces( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeBoundaryFaces = Feel::unwrap_ptr( mesh ).facesOnBoundary( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeBoundaryFaces ),
-                              std::get<1>( rangeBoundaryFaces ),
-                              std::get<2>( rangeBoundaryFaces ) );
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).template facesFilter<entity_filter_t::ON_BOUNDARY>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeFaces ), std::get<1>( rangeFaces ), std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
@@ -331,14 +279,10 @@ boost::tuple<mpl::size_t<MESH_FACES>,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::face_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype >
-internalfaces( MeshType const& mesh, rank_type __pid )
+internalfaces( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeInternalFaces = Feel::unwrap_ptr( mesh ).internalFaces( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeInternalFaces ),
-                              std::get<1>( rangeInternalFaces ),
-                              std::get<2>( rangeInternalFaces ) );
-
+    auto rangeFaces = Feel::unwrap_ptr( mesh ).template facesFilter<entity_filter_t::INTERNAL>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeFaces ), std::get<1>( rangeFaces ), std::get<2>( rangeFaces ) );
 }
 
 template<typename MeshType>
@@ -349,36 +293,15 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 interprocessfaces( MeshType const& mesh, rank_type neighbor_pid )
 {
     auto rangeInterprocessFaces = Feel::unwrap_ptr( mesh ).interProcessFaces( neighbor_pid );
-    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
-                              std::get<0>( rangeInterprocessFaces ),
-                              std::get<1>( rangeInterprocessFaces ),
-                              std::get<2>( rangeInterprocessFaces ) );
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(), std::get<0>( rangeInterprocessFaces ), std::get<1>( rangeInterprocessFaces ), std::get<2>( rangeInterprocessFaces ) );
 }
 
 template<typename MeshType>
 decltype(auto)
-edges( MeshType const& mesh, rank_type __pid )
+edges( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeMarkedEdges = Feel::unwrap_ptr( mesh ).edgesWithProcessId( __pid );
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              std::get<0>( rangeMarkedEdges ),
-                              std::get<1>( rangeMarkedEdges ),
-                              std::get<2>( rangeMarkedEdges ) );
-}
-
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
-markededges( MeshType const& mesh, uint16_type markerType, rank_type pid )
-{
-    auto rangeMarkedEdges = Feel::unwrap_ptr( mesh ).edgesWithMarkerByType( markerType, pid );
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              std::get<0>( rangeMarkedEdges ),
-                              std::get<1>( rangeMarkedEdges ),
-                              std::get<2>( rangeMarkedEdges ) );
+    auto rangeEdges = Feel::unwrap_ptr( mesh ).template edgesFilter<entity_filter_t::PROCESS_ID>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), std::get<0>( rangeEdges ), std::get<1>( rangeEdges ), std::get<2>( rangeEdges ) );
 }
 
 template<typename MeshType>
@@ -386,13 +309,10 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
-markededges( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
+markededges( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangeMarkedEdges = Feel::unwrap_ptr( mesh ).edgesWithMarkerByType( markerType, markersFlag, pid );
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              std::get<0>( rangeMarkedEdges ),
-                              std::get<1>( rangeMarkedEdges ),
-                              std::get<2>( rangeMarkedEdges ) );
+    auto rangeEdges = Feel::unwrap_ptr( mesh ).template edgesFilter<entity_filter_t::MARKER>( ept, markerType, invalid_flag_type_value, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), std::get<0>( rangeEdges ), std::get<1>( rangeEdges ), std::get<2>( rangeEdges ) );
 }
 
 template<typename MeshType>
@@ -400,13 +320,10 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
-boundaryedges( MeshType const& mesh )
+markededges( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, entity_process_t ept )
 {
-    auto rangeBoundaryEdges = Feel::unwrap_ptr( mesh ).edgesOnBoundary();
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              std::get<0>( rangeBoundaryEdges ),
-                              std::get<1>( rangeBoundaryEdges ),
-                              std::get<2>( rangeBoundaryEdges ) );
+    auto rangeEdges = Feel::unwrap_ptr( mesh ).template edgesFilter<entity_filter_t::MARKER>( ept, markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), std::get<0>( rangeEdges ), std::get<1>( rangeEdges ), std::get<2>( rangeEdges ) );
 }
 
 template<typename MeshType>
@@ -414,13 +331,21 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
-internaledges( MeshType const& mesh )
+boundaryedges( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeInternalEdges = Feel::unwrap_ptr( mesh ).internalEdges();
-    return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
-                              std::get<0>( rangeInternalEdges ),
-                              std::get<1>( rangeInternalEdges ),
-                              std::get<2>( rangeInternalEdges ) );
+    auto rangeEdges = Feel::unwrap_ptr( mesh ).template edgesFilter<entity_filter_t::ON_BOUNDARY>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), std::get<0>( rangeEdges ), std::get<1>( rangeEdges ), std::get<2>( rangeEdges ) );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edge_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::edges_reference_wrapper_ptrtype >
+internaledges( MeshType const& mesh, rank_type pid, entity_process_t ept )
+{
+    auto rangeEdges = Feel::unwrap_ptr( mesh ).template facesFilter<entity_filter_t::INTERNAL>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_EDGES>(), std::get<0>( rangeEdges ), std::get<1>( rangeEdges ), std::get<2>( rangeEdges ) );
 }
 
 template<typename MeshType>
@@ -428,20 +353,10 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-allpoints( MeshType const& mesh )
+points( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype mypoints( new typename MeshTraits<MeshType>::points_reference_wrapper_type );
-    auto it = Feel::unwrap_ptr( mesh ).beginOrderedPoint();
-    auto en = Feel::unwrap_ptr( mesh ).endOrderedPoint();
-    for ( ; it!=en;++it )
-    {
-        auto const& pt = unwrap_ref( *it );
-        mypoints->push_back(boost::cref(pt));
-    }
-    mypoints->shrink_to_fit();
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              mypoints->begin(), mypoints->end(),
-                              mypoints );
+    auto rangePoints = Feel::unwrap_ptr( mesh ).template pointsFilter<entity_filter_t::PROCESS_ID>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(), std::get<0>( rangePoints ), std::get<1>( rangePoints ), std::get<2>( rangePoints ) );
 }
 
 template<typename MeshType>
@@ -449,13 +364,20 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-points( MeshType const& mesh )
+markedpoints( MeshType const& mesh, uint16_type markerType, rank_type pid, entity_process_t ept )
 {
-    auto rangePoints = Feel::unwrap_ptr( mesh ).pointsWithProcessId();
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              std::get<0>( rangePoints ),
-                              std::get<1>( rangePoints ),
-                              std::get<2>( rangePoints ) );
+    auto rangePoints = Feel::unwrap_ptr( mesh ).template pointsFilter<entity_filter_t::MARKER>( ept, markerType, invalid_flag_type_value, pid );
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(), std::get<0>( rangePoints ), std::get<1>( rangePoints ), std::get<2>( rangePoints ) );
+}
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
+             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
+markedpoints( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid, entity_process_t ept )
+{
+    auto rangePoints = Feel::unwrap_ptr( mesh ).template pointsFilter<entity_filter_t::MARKER>( ept, markerType, markersFlag, pid );
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(), std::get<0>( rangePoints ), std::get<1>( rangePoints ), std::get<2>( rangePoints ) );
 }
 
 template<typename MeshType>
@@ -463,26 +385,10 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-markedpoints( MeshType const& mesh, uint16_type markerType, rank_type pid )
+boundarypoints( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangePointsWithMarker = Feel::unwrap_ptr( mesh ).pointsWithMarkerByType( markerType, pid );
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              std::get<0>( rangePointsWithMarker ),
-                              std::get<1>( rangePointsWithMarker ),
-                              std::get<2>( rangePointsWithMarker ) );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-markedpoints( MeshType const& mesh, uint16_type markerType, std::set<flag_type> const& markersFlag, rank_type pid )
-{
-    auto rangePointsWithMarker = Feel::unwrap_ptr( mesh ).pointsWithMarkerByType( markerType, markersFlag, pid );
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              std::get<0>( rangePointsWithMarker ),
-                              std::get<1>( rangePointsWithMarker ),
-                              std::get<2>( rangePointsWithMarker ) );
+    auto rangePoints = Feel::unwrap_ptr( mesh ).template pointsFilter<entity_filter_t::ON_BOUNDARY>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(), std::get<0>( rangePoints ), std::get<1>( rangePoints ), std::get<2>( rangePoints ) );
 }
 
 template<typename MeshType>
@@ -490,27 +396,10 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
              typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-boundarypoints( MeshType const& mesh )
+internalpoints( MeshType const& mesh, rank_type pid, entity_process_t ept )
 {
-    auto rangeBoundaryPoints = Feel::unwrap_ptr( mesh ).boundaryPoints();
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              std::get<0>( rangeBoundaryPoints ),
-                              std::get<1>( rangeBoundaryPoints ),
-                              std::get<2>( rangeBoundaryPoints ) );
-}
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::point_reference_wrapper_const_iterator,
-             typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype >
-internalpoints( MeshType const& mesh )
-{
-    auto rangeInternalPoints = Feel::unwrap_ptr( mesh ).internalPoints();
-    return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
-                              std::get<0>( rangeInternalPoints ),
-                              std::get<1>( rangeInternalPoints ),
-                              std::get<2>( rangeInternalPoints ) );
+    auto rangePoints = Feel::unwrap_ptr( mesh ).template pointsFilter<entity_filter_t::INTERNAL>( ept, pid );
+    return boost::make_tuple( mpl::size_t<MESH_POINTS>(), std::get<0>( rangePoints ), std::get<1>( rangePoints ), std::get<2>( rangePoints ) );
 }
 
 } // detail

@@ -1,12 +1,12 @@
 /**
  * @file facet.hpp
  * @author Christophe Prud'homme <christophe.prudhomme@cemosis.fr>
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2022-07-21
- * 
+ *
  * @copyright Copyright (c) 2022 Université de Strasbourg
- * 
+ *
  */
 #pragma once
 
@@ -16,7 +16,7 @@ namespace Feel {
  * @brief get the local indexing of a facet from the global id
  * @ingroup Discretization
  * @tparam FacetType type of face
- * @param f facet 
+ * @param f facet
  * @return a tuple containing the element 0 or 1 to which the facet belongs and the local index of the facet in this element
  */
 template<typename FacetType>
@@ -24,7 +24,7 @@ auto facetGlobalToLocal( FacetType && f )
 {
     int face_id = f.pos_first();
     int faceConnectionId = 0;
-    
+
     if ( f.element( 0 ).isGhostCell() )
     {
         face_id = std::forward<FacetType>(f).pos_second();
@@ -36,9 +36,9 @@ auto facetGlobalToLocal( FacetType && f )
 /**
  * @brief get the local indexing of a facet from the global id and a doftable
  * @ingroup Discretization
- * 
+ *
  * @warning if the tuple {-1,-1} is returned it means with are on a partial mesh and the facet is in it
- * 
+ *
  * @tparam FacetType type of facet
  * @tparam DofTableType type of doftable
  * @param f facet
@@ -49,7 +49,7 @@ template <typename FacetType, typename DofTableType>
 auto facetGlobalToLocal( FacetType&& f, DofTableType&& dof )
 {
     bool hasMeshSupportPartial = dof->hasMeshSupport() && dof->meshSupport()->isPartialSupport();
-    bool hasDofTableMPIExtended = dof->buildDofTableMPIExtended();
+    bool hasDofTableMPIExtended = dof->hasDofTableExtended();
 
     int face_id = f.pos_first();
     int faceConnectionId = 0;

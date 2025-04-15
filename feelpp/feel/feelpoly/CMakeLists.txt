@@ -25,6 +25,4 @@
 set(SRC discontinuous.cpp imsimplex.cpp gausssimplex.cpp gausshypercube.cpp)
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelpoly "${SRC};${HDR}")
-
-
+feel_append_src(feelpoly "${SRC}")

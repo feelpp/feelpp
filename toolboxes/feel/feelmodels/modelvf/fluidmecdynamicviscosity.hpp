@@ -1521,6 +1521,16 @@ public:
             {
                 this->initTensor( std::true_type{}, true, exprExpanded, ttse, expr, geom, theInitArgs... );
             }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperators, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_expr( expr )
+            {
+                CHECK( tensorExprEvaluateVelocityOperators ) << "tensorExprEvaluateVelocityOperators not init";
+                M_tensorExprEvaluateVelocityOperators = tensorExprEvaluateVelocityOperators;
+                this->initTensor( std::true_type{}, false, exprExpanded, ttse, expr, geom, theInitArgs... );
+            }
 
 
         std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> tensorExprEvaluateVelocityOperatorsPtr() const { return M_tensorExprEvaluateVelocityOperators; }

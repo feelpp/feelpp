@@ -61,12 +61,12 @@ using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order,T>::ptrtype;
 template<int Order,typename MeshType,typename T=double>
 inline
 typename meta::Ned1h<MeshType,Order,T>::ptrtype
-Ned1h( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
+Ned1h( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     typedef typename meta::Ned1h<MeshType,Order,T>::type space_type;
     return space_type::New( _mesh=mesh,
                             _worldscomm=makeWorldsComm( 1, mesh->worldCommPtr() ),
-                            _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                            _extended_doftable=dte );
 }
 
 /**
@@ -76,12 +76,12 @@ Ned1h( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
 template<int Order,typename MeshType, typename RangeType, typename T = double>
 inline
 typename meta::Ned1h<MeshType,Order,T>::ptrtype
-Ned1h( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false )
+Ned1h( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     typedef typename meta::Ned1h<MeshType,Order,T>::type space_type;
     return space_type::New( _mesh=mesh,
                             _range=std::forward<RangeType>(rangeElt),
-                            _extended_doftable=buildExtendedDofTable );
+                            _extended_doftable=dte );
 }
 
 } // Feel

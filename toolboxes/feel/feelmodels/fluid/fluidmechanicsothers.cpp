@@ -29,15 +29,6 @@ namespace Feel
 namespace FeelModels
 {
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-bool
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
-{
-    if ( this->worldComm().localSize() == 1 )
-        return false;
-    return ( M_XhVelocity->extendedDofTable() || M_XhPressure->extendedDofTable() );
-}
-
 //---------------------------------------------------------------------------------------------------------//
 #if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1776,5 +1767,3 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateRangeDistributionByMaterialName( std::
 
 } // namespace FeelModels
 } // namespace Feel
-
-

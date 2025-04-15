@@ -166,6 +166,7 @@ BOOST_AUTO_TEST_CASE( testSampling )
     auto mysampling_bis = muspace->sampling();
     mysampling_bis->equidistribute( 100 );
     mysampling_bis->writeOnFile("mysampling.sample");
+    Environment::worldComm().barrier();
     auto mysampling_read = muspace->sampling();
     int n_read = mysampling_read->readFromFile("mysampling.sample");
     BOOST_CHECK( n_read == mysampling_bis->size() );

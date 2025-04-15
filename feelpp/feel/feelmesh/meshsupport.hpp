@@ -41,6 +41,7 @@ namespace Feel
 template<typename MeshType>
 class MeshSupport : public MeshSupportBase, public std::enable_shared_from_this<MeshSupport<MeshType>>
 {
+    enum class _face_attributes{ on_boundary=0, intraprocess, interprocess };
 public :
     using super_type = MeshSupportBase;
     using mesh_type = typename MeshTraits<MeshType>::mesh_type;
@@ -49,6 +50,10 @@ public :
     using range_faces_type = Range<mesh_type,MESH_FACES>;
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
+    using point_interprocess_map_type = typename mesh_type::point_interprocess_map_type;
+    //using edges_interprocess_map_type = typename mesh_type::edges_interprocess_map_type; // NOT COMPILE (only available for 3D)
+    using edges_interprocess_map_type = std::unordered_map<index_type,std::set<rank_type>>;
+
     static constexpr int nDim = mesh_type::nDim;
 
     MeshSupport() = default;
@@ -58,24 +63,15 @@ public :
         :
         M_mesh( mesh ),
         M_rangeElements( rangeElements ),
-        M_rangeInterProcessFaces(mesh),
-        M_rangeBoundaryFaces(mesh),
-        M_rangeInternalFaces(mesh),
-        M_isFullSupport( fullsupport ),
-        M_hasUpdatedParallelData( false ),
-        M_hasUpdatedBoundaryInternalFaces( false )
+        M_isFullSupport( fullsupport )
         {
             if ( !M_isFullSupport )
             {
-                for (auto const& eltWrap : M_rangeElements )
-                    M_rangeMeshElementsIdsPartialSupport.insert( unwrap_ref(eltWrap).id() );
-
                 M_localizationToolPartialSupport = std::make_shared<Localization<mesh_type>>();
                 M_localizationToolPartialSupport->setMesh( M_mesh, M_rangeElements, false );
-                //M_localizationToolPartialSupport->/*init*/reset( M_rangeElements );
-                //M_rangeElements.setMeshSupport( this->shared_from_this() );
                 M_mesh->attachMeshSupport( this );
             }
+            this->updateForUse();
         }
 
     ~MeshSupport() override
@@ -92,50 +88,40 @@ public :
 
     std::shared_ptr<Localization<mesh_type>> tool_localization() const { return this->isPartialSupport()? M_localizationToolPartialSupport : M_mesh->tool_localization(); }
 
-    range_elements_type const& rangeElements() const
-    {
-        return M_rangeElements;
-    }
-    range_faces_type const& rangeInterProcessFaces() const
-    {
-        this->updateParallelData();
-        return M_rangeInterProcessFaces;
-    }
-    range_faces_type const& rangeBoundaryFaces() const
-    {
-        this->updateBoundaryInternalFaces();
-        return M_rangeBoundaryFaces;
-    }
-    range_faces_type const& rangeInternalFaces() const
-    {
-        this->updateBoundaryInternalFaces();
-        return M_rangeInternalFaces;
-    }
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+    range_elements_type elementsFilterImpl( Ts&&... ts ) const;
 
-    range_elements_type rangeElements( EntityProcessType entity ) const;
-    //!
-    //! return the set of elements of marker type marker_t with marker flag
-    //!
-    range_elements_type rangeMarkedElements( uint16_type marker_t, boost::any flag );
-    //!
-    //! return the set of faces of marker type marker_t with marker flag
-    //!
-    range_faces_type rangeMarkedFaces( uint16_type marker_t, boost::any flag );
+    template <entity_filter_t FF, typename ... Ts>
+    range_elements_type elementsFilter( entity_process_t ept, Ts&&... ts ) const;
 
-    //!
-    //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
-    //!
-    bool hasAnyMarker( std::initializer_list<std::string> l )
-        {
-            if ( M_isFullSupport )
-                return M_mesh->hasAnyMarker( l );
-            for (auto n : l )
-            {
-                if ( nelements(rangeMarkedFaces(1,n), true ) )
-                    return true;
-            }
-            return false;
-        }
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    range_elements_type rangeElementsProcessId( rank_type part ) const;
+
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    range_elements_type rangeElementsMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type part ) const;
+
+
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+    range_faces_type facesFilterImpl( Ts&&... ts ) const;
+
+    template <entity_filter_t FF, typename ... Ts>
+    range_faces_type facesFilter( entity_process_t ept, Ts&&... ts ) const;
+
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    range_faces_type rangeFacesProcessId( rank_type part ) const;
+
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    range_faces_type rangeBoundaryFaces( rank_type part ) const;
+
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    range_faces_type rangeInternalFaces( rank_type part ) const;
+
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    range_faces_type rangeFacesMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type part ) const;
+
+
+    range_faces_type rangeInterProcessFaces( rank_type part, rank_type neighbor_pid ) const;
+
     size_type numElements() const override
         {
             if ( M_isFullSupport )
@@ -150,17 +136,11 @@ public :
             else
                 return M_rangeMeshElementsIdsPartialSupport.find( eltId ) != M_rangeMeshElementsIdsPartialSupport.end();
         }
-    bool hasGhostElement( size_type eltId ) const override
+    bool hasGhostElement( size_type eltId ) const
         {
-            if ( M_isFullSupport )
-            {
-                if ( M_mesh->hasElement( eltId ) )
-                    return M_mesh->element( eltId ).isGhostCell();
-                else
-                    return false;
-            }
-            else
-                return M_rangeMeshElementsGhostIdsPartialSupport.find( eltId ) != M_rangeMeshElementsGhostIdsPartialSupport.end();
+            if ( !this->hasElement( eltId ) )
+                return false;
+            return M_mesh->element( eltId ).isGhostCell();
         }
 
     template <typename FaceType>
@@ -192,236 +172,36 @@ public :
             }
         }
 
-    std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const override { return M_rangeMeshElementsIdsPartialSupport; }
-    std::unordered_set<size_type> const& rangeMeshElementsGhostIdsPartialSupport() const override { return M_rangeMeshElementsGhostIdsPartialSupport; }
-
-    void updateParallelData() const
+    //! return true if the point id on interprocess of current partition
+    bool isInterprocessPoints( index_type pointId ) const
         {
-            wc( this )->print(fmt::format( "[updateParallelData] starts, hasUpdatedParallelData: {}", M_hasUpdatedParallelData ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
-            if ( M_hasUpdatedParallelData )
-                return;
-
-            if ( M_isFullSupport )
-                this->updateParallelDataFullSupport();
-            else
-                this->updateParallelDataPartialSupport();
-
-            M_hasUpdatedParallelData = true;
-            wc( this )->print( fmt::format( "[updateParallelData] starts, hasUpdatedParallelData: {}", M_hasUpdatedParallelData ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
+            return this->findInterprocessPoints( pointId ).first;
         }
-    void updateBoundaryInternalFaces() const
+    //! try to find data of interprocess of current partition point id and return pair(bool,iterator)
+    std::pair<bool,typename point_interprocess_map_type::const_iterator> findInterprocessPoints( index_type pointId ) const
         {
-            if ( M_hasUpdatedBoundaryInternalFaces )
-                return;
-
-            if ( M_isFullSupport )
-                this->updateBoundaryInternalFacesFullSupport();
-            else
-                this->updateBoundaryInternalFacesPartialSupport();
-
-            M_hasUpdatedBoundaryInternalFaces = true;
+            auto itFind = M_interprocessPoints.find( pointId );
+            return std::make_pair( itFind != M_interprocessPoints.end(), itFind );
         }
+    //! return true if the edge id is on interprocess of current partition
+    bool isInterprocessEdges( index_type edgeId ) const
+        {
+            return this->findInterprocessEdges( edgeId ).first;
+        }
+    //! try to find data of interprocess of current partition edge id and return pair(bool,iterator)
+    std::pair<bool,typename edges_interprocess_map_type::const_iterator> findInterprocessEdges( index_type edgeId ) const
+        {
+            auto itFind = M_interprocessEdges.find( edgeId );
+            return std::make_pair( itFind != M_interprocessEdges.end(), itFind );
+        }
+
+    //! @return true if some markers in \p l are present in the mesh data structure, false otherwise
+    //! WARNING, we use the full mesh, maybe only on this support (but required collective mpi operation)
+    bool hasAnyMarker( std::initializer_list<std::string> l ) { return M_mesh->hasAnyMarker( l ); }
+
 private :
-    void updateParallelDataFullSupport() const
-        {
-            M_rangeInterProcessFaces = interprocessfaces(M_mesh);
-        }
-    void updateParallelDataPartialSupport() const
-        {
-            wc(this)->print( fmt::format( "[updateParallelDataPartialSupport] starts, hasUpdatedParallelData: {}", M_hasUpdatedParallelData ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
-            if ( M_mesh->worldComm().localSize() == 1 )
-            {
-                return;
-            }
-            // prepare data to send with mpi
-            std::map< rank_type, std::vector<size_type> > dataToSend;
-            std::map< rank_type, std::vector<size_type> > dataToRecv;
-            for ( auto const& eltWrap : this->rangeElements() )
-            {
-                auto const& elt = unwrap_ref( eltWrap );
-                if ( elt.isGhostCell() )
-                    continue;
-                auto const& idInOtherPart = elt.idInOthersPartitions();
-                for ( auto const& idData : idInOtherPart )
-                    dataToSend[idData.first].push_back(idData.second);
-            }
-            // mpi comm
-            int neighborSubdomains = M_mesh->neighborSubdomains().size();
-            int nbRequest = 2*neighborSubdomains;
-            wc(this)->print( fmt::format( "[updateParallelDataPartialSupport - {}] nbRequest={}, neighborSubdomains={}", rank(M_mesh), nbRequest, neighborSubdomains ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v >1  );
-            mpi::request * reqs = new mpi::request[nbRequest];
-            int cptRequest=0;
-            std::map<rank_type,std::size_t> sizeRecv;
-            std::map<rank_type,std::size_t> sizeSend;
-
-            // get size of data to transfer
-            for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
-            {
-                sizeSend[neighborRank] = dataToSend[neighborRank].size();
-                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
-                reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
-            }
-            // wait all requests
-            mpi::wait_all(reqs, reqs + cptRequest);
-
-            // send/recv data
-            cptRequest=0;
-            for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
-            {
-                std::size_t nSendData = dataToSend[neighborRank].size();
-                if ( nSendData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
-                std::size_t nRecvData = sizeRecv[neighborRank];
-                dataToRecv[neighborRank].resize( nRecvData );
-                if ( nRecvData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
-            }
-            mpi::wait_all(reqs, reqs + cptRequest);
-            delete [] reqs;
-            // get elt ids of ghost in mesh
-            std::unordered_set<size_type> ghostEltIdsInMesh;
-            auto rangeGhostElt = M_mesh->ghostElements();
-            auto itghost = std::get<0>( rangeGhostElt );
-            auto enghost = std::get<1>( rangeGhostElt );
-            for ( ; itghost != enghost ; ++itghost )
-                ghostEltIdsInMesh.insert( unwrap_ref( *itghost ).id() );
-            // get elt ids of ghost in range of mesh element
-            for ( auto const& dataToRecvByProc : dataToRecv )
-            {
-                for ( size_type eltId : dataToRecvByProc.second )
-                {
-                    if ( ghostEltIdsInMesh.find( eltId ) != ghostEltIdsInMesh.end() )
-                        M_rangeMeshElementsGhostIdsPartialSupport.insert( eltId );
-                }
-            }
-
-            for ( size_type eltId : M_rangeMeshElementsGhostIdsPartialSupport )
-                M_rangeMeshElementsIdsPartialSupport.insert( eltId );
-
-            for ( auto const& eltWrap : this->rangeElements() )
-            {
-                auto const& elt = unwrap_ref( eltWrap );
-                if ( elt.isGhostCell() )
-                    continue;
-                for ( uint16_type f = 0; f < element_type::numTopologicalFaces; ++f )
-                {
-                    if ( !elt.facePtr(f) )
-                        continue;
-                    auto const& face = elt.face( f );
-                    if ( !face.isInterProcessDomain() )
-                        continue;
-                    auto const& elt0 = face.element0();
-                    auto const& elt1 = face.element1();
-                    const bool elt0isGhost = elt0.isGhostCell();
-                    auto const& eltOnProc = (elt0isGhost)?elt1:elt0;
-                    auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
-                    if ( M_rangeMeshElementsGhostIdsPartialSupport.find( eltOffProc.id() ) == M_rangeMeshElementsGhostIdsPartialSupport.end() )
-                        continue;
-                    M_rangeInterProcessFaces.push_back( face );
-                }
-            }
-            wc( this )->print( fmt::format( "[updateParallelDataPartialSupport] stop, hasUpdatedParallelData: {}", M_hasUpdatedParallelData ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
-        }
-
-    void updateBoundaryInternalFacesFullSupport() const
-        {
-            M_rangeBoundaryFaces = boundaryfaces(M_mesh);
-            M_rangeInternalFaces = internalfaces(M_mesh);
-        }
-    void updateBoundaryInternalFacesPartialSupport() const
-        {
-            this->updateParallelData();
-
-            std::unordered_map<size_type,std::pair<const face_type*,uint8_type>> faceInRange;
-            for ( auto const& eltWrap : this->rangeElements() )
-            {
-                auto const& elt = unwrap_ref( eltWrap );
-                for ( uint16_type i = 0; i < mesh_type::element_type::numTopologicalFaces; ++i )
-                {
-                    if ( !elt.facePtr(i) )
-                        continue;
-                    const face_type* facePtr = elt.facePtr(i);
-                    size_type faceId = facePtr->id();
-                    auto const& face = elt.face(i);
-                    if ( faceInRange.find( faceId ) != faceInRange.end() )
-                        faceInRange[faceId].second = 2;
-                    else
-                        faceInRange[faceId] = std::make_pair(facePtr,1);
-                }
-            }
-            for ( auto const& faceWrap : this->rangeInterProcessFaces() )
-            {
-                size_type faceId = unwrap_ref(faceWrap).id();
-                DCHECK( faceInRange.find( faceId ) != faceInRange.end() ) << "something wrong";
-                faceInRange[faceId].second = 3;
-            }
-
-            std::map<rank_type,std::vector<size_type> > dataToSend;
-            std::map<rank_type,std::vector<size_type> > dataToRecv;
-            for ( auto const& faceDataPair : faceInRange )
-            {
-                auto const& faceData = faceDataPair.second;
-                if ( faceData.second == 1 )
-                {
-                    auto const& theface = *faceData.first;
-                    if ( theface.isInterProcessDomain() )
-                    {
-                        rank_type neighborPid = theface.partition2();
-                        dataToSend[neighborPid].push_back( theface.idInOthersPartitions(neighborPid) );
-                    }
-                    M_rangeBoundaryFaces.push_back( theface );
-                }
-                else
-                    M_rangeInternalFaces.push_back( *faceData.first );
-            }
-
-            // maybe some boundary faces on interprocess faces are not detected
-            // on neighbor part (because not connected to an element of partial support)
-            // but should be added on range : required mpi comm
-            int neighborSubdomains = M_mesh->neighborSubdomains().size();
-            int nbRequest = 2*neighborSubdomains;
-            mpi::request * reqs = new mpi::request[nbRequest];
-            int cptRequest=0;
-            std::map<rank_type,std::size_t> sizeRecv;
-            std::map<rank_type,std::size_t> sizeSend;
-
-            // get size of data to transfer
-            for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
-            {
-                sizeSend[neighborRank] = dataToSend[neighborRank].size();
-                reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
-                reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
-            }
-            // wait all requests
-            mpi::wait_all(reqs, reqs + cptRequest);
-
-            // send/recv data
-            cptRequest=0;
-            for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
-            {
-                std::size_t nSendData = dataToSend[neighborRank].size();
-                if ( nSendData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
-                std::size_t nRecvData = sizeRecv[neighborRank];
-                dataToRecv[neighborRank].resize( nRecvData );
-                if ( nRecvData > 0 )
-                    reqs[cptRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
-            }
-            mpi::wait_all(reqs, reqs + cptRequest);
-            delete [] reqs;
-
-            for ( auto const& dataRecvByProc : dataToRecv )
-            {
-                for ( size_type faceId : dataRecvByProc.second )
-                {
-                    if ( faceInRange.find( faceId ) == faceInRange.end() )
-                        M_rangeBoundaryFaces.push_back( M_mesh->face( faceId ) );
-                }
-            }
-            M_rangeBoundaryFaces.setMeshSupport( const_cast<MeshSupport*>(this)->shared_from_this() );
-            M_rangeInternalFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
-        }
-
+    void updateForUse();
+    void updateParallelDataPartialSupport();
     void resetLocalizationTool() override
         {
             if ( M_localizationToolPartialSupport )
@@ -433,181 +213,666 @@ private :
     range_elements_type M_rangeElements;
     std::shared_ptr<Localization<mesh_type>> M_localizationToolPartialSupport;
 
-    mutable range_faces_type M_rangeInterProcessFaces;
-    mutable range_faces_type M_rangeBoundaryFaces;
-    mutable range_faces_type M_rangeInternalFaces;
-    mutable std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
-    mutable std::unordered_set<size_type> M_rangeMeshElementsGhostIdsPartialSupport;
+    std::vector< std::reference_wrapper<const element_type> > M_orderedElements;
+    std::vector< std::tuple<std::reference_wrapper<const face_type>, _face_attributes > > M_orderedFaces;
+    std::unordered_set<size_type> M_rangeMeshElementsIdsPartialSupport;
+    point_interprocess_map_type M_interprocessPoints;
+    edges_interprocess_map_type M_interprocessEdges;
 
     bool M_isFullSupport;
-    mutable bool M_hasUpdatedParallelData;
-    mutable bool M_hasUpdatedBoundaryInternalFaces;
-
 };
 
+
 template <typename MeshType>
-typename MeshSupport<MeshType>::range_elements_type
-MeshSupport<MeshType>::rangeElements( EntityProcessType entity ) const
+void
+MeshSupport<MeshType>::updateForUse()
 {
     if ( M_isFullSupport )
-        return elements( M_mesh, entity );
+        return;
 
-    if ( entity == EntityProcessType::LOCAL_ONLY )
-        return M_rangeElements;
+    this->updateParallelDataPartialSupport();
 
-    Range<mesh_type, MESH_ELEMENTS> myExtendedElements( M_mesh );
 
-    if ( entity == EntityProcessType::ALL )
+    // update subentities (faces) on active elements
+    std::unordered_map<size_type,std::pair<const face_type*,_face_attributes /*uint8_type*/>> faceInRange;
+    for ( auto const& eltWrap : M_orderedElements ) // TODO get end index of active elements
     {
-        for ( auto const& eltWrap : M_rangeElements )
-            myExtendedElements.push_back( eltWrap );
-    }
-
-    if ( ( ( entity == EntityProcessType::GHOST_ONLY ) || ( entity == EntityProcessType::ALL ) ) && ( M_mesh->worldComm().localSize() > 1 ) )
-    {
-        CHECK( M_hasUpdatedParallelData ) << "parallel data must be updated";
-
-        std::unordered_set<size_type> eltGhostDone;
-        for ( auto const& faceWrap : M_rangeInterProcessFaces )
+        auto const& elt = eltWrap.get();
+        //auto const& elt = unwrap_ref( eltWrap );
+        if ( elt.isGhostCell() )
+            continue;
+        for ( uint16_type i = 0; i < mesh_type::element_type::numTopologicalFaces; ++i )
         {
-            auto const& faceip = boost::unwrap_ref( faceWrap ); //*face_it );
-            auto const& elt0 = faceip.element0();
-            auto const& elt1 = faceip.element1();
-            const bool elt0isGhost = elt0.isGhostCell();
-            auto const& eltOffProc = ( elt0isGhost ) ? elt0 : elt1;
-            auto const& eltOnProc = ( elt0isGhost ) ? elt1 : elt0;
-            if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() )
+            if ( !elt.facePtr(i) )
                 continue;
-            myExtendedElements.push_back( eltOffProc );
-            eltGhostDone.insert( eltOffProc.id() );
+            const face_type* facePtr = elt.facePtr(i);
+            size_type faceId = facePtr->id();
+            auto const& face = elt.face(i);
+
+            if ( face.isInterProcessDomain() )
+            {
+                auto const& elt0 = face.element0();
+                auto const& elt1 = face.element1();
+                if ( this->hasElement( elt0.id() ) && this->hasElement( elt1.id() ) )
+                {
+                    faceInRange[faceId] = std::make_pair(facePtr,_face_attributes::interprocess);
+                    continue;
+                }
+            }
+            if ( faceInRange.find( faceId ) != faceInRange.end() )
+                faceInRange[faceId].second = _face_attributes::intraprocess;
+            else
+                faceInRange[faceId] = std::make_pair(facePtr,_face_attributes::on_boundary);
         }
     }
-    myExtendedElements.setMeshSupport( const_cast<MeshSupport*>(this)->shared_from_this() );
-    return myExtendedElements;
+
+
+    std::map< rank_type, std::vector<size_type> > dataToSend, dataToRecv;
+    std::map< rank_type, std::vector< std::reference_wrapper<const element_type> > > dataMemory;
+
+    for ( auto const& eltWrap : M_orderedElements ) // TODO get start index of ghost elements
+    {
+        auto const& elt = eltWrap.get();
+        if ( !elt.isGhostCell() )
+            continue;
+        dataToSend[elt.processId()].push_back( elt.idInOthersPartitions( elt.processId() ) );
+        dataMemory[elt.processId()].push_back( std::cref(elt) );
+    }
+
+    // mpi comm
+    int neighborSubdomains = M_mesh->neighborSubdomains().size();
+    int nbMaxRequest = 2*neighborSubdomains;
+    std::vector<mpi::request> reqs( nbMaxRequest );
+    int countRequest = 0;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
+
+    // get size of data to transfer
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[countRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
+        reqs[countRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    // send/recv data
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        std::size_t nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[countRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[countRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    // step2 : from active elts, prepare mpi data of subentities required (from ghost elts)
+    std::map< rank_type, std::vector<std::tuple<std::vector<_face_attributes>>> > dataToSendStep2, dataToRecvStep2;
+    for ( auto const& [rankRecv,eltIds] : dataToRecv )
+    {
+        auto & dataToSendStep2OnRank = dataToSendStep2[rankRecv];
+        dataToSendStep2OnRank.resize( eltIds.size() );
+        for ( int k=0; k<eltIds.size(); ++k )
+        {
+            size_type eltId = eltIds[k];
+            auto & [dataToSendStep2OnFacesOnElt] = dataToSendStep2OnRank[k];
+            auto const& elt = M_mesh->element( eltId );
+            dataToSendStep2OnFacesOnElt.resize( elt.nTopologicalFaces() );
+            for ( uint16_type i = 0; i < elt.nTopologicalFaces(); ++i )
+            {
+                if ( !elt.facePtr(i) )
+                    continue;
+                auto const& face = elt.face(i);
+                auto itFindFace = faceInRange.find( face.id() );
+                CHECK( itFindFace != faceInRange.end() ) << "face not registered, something wrong";
+                dataToSendStep2OnFacesOnElt[i] = std::get<1>( itFindFace->second );
+            }
+        }
+    }
+    // step2 : send/recv data
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        std::size_t nSendData = dataToSendStep2[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[countRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSendStep2[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeSend[neighborRank]; // use size from send of step1
+        dataToRecvStep2[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[countRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecvStep2[neighborRank].data(), nRecvData );
+    }
+    // step2 : wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    for ( auto const& [rankRecv,dataSubentitiesByElt] : dataToRecvStep2 )
+    {
+        auto const& dataMemoryOnRank = dataMemory[rankRecv];
+        CHECK( dataMemoryOnRank.size() == dataSubentitiesByElt.size() ) << fmt::format( "incompatible size: {} vs {}", dataMemoryOnRank.size(), dataSubentitiesByElt.size() );
+        for (int k=0;k<dataSubentitiesByElt.size();++k)
+        {
+            auto dataFaces = std::get<0>( dataSubentitiesByElt[k] );
+            auto const& ghostElt = dataMemoryOnRank[k].get();
+            CHECK( dataFaces.size() == ghostElt.nTopologicalFaces() ) << fmt::format( "incompatible size: {} vs {}", dataFaces.size(), ghostElt.nTopologicalFaces() );
+            for ( uint16_type i = 0; i < ghostElt.nTopologicalFaces(); ++i )
+            {
+                if ( !ghostElt.facePtr(i) )
+                    continue;
+                auto const& face = ghostElt.face(i);
+                size_type faceId = face.id();
+                if ( faceInRange.find( faceId ) == faceInRange.end() )
+                    faceInRange[faceId] = std::make_pair(std::addressof(face),dataFaces[i]);
+            }
+        }
+    }
+
+
+
+
+
+    M_orderedFaces.reserve( faceInRange.size() );
+    for ( auto const& faceWrap : M_mesh->orderedFaces() )
+    {
+        auto const& face = unwrap_ref( faceWrap );
+        auto itFind = faceInRange.find( face.id() );
+        if ( itFind == faceInRange.end() )
+            continue;
+        M_orderedFaces.push_back( std::make_tuple(std::cref(face), std::get<1>( itFind->second ) ) );
+    }
+
+
+
+
+
+
+
+    // update interprocess entties
+    // TODO optimisation if we have interprocessfaces
+
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> pointsInterprocessDetection; // ( pt id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+    std::unordered_map<index_type,std::tuple<bool,std::set<rank_type>>> edgesInterprocessDetection; // ( edge id -> ( isOnActiveElt, isOnGhostEltRanks ) )
+#if 0
+    pointsInterprocessDetection.reserve( std::distance( this->beginOrderedPoint(),
+                                                        this->endOrderedPoint() ) );
+    if constexpr ( nDim == 3 )
+        edgesInterprocessDetection.reserve( std::distance( this->beginOrderedEdge(),
+                                                           this->endOrderedEdge() ) );
+#endif
+    auto itPointIpDetect = pointsInterprocessDetection.begin();
+    auto itEdgeIpDetect = edgesInterprocessDetection.begin();
+    for ( auto const& eltWrap : M_orderedElements ) // TODO get end index of active elements
+    {
+        auto const& elt = eltWrap.get();
+
+        // nothing to do if no neighbor process
+        if ( elt.idInOthersPartitions().empty() )
+            continue;
+
+        for ( uint16_type n=0; n < elt.nPoints(); n++ )
+        {
+            auto const& point = elt.point( n );
+            std::tie( itPointIpDetect,std::ignore ) = pointsInterprocessDetection.try_emplace( point.id(), false, std::set<rank_type>{} );
+            if ( elt.isGhostCell() )
+                std::get<1>( itPointIpDetect->second ).insert( elt.processId() );
+            else
+                std::get<0>( itPointIpDetect->second ) = true;
+        }
+#if 1
+        if constexpr ( nDim == 3 )
+        {
+            for ( size_type j = 0; j < elt.nEdges(); j++ )
+            {
+                if ( !elt.edgePtr( j ) )
+                    continue;
+                auto const& edge = elt.edge( j );
+                std::tie( itEdgeIpDetect,std::ignore ) = edgesInterprocessDetection.try_emplace( edge.id(), false, std::set<rank_type>{} );
+                if ( elt.isGhostCell() )
+                    std::get<1>( itEdgeIpDetect->second ).insert( elt.processId() );
+                else
+                    std::get<0>( itEdgeIpDetect->second ) = true;
+            }
+        }
+#endif
+    }
+
+    M_interprocessPoints.clear();
+    for ( auto const& [pointId,ipData] : pointsInterprocessDetection )
+    {
+        if ( !std::get<0>( ipData ) ) // not on current process
+            continue;
+        if ( std::get<1>( ipData ).empty() ) // not on neighbor process
+            continue;
+        //M_interprocessPoints.try_emplace( pointId, std::move( std::get<1>( ipData ) ) );
+        M_interprocessPoints.try_emplace( pointId, std::get<1>( ipData ) );
+    }
+
+    M_interprocessEdges.clear();
+    for ( auto const& [edgeId,ipData] : edgesInterprocessDetection )
+    {
+        if ( !std::get<0>( ipData ) ) // not on current process
+            continue;
+        if ( std::get<1>( ipData ).empty() ) // not on neighbor process
+            continue;
+        //M_interprocessEdges.try_emplace( edgeId, std::move( std::get<1>( ipData ) ) );
+        M_interprocessEdges.try_emplace( edgeId, std::get<1>( ipData ) );
+    }
+
 }
 
-template<typename MeshType>
+
+template <typename MeshType>
+void
+MeshSupport<MeshType>::updateParallelDataPartialSupport()
+{
+    wc(this)->print( fmt::format( "[updateParallelDataPartialSupport] starts..." ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
+    if ( M_mesh->worldComm().localSize() == 1 )
+    {
+        for ( auto const& eltWrap : M_rangeElements )//this->rangeElements() )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            if ( elt.isGhostCell() )
+                continue;
+            M_rangeMeshElementsIdsPartialSupport.insert( elt.id() );
+            M_orderedElements.push_back( std::cref(elt) );
+        }
+        return;
+    }
+    // prepare data to send with mpi
+    std::map< rank_type, std::vector<size_type> > dataToSend;
+    std::map< rank_type, std::vector<size_type> > dataToRecv;
+    for ( auto const& eltWrap : M_rangeElements )//this->rangeElements() )
+    {
+        auto const& elt = unwrap_ref( eltWrap );
+        if ( elt.isGhostCell() )
+            continue;
+        M_rangeMeshElementsIdsPartialSupport.insert( elt.id() );
+        M_orderedElements.push_back( std::cref(elt) );
+
+        auto const& idInOtherPart = elt.idInOthersPartitions();
+        for ( auto const& idData : idInOtherPart )
+            dataToSend[idData.first].push_back(idData.second);
+    }
+    // mpi comm
+    int neighborSubdomains = M_mesh->neighborSubdomains().size();
+    int nbMaxRequest = 2*neighborSubdomains;
+    wc(this)->print( fmt::format( "[updateParallelDataPartialSupport - {}] nbMaxRequest={}, neighborSubdomains={}", rank(M_mesh), nbMaxRequest, neighborSubdomains ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v >1  );
+    std::vector<mpi::request> reqs( nbMaxRequest );
+    int countRequest = 0;
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
+
+    // get size of data to transfer
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        sizeSend[neighborRank] = dataToSend[neighborRank].size();
+        reqs[countRequest++] = M_mesh->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
+        reqs[countRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    // send/recv data
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        std::size_t nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[countRequest++] = M_mesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[countRequest++] = M_mesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank].data(), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    // update ghost elements
+    for ( auto const& [rankRecv,eltIds] : dataToRecv )
+    {
+        for ( size_type ghostEltId : eltIds )
+        {
+            auto [itEltId,isInsert] = M_rangeMeshElementsIdsPartialSupport.insert( ghostEltId );
+            if ( !isInsert )
+                continue;
+            auto const& ghostElt = M_mesh->element( ghostEltId );
+            M_rangeMeshElementsIdsPartialSupport.insert( ghostElt.id() );
+            M_orderedElements.push_back( std::cref(ghostElt) );
+        }
+    }
+}
+
+
+template <typename MeshType>
+template <entity_process_t EPT>
 typename MeshSupport<MeshType>::range_elements_type
-MeshSupport<MeshType>::rangeMarkedElements( uint16_type marker_t, boost::any flag )
+MeshSupport<MeshType>::rangeElementsProcessId( rank_type part ) const
 {
-    std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
-    flag_type m = *markerFlagSet.begin();
     if ( M_isFullSupport )
-    {
-        return markedelementsByType( M_mesh, marker_t, flag );
-    }
+        return elements( M_mesh, part, EPT );
 
-    Range<mesh_type,MESH_ELEMENTS> myelements(M_mesh);
-    auto insertMarkedElements = [&myelements, &marker_t,&markerFlagSet]( auto const& eltWrap)
-                             {
-                                 auto const& element = unwrap_ref( eltWrap );
-                                 if ( !element.hasMarker( marker_t ) )
-                                     return false;
-                                 if ( element.marker( marker_t ).isOff() )
-                                     return false;
-                                 if ( markerFlagSet.find( element.marker( marker_t ).value() ) == markerFlagSet.end() )
-                                     return false;
-
-                                 myelements.push_back( element );
-                                 return true;
-                             };
-    for ( auto const& eltWrap : this->rangeElements() )
+    range_elements_type rangeElts( M_mesh );
+    for ( auto const& eltWrap : M_orderedElements )
     {
-        insertMarkedElements( eltWrap );
+        auto const& elt = eltWrap.get();
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        {
+            if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                continue;
+        }
+        rangeElts.push_back( boost::cref( elt ) );
     }
-    myelements.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
-    return myelements;
+    rangeElts.shrink_to_fit();
+    rangeElts.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeElts;
+}
+
+
+
+template <typename MeshType>
+template <entity_process_t EPT>
+typename MeshSupport<MeshType>::range_elements_type
+MeshSupport<MeshType>::rangeElementsMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type part ) const
+{
+    if ( M_isFullSupport )
+        return markedelementsByType( M_mesh, markerType, markerFlags, part, EPT );
+
+    range_elements_type rangeElts( M_mesh );
+    for ( auto const& eltWrap : M_orderedElements )
+    {
+        auto const& elt = eltWrap.get();
+        if ( !elt.hasMarkerType( markerType ) )
+            continue;
+        if ( !elt.marker( markerType ).hasOneOf( markerFlags ) )
+            continue;
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        {
+            if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                continue;
+        }
+        rangeElts.push_back( boost::cref( elt ) );
+    }
+    rangeElts.shrink_to_fit();
+    rangeElts.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeElts;
+}
+
+
+
+template <typename MeshType>
+template <entity_process_t EPT>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::rangeFacesProcessId( rank_type part ) const
+{
+    if ( M_isFullSupport )
+        return faces( M_mesh, part, EPT );
+
+    range_faces_type rangeFaces( M_mesh );
+    for ( auto const& [faceWrap,faceAttribute] : M_orderedFaces )
+    {
+        auto const& face = faceWrap.get();
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        {
+            if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                continue;
+        }
+        rangeFaces.push_back( boost::cref( face ) );
+    }
+    rangeFaces.shrink_to_fit();
+    rangeFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeFaces;
+}
+
+template <typename MeshType>
+template <entity_process_t EPT>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::rangeBoundaryFaces( rank_type part ) const
+{
+    if ( M_isFullSupport )
+        return boundaryfaces( M_mesh, part, EPT );
+
+    range_faces_type rangeFaces( M_mesh );
+    for ( auto const& [faceWrap,faceAttribute] : M_orderedFaces )
+    {
+        auto const& face = faceWrap.get();
+        if ( faceAttribute != _face_attributes::on_boundary )
+            continue;
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        {
+            if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                continue;
+        }
+        rangeFaces.push_back( boost::cref( face ) );
+    }
+    rangeFaces.shrink_to_fit();
+    rangeFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeFaces;
+}
+
+template <typename MeshType>
+template <entity_process_t EPT>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::rangeInternalFaces( rank_type part ) const
+{
+    if ( M_isFullSupport )
+        return internalfaces( M_mesh, part, EPT );
+
+    range_faces_type rangeFaces( M_mesh );
+    for ( auto const& [faceWrap,faceAttribute] : M_orderedFaces )
+    {
+        auto const& face = faceWrap.get();
+        if ( faceAttribute != _face_attributes::intraprocess || faceAttribute != _face_attributes::interprocess  )
+            continue;
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        {
+            if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                continue;
+        }
+        rangeFaces.push_back( boost::cref( face ) );
+    }
+    rangeFaces.shrink_to_fit();
+    rangeFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeFaces;
+}
+
+template <typename MeshType>
+template <entity_process_t EPT>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::rangeFacesMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type part ) const
+{
+    if ( M_isFullSupport )
+        return markedfacesByType( M_mesh, markerType, markerFlags, part, EPT );
+
+    range_faces_type rangeFaces( M_mesh );
+    for ( auto const& [faceWrap,faceAttribute] : M_orderedFaces )
+    {
+        auto const& face = faceWrap.get();
+        if ( !face.hasMarkerType( markerType ) )
+            continue;
+        if ( !face.marker( markerType ).hasOneOf( markerFlags ) )
+            continue;
+        if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        {
+            if ( !Feel::detail::checkPartitionPredicate<EPT>( face, part ) )
+                continue;
+        }
+        rangeFaces.push_back( boost::cref( face ) );
+    }
+    rangeFaces.shrink_to_fit();
+    rangeFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeFaces;
+}
+
+
+template <typename MeshType>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::rangeInterProcessFaces( rank_type part, rank_type neighbor_pid ) const
+{
+    CHECK( part == rank( M_mesh ) ) << "TODO ; currently we support only interprocess in current rank";
+
+    if ( M_isFullSupport )
+        return interprocessfaces( M_mesh, neighbor_pid );
+
+    bool allNeighbor = ( neighbor_pid == invalid_v<rank_type> );
+    range_faces_type rangeFaces( M_mesh );
+    for ( auto const& [faceWrap,faceAttribute] : M_orderedFaces )
+    {
+        auto const& face = faceWrap.get();
+        if ( faceAttribute != _face_attributes::interprocess  )
+            continue;
+        if ( face.partition1() != part )
+            continue;
+        if ( !allNeighbor && face.partition2() != neighbor_pid )
+            continue;
+        rangeFaces.push_back( boost::cref( face ) );
+    }
+    rangeFaces.shrink_to_fit();
+    rangeFaces.setMeshSupport( const_cast<MeshSupport*>( this )->shared_from_this() );
+    return rangeFaces;
+
+}
+
+
+template<typename MeshType>
+template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+typename MeshSupport<MeshType>::range_elements_type
+MeshSupport<MeshType>::elementsFilterImpl( Ts&&... ts ) const
+{
+    if constexpr ( FF == entity_filter_t::PROCESS_ID )
+        return this->rangeElementsProcessId<EPT>( std::forward<Ts>( ts )... );
+    else if constexpr ( FF == entity_filter_t::MARKER )
+        return this->rangeElementsMarkerByType<EPT>( std::forward<Ts>( ts )... );
+    // else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
+    //     return this->rangeBoundaryFaces<EPT>( std::forward<Ts>( ts )... );
+    // else if constexpr ( FF == entity_filter_t::INTERNAL )
+    //     return this->internalFaces<EPT>( std::forward<Ts>( ts )... );
+    CHECK( false ) << "TODO";
+    return {};
 }
 
 template<typename MeshType>
-typename MeshSupport<MeshType>::range_faces_type
-MeshSupport<MeshType>::rangeMarkedFaces( uint16_type marker_t, boost::any flag )
+template <entity_filter_t FF, typename ... Ts>
+typename MeshSupport<MeshType>::range_elements_type
+MeshSupport<MeshType>::elementsFilter( entity_process_t ept, Ts&&... ts ) const
 {
-    std::set<flag_type> markerFlagSet = Feel::unwrap_ptr( M_mesh ).markersId( flag );
-    flag_type m = *markerFlagSet.begin();
-    if ( M_isFullSupport )
-    {
-        return markedfacesByType( M_mesh, marker_t, flag );
-    }
-
-    Range<mesh_type,MESH_FACES> myfaces( M_mesh );
-    auto insertMarkedFace = [&myfaces, &marker_t,&markerFlagSet]( auto const& eltWrap)
-                             {
-                                 auto const& face = unwrap_ref( eltWrap );
-                                 if ( !face.hasMarker( marker_t ) )
-                                     return false;
-                                 if ( face.marker( marker_t ).isOff() )
-                                     return false;
-                                 if ( markerFlagSet.find( face.marker( marker_t ).value() ) == markerFlagSet.end() )
-                                     return false;
-
-                                 myfaces.push_back( face );
-                                 return true;
-                             };
-    for ( auto const& eltWrap : this->rangeBoundaryFaces() )
-    {
-        insertMarkedFace( eltWrap );
-    }
-    for ( auto const& eltWrap : this->rangeInternalFaces() )
-    {
-        insertMarkedFace( eltWrap );
-    }
-    myfaces.setMeshSupport( const_cast<MeshSupport*>(this)->shared_from_this() );
-    return myfaces;
+    return std::invoke(
+        [this,&ept](auto&& ... args)
+            {
+                switch ( ept )
+                {
+                default:
+                case entity_process_t::LOCAL_ONLY:
+                    return this->elementsFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                    return this->elementsFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                case entity_process_t::GHOST_ONLY:
+                    return this->elementsFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                case entity_process_t::ALL:
+                    return this->elementsFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                }
+            },
+        std::forward<Ts>( ts )... );
 }
+
+template<typename MeshType>
+template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::facesFilterImpl( Ts&&... ts ) const
+{
+    if constexpr ( FF == entity_filter_t::PROCESS_ID )
+        return this->rangeFacesProcessId<EPT>( std::forward<Ts>( ts )... );
+    else if constexpr ( FF == entity_filter_t::MARKER )
+        return this->rangeFacesMarkerByType<EPT>( std::forward<Ts>( ts )... );
+    else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
+        return this->rangeBoundaryFaces<EPT>( std::forward<Ts>( ts )... );
+    else if constexpr ( FF == entity_filter_t::INTERNAL )
+        return this->rangeInternalFaces<EPT>( std::forward<Ts>( ts )... );
+    return {};
+}
+
+template<typename MeshType>
+template <entity_filter_t FF, typename ... Ts>
+typename MeshSupport<MeshType>::range_faces_type
+MeshSupport<MeshType>::facesFilter( entity_process_t ept, Ts&&... ts ) const
+{
+    return std::invoke(
+        [this,&ept](auto&& ... args)
+            {
+                switch ( ept )
+                {
+                default:
+                case entity_process_t::LOCAL_ONLY:
+                    return this->facesFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                    return this->facesFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                case entity_process_t::GHOST_ONLY:
+                    return this->facesFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                case entity_process_t::ALL:
+                    return this->facesFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                }
+            },
+        std::forward<Ts>( ts )... );
+}
+
+
+
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 using support_mesh_t = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
-elements( MeshSupportType const& imesh )
+elements( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return imesh->rangeElements();
+    return imesh->template elementsFilter<entity_filter_t::PROCESS_ID>( ept, rank( imesh->mesh() ) );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
-markedelements( MeshSupportType const& imesh, boost::any flag )
+markedelements( MeshSupportType const& imesh, boost::any markersFlag, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return imesh->rangeMarkedElements( 1, flag );
+    std::set<flag_type> markerFlagSet = imesh->mesh()->markersId( markersFlag );
+    return imesh->template elementsFilter<entity_filter_t::MARKER>( ept, 1, markerFlagSet, rank( imesh->mesh() ) );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
-faces( MeshSupportType const& imesh )
+faces( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LOCAL_ONLY  )
 {
-    using mesh_type = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
-    Range<mesh_type,MESH_FACES> myfaces( imesh->mesh() );
-    for ( auto const& eltWrap : imesh->rangeBoundaryFaces() )
-    {
-        myfaces.push_back( eltWrap );
-    }
-    for ( auto const& eltWrap : imesh->rangeInternalFaces() )
-    {
-        myfaces.push_back( eltWrap );
-    }
-    myfaces.setMeshSupport( imesh );
-    return myfaces;
+    return imesh->template facesFilter<entity_filter_t::PROCESS_ID>( ept, rank( imesh->mesh() ) );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
-boundaryfaces( MeshSupportType const& imesh )
+boundaryfaces( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return imesh->rangeBoundaryFaces();
+    return imesh->template facesFilter<entity_filter_t::ON_BOUNDARY>( ept, rank( imesh->mesh() ) );
 }
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
-internalfaces( MeshSupportType const& imesh )
+internalfaces( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return imesh->rangeInternalFaces();
+    return imesh->template facesFilter<entity_filter_t::INTERNAL>( ept, rank( imesh->mesh() ) );
 }
-
 
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
-markedfaces( MeshSupportType const& imesh, boost::any flag )
+markedfaces( MeshSupportType const& imesh, boost::any markersFlag, entity_process_t ept = entity_process_t::LOCAL_ONLY )
 {
-    return imesh->rangeMarkedFaces( 1, flag );
+    std::set<flag_type> markerFlagSet = imesh->mesh()->markersId( markersFlag );
+    return imesh->template facesFilter<entity_filter_t::MARKER>( ept, 1, markerFlagSet, rank( imesh->mesh() ) );
 }
+
+template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
+auto
+interprocessfaces( MeshSupportType const& imesh, rank_type neighbor_pid = invalid_v<rank_type> )
+{
+    return imesh->rangeInterProcessFaces( rank( imesh->mesh() ), neighbor_pid );
+}
+
 
 } // namespace Feel
 
