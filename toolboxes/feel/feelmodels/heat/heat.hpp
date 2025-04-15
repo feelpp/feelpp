@@ -470,7 +470,7 @@ class Heat : public ModelNumerical,
         Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;
-        bool M_useExtendedDoftable = false;
+        DofTableExtendedType M_useExtendedDoftable = DofTableExtendedType::DEFAULT;
         element_temperature_ptrtype M_fieldTemperature;
 
         // time discretisation

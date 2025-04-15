@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
 {
-    if ( T::value==1 && Environment::worldComm().size()>1) return;
+    if ( Environment::worldComm().size()>1) return;
 
     BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;

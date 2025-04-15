@@ -42,7 +42,7 @@ template<typename MeshType,
 struct Pch
 {
     using type = boost::mp11::mp_if_c<Tag==0 && std::is_same_v<T,double>,
-                                      FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>>,  
+                                      FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts>>>,
                                       FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous,Pts,Tag>>,T> >;
     typedef std::shared_ptr<type> ptrtype;
 };
@@ -82,11 +82,11 @@ template<int Order,
          int Tag = 0>
 inline
 Pch_ptrtype<MeshType,Order,T,Pts,Tag>
-Pch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
+Pch( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                    _extended_doftable=buildExtendedDofTable );
+                                                    _extended_doftable=dte );
 }
 
 /**
@@ -102,12 +102,12 @@ template<int Order,
          int Tag = 0>
 inline
 Pch_ptrtype<MeshType,Order,T,Pts,Tag>
-Pch( std::shared_ptr<MeshType> const& mesh, RangeType&& rangeElt, bool buildExtendedDofTable=false, size_type components = 0 )
+Pch( std::shared_ptr<MeshType> const& mesh, RangeType&& rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT, size_type components = 0 )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _range=std::forward<RangeType>(rangeElt),
                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                    _extended_doftable=buildExtendedDofTable,
+                                                    _extended_doftable=dte,
                                                     _components=components );
 }
 

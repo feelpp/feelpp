@@ -248,6 +248,16 @@ public:
             this->initTensor( expr, geom );
         }
 
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            super_type( geom, theInitArgs... ),
+            M_expr( expr )
+            {
+                this->initTensor( std::true_type{}, exprExpanded, ttse, expr, geom, theInitArgs... );
+            }
+
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override
         {
             this->update(geom);
@@ -272,6 +282,26 @@ public:
                 M_tensorExprIdPressure->update( geom );
             this->updateImpl();
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+            {
+                //this->update( std::true_type{}, true, exprExpanded, ttse, geom, theUpdateArgs... );
+                this->setGmc( geom );
+                M_tensorExprEvaluateVelocityOperators->update( geom );
+                M_tensorDynamicViscosity->update( std::true_type{}, false, exprExpanded.exprDynamicVisocity(), ttse, geom, theUpdateArgs... );
+                // TODO others with exprExpanded
+                if ( M_tensorExprTurbulentDynamicVisocity )
+                    M_tensorExprTurbulentDynamicVisocity->update( geom );
+                if ( M_tensorExprTurbulentKineticEnergy)
+                {
+                    M_tensorExprTurbulentKineticEnergy->update( geom );
+                    M_tensorExprDensity->update( geom );
+                }
+                if ( M_tensorExprIdPressure )
+                    M_tensorExprIdPressure->update( geom );
+                this->updateImpl();
+            }
 
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
@@ -382,6 +412,26 @@ public:
                 M_tensorExprEvaluateVelocityOperators = std::make_shared<tensor_expr_evaluate_velocity_opertors_type>( *(expr.exprEvaluateVelocityOperatorsPtr()), theInitArgs... );
                 M_tensorDynamicViscosity.emplace( expr.exprDynamicVisocity(), M_tensorExprEvaluateVelocityOperators, theInitArgs... );
                 M_dynamicViscosityDependsOnVelocityField = expr.exprDynamicVisocity().dependsOnVelocityField();
+                if ( expr.turbulence().isEnabled() )
+                {
+                    M_tensorExprTurbulentDynamicVisocity.emplace( expr.exprTurbulentDynamicVisocity(), theInitArgs... );
+                    if ( expr.turbulence().hasTurbulentKineticEnergy() )
+                    {
+                        M_tensorExprTurbulentKineticEnergy.emplace( expr.exprTurbulentKineticEnergy(), theInitArgs... );
+                        M_tensorExprDensity.emplace( expr.exprDensity(), theInitArgs... );
+                    }
+                }
+                if ( expr.withPressureTerm() )
+                    M_tensorExprIdPressure.emplace( expr.expressionIdPressure(),theInitArgs... );
+            }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void initTensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                         this_type const& expr, const TheArgsType&... theInitArgs )
+            {
+                M_tensorExprEvaluateVelocityOperators = std::make_shared<tensor_expr_evaluate_velocity_opertors_type>( *(exprExpanded.exprEvaluateVelocityOperatorsPtr()), theInitArgs... );
+                //M_tensorDynamicViscosity.emplace( expr.exprDynamicVisocity(), M_tensorExprEvaluateVelocityOperators, theInitArgs... );
+                M_tensorDynamicViscosity.emplace( std::true_type{}, exprExpanded.exprDynamicVisocity(), ttse, expr.exprDynamicVisocity(), M_tensorExprEvaluateVelocityOperators, theInitArgs... );
+                M_dynamicViscosityDependsOnVelocityField = exprExpanded.exprDynamicVisocity().dependsOnVelocityField();
                 if ( expr.turbulence().isEnabled() )
                 {
                     M_tensorExprTurbulentDynamicVisocity.emplace( expr.exprTurbulentDynamicVisocity(), theInitArgs... );

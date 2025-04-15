@@ -70,10 +70,7 @@ public :
             int s_dof = -1;
             if ( Environment::worldComm().globalRank()==proc_number )
             {
-
-                auto searchGpDof = Xp->dof()->searchGlobalProcessDof( p_dof );
-                CHECK( boost::get<0>( searchGpDof ) ) << "Did not find p_dof "<< p_dof <<" when it should be here\n";
-                auto gpdof = boost::get<1>( searchGpDof );
+                size_type gpdof = Xp->dof()->worldIndexToProcessIndex( p_dof );
                 s_dof = parallelToSequential( gpdof );
             }
             boost::mpi::broadcast( Environment::worldComm(), s_dof, proc_number );

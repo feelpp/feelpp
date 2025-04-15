@@ -581,7 +581,7 @@ public:
      * \return a reference to the current linear form
      * \warning the linear form is cleared before the copy
      * \warning the linear form is resized to the size of the linear form to copy if the spaces are not the same
-     * 
+     *
      * \code
      * auto Xh = space_type::New( mesh );
      * auto Yh = space_type::New( mesh );
@@ -599,7 +599,7 @@ public:
     {
         if ( this != &lf )
         {
-            
+
             bool same_spaces = (M_X == lf.M_X);
             if ( M_F && same_spaces )
             {
@@ -648,9 +648,9 @@ public:
 
     /**
      * @brief add += operator
-     * 
+     *
      * @param f linear form to add
-     * @return LinearForm& 
+     * @return LinearForm&
      */
     LinearForm& operator+=( LinearForm const& f )
     {
@@ -668,9 +668,9 @@ public:
     }
     /**
      * @brief add -= operator
-     * 
+     *
      * @param f linear form to substract
-     * @return LinearForm& 
+     * @return LinearForm&
      */
     LinearForm& operator-=( LinearForm const& f )
     {
@@ -688,9 +688,9 @@ public:
     }
     /**
      * @brief operator *= with a scalar
-     * 
+     *
      * @param s scalar to multiply with
-     * @return LinearForm& 
+     * @return LinearForm&
      */
     LinearForm& operator*=( value_type const& s )
     {
@@ -700,9 +700,9 @@ public:
     }
     /**
      * @brief operator /= with a scalar
-     * 
+     *
      * @param s scalar
-     * @return LinearForm& 
+     * @return LinearForm&
      */
     LinearForm& operator/=( value_type const& s )
     {
@@ -777,10 +777,10 @@ public:
     //! @return the name of the linear form
     //!
     std::string const& name() const { return M_name; }
-    
+
     //!
     //! \return the test function space
-    //! 
+    //!
     space_ptrtype const& functionSpace() const
     {
         return M_X;
@@ -1088,7 +1088,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
 
     if ( !__F )
         M_F = backend()->newVector( _test=__X );
-    
+
     if ( init )
         M_F->zero();
 }
@@ -1246,13 +1246,13 @@ struct LinearForm
 
 /**
  * @brief operator + with two linear forms
- * 
+ *
  * @tparam SpaceType space type
  * @tparam VectorType representation type
  * @tparam ElemContType type of element
  * @param a linear form
  * @param b linear form
- * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ * @return LinearForm<SpaceType, VectorType, ElemContType>
  */
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
@@ -1266,13 +1266,13 @@ operator+(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> cons
 }
 /**
  * @brief operator - with two linear forms
- * 
+ *
  * @tparam SpaceType space type
  * @tparam VectorType representation type
  * @tparam ElemContType type of element
  * @param a linear form
  * @param b linear form
- * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ * @return LinearForm<SpaceType, VectorType, ElemContType>
  */
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
@@ -1286,13 +1286,13 @@ operator-(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> cons
 }
 /**
  * @brief operator * with a scalar on the right
- * 
+ *
  * @tparam SpaceType space type
  * @tparam VectorType representation type
  * @tparam ElemContType type of elements
  * @param a linear form
  * @param s representation type
- * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ * @return LinearForm<SpaceType, VectorType, ElemContType>
  */
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
@@ -1306,13 +1306,13 @@ operator*(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> cons
 }
 /**
  * @brief operator * with a scalar on the left
- * 
+ *
  * @tparam SpaceType space type
  * @tparam VectorType representation type
  * @tparam ElemContType type of container of elements
- * @param s scalar 
+ * @param s scalar
  * @param a linear form
- * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ * @return LinearForm<SpaceType, VectorType, ElemContType>
  */
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
@@ -1325,13 +1325,13 @@ operator*(typename SpaceType::value_type const& s, Feel::vf::detail::LinearForm<
 }
 /**
  * @brief operator / with a scalar
- * 
+ *
  * @tparam SpaceType space type
  * @tparam VectorType representation type
  * @tparam ElemContType type of container of elements
  * @param a linear form
  * @param s scalar
- * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ * @return LinearForm<SpaceType, VectorType, ElemContType>
  */
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
@@ -1345,12 +1345,12 @@ operator/(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> cons
 }
 /**
  * @brief unary minus operator
- * 
+ *
  * @tparam SpaceType space type
  * @tparam VectorType representation type
  * @tparam ElemContType type of container of elements
  * @param a linear form
- * @return LinearForm<SpaceType, VectorType, ElemContType> 
+ * @return LinearForm<SpaceType, VectorType, ElemContType>
  */
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType>
@@ -1364,21 +1364,21 @@ operator-(Feel::vf::detail::LinearForm<SpaceType, VectorType, ElemContType> cons
 
 /**
  * @brief sum of linear forms
- * 
- * @tparam FE1 
- * @tparam BinaryOperation 
- * @tparam VectorUblas<typename functionspace_type<FE1>::value_type> 
+ *
+ * @tparam FE1
+ * @tparam BinaryOperation
+ * @tparam VectorUblas<typename functionspace_type<FE1>::value_type>
  * @param v vector of linear forms
  * @param op is the binary operation to apply
  * @param init is the initial value
- * @return LinearForm<FE1,ElemContType> 
+ * @return LinearForm<FE1,ElemContType>
  */
 template<typename FE1,
          class BinaryOperation,
          typename VectorType=typename Backend<typename functionspace_type<FE1>::value_type>::vector_type,
          typename ElemContType = VectorType>
-Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> sum( std::vector<Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> > const& v, 
-                                                                BinaryOperation op, 
+Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> sum( std::vector<Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> > const& v,
+                                                                BinaryOperation op,
                                                                Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType> init = Feel::vf::detail::LinearForm<FE1,VectorType,ElemContType>() )
 {
     for(auto const& a : v)

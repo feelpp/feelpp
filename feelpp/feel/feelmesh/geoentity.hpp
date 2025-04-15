@@ -7,7 +7,7 @@
 
   Copyright (C) 2011-2020 Feel++ Consortium
   Copyright (C) 2005,2006 EPFL
-  
+
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -125,11 +125,7 @@ public:
         M_entity( (MESH_ENTITY_INTERNAL<<nBitShiftedGeoEntityContext) | (Geometry<<nBitShiftedReferenceGeometry) | (Shape<<nBitShiftedReferenceShapes) ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_pid( invalid_rank_type_value ),
-        M_pidInPartition( invalid_rank_type_value ),
-        M_neighor_pids(),
-        M_idInOtherPartitions(),
-        M_elist(),
-        M_elistGhost()
+        M_pidInPartition( invalid_rank_type_value )
     {}
 
     explicit GeoEntity( size_type i,
@@ -142,11 +138,7 @@ public:
         M_entity( (context<<nBitShiftedGeoEntityContext) | (geometry<<nBitShiftedReferenceGeometry) | (shape<<nBitShiftedReferenceShapes) ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_pid( invalid_rank_type_value ),
-        M_pidInPartition( invalid_rank_type_value ),
-        M_neighor_pids(),
-        M_idInOtherPartitions(),
-        M_elist(),
-        M_elistGhost()
+        M_pidInPartition( invalid_rank_type_value )
     {}
 
     GeoEntity( GeoEntity const& __me ) = default;
@@ -158,10 +150,8 @@ public:
         M_boundaryEntityDimension( std::move( __me.M_boundaryEntityDimension ) ),
         M_pid( std::move( __me.M_pid ) ),
         M_pidInPartition( std::move( __me.M_pidInPartition ) ),
-        M_neighor_pids( std::move( __me.M_neighor_pids ) ),
         M_idInOtherPartitions( std::move( __me.M_idInOtherPartitions ) ),
         M_elist( std::move( __me.M_elist ) ),
-        M_elistGhost( std::move( __me.M_elistGhost ) ),
         M_markers( std::move( __me.M_markers ) )
         {
             //std::cout << "GeoEntity moved ctor\n";
@@ -175,10 +165,8 @@ public:
             M_boundaryEntityDimension= std::move( __me.M_boundaryEntityDimension );
             M_pid= std::move( __me.M_pid );
             M_pidInPartition= std::move( __me.M_pidInPartition );
-            M_neighor_pids= std::move( __me.M_neighor_pids );
             M_idInOtherPartitions= std::move( __me.M_idInOtherPartitions );
             M_elist= std::move( __me.M_elist );
-            M_elistGhost= std::move( __me.M_elistGhost );
             M_markers = std::move( __me.M_markers );
             //std::cout << "GeoEntity moved assign\n";
             return *this;
@@ -498,7 +486,7 @@ public:
      */
     rank_type numberOfPartitions() const noexcept
     {
-        return static_cast<rank_type>(M_neighor_pids.size()+1);
+        return static_cast<rank_type>( M_idInOtherPartitions.size()+1 );
     }
 
     /**
@@ -506,7 +494,7 @@ public:
      */
     rank_type numberOfNeighborPartitions() const
     {
-        return static_cast<rank_type>(M_neighor_pids.size());
+        return static_cast<rank_type>( M_idInOtherPartitions.size() );
     }
 
     /**
@@ -515,66 +503,17 @@ public:
      */
     bool isLinkedToOtherPartitions() const
     {
-        return M_neighor_pids.size() > 0;
+        return !M_idInOtherPartitions.empty();
     }
-
-    /**
-     * \return the number of partition the element is linked to
-     */
-    std::vector<rank_type> const& neighborPartitionIds() const
-    {
-        return M_neighor_pids;
-    }
-    /**
-     * \return the number of partition the element is linked to
-     */
-    std::vector<rank_type> & neighborPartitionIds()
-    {
-        return M_neighor_pids;
-    }
-    /**
-     * clear the neighbor partition ids container
-     */
-    void clearNeighborPartitionIds()
-    {
-        M_neighor_pids.clear();
-    }
-
-    /**
-     * set id in a partition pid of the entity
-     */
-    FEELPP_DEPRECATED void setIdInOthersPartitions( rank_type pid, size_type id )
-    {
-        M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
-    }
-    void setIdInOtherPartitions( rank_type pid, size_type id )
-    {
-        M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
-    }
-
-    /**
-     * set (partition,id) in other partitions of the entity
-     */
-    void setIdInOtherPartitions( std::map<rank_type,size_type> const& iop )
-        {
-            M_idInOtherPartitions = iop;
-        }
-
-    
-    /**
-     * set (partition,id) in other partitions of the entity
-     */
-    void setIdInOtherPartitions( std::map<rank_type,size_type>&& iop )
-        {
-            M_idInOtherPartitions = iop;
-        }
 
     /**
      * \return the id of the entity in a partition pid
      */
     size_type idInOthersPartitions( rank_type pid ) const
     {
-        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() ) 
+        if ( pid == this->pidInPartition() )
+            return this->id();
+        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
         return M_idInOtherPartitions.find( pid )->second;
     }
@@ -582,10 +521,16 @@ public:
     /**
      * \return idInOthersPartitions map
      */
-    std::map<rank_type, size_type> const& idInOthersPartitions() const
+    std::map<rank_type, size_type> const& idInOthersPartitions() const noexcept
     {
         return M_idInOtherPartitions;
     }
+
+    std::map<rank_type, size_type> const& neighborProcessIds() const noexcept
+        {
+            return M_idInOtherPartitions;
+        }
+
     /**
      * clear id in others partitions container
      */
@@ -639,37 +584,61 @@ public:
         M_boundaryEntityDimension = ent_d;
     }
 
-    /**
-     * \return the number of partition the element is linked to including the
-     * partition to which it belongs
-     */
-    FEELPP_DEPRECATED void setNumberOfPartitions( uint16_type np )
-    {
-        CHECK( 0 ) << "Invalid call to setNumberOfPartitions()";
-    }
 
     /**
-     * set the number of partition the element is linked to
+     * set id in a partition pid of the entity
      */
-    void setNumberOfNeighborPartitions( uint16_type nep )
-    {
-        M_neighor_pids.resize( nep );
-    }
+    // FEELPP_DEPRECATED void setIdInOthersPartitions( rank_type pid, size_type id )
+    // {
+    //     M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
+    // }
+    void setIdInOtherPartitions( rank_type pid, size_type id )
+        {
+            M_idInOtherPartitions[pid] = id;
+        }
+
+    /**
+     * set (partition,id) in other partitions of the entity
+     */
+    void setIdInOtherPartitions( std::map<rank_type,size_type> const& iop )
+        {
+            M_idInOtherPartitions = iop;
+        }
+
+
+    /**
+     * set (partition,id) in other partitions of the entity
+     */
+    void setIdInOtherPartitions( std::map<rank_type,size_type>&& iop )
+        {
+            M_idInOtherPartitions = iop;
+        }
+
+    template <typename Q>
+    void setNeighborProcessIds( Q && pids )
+        {
+            M_idInOtherPartitions = std::forward<Q>( pids );
+            // init with invalid value
+            std::for_each( M_idInOtherPartitions.begin(), M_idInOtherPartitions.end(), [](auto & e){ std::get<1>(e) = invalid_v<index_type>; } );
+        }
 
     /**
      * \return the number of partition the element is linked to
      */
     void setNeighborPartitionIds( std::vector<rank_type> const& npids )
     {
-        M_neighor_pids = npids;
+        M_idInOtherPartitions.clear();
+        for ( rank_type p : npids)
+        {
+            CHECK( p != pidInPartition() ) << fmt::format("neighor pid {} should not be the current process id",p );
+            M_idInOtherPartitions.emplace( p, invalid_v<index_type> );
+        }
     }
 
     void addNeighborPartitionId( rank_type p )
     {
-        if ( std::find( M_neighor_pids.begin(), M_neighor_pids.end(), p) == M_neighor_pids.end() )
-        {
-            M_neighor_pids.push_back(p);
-        }
+        CHECK( p != pidInPartition() ) << fmt::format("neighor pid {} should not be the current process id",p );
+        M_idInOtherPartitions.emplace( p, invalid_v<index_type> );
     }
 
     //@}
@@ -729,45 +698,6 @@ public:
     std::set<std::pair<size_type,uint16_type>> & elements()
     {
         return M_elist;
-    }
-
-
-    /**
-     * add a new ghost element to which the point belongs
-     */
-    self_type& addElementGhost( rank_type proc, size_type e  )
-    {
-        M_elistGhost[proc].insert(e);
-        return *this;
-    }
-
-    /**
-     * \return the number of ghost elements whom the point belongs to
-     */
-    rank_type numberOfProcGhost() const
-    {
-        return M_elistGhost.size();
-    }
-
-    /**
-     * \return the set of ids of ghost elements whom the point belongs to
-     */
-    std::map<rank_type,std::set<size_type> > const& elementsGhost() const
-    {
-        return M_elistGhost;
-    }
-
-    /**
-     * \return true if geoentity is a subentity of a ghost elt belongs to partition p
-     */
-    bool isSubEntityOfGhostElement( rank_type p ) const
-    {
-        return M_elistGhost.find( p ) != M_elistGhost.end();
-    }
-
-    void clearElementsGhost()
-    {
-        M_elistGhost.clear();
     }
 
     //@}
@@ -934,7 +864,6 @@ private:
             ar & M_pid;
             DVLOG(2) << "  - pid:" << M_pid << "\n";
             ar & M_pidInPartition;
-            ar & M_neighor_pids;
             ar & M_idInOtherPartitions;
             DVLOG( 2 ) << "  - markers...\n";
             ar& M_markers;
@@ -953,13 +882,10 @@ private:
 
     rank_type M_pid;
     rank_type M_pidInPartition;
-    std::vector<rank_type> M_neighor_pids;
     std::map<rank_type, size_type> M_idInOtherPartitions;
 
     //! element list to which the point belongs
     std::set<std::pair<size_type,uint16_type>>  M_elist;
-    //! ghost elements which share the entity
-    std::map<rank_type,std::set<size_type > > M_elistGhost;
 
     //! mapping from marker index to marker flag
     std::map<uint16_type, marker_type> M_markers;
@@ -980,6 +906,48 @@ typedef GeoEntity<Hypercube<2, 1> > LinearQuad;
 typedef GeoEntity<Hypercube<3, 1> > LinearHexa;
 typedef GeoEntity<Hypercube<2, 2> > QuadraticQuad;
 typedef GeoEntity<Hypercube<3, 2> > QuadraticHexa;
+
+
+namespace detail
+{
+//! return true if the entity satisfy the predicate partitions defined by EPT and part
+template <entity_process_t EPT, typename EntityType>
+bool checkPartitionPredicate( EntityType const& entity, rank_type part )
+{
+    if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
+        return entity.processId() == part;
+    else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
+        return entity.processId() != part;
+    else if constexpr ( EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+    {
+        if constexpr ( is_topological_face<EntityType>::value )
+            return entity.processId() == part || entity.isInterProcessDomain( part );
+        else
+        {
+            //CHECK( false ) << "TODO";
+            // only for element entity, because INTERPROCESS has no impact (TODO check if entity is a mesh element)
+            return entity.processId() == part;
+        }
+    }
+    return true;
+}
+
+//! return true if the entity satisfy the predicate partitions defined by EPT and part
+template <entity_process_t EPT, typename EntityType, typename InterprocessMappingType>
+bool checkPartitionPredicate( EntityType const& entity, rank_type part, InterprocessMappingType const& interprocessMapping )
+{
+    if constexpr ( EPT == entity_process_t::LOCAL_ONLY )
+        return entity.processId() == part;
+    else if constexpr ( EPT == entity_process_t::GHOST_ONLY )
+        return entity.processId() != part;
+    else if constexpr ( EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+        return entity.processId() == part || interprocessMapping.find( entity.id() ) != interprocessMapping.end();
+    else
+        return true;
+}
+
+
+}
 
 } // Feel
 

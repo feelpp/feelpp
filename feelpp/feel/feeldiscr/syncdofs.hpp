@@ -2,7 +2,7 @@
 //!
 //! This file is part of the Feel++ library
 //!
-//! Author(s) : 
+//! Author(s) :
 //!     Thibaut Metivet <thibaut.metivet@inria.fr>
 //!
 //! This library is free software; you can redistribute it and/or
@@ -93,9 +93,7 @@ void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& 
     {
         size_type dofGCId = ghostDofVal.first;
         // Find received dof global process id
-        auto resSearchDof = dofTable.searchGlobalProcessDof( dofGCId );
-        DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
-        size_type const dofId = boost::get<1>( resSearchDof );
+        size_type const dofId = dofTable.worldIndexToProcessIndex( dofGCId );
         //size_type const dofId = dofGCId - dofTable.firstDofGlobalCluster();
         // Update current value with received ghost values
         value_type valCurrent = phi[dofId];
@@ -107,7 +105,7 @@ void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& 
         //std::cout << std::endl;
         phi[dofId] = func( valCurrent, ghostDofVal.second );
     }
-    
+
     // Re-send active dof value to ghost dofs
     auto const& activeDofsShared = dofTable.activeDofSharedOnCluster();
     itElt = range.begin();
@@ -147,9 +145,8 @@ void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& 
             size_type dofGCId = dataRFromProc.first;
             value_type dofVal = dataRFromProc.second;
             // Find received dof global process id
-            auto resSearchDof = dofTable.searchGlobalProcessDof( dofGCId );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "] " << "dof " << dofGCId << " not found\n";
-            size_type const dofId = boost::get<1>( resSearchDof );
+            size_type const dofId = dofTable.worldIndexToProcessIndex( dofGCId );
+
             DCHECK( dofTable.dofGlobalProcessIsGhost( dofId ) ) << "[" << localPid << "] "<< "dof " << dofGCId << ", " << dofId << " is not a ghost\n";
             phi[dofId] = dofVal;
         }

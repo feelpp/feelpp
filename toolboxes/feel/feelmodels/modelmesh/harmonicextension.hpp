@@ -75,7 +75,7 @@ public :
     HarmonicExtension(mesh_ptrtype mesh, backend_ptrtype const& backend,
                       std::string const& prefix="",
                       worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
-                      bool useGhostEltFromExtendedStencil=false,
+                      DofTableExtendedType dte = DofTableExtendedType::DEFAULT,
                       ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     HarmonicExtension(space_ptrtype space, backend_ptrtype const& backend,
@@ -101,18 +101,10 @@ public :
     void
     generateALEMap( elem_type const & dispOnBoundary )
     {
-#if 0
-        bool useGhostEltFromExtendedStencil = this->functionSpace()->dof()->buildDofTableMPIExtended() && this->mesh()->worldComm().localSize()>1;
-        EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        *M_dispImposedOnBoundary = vf::project(_space=this->functionSpace(),
-                                               _range=elements(this->mesh(),entityProcess),
-                                               _expr=vf::idv(dispOnBoundary) );
-#else
-        CHECK( !this->functionSpace()->dof()->buildDofTableMPIExtended() ) << "not implemented";
-        *M_dispImposedOnBoundary = vf::project(_space=this->functionSpace(),
-                                               _range=elements(support(this->functionSpace())),
-                                               _expr=vf::idv(dispOnBoundary) );
-#endif
+        // TODO range should be only on moving boundary
+        M_dispImposedOnBoundary->on(_range=elements(support(this->functionSpace())),
+                                    _expr=vf::idv(dispOnBoundary),
+                                    _close=true );
         this->solve();
     }
 

@@ -197,6 +197,8 @@ make_bfassign3( BFType& lf,
 }
 
 
+
+
 //!
 //! BilinearForm class
 //!
@@ -211,10 +213,10 @@ public:
      */
     //@{
     enum { nDim = FE1::nDim };
-    
+
     using value_type = typename FE1::value_type;
     using super = BilinearFormBase<value_type>;
-        
+
     using space_1_type = functionspace_type<FE1>;
     typedef std::shared_ptr<space_1_type> space_1_ptrtype;
     typedef space_1_type test_space_type;
@@ -225,7 +227,7 @@ public:
     typedef space_2_type trial_space_type;
     typedef std::shared_ptr<space_2_type> trial_space_ptrtype;
 
-    
+
     typedef typename space_1_type::template Element<value_type,ElemContType> element_1_type;
 
     typedef typename space_2_type::template Element<value_type,ElemContType> element_2_type;
@@ -258,9 +260,9 @@ public:
 
     using index_type = typename mesh_1_type::index_type;
     using size_type = typename mesh_1_type::size_type;
-    
+
     using matrix_ptrtype = typename super::matrix_ptrtype;
-    
+
     template<typename SpaceType, bool UseMortar = false>
     struct finite_element
     {
@@ -1106,8 +1108,8 @@ public:
                   size_type graph_hints = Pattern::COUPLED );
 
     /**
-     * @brief Construct a new Bilinear Form object  
-     * 
+     * @brief Construct a new Bilinear Form object
+     *
      * @param f bilinear form to copy
      */
     BilinearForm( BilinearForm const& f )
@@ -1119,12 +1121,12 @@ public:
         if ( !this->isMatrixAllocated() || !same_spaces )
             this->allocateMatrix( M_X1, M_X2 );
         super::operator=( f );
-        //toc(M_name, FLAGS_v > 0 );   
+        //toc(M_name, FLAGS_v > 0 );
     }
     /**
      * @brief Construct a new Bilinear Form object
-     * 
-     * @param __vf 
+     *
+     * @param __vf
      */
     BilinearForm( BilinearForm && __vf ) = default;
 
@@ -1155,7 +1157,7 @@ public:
             if ( !this->isMatrixAllocated() || !same_spaces )
                 this->allocateMatrix( M_X1, M_X2 );
             super::operator=( form );
-            
+
         }
 
         return *this;
@@ -1173,7 +1175,7 @@ public:
     template <class ExprT>
     BilinearForm& operator+=( Expr<ExprT> const& expr );
 
-    
+
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1188,9 +1190,9 @@ public:
 
     /**
      * @brief Computes the linear form associated with the bilinear form for a given trial function
-     * 
-     * @param __u 
-     * @return form1_t<test_space_type> 
+     *
+     * @param __u
+     * @return form1_t<test_space_type>
      */
     form1_t<test_space_type> operator()( element_2_type const& __u ) const
         {
@@ -1206,7 +1208,7 @@ public:
     }
     BilinearForm& operator-=( BilinearForm const& a )
     {
-         static_cast<super&>(*this) -= static_cast<const super&>(a);   
+         static_cast<super&>(*this) -= static_cast<const super&>(a);
         return *this;
     }
     BilinearForm& operator*=( value_type const& a )
@@ -1221,8 +1223,8 @@ public:
     }
     /**
      * @brief unary minus operator
-     * 
-     * @return new BilinearForm 
+     *
+     * @return new BilinearForm
      */
     BilinearForm operator-() const
     {
@@ -1451,7 +1453,7 @@ BilinearForm<FE1, FE2, ElemContType>::operator=( Expr<ExprT> const& __expr )
 #else
     using has_multiple_spaces_t = mpl::bool_<mpl::or_< mpl::bool_< ( space_1_type::nSpaces > 1 )>,
                                              mpl::bool_< ( space_2_type::nSpaces > 1 )> >::type::value >;
-                     
+
     //M_futs_assign.push_back( std::async( std::launch::async, &BilinearForm<FE1, FE2, ElemContType>::template assign<ExprT>, this, __expr, true, has_multiple_spaces_t() ) );
     this->push_back( std::async( std::launch::async, [this,__expr](){ this->assign( __expr, true, has_multiple_spaces_t() ); } ) );
     std::cout << "futs: " << this->M_fut_assign.size() << std::endl;
@@ -1669,22 +1671,22 @@ Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> operator-( Feel::vf::detail
 
 /**
  * @brief sum of bilinear forms
- * 
- * @tparam FE1 
- * @tparam FE2 
- * @tparam BinaryOperation 
- * @tparam VectorUblas<typename functionspace_type<FE1>::value_type> 
+ *
+ * @tparam FE1
+ * @tparam FE2
+ * @tparam BinaryOperation
+ * @tparam VectorUblas<typename functionspace_type<FE1>::value_type>
  * @param v vector of bilinear forms
  * @param op is the binary operation to apply
  * @param init is the initial value
- * @return BilinearForm<FE1,FE2,ElemContType> 
+ * @return BilinearForm<FE1,FE2,ElemContType>
  */
 template<typename FE1,
          typename FE2,
          class BinaryOperation,
          typename ElemContType = VectorUblas<typename functionspace_type<FE1>::value_type> >
-Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> sum( std::vector<Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> > const& v, 
-                                                          BinaryOperation op, 
+Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> sum( std::vector<Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> > const& v,
+                                                          BinaryOperation op,
                                                           Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType> init = Feel::vf::detail::BilinearForm<FE1,FE2,ElemContType>() )
 {
     for(auto const& a : v)
@@ -1703,6 +1705,18 @@ template<typename FE1,
 using form2_t = form2_type<FE1,FE2,ElemContType>;
 
 
+template<typename T>
+struct is_bilinear_form : std::is_base_of<BilinearFormBase<typename std::decay_t<T>::value_type>, std::decay_t<T>>::type {};
+template <typename T>
+inline constexpr bool is_bilinear_form_v = is_bilinear_form<T>::value;
+
+
+template <typename T, typename = void>
+struct form_test_mesh : mp11::mp_identity<typename std::decay_t<T>::mesh_type> {};
+template <typename T>
+struct form_test_mesh< T, std::enable_if_t<is_bilinear_form_v<T>> > : mp11::mp_identity<typename std::decay_t<T>::mesh_1_type> {};
+template <typename T>
+using form_test_mesh_t = typename form_test_mesh<T>::type;
 
 } // feel
 
