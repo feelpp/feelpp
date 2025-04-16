@@ -32,8 +32,9 @@ feelpp_list_subdirs(feeldirs ${CMAKE_CURRENT_SOURCE_DIR})
 
 foreach(includedir ${feeldirs})
   FILE(GLOB files "${includedir}/*.h*" )
-  FILE(GLOB cppfiles "${includedir}/*.cpp" )
-  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feelpp/feel/${includedir} COMPONENT Devel)
+  #FILE(GLOB cppfiles "${includedir}/*.cpp" )
+  #INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feelpp/feel/${includedir} COMPONENT Devel)
+  INSTALL(FILES ${files} DESTINATION include/feelpp/feel/${includedir} COMPONENT Devel)
   
   feelpp_list_subdirs(feelsubdirs ${CMAKE_CURRENT_SOURCE_DIR}/${includedir})
   #message(STATUS "====== subdir ${includedir} : ${feelsubdirs}")

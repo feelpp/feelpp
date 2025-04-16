@@ -51,6 +51,16 @@ enum FunctionSpaceType
     TENSOR2_SYMM
 };
 
+
+enum class DofTableExtendedType
+{
+    NONE = 0,
+    // FACES,
+    // EDGES,
+    VERTICES,
+    DEFAULT
+};
+
 }
 
 #endif

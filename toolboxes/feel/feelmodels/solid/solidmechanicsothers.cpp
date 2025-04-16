@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
 
@@ -1077,14 +1077,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
 {
-    if ( M_timeStepping != "Newmark" )
-        return;
-
     this->log("SolidMechanics","updateVelocityAndAcceleration", "start" );
 
     if (this->hasSolidEquationStandard())
     {
-        M_timeStepNewmark->updateFromDisp(*M_fieldDisplacement);
+        if ( M_timeStepping == "Newmark" )
+            M_timeStepNewmark->updateFromDisp(*M_fieldDisplacement);
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            M_fieldAcceleration->zero();
+            M_fieldAcceleration->add( M_timeStepBdfVelocity->polyDerivCoefficient(0), *M_fieldVelocity );
+            M_fieldAcceleration->add( -1.,  M_timeStepBdfVelocity->polyDeriv() );
+        }
     }
 
     if ( this->hasSolidEquation1dReduced() )
@@ -1484,7 +1488,3 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
 
 
 } // Feel
-
-
-
-

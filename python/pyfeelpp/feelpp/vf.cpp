@@ -42,7 +42,7 @@ using namespace Feel;
 void defExpr(py::module &m)
 {
     using namespace Feel;
- 
+
 }
 
 template<int M, int N, int Order>
@@ -68,18 +68,41 @@ void addGinacMatrix( py::module& m )
         .def(
             "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::map<std::string, double /*value_type*/> const& m )
             { return e.evaluate( m ); },
-            "evaluate the expression", py::arg( "mp" ) )
+            "evaluate the expression for a given dict of values", py::arg( "mp" ) )
         .def(
             "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::string const& s, Eigen::VectorXd const& x, bool parallel )
             {
                 Eigen::VectorXd y(x.size());
-                std::transform( x.begin(), x.end(),  y.begin(), 
-                                  [&e,s,parallel](auto x) { 
+                std::transform( x.begin(), x.end(),  y.begin(),
+                                  [&e,s,parallel](auto x) {
                                       e.setParameterValues( { { s, x } } );
-                                      return e.evaluate(parallel)( 0, 0 ); 
+                                      return e.evaluate(parallel)( 0, 0 );
                                   } );
                 return y; },
-            "evaluate the expression", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true )
+            "evaluate the expression for an array of values for one parameter", py::arg( "parameter" ), py::arg( "values" ), py::arg( "parallel" ) = true )
+        .def(
+            "evaluate", []( Expr<GinacMatrix<M, N, Order>>& e, std::map<std::string, Eigen::VectorXd> const& m, bool parallel )
+            {
+                if (m.empty())
+                    throw std::runtime_error("[expr:evaluate] map is empty");
+
+                size_t n = m.begin()->second.size();
+                for (const auto& [key, values] : m)
+                {
+                    if (values.size() != n)
+                        throw std::runtime_error("[expr:evaluate] size mismatch in parameter arrays");
+                }
+
+                Eigen::VectorXd y(n);
+                for (size_t i = 0; i < n; ++i)
+                {
+                    for (const auto& [key, values] : m)
+                        e.setParameterValues({{key, values[i]}});
+                    y(i) = e.evaluate(parallel)(0, 0);
+                }
+                return y;
+            },
+            "evaluate the expression for arrays of parameters", py::arg( "mp" ), py::arg( "parallel" ) = true )
         .def(
             "diff", []( Expr<GinacMatrix<M, N, Order>>& e, std::string const& s )
             { return e.template diff<1>( s ); },
@@ -123,7 +146,7 @@ PYBIND11_MODULE(_vf, m )
                             constexpr int _order = std::decay_t<decltype(hana::at_c<1>(d))>::value;
                             using mesh_t = Mesh<Simplex<_dim, 1>>;
                             using mesh_ptr_t = std::shared_ptr<mesh_t>;
-                            
+
                             m.def( "vonmises", []( Pchv_element_t<mesh_t, 1> const& d, nl::json const& model )
                                    {
                                         auto Xh = Pch<_order>(d.functionSpace()->mesh());
@@ -137,7 +160,7 @@ PYBIND11_MODULE(_vf, m )
                                             r.on( _range=elements(d.functionSpace()->mesh()), _expr=vonmises( 2*mu*def+lambda*divv(d)*eye<_dim,_dim>() ) );
                                         }
 
-                                        return r; 
+                                        return r;
                                     },
                                     "compute von mises stress", py::arg( "displacement" ), py::arg( "model" ) );
                         } );

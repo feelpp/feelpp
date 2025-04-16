@@ -434,9 +434,10 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         }
     }
 
-    uint16_type __face_id = faceInit.pos_first();
-    gmc_ptrtype gmc0 = __gm->template context<context>( faceInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() );
-    gmc1_ptrtype gmc01 = __gm1->template context<context>( faceInit.element( 0 ), __geopc1, __face_id, M_expr.dynamicContext() );
+    uint16_type faceIdInElt0 = faceInit.pos_first();
+    uint16_type faceIdInElt1 = faceIdInElt0;
+    gmc_ptrtype gmc0 = __gm->template context<context>( faceInit.element( 0 ), __geopc, faceIdInElt0, M_expr.dynamicContext() );
+    gmc1_ptrtype gmc01 = __gm1->template context<context>( faceInit.element( 0 ), __geopc1, faceIdInElt0, M_expr.dynamicContext() );
 
     gmc_ptrtype gmc1;
     gmc1_ptrtype gmc11;
@@ -474,8 +475,8 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             if ( faceCur.isGhostFace() )
                 continue;
 
-            uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-            uint16_type __face_id_in_elt_1 = faceCur.pos_second();
+            faceIdInElt0 = faceCur.pos_first();
+            faceIdInElt1 = faceCur.pos_second();
 
             switch ( M_geomap_strategy )
             {
@@ -484,12 +485,12 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 if ( !gmc1 )
                 {
-                    gmc1 = __gm->template context<context>( faceCur.element( 1 ), __geopc, __face_id_in_elt_1, M_expr.dynamicContext() );
+                    gmc1 = __gm->template context<context>( faceCur.element( 1 ), __geopc, faceIdInElt1, M_expr.dynamicContext() );
                     mapgmc2 = Feel::vf::mapgmc( gmc0,gmc1 );
                     expr2 = std::make_shared<t2_expr_type>( M_expr, mapgmc2 );
                 }
-                gmc0->template update<context>( faceCur.element( 0 ), __face_id );
-                bool found_permutation = gmc1->template updateFromNeighborMatchingFace<context>( faceCur.element( 1 ), __face_id_in_elt_1, gmc0 );
+                gmc0->template update<context|vm::POINT>( faceCur.element( 0 ), faceIdInElt0 );
+                bool found_permutation = gmc1->template updateFromNeighborMatchingFace<context>( faceCur.element( 1 ), faceIdInElt1, gmc0 );
                 CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
                 expr2->update( mapgmc2 );
                 this->eval( *expr2, mapgmc2, e, __v, __p );
@@ -500,12 +501,12 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
             {
                 if ( !gmc11 )
                 {
-                    gmc11 = __gm1->template context<context>( faceCur.element( 1 ), __geopc1, __face_id_in_elt_1, M_expr.dynamicContext() );
+                    gmc11 = __gm1->template context<context>( faceCur.element( 1 ), __geopc1, faceIdInElt1, M_expr.dynamicContext() );
                     mapgmc21 = Feel::vf::mapgmc( gmc01,gmc11 );
                     expr21 = std::make_shared<t2_expr1_type>( M_expr, mapgmc21 );
                 }
-                gmc01->template update<context>( faceCur.element( 0 ), __face_id );
-                bool found_permutation = gmc11->template updateFromNeighborMatchingFace<context>( faceCur.element( 1 ), __face_id_in_elt_1, gmc01 );
+                gmc01->template update<context|vm::POINT>( faceCur.element( 0 ), faceIdInElt0 );
+                bool found_permutation = gmc11->template updateFromNeighborMatchingFace<context>( faceCur.element( 1 ), faceIdInElt1, gmc01 );
                 CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
                 expr21->update( mapgmc21 );
                 this->eval( *expr21, mapgmc21, e, __v, __p );
@@ -515,14 +516,14 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
         }
         else
         {
-            uint16_type __face_id = faceCur.pos_first();
+            faceIdInElt0 = faceCur.pos_first();
             switch ( M_geomap_strategy )
             {
             default:
             case GeomapStrategyType::GEOMAP_OPT:
             case GeomapStrategyType::GEOMAP_HO:
             {
-                gmc0->template update<context>( faceCur.element( 0 ), __face_id );
+                gmc0->template update<context>( faceCur.element( 0 ), faceIdInElt0 );
                 DVLOG(2) << "[evaluator::GEOMAP_HO|GEOMAP_OPT] FACE_ID = " << faceCur.id() << "  ref pts=" << gmc0->xRefs() << "\n";
                 expr.update( mapgmc );
                 this->eval( expr, mapgmc, e, __v, __p );
@@ -531,7 +532,7 @@ Evaluator<iDim, Iterator, Pset, ExprT>::operator()( mpl::size_t<MESH_FACES> ) co
 
             case GeomapStrategyType::GEOMAP_O1:
             {
-                gmc01->template update<context>( faceCur.element( 0 ), __face_id );
+                gmc01->template update<context>( faceCur.element( 0 ), faceIdInElt0 );
                 DVLOG(2) << "[evaluator::GEOMAP_O1] FACE_ID = " << faceCur.id() << "  ref pts=" << gmc01->xRefs() << "\n";
                 expr1.update( mapgmc1 );
                 this->eval( expr1, mapgmc1, e, __v, __p );

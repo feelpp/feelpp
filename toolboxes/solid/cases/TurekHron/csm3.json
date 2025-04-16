@@ -48,7 +48,7 @@
             "normal_stress":
             {
                 "free-wall":{
-                    "expr":"0" 
+                    "expr":"0"
                 }
             }
         }
@@ -59,7 +59,7 @@
         {
             "Exports":
             {
-                "fields":["displacement","velocity","pid"]
+                "fields":["displacement","velocity","acceleration","pid"]
             },
             "Measures":
             {
@@ -68,7 +68,10 @@
                     "pointA":
                     {
                         "coord":"{0.6,0.2,0}",
-                        "fields":["displacement","velocity"]
+                        "fields":["displacement","velocity","acceleration"],
+                        "expressions":{
+                            "magnitude_acceleration":"sqrt(solid_a_0^2+solid_a_1^2):solid_a_0:solid_a_1"
+                        }
                     }
                 },
                 "Statistics":

@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_scalar, T, dim_types )
     }
     auto Vh = Pch<1>( mesh, markedelements(mesh, "Omega1" ) );
     auto u = Vh->element();
-    u.on( _range=elements( support(Vh) ), _expr=constant(1.) );
+    u.on( _range=elements( support(Vh) ), _expr=constant(1.), _close=true );
     auto I = integrate( _range=elements( support(Vh) ), _expr=idv(u) ).evaluate();
      
     std::cout << fmt::format( "meas Omega1 = {}", I ) << std::endl;
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_scalar, T, dim_types )
 
     auto Xh = Pch<1>( mesh, markedelements( mesh, "Omega2" ) );
     auto v = Xh->element();
-    v.on( _range = elements( support( Xh ) ), _expr = constant( 1. ) );
+    v.on( _range = elements( support( Xh ) ), _expr = constant( 1. ), _close=true );
     I = integrate( _range = elements( support( Xh ) ), _expr = idv( v )  ).evaluate();
     std::cout << fmt::format( "meas Omega2 = {}", I ) << std::endl;
     BOOST_CHECK_CLOSE( I.norm(), 1 - I2, 1.e-10 );
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_vectorial, T, dim_types )
     }
     auto Vh = Pchv<1>( mesh, markedelements( mesh, "Omega1" ) );
     auto u = Vh->element();
-    u.on( _range = elements( support( Vh ) ), _expr = one() );
+    u.on( _range = elements( support( Vh ) ), _expr = one(), _close=true );
     auto I = integrate( _range = elements( support( Vh ) ), _expr = trans(idv( u ))*one()/T::value ).evaluate();
     std::cout << fmt::format( "meas Omega1 = {}", I ) << std::endl;
     BOOST_CHECK_CLOSE( I.norm(), I2, 1.e-10 );
@@ -93,14 +93,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_vectorial, T, dim_types )
     I = integrate( _range = boundaryfaces( support( Vh ) ), _expr = trans(idv( u ))*N() ).evaluate();
     std::cout << fmt::format( "int 1 . N = {}", I ) << std::endl;
     BOOST_CHECK_SMALL( I.norm(), 1.e-10 );
-    u.on( _range = elements( support( Vh ) ), _expr = Px()*oneX() );
+    u.on( _range = elements( support( Vh ) ), _expr = Px()*oneX(),_close=true );
     I = integrate( _range = boundaryfaces( support( Vh ) ), _expr = trans( idv( u ) ) * N() ).evaluate();
     std::cout << fmt::format( "int X . N = {}, exact={}", I, I2 ) << std::endl;
     BOOST_CHECK_CLOSE( I.norm(), I2, 1.e-10 );
 
     auto Xh = Pchv<1>( mesh, markedelements( mesh, "Omega2" ) );
     auto v = Xh->element();
-    v.on( _range = elements( support( Xh ) ), _expr = one() );
+    v.on( _range = elements( support( Xh ) ), _expr = one(), _close=true );
     I = integrate( _range = elements( support( Xh ) ), _expr = trans( idv( v ) ) * one() / T::value ).evaluate();
     std::cout << fmt::format( "meas Omega2 = {}", I ) << std::endl;
     BOOST_CHECK_CLOSE( I.norm(), 1 - I2, 1.e-10 );
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_vectorial, T, dim_types )
     std::cout << fmt::format( "int 1 . N = {}", I ) << std::endl;
     BOOST_CHECK_SMALL( I.norm(), 1.e-10 );
 
-    v.on( _range = elements( support( Xh ) ), _expr = Px()*oneX() );
+    v.on( _range = elements( support( Xh ) ), _expr = Px()*oneX(), _close=true );
     I = integrate( _range = boundaryfaces( support( Xh ) ), _expr = trans( idv( v ) ) * N() ).evaluate();
     std::cout << fmt::format( "int X . N = {}, exact = {}", I, 1-I2 ) << std::endl;
     BOOST_CHECK_CLOSE( I.norm(), 1-I2, 1.e-10 );

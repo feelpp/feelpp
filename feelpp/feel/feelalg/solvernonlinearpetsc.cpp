@@ -102,7 +102,7 @@ extern "C"
         Feel::SolverNonLinearPetsc<double>* b =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
         LOG(INFO) << "call feel_petsc_post_nlsolve";
-    
+
         if ( b->postSolve() )
         {
             Feel::vector_ptrtype vx( vec( x, b->mapRowPtr() ) );
@@ -125,7 +125,7 @@ extern "C"
     {
         Feel::SolverNonLinearPetsc<double>* b =
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
-        
+
         if ( b->preSolve() )
         {
             Feel::vector_ptrtype vx( vec( x, b->mapRowPtr() ) );
@@ -153,7 +153,7 @@ extern "C"
             static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
         if ( !solver ) return 1;
 
-        
+
         if ( its>0 && solver->showKSPConvergedReason() )
         {
             KSP            ksp;         /* linear solver context */
@@ -174,11 +174,11 @@ extern "C"
             if ( solver->worldComm().isMasterRank() )
             {
                 if ( reason> 0 )
-                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] SNES KSP converged with #{} iterations, residual norm {:.4e}, reason: {}",
+                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] SNES KSP converged with #{} iterations, residual norm {:.4e}, reason: {}",
                                                fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
                               << std::endl;
                 else
-                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] SNES KSP did not converge due to {} iterations, residual norm {:.4e}, reason: {}",
+                    std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] SNES KSP did not converge due to {} iterations, residual norm {:.4e}, reason: {}",
                                                fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
                               << std::endl;
             }
@@ -959,7 +959,7 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         e = KSPSetPreSolve( M_ksp, feel_petsc_pre_nlsolve, this );
         CHKERRABORT( this->worldComm().globalComm(), e);
     }
-    
+
     if ( this->postSolve() )
     {
         LOG(INFO) << "set Post solve" ;

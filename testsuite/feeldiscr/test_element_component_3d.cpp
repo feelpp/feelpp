@@ -183,18 +183,14 @@ BOOST_AUTO_TEST_CASE( element_component_tensor2 )
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
     test_tensor2( Pchm<2>( mesh ) );
-    test_tensor2( Pchm<2>( mesh, true ) );
     test_tensor2( Pdhm<2>( mesh ) );
-    test_tensor2( Pdhm<2>( mesh, true ) );
 }
 
 BOOST_AUTO_TEST_CASE( element_component_tensor2symm )
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
     test_tensor2symm( Pchms<2>( mesh ) );
-    test_tensor2symm( Pchms<2>( mesh, true ) );
     test_tensor2symm( Pdhms<2>( mesh ) );
-    test_tensor2symm( Pdhms<2>( mesh, true ) );
 }
 
 
