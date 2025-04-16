@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
@@ -100,19 +100,17 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("CoefficientFormPDE","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
-    bool useExtendedDoftable = is_lagrange_polynomialset_v<typename space_unknown_type::fe_type> && !space_unknown_type::fe_type::isContinuous;
-
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_extended_doftable=useExtendedDoftable );
+        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
         this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements,_extended_doftable=useExtendedDoftable );
+        M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
     }
 
     M_fieldUnknown.reset( new element_unknown_type( M_Xh,this->unknownName() ) );

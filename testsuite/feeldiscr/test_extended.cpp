@@ -36,7 +36,7 @@ int main(int argc, char**argv )
 
     auto mesh = loadMesh(_mesh=new mesh_type );
     // Function spaces creation with extended doftable
-    std::vector<bool> ext_doft( {true, false, false} );
+    std::vector<DofTableExtendedType> ext_doft( {DofTableExtendedType::VERTICES, DofTableExtendedType::NONE, DofTableExtendedType::NONE} );
     auto Xh_F = space_type_F::New( _mesh=mesh,_extended_doftable=ext_doft );
 
     // Matrix creation with extended pattern

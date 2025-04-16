@@ -505,7 +505,58 @@ public:
 
             tic();
             auto & fieldsMap = this->fields<IsNodal>();
-            //std::vector<ComponentType> mapIndicesToComponent = { ComponentType::X, ComponentType::Y, ComponentType::Z };
+            std::vector<ComponentType> mapIndicesToComponent = { ComponentType::X, ComponentType::Y, ComponentType::Z };
+
+            // TODO: move in migrate filter
+            auto rangeInterpWithRelatedMesh = [&scalarSpace,&func](){
+                                                  auto meshDomain = func.functionSpace()->mesh();
+                                                  auto meshImage = scalarSpace->mesh();
+                                                  auto spaceDomain = func.functionSpace();
+                                                  auto spaceImage = scalarSpace;
+                                                  bool hasMeshSupportPartialDomain = spaceDomain->dof()->hasMeshSupport() && spaceDomain->dof()->meshSupport()->isPartialSupport();
+                                                  bool hasMeshSupportPartialImage = spaceImage->dof()->hasMeshSupport() && spaceImage->dof()->meshSupport()->isPartialSupport();
+                                                  if ( meshImage->isSameMesh( meshDomain ) )
+                                                  {
+                                                      if ( hasMeshSupportPartialDomain && hasMeshSupportPartialImage )
+                                                          return intersect( elements( support(spaceDomain) ), elements( support(spaceImage) ) );
+                                                      else if ( hasMeshSupportPartialDomain )
+                                                          return elements( support(spaceDomain) );
+                                                      else if ( hasMeshSupportPartialImage )
+                                                          return elements( support(spaceImage) );
+                                                      else
+                                                          return elements( meshImage );
+                                                  }
+                                                  else if ( meshImage->isSubMeshFrom( meshDomain ) )
+                                                  {
+                                                      if ( hasMeshSupportPartialDomain )
+                                                      {
+#if 0
+                                                          CHECK( false ) << "TODO : range intersection with related meshes";
+                                                          return intersect( elements( support(spaceDomain) ), elements( support(spaceImage) ) );
+#else
+                                                          // WARNING just for test, need to use migrate() filter
+                                                          return elements( support(spaceImage) );
+#endif
+                                                      }
+                                                      else if ( hasMeshSupportPartialImage )
+                                                          return elements( support(spaceImage) );
+                                                      else
+                                                          return elements( meshImage );
+                                                  }
+                                                  else if ( meshImage->isParentMeshOf( meshDomain ) )
+                                                  {
+                                                      if ( hasMeshSupportPartialImage )
+                                                      {
+                                                          CHECK( false ) << "TODO : range intersection with related meshes";
+                                                          return intersect( elements( support(spaceDomain) ), elements( support(spaceImage) ) );
+                                                      }
+                                                      else if ( hasMeshSupportPartialDomain )
+                                                          return elements( support(spaceDomain) );
+                                                      else
+                                                          return elements( meshDomain );
+                                                  }
+                                                  return elements( meshImage );
+                                              };
 
             if constexpr ( FunctionType::is_scalar )
                 {
@@ -513,7 +564,13 @@ public:
                     fieldsMap[ __fname].second.resize( 1, { scalarSpace->elementPtr( __n, func.description() ) } );
                     if constexpr ( !IsElementToNodal )
                         {
-                            interpolate( scalarSpace, func, *fieldsMap[__fname].second[0][0] );
+                            if ( func.functionSpace()->mesh()->isRelatedTo( scalarSpace->mesh() ) )
+                            {
+                                auto rangeElt = rangeInterpWithRelatedMesh();
+                                fieldsMap[__fname].second[0][0]->on(_range=rangeElt,_expr=idv(func),_close=true);
+                            }
+                            else
+                                interpolate( scalarSpace, func, *fieldsMap[__fname].second[0][0] );
                         }
                     else
                     {
@@ -529,7 +586,14 @@ public:
                         fieldsMap[ __fname].second[c1] = { scalarSpace->elementPtr( __n, func.description() ) };
                     if constexpr ( !IsElementToNodal )
                          {
-                             interpolate( scalarSpace, func, fieldsMap[__fname].second );
+                             if ( func.functionSpace()->mesh()->isRelatedTo( scalarSpace->mesh() ) )
+                             {
+                                 auto rangeElt = rangeInterpWithRelatedMesh();
+                                 for ( int c1 = 0; c1 < FunctionType::nComponents ;++c1 )
+                                     fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=idv(func.comp(mapIndicesToComponent.at(c1)) ),_close=true );
+                             }
+                             else
+                                 interpolate( scalarSpace, func, fieldsMap[__fname].second );
                          }
                     else
                     {
@@ -552,7 +616,18 @@ public:
                     }
                     if constexpr ( !IsElementToNodal )
                     {
-                        interpolate( scalarSpace, func, fieldsMap[__fname].second );
+                        if ( func.functionSpace()->mesh()->isRelatedTo( scalarSpace->mesh() ) )
+                        {
+                            auto rangeElt = rangeInterpWithRelatedMesh();
+                            for ( int c1 = 0; c1 < FunctionType::nComponents1 ;++c1 )
+                                for ( int c2 = 0; c2 < FunctionType::nComponents2 ;++c2 )
+                                    fieldsMap[__fname].second[c1][c2]->on(_range=rangeElt,
+                                                                          _expr=idv(func.comp( mapIndicesToComponent.at(c1),
+                                                                                               mapIndicesToComponent.at(c2) )),
+                                                                          _close=true );
+                        }
+                        else
+                            interpolate( scalarSpace, func, fieldsMap[__fname].second );
                     }
                     else
                     {
@@ -577,7 +652,18 @@ public:
                     }
                     if constexpr ( !IsElementToNodal )
                     {
-                        interpolate( scalarSpace, func, fieldsMap[__fname].second );
+                        if ( func.functionSpace()->mesh()->isRelatedTo( scalarSpace->mesh() ) )
+                        {
+                            auto rangeElt = rangeInterpWithRelatedMesh();
+                            for ( int c1 = 0; c1 < FunctionType::nComponents1 ;++c1 )
+                                for ( int c2 = 0; c2 <= c1 ;++c2 )
+                                    fieldsMap[__fname].second[c1][c2]->on(_range=rangeElt,
+                                                                          _expr=idv(func.comp( mapIndicesToComponent.at(c1),
+                                                                                               mapIndicesToComponent.at(c2) )),
+                                                                          _close=true );
+                        }
+                        else
+                            interpolate( scalarSpace, func, fieldsMap[__fname].second );
                     }
                     else
                     {
@@ -835,7 +921,7 @@ public:
                         {
                             if constexpr (std::is_same_v<scalar_p1_space_type,typename FunctionType::functionspace_type> )
                                 {
-                                    if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->extendedDofTable() && support( func.functionSpace() )->isFullSupport() )
+                                    if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->dof()->hasDofTableExtended() && support( func.functionSpace() )->isFullSupport() )
                                         M_ts->M_scalar_p1 = func.functionSpace();
                                 }
                         }
@@ -865,7 +951,7 @@ public:
                     {
                         if constexpr ( std::is_same_v<scalar_p0_space_type,typename FunctionType::functionspace_type> )
                         {
-                            if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->extendedDofTable() && support( func.functionSpace() )->isFullSupport() )
+                            if ( ( func.mesh() == M_mesh ) && !func.functionSpace()->dof()->hasDofTableExtended() && support( func.functionSpace() )->isFullSupport() )
                                 M_ts->M_scalar_p0 = func.functionSpace();
                         }
                     }

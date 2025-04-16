@@ -520,13 +520,13 @@ private:
     testElementIdFromRange( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
     {
         std::set<std::pair<index_type,rank_type> > res;
-        if ( theface.isConnectedTo0() && !theface.element0().isGhostCell() )
+        if ( theface.isConnectedTo0() /*&& !theface.element0().isGhostCell()*/ )
         {
             auto resElt0 = testElementIdFromRange( mpl::size_t<MESH_ELEMENTS>(), theface.element( 0 ) );
             for ( std::pair<index_type,rank_type> const& idElt0 : resElt0 )
                 res.insert( idElt0 );
         }
-        if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+        if ( theface.isConnectedTo1() /*&& !theface.element1().isGhostCell()*/ )
         {
             auto resElt1 = testElementIdFromRange( mpl::size_t<MESH_ELEMENTS>(), theface.element( 1 ) );
             for ( std::pair<index_type,rank_type> const& idElt1 : resElt1 )
@@ -706,7 +706,7 @@ public :
     rangeiterator(mpl::bool_<true> /**/) const
     {
         std::list<typename rangeiteratorType<I,J>::defaultrange_type> res;
-        res.push_back( _M_X1->dof()->hasMeshSupport()? _M_X1->dof()->meshSupport()->rangeElements() : elements( _M_X1->mesh() ) );
+        res.push_back( _M_X1->dof()->hasMeshSupport()? elements(_M_X1->dof()->meshSupport()) : elements( _M_X1->mesh() ) );
         return res;
     }
     template <int I,int J>
@@ -798,7 +798,7 @@ struct compute_stencil_type
 
 }
 
-template<class T, class U> inline bool operator<(std::weak_ptr<T> const & a, std::weak_ptr<U> const & b) 
+template<class T, class U> inline bool operator<(std::weak_ptr<T> const & a, std::weak_ptr<U> const & b)
 {
     return a.owner_before( b );
 }
@@ -1572,6 +1572,7 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
             for ( auto const& [idTestElt,rankTestElt] : infoTestElts )
             {
                 auto const& elem = _M_X1->mesh()->element( idTestElt );
+                //CHECK( _M_X1->dof()->isElementDone( idTestElt ) ) << fmt::format("_M_X1 element id not done: {}",idTestElt);
 
                 auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
                 //const uint16_type  n1_dof_on_element = element_dof1.size();
@@ -1586,6 +1587,8 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
 
                     if ( trial_space_type::dof_type::is_mortar )
                         element_dof2.resize( _M_X2->dof()->getIndicesSize( domain_eid ) );
+
+                    //CHECK( _M_X2->dof()->isElementDone( domain_eid ) ) << fmt::format("_M_X2 element id not done: {}",domain_eid);
 
                     // Get the global indices of the DOFs with support on this element
                     bool is_empty = _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
@@ -1647,8 +1650,8 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
                                         const auto* neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id ) );
 
                                         if ( neighbor->processId() != proc_id )
-                                            CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
-                                                     _M_X2->dof()->buildDofTableMPIExtended() ) )
+                                            CHECK( ( _M_X1->dof()->hasDofTableExtended() &&
+                                                     _M_X2->dof()->hasDofTableExtended() ) )
                                                 << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
 
                                         if ( neighbor_id == neighbor->id() )
@@ -1711,12 +1714,12 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
                 if ( !faceExtended.isConnectedTo0() || !faceExtended.isConnectedTo1() ) continue;
 
                 if ( faceExtended.isInterProcessDomain() )
-                    CHECK( ( _M_X1->dof()->buildDofTableMPIExtended() &&
-                             _M_X2->dof()->buildDofTableMPIExtended() ) )
+                    CHECK( ( _M_X1->dof()->hasDofTableExtended() &&
+                             _M_X2->dof()->hasDofTableExtended() ) )
                         << "Both spaces must have the extended dof table and none of them should be P0 Continuous to build the matrix stencil. Use block pattern construction instead!";
 #if 0
-                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
-                           _M_X2->dof()->buildDofTableMPIExtended() )
+                CHECK( _M_X1->dof()->hasDofTableExtended() &&
+                       _M_X2->dof()->hasDofTableExtended() )
                         << "DofTableMPIExtended is not built!";
 #endif
 
@@ -1855,7 +1858,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
     //auto r = elements( _M_X1->mesh(), EntityProcessType::ALL );
     auto m = dynamic_cast<typename test_space_type::mesh_type::template parent_mesh_type<> const*>(_M_X1->mesh()->parentMesh().get());
     using index_type = typename test_space_type::mesh_type::index_type;
-    auto r = faces(m, EntityProcessType::LOCAL_ONLY/*EntityProcessType::ALL*/ );
+    //auto r = faces(m, EntityProcessType::LOCAL_ONLY/*EntityProcessType::ALL*/ );
+    auto r = faces(m, EntityProcessType::ALL );
 
     auto elem_it = r.begin();
     auto elem_en = r.end();
@@ -1881,9 +1885,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
             DVLOG(2) << "[Stencil::computeGraphHDG] F.id=" << F.id() << " element0().id: " << F.idElement0();
         std::vector<index_type> list_of_connected_faces;
         std::vector<index_type> dK, dK1;
-        if ( F.isConnectedTo0() && !F.element0().isGhostCell() )
+        if ( F.isConnectedTo0() /*&& !F.element0().isGhostCell()*/ )
             dK =  _M_X2->mesh()->meshToSubMesh( F.element0().facesId()).first;
-        if ( F.isConnectedTo1() && !F.element1().isGhostCell() )
+        if ( F.isConnectedTo1() /*&& !F.element1().isGhostCell()*/ )
             dK1 =  _M_X2->mesh()->meshToSubMesh( F.element1().facesId()).first;
 
         DVLOG(2) << "dK=" << dK;
@@ -1921,7 +1925,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
                 DVLOG(2) << "[Stencil::computeGraphHDG] trial dKi=" << dKi << std::endl;
                 if ( dKi == invalid_v<index_type> )
                     continue;
-                
+
                 // Get the global indices of the DOFs with support on this element
                 _M_X2->dof()->getIndicesSetOnGlobalCluster( dKi, element_dof2 );
 

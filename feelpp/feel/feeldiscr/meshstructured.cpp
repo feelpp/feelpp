@@ -263,7 +263,7 @@ MeshStructured<GeoShape,T,IndexT>::generateStructuredMesh()
     rank_type nProc = this->worldComm().localSize();
     rank_type partId = this->worldComm().localRank();
 
-    std::unordered_map<size_type, boost::tuple<size_type, rank_type>> mapGhostElt;
+    std::unordered_map<size_type, std::tuple<size_type, rank_type>> mapGhostElt;
     std::unordered_map<size_type, size_type> idStructuredMeshToFeelMesh;
     //node_type coords( 2 );
 
@@ -359,7 +359,7 @@ MeshStructured<GeoShape,T,IndexT>::generateStructuredMesh()
             {
                 auto [eid,eidFeel] = this->addStructuredElement({i},partId,partIdGhost,{} );
                 idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
-                mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
+                mapGhostElt.insert( std::make_pair( eid, std::make_tuple( eidFeel, partIdGhost ) ) );
             }
         }
         else if constexpr ( nDim == 2 )
@@ -374,7 +374,7 @@ MeshStructured<GeoShape,T,IndexT>::generateStructuredMesh()
                 {
                     auto [eid,eidFeel] = this->addStructuredElement({i,j},partId,partIdGhost,{} );
                     idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
-                    mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
+                    mapGhostElt.insert( std::make_pair( eid, std::make_tuple( eidFeel, partIdGhost ) ) );
                 }
             }
         }
@@ -394,14 +394,14 @@ MeshStructured<GeoShape,T,IndexT>::generateStructuredMesh()
                     {
                         auto [eid,eidFeel] = this->addStructuredElement({i,j,k},partId,partIdGhost,{} );
                         idStructuredMeshToFeelMesh.insert( std::make_pair( eid, eidFeel ) );
-                        mapGhostElt.insert( std::make_pair( eid, boost::make_tuple( eidFeel, partIdGhost ) ) );
+                        mapGhostElt.insert( std::make_pair( eid, std::make_tuple( eidFeel, partIdGhost ) ) );
                     }
                 }
             }
         }
     }
 
-    this->updateGhostCellInfoByUsingNonBlockingComm( idStructuredMeshToFeelMesh, mapGhostElt );
+    this->updateGhostCellInfo( idStructuredMeshToFeelMesh, mapGhostElt );
 }
 
 template <typename GeoShape, typename T, typename IndexT>
@@ -411,8 +411,7 @@ MeshStructured<GeoShape,T,IndexT>::addStructuredPoint( std::array<index_type,nDi
     index_type ptid = M_setup->pointId( indexes );
     node_type coords = M_setup->pointCoordinates( indexes );
     point_type pt( ptid, coords );
-    if ( !isGhost )
-        pt.setProcessId( partId );
+    pt.setProcessId( partId );
     pt.setProcessIdInPartition( partId );
     this->addPoint( pt );
 }
@@ -439,149 +438,95 @@ MeshStructured<GeoShape,T,IndexT>::addStructuredElement( std::array<index_type,n
     return std::make_pair( eid, eit->second.id() );
 }
 
-
 template <typename GeoShape, typename T, typename IndexT>
 void
-MeshStructured<GeoShape,T,IndexT>::updateGhostCellInfoByUsingNonBlockingComm( std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
-                                                           std::unordered_map<size_type, boost::tuple<size_type, rank_type>> const& mapGhostElt )
+MeshStructured<GeoShape,T,IndexT>::updateGhostCellInfo( std::unordered_map<size_type, size_type> const& idStructuredMeshToFeelMesh,
+                                                        std::unordered_map<size_type, std::tuple<size_type, rank_type>> const& mapGhostElt )
 {
-    DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
+    const rank_type myRank = this->worldComm().localRank();
+    const rank_type nProc = this->worldComm().localSize();
 
-    const int nProc = this->worldComm().localSize();
-    DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : nProc = " << nProc;
-    //std::cout << nProc << std::endl;
+    std::map<rank_type, std::vector<size_type> > dataToSend;
+    std::map<rank_type, std::vector<size_type> > dataToRecv;
+    std::map<rank_type, std::vector<std::reference_wrapper<element_type>> > memory;
 
-    //-----------------------------------------------------------//
-    // compute size of container to send
-    std::unordered_map<rank_type, int> nDataInVecToSend;
-    auto it_map = mapGhostElt.begin();
-    auto const en_map = mapGhostElt.end();
-    for ( ; it_map != en_map; ++it_map )
+    for ( auto const& [eidMeshStructured,ghostData] : mapGhostElt )
     {
-        const rank_type idProc = it_map->second.template get<1>();
-        if ( nDataInVecToSend.find( idProc ) == nDataInVecToSend.end() )
-            nDataInVecToSend[idProc] = 0;
-        nDataInVecToSend[idProc]++;
+        size_type ghostEltIdFeel = std::get<0>( ghostData );
+        rank_type ghostPid = std::get<1>( ghostData );
+        dataToSend[ghostPid].push_back( eidMeshStructured );
+        memory[ghostPid].push_back( std::ref( this->elementIterator( ghostEltIdFeel )->second ) );
     }
-    //-----------------------------------------------------------//
-    // init and resize the container to send
-    std::unordered_map<rank_type, std::vector<int>> dataToSend;
-    auto itNDataInVecToSend = nDataInVecToSend.begin();
-    auto const enNDataInVecToSend = nDataInVecToSend.end();
-    for ( ; itNDataInVecToSend != enNDataInVecToSend; ++itNDataInVecToSend )
-    {
-        const rank_type idProc = itNDataInVecToSend->first;
-        const int nData = itNDataInVecToSend->second;
-        dataToSend[idProc].resize( nData );
-    }
-    //-----------------------------------------------------------//
-    // prepare container to send
-    std::unordered_map<rank_type, std::unordered_map<int, int>> memoryMsgToSend;
-    std::unordered_map<rank_type, int> nDataInVecToSendBis;
-    it_map = mapGhostElt.begin();
-    for ( ; it_map != en_map; ++it_map )
-    {
-        const int idGmsh = it_map->first;
-        const int idFeel = it_map->second.template get<0>();
-        const rank_type idProc = it_map->second.template get<1>();
 
-        if ( nDataInVecToSendBis.find( idProc ) == nDataInVecToSendBis.end() )
-            nDataInVecToSendBis[idProc] = 0;
-        // save request
-        memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = idFeel;
-        // update container
-        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idGmsh;
-        // update counter
-        nDataInVecToSendBis[idProc]++;
-        // std::cout << idProc << std::endl;
-    }
-    //-----------------------------------------------------------//
-    // counter of request
-    int nbRequest = 0;
-    for ( rank_type proc = 0; proc < nProc; ++proc )
-    {
-        if ( dataToSend.find( proc ) != dataToSend.end() )
-            nbRequest +=2;
-    }
-    if ( nbRequest == 0 ) return;
+    int nbMaxRequest = 2*dataToSend.size();
+    std::vector<mpi::request> reqs( nbMaxRequest );
+    int countRequest = 0;
 
-    mpi::request* reqs = new mpi::request[nbRequest];
-    int cptRequest = 0;
-    //-----------------------------------------------------------//
-    // first send
-    std::unordered_map<rank_type, std::vector<int>> dataToRecv;
-    for ( auto const& [procComm,dataToSendOnProc] : dataToSend )
+    // get size of data to transfer
+    std::map<rank_type,std::size_t> sizeRecv;
+    std::map<rank_type,std::size_t> sizeSend;
+    for ( auto const& [neighborRank,data]: dataToSend )
     {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( procComm, 0, dataToSendOnProc.data(), dataToSendOnProc.size() );
-        auto & dataToRecvOnProc = dataToRecv[procComm];
-        dataToRecvOnProc.resize( dataToSendOnProc.size() );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( procComm, 0, dataToRecvOnProc.data(), dataToRecvOnProc.size() );
+        sizeSend[neighborRank] = data.size();
+        reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank, 0, sizeSend[neighborRank] );
+        reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
-    //-----------------------------------------------------------//
     // wait all requests
-    mpi::wait_all( reqs, reqs + nbRequest );
-    //-----------------------------------------------------------//
-    // build the container to ReSend
-    std::unordered_map<rank_type, std::vector<int>> dataToReSend;
-    auto itDataRecv = dataToRecv.begin();
-    auto const enDataRecv = dataToRecv.end();
-    for ( ; itDataRecv != enDataRecv; ++itDataRecv )
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    // step 1 :send/recv of data
+    for ( auto const& [neighborRank,data]: dataToSend )
     {
-        const rank_type idProc = itDataRecv->first;
-        const int nDataRecv = itDataRecv->second.size();
-        dataToReSend[idProc].resize( nDataRecv );
-        //store the idFeel corresponding
-        for ( int k = 0; k < nDataRecv; ++k )
+        std::size_t nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
+        std::size_t nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
+    }
+    // step 1 :wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    std::map<rank_type, std::vector<size_type> > dataToSendStep2;
+    std::map<rank_type, std::vector<size_type> > dataToRecvStep2;
+    for ( auto const& [neighborRank,eids] : dataToRecv )
+    {
+        dataToSendStep2[neighborRank].resize( eids.size() );
+        for ( int k = 0; k < eids.size(); ++k )
         {
-            dataToReSend[idProc][k] = idStructuredMeshToFeelMesh.find( itDataRecv->second[k] )->second;
+            size_type eidFeel = idStructuredMeshToFeelMesh.at(eids[k]);
+            dataToSendStep2[neighborRank][k] = eidFeel;
+            this->elementIterator( eidFeel )->second.addNeighborPartitionId( neighborRank );
         }
     }
-    //-----------------------------------------------------------//
-    // send respond to the request
-    cptRequest = 0;
-    std::unordered_map<rank_type, std::vector<int>> finalDataToRecv;
-    for ( auto const& [procComm,dataToSendOnProc] : dataToReSend )
-    {
-        reqs[cptRequest++] = this->worldComm().localComm().isend( procComm, 0, dataToSendOnProc.data(), dataToSendOnProc.size() );
-        auto & dataToRecvOnProc = finalDataToRecv[procComm];
-        dataToRecvOnProc.resize( dataToSendOnProc.size() );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( procComm, 0, dataToRecvOnProc.data(), dataToRecvOnProc.size() );
-    }
-    //-----------------------------------------------------------//
-    // wait all requests
-    mpi::wait_all( reqs, reqs + nbRequest );
-    // delete reqs because finish comm
-    delete[] reqs;
-    //-----------------------------------------------------------//
-    // update mesh : id in other partitions for the ghost cells
-    auto itFinalDataToRecv = finalDataToRecv.begin();
-    auto const enFinalDataToRecv = finalDataToRecv.end();
 
-    for ( ; itFinalDataToRecv != enFinalDataToRecv; ++itFinalDataToRecv )
+    // step 2 :send/recv of data
+    for ( auto const& [neighborRank,data]: dataToSend )
     {
-        const rank_type idProc = itFinalDataToRecv->first;
-        const int nDataRecv = itFinalDataToRecv->second.size();
-        //std::cout << idProc << ":" << nDataRecv << std::endl;
-        for ( int k = 0; k < nDataRecv; ++k )
-        {
-            /* std::cout << "I want element " << memoryMsgToSend[idProc][k] << ": " << idProc << std::endl;*/
-            auto& eltToUpdate = this->elementIterator( memoryMsgToSend[idProc][k] /*,idProc*/ )->second;
-#if 0
-            std::cout << "k = " << k << std::endl;
-            std::cout << "itFinalDataToRecv->second[k]  " << itFinalDataToRecv->second[k]  << std::endl;
-            std::cout << "eltToUpdate->id()             " << eltToUpdate->id()             << std::endl;
-            std::cout << "eltToUpdate->processId()      " << eltToUpdate->processId()      << std::endl;
-            std::cout << "eltToUpdate->pidInPartition() " << eltToUpdate->pidInPartition() << std::endl;
-            std::cout << "eltToUpdate->refDim()         " << eltToUpdate->refDim()         << std::endl;
-            std::cout << "eltToUpdate->nPoints()        " << eltToUpdate->nPoints()        << std::endl;
-#endif
-            eltToUpdate.setIdInOtherPartitions( idProc, itFinalDataToRecv->second[k] );
-        }
+        std::size_t nSendData = dataToSendStep2[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[countRequest++] = this->worldComm().localComm().isend( neighborRank, 0, dataToSendStep2[neighborRank].data(), nSendData );
+
+        std::size_t nRecvData = sizeSend[neighborRank]; // use inverse size
+        dataToRecvStep2[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[countRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep2[neighborRank].data(), nRecvData );
     }
-    //-----------------------------------------------------------//
-    DVLOG( 1 ) << "updateGhostCellInfoNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
+    // step 2 :wait all requests
+    mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+    countRequest = 0;
+
+    // uodate element multiprocess mapping
+    for ( auto const& [neighborRank,dataRecv] : dataToRecvStep2 )
+    {
+        std::size_t nDataRecv = dataRecv.size();
+        for ( std::size_t k = 0; k < nDataRecv; ++k )
+            memory[neighborRank][k].get().setIdInOtherPartitions( neighborRank, dataRecv[k] );
+    }
 }
-
 
 
 
