@@ -122,7 +122,9 @@ int hdg_laplacian()
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") ); 
+    auto r_2 = expr( locals.at("r_2") );
+    
+    auto beta = expr( locals.at("beta") );
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -130,6 +132,10 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>(u_exact_str);
     auto k = expr(soption("k"));
     auto lambda = cst(1.)/k;
+    // for adding the convection terms:
+    auto beta = vec(cst(1.0), cst(1.0));
+    auto beta_n = trans(beta) * N(); // for beta . n
+
     auto un = trans(u_exact)*N();
     auto f = expr( soption( "functions.f") );
     auto g = p_exact;
@@ -233,7 +239,7 @@ int hdg_laplacian()
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
-    a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
+    a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)) + (trans(beta)*idt(p))*id(v) ); // for - \int_K p_h div(v_h) + \int_K beta \cdot p_h v_h
     toc("a(0,1)",FLAGS_v>0);
 
     tic();
@@ -252,6 +258,11 @@ int hdg_laplacian()
     toc("a(1,0)",FLAGS_v>0);
 
     tic();
+
+    // for the term \int_K (beta \cdot gradt(p))*w :
+    // a(1_c,1_c) += integrate(_range=elements(mesh), _expr=(id(w) * inner(beta, gradt(p))));
+    a(1_c,1_c) += integrate(_range=elements(mesh), _expr=(id(w) * (beta[0] * gradt(p)[0] + beta[1] * gradt(p)[1])));
+
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
                             _expr=tau_constant *
                             ( leftfacet( idt(p))*leftface(id(w)) +
@@ -288,11 +299,11 @@ int hdg_laplacian()
 
     tic();
     a(2_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
+                            _expr=tau_constant * beta_n * id(l) * ( leftfacet( idt(p) )+
                                                            rightfacet( idt(p) )));
 
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=tau_constant * id(l) * ( idt(p) ) );
+                            _expr=tau_constant *beta_n* id(l) * ( idt(p) ) );
     toc("a(2,1)",FLAGS_v>0);
 
     tic();
