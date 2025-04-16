@@ -70,7 +70,7 @@ jobs:
 
   feelpp:
     needs: [check_skip]
-    runs-on: self-spack
+    runs-on: self-pkg
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
