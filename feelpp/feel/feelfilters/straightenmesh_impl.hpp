@@ -65,7 +65,7 @@ straightenMesh( std::shared_ptr<MeshType> mesh, worldcomm_ptr_t const& worldcomm
         using namespace vf;
         bool upExtendedElt = true;
         EntityProcessType entityProcess = ( upExtendedElt ) ? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-        auto Xh = Pchv<_mesh_type::nOrder>( _mesh, upExtendedElt );
+        auto Xh = Pchv<_mesh_type::nOrder>( _mesh, upExtendedElt? DofTableExtendedType::VERTICES : DofTableExtendedType::NONE );
         auto xHo = vf::project( _space = Xh, _range = elements( mesh, entityProcess ), _expr = vf::P(), _geomap = GeomapStrategyType::GEOMAP_HO );
         auto xLo = vf::project( _space = Xh, _range = elements( mesh, entityProcess ), _expr = vf::P(), _geomap = GeomapStrategyType::GEOMAP_O1 );
         auto xHoBdy = vf::project( _space = Xh, _range = boundaryfaces( mesh, entityProcess ), _expr = vf::P(), _geomap = GeomapStrategyType::GEOMAP_HO );

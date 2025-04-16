@@ -284,40 +284,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("FluidMechanics","initFunctionSpaces","start");
     this->timerTool("Constructor").start();
 
-    // maybe build extended dof table
-    std::vector<bool> extendedDT( 2,false );
-    bool hasExtendedDofTable = false;
-    if ( (this->doCIPStabConvection() || this->doCIPStabDivergence()) && !this->applyCIPStabOnlyOnBoundaryFaces() )
-    {
-        this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on velocity" );
-        extendedDT[0] = true;
-        hasExtendedDofTable = true;
-    }
-    if ( this->doCIPStabPressure() )
-    {
-        this->log("FluidMechanics","createFunctionSpaces", "use buildDofTableMPIExtended on pressure" );
-        extendedDT[1] = true;
-        hasExtendedDofTable = true;
-    }
-
     // fluid spaces : velocity and pressure
     auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_XhVelocity = space_velocity_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[0] );
-        M_XhPressure = space_pressure_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[1] );
+        M_XhVelocity = space_velocity_type::New( _mesh=this->mesh() );
+        M_XhPressure = space_pressure_type::New( _mesh=this->mesh() );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_XhVelocity = space_velocity_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[0],
                                                  _range=M_rangeMeshElements );
         M_XhPressure = space_pressure_type::New( _mesh=this->mesh(),
-                                                 _extended_doftable=extendedDT[1],
                                                  _range=M_rangeMeshElements );
     }
 
@@ -624,7 +604,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
         typename boundary_conditions_type::Inlet::Shape shape = bcData->shape();
         auto rangeFaces = markedfaces(this->mesh(),markers);
         auto meshinlet = createSubmesh( _mesh=this->mesh(),_range=rangeFaces, _view=true );
-        auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet,_worldscomm=this->localNonCompositeWorldsComm() );
+        auto spaceinlet = space_fluidinlet_type::New( _mesh=meshinlet );//,_worldscomm=this->localNonCompositeWorldsComm() );
         auto velinlet = spaceinlet->elementPtr();
         auto velinletInterpolated = functionSpaceVelocity()->compSpace()->elementPtr();
         auto opIfluidinlet = opInterpolation(_domainSpace=spaceinlet,
@@ -644,8 +624,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFluidInlet()
         {
         case boundary_conditions_type::Inlet::Shape::constant :
             maxVelRef = areainlet;
-            velinletRef->on(_range=elements(meshinlet),_expr=cst(areainlet) );
-            velinletRef->on(_range=boundaryfaces(meshinlet),_expr=cst(0.) );
+            //velinletRef->on(_range=elements(meshinlet),_expr=cst(areainlet) );
+            velinletRef->setConstant( areainlet );
+            velinletRef->on(_range=boundaryfaces(meshinlet),_expr=cst(0.), _close=true );
             break;
         case boundary_conditions_type::Inlet::Shape::parabolic :
             auto l = form1( _test=spaceinlet );
@@ -753,7 +734,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
 
-    
+
 
     if ( M_solverName == "automatic" )
     {
@@ -1502,9 +1483,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
          if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo <= 2  )
         {
 #if 1
+            range_faces_type rangeTrace;
             auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
-            auto rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
-            M_meshTrace = createSubmesh( _mesh=velocityMeshSupport/*this->mesh()*/, _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
+            if ( true )//this->worldComm().localSize() == 1 || !velocityMeshSupport->isPartialSupport() ) // default case
+            {
+                //rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
+                rangeTrace = boundaryfaces( velocityMeshSupport );
+                M_meshTrace = createSubmesh( _mesh=velocityMeshSupport/*this->mesh()*/, _range=rangeTrace,
+                                             _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
+            }
+            else // temporary fix (case parallel with partial mesh support)
+            {
+                auto rangeSubdomainFull = elements(velocityMeshSupport);
+                auto rangeSubdomain = elements(this->mesh(),rangeSubdomainFull,boundaryfaces( velocityMeshSupport ));
+                //auto rangeSubdomain = markedelements(this->mesh(),"AqueousHumor");
+                M_tmpExporterTraceSubmesh = createSubmesh(_mesh=this->mesh()/*velocityMeshSupport*/,_range=rangeSubdomain,_view=true );
+                //rangeTrace = boundaryfaces( M_tmpFluidSubmesh );
+                M_tmpExporterTraceRangeFaces = migrate( M_tmpExporterTraceSubmesh, boundaryfaces( velocityMeshSupport ) );
+
+                M_meshTrace = createSubmesh( _mesh=M_tmpExporterTraceSubmesh, _range=*M_tmpExporterTraceRangeFaces,
+                                             _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),
+                                             _view=true );
+            }
 #else
             auto rangeTrace = M_bodySetBC.begin()->second.rangeMarkedFacesOnFluid();
             M_meshTrace = M_bodySetBC.begin()->second.mesh();
@@ -1800,18 +1800,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initDist2Wall()
     space_dist2wall_ptrtype M_spaceDist2Wall;
     M_spaceDist2Wall = space_dist2wall_type::New(_mesh=this->mesh() );
     M_fieldDist2Wall = M_spaceDist2Wall->elementPtr();
+    auto tmpField = M_spaceDist2Wall->elementPtr();
 
     auto thefms = fms( M_spaceDist2Wall );
 
     //auto phio = Xh->element();
     //phio = vf::project(Xh, elements(mesh), h() );
-    M_fieldDist2Wall->on(_range=elements(this->mesh()),_expr=h() );
+    M_fieldDist2Wall->on(_range=elements(this->mesh(),entity_process_t::ALL),_expr=h() );
 
     auto rangeWall = M_dist2WallMarkers.empty()? boundaryfaces(this->mesh()) : markedfaces(this->mesh(), M_dist2WallMarkers );
 
-    (*M_fieldDist2Wall) +=vf::project(_space=M_spaceDist2Wall,
-                                      _range=rangeWall,
-                                      _expr= -idv(M_fieldDist2Wall) - h()/100. );
+    // (*M_fieldDist2Wall) +=vf::project(_space=M_spaceDist2Wall,
+    //                                   _range=rangeWall,
+    //                                   _expr= -idv(M_fieldDist2Wall) - h()/100. );
+    //
+    tmpField->on(_range=rangeWall, _expr= -idv(M_fieldDist2Wall) - h()/100.,_close=true );
+    *M_fieldDist2Wall += *tmpField;
     *M_fieldDist2Wall = thefms->march(*M_fieldDist2Wall);
     M_fieldDist2Wall->on(_range=rangeWall,_expr=cst(0.),_close=true);
 }
@@ -1826,7 +1830,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                                                             this->worldCommPtr(), "", this->repository() ) );
 
     bool isSpalartAllmarasTurbulenceModel = this->hasTurbulenceModel( "Spalart-Allmaras" );
-    
+
     std::string eqkeyword;
     if ( isSpalartAllmarasTurbulenceModel )
     {
@@ -2848,7 +2852,6 @@ aggregateParallelSupport( std::vector<std::shared_ptr<datamap_t<>>> const& datam
         {
             auto const& mapUsed = *itMapUsed;
             mapNew->setNLocalDofWithGhost( p, mapUsed->nLocalDofWithGhost(p) );
-            mapNew->setLastDof( p, mapUsed->nLocalDofWithGhost(p) - 1 );
         }
         if ( mapRef->nLocalDofWithoutGhost(p) > 0 )
         {
@@ -3466,7 +3469,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::init( self_type co
     {
         if ( bbc.articulationTranslationalVelocityExpr().empty() )
             continue;
-        std::string const& bbcName = bbc.articulationTranslationalVelocityExpr().begin()->first; // WARNING : we guess that we have only one body! TODO 
+        std::string const& bbcName = bbc.articulationTranslationalVelocityExpr().begin()->first; // WARNING : we guess that we have only one body! TODO
         auto itFind = this->find( bbcName );
         CHECK( itFind != this->end() ) << "body not found";
 

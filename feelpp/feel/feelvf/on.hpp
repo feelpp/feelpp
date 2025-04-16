@@ -595,6 +595,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
             // do not process the face if it is a ghost face: belonging to two
             // processes and being in a process id greater than the one
             // corresponding face
+#if 0
             if ( hasMeshSupportPartial )
             {
                 if ( __dof->meshSupport()->isGhostFace( theface ) )
@@ -605,9 +606,52 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
                 LOG(WARNING) << "face id : " << theface.id() << " is a ghost face";
                 continue;
             }
+#endif
+            //__face_id = theface.pos_first();
+            uint16_type faceConnectionId = invalid_v<uint16_type>;
+            if ( theface.isConnectedTo1() )
+            {
+                if ( hasMeshSupportPartial )
+                {
+                    bool hasElt0 = __dof->meshSupport()->hasElement( theface.element( 0 ).id() );
+                    bool hasElt1 = __dof->meshSupport()->hasElement( theface.element( 1 ).id() );
+                    if ( hasElt0 && hasElt1 )
+                    {
+                        // prefer non ghost element if possible
+                        if ( theface.element( 0 ).isGhostCell() && !theface.element( 1 ).isGhostCell() )
+                            faceConnectionId = 1;
+                        else
+                            faceConnectionId = 0;
+                    }
+                    else if ( hasElt0 )
+                        faceConnectionId = 0;
+                    else if ( hasElt1 )
+                        faceConnectionId = 1;
+                }
+                else
+                {
+                    // prefer non ghost element if possible
+                    if ( theface.element( 0 ).isGhostCell() && !theface.element( 1 ).isGhostCell() )
+                        faceConnectionId = 1;
+                    else
+                        faceConnectionId = 0;
+                }
+            }
+            else
+            {
+                if ( hasMeshSupportPartial )
+                {
+                    if ( __dof->meshSupport()->hasElement( theface.element( 0 ).id() ) )
+                        faceConnectionId = 0;
+                }
+                else
+                    faceConnectionId = 0;
+            }
+            if ( faceConnectionId == invalid_v<uint16_type> )
+                continue;
+            __face_id = faceConnectionId == 0 ? theface.pos_first() : theface.pos_second();
 
-            __face_id = theface.pos_first();
-            uint16_type faceConnectionId = 0;
+#if 0
             if ( hasMeshSupportPartial )
             {
                 auto const& elt0 = theface.element( 0 );
@@ -625,6 +669,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
                 __face_id = theface.pos_second();
                 faceConnectionId = 1;
             }
+#endif
             ctx->template update<gmc_v>( theface.element( faceConnectionId ), __face_id );
 
             DVLOG(2) << "FACE_ID = " << theface.id()

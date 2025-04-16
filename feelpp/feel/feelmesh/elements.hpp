@@ -42,25 +42,6 @@ namespace Feel
 
 /// \cond detail
 
-namespace detail
-{
-    template <typename EltType >
-    void
-    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<1> /**/)
-    {}
-    template <typename EltType >
-    void
-    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<2> /**/)
-    {}
-    template <typename EltType >
-    void
-    updateElementGhostConnectEdgeToElement( EltType& e, uint16_type i, mpl::int_<3> /**/)
-    {
-        if ( e.edgePtr(i) )
-            e.edge( i ).addElementGhost( e.processId(),e.id() );
-    }
-}
-
 
 /*!
   \class Elements
@@ -70,7 +51,7 @@ namespace detail
   @see
 */
 template<typename ElementType, typename T = double, typename IndexT = uint32_type>
-class Elements 
+class Elements
 {
 public:
 
@@ -81,13 +62,13 @@ public:
 
     using index_type = IndexT;
     using size_type = index_type;
-    
+
     /**
      * Element type depending on the dimension, @see geoelement.hpp
      * \note Elements have their topological dimension equal to the
      * dimension of the geometric space.
      */
-    using element_type = 
+    using element_type =
         mp11::mp_if_c<(ElementType::nDim == 3),
             GeoElement3D<ElementType::nRealDim, ElementType, T, IndexT, true>,
             mp11::mp_if_c<(ElementType::nDim == 2),
@@ -183,39 +164,6 @@ public:
         }
     };
 
-    /**
-     * @class ElementConnectPointToElement
-     * @brief connect point to element
-     *
-     */
-    struct ElementGhostConnectPointToElement
-    {
-        void operator()( element_type& e )
-        {
-            for ( uint16_type i = 0; i < e.numPoints; ++i )
-            {
-                e.point( i ).addElementGhost( e.processId(),e.id() );
-                // only if point is on interprocess
-                if ( e.point( i ).processId()!=invalid_rank_type_value )
-                    e.point( i ).addNeighborPartitionId( e.processId() );
-            }
-        }
-    };
-
-    /**
-     * @class ElementGhostConnectEdgeToElement
-     * @brief connect edge to element
-     *
-     */
-    struct ElementGhostConnectEdgeToElement
-    {
-        void operator()( element_type& e )
-        {
-            for ( uint16_type i = 0; i < e.numEdges; ++i )
-                Feel::detail::updateElementGhostConnectEdgeToElement(e,i,mpl::int_<element_type::nDim>());
-        }
-    };
-
 
     /// \endcond
 
@@ -301,7 +249,7 @@ public:
         return M_elements.empty();
     }
 
-    WorldComm & worldCommElements() 
+    WorldComm & worldCommElements()
         {
             return *M_worldComm;
         }
@@ -450,8 +398,9 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * with any \c Marker1 \p on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
-    elementsWithMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
+    elementsWithAllMarkerByType( uint16_type markerType, rank_type p = invalid_rank_type_value ) const
         {
             const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
             elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
@@ -460,12 +409,15 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& elt = unwrap_ref( *it );
-                if ( elt.processId() != part )
-                    continue;
                 if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( elt.marker( markerType ).isOff() )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                        continue;
+                }
                 myelements->push_back(boost::cref(elt));
             }
             myelements->shrink_to_fit();
@@ -475,6 +427,7 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p markerFlags on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
         {
@@ -485,12 +438,15 @@ public:
             for ( ; it!=en;++it )
             {
                 auto const& elt = unwrap_ref( *it );
-                if ( elt.processId() != part )
-                    continue;
                 if ( !elt.hasMarkerType( markerType ) )
                     continue;
                 if ( !elt.marker( markerType ).hasOneOf( markerFlags ) )
                     continue;
+                if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+                {
+                    if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                        continue;
+                }
                 myelements->push_back(boost::cref(elt));
             }
             myelements->shrink_to_fit();
@@ -500,13 +456,14 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
         {
             if ( m == invalid_flag_type_value )
-                return this->elementsWithMarkerByType( markerType, p );
+                return this->elementsWithAllMarkerByType<EPT>( markerType, p );
             else
-                return this->elementsWithMarkerByType( markerType, std::set<flag_type>( { m } ), p );
+                return this->elementsWithMarkerByType<EPT>( markerType, std::set<flag_type>( { m } ), p );
 
         }
 
@@ -514,28 +471,31 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker1 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->elementsWithMarkerByType( 1, m, p );
+            return this->elementsWithMarkerByType<EPT>( 1, m, p );
         }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker2 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarker2( flag_type m, rank_type p = invalid_rank_type_value ) const
         {
-            return this->elementsWithMarkerByType( 2, m, p );
+            return this->elementsWithMarkerByType<EPT>( 2, m, p );
         }
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with \c Marker3 \p m on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithMarker3( flag_type m, rank_type p = invalid_rank_type_value ) const
         {
-            return this->elementsWithMarkerByType( 3, m, p );
+            return this->elementsWithMarkerByType<EPT>( 3, m, p );
         }
 
 
@@ -626,6 +586,7 @@ public:
      * \return the range of iterator \c (begin,end) over the elements
      * on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     elementsWithProcessId( rank_type p = invalid_rank_type_value ) const
     {
@@ -636,8 +597,11 @@ public:
         for ( ; it!=en;++it )
         {
             auto const& elt = unwrap_ref( *it );
-            if ( elt.processId() != part )
-                continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                    continue;
+            }
             myelements->push_back(boost::cref(elt));
         }
         myelements->shrink_to_fit();
@@ -667,6 +631,7 @@ public:
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p which share a subentity of minDim<= dim <= maxDim on boundary
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, rank_type p = invalid_rank_type_value  ) const
     {
@@ -677,14 +642,17 @@ public:
         for ( ; it!=en;++it )
         {
             auto const& elt = unwrap_ref( *it );
-            if ( elt.processId() != part )
-                continue;
             if ( !elt.isOnBoundary() )
                 continue;
             if ( elt.boundaryEntityDimension() < entity_min_dim )
                 continue;
             if ( elt.boundaryEntityDimension() > entity_max_dim )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                    continue;
+            }
             myelements->push_back(boost::cref(elt));
         }
         myelements->shrink_to_fit();
@@ -695,17 +663,19 @@ public:
      * \return the range of iterator \c (begin,end) over the boundary
      *  element on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     boundaryElements( rank_type p = invalid_rank_type_value  ) const
     {
         const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
-        return boundaryElements( 0, 2, part );
+        return this->boundaryElements<EPT>( 0, 2, part );
     }
 
     /**
      * \return the range of iterator \c (begin,end) over the internal
      *  element on processor \p p
      */
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     internalElements( rank_type p = invalid_rank_type_value  ) const
     {
@@ -716,10 +686,13 @@ public:
         for ( ; it!=en;++it )
         {
             auto const& elt = unwrap_ref( *it );
-            if ( elt.processId() != part )
-                continue;
             if ( !elt.isInternal() )
                 continue;
+            if constexpr ( EPT == entity_process_t::LOCAL_ONLY || EPT == entity_process_t::GHOST_ONLY || EPT == entity_process_t::LOCAL_AND_INTERPROCESS_ONLY )
+            {
+                if ( !Feel::detail::checkPartitionPredicate<EPT>( elt, part ) )
+                    continue;
+            }
             myelements->push_back(boost::cref(elt));
         }
         myelements->shrink_to_fit();
@@ -734,6 +707,9 @@ public:
     std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
     ghostElements() const
     {
+#if 1 // TEST VINCENT
+        return this->elementsWithProcessId<entity_process_t::GHOST_ONLY>();
+#else
         elements_reference_wrapper_ptrtype myelements( new elements_reference_wrapper_type );
         auto it = this->beginOrderedElement();
         auto en = this->endOrderedElement();
@@ -746,7 +722,45 @@ public:
         }
         myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
+#endif
     }
+
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsFilterImpl( Ts&&... ts ) const
+        {
+            if constexpr ( FF == entity_filter_t::PROCESS_ID )
+                return this->elementsWithProcessId<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::MARKER )
+                return this->elementsWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
+                return this->boundaryElements<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::INTERNAL )
+                return this->internalElements<EPT>( std::forward<Ts>( ts )... );
+            return {};
+        }
+    template <entity_filter_t FF, typename ... Ts>
+    std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype>
+    elementsFilter( entity_process_t ept, Ts&&... ts ) const
+        {
+            return std::invoke(
+                [this,&ept](auto&& ... args)
+                    {
+                        switch ( ept )
+                        {
+                        default:
+                        case entity_process_t::LOCAL_ONLY:
+                            return this->elementsFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                            return this->elementsFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::GHOST_ONLY:
+                            return this->elementsFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::ALL:
+                            return this->elementsFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                        }
+                    },
+                std::forward<Ts>( ts )... );
+        }
 
 
     //@}
@@ -826,7 +840,7 @@ public:
     template<typename ElementVecType>
     void updateMarker( uint16_type markerType, ElementVecType const& evec )
     {
-        EntityProcessType entityProcess = (evec.functionSpace()->dof()->buildDofTableMPIExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
+        EntityProcessType entityProcess = (evec.functionSpace()->dof()->hasDofTableExtended())? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = Feel::elements( evec.mesh(), entityProcess );
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();

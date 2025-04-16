@@ -105,7 +105,7 @@ template <typename T, typename V, typename = void>
 struct is_iterable_of : std::false_type {};
 template <typename T, typename V>
 struct is_iterable_of< T, V, std::void_t<
-        decltype(std::declval<T>().begin()), decltype(std::declval<T>().end()), 
+        decltype(std::declval<T>().begin()), decltype(std::declval<T>().end()),
         std::is_same<decltype(*std::declval<T>().begin()), V>
     > > : std::true_type {};
 template <typename T, typename V>
@@ -133,13 +133,18 @@ struct remove_std_vector<std::vector<T> >
 template<typename T>
 using remove_std_vector_t = typename remove_std_vector<T>::type;
 
+//! std::tuple
+template <typename> struct is_tuple: std::false_type {};
+template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
+template <typename T>
+inline constexpr bool is_tuple_v = is_tuple<T>::value;
 
 template <typename T>
 inline constexpr bool is_eigen_matrix_v = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>,std::decay_t<T> >;
 
 /**
  * @brief Utility class to get the element type contained in ObjectType
- * 
+ *
  * @tparam ObjectType class
  */
 template <typename ObjectType, typename = void>

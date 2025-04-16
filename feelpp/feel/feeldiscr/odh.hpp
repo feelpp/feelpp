@@ -69,12 +69,12 @@ using Odh_ptrtype = typename meta::Odh<MeshType,Order,T,Tag>::ptrtype;
 template<int Order,typename MeshType, typename T = double, int Tag = 0>
 inline
 Odh_ptrtype<MeshType,Order,T,Tag>
-Odh( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
+Odh( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    
+
     return Odh_type<MeshType,Order,T,Tag>::New( _mesh=mesh,
                                               _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                              _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                              _extended_doftable=dte );
 }
 
 }

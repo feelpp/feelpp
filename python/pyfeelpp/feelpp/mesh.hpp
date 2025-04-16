@@ -184,7 +184,7 @@ void defMesh(py::module &m)
         "load",
         []( mesh_ptr_t m, std::string const& n, double h, int verbose, std::string const& prefix )
         {
-            return loadMesh( _mesh=new mesh_t, _filename=n, _h=h, _verbose=verbose, _prefix=prefix );
+            return loadMesh( _mesh=new mesh_t, _filename=n, _h=h, _verbose=verbose, _prefix=prefix, _rebuild_partitions=true );
         },
         "load a mesh from a file", py::arg("mesh"), py::arg("name"), py::arg("h")=0.1, py::arg("verbose") = 1 , py::arg("prefix") = "" );
 
@@ -323,13 +323,13 @@ void defMesh(py::module &m)
     }
     m.def(
         "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_ELEMENTS> const& range )
-        { return createSubmesh( _mesh = m, _range = range ); },
+        { return createSubmesh( _range = range ); },
         py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of elements" ).c_str() );
     if constexpr ( mesh_t::nDim >= 2 )
     {
         m.def(
             "createSubmesh", []( mesh_ptr_t const& m, Range<mesh_ptr_t,MESH_FACES> const& range )
-            { return createSubmesh( _mesh = m, _range = range ); },
+            { return createSubmesh( _range = range ); },
             py::return_value_policy::copy, py::arg( "mesh" ), py::arg( "range" ), fmt::format( "create submesh from range of facets" ).c_str() );
     }
 }

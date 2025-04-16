@@ -128,30 +128,18 @@ public:
      */
     //@{
 
-    void add( face_type const& face )
+    bool add( face_type const& face )
         {
-            bool useConnection0 = face.processId() == face.proc_first();
-            if ( face.isGhostCell() )
-            {
-                if ( M_doftable->isElementDone( face.ad_first() ) )
-                {
-                    useConnection0 = true;
-                }
-                else
-                {
-                    CHECK( face.isConnectedTo1() ) << "no connection1";
-                    CHECK( M_doftable->isElementDone( face.ad_second() ) ) << " no dof table define on this elt " << face.ad_second() << "\n";
-                    useConnection0 = false;
-                }
-            }
+            uint8_type connectionId = invalid_v<uint8_type>;
+            if ( face.isConnectedTo0() && M_doftable->isElementDone( face.ad_first() ) )
+                connectionId = 0;
+            else if ( face.isConnectedTo1() && M_doftable->isElementDone( face.ad_second() ) )
+                connectionId = 1;
+            if ( connectionId == invalid_v<uint8_type> )
+                return false;
 
-            uint16_type lcVertex = 0;
-            uint16_type lcEdge = 0;
-            uint16_type lcFace = 0;
-
-            addVertexBoundaryDof( face, useConnection0, lcVertex );
-            addEdgeBoundaryDof( face, useConnection0, lcEdge );
-            addFaceBoundaryDof( face, useConnection0, lcFace );
+            this->add( face, connectionId );
+            return true;
         }
 
     void add( face_type const& face, uint8_type connectionId )

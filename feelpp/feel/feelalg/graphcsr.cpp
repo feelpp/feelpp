@@ -67,18 +67,6 @@ GraphCSR::GraphCSR( size_type n,
         M_mapCol->setNLocalDofWithoutGhost( proc, _size2 );
         M_mapCol->setNLocalDofWithGhost( proc, _size2 );
 
-        M_mapRow->setFirstDof( proc, 0 );
-        M_mapCol->setFirstDof( proc, 0 );
-        if (_size2==0)
-            M_mapCol->setLastDof( proc, 0 );
-        else
-            M_mapCol->setLastDof( proc, _size2-1 );
-
-        if ( _size1==0 )
-            M_mapRow->setLastDof( proc, 0 );
-        else
-            M_mapRow->setLastDof( proc, _size1-1 );
-
         if ( proc==myrank )
         {
             M_mapRow->setNDof( _size1 );
@@ -136,7 +124,7 @@ GraphCSR::GraphCSR( datamap_type const& mapRow,
 GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
                     bool diagIsNonZero, bool close )
     :
-    super( blockSet(0,0)->worldCommPtr() ), 
+    super( blockSet(0,0)->worldCommPtr() ),
     M_is_closed( false ),
     M_max_nnz( 0 ),
     M_n_total_nz( /*n*/0, 0 ),
@@ -335,21 +323,17 @@ GraphCSR::mergeBlockGraphMPI( self_ptrtype const& g,vf::BlocksBase<self_ptrtype>
                 + ( nLocalDofWithGhostOnProcStartRow - nLocalDofWithoutGhostOnProcStartRow)
                 + (it->second.get<1>() - g->mapRow().nLocalDofWithoutGhost());
 
-            DCHECK( this->mapRow().searchGlobalProcessDof(theglobalrow).get<0>() )
+#if !defined( NDEBUG )
+            DCHECK( this->mapRow().worldIndexToProcessIndex(theglobalrow) != invalid_v<size_type> )
                 << " my rank " << g->worldComm().globalRank()
                 << " does not contain this ghost dof " << theglobalrow
                 << "in DataMapRow\n";
-#if 0
-            bool find=false;
-            size_type gDofProcess = 0;
-            boost::tie(find,gDofProcess) = this->mapRow().searchGlobalProcessDof(theglobalrow);
-            if (!find) { std::cout << "STRANGE(continue) "<< std::endl; continue; }
-#endif
             DCHECK(M_mapRow->mapGlobalProcessToGlobalCluster(thelocalrow) == theglobalrow)
                 << " my rank " << g->worldComm().globalRank()
                 << " thelocalrow " << thelocalrow
                 << " M_mapRow. " << M_mapRow->mapGlobalProcessToGlobalCluster(thelocalrow)
                 << " theglobalrow" << theglobalrow << "\n";
+#endif
             }
 
         DVLOG(2) << "rank " << this->worldComm().rank() << "update from : "
@@ -479,20 +463,14 @@ GraphCSR::transpose( bool doClose )
                 {
                     const int realproc = M_graphT->mapRow().procOnGlobalCluster(*colit);
 
-                    bool find=false;
-                    size_type gDofProcess = 0;
-                    boost::tie(find,gDofProcess) = M_graphT->mapRow().searchGlobalProcessDof(*colit);
-                    // only if find
-                    if (find)
+                    self_type::row_type& row = M_graphT->row( *colit );
+                    if ( !hasEntry )
                     {
-                        self_type::row_type& row = M_graphT->row( *colit );
-                        if ( !hasEntry )
-                        {
-                            row.get<0>()=realproc;
-                            row.get<1>()= gDofProcess;
-                        }
-                        row.get<2>().insert( globalindex );
+                        size_type gDofProcess = M_graphT->mapRow().worldIndexToProcessIndex( *colit );
+                        row.get<0>()=realproc;
+                        row.get<1>()= gDofProcess;
                     }
+                    row.get<2>().insert( globalindex );
                 }
             } // for ( auto colit ... )
     }
@@ -796,7 +774,7 @@ GraphCSR::close()
 
     }
     VLOG(2) << "Closing graph done.";
-    
+
     if ( nProc > 1 )
     {
         VLOG(2) << "Closing graph parallel work start.";

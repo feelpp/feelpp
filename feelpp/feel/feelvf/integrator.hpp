@@ -763,11 +763,14 @@ private:
                       FaceRangeType const& faceRange ) const;
 
     template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
-    boost::tuple<size_type,rank_type,uint16_type>
+    std::vector<std::tuple<uint16_type,
+                           typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_1_type const*,
+                           typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_2_type const*>>
     testElt0IdFromFaceRange( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                              FaceRangeType const& faceRange ) const;
     template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
-    boost::tuple<size_type,rank_type,uint16_type>
+    std::vector<std::tuple<uint16_type,
+                           typename vf::detail::LinearForm<FE,VectorType,ElemContType>::mesh_test_element_type const*>>
     testElt0IdFromFaceRange( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
                              FaceRangeType const& faceRange ) const;
 
@@ -3075,121 +3078,116 @@ Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::LinearForm<FE,Vect
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
-boost::tuple<typename Integrator<Elements, Im, Expr, Im2>::size_type,rank_type,uint16_type>
+std::vector<std::tuple<uint16_type,
+                       typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_1_type const*,
+                       typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_2_type const*>>
 Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                                                               FaceRangeType const& faceRange ) const
 {
-    uint16_type __face_id_in_elt_0 = faceRange.pos_first();
-    rank_type procIdElt0 = faceRange.proc_first();
-    //uint16_type idEltConnectedFaceRange = 0;
-    size_type idEltTest = faceRange.element( 0 ).id();
-    bool trialEltIsOk = false;
+    bool faceHasTwoConnection = faceRange.isConnectedTo1();
 
-    if ( !faceRange.element0().isGhostCell() )
+    bool rangeMeshIsSameMeshOfTestMesh = faceRange.mesh()->isSameMesh( __form.testSpace()->mesh() );
+    bool rangeMeshIsSameMeshOfTrialMesh = faceRange.mesh()->isSameMesh( __form.trialSpace()->mesh() );
+
+    bool rangeMeshIsSubMeshOfTestMesh = faceRange.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+    bool rangeMeshIsSubMeshOfTrialMesh = faceRange.mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+    bool testMeshIsSubMeshOfRangeMesh = __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() );
+    bool trialMeshIsSubMeshOfRangeMesh = __form.trialSpace()->mesh()->isSubMeshFrom( faceRange.mesh() );
+
+    bool trialMeshIsSubMeshOfTestMesh = __form.trialSpace()->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+    bool testMeshIsSubMeshOfTrialMesh = __form.testSpace()->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+    bool testMeshSupportIsPartial = __form.testSpace()->dof()->hasMeshSupport() && __form.testSpace()->dof()->meshSupport()->isPartialSupport();
+    bool trialMeshSupportIsPartial = __form.trialSpace()->dof()->hasMeshSupport() && __form.trialSpace()->dof()->meshSupport()->isPartialSupport();
+
+    using mesh_element_test_type = typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_1_type;
+    using mesh_element_trial_type = typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_2_type;
+
+    std::vector<std::tuple<uint16_type,mesh_element_test_type const*,mesh_element_trial_type const*>> res;
+
+    for ( uint16_type k=0; k<(faceHasTwoConnection?2:1); ++k )
     {
-
-
-    if ( faceRange.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-    {
-        idEltTest = faceRange.mesh()->subMeshToMesh( idEltTest );
-    }
-    else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() ) )
-    {
-        idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
-        if ( idEltTest == invalid_v<size_type> )
-        {
-            if ( faceRange.isConnectedTo1() && !faceRange.element1().isGhostCell() )
-            {
-                __face_id_in_elt_0 = faceRange.pos_second();
-                procIdElt0 = faceRange.proc_second();
-                //idEltConnectedFaceRange = 1;
-                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( faceRange.element( 1 ).id() );
-            }
-        }
-    }
-
-    if ( idEltTest != invalid_v<size_type> )
-    {
-        size_type idEltTrial = idEltTest;
-        if ( __form.trialSpace()->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-            idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltTest );
-        else if ( __form.testSpace()->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() ) )
-            idEltTrial = __form.testSpace()->mesh()->subMeshToMesh( idEltTest );
-
-        if (idEltTrial != invalid_v<size_type>)
-            trialEltIsOk=true;
-     }
-
-    }
-    else // ghost cell
-    {
-        if ( !faceRange.isConnectedTo1() || faceRange.element1().isGhostCell() )
-            return boost::make_tuple( invalid_v<size_type>, procIdElt0, __face_id_in_elt_0 );
+        mesh_element_test_type const* eltTest = nullptr;
+        mesh_element_trial_type const* eltTrial = nullptr;
+        if ( rangeMeshIsSameMeshOfTestMesh )
+            eltTest = &faceRange.element( k );
         else
-            idEltTest = invalid_v<size_type>; // continue algo
-    }
-
-    // if first pass not good, restart with faceRange.element1
-    if ( ( idEltTest == invalid_v<size_type> || !trialEltIsOk )  && faceRange.isConnectedTo1() && !faceRange.element1().isGhostCell() )
-    {
-        __face_id_in_elt_0 = faceRange.pos_second();
-        procIdElt0 = faceRange.proc_second();
-        idEltTest = faceRange.element( 1 ).id();
-        if ( faceRange.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-            idEltTest = faceRange.mesh()->subMeshToMesh( idEltTest );
-        else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() ) )
-            idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
-
-        trialEltIsOk = false;
-        if ( idEltTest != invalid_v<size_type> )
         {
-            size_type idEltTrial = idEltTest;
-            if ( __form.trialSpace()->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltTest );
-            else if ( __form.testSpace()->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() ) )
-                idEltTrial = __form.testSpace()->mesh()->subMeshToMesh( idEltTest );
-
-            if (idEltTrial != invalid_v<size_type>)
-                {
-
-                trialEltIsOk=true;
-                }
+            size_type idEltTest = faceRange.element( k ).id();
+            if ( rangeMeshIsSubMeshOfTestMesh )
+                idEltTest = faceRange.mesh()->subMeshToMesh( idEltTest );
+            else if ( testMeshIsSubMeshOfRangeMesh )
+                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
+            if ( idEltTest != invalid_v<size_type> )
+                eltTest = &__form.testSpace()->mesh()->element( idEltTest );
         }
-    }
+        if ( !eltTest )
+            continue;
+        if ( testMeshSupportIsPartial && !__form.testSpace()->dof()->meshSupport()->hasElement( eltTest->id() ) )
+            continue;
 
-    // if test or trial id not find, return invalid value
-    if ( idEltTest == invalid_v<size_type> || !trialEltIsOk )
-        return boost::make_tuple( invalid_v<size_type>, procIdElt0, __face_id_in_elt_0 );
-    else
-        return boost::make_tuple( idEltTest,procIdElt0, __face_id_in_elt_0 );
+        if ( rangeMeshIsSameMeshOfTrialMesh )
+            eltTrial = &faceRange.element( k );
+        else
+        {
+            size_type idEltTrial = faceRange.element( k ).id();
+            if ( rangeMeshIsSubMeshOfTrialMesh )
+                idEltTrial = faceRange.mesh()->subMeshToMesh( idEltTrial );
+            else if ( trialMeshIsSubMeshOfRangeMesh )
+                idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltTrial );
+            if ( idEltTrial != invalid_v<size_type> )
+                eltTrial = &__form.trialSpace()->mesh()->element( idEltTrial );
+        }
+        if ( !eltTrial )
+            continue;
+        if ( trialMeshSupportIsPartial && !__form.trialSpace()->dof()->meshSupport()->hasElement( eltTrial->id() ) )
+            continue;
+
+        res.push_back( std::make_tuple( faceRange.idInElement(k), eltTest, eltTrial ) );
+    }
+    return res;
 }
+
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
-boost::tuple<typename Integrator<Elements, Im, Expr, Im2>::size_type,rank_type,uint16_type>
+std::vector<std::tuple<uint16_type,
+                       typename vf::detail::LinearForm<FE,VectorType,ElemContType>::mesh_test_element_type const*>>
 Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
                                                               FaceRangeType const& faceRange ) const
 {
-    uint16_type __face_id_in_elt_0 = faceRange.pos_first();
-    rank_type procIdElt0 = faceRange.proc_first();
-    size_type idEltTest = faceRange.element( 0 ).id();
-    if ( faceRange.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+    bool faceHasTwoConnection = faceRange.isConnectedTo1();
+
+    bool rangeMeshIsSameMeshOfTestMesh = faceRange.mesh()->isSameMesh( __form.testSpace()->mesh() );
+
+    bool rangeMeshIsSubMeshOfTestMesh = faceRange.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+    bool testMeshIsSubMeshOfRangeMesh = __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() );
+
+    bool testMeshSupportIsPartial = __form.testSpace()->dof()->hasMeshSupport() && __form.testSpace()->dof()->meshSupport()->isPartialSupport();
+
+    using mesh_element_test_type = typename vf::detail::LinearForm<FE,VectorType,ElemContType>::mesh_test_element_type;
+    std::vector<std::tuple<uint16_type,mesh_element_test_type const*>> res;
+
+    for ( uint16_type k=0; k<(faceHasTwoConnection?2:1); ++k )
     {
-        idEltTest = faceRange.mesh()->subMeshToMesh( idEltTest );
-    }
-    else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceRange.mesh() ) )
-    {
-        idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
-        if ( idEltTest == invalid_v<size_type> )
+        mesh_element_test_type const* eltTest = nullptr;
+        if ( rangeMeshIsSameMeshOfTestMesh )
+            eltTest = &faceRange.element( k );
+        else
         {
-            if ( faceRange.isConnectedTo1() )
-            {
-                __face_id_in_elt_0 = faceRange.pos_second();
-                procIdElt0 = faceRange.proc_second();
-                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( faceRange.element( 1 ).id() );
-            }
+            size_type idEltTest = faceRange.element( k ).id();
+            if ( rangeMeshIsSubMeshOfTestMesh )
+                idEltTest = faceRange.mesh()->subMeshToMesh( idEltTest );
+            else if ( testMeshIsSubMeshOfRangeMesh )
+                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltTest );
+            if ( idEltTest != invalid_v<size_type> )
+                eltTest = &__form.testSpace()->mesh()->element( idEltTest );
         }
+        if ( !eltTest )
+            continue;
+        if ( testMeshSupportIsPartial && !__form.testSpace()->dof()->meshSupport()->hasElement( eltTest->id() ) )
+            continue;
+        res.push_back( std::make_tuple( faceRange.idInElement(k), eltTest ) );
     }
-    return boost::make_tuple( idEltTest, procIdElt0, __face_id_in_elt_0 );
+    return res;
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -3265,11 +3263,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     typedef typename eval::gmpc1_type pc1_type;
     typedef typename eval::gmpc_ptrtype pc_ptrtype;
     typedef typename eval::gmpc1_ptrtype pc1_ptrtype;
-    //typedef typename mpl::if_<mpl::equal_to<mpl::int_<FormType::nDim>, mpl::int_<2> >, mpl::identity<typename eval::element_type::edge_permutation_type>, mpl::identity<typename eval::element_type::face_permutation_type> >::type::type permutation_type;
 
-    //QuadMapped<im_type> qm;
     typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-    //typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
 
 
     std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
@@ -3297,6 +3292,22 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
     bool hasMeshSupportPartialTest = __form.testSpace()->dof()->hasMeshSupport() && __form.testSpace()->dof()->meshSupport()->isPartialSupport();
 
+    // case where the face is connected at one element only
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+    typedef typename FormType::template Context<map_gmc_type, expression_type, face_im_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, face_im2_type> form1_context_type;
+    typedef std::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef std::shared_ptr<form1_context_type> form1_context_ptrtype;
+    // case where the face is connected at two elements
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc1_ptrtype> > map21_gmc_type;
+    typedef typename FormType::template Context<map2_gmc_type, expression_type, face_im_type> form2_context_type;
+    typedef typename FormType::template Context<map21_gmc_type, expression_type, face_im2_type> form21_context_type;
+    typedef std::shared_ptr<form2_context_type> form2_context_ptrtype;
+    typedef std::shared_ptr<form21_context_type> form21_context_ptrtype;
+
+
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
         auto it = lit->begin();
@@ -3305,151 +3316,62 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         DLOG(INFO) << "Standard integration over "
                    << std::distance( it, en )  << " faces\n";
 
-        // check that we have elements to iterate over
-        if ( it == en )
-            continue;
-        auto const& faceInit = boost::unwrap_ref( *it );
+        using mesh_test_type = form_test_mesh_t<FormType>;
+        using mesh_element_test_type = typename mesh_test_type::element_type;
+        mesh_element_test_type const* eltTestInitPtr = nullptr;
+        uint16_type __face_id_in_elt_0 = invalid_v<uint16_type>;
 
-        if ( faceInit.isConnectedTo0() == false )
-            continue;
-
-        // true if range/test/trial are same mesh
-        bool useSameMesh = this->useSameMesh( __form,faceInit );
-
-        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
-        rank_type procIdElt0 = faceInit.proc_first();
-        size_type idEltTestInit = faceInit.element( 0 ).id();
-        if ( !useSameMesh )
+        for ( ; it != en; ++it )
         {
-            bool hasFindEltToInit = false;
-            while( !hasFindEltToInit)
+            auto const& faceInit = boost::unwrap_ref( *it );
+            auto testTrialEltInitConnections = this->testElt0IdFromFaceRange( __form, faceInit );
+            if ( !testTrialEltInitConnections.empty() )
             {
-                if ( faceInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                {
-                    idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltTestInit );
-                }
-                else if ( __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() ) )
-                {
-                    idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
-                    if ( idEltTestInit == invalid_v<size_type> )
-                    {
-                        if ( faceInit.isConnectedTo1() )
-                        {
-                            __face_id_in_elt_0 = faceInit.pos_second();
-                            procIdElt0 = faceInit.proc_second();
-                            idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( faceInit.element( 1 ).id() );
-                        }
-                    }
-                }
-                if ( idEltTestInit == invalid_v<size_type> )
-                {
-                    ++it;
-                    if (it==en) break;
-                }
-                else
-                    hasFindEltToInit=true;
+                __face_id_in_elt_0 = std::get<0>( testTrialEltInitConnections.front() );
+                eltTestInitPtr = std::get<1>( testTrialEltInitConnections.front() );
+                break;
             }
-            if ( !hasFindEltToInit )
-                continue;
-            else
-                CHECK( idEltTestInit != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
-
         }
+        if ( !eltTestInitPtr )
+            continue;
 
-        auto const& elt0TestInit = __form.testSpace()->mesh()->element( idEltTestInit );
-        //auto const& faceTestInit = elt0TestInit.face( __face_id_in_elt_0 );
+        auto const& elt0TestInit = *eltTestInitPtr;
 
-        // get the geometric mapping associated with element 0
-        //DLOG(INFO) << "element " << faceInit.element(0)  << "face " << __face_id_in_elt_0 << " permutation " << faceInit.element(0).permutation( __face_id_in_elt_0 ) << "\n";
+        // geometric mapping associated with element 0
         gm_ptrtype __gm = elt0TestInit.gm();
         gm1_ptrtype __gm1 = elt0TestInit.gm1();
-        //DLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
         gmc_ptrtype __c0 = __gm->template context<gmc_context_face_v>( elt0TestInit, __geopc, __face_id_in_elt_0, this->expression().dynamicContext() );
         gmc1_ptrtype __c01 = __gm1->template context<gmc_context_face_v>( elt0TestInit, __geopc1, __face_id_in_elt_0, this->expression().dynamicContext() );
+        // geometric mapping associated with element 1
+        gmc_ptrtype __c1;
+        gmc1_ptrtype __c11;
 
-        //
-        // the case where the face is connected only to one element
-        //
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-        typedef typename FormType::template Context<map_gmc_type, expression_type, face_im_type> form_context_type;
-        typedef typename FormType::template Context<map_gmc1_type, expression_type, face_im2_type> form1_context_type;
-        typedef std::shared_ptr<form_context_type> form_context_ptrtype;
-        typedef std::shared_ptr<form1_context_type> form1_context_ptrtype;
+        // case where the face is connected at one element only
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
         map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c01 ) );
         form_context_ptrtype form;
         form1_context_ptrtype form1;
 
-        //
-        // the case where the face is connected only to two elements
-        //
-        // get the geometric mapping associated with element 1
-        gmc_ptrtype __c1;
-        gmc1_ptrtype __c11;
-
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc_ptrtype> > map2_gmc_type;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype>, fusion::pair<vf::detail::gmc<1>, gmc1_ptrtype> > map21_gmc_type;
-        typedef typename FormType::template Context<map2_gmc_type, expression_type, face_im_type> form2_context_type;
-        typedef typename FormType::template Context<map21_gmc_type, expression_type, face_im2_type> form21_context_type;
-        typedef std::shared_ptr<form2_context_type> form2_context_ptrtype;
-        typedef std::shared_ptr<form21_context_type> form21_context_ptrtype;
+        // case where the face is connected at two elements
         form2_context_ptrtype form2;
         form21_context_ptrtype form21;
 
-        bool isInitConnectionTo0=false;
-        bool isInitConnectionTo1=false;
+        // init linear/bilinear form for one connection
+        form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
+        form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
 
-        // true if connected to another element, false otherwise
-        //if ( faceInit.isConnectedTo1() )
-        if ( this->faceIntegratorUseTwoConnections(__form,faceInit,elt0TestInit,__face_id_in_elt_0) )
-        {
-            uint16_type __face_id_in_elt_1 = faceInit.pos_second();
-            rank_type procIdElt1 = faceInit.proc_second();
-            size_type idElt1TestInit = faceInit.element( 1 ).id();
-            if ( !useSameMesh )
-            {
-                // search other connection
-                if ( elt0TestInit.face( __face_id_in_elt_0 ).element( 0 ).id() == elt0TestInit.id() )
-                {
-                    __face_id_in_elt_1 = elt0TestInit.face( __face_id_in_elt_0 ).pos_second();
-                    procIdElt1 = elt0TestInit.face( __face_id_in_elt_0 ).proc_second();
-                    idElt1TestInit = elt0TestInit.face( __face_id_in_elt_0 ).element( 1 ).id();
-                }
-                else
-                {
-                    __face_id_in_elt_1 = elt0TestInit.face( __face_id_in_elt_0 ).pos_first();
-                    procIdElt1 = elt0TestInit.face( __face_id_in_elt_0 ).proc_first();
-                    idElt1TestInit = elt0TestInit.face( __face_id_in_elt_0 ).element( 0 ).id();
-                }
-            }
-            //CHECK( idElt1TestInit != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
-            // get element1
-            auto const& elt1TestInit = __form.testSpace()->mesh()->element( idElt1TestInit );
+        // init linear/bilinear form for two connections
+        __c1 = __gm->template context<gmc_context_face_v>( elt0TestInit, __geopc, __face_id_in_elt_0, this->expression().dynamicContext() );
+        __c11 = __gm1->template context<gmc_context_face_v>( elt0TestInit, __geopc1, __face_id_in_elt_0, this->expression().dynamicContext() );
 
-            // init linear/bilinear form for two connections
-            __c1 = __gm->template context<gmc_context_face_v>( elt1TestInit, __geopc, __face_id_in_elt_1, this->expression().dynamicContext() );
-            __c11 = __gm1->template context<gmc_context_face_v>( elt1TestInit, __geopc1, __face_id_in_elt_1, this->expression().dynamicContext() );
+        map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                               fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+        map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
+                                 fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
 
-            map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                   fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-            map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
-                                     fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
+        form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
+        form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
 
-            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
-            form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
-            isInitConnectionTo1=true;
-        }
-
-        else
-        {
-            // init linear/bilinear form for one connection
-            form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
-            form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
-            isInitConnectionTo0=true;
-        }
-
-        //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
         DLOG(INFO) << "[Integrator::faces/forms] starting...\n";
 
 
@@ -3464,197 +3386,44 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         {
             auto const& faceCur = boost::unwrap_ref( *it );
 
-            // get some info about test mesh element0 connected to the current face
-            uint16_type __face_id_in_elt_0 = faceCur.pos_first();
-            rank_type procIdElt0 = faceCur.proc_first();
-            size_type idEltTest = faceCur.element( 0 ).id();
-            bool swapElt0Elt1WithSameMesh = false;
-            bool tryTwoConnections = true;
-            if ( !useSameMesh)
+            auto testTrialEltConnections = this->testElt0IdFromFaceRange(__form,faceCur);
+            if ( testTrialEltConnections.empty() )
+                continue;
+            bool useTwoConnections = testTrialEltConnections.size() > 1;
+            auto const& testTrialEltConnection = testTrialEltConnections.front();
+            uint16_type __face_id_in_elt_0 = std::get<0>( testTrialEltConnection );
+            auto const& elt0Test = *std::get<1>( testTrialEltConnection );
+
+            if ( useTwoConnections )
             {
-                boost::tie( idEltTest, procIdElt0, __face_id_in_elt_0) = this->testElt0IdFromFaceRange(__form,faceCur);
-                if ( idEltTest == invalid_v<size_type> )
-                    continue;
-            }
-            else if ( faceCur.isConnectedTo1() )
-            {
-                if ( !hasMeshSupportPartialTest )
-                {
-                    if ( faceCur.element0().isGhostCell() )
-                    {
-                        __face_id_in_elt_0 = faceCur.pos_second();
-                        procIdElt0 = faceCur.proc_second();
-                        idEltTest = faceCur.element( 1 ).id();
-                        swapElt0Elt1WithSameMesh = true;
-                    }
-                }
-                else
-                {
-                    bool partialSupportHasConnection0 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltTest );
-                    size_type idEltOtherConnection = faceCur.element( 1 ).id();
-                    bool partialSupportHasConnection1 = __form.testSpace()->dof()->meshSupport()->hasElement( idEltOtherConnection );
-
-                    if ( ( partialSupportHasConnection0 && !partialSupportHasConnection1 ) ||
-                         ( !partialSupportHasConnection0 && partialSupportHasConnection1 ) )
-                        tryTwoConnections = false;
-
-                    if ( tryTwoConnections )
-                    {
-                        if ( faceCur.element0().isGhostCell() )
-                        {
-                            __face_id_in_elt_0 = faceCur.pos_second();
-                            procIdElt0 = faceCur.proc_second();
-                            idEltTest = faceCur.element( 1 ).id();
-                            swapElt0Elt1WithSameMesh = true;
-                        }
-                    }
-                    else
-                    {
-                        if ( partialSupportHasConnection0 )
-                        {
-                            if ( faceCur.element0().isGhostCell() )
-                                continue;
-                        }
-                        else
-                        {
-                            if ( faceCur.element1().isGhostCell() )
-                                continue;
-                            __face_id_in_elt_0 = faceCur.pos_second();
-                            procIdElt0 = faceCur.proc_second();
-                            idEltTest = idEltOtherConnection;//faceCur.element( 1 ).id();
-                            //swapElt0Elt1WithSameMesh = true;
-                        }
-                    }
-                }
-            }
-
-            // element0 (from test mesh) used in integration
-            auto const& elt0Test = __form.testSpace()->mesh()->element( idEltTest );
-            CHECK( !elt0Test.isGhostCell() ) << "elt0 can't be a ghost element";
-            //auto const& faceTest = elt0Test.face( __face_id_in_elt_0 );
-
-
-            //if ( faceCur.isConnectedTo1() )
-            if ( tryTwoConnections && this->faceIntegratorUseTwoConnections(__form,faceCur,elt0Test,__face_id_in_elt_0) )
-            {
-                if ( faceCur.isGhostFace() )
-                {
-                    if ( hasMeshSupportPartialTest )
-                    {
-                        if ( __form.testSpace()->dof()->meshSupport()->isGhostFace( faceCur ) )
-                            continue;
-                    }
-                    else
-                    {
-                        LOG(WARNING) << "face id : " << faceCur.id() << " is a ghost face" << faceCur.G();
-                        continue;
-                    }
-                }
-                // // if is a interprocess faces, only integrate in one process
-                // if ( faceCur.isInterProcessDomain() && faceCur.partition1() > faceCur.partition2() )
-                //     continue;
-
-
-                // get some info about test mesh element1 connected to the current face
-                uint16_type __face_id_in_elt_1 = faceCur.pos_second();
-                rank_type procIdElt1 = faceCur.proc_second();
-                size_type idElt1Test = faceCur.element( 1 ).id();
-                if ( !useSameMesh )
-                {
-                    // search other connection
-                    if ( elt0Test.face( __face_id_in_elt_0 ).element( 0 ).id() == elt0Test.id() )
-                    {
-                        __face_id_in_elt_1 = elt0Test.face( __face_id_in_elt_0 ).pos_second();
-                        procIdElt1 = elt0Test.face( __face_id_in_elt_0 ).proc_second();
-                        idElt1Test = elt0Test.face( __face_id_in_elt_0 ).element( 1 ).id();
-                    }
-                    else
-                    {
-                        __face_id_in_elt_1 = elt0Test.face( __face_id_in_elt_0 ).pos_first();
-                        procIdElt1 = elt0Test.face( __face_id_in_elt_0 ).proc_first();
-                        idElt1Test = elt0Test.face( __face_id_in_elt_0 ).element( 0 ).id();
-                    }
-                }
-                else if ( swapElt0Elt1WithSameMesh )
-                {
-                    __face_id_in_elt_1 = faceCur.pos_first();
-                     procIdElt1 = faceCur.proc_first();
-                     idElt1Test = faceCur.element( 0 ).id();
-                }
-                CHECK( idElt1Test != invalid_v<size_type> ) << "mesh relation fail : no find a corresponding element\n";
-
-                // element1 (from test mesh) used in integration
-                auto const& elt1Test = __form.testSpace()->mesh()->element( idElt1Test );
-
-                if ( !isInitConnectionTo1 )
-                {
-                    // init linear/bilinear form for element1
-                    __c1 = __gm->template context<gmc_context_face_v>( elt1Test, __geopc, __face_id_in_elt_1, this->expression().dynamicContext() );
-                    __c11 = __gm1->template context<gmc_context_face_v>( elt1Test, __geopc1, __face_id_in_elt_1, this->expression().dynamicContext() );
-                    map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                           fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
-                    map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
-                                             fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
-
-                    form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
-                    form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
-                    isInitConnectionTo1=true;
-                }
+                DCHECK( !faceCur.isOnBoundary() ) << "face on boundary but connected on both sides";
+                auto const& testTrialEltConnection1 = testTrialEltConnections.back();
+                uint16_type __face_id_in_elt_1 = std::get<0>( testTrialEltConnection1 );
+                auto const& elt1Test = *std::get<1>( testTrialEltConnection1 );
 
                 switch ( M_gt )
                 {
                 default:
                 case GeomapStrategyType::GEOMAP_HO:
                 {
-                    FEELPP_ASSERT( faceCur.isOnBoundary() == false  )
-                        ( faceCur.id() ).error( "face on boundary but connected on both sides" );
-                    //ti0.restart();
                     __c0->template update<gmc_context_face_v>( elt0Test, __face_id_in_elt_0 );
                     bool found_permutation = __c1->template updateFromNeighborMatchingFace<gmc_context_face_v>( elt1Test, __face_id_in_elt_1, __c0 );
-                    CHECK(found_permutation) << "the permutation of quadrature points were not found\n";
-                    //t0 += ti0.elapsed();
-
-                    //ti1.restart();
-                    map2_gmc_type mapgmc2 = map2_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
-                                                           fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+                    DCHECK(found_permutation) << "the permutation of quadrature points were not found\n";
                     form2->update( mapgmc2, mapgmc2, mapgmc2, face_ims[__face_id_in_elt_0], mpl::int_<2>() );
-                    //t1 += ti1.elapsed();
-
-                    //ti2.restart();
                     form2->integrate( );
-                    //t2 += ti2.elapsed();
-
-                    //ti3.restart();
                     form2->assemble( elt0Test.id(), elt1Test.id() );
-                    //t3 += ti3.elapsed();
                 }
                 break;
 
                 case GeomapStrategyType::GEOMAP_O1:
                 case GeomapStrategyType::GEOMAP_OPT:
                 {
-                    FEELPP_ASSERT( faceCur.isOnBoundary() == false  )
-                        ( faceCur.id() ).error( "face on boundary but connected on both sides" );
-                    //ti0.restart();
                     __c01->template update<gmc_context_face_v>( elt0Test, __face_id_in_elt_0 );
                     bool found_permutation = __c11->template updateFromNeighborMatchingFace<gmc_context_face_v>( elt1Test, __face_id_in_elt_1, __c01 );
                     CHECK(found_permutation) << "the permutation of quadrature points was not found\n";
-
-                    //t0 += ti0.elapsed();
-
-                    //ti1.restart();
-                    map21_gmc_type mapgmc21 = map21_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
-                                                              fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
                     form21->update( mapgmc21, mapgmc21, mapgmc21, face_ims2[__face_id_in_elt_0], mpl::int_<2>() );
-                    //t1 += ti1.elapsed();
-
-                    //ti2.restart();
                     form21->integrate( );
-                    //t2 += ti2.elapsed();
-
-                    //ti3.restart();
                     form21->assemble( elt0Test.id(), elt1Test.id() );
-                    //t3 += ti3.elapsed();
                 }
                 break;
                 }
@@ -3662,29 +3431,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
             else
             {
-                if ( !isInitConnectionTo0 )
-                {
-                    form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
-                    form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
-                    isInitConnectionTo0=true;
-                }
-
-                //ti0.restart();
                 __c0->template update<gmc_context_face_v>( elt0Test,__face_id_in_elt_0 );
-                //t0 += ti0.elapsed();
-
-                //ti1.restart();
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
                 form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
-                //t1 += ti1.elapsed();
-
-                //ti2.restart();
                 form->integrate();
-                //t2 += ti2.elapsed();
-
-                //ti3.restart();
                 form->assemble();
-                //t3 += ti3.elapsed();
             } // end loop on elements
         }
     }// end loop on list of element
@@ -3870,6 +3620,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             auto const& faceCur = boost::unwrap_ref( *elt_it );
 
             auto eltsTrialTestRelated = mrdmt.eltsRelatedToRange( faceCur );
+            //std::cout << fmt::format("eltsTrialTestRelated size:",eltsTrialTestRelated.size()) << std::endl;
             if ( eltsTrialTestRelated.empty() )
                 continue;
 
@@ -5895,8 +5646,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
             else
             {
-                if ( faceConnection.element( 0 ).isGhostCell() )
-                    continue;
                 uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
                 __c0->template update<gmc_context_face_v>( faceConnection.element( 0 ), __face_id_in_elt_0 );
                 map_gmc_type mapgmc = Feel::vf::mapgmc(__c0);
@@ -6240,7 +5989,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
      typedef Integrator<range_type, Im, ExprT, Im2> expr_t;
 
-     using element_iterator = typename range_type::iterator_t; 
+     using element_iterator = typename range_type::iterator_t;
      static constexpr uint16_type geoOrder = range_type::element_t::nOrder;
      LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
      return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );

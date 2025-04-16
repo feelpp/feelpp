@@ -1,4 +1,3 @@
-
 #define BOOST_TEST_MODULE test_meshmarker
 #include <feel/feelcore/testsuite.hpp>
 
@@ -109,11 +108,11 @@ BOOST_AUTO_TEST_CASE( test_meshmarker2 )
     BOOST_CHECK_CLOSE( measure_interface_all, 2.0, 1e-10 );
 
     size_type nMarkedPoints_point_corner_00 = nelements( markedpoints(mesh,"point_corner_00"), true );
-    BOOST_CHECK( nMarkedPoints_point_corner_00 >= 1 );
+    BOOST_CHECK( nMarkedPoints_point_corner_00 == 1 );
     size_type nMarkedPoints_point_corner_all = nelements( markedpoints(mesh,"point_corner_all"), true );
-    BOOST_CHECK( nMarkedPoints_point_corner_all >= 4 );
+    BOOST_CHECK( nMarkedPoints_point_corner_all == 4 );
     size_type nMarkedPoints_point_geo_all = nelements( markedpoints(mesh,"point_geo_all"), true );
-    BOOST_CHECK( nMarkedPoints_point_geo_all >= 9 );
+    BOOST_CHECK_EQUAL( nMarkedPoints_point_geo_all, 9 );
 
 
     auto submeshElt = createSubmesh(_mesh=mesh,_range=markedelements(mesh,"mat1_2_3"));
@@ -135,10 +134,9 @@ BOOST_AUTO_TEST_CASE( test_meshmarker2 )
     BOOST_CHECK_CLOSE( submeshElt_measure_gamma_all, 3.0, 1e-10 );
 
     size_type submeshElt_nMarkedPoints_point_geo_all = nelements( markedpoints(submeshElt,"point_geo_all"), true );
-    BOOST_CHECK( submeshElt_nMarkedPoints_point_geo_all >= 8 );
+    BOOST_CHECK( submeshElt_nMarkedPoints_point_geo_all == 8 );
 
 }
 
 
 BOOST_AUTO_TEST_SUITE_END()
-

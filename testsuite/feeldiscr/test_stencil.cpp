@@ -268,8 +268,8 @@ BOOST_AUTO_TEST_CASE( test_stencil_zero )
     using mesh_t = Mesh<Simplex<2>>;
     auto mesh = loadMesh( _mesh=new mesh_t );
 
-    auto Vh = Pchv<1>( mesh, true );
-    auto Wh = Pch<1>( mesh, true );
+    auto Vh = Pchv<1>( mesh );
+    auto Wh = Pch<1>( mesh );
     BlocksBaseGraphCSR zero_graph(2,2);
     zero_graph(0,0) = stencil( _test=Vh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();
     zero_graph(1,0) = stencil( _test=Wh,_trial=Vh, _diag_is_nonzero=false, _close=false,_pattern=(size_type)Pattern::ZERO)->graph();

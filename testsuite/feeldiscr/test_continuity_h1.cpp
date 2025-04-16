@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( LagrangeCG, T, dim_types )
 
     mesh_ptrtype mesh = loadMesh( _mesh=new mesh_type );
 
-    auto Xh = Pch<1>( mesh, true );
+    auto Xh = Pch<1>( mesh );
     auto u = Xh->element();
     auto a1 = form1( _test=Xh );
     a1  = integrate( _range=internalfaces( mesh ), _expr=(leftface(id(u))+rightface(-id(u)) ) );

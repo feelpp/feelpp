@@ -218,7 +218,7 @@ class Mesh1D
         return super_elements::element_type::numLocalFaces;
     }
 
-    //! 
+    //!
     //! the number of topological faces per element
     //! @return the number of topological faces per element
     //!
@@ -321,6 +321,9 @@ class Mesh1D
         return this->endPoint();
     }
 
+    typename super_points::ordered_points_reference_wrapper_type const& orderedFaces() const noexcept { return this->orderedPoints(); }
+
+
      std::pair<face_iterator,bool> addFace( face_type& f )
         {
             return this->addPoint( f );
@@ -335,55 +338,103 @@ class Mesh1D
             return this->erasePoint( it );
         }
 
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     internalFaces( rank_type p = invalid_rank_type_value ) const
         {
-            return this->internalPoints( p );
+            return super_points::template internalPoints<EPT>( p );
         }
+
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesOnBoundary( rank_type p = invalid_rank_type_value ) const
         {
-            return this->boundaryPoints( p );
+            return super_points::template boundaryPoints<EPT>( p );
         }
 
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
         {
-            return this->pointsWithMarkerByType( markerType, markerFlags, p );
+            return super_points::template pointsWithMarkerByType<EPT>( markerType, markerFlags, p );
         }
-     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
         {
-            return this->pointsWithMarkerByType( markerType, m, p );
+            return super_points::template pointsWithMarkerByType<EPT>( markerType, m, p );
         }
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->facesWithMarkerByType( 1, m, p );
+            return super_faces::template facesWithMarkerByType<EPT>( 1, m, p );
         }
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarker2( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->facesWithMarkerByType( 2, m, p );
+            return super_faces::template facesWithMarkerByType<EPT>( 2, m, p );
         }
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithMarker3( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
         {
-            return this->facesWithMarkerByType( 3, m, p );
+            return super_faces::template facesWithMarkerByType<EPT>( 3, m, p );
         }
 
+    template <entity_process_t EPT = entity_process_t::LOCAL_ONLY>
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     facesWithProcessId( rank_type p = invalid_rank_type_value ) const
         {
-            return this->pointsWithProcessId( p );
+            return super_points::template pointsWithProcessId<EPT>( p );
         }
+
+    // TODO move in points
+    template <entity_filter_t FF, entity_process_t EPT, typename ... Ts>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesFilterImpl( Ts&&... ts ) const
+        {
+            if constexpr ( FF == entity_filter_t::PROCESS_ID )
+                return super_points::template pointsWithProcessId<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::MARKER )
+                return super_points::template pointsWithMarkerByType<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::ON_BOUNDARY )
+                return super_points::template boundaryPoints<EPT>( std::forward<Ts>( ts )... );
+            else if constexpr ( FF == entity_filter_t::INTERNAL )
+                return super_points::template internalPoints<EPT>( std::forward<Ts>( ts )... );
+            return {};
+        }
+    template <entity_filter_t FF, typename ... Ts>
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesFilter( entity_process_t ept, Ts&&... ts ) const
+        {
+            return std::invoke(
+                [this,&ept](auto&& ... args)
+                    {
+                        switch ( ept )
+                        {
+                        default:
+                        case entity_process_t::LOCAL_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::LOCAL_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::LOCAL_AND_INTERPROCESS_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::GHOST_ONLY:
+                            return this->facesFilterImpl<FF, entity_process_t::GHOST_ONLY>( std::forward<decltype(args)>(args) ... );
+                        case entity_process_t::ALL:
+                            return this->facesFilterImpl<FF, entity_process_t::ALL>( std::forward<decltype(args)>(args) ... );
+                        }
+                    },
+                std::forward<Ts>( ts )... );
+        }
+
     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
     interProcessFaces( rank_type neighbor_pid = invalid_rank_type_value ) const
         {
             return this->interProcessPoints( neighbor_pid );
         }
-    
-    
+
+
 
     void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
@@ -420,7 +471,7 @@ class Mesh1D
     /**
      * update permutation of entities of co-dimension 1
      */
-    void updateEntitiesCoDimensionOnePermutation() 
+    void updateEntitiesCoDimensionOnePermutation()
     {
         // no-op
     }

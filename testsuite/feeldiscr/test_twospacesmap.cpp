@@ -42,18 +42,15 @@ BOOST_AUTO_TEST_CASE( onespace )
 
     for ( auto index : randoms )
     {
-        auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-        if ( boost::get<0>( searchGpDof ) )
+        if ( !Xh->dof()->dofGlobalClusterIsOnProc( index ) )
+            continue;
+        size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
+        for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
         {
-            size_type gpdof = boost::get<1>( searchGpDof );
-            for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
-            {
-                size_type eltId = dof.second.elementId();
-                if ( Xh->mesh()->element( eltId ).isGhostCell() )
-                    continue;
-                element_ids.insert( eltId );
-
-            }
+            size_type eltId = dof.second.elementId();
+            if ( Xh->mesh()->element( eltId ).isGhostCell() )
+                continue;
+            element_ids.insert( eltId );
         }
     }
 
@@ -79,9 +76,7 @@ BOOST_AUTO_TEST_CASE( onespace )
 
         if ( Environment::worldComm().globalRank()==proc_number )
         {
-            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-            CHECK( boost::get<0>( searchGpDof ) ) << "GPDof not found\n";
-            size_type gpdof = boost::get<1>( searchGpDof );
+            size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
             value = u( gpdof );
         }
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
@@ -130,10 +125,10 @@ BOOST_AUTO_TEST_CASE( composite )
 
     for ( auto index : randoms )
     {
-        auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-        if ( boost::get<0>( searchGpDof ) )
-        {
-            size_type gpdof = boost::get<1>( searchGpDof );
+        if ( !Xh->dof()->dofGlobalClusterIsOnProc( index ) )
+            continue;
+
+            size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
             int space = Xh->dof()->databaseIndexFromContainerId( gpdof );
             gpdof = Xh->dof()->containerIdToDofId( space, gpdof );
 
@@ -157,7 +152,6 @@ BOOST_AUTO_TEST_CASE( composite )
                     element_ids.insert( eltId );
                 }
             }
-        }
     }
 
     auto newmesh = createSubmesh( _mesh=mesh, _range=idelements(mesh,element_ids.begin(), element_ids.end()) );
@@ -184,9 +178,7 @@ BOOST_AUTO_TEST_CASE( composite )
 
         if ( Environment::worldComm().globalRank()==proc_number )
         {
-            auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-            CHECK( boost::get<0>( searchGpDof ) ) << "GPDof not found\n";
-            size_type gpdof = boost::get<1>( searchGpDof );
+            size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
             value = U( gpdof );
         }
         boost::mpi::broadcast( Environment::worldComm(), value, proc_number );
