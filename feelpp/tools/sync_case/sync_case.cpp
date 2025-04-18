@@ -3,9 +3,9 @@
  This file is part of the Feel++ library
 
  Author(s): Thomas Saigre <saigre@math.unistra.fr>
- Date: 14 July 2022
+ Date: 18 April 2025
 
- Copyright (C) 2022 Feel++ Consortium
+ Copyright (C) 2022-2025 Feel++ Consortium
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
