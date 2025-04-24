@@ -164,8 +164,8 @@ public :
         tensor( this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
             :
             M_expr( expr ),
-            M_useLeft( false ), M_useRight( false ),
             M_internalFacesEvalutationType( expr.internalFacesEvalutationType() ),
+            M_useLeft( false ), M_useRight( false ),
             M_hasRequiresMarkersConnection( false )
             {
                 this->updateRequiresMarkerForUse( geom );
@@ -176,8 +176,8 @@ public :
                 this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
             :
             M_expr( expr ),
-            M_useLeft( false ), M_useRight( false ),
             M_internalFacesEvalutationType( expr.internalFacesEvalutationType() ),
+            M_useLeft( false ), M_useRight( false ),
             M_hasRequiresMarkersConnection( false )
             {
                 CHECK( false ) << "TODO";
@@ -224,11 +224,8 @@ public :
 
             if constexpr( has_two_side )
             {
-                if ( M_internalFacesEvalutationType == InternalFacesEvalType::One_Side )
-                {
-                    if ( M_useLeft )
-                        M_useRight = false;
-                }
+                if ( M_internalFacesEvalutationType == InternalFacesEvalType::One_Side && M_useLeft && M_useRight  )
+                    M_useRight = false;
             }
 
             if ( M_useLeft )

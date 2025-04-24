@@ -394,10 +394,8 @@ ALE<Convex,Order>::generateLowOrderMap_WINSLOW( ale_map_element_type const & dis
 
     // interpolate disp
     M_displacementLow->on( _range=elements(M_displacementLow->mesh()),
-                           _expr=idv(M_winslowFactory->displacement()) );
-    if ( M_displacementLow->functionSpace()->dof()->buildDofTableMPIExtended() )
-        sync( *M_displacementLow, "=" );
-
+                           _expr=idv(M_winslowFactory->displacement()),
+                           _close=true);
     *M_aleLow = *M_identityLow;
     *M_aleLow += *M_displacementLow;
 #endif
@@ -806,4 +804,3 @@ ALE<Convex,Order>::updateMetricMeshAdaptationForUse()
 } // namespace ALE_IMPL
 } // namespace FeelModels
 } // namespace Feel
-

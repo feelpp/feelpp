@@ -38,10 +38,10 @@ BOOST_AUTO_TEST_CASE( globaldof_recovery )
     // get all the list of all the elements containing the dof
     std::set<int> element_ids;
     std::vector<std::pair<int,int>> local_id_dof;
-    auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-    if ( boost::get<0>( searchGpDof ) )
+
+    size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
+    if ( gpdof != invalid_v<size_type> )
     {
-        size_type gpdof = boost::get<1>( searchGpDof );
         for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
         {
             size_type eltId = dof.second.elementId();
@@ -103,10 +103,9 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
     int elt_id=-1;
     int l_dof=-1;
 
-    auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-    if ( boost::get<0>( searchGpDof ) )
+    size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
+    if ( gpdof != invalid_v<size_type> )
     {
-        size_type gpdof = boost::get<1>( searchGpDof );
         for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
         {
             size_type eltId = dof.second.elementId();
@@ -122,8 +121,8 @@ BOOST_AUTO_TEST_CASE( parallel_to_seq )
                     points_id.insert( elt.point(p).id()+1 );
             }
         }
-
     }
+
     boost::mpi::broadcast( Environment::worldComm(), points_id, proc_n );
     boost::mpi::broadcast( Environment::worldComm(), l_dof, proc_n );
 

@@ -261,25 +261,6 @@ public:
         return M_n_localWithGhost_df[proc];
     }
 
-    /**
-     * @return the number of degrees of freedom on this processor.
-     */
-    size_type nMyDof () const
-    {
-        return this->nDofOnProcessor ( this->worldComm().rank() );
-    }
-
-    /**
-     * @return the number of degrees of freedom on subdomain \p proc.
-     */
-    size_type nDofOnProcessor( const rank_type proc ) const
-    {
-        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
-                                           <<  proc << ", first dof : " <<  M_first_df.size();
-        return M_n_localWithoutGhost_df[proc];
-        //return ( M_last_df[proc] - M_first_df[proc]+1);
-    }
-
     rank_type nProcessors() const
     {
         return this->worldComm().size();
@@ -288,19 +269,12 @@ public:
     /**
      * @return the first dof index that is in  local subdomain
      */
-    size_type firstDof() const
-    {
-        return this->firstDof( this->worldComm().rank() );
-    }
+    size_type firstDof() const { return this->nLocalDofWithGhost() > 0 ? 0 : invalid_v<size_type>; }
+
     /**
      * @return the first dof index that is local to subdomain \p proc.
      */
-    size_type firstDof( const rank_type proc ) const
-    {
-        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
-                                           <<  proc << ", first dof : " <<  M_first_df.size();
-        return M_first_df[proc];
-    }
+    size_type firstDof( const rank_type proc ) const { return this->firstDof(); }
 
     size_type firstDofGlobalCluster() const
     {
@@ -322,19 +296,12 @@ public:
     /**
      * Returns the last dof index that is in local  subdomain
      */
-    size_type lastDof() const
-    {
-        return this->lastDof( this->worldComm().rank() );
-    }
+    size_type lastDof() const { return this->nLocalDofWithGhost() > 0 ? this->nLocalDofWithGhost()-1 : invalid_v<size_type>; }
+
     /**
      * Returns the last dof index that is local to subdomain \p proc.
      */
-    size_type lastDof( const rank_type proc ) const
-    {
-        DCHECK( proc < M_last_df.size() ) << "invalid proc id or dof table , proc: "
-                                          <<  proc << ", last dof : " <<  M_last_df.size();
-        return M_last_df[proc];
-    }
+    size_type lastDof( const rank_type proc ) const { return this->lastDof(); }
 
     /**
      * Returns the last dof index that is in local  subdomain
@@ -373,95 +340,20 @@ public:
         return !this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
     }
 
-    //! return global process id from global cluster id if available
-    boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
-
-    //! Returns local ID of global ID, return invalid_v<size_type> if not found on this processor.
-    size_type  lid( size_type GID ) const
+    //! return process index from world index (if index is not present, return an invalid value)
+    size_type worldIndexToProcessIndex( size_type index ) const;
+    //! return process index from a ghost world index (if index a ghost index, return an invalid value)
+    size_type ghostWorldIndexToProcessIndex( size_type index ) const
     {
-        uint16_type pid = this->worldComm().rank();
-
-        if ( GID >= firstDof( pid ) &&
-                GID <= lastDof( pid ) )
-            return GID - firstDof( pid );
-
-        return invalid_v<size_type>;
+        auto itFind = M_ghostWorldIndexToProcessIndex.find( index );
+        return itFind != M_ghostWorldIndexToProcessIndex.end()? itFind->second : invalid_v<size_type>;
     }
-
-    //! Returns global ID of local ID, return -1 if not found on this processor.
-    size_type gid( size_type LID ) const
-    {
-        uint16_type pid = this->worldComm().rank();
-
-        if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
-            return firstDof( pid ) + LID;
-
-        return invalid_v<size_type>;
-    }
-
-    //! Returns true if the GID passed in belongs to the calling processor in this map, otherwise returns false.
-    bool  myGID( size_type GID ) const
-    {
-        return( lid( GID )!=invalid_v<size_type> );
-    }
-
-    //! Returns true if the LID passed in belongs to the calling processor in this map, otherwise returns false.
-    bool  myLID( size_type LID ) const
-    {
-        return( gid( LID )!=invalid_v<size_type> );
-    }
-
-    //!Returns the minimum global ID across the entire map.
-    size_type  minAllGID() const
-    {
-        return( firstDof( 0 ) );
-    }
-
-    //! Returns the maximum global ID across the entire map.
-    size_type  maxAllGID() const
-    {
-        return( lastDof( this->worldComm().size()-1 ) );
-    }
-
-    //! Returns the maximum global ID owned by this processor.
-    size_type  minMyGID() const
-    {
-        return firstDof( this->worldComm().rank() );
-    }
-
-    //! Returns the maximum global ID owned by this processor.
-    size_type  maxMyGID() const
-    {
-        return lastDof( this->worldComm().rank() );
-    };
-
-    //!  The minimum local index value on the calling processor.
-    size_type  minLID() const
-    {
-        return 0;
-    };
-
-    //! The maximum local index value on the calling processor.
-    size_type  maxLID() const
-    {
-        return lastDof( this->worldComm().rank() )-firstDof( this->worldComm().rank() );
-    };
 
     //! number of elements across all processors.
     size_type nGlobalElements() const
     {
         return M_n_dofs;
     };
-
-    //! number of elements on the calling processor.
-    //size_type nMyElements() const {return nLocalDofWithGhost();};
-    size_type nMyElements() const
-    {
-        return nLocalDof();
-    };
-
-    //! Puts list of global elements on this processor size_typeo the user-provided array.
-    std::vector<size_type> const& myGlobalElements() const;
 
     //! processor numbering to world numbering
     std::vector<size_type> const& mapGlobalProcessToGlobalCluster() const
@@ -475,24 +367,18 @@ public:
         return M_mapGlobalProcessToGlobalCluster[i];
     }
 
-    FEELPP_DEPRECATED
-    size_type mapGlobalClusterToGlobalProcess( size_type i ) const
-    {
-        return i;
-    }
-
     void setNDof( size_type ndof );
 
     void setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld=true );
     void setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld=true );
-    void setFirstDof( const rank_type proc, const size_type df, bool inWorld=true );
-    void setLastDof( const rank_type proc, const size_type df, bool inWorld=true );
     void setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
     void setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld=true );
 
     void setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map );
     void setMapGlobalProcessToGlobalCluster( size_type i, size_type j );
     void resizeMapGlobalProcessToGlobalCluster( size_type n );
+
+    void updateWorldIndexForUse();
 
     void updateDataInWorld();
 
@@ -528,7 +414,7 @@ public:
      */
     void showMe( bool showAll=false, std::ostream& __out = std::cout ) const;
 
-    
+
 
     /**
      * \return the number of mapping (from functionspace id to container id with global process numbering)
@@ -539,17 +425,6 @@ public:
      */
     size_type databaseIndexFromContainerId( size_type gpdof ) const
         {
-#if 0
-            size_type currentStartId = 0;
-            for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
-            {
-                size_type nGpDof = this->dofIdToContainerId( tag ).size();
-                if ( gpdof >= currentStartId && gpdof < ( currentStartId + nGpDof ) )
-                    return tag;
-                currentStartId+=nGpDof;
-            }
-            return 0;
-#endif
             for ( int tag=0;tag<this->numberOfDofIdToContainerId();++tag )
             {
                 auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
@@ -659,11 +534,8 @@ public:
         ar & BOOST_SERIALIZATION_NVP( M_n_dofs );
         ar & BOOST_SERIALIZATION_NVP( M_n_localWithoutGhost_df );
         ar & BOOST_SERIALIZATION_NVP( M_n_localWithGhost_df );
-        ar & BOOST_SERIALIZATION_NVP( M_first_df );
-        ar & BOOST_SERIALIZATION_NVP( M_last_df );
         ar & BOOST_SERIALIZATION_NVP( M_first_df_globalcluster );
         ar & BOOST_SERIALIZATION_NVP( M_last_df_globalcluster );
-        ar & BOOST_SERIALIZATION_NVP( M_myglobalelements );
         ar & BOOST_SERIALIZATION_NVP( M_mapGlobalProcessToGlobalCluster );
         ar & BOOST_SERIALIZATION_NVP( M_neighbor_processors );
         ar & BOOST_SERIALIZATION_NVP( M_activeDofSharedOnCluster );
@@ -692,16 +564,6 @@ protected:
     std::vector<size_type> M_n_localWithGhost_df;
 
     /**
-     * First DOF index on processor \p p.
-     */
-    std::vector<size_type> M_first_df;
-
-    /**
-     * Last DOF index on processor \p p.
-     */
-    std::vector<size_type> M_last_df;
-
-    /**
      * First globalcluster DOF index on processor \p p.
      */
     std::vector<size_type> M_first_df_globalcluster;
@@ -710,9 +572,6 @@ protected:
      * Last globalcluster DOF index on processor \p p.
      */
     std::vector<size_type> M_last_df_globalcluster;
-
-    // ??
-    mutable std::vector<size_type> M_myglobalelements;
 
     /**
      * Map between Global Process To Global Cluster.
@@ -729,7 +588,9 @@ protected:
      */
     std::map<size_type, std::set<rank_type> > M_activeDofSharedOnCluster;
 
-    
+
+    std::map<size_type,size_type> M_ghostWorldIndexToProcessIndex;
+
     /**
      * Index split ( differentiate multiphysic )
      */

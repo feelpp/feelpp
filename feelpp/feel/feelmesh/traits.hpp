@@ -31,15 +31,23 @@
 #ifndef __FEELPP_MESH_TRAITS_HPP
 #define __FEELPP_MESH_TRAITS_HPP 1
 
+#include <boost/mp11/utility.hpp>
+#include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
+
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
-#include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
 #include <feel/feelmesh/enums.hpp>
-#include <boost/mp11/utility.hpp>
 
 namespace Feel
 {
+
+/**
+ * @brief Tag base class
+ * @ingroup Mesh
+ */
+struct SubFaceOfBase {};
+
 /**
  * \class MeshTraits
  * \ingroup Mesh
@@ -163,8 +171,10 @@ template<typename T>
 struct is_0d_real : mpl::bool_< decay_type<T>::nRealDim ==0 > {};
 
 
+// template<typename T>
+// struct is_topological_face : mpl::bool_<(decay_type<T>::nDim==decay_type<T>::nRealDim-1)> {};
 template<typename T>
-struct is_topological_face : mpl::bool_<(decay_type<T>::nDim==decay_type<T>::nRealDim-1)> {};
+struct is_topological_face : mpl::bool_<std::is_base_of_v<SubFaceOfBase,decay_type<T>>> {};
 template<typename T>
 struct is_face : mpl::bool_<(decay_type<T>::nDim == 2 && decay_type<T>::nRealDim == 3)> {};
 template<typename T>
@@ -200,8 +210,8 @@ template<typename T>
 struct is_segment : mpl::and_<is_convex<T>,is_1d<T>> {};
 
 /**
- * Checks whether T is a GeoElement<n>D type. 
- * Provides the member constant value that is equal to true, if T is the type GeoElement<n>D. 
+ * Checks whether T is a GeoElement<n>D type.
+ * Provides the member constant value that is equal to true, if T is the type GeoElement<n>D.
  * Otherwise, value is equal to false.
  */
 template <typename T> struct is_geoelement: std::false_type {};
