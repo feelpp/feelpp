@@ -93,7 +93,7 @@ int hdg_laplacian()
 {
     using Feel::cout;
 
-    auto tau_constant =  cst(doption("hdg.tau.constant"));
+
     int tau_order =  ioption("hdg.tau.order");
 
     int proc_rank = Environment::worldComm().globalRank();
@@ -133,8 +133,7 @@ int hdg_laplacian()
     auto k = expr(soption("k"));
     auto lambda = cst(1.)/k;
     // for adding the convection terms:
-    auto beta = vec(cst(1.0), cst(1.0));
-    auto beta_n = trans(beta) * N(); // for beta . n
+    
 
     auto un = trans(u_exact)*N();
     auto f = expr( soption( "functions.f") );
@@ -142,6 +141,11 @@ int hdg_laplacian()
     auto r_1 = cst(0.);
     auto r_2 = un;
 #endif
+    auto beta = one(); //vec(cst(1.0), cst(1.0));
+    auto beta_n = trans(beta) * N(); // for beta . n
+    auto tau_D =  cst(doption("hdg.tau.constant"));
+    auto tau_C = max(beta_n,0.);
+    auto gamma_u = tau_D/h()+tau_C;
     tic();
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
@@ -261,23 +265,23 @@ int hdg_laplacian()
 
     // for the term \int_K (beta \cdot gradt(p))*w :
     // a(1_c,1_c) += integrate(_range=elements(mesh), _expr=(id(w) * inner(beta, gradt(p))));
-    a(1_c,1_c) += integrate(_range=elements(mesh), _expr=(id(w) * (beta[0] * gradt(p)[0] + beta[1] * gradt(p)[1])));
-
+    a(1_c,1_c) += integrate(_range=elements(mesh), _expr= - (grad(w) * beta * idt(p)) );
+    a(1_c,1_c) += integrate(_range=internalfaces(mesh), _expr=  (grad(w) * beta * idt(p)) );
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant *
+                            _expr=gamma_u *
                             ( leftfacet( idt(p))*leftface(id(w)) +
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=(tau_constant * id(w)*idt(p)));
+                            _expr=(gamma_u * id(w)*idt(p)));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-tau_constant * idt(phat) *
+                            _expr=-gamma_u * idt(phat) *
                             ( leftface( id(w) )+
                               rightface( id(w) )));
     a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-tau_constant * idt(phat) * id(w) );
+                            _expr=-gamma_u * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     //
@@ -299,27 +303,27 @@ int hdg_laplacian()
 
     tic();
     a(2_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * beta_n * id(l) * ( leftfacet( idt(p) )+
+                            _expr=gamma_u * beta_n * id(l) * ( leftfacet( idt(p) )+
                                                            rightfacet( idt(p) )));
 
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=tau_constant *beta_n* id(l) * ( idt(p) ) );
+                            _expr=gamma_u *beta_n* id(l) * ( idt(p) ) );
     toc("a(2,1)",FLAGS_v>0);
 
     tic();
     a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-(1.-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
+                            _expr=-(1.-0.5*boption("sc.condense"))*gamma_u * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=-tau_constant * idt(phat) * id(l)  );
+                            _expr=-gamma_u * idt(phat) * id(l)  );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                             _expr=idt(phat) * id(l) );
     // Robin
     a( 2_c, 0_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=id(l)*normalt(u) );
     a( 2_c, 1_c ) += integrate(_range=markedfaces(mesh,"Robin"),
-                               _expr=tau_constant * id(l) * idt(p)  );
+                               _expr=gamma_u * id(l) * idt(p)  );
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
-                               _expr=-tau_constant * idt(phat) * id(l) );
+                               _expr=-gamma_u * idt(phat) * id(l) );
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=-r_1*idt(phat) * id(l) );
 
