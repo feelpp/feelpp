@@ -243,7 +243,9 @@ int hdg_laplacian()
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
-    a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)) + (trans(beta)*idt(p))*id(v) ); // for - \int_K p_h div(v_h) + \int_K beta \cdot p_h v_h
+    
+    a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)) ); 
+    a(0_c,1_c) += integrate(_range=elements(mesh), _expr=-lambda*idt(p)*trans(beta)*id(v) );
     toc("a(0,1)",FLAGS_v>0);
 
     tic();
@@ -265,8 +267,8 @@ int hdg_laplacian()
 
     // for the term \int_K (beta \cdot gradt(p))*w :
     // a(1_c,1_c) += integrate(_range=elements(mesh), _expr=(id(w) * inner(beta, gradt(p))));
-    a(1_c,1_c) += integrate(_range=elements(mesh), _expr= - (grad(w) * beta * idt(p)) );
-    a(1_c,1_c) += integrate(_range=internalfaces(mesh), _expr=  (grad(w) * beta * idt(p)) );
+    //a(1_c,1_c) += integrate(_range=elements(mesh), _expr= - (grad(w) * beta * idt(p)) );
+
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
                             _expr=gamma_u *
                             ( leftfacet( idt(p))*leftface(id(w)) +
