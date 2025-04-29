@@ -1,4 +1,3 @@
-// -*- mode: javascript -*-
 {
     "Name": "Magneto-swimmer",
     "ShortName":"magneto",
@@ -8,12 +7,19 @@
             "materials":["Fluid"],
             "equations":"Stokes"
         },
-        "solid":{
-            "materials":["Solid"],
+        "solid":
+        {
+            "materials":["Solid","Head"],
             "equations":"Hyper-Elasticity"
         },
-        "fsi":{
-            "materials":["Fluid","Solid"],
+        "body":
+        {
+            "name":"swimmer",
+            "materials":["Solid","Head"]
+        },
+        "fsi":
+        {
+            "materials":["Fluid","Solid","Head"],
             "setup":{
                 "interface":"fsi-wall"
             }
@@ -36,26 +42,21 @@
             }
         }
     },
-    "Parameters":
-    {
-        "ubar":"0.02",
-        "chi":"t<2:t"
-    },
     "Materials":
     {
         "Fluid": {
-            "rho":"1.0e3",
-            "mu":"1.0"
+            "rho":"1260",
+            "mu":"152"
         },
         "Solid": {
-            "E":"5.6e6",
-            "nu":"0.4",
-            "rho":"1e3"
+            "E":"200000",
+            "nu":"0.40",
+            "rho":"1000"
         },
         "Head": {
-            "E":"5.6e6",
-            "nu":"0.4",
-            "rho":"1e3"
+            "E":"4.1e10",
+            "nu":"0.281",
+            "rho":"8000"
         }
 
     },
@@ -65,10 +66,6 @@
         {
             "velocity":
             {
-                "fluid-inlet":
-                {
-                    "expr":"{ 1.5*ubar*(4./0.1681)*y*(0.41-y)*( ((1-cos(pi*t/2))/2)*chi + (1-chi) ),0}:ubar:y:t:chi"
-                },
                 "fluid-wall":
                 {
                     "expr":"{0,0}"
@@ -79,6 +76,41 @@
                 "fluid-outlet":
                 {
                     "expr":"0" 
+                },
+                "fluid-inlet":
+                {
+                   "expr":"0" 
+                }
+            },
+            "body":
+            {
+                "fsi-wall":
+                {
+                    "markers":"fsi-wall",
+                    "materials":
+                    {
+                        "names":["Solid","Head"]
+                    }
+                }
+            }
+        }
+    },
+    "MagnetoTorque":  
+    {
+        "body":
+        {
+            "setup": 
+            {
+                "torqueParam":
+                {
+                    "freq":1,
+                    "amp":0.1,
+                    "mx":1000000,
+                    "my":1000000,
+                    "mz":1,
+                    "bx":0.5, 
+                    "by":0.5,
+                    "bz":1
                 }
             }
         }
@@ -90,6 +122,13 @@
             "Exports":
             {
                 "fields":["velocity","pressure","mesh-displacement","pid"]
+            },
+            "Measures":
+            {
+                "Quantities":
+                {
+                    "names":"all"
+                }
             }
         },
         "solid":
@@ -102,14 +141,9 @@
             {
                 "Points":
                 {
-                    "pointHead":
+                    "pointA":
                     {
-                        "coord":"{0.238,0.20}",
-                        "fields":["displacement","velocity"]
-                    },
-                    "pointFlagelle":
-                    {
-                        "coord":"{0.24899,0.20}",
+                        "coord":"{0.,0.}",
                         "fields":["displacement","velocity"]
                     }
                 }
