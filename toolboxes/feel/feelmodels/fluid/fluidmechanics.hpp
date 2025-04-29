@@ -2810,6 +2810,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
 
         for ( auto & [bpname,bbc] : M_bodySetBC )
         {
+            std::cout << "Check magneto  bbc.hasElasticBehaviorFromExpr()  : " <<  bbc.hasElasticBehaviorFromExpr()  << std::endl;
+
             if ( bbc.hasElasticBehaviorFromExpr() )
             {
                 auto hola = bbc.createElasticBehavior( se );
@@ -2823,6 +2825,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
         {
             //this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
             mmt->updateDisplacementImposedOnInitialDomain( this->keyword()+"_body", idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
+
+            std::cout << "Check magneto  bbc.hasElasticVelocity()  : " <<  bbc.hasElasticVelocity()  << std::endl;
 
             if ( bbc.hasElasticVelocity() )
                 bbc.updateElasticVelocityWithRotation();

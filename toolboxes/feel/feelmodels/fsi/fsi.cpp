@@ -46,6 +46,11 @@ FSI<FluidType,SolidType>::FSI( std::string const& prefix,
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
+
+    // Magneto-swimmer parameters 
+    M_solve_rigid( boption(_name="solve-rigid",_prefix=this->prefix())  ),
+    M_solve_elastic( boption(_name="solve-elastic",_prefix=this->prefix())  ),
+
     M_fsiCouplingBoundaryCondition( soption(_name="coupling-bc",_prefix=this->prefix()) ),
     M_interfaceFSIisConforme( boption(_name="conforming-interface",_prefix=this->prefix()) ),
     M_fixPointTolerance( doption(_name="fixpoint.tol",_prefix=this->prefix()) ),
@@ -545,14 +550,20 @@ FSI<FluidType,SolidType>::init()
                                                                                   std::ref( *this ), std::placeholders::_1 ) );
 
         // Magneto 
-        M_solidModel->algebraicFactory()->addFunctionLinearDofElimination( std::bind( &self_type::updateLinearPDEDofElimination_Magneto,
-            std::ref( *this ), std::placeholders::_1 ) );
-        M_solidModel->algebraicFactory()->addFunctionNewtonInitialGuess( std::bind( &self_type::updateNewtonInitialGuess_Magneto,
-          std::ref( *this ), std::placeholders::_1 ) );
-        M_solidModel->algebraicFactory()->addFunctionJacobianDofElimination( std::bind( &self_type::updateJacobianDofElimination_Magneto,
+        bool solve_dirichlet = boption(_name="solve-dirichlet",_prefix=this->prefix());
+
+        if (solve_dirichlet)
+        {
+            M_solidModel->algebraicFactory()->addFunctionLinearDofElimination( std::bind( &self_type::updateLinearPDEDofElimination_Magneto,
+                std::ref( *this ), std::placeholders::_1 ) );
+            M_solidModel->algebraicFactory()->addFunctionNewtonInitialGuess( std::bind( &self_type::updateNewtonInitialGuess_Magneto,
               std::ref( *this ), std::placeholders::_1 ) );
-        M_solidModel->algebraicFactory()->addFunctionResidualDofElimination( std::bind( &self_type::updateResidualDofElimination_Magneto,
-              std::ref( *this ), std::placeholders::_1 ) );
+            M_solidModel->algebraicFactory()->addFunctionJacobianDofElimination( std::bind( &self_type::updateJacobianDofElimination_Magneto,
+                  std::ref( *this ), std::placeholders::_1 ) );
+            M_solidModel->algebraicFactory()->addFunctionResidualDofElimination( std::bind( &self_type::updateResidualDofElimination_Magneto,
+                  std::ref( *this ), std::placeholders::_1 ) );
+        }
+
 
     }
     else if ( M_solidModel->is1dReducedModel() )
@@ -1025,6 +1036,8 @@ template< class FluidType, class SolidType >
 void 
 FSI<FluidType, SolidType>::solveMagneto()
 {
+    // Regarder pour autre remailleur
+    
     // Timer 
     boost::mpi::timer mytimer;
 
@@ -1052,7 +1065,6 @@ FSI<FluidType, SolidType>::solveMagneto()
         this->aitkenRelaxTool()->saveOldSolution();
         this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
 
-
         // Compute the ALE map according to the solid displacement, move the mesh, and interpolate the solid displacement onto the fsi interface of the fluid
         timerCur.restart();
         this->transfertDisplacementAndApplyMeshMoving();
@@ -1061,11 +1073,16 @@ FSI<FluidType, SolidType>::solveMagneto()
         
 
         // Solve the fluid problem, with plug-in of the dirichlet condition using the interpolated solid displacement
-        M_fluidModel->solve();
-
-        // To change -> fluid-rigid toolbox
-        // To change -> recompute ALE map
-
+        
+        if (this->M_solve_rigid)
+        {
+            timerCur.restart();
+            M_fluidModel->solve();
+            this->transfertDisplacementAndApplyMeshMoving();
+            double tALE = timerCur.elapsed();
+            this->log("FSI","solve fluid-rigid","finish in "+(boost::format("%1% s") % tALE).str() );
+        }
+            
         // Interpolate the fluid stress onto the fsi interface of the solid
         timerCur.restart();
         this->transfertStress();
@@ -1073,15 +1090,17 @@ FSI<FluidType, SolidType>::solveMagneto()
         this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
 
         // Solve the solid problem with a plug-in of the Neumann condition using the interpolated fluid stress
-
-        // To change -> plug-in head rotation, dirichlet condition
-        //M_solid->fieldDisplacement() 
-        M_solidModel->solve();
+        if (this->M_solve_elastic)
+        {
+            M_solidModel->solve(); 
+        }
+        
 
         // Apply relaxation to compute new solid displacement and update solid velocity and acceleration
         timerCur.restart();
         this->aitkenRelaxTool()->applyRelaxation();
         M_solidModel->updateVelocity();
+
         if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
             this->aitkenRelaxTool()->printInfo();
         this->aitkenRelaxTool()->shiftRight();
@@ -1107,9 +1126,10 @@ FSI<FluidType, SolidType>::solveMagneto()
     this->log("FSI","update final ale ","finish in "+(boost::format("%1% s") % tALE).str() );
 
     // Compute final fluid solution
-    M_fluidModel->solve();
+    if (this->M_solve_rigid)
+        M_fluidModel->solve();
+
         
-    
     double timeElapsed = mytimer.elapsed();
     if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
         std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] finish fsi solve in " << timeElapsed << "\n";

@@ -1,4 +1,5 @@
 #include <feel/feelmodels/fsi/fsi.hpp>
+#include "swimmer.hpp"
 
 namespace Feel
 {
@@ -22,6 +23,15 @@ runApplicationFSI_magneto()
  
     FSImodel->init();
     FSImodel->printAndSaveInfo();
+
+    // Add magneto torque to fluid-rigid interaction
+    auto add_torque = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateLinear & data)
+    {
+        auto const& t = unwrap_ptr(FSImodel->fluidModel());
+        magnetoTorqueModelFSI<FEELPP_DIM,0,model_fsi_type>(t, data);
+    };
+    // add the lambda function to the algebraic factory
+    FSImodel->fluidModel()->algebraicFactory()->addFunctionLinearAssembly( add_torque );
   
     for ( FSImodel->startTimeStep() ; !FSImodel->timeStepBase()->isFinished(); FSImodel->updateTimeStep() )
     {

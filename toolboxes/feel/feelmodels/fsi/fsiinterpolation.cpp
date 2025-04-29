@@ -374,6 +374,9 @@ FSI<FluidType,SolidType>::transfertDisplacementAndApplyMeshMoving()
     //sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 }
 
+
+
+
 //-----------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >

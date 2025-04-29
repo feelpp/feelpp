@@ -24,38 +24,39 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Magneto( DataUpdateLinea
         auto Xh = M_solidModel->functionSpaceDisplacement();
         auto const& u = M_solidModel->fieldDisplacement();
 
-        auto massCenter = mean( _range=markedelements(mesh,"Head"), _expr = P());
-        auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
-        std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
+        // Get head orientation and mass center
+  
+        for ( auto const& [bpname,bpbc] : M_fluidModel->bodySetBC() )
+        {
+            //auto angle = bpbc.body().rigidRotationAngles();
+            //double orientation = angle(0,0);
+            //std::cout << "Current Orientation Solid pb : " << orientation << std::endl;
+            //auto massCenterTrue = bpbc.body().massCenter();
+            // Define rigid motion
+            //auto rot = vec(
+            //    cos(orientation) * (Px() -  cst(xcm)) - sin(orientation) * (Py() - cst(ycm)) - Px() + cst(xcm) ,
+            //    sin(orientation) * (Px() -  cst(xcm)) + cos(orientation) * (Py() - cst(ycm)) - Py() + cst(ycm)
+            //);
+            
+            // Rotation matrix
+            auto R = bpbc.body().rigidRotationMatrixExpr();
 
-        // on fixe theta pour l'instant
-        double theta_ = 0.;
-        if (this->timeStepBase()->time() <= 0.2)
-            theta_ = this->timeStepBase()->time();
-        
-        else if (this->timeStepBase()->time() <= 0.6)
-            theta_ = 0.4 - this->timeStepBase()->time();
-        
-        else 
-            theta_ = - 0.8 + this->timeStepBase()->time();
-        // idem pour la translation
-        double translation_x = -this->timeStepBase()->time()/100.;
-        double translation_y = 0;
+            // Translation
+            auto disp =  bpbc.body().rigidTranslationExpr();
 
-        auto rot = vec(
-            cos(theta_) * (Px() -  cst(massCenter(0,0))) - sin(theta_) * (Py() - cst(massCenter(1,0))) - Px() + cst(massCenter(0,0)) + cst(translation_x),
-            sin(theta_) * (Px() -  cst(massCenter(0,0))) + cos(theta_) * (Py() - cst(massCenter(1,0))) - Py() + cst(massCenter(1,0)) + cst(translation_y)
-        );
-
+            // Mass center
+            auto massCenter = bpbc.body().massCenterExpr();
     
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A, 
+            auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A, 
                                 _pattern=size_type(Pattern::COUPLED),
                                 _rowstart=M_solidModel->rowStartInMatrix(),
                                 _colstart=M_solidModel->colStartInMatrix() );
+            
+            // Rotation of the rigid head 
+            bilinearForm +=on( _range=markedfaces(mesh,"magneto"),_element=u, _rhs=F,_expr= R*(P() - massCenter) + massCenter + disp -P());
+            bilinearForm +=on( _range=markedelements(mesh,"Head"),_element=u, _rhs=F,_expr= R*(P() - massCenter) + massCenter + disp -P());
 
-        bilinearForm +=on( _range=markedfaces(mesh,"magneto"),_element=u, _rhs=F,_expr=rot);
-        bilinearForm +=on( _range=markedelements(mesh,"Head"),_element=u, _rhs=F,_expr=rot);
-
+        }
 
         this->log("FSI","updateLinearPDEDofElimination_magneto", "finish" );
     }
@@ -75,34 +76,33 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Magneto( DataNewtonInitialGue
         auto Xh = M_solidModel->functionSpaceDisplacement();
         auto u = Xh->element( U, M_solidModel->rowStartInVector() );
 
-        auto massCenter = mean( _range=markedelements(mesh,"Head"), _expr = P());
-        auto massCenterVec = vec(cst(massCenter(0,0)),cst(massCenter(1,0)));
-        std::cout << "massCenter : " << massCenter(0,0) << ", " << massCenter(1,0) << std::endl;
         
-        // on fixe theta pour l'instant
-        double theta_ = 0.;
-        if (this->timeStepBase()->time() <= 0.2)
-            theta_ = this->timeStepBase()->time();
-        
-        else if (this->timeStepBase()->time() <= 0.6)
-            theta_ = 0.4 - this->timeStepBase()->time();
-        
-        else 
-            theta_ = - 0.8 + this->timeStepBase()->time();
-        
-        // idem pour la translation
-        double translation_x = - this->timeStepBase()->time()/100.;;
-        double translation_y = 0.;
+        for ( auto const& [bpname,bpbc] : M_fluidModel->bodySetBC() )
+        {
+            //auto angle = bpbc.body().rigidRotationAngles();
+            //double orientation = angle(0,0);
+            //std::cout << "Current Orientation Solid pb : " << orientation << std::endl;
+            //auto massCenterTrue = bpbc.body().massCenter();
+            // Define rigid motion
+            //auto rot = vec(
+            //    cos(orientation) * (Px() -  cst(xcm)) - sin(orientation) * (Py() - cst(ycm)) - Px() + cst(xcm) ,
+            //    sin(orientation) * (Px() -  cst(xcm)) + cos(orientation) * (Py() - cst(ycm)) - Py() + cst(ycm)
+            //);
+            
+            // Rotation matrix
+            auto R = bpbc.body().rigidRotationMatrixExpr();
 
-        auto rot = vec(
-            cos(theta_) * (Px() -  cst(massCenter(0,0))) - sin(theta_) * (Py() - cst(massCenter(1,0))) - Px() + cst(massCenter(0,0)) + cst(translation_x),
-            sin(theta_) * (Px() -  cst(massCenter(0,0))) + cos(theta_) * (Py() - cst(massCenter(1,0))) - Py() + cst(massCenter(1,0)) + cst(translation_y)
-        );
+            // Translation
+            auto disp =  bpbc.body().rigidTranslationExpr();
 
-        
-        u.on(_range=markedfaces(mesh,"magneto"), _expr= rot);
-        u.on( _range=markedelements(mesh,"Head"), _expr= rot);
+            // Mass center
+            auto massCenter = bpbc.body().massCenterExpr();
 
+            // Rotation of the rigid head 
+            u.on(_range=markedfaces(mesh,"magneto"), _expr= R*(P() - massCenter) + massCenter + disp -P());
+            u.on( _range=markedelements(mesh,"Head"), _expr= R*(P() - massCenter) + massCenter + disp -P());
+
+        }
 
         // update info for synchronization
         M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );

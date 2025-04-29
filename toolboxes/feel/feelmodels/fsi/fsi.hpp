@@ -237,6 +237,10 @@ public :
     void setFluidModel( fluid_ptrtype const& fm ) { M_fluidModel=fm; }
     void setSolidModel( solid_ptrtype const& sm ) { M_solidModel=sm; }
 
+    // Get magneto-swimmer paramters
+    bool solve_rigid() const { return M_solve_rigid; }
+    bool solve_elastic() const { return M_solve_elastic; } 
+
     std::string fsiCouplingType() const { return M_fsiCouplingType; }
     std::string fsiCouplingBoundaryCondition() const { return M_fsiCouplingBoundaryCondition; }
     bool useFSISemiImplicitScheme() const { return ( this->fsiCouplingType() == "Semi-Implicit" ); }
@@ -384,6 +388,12 @@ private :
     range_fluid_face_type M_rangeFSI_fluid;
     range_solid_face_type M_rangeFSI_solid;
     std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
+
+
+    // Magneto-swimmer parameters
+    bool M_solve_rigid;
+    bool M_solve_elastic;
+    bool M_solve_all;
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...

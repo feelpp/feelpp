@@ -13,6 +13,7 @@ add_executable(fsi_magneto_2d main_fsi_magneto.cpp  )
 target_link_libraries(fsi_magneto_2d Feelpp::feelpp feelpp_toolbox_fsi_lib_2dP2P1G1_2dP1G1 feelpp_toolbox_fsi_lib_2dP2P1G1_2dP2G1 )
 set_property(TARGET fsi_magneto_2d PROPERTY COMPILE_DEFINITIONS FEELPP_DIM=2 FEELPP_GEO_ORDER=1)
 target_include_directories( fsi_magneto_2d PUBLIC ${CMAKE_SOURCE_DIR}/python/pyfeelpp-toolboxes/feelpp/toolboxes/solid)
+target_include_directories( fsi_magneto_2d PUBLIC ${CMAKE_SOURCE_DIR}/python/pyfeelpp-toolboxes/feelpp/toolboxes/fluid)
 install(TARGETS fsi_magneto_2d RUNTIME DESTINATION bin COMPONENT Bin)
 
 #feelpp_add_application( fsi_3d SRCS main_fsi.cpp

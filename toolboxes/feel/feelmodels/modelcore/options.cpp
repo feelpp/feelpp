@@ -343,6 +343,12 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"mesh-save.directory").c_str(),Feel::po::value< std::string >(), "mesh-directory")
         (prefixvm(prefix,"mesh-save.force-rebuild").c_str(), Feel::po::value<bool>()->default_value( false ), "mesh-save.force-rebuild")
 
+        // Magneto-swimmer options 
+        (prefixvm(prefix,"solve-rigid").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only rigid part")
+        (prefixvm(prefix,"solve-elastic").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only elastic part")
+        (prefixvm(prefix,"solve-dirichlet").c_str(), Feel::po::value<bool>()->default_value( true ), " magneto swimmer solve all")
+
+
         (prefixvm(prefix,"conforming-interface").c_str(), Feel::po::value<bool>()->default_value( false ), " fsi interface is conforme?")
         (prefixvm(prefix,"coupling-type").c_str(),Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
         (prefixvm(prefix,"coupling-bc").c_str(),Feel::po::value< std::string >()->default_value("dirichlet-neumann"), " dirichlet-neumann, robin-robin,robin-neumann")
