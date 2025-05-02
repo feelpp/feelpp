@@ -1,3 +1,5 @@
+
+
 //! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 //!
 //! This file is part of the Feel++ library
@@ -29,6 +31,8 @@
 #include <feel/feelmodels/modelcore/remeshinterpolation.hpp>
 #include <feel/feelcore/pybind11_json.hpp>
 #include "contactforce.hpp"
+#include "torque.hpp"
+#include "force.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
@@ -135,6 +139,63 @@ void defFM(py::module &m)
             },
             "Initialization of execution time"
         ) 
+
+        .def(
+            "addRigidTorque",[](fm_t &t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    rigidTorqueModel<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+
+            },
+            "add function linear assembly"
+        ) 
+        
+        .def(
+            "addRigidTorqueRes",[](fm_t &t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    rigidTorqueModel<1>(t, data);
+                };  
+
+                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
+
+            },
+            "add function residual assembly"
+        )
+
+
+        .def(
+            "addRigidForce",[](fm_t &t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateLinear & data) 
+                { 
+                    rigidForceModel<0>(t, data);
+                };
+
+                t.algebraicFactory()->addFunctionLinearAssembly(add_force_term);
+
+            },
+            "add function linear assembly"
+        ) 
+        
+        .def(
+            "addRigidForceRes",[](fm_t &t)
+            {
+                auto add_force_term = [&t](FeelModels::ModelAlgebraic::DataUpdateResidual & data) 
+                { 
+                    rigidForceModel<1>(t, data);
+                };  
+
+                t.algebraicFactory()->addFunctionResidualAssembly(add_force_term) ;
+
+            },
+            "add function residual assembly"
+        )
         
         ;
         
@@ -151,4 +212,3 @@ PYBIND11_MODULE(_fluid, m )
     defFM<3,3,2,1>(m);
 
 }
-

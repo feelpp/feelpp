@@ -1,0 +1,77 @@
+{
+    "Name": "Expansion",
+    "ShortName": "Expansion",
+    "Models":
+    {
+        "expansion":{
+            "equations":"Expansion"
+        },
+        "Expansion":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pchv2",
+                    "name":"theta",
+                    "symbol":"theta"
+                },
+                "coefficients":{
+                    "c":"1", 
+                    "f":"{0.,0.,0.}"
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "expansion":
+        {
+            "Fields":
+            {
+                "primal_u" :
+                {
+                    "filename":"$cfgdir/feelppdb/shaposwimmer/np_1/pfluid.save/velocity_1.h5",
+                    "basis":"Pchv2"
+                }
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":["Fluid"]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "Expansion":
+        {
+            "Dirichlet":
+            {
+                "zero":
+                {
+                    "markers":["BoxWalls"],
+                    "expr":"{0.,0.,0.}"
+                }
+            },
+            "Neumann":
+            {
+                "expansion": 
+                {
+                    "markers":["Ellipsoid"],
+                    "expr": "{1,0,0}"
+                    
+                }   
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "expansion":
+        {
+            "Exports":
+            {
+                "fields":"all"
+            }
+        }
+    }
+}
