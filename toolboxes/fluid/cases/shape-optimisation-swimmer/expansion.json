@@ -9,7 +9,7 @@
         "Expansion":{
             "setup":{
                 "unknown":{
-                    "basis":"Pchv2",
+                    "basis":"Pchv1",
                     "name":"theta",
                     "symbol":"theta"
                 },
@@ -29,6 +29,11 @@
                 "primal_u" :
                 {
                     "filename":"$cfgdir/feelppdb/shaposwimmer/np_1/pfluid.save/velocity_1.h5",
+                    "basis":"Pchv2"
+                },
+                "dual_u" :
+                {
+                    "filename":"$cfgdir/feelppdb/shaposwimmer/np_1/dfluid.save/velocity_1.h5",
                     "basis":"Pchv2"
                 }
             }
@@ -58,7 +63,7 @@
                 "expansion": 
                 {
                     "markers":["Ellipsoid"],
-                    "expr": "{1,0,0}"
+                    "expr": "{0.1,0,0}"//"{t*(-2*Mu*(meshes_expansion_fields_grad_primal_u_00*meshes_expansion_fields_grad_dual_u_00 + meshes_expansion_fields_grad_primal_u_11*meshes_expansion_fields_grad_dual_u_11 + meshes_expansion_fields_grad_primal_u_22 * meshes_expansion_fields_grad_dual_u_22 + 0.5*(meshes_expansion_fields_grad_primal_u_10 + meshes_expansion_fields_grad_primal_u_01)*(meshes_expansion_fields_grad_dual_u_10 + meshes_expansion_fields_grad_dual_u_01)+0.5*(meshes_expansion_fields_grad_primal_u_20 + meshes_expansion_fields_grad_primal_u_02)*(meshes_expansion_fields_grad_dual_u_20 + meshes_expansion_fields_grad_dual_u_02)+0.5*(meshes_expansion_fields_grad_primal_u_12 + meshes_expansion_fields_grad_primal_u_21)*(meshes_expansion_fields_grad_dual_u_12 + meshes_expansion_fields_grad_dual_u_21)) +l)*(-nx), t*(-2*Mu*(meshes_expansion_fields_grad_primal_u_00*meshes_expansion_fields_grad_dual_u_00 + meshes_expansion_fields_grad_primal_u_11*meshes_expansion_fields_grad_dual_u_11 + meshes_expansion_fields_grad_primal_u_22 * meshes_expansion_fields_grad_dual_u_22 + 0.5*(meshes_expansion_fields_grad_primal_u_10 + meshes_expansion_fields_grad_primal_u_01)*(meshes_expansion_fields_grad_dual_u_10 + meshes_expansion_fields_grad_dual_u_01)+0.5*(meshes_expansion_fields_grad_primal_u_20 + meshes_expansion_fields_grad_primal_u_02)*(meshes_expansion_fields_grad_dual_u_20 + meshes_expansion_fields_grad_dual_u_02)+0.5*(meshes_expansion_fields_grad_primal_u_12 + meshes_expansion_fields_grad_primal_u_21)*(meshes_expansion_fields_grad_dual_u_12 + meshes_expansion_fields_grad_dual_u_21)) +l)*(-ny),t*(-2*Mu*(meshes_expansion_fields_grad_primal_u_00*meshes_expansion_fields_grad_dual_u_00 + meshes_expansion_fields_grad_primal_u_11*meshes_expansion_fields_grad_dual_u_11 + meshes_expansion_fields_grad_primal_u_22 * meshes_expansion_fields_grad_dual_u_22 + 0.5*(meshes_expansion_fields_grad_primal_u_10 + meshes_expansion_fields_grad_primal_u_01)*(meshes_expansion_fields_grad_dual_u_10 + meshes_expansion_fields_grad_dual_u_01)+0.5*(meshes_expansion_fields_grad_primal_u_20 + meshes_expansion_fields_grad_primal_u_02)*(meshes_expansion_fields_grad_dual_u_20 + meshes_expansion_fields_grad_dual_u_02)+0.5*(meshes_expansion_fields_grad_primal_u_12 + meshes_expansion_fields_grad_primal_u_21)*(meshes_expansion_fields_grad_dual_u_12 + meshes_expansion_fields_grad_dual_u_21)) +l)*(-nz)}:meshes_expansion_fields_grad_primal_u_00:meshes_expansion_fields_grad_primal_u_11:meshes_expansion_fields_grad_primal_u_01:meshes_expansion_fields_grad_primal_u_10:meshes_expansion_fields_grad_primal_u_20:meshes_expansion_fields_grad_primal_u_02:meshes_expansion_fields_grad_primal_u_12:meshes_expansion_fields_grad_primal_u_21:meshes_expansion_fields_grad_primal_u_22:meshes_expansion_fields_grad_dual_u_00:meshes_expansion_fields_grad_dual_u_11:meshes_expansion_fields_grad_dual_u_01:meshes_expansion_fields_grad_dual_u_10:meshes_expansion_fields_grad_dual_u_20:meshes_expansion_fields_grad_dual_u_02:meshes_expansion_fields_grad_dual_u_12:meshes_expansion_fields_grad_dual_u_21:meshes_expansion_fields_grad_dual_u_22:Mu:l:t:nx:ny:nz"
                     
                 }   
             }
