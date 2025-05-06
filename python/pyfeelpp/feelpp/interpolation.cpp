@@ -122,6 +122,7 @@ PYBIND11_MODULE( _interpolation, m )
         // 3D
         //std::cout << fmt::format("-- Pch 3D P{}", _order ) << std::endl;
         defInterpolate<Pch_type<Mesh<Simplex<3>>, _order>>( m );
+        defInterpolate<Pchv_type<Mesh<Simplex<3>>, _order>>( m );
     });
     
 }
