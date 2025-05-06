@@ -102,7 +102,7 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}, {"beta","{1,1}"}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
     auto thechecker = checker( _name= "L2/H1 convergence", 
@@ -124,7 +124,7 @@ int hdg_laplacian()
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") );
     
-    auto beta = expr( locals.at("beta") );
+    auto beta = expr<FEELPP_DIM,1>( locals.at("beta") );
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -140,8 +140,8 @@ int hdg_laplacian()
     auto g = p_exact;
     auto r_1 = cst(0.);
     auto r_2 = un;
-#endif
     auto beta = one(); //vec(cst(1.0), cst(1.0));
+#endif
     auto beta_n = trans(beta) * N(); // for beta . n
     auto tau_D =  cst(doption("hdg.tau.constant"));
     auto tau_C = max(beta_n,0.);
