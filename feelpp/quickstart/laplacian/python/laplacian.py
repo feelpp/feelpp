@@ -31,6 +31,11 @@ if 'dim' in locals():
     dim=int(locals()['dim']);
 else:
     dim=2
+    
+if 'beta' in locals() and locals()['beta']:
+    beta=sympify(locals()['beta']);
+    # print("beta:",beta)
+
 import sys    
 print(sys.path)    
 print("p=",p)
@@ -40,15 +45,18 @@ grad_p=grad(p,s);
 flux=-k*grad(p,s);
 u=flux
 print("u=",u)
+
+convection_term = Matrix([1, 1]).dot(grad(p, s))
+
 J=tensorcontraction(tensorproduct(u,u),(0,1))/k;
 
 if compute_pde_coefficients=='true':
     un=n(flux,1,ns)
     print("un:", un)
-    f = div(flux, s) # + dt(p)
+    f = div(flux, s) + convection_term # + dt(p)
     print("f:",f)
-    g=p
-    r_2=un-r_1*p
+    # g=p
+    # r_2=un-r_1*p
 else:
     if 'un' in locals() and locals()['un']:
         un=sympify(locals()['un'])
