@@ -950,7 +950,7 @@ private:
             for ( ; it != en ; ++it )
                 M_orderedElements.push_back( boost::ref( it->second ) );
             M_needToOrderElements = true;
-            this->updateOrderedElements();
+            this->updateOrderedElement();
         }
 
     friend class boost::serialization::access;

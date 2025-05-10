@@ -800,7 +800,7 @@ private:
             for ( ; it != en ; ++it )
                 M_orderedFaces.push_back( boost::ref( it->second ) );
             M_needToOrderFaces = true;
-            this->updateOrderedFaces();
+            this->updateOrderedFace();
         }
 
     friend class boost::serialization::access;
