@@ -74,3 +74,13 @@ endif()
 if ( FEELPP_ENABLE_KOKKOS )
   feelpp_add_test( kokkos )
 endif( )
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(HWLOC    REQUIRED    hwloc)
+
+find_package(ut REQUIRED)  
+
+add_executable(feelpp_test_hwlocsys test_hwlocsys.cpp )
+target_link_libraries(feelpp_test_hwlocsys  PRIVATE Feelpp::feelpp  ${HWLOC_LIBRARIES}  Boost::ut )
+
+add_test( NAME feelpp_test_hwlocsys COMMAND feelpp_test_hwlocsys )

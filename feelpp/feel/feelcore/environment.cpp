@@ -52,7 +52,7 @@ extern "C"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-#include <range/v3/view/take_exactly.hpp>
+#include <ranges>
 
 #include <feel/feelcore/mongocxx.hpp>
 
@@ -656,9 +656,9 @@ Environment::Environment( int argc, char** argv,
 
     if ( not S_hwSysInstance )
     {
-#if defined(FEELPP_HAS_KWSYS )
+#if 1 //defined(FEELPP_HAS_KWSYS )
         // Use kwsys library.
-        S_hwSysInstance = std::make_unique<Sys::KWSys>();
+        S_hwSysInstance = std::make_unique<Sys::HwlocSys>();
 #else
         S_hwSysInstance = std::make_unique<Sys::HWSys>();
 #endif
@@ -734,7 +734,7 @@ Environment::~Environment()
         data.add_row( { "journal", Environment::journalFilename() } );
     Table paths;
     paths.add_row( { Environment::appRepository() } );
-    for ( auto p : S_paths | ranges::views::take_exactly( S_paths.size() - 3 ) )
+    for ( auto p : S_paths | std::views::take( S_paths.size() - 3 ) )
     {
         paths.add_row({p.string()});
     }

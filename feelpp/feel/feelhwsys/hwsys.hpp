@@ -25,9 +25,9 @@
 
 #include <feel/feelhwsys/hwsysbase.hpp>
 
-#if defined(FEELPP_HAS_KWSYS )
+//#if defined(FEELPP_HAS_KWSYS )
 #include <feel/feelhwsys/kwsys.hpp>
-#endif
+//#endif
 
 namespace Feel
 {

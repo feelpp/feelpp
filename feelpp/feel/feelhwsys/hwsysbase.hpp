@@ -62,10 +62,11 @@ public:
     //! Destructor
     ~HwSysBase() override = default;
 
-    //! Accessors
-    //! @{
-
-    // @}
+    std::string procLogicalCpuNumber()   const { return M_proc_logical_cpu_number; }
+    std::string procPhysicalCpuNumber()  const { return M_proc_physical_cpu_number; }
+    std::string procCacheSize()          const { return M_proc_cache_size; }
+    std::string memPhysicalTotal()       const { return M_mem_physical_total; }
+    std::string loadAvg()                const { return M_load_avg; }
 
     //protected:
 
