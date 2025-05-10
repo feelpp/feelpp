@@ -665,88 +665,104 @@ endif()
 if (NOT TARGET pdf)
   add_custom_target (pdf)
 endif()
-macro (feelpp_add_man NAME MAN SECT)
-  if (FEELPP_HAS_ASCIIDOCTOR )
+# suppress old‑style add_custom_command() behavior
+cmake_policy(SET CMP0175 NEW)
+
+macro(feelpp_add_man NAME MAN SECT)
+  if(FEELPP_HAS_ASCIIDOCTOR)
     message(STATUS "building manuals for ${NAME}")
-    message(STATUS "building manual page ${NAME}.${SECT}")
+    set(_adoc   "${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc")
+    set(_outdir "${CMAKE_CURRENT_BINARY_DIR}")
 
-    if ( FEELPP_HAS_ASCIIDOCTOR_MANPAGE )
-      add_custom_target(${NAME}.${SECT})
+    #
+    # 1) man page
+    #
+    if(FEELPP_HAS_ASCIIDOCTOR_MANPAGE)
+      set(_manfile "${_outdir}/${NAME}.${SECT}")
+      set(_tgt_man "gen_${NAME}_${SECT}_man")
 
-      add_custom_command (
-        TARGET ${NAME}.${SECT}
-        #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
-        COMMAND ${FEELPP_A2M} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        )
-      #add_custom_target(${NAME}.${SECT} DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
-      if (TARGET man)
-        add_dependencies(man ${NAME}.${SECT})
+      add_custom_command(
+        OUTPUT    "${_manfile}"
+        COMMAND   ${FEELPP_A2M} -o "${_manfile}" "${_adoc}"
+        DEPENDS   "${_adoc}"
+        COMMENT   "Generating man page ${NAME}.${SECT}"
+      )
+      add_custom_target(${_tgt_man} DEPENDS "${_manfile}")
+
+      if(TARGET man)
+        add_dependencies(man ${_tgt_man})
       endif()
-      if ( TARGET ${NAME} )
-        add_dependencies(${NAME} ${NAME}.${SECT})
+      if(TARGET ${NAME})
+        add_dependencies(${NAME} ${_tgt_man})
       endif()
-      install(CODE "execute_process(COMMAND \"bash\" \"-c\" \"${FEELPP_A2M_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\")" COMPONENT Bin)
 
-
-      install (
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
-        DESTINATION ${CMAKE_INSTALL_MANDIR}/man${SECT}
-        COMPONENT Bin
-        )
+      install(
+        FILES       "${_manfile}"
+        DESTINATION "${CMAKE_INSTALL_MANDIR}/man${SECT}"
+        COMPONENT   Bin
+      )
     endif()
-    if ( FEELPP_HAS_ASCIIDOCTOR_HTML5 )
-      add_custom_target(${NAME}.${SECT}.html)
-      add_custom_command (
-        TARGET ${NAME}.${SECT}.html
-        #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-        COMMAND ${FEELPP_A2H} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        DEPENDS ${FEELPP_STYLESHEET}
-        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        )
-      #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
-      if (TARGET html)
-        add_dependencies(html ${NAME}.${SECT}.html)
-      endif()
-      if ( TARGET ${NAME} )
-        add_dependencies(${NAME} ${NAME}.${SECT}.html)
 
+    #
+    # 2) HTML5 manual
+    #
+    if(FEELPP_HAS_ASCIIDOCTOR_HTML5)
+      set(_htmlfile "${_outdir}/${NAME}.${SECT}.html")
+      set(_tgt_html "gen_${NAME}_${SECT}_html")
+
+      add_custom_command(
+        OUTPUT    "${_htmlfile}"
+        COMMAND   ${FEELPP_A2H} -o "${_htmlfile}" "${_adoc}"
+        DEPENDS   "${_adoc}" ${FEELPP_STYLESHEET}
+        COMMENT   "Generating HTML manual ${NAME}.html"
+      )
+      add_custom_target(${_tgt_html} DEPENDS "${_htmlfile}")
+
+      if(TARGET html)
+        add_dependencies(html ${_tgt_html})
       endif()
-      install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
-      install (
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}
-        COMPONENT Bin
-        )
+      if(TARGET ${NAME})
+        add_dependencies(${NAME} ${_tgt_html})
       endif()
 
+      install(
+        FILES       "${_htmlfile}"
+        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}"
+        COMPONENT   Bin
+      )
+    endif()
 
-      if ( FEELPP_HAS_ASCIIDOCTOR_PDF )
-        message(STATUS "${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc" )
-        add_custom_target(${NAME}.pdf)
-        add_custom_command (
-          TARGET ${NAME}.pdf
-          COMMAND ${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-          DEPENDS ${FEELPP_STYLESHEET}
-          MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-          )
-        #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
-        if (TARGET pdf)
-          add_dependencies(pdf ${NAME}.pdf)
-        endif()
-        if ( TARGET ${NAME} )
-          add_dependencies(${NAME} ${NAME}.pdf)
-          
-        endif()
-        install(CODE "execute_process(COMMAND bash \"-c\"  \"${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
-        install (
-          FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf
-          DESTINATION  ${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}
-          COMPONENT Bin
-          )
+    #
+    # 3) PDF manual
+    #
+    if(FEELPP_HAS_ASCIIDOCTOR_PDF)
+      set(_pdffile "${_outdir}/${NAME}.pdf")
+      set(_tgt_pdf "gen_${NAME}_pdf")
+
+      add_custom_command(
+        OUTPUT    "${_pdffile}"
+        COMMAND   ${ASCIIDOCTOR_PDF_EXECUTABLE} -o "${_pdffile}" "${_adoc}"
+        DEPENDS   "${_adoc}" ${FEELPP_STYLESHEET}
+        COMMENT   "Generating PDF manual ${NAME}.pdf"
+      )
+      add_custom_target(${_tgt_pdf} DEPENDS "${_pdffile}")
+
+      if(TARGET pdf)
+        add_dependencies(pdf ${_tgt_pdf})
       endif()
-   endif()
-endmacro (feelpp_add_man)
+      if(TARGET ${NAME})
+        add_dependencies(${NAME} ${_tgt_pdf})
+      endif()
+
+      install(
+        FILES       "${_pdffile}"
+        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}"
+        COMPONENT   Bin
+      )
+    endif()
+
+  endif()
+endmacro()
 
 # OM cmake macros
 macro ( feelpp_add_fmu )
