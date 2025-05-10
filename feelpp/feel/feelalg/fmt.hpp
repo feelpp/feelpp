@@ -13,7 +13,7 @@
 
 FMT_BEGIN_NAMESPACE
 
-template <typename Scalar, int Rank> struct fmt::formatter<Eigen::Tensor<Scalar, Rank>> : ostream_formatter {};
+template <typename Scalar, int Rank> struct formatter<Eigen::Tensor<Scalar, Rank>> : ostream_formatter {};
 
 FMT_END_NAMESPACE
 
