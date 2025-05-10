@@ -31,8 +31,7 @@
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/exreader.hpp>
 #include <feel/feelvf/detail/ginacmatrix.hpp>
-#include <fmt/core.h>
-#include <fmt/ostream.h>
+
 
 namespace GiNaC
 {

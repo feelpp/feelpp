@@ -39,6 +39,7 @@
 // #endif
 
 #include <ginac/ginac.h>
+//#include <feel/feelvf/fmt.hpp>
 #include <feel/feelvf/excompiler.hpp>
 extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;
 extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_info;
@@ -53,6 +54,7 @@ extern template GiNaC::registered_class_info GiNaC::container<std::vector>::reg_
 #include <boost/range/algorithm/for_each.hpp>
 
 #include <feel/feelvf/expr.hpp>
+
 
 namespace GiNaC
 {

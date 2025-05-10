@@ -969,7 +969,7 @@ BOOST_AUTO_TEST_CASE( test_triangle_neg )
 
 BOOST_AUTO_TEST_CASE( test_mapabcd )
 {
-    auto a1b = expr("mapabcd(t,1,2,-1,1):t");
+    auto a1b = expr("mapabcd(t,1,2,-1.,1.):t");
     a1b.setParameterValues( { { "t", -2 } } );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
     a1b.setParameterValues( { { "t", 3 } } );
