@@ -5,12 +5,14 @@
     {
         "fluid":{
             "materials":["Fluid"],
-            "equations":"Stokes"
+            "equations":"Stokes",
+            "equationsAA":"Navier-Stokes"
         },
         "solid":
         {
             "materials":["Solid","Head"],
-            "equations":"Hyper-Elasticity"
+            "equations":"Hyper-Elasticity",
+            "equationsAA":"Elasticity"
         },
         "body":
         {
@@ -21,7 +23,11 @@
         {
             "materials":["Fluid","Solid","Head"],
             "setup":{
-                "interface":"fsi-wall"
+                //"interface":"fsi-wall",
+                "interfaces":[{
+                    "markers":"fsi-wall",
+                    "type":"body"
+                }]
             }
         }
     },
@@ -49,9 +55,11 @@
             "mu":"152"
         },
         "Solid": {
-            "E":"200000",
+            "E":"2e6",
+            //"E":"200000",
             "nu":"0.40",
-            "rho":"1000"
+            //"rho":"1000"
+            "rho":"1"
         },
         "Head": {
             "E":"4.1e10",
@@ -68,6 +76,7 @@
             {
                 "fluid-wall":
                 {
+                    "markers":["fluid-wall"],
                     "expr":"{0,0}"
                 }
             },
@@ -75,11 +84,11 @@
             {
                 "fluid-outlet":
                 {
-                    "expr":"0" 
+                    "expr":"0"
                 },
                 "fluid-inlet":
                 {
-                   "expr":"0" 
+                   "expr":"0"
                 }
             },
             "body":
@@ -95,20 +104,20 @@
             }
         }
     },
-    "MagnetoTorque":  
+    "MagnetoTorque":
     {
         "body":
         {
-            "setup": 
+            "setup":
             {
                 "torqueParam":
                 {
-                    "freq":1,
+                    "freq":3,
                     "amp":0.1,
                     "mx":1000000,
                     "my":1000000,
                     "mz":1,
-                    "bx":0.5, 
+                    "bx":0.5,
                     "by":0.5,
                     "bz":1
                 }

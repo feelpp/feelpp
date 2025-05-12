@@ -46,11 +46,6 @@ FSI<FluidType,SolidType>::FSI( std::string const& prefix,
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
-
-    // Magneto-swimmer parameters 
-    M_solve_rigid( boption(_name="solve-rigid",_prefix=this->prefix())  ),
-    M_solve_elastic( boption(_name="solve-elastic",_prefix=this->prefix())  ),
-
     M_fsiCouplingBoundaryCondition( soption(_name="coupling-bc",_prefix=this->prefix()) ),
     M_interfaceFSIisConforme( boption(_name="conforming-interface",_prefix=this->prefix()) ),
     M_fixPointTolerance( doption(_name="fixpoint.tol",_prefix=this->prefix()) ),
@@ -278,20 +273,26 @@ FSI<FluidType,SolidType>::init()
     if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
         this->createMesh();
 
-    std::set<std::string> markersFSI_fluid;// = { "fsiWall" /*"fsi-wall"*/ }; // this->fluidModel()->markersFSI()
-    std::set<std::string> markersFSI_solid;// = { "fsiWall" /*"fsi-wall"*/ }; // this->solidModel()->markerNameFSI()
-
+    // get interfaces markers
+    std::set<std::string> markersFSI_fluid, markersFSI_solid, markersFSI_body_fluid, markersFSI_wall_fluid;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicFSIData = std::static_pointer_cast<ModelPhysicFSI<mesh_fluid_type::nRealDim>>(physicData);
-        markersFSI_fluid.insert( physicFSIData->interfaceFluid().begin(),physicFSIData->interfaceFluid().end() );
-        markersFSI_solid.insert( physicFSIData->interfaceSolid().begin(),physicFSIData->interfaceSolid().end() );
+
+        if ( physicFSIData->hasInterface("body") )
+        {
+            auto const& markers = physicFSIData->interfaceMarkers( "body" );
+            markersFSI_body_fluid.insert( markers.begin(),markers.end() );
+            markersFSI_fluid.insert( markers.begin(),markers.end() );
+        }
+        else if ( physicFSIData->hasInterface("wall") )
+        {
+            auto const& markers = physicFSIData->interfaceMarkers( "wall" );
+            markersFSI_wall_fluid.insert( markers.begin(),markers.end() );
+            markersFSI_fluid.insert( markers.begin(),markers.end() );
+        }
     }
-    // if ( this->worldComm().isMasterRank() )
-    // {
-    //     std::cout << "markersFSI_fluid :  " << markersFSI_fluid << std::endl;
-    //     std::cout << "markersFSI_solid :  " << markersFSI_solid << std::endl;
-    // }
+    markersFSI_solid = markersFSI_fluid;
 
 
     // fluid model build
@@ -321,8 +322,7 @@ FSI<FluidType,SolidType>::init()
 
 
     // up mesh motion tool
-    this->fluidModel()->meshMotionTool()->addMarkersInBoundaryCondition( "moving", markersFSI_fluid );
-     //this->fluidModel()->meshMotionTool()->setDisplacementImposedOnInitialDomainOverFaces( M_fluidModel->keyword()+"_"+this->keyword(), markersFSI_fluid );
+    this->fluidModel()->meshMotionTool()->addMarkersInBoundaryCondition( "moving", markersFSI_wall_fluid );
 
     // revert fluid reference mesh if restart
     if ( this->fluidModel()->doRestart() )
@@ -403,6 +403,9 @@ FSI<FluidType,SolidType>::init()
 
 
     M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_fluid );
+    //M_rangeFsiBody_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_body_fluid );
+    M_rangeFsiWall_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_wall_fluid );
+
     auto submeshfsi_fluid = createSubmesh( _mesh=this->fluidModel()->mesh(),_range=M_rangeFSI_fluid,_view=1 );
     M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
     M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
@@ -465,7 +468,7 @@ FSI<FluidType,SolidType>::init()
     std::string aitkenType = "method1";
 #if 0
     aitkenType = "fixed-relaxation";
-    M_fixPointInitialTheta=0;
+    M_fixPointInitialTheta=1;
 #endif
     M_fixPointConvergenceFSI.reset(new fixpointconvergenceFSI_type(M_solidModel) );
     M_aitkenFSI.reset(new aitkenrelaxationFSI_type(M_solidModel,
@@ -477,14 +480,14 @@ FSI<FluidType,SolidType>::init()
     //-------------------------------------------------------------------------//
     // build interface operator for generalized robin-neumann
     auto XhFluidVelocity = this->fluidModel()->functionSpaceVelocity();
-    M_dofsMultiProcessVelocitySpaceOnFSI_fluid = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
+    M_dofsMultiProcessVelocitySpaceOnFSI_fluid = XhFluidVelocity->dofs( M_rangeFsiWall_fluid, ComponentType::NO_COMPONENT, true );
     if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
         this->initCouplingRobinNeumannGeneralized();
     }
     else if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        auto dofsToAdd = XhFluidVelocity->dofs(  M_rangeFSI_fluid );
+        auto dofsToAdd = XhFluidVelocity->dofs( M_rangeFsiWall_fluid );
         XhFluidVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
         this->dofEliminationIdsAll("fluid.velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         //auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
@@ -517,6 +520,15 @@ FSI<FluidType,SolidType>::init()
             M_fieldsGradVelocity_solid[k] = M_spaceNormalStressFromFluid_solid->elementPtr();
     }
     //-------------------------------------------------------------------------//
+
+    for ( auto & [bname,bbc] : this->fluidModel()->bodySetBC() )
+        M_elasticBodies.emplace( bname, std::make_unique<ElasticBodyBehavior>( std::addressof( bbc ), this ) );
+
+    if ( !M_elasticBodies.empty() )
+    {
+        M_fieldTmpOnSolid = M_solidModel->fieldDisplacement().functionSpace()->elementPtr();
+        M_fieldBodyDisplacementOnSolid = M_solidModel->fieldDisplacement().functionSpace()->elementPtr();
+    }
 
     if ( this->fluidModel()->doRestart() )
     {
@@ -1031,110 +1043,6 @@ FSI<FluidType,SolidType>::setParameterValues( std::map<std::string,double> const
 //---------------------------------------------------------------------------------------------------------//
 
 
-// Implicit Dirichlet-Neumann scheme for magneto-swimmer
-template< class FluidType, class SolidType >
-void 
-FSI<FluidType, SolidType>::solveMagneto()
-{
-    // Regarder pour autre remailleur
-    
-    // Timer 
-    boost::mpi::timer mytimer;
-
-    // Predict the solid displacement and update solid velocity and acceleration
-    M_solidModel->predictorDispl();
-    M_solidModel->updateVelocity();
-
-    // Restart relaxation
-    bool useAitken = true;
-    if ( useAitken )
-        this->aitkenRelaxTool()->restart();
-    
-    // Set convergence parameters
-    bool hasConverged = false;
-    int cptFSI=0;
-    double residualRelativeConvergence=1;
-    boost::mpi::timer timerCur,timerIter;
-
-    while ( (!this->aitkenRelaxTool()->isFinished() || cptFSI < this->fixPointMinItConvergence() ) && cptFSI < this->fixPointMaxIt() )
-    {
-        timerIter.restart();
-        timerCur.restart();
-
-        // Set relaxation tool to previous solid displacement
-        this->aitkenRelaxTool()->saveOldSolution();
-        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
-
-        // Compute the ALE map according to the solid displacement, move the mesh, and interpolate the solid displacement onto the fsi interface of the fluid
-        timerCur.restart();
-        this->transfertDisplacementAndApplyMeshMoving();
-        double tALE = timerCur.elapsed();
-        this->log("FSI","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
-        
-
-        // Solve the fluid problem, with plug-in of the dirichlet condition using the interpolated solid displacement
-        
-        if (this->M_solve_rigid)
-        {
-            timerCur.restart();
-            M_fluidModel->solve();
-            this->transfertDisplacementAndApplyMeshMoving();
-            double tALE = timerCur.elapsed();
-            this->log("FSI","solve fluid-rigid","finish in "+(boost::format("%1% s") % tALE).str() );
-        }
-            
-        // Interpolate the fluid stress onto the fsi interface of the solid
-        timerCur.restart();
-        this->transfertStress();
-        double t3 = timerCur.elapsed();
-        this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
-
-        // Solve the solid problem with a plug-in of the Neumann condition using the interpolated fluid stress
-        if (this->M_solve_elastic)
-        {
-            M_solidModel->solve(); 
-        }
-        
-
-        // Apply relaxation to compute new solid displacement and update solid velocity and acceleration
-        timerCur.restart();
-        this->aitkenRelaxTool()->applyRelaxation();
-        M_solidModel->updateVelocity();
-
-        if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
-            this->aitkenRelaxTool()->printInfo();
-        this->aitkenRelaxTool()->shiftRight();
-
-        // Compute convergence
-        hasConverged = this->aitkenRelaxTool()->isFinished();
-        residualRelativeConvergence = this->aitkenRelaxTool()->residualNorm();
-        double t4 = timerCur.elapsed();
-        this->log("FSI","apply relax and up vel/acc struct","finish in "+(boost::format("%1% s") % t4).str() );
-
-        //--------------------------------------------------------------//
-        double timeElapsedIter = timerIter.elapsed();
-        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
-        this->log("FSI","iteration fsi","finish in "+(boost::format("%1% s") % timeElapsedIter).str());
-        this->log("FSI","iteration fsi","--------------------xxxxxxxxxxxxxxxxxxxx--------------------");
-        ++cptFSI;
-    }
-
-    // Compute the ALE map according to the final solid displacement, move the mesh
-    timerCur.restart();
-    this->transfertDisplacementAndApplyMeshMoving();
-    double tALE = timerCur.elapsed();
-    this->log("FSI","update final ale ","finish in "+(boost::format("%1% s") % tALE).str() );
-
-    // Compute final fluid solution
-    if (this->M_solve_rigid)
-        M_fluidModel->solve();
-
-        
-    double timeElapsed = mytimer.elapsed();
-    if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
-        std::cout << "["<<prefixvm(this->prefix(),"FSI") <<"] finish fsi solve in " << timeElapsed << "\n";
-} 
-
 
 template< class FluidType, class SolidType >
 void
@@ -1150,8 +1058,11 @@ FSI<FluidType,SolidType>::solveImpl1()
     }
 
     // predictor disp
-    M_solidModel->predictorDispl();
-    M_solidModel->updateVelocity();
+    if ( true )
+    {
+        M_solidModel->predictorDispl();
+        M_solidModel->updateVelocity();
+    }
 
     // coupling fluid structure
     bool useAitken = true;//boption(_name="coupling-dirichlet-neumann.use-aitken",_prefix=this->prefix());
@@ -1163,51 +1074,78 @@ FSI<FluidType,SolidType>::solveImpl1()
     int cptFSI=0;
     double residualRelativeConvergence=1;
     //this->updateBackendOptimisation(true,true);
-    boost::mpi::timer timerCur,timerIter;
+    Feel::Timer timerCur,timerIter;
 
     while ( (!this->aitkenRelaxTool()->isFinished() || cptFSI < this->fixPointMinItConvergence() ) &&
             cptFSI < this->fixPointMaxIt() )
     {
-        timerIter.restart();
-        timerCur.restart();
+        timerIter.start();
+        timerCur.start();
         //--------------------------------------------------------------//
         this->aitkenRelaxTool()->saveOldSolution();
         this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
         //--------------------------------------------------------------//
-        // ALE solver
-        timerCur.restart();
+
+        // update fluid toolbox for use
+        timerCur.start();
         if (this->fsiCouplingType()=="Implicit")
         {
+            // update elastic body displacement
+            if ( !M_elasticBodies.empty() )
+            {
+                M_fluidModel->meshMotionTool()->revertReferenceMesh( false );
+                M_fluidModel->meshMotionTool()->revertInitialDomain( false );
+                for ( auto & [bname, elasticBody] : M_elasticBodies )
+                    elasticBody->updateFluidAleMeshForUse();
+                M_fluidModel->meshMotionTool()->revertReferenceMesh( false );
+                M_fluidModel->meshMotionTool()->revertMovingMesh( false );
+            }
             this->transfertDisplacementAndApplyMeshMoving();
             double tALE = timerCur.elapsed();
-            this->log("FSI","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
+            this->log("FSI","update ale",fmt::format("finish in {} s",tALE) );
         }
         else  if (this->fsiCouplingType()=="Semi-Implicit")
         {
             this->transfertVelocity();
             double tALE = timerCur.elapsed();
-            this->log("FSI","transfert velocity","finish in "+(boost::format("%1% s") % tALE).str());
+            this->log("FSI","transfert velocity",fmt::format("finish in {} s",tALE) );
         }
-        //--------------------------------------------------------------//
+
+        //update elastic body velocity
+        for ( auto & [bname, elasticBody] : M_elasticBodies )
+            elasticBody->updateBodyElasticVelocity();
+
+        // solve fluid model
         M_fluidModel->solve();
+
+        // in case of fluid-body interaction, we need to move the mesh with new current posistion
+        // TODO : take into account semi-implicit
+        if ( !M_elasticBodies.empty() )
+            this->transfertDisplacementAndApplyMeshMoving();
+
         //--------------------------------------------------------------//
-        timerCur.restart();
-        // revert ref mesh
-        //M_fluidModel->meshMotionTool()->revertReferenceMesh();
         // transfert stress
+        timerCur.start();
         this->transfertStress();
-        // revert moving mesh
-        //M_fluidModel->meshMotionTool()->revertMovingMesh();
         double t3 = timerCur.elapsed();
-        this->log("FSI","transfert stress","finish in "+(boost::format("%1% s") % t3).str() );
-        //--------------------------------------------------------------//
+        this->log("FSI","transfert stress", fmt::format("finish in {} s",t3) );
+
+        // update body displacement in solid toolbox (used for fix )
+        for ( auto & [bname, elasticBody] : M_elasticBodies )
+            elasticBody->updateBodyDisplacementOnSolid();
+
+        // solve solid model
         M_solidModel->solve();
+
         //--------------------------------------------------------------//
-        timerCur.restart();
+        timerCur.start();
+
         //compute and apply aitken relaxation
         this->aitkenRelaxTool()->applyRelaxation();
+
         // update velocity and acceleration
         M_solidModel->updateVelocity();
+
         // aitken relaxtion
         if (this->worldComm().isMasterRank() && this->verboseSolverTimer())
             this->aitkenRelaxTool()->printInfo();
@@ -1216,8 +1154,9 @@ FSI<FluidType,SolidType>::solveImpl1()
         residualRelativeConvergence = this->aitkenRelaxTool()->residualNorm();
 
         double t4 = timerCur.elapsed();
-        this->log("FSI","apply relax and up vel/acc struct","finish in "+(boost::format("%1% s") % t4).str() );
+        this->log("FSI","apply relax and up vel/acc struct", fmt::format("finish in {} s",t4) );
         //--------------------------------------------------------------//
+
 
         if (this->fsiCouplingType()=="Semi-Implicit")
         {

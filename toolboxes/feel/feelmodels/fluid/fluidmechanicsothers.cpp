@@ -682,19 +682,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->setStartBlockSpaceIndex( 0 );
 
     auto se = this->symbolsExpr();
-    this->updateFluidInletVelocity( se ); // TODO VINCENT : create an updateBoundaryConditionForUse?
-
-    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externally)
-    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
 #if 0
     if ( this->worldComm().isMasterRank() )
         std::cout << "symbolsExpr : \n "<<  se.names() << std::endl;
 #endif
+
+    // update elastic behavior of bodies
+    this->updateElasticBody( se );
+
+    // move mesh if available
     if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve )
         this->updateALEmesh();
 
-    M_bodySetBC.updateForUse( *this );
+    // update boundary condition for use
+    this->updateFluidInletVelocity( se );
+
+    // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externally)
+    this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
+
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, this->algebraicFactory() );
+
 #if 0 // TODO
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
@@ -807,6 +814,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     // if ( this->hasTurbulenceModel() )
     //     M_turbulenceModelType->solve();
+
+
+    M_bodySetBC.updateRigidDisplacement( this->timeStep(), se );
+    bool postMeshMovingRequired = !M_bodySetBC.empty();
+    if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve && postMeshMovingRequired )
+        this->updateALEmesh();
 
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -1277,11 +1290,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
         auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
+        // set connection markers if has partial mesh support (i.e. physics not in whole mesh)
+        std::set<std::string> requiresMarkersConnection;
+        auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+        if ( !mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
+            requiresMarkersConnection = mom->markers( this->physicsAvailableFromCurrentType() );
+
         // stress tensor : -p*Id + 2*mu*D(u)
         auto const sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u)*inv(Fa),idv(p),*physicFluidData,matProps,true);
+        auto normalStressRefExpr = evalOnFaces( sigmav*det(Fa)*trans(inv(Fa))*N(),requiresMarkersConnection );
+
         fieldToUpdate->on(_range=rangeFaces,
-                          _expr=sigmav*det(Fa)*trans(inv(Fa))*N(),
-                          _geomap=this->geomap() );
+                          _expr=normalStressRefExpr,
+                          //_expr=sigmav*det(Fa)*trans(inv(Fa))*N(),
+                          _geomap=this->geomap(), _close=true );
 
 #if 0
         //
@@ -1329,13 +1351,8 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmeshImpl()
 {
     // VINCENT TODO move this code
-#if 0
-    //-------------------------------------------------------------------//
-    // compute ALE map
-    //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
-    //M_meshALE->update(*M_meshDisplacementOnInterface/*polyBoundarySet*/);
-    M_meshALE->updateMovingMesh();
-#endif
+
+    M_bodySetBC.updateForUse( *this );
     //-------------------------------------------------------------------//
 
     if ( this->doCIPStabConvection() )

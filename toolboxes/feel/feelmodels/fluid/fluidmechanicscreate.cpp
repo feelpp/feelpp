@@ -2447,6 +2447,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( nl::json const& jarg, ModelMate
     auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
     M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
     M_fieldDisplacement = M_spaceDisplacement->elementPtr();
+    M_fieldDisplacementAtPreviousTime = M_spaceDisplacement->elementPtr();
 
     this->updateForUse();
 }
@@ -2469,12 +2470,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
         // function space and fields
         space_displacement_ptrtype old_spaceDisplacement = M_spaceDisplacement;
         element_displacement_ptrtype old_fieldDisplacement = M_fieldDisplacement;
+        element_displacement_ptrtype old_fieldDisplacementAtPreviousTime = M_fieldDisplacementAtPreviousTime;
         element_displacement_ptrtype old_fieldElasticDisplacement = M_fieldElasticDisplacement;
 
         auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
         auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
         M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
         M_fieldDisplacement = M_spaceDisplacement->elementPtr();
+        M_fieldDisplacementAtPreviousTime = M_spaceDisplacement->elementPtr();
 
         // createInterpolationOp
         auto opI_displacement = opInterpolation(_domainSpace=old_spaceDisplacement,
@@ -2484,7 +2487,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMe
 
         auto matrixInterpolation_displacement = opI_displacement->matPtr();
         matrixInterpolation_displacement->multVector( *old_fieldDisplacement, *M_fieldDisplacement );
-
+        matrixInterpolation_displacement->multVector( *old_fieldDisplacementAtPreviousTime, *M_fieldDisplacementAtPreviousTime );
 
         if ( old_fieldElasticDisplacement )
         {
@@ -2534,6 +2537,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
 
     this->computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame );
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles )
+{
+    M_rigidTranslationDisplacement = rigidTranslation;
+    M_rigidRotationAngles = rigidRotationAngles;
+    // we compute new displacement from current mesh position + rigid body displacement update
+    // TODO: check is on moving mesh
+    //auto T = Feel::vf::toExpr( M_rigidTranslationDisplacement - M_rigidTranslationDisplacementAtPreviousTime ); // NOT COMPILE, should be fixed!!
+    auto T = this->rigidTranslationExpr() - Feel::vf::toExpr( M_rigidTranslationDisplacementAtPreviousTime );
+    auto R = Feel::vf::toExpr( Body::rigidRotationMatrix( M_rigidRotationAngles-M_rigidRotationAnglesAtPreviousTime ) );
+    auto M = this->massCenterExpr();
+
+    auto tmp = M_spaceDisplacement->element();
+    tmp = this->fieldDisplacement();
+
+    this->updateDisplacement( elements(support(M_spaceDisplacement)), idv(tmp) + R*( P() - M ) + M + T - P() );
+}
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::BodyBoundaryCondition( self_type const& fluidToolbox )

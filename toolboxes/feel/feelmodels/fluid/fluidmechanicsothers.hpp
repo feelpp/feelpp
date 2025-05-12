@@ -58,6 +58,41 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateFluidInlet
 
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename SymbolsExprType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateElasticBody( SymbolsExprType const& se )
+{
+    if ( M_bodySetBC.empty() )
+        return;
+
+    // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid these meshmoves)
+    auto mmt = this->meshMotionTool();
+    bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
+        mmt->revertReferenceMesh( false );
+    mmt->revertInitialDomain( false );
+
+    for ( auto & [bpname,bbc] : M_bodySetBC )
+    {
+        if ( bbc.hasElasticBehaviorFromExpr() )
+        {
+            auto hola = bbc.createElasticBehavior( se );
+            bbc.updateElasticBehavior( hola, *this );
+            bbc.body().updateDisplacementFromElasticBehavior();
+            if ( bbc.hasElasticVelocity() ) // TODO: check if we need to apply this update
+                bbc.updateElasticVelocityWithRotation();
+
+            //M_bodySetBC.updateDisplacement( this->timeStep(), se );
+        }
+    }
+
+    mmt->revertReferenceMesh( false );
+    if ( !meshIsOnRefAtBegin )
+        mmt->revertMovingMesh( false );
+}
+
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelContextType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInHousePreconditioner( DataUpdateBase & data, ModelContextType const& mctx ) const

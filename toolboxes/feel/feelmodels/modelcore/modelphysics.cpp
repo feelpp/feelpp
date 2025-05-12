@@ -895,12 +895,34 @@ ModelPhysicFSI<Dim>::ModelPhysicFSI( ModelPhysics<Dim> const& mphysics, std::str
     super_type( modeling, type, name, mphysics, model )
 {
     auto const& j_setup = model.setup();
-    if ( j_setup.contains( "interface" ) )
+    if ( j_setup.contains( "interface" ) ) // DEPRECATED
     {
+        std::string interfaceType = "wall";
         ModelMarkers markers;
         markers.setup( j_setup.at("interface")/*, indexes*/ );
-        M_interfaceFluid = markers;
-        M_interfaceSolid = markers;
+        M_interfaceMarkers[interfaceType].insert( markers.begin(), markers.end() );
+    }
+
+    if ( j_setup.contains( "interfaces" ) )
+    {
+        auto jInterfaces = j_setup.at( "interfaces" );
+        if ( jInterfaces.is_array() )
+        {
+            for ( auto const& [jkey,jval] : jInterfaces.items() )
+            {
+                std::string interfaceType = jval.value( "type", "wall" );
+                ModelMarkers markers;
+                markers.setup( jval.at("markers")/*, indexes*/ );
+                M_interfaceMarkers[interfaceType].insert( markers.begin(), markers.end() );
+            }
+        }
+        else if ( jInterfaces.is_object() )
+        {
+            std::string interfaceType = jInterfaces.value( "type", "wall" );
+            ModelMarkers markers;
+            markers.setup( jInterfaces.at("markers")/*, indexes*/ );
+            M_interfaceMarkers[interfaceType].insert( markers.begin(), markers.end() );
+        }
     }
 }
 
@@ -911,8 +933,9 @@ ModelPhysicFSI<Dim>::updateInformationObject( nl::json & p ) const
     super_type::updateInformationObject( p["Generic"] );
 
     nl::json & pFSI = p["FSI"];
-    pFSI["interface_fluid"] = M_interfaceFluid;
-    pFSI["interface_solid"] = M_interfaceSolid;
+    for ( std::string const& interfaceType : { "wall", "body"} )
+        if ( this->hasInterface( interfaceType ) )
+            pFSI[fmt::format("interface_{}",interfaceType)] = interfaceMarkers( interfaceType );
 }
 template <uint16_type Dim>
 tabulate_informations_ptr_t

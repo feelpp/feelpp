@@ -392,6 +392,11 @@ public:
         //! return the elastic velocity
         element_velocity_type & fieldElasticVelocity() { return *M_fieldElasticVelocity; }
 
+        //! return the displacement field at previous time
+        element_displacement_type const& fieldDisplacementAtPreviousTime() const { return *M_fieldDisplacementAtPreviousTime; }
+
+
+
         //! return true if an elastic displacement is defined
         bool hasElasticDisplacement() const { return M_fieldElasticDisplacement? true : false; }
 
@@ -413,6 +418,9 @@ public:
 
         //! return the current translation as an expression
         auto rigidTranslationExpr() const { return Feel::vf::toExpr( M_rigidTranslationDisplacement ); }
+
+        //! return rigid translation displacement at previous time
+        eigen_vector_type<nRealDim> const& rigidTranslationDisplacementAtPreviousTime() const { return M_rigidTranslationDisplacementAtPreviousTime; }
 
         //! return the current rotation angles
         rotation_angles_type const& rigidRotationAngles() const { return M_rigidRotationAngles; }
@@ -453,6 +461,10 @@ public:
         //! return the current rotation matrix as an expression
         auto rigidRotationMatrixExpr() const { return toExpr( this->rigidRotationMatrix() ); }
 
+        //! return rotation angles at previous time
+        rotation_angles_type const& rigidRotationAnglesAtPreviousTime() const { return M_rigidRotationAnglesAtPreviousTime; }
+
+
 
         void updateDisplacementFromRigidVelocity( translational_velocity_type const& translationVelocity,
                                                   angular_velocity_type const& angularVelocity,
@@ -464,32 +476,15 @@ public:
                 this->updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
             }
 
-        void updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles )
+        void updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles );
+
+
+        //! update displacement by setting disp equal to previous disp + current elastic update
+        void updateDisplacementFromElasticBehavior()
             {
-                // WARNING : only valid if evaluated in initial domain
-
-                M_rigidTranslationDisplacement = rigidTranslation;
-                M_rigidRotationAngles = rigidRotationAngles;
-
-                auto dispByTranslationExpr = this->rigidTranslationExpr();
-                auto R = this->rigidRotationMatrixExpr();
-
-                if ( this->hasElasticDisplacement() )
-                {
-                    auto dispByTranslationAndElastic = M_spaceDisplacement->element();
-                    dispByTranslationAndElastic.on(_range=elements(support(M_spaceDisplacement)),_expr=dispByTranslationExpr+idv(this->fieldElasticDisplacement()));
-                    auto [newMass,newMassCenter] = this->computeMassAndMassCenterFromDisplacementField( dispByTranslationAndElastic );
-                    auto mcExpr = Feel::vf::toExpr( newMassCenter );
-                    this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(dispByTranslationAndElastic)-mcExpr) + mcExpr -P() );
-                }
-                else
-                {
-                    auto dispByTranslationField = M_spaceDisplacement->element();
-                    dispByTranslationField.on(_range=elements(support(M_spaceDisplacement)),_expr=dispByTranslationExpr);
-                    auto [newMass,newMassCenter] = this->computeMassAndMassCenterFromDisplacementField( dispByTranslationField );
-                    auto mcExpr = Feel::vf::toExpr( newMassCenter );
-                    this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(dispByTranslationField)-mcExpr) + mcExpr -P() );
-                }
+                M_fieldDisplacement->zero();
+                M_fieldDisplacement->add( 1.0, *M_fieldDisplacementAtPreviousTime );
+                M_fieldDisplacement->add( 1.0, *M_fieldElasticDisplacement );
             }
 
         void addRigidTranslationToCurrentDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation )
@@ -690,9 +685,10 @@ public:
                 M_rigidTranslationDisplacementAtPreviousTime = M_rigidTranslationDisplacement;
                 M_rigidRotationAnglesAtPreviousTime = M_rigidRotationAngles;
                 M_momentOfInertiaAtPreviousTime_bodyFrame = M_momentOfInertia_bodyFrame;
+                *M_fieldDisplacementAtPreviousTime = *M_fieldDisplacement;
             }
 
-    private :
+    private:
         std::shared_ptr<ModelPhysics<nRealDim>> M_modelPhysics;
         mesh_ptrtype M_mesh;
         materialsproperties_ptrtype M_materialsProperties;
@@ -710,6 +706,7 @@ public:
         space_displacement_ptrtype M_spaceDisplacement;
         element_displacement_ptrtype M_fieldDisplacement;
         element_displacement_ptrtype M_fieldElasticDisplacement;
+        element_displacement_ptrtype M_fieldDisplacementAtPreviousTime;
 
         space_velocity_ptrtype M_spaceElasticVelocity;
         element_velocity_ptrtype M_fieldElasticVelocity;
@@ -1322,8 +1319,8 @@ public:
         template <typename ElasticBehaviorType>
         void updateElasticBehavior( ElasticBehaviorType const& elasticBehavior, self_type const& fluidToolbox );
 
-        //! update displacement of body
-        void updateDisplacement( double dt )
+        //! update rigid displacement of body
+        void updateRigidDisplacement( double dt )
             {
                 typename Body::translational_velocity_type translationalVelocity = Body::translational_velocity_type::Zero();
                 typename Body::angular_velocity_type angularVelocity = Body::angular_velocity_type::Zero();
@@ -1588,19 +1585,12 @@ public:
             }
 
         template <typename SymbolsExprType>
-        void updateDisplacement( double dt, SymbolsExprType const& se )
+        void updateRigidDisplacement( double dt, SymbolsExprType const& se )
             {
                 for ( auto & [bpname,bbc] : *this )
                 {
-#if 0
-                    if ( bbc.hasElasticBehaviorFromExpr() )
-                    {
-                        auto hola = bbc.createElasticBehavior( se );
-                        bbc.updateElasticBehavior( hola, *this );
-                    }
-#endif
                     if ( !bbc.isInNBodyArticulated() || ( bbc.getNBodyArticulated().masterBodyBC().name() == bbc.name() ) )
-                        bbc.updateDisplacement( dt );
+                        bbc.updateRigidDisplacement( dt );
                 }
 
                 for ( auto & nba : this->nbodyArticulated() )
@@ -2332,6 +2322,9 @@ public :
     //! return the set of body BC
     BodySetBoundaryCondition & bodySetBC() { return M_bodySetBC; }
 
+    template <typename SymbolsExprType>
+    void updateElasticBody( SymbolsExprType const& se );
+
     //___________________________________________________________________________________//
 
     void updateRangeDistributionByMaterialName( std::string const& key, range_faces_type const& rangeFaces );
@@ -2799,43 +2792,22 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateALEmesh( S
 
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bodySetBC.empty() )
-    {
-        // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid these meshmoves)
-        auto mmt = this->meshMotionTool();
-        bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();
-        if ( !meshIsOnRefAtBegin )
-            mmt->revertReferenceMesh( false );
-        mmt->revertInitialDomain( false );
-
-        for ( auto & [bpname,bbc] : M_bodySetBC )
-        {
-            std::cout << "Check magneto  bbc.hasElasticBehaviorFromExpr()  : " <<  bbc.hasElasticBehaviorFromExpr()  << std::endl;
-
-            if ( bbc.hasElasticBehaviorFromExpr() )
-            {
-                auto hola = bbc.createElasticBehavior( se );
-                bbc.updateElasticBehavior( hola, *this );
-            }
-        }
-
-        M_bodySetBC.updateDisplacement( this->timeStep(), se );
-
-        for ( auto & [bpname,bbc] : M_bodySetBC )
-        {
-            //this->meshALE()->updateDisplacementImposed( idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
-            mmt->updateDisplacementImposedOnInitialDomain( this->keyword()+"_body", idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
-
-            std::cout << "Check magneto  bbc.hasElasticVelocity()  : " <<  bbc.hasElasticVelocity()  << std::endl;
-
-            if ( bbc.hasElasticVelocity() )
-                bbc.updateElasticVelocityWithRotation();
-        }
-
+    // revert to intial domain, really required??
+    auto mmt = this->meshMotionTool();
+    bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
         mmt->revertReferenceMesh( false );
-        if ( !meshIsOnRefAtBegin )
-            mmt->revertMovingMesh( false );
+    mmt->revertInitialDomain( false );
+
+    for ( auto & [bpname,bbc] : M_bodySetBC )
+    {
+        auto mmt = this->meshMotionTool();
+        mmt->updateDisplacementImposedOnInitialDomain( this->keyword()+"_body", idv(bbc.body().fieldDisplacement()), elements(support(bbc.body().fieldDisplacement().functionSpace())) );
     }
+
+    mmt->revertReferenceMesh( false );
+    if ( !meshIsOnRefAtBegin )
+        mmt->revertMovingMesh( false );
 
     super_type::super_model_meshes_type::updateMeshMotion<mesh_type>( this->keyword(), se );
 

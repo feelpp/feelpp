@@ -737,13 +737,13 @@ public :
     ModelPhysicFSI( ModelPhysicFSI const& ) = default;
     ModelPhysicFSI( ModelPhysicFSI && ) = default;
 
-    std::set<std::string> const& interfaceFluid() const { return M_interfaceFluid; }
-    std::set<std::string> const& interfaceSolid() const { return M_interfaceSolid; }
+    bool hasInterface( std::string const& type ) const { return M_interfaceMarkers.find( type ) != M_interfaceMarkers.end(); }
+    std::set<std::string> const& interfaceMarkers( std::string const& type ) const { return M_interfaceMarkers.at( type ); }
 
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 private :
-    std::set<std::string> M_interfaceFluid, M_interfaceSolid;
+    std::map<std::string,std::set<std::string>> M_interfaceMarkers;
 };
 
 /**

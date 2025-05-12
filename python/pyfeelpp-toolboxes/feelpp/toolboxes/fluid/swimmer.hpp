@@ -28,7 +28,7 @@ template<int nDim, std::size_t residualType, typename FSIModel, typename FluidMe
 void
 magnetoTorqueModelFSI(FluidMechanics const& t, DataType & data)
 {
-    std::cout << "apply fsi magneto torque" << std::endl;
+    //std::cout << "apply fsi magneto torque" << std::endl;
 
     // Get parameters from JSON
     fs::path path (Environment::expand(soption(_name="fsi.filename")));
@@ -37,7 +37,7 @@ magnetoTorqueModelFSI(FluidMechanics const& t, DataType & data)
     if (fs::exists(path))
     {
         std::ifstream i(path.string().c_str());
-        json j = json::parse(i);
+        json j = json::parse(i,nullptr,true,true);
         jsonMagneto = j["MagnetoTorque"]["body"]["setup"];
     }
 
@@ -64,14 +64,14 @@ magnetoTorqueModelFSI(FluidMechanics const& t, DataType & data)
     {
         auto angle = bpbc.body().rigidRotationAngles();
         orientation = angle(0,0);
-        std::cout << "Current orientation : " << orientation << std::endl;
+        //std::cout << "Current orientation : " << orientation << std::endl;
     }
     
     // Compute true theta
     double theta_true = amp * sin( 2 * M_PI * freq * t.currentTime() );
        
     double T_head = integrate( _range = markedelements( t.mesh(), "Head" ), _expr = cst(mx) * std::cos(orientation) * cst(by) * std::sin(theta_true) - cst(my) * std::sin(orientation) * cst(bx) * std::cos(theta_true)).evaluate()(0,0);
-    std::cout << "Applied torue to head : " << T_head << std::endl;
+    //std::cout << "Applied torue to head : " << T_head << std::endl;
     
     // Add torque to newton eq
     auto r = [&data]() 
