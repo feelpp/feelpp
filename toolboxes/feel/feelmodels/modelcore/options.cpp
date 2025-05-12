@@ -344,8 +344,8 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"mesh-save.force-rebuild").c_str(), Feel::po::value<bool>()->default_value( false ), "mesh-save.force-rebuild")
 
         // Magneto-swimmer options 
-        (prefixvm(prefix,"solve-rigid").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only rigid part")
-        (prefixvm(prefix,"solve-elastic").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only elastic part")
+        // (prefixvm(prefix,"solve-rigid").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only rigid part")
+        // (prefixvm(prefix,"solve-elastic").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only elastic part")
         (prefixvm(prefix,"solve-dirichlet").c_str(), Feel::po::value<bool>()->default_value( true ), " magneto swimmer solve all")
 
 
