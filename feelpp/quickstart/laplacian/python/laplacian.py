@@ -11,49 +11,50 @@ else:
     is_time_dependent = 'true'
 
 if 'k' in locals() and locals()['k']:
-    k=sympify(locals()['k']);
+    k=sympify(locals()['k'])
 else:
     k=sympify(1)
 
 if 'r_1' in locals() and locals()['r_1']:
-    r_1=sympify(locals()['r_1']);
+    r_1=sympify(locals()['r_1'])
 else:
     r_1=sympify(1)
 
 
 if 'p' in locals():
-    p=sympify(locals()['p']);
+    p=sympify(locals()['p'])
 else:
     p=x+y
 print("potential:",p)
 
 if 'dim' in locals():
-    dim=int(locals()['dim']);
+    dim=int(locals()['dim'])
 else:
     dim=2
     
 if 'beta' in locals() and locals()['beta']:
-    beta=sympify(locals()['beta']);
+    beta=sympify(locals()['beta'])
+else
+    beta=simpify("{1,1}")
     # print("beta:",beta)
 
 import sys    
 print(sys.path)    
 print("p=",p)
-s=syms( dim );
-ns=nsyms( dim );
-grad_p=grad(p,s);
-flux=-k*grad(p,s);
+s=syms( dim )
+ns=nsyms( dim )
+grad_p=grad(p,s)
+flux=-k*grad(p,s)+beta.dot(grad_p)
 u=flux
 print("u=",u)
 
-convection_term = Matrix([1, 1]).dot(grad(p, s))
 
-J=tensorcontraction(tensorproduct(u,u),(0,1))/k;
+J=tensorcontraction(tensorproduct(u,u),(0,1))/k
 
 if compute_pde_coefficients=='true':
     un=n(flux,1,ns)
     print("un:", un)
-    f = div(flux, s) + convection_term # + dt(p)
+    f = div(flux, s) 
     print("f:",f)
     # g=p
     # r_2=un-r_1*p

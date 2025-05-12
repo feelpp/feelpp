@@ -234,6 +234,9 @@ int hdg_laplacian()
     //
     // First row a(0_c,:)
     //
+    auto beta_dot_n = trans(beta)*N();
+    auto inflow = chi(beta_dot_n < 0.); // inflow: trace comes from phat
+    auto outflow = chi(beta_dot_n >= 0.); // outflow: trace comes from p
     tic();
     if ( boption( "mass.quad" ) )
         a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
@@ -246,14 +249,19 @@ int hdg_laplacian()
     
     a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)) ); 
     a(0_c,1_c) += integrate(_range=elements(mesh), _expr=-lambda*idt(p)*trans(beta)*id(v) );
+    a(0_c,1_c) += += integrate(_range=internalfaces(mesh),
+                            _expr=( beta_dot_n*outflow*idt(p)*(leftface(normal(v))+
+                                               rightface(normal(v)))) );
+    a(0_c,1_c) += integrate(_range=boundaryfaces(mesh),
+                            _expr=beta_dot_n*outflow*idt(p)*(normal(v)));
     toc("a(0,1)",FLAGS_v>0);
 
     tic();
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( idt(phat)*(leftface(normal(v))+
+                            _expr=( beta_dot_n*inflow*idt(phat)*(leftface(normal(v))+
                                                rightface(normal(v)))) );
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=idt(phat)*(normal(v)));
+                            _expr=beta_dot_n*inflow*idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
 
     //
