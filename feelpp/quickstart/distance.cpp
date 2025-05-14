@@ -47,7 +47,6 @@ int main(int argc, char**argv )
         double h_ = doption(_name="h");
         int M = ioption(_name="M");
         std::string filename = soption(_name="gmsh.filename");
-        std::cout << filename << std::endl;
 
         // Load the mesh        
         tic();
@@ -98,16 +97,21 @@ int main(int argc, char**argv )
             for ( int p=0; p<elt.nVertices(); ++p )
             {
                 auto const & point = elt.point(p); 
-                size_type id_p = Xh_->dof()->localToGlobal( elt.id(), p ).index(); 
-
-                if (std::find(pointIDs.begin(), pointIDs.end(), id_p) == pointIDs.end()) // un nouveau point
-                {
-                    pointIDs.push_back(id_p);
-                    origin << point.node()[0], point.node()[1], point.node()[2]; // définir l'origin du rayon
                 
-                    for (int k = 0; k < M; k++) // on stocke tous les rayons pour cet origin
-                        allrays.push_back(bvh_ray_type(origin,directions[k]));
+                // pas sure si isGhostCell est la bonne fonction 
+                if (!point.isOnBoundary() && !point.isGhostCell()) // on ne considère pas les points qui se trouvent au bord ni les dof ghosts
+                {
+                    size_type id_p = Xh_->dof()->localToGlobal( elt.id(), p ).index(); 
+
+                    if (std::find(pointIDs.begin(), pointIDs.end(), id_p) == pointIDs.end()) // un nouveau point
+                    {
+                        pointIDs.push_back(id_p);
+                        origin << point.node()[0], point.node()[1], point.node()[2]; // définir l'origin du rayon
+                
+                        for (int k = 0; k < M; k++) // on stocke tous les rayons pour cet origin
+                            allrays.push_back(bvh_ray_type(origin,directions[k]));
                     
+                    }
                 }
             }
         }
@@ -119,12 +123,16 @@ int main(int argc, char**argv )
         std::vector<std::vector<double>> dist(pointIDs.size(), std::vector<double>(M, 0.0));
         
         for (auto const& [fid,rirs] : enumerate(multiRayIntersectionResult))
-            dist[static_cast<int>(fid / M)][fid % M] = rirs.front().distance();
+        {
+            if (!rirs.empty()) // on check l'intersection
+                dist[static_cast<int>(fid / M)][fid % M] = rirs.front().distance();
+        }   
         
         // Get min for each point
         for (int k = 0; k < pointIDs.size(); k++)
             d_BVH[pointIDs[k]] = *(std::min_element(dist[k].begin(), dist[k].end())); 
-                
+        
+
         e_->add( "d_BVH", d_BVH );
         toc("raytracing");
 
