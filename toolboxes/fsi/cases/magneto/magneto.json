@@ -14,10 +14,19 @@
             "equations":"Hyper-Elasticity",
             "equationsAA":"Elasticity"
         },
-        "body":
-        {
-            "name":"swimmer",
-            "materials":["Solid","Head"]
+        "multibody":{
+            "name":"toto",
+            "setup":{
+                "bodies":{
+                    "name":"fsi-wall",
+                    "materials":["Solid","Head"],
+                    "mass-center":{
+                        "evaluate-on-materials":["Head"]
+                    }
+                },
+                "connectors":{},
+                "constraints":{}
+            }
         },
         "fsi":
         {
