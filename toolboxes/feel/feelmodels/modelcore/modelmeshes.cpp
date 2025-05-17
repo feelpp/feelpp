@@ -621,6 +621,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
             mas.setParameterValues( paramValues );
         this->updateMeshAdaptation<MeshType>( MeshAdaptation::template createEvent<MeshAdaptation::Event::Type::after_import>(),
                                               Feel::vf::symbolsExpr( mMeshes.symbolsExprParameter(), mMeshes.template symbolsExpr<MeshType>() ) );
+        themesh = this->mesh<MeshType>();
     }
 
     if constexpr ( mesh_type::nDim>1 )

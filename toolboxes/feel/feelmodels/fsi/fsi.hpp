@@ -226,13 +226,13 @@ public :
 
         typedef Range<mesh_fluid_type,MESH_ELEMENTS> range_fluid_element_type;
         typedef Range<mesh_solid_type,MESH_ELEMENTS> range_solid_element_type;
-        using op_s2f_disp_ebb_type = OperatorInterpolation<space_struct_disp_type, typename fluid_type::Body::space_displacement_type,
+        using op_s2f_disp_ebb_type = OperatorInterpolation<space_struct_disp_type, typename fluid_type::multibody_type::body_type::space_displacement_type,
                                                            range_fluid_element_type,InterpolationConforme>;
 
         using op_s2f_velocity_ebb_type = OperatorInterpolation<space_struct_disp_type, typename fluid_type::space_velocity_type,
                                                                range_fluid_element_type,InterpolationConforme>;
 
-        using op_f2s_disp_type = OperatorInterpolation<typename fluid_type::Body::space_displacement_type, space_struct_disp_type,
+        using op_f2s_disp_type = OperatorInterpolation<typename fluid_type::multibody_type::body_type::space_displacement_type, space_struct_disp_type,
                                                        range_solid_element_type,InterpolationConforme>;
 
         ElasticBodyBehavior( typename fluid_type::BodyBoundaryCondition * bbc, self_type * fsiToolbox )
@@ -252,16 +252,17 @@ public :
                                              _backend=M_fsiToolbox->fluidModel()->backend() );
 
 
-                auto spaceElastVel = body.fieldElasticVelocity().functionSpace();
-
                 if ( false ) // semi-implicit
                 {
+#if 0
+                    auto spaceElastVel = body.fieldElasticVelocity().functionSpace();
                     M_opI_vel = opInterpolation(_domainSpace=M_fsiToolbox->solidModel()->fieldVelocity().functionSpace(),
                                                 _imageSpace=spaceElastVel,
                                                 _range=range,
                                                 //_type=InterpolationNonConforme(),
                                                 _type=InterpolationConforme(),
                                                 _backend=M_fsiToolbox->fluidModel()->backend() );
+#endif
                 }
 
                 M_opI_f2s_disp = opInterpolation(_domainSpace=spaceDisp,
@@ -285,7 +286,7 @@ public :
                 M_opI_disp->apply( M_fsiToolbox->solidModel()->fieldDisplacement(), uInterp );
                 // remove rigid disp from previous time
                 auto translateExpr = Feel::vf::toExpr( body.rigidTranslationDisplacementAtPreviousTime() ) - body.rigidTranslationExpr();
-                auto R2 = Feel::vf::toExpr( fluid_type::Body::rigidRotationMatrix( body.rigidRotationAnglesAtPreviousTime()-body.rigidRotationAngles() ) );
+                auto R2 = Feel::vf::toExpr( fluid_type::multibody_type::body_type::rigidRotationMatrix( body.rigidRotationAnglesAtPreviousTime()-body.rigidRotationAngles() ) );
                 auto [newMass,newMassCenter] = body.computeMassAndMassCenterFromDisplacementField( uInterp );
                 auto mcExpr2 = Feel::vf::toExpr( newMassCenter );
                 auto elasticDispExpr = R2*(P()+idv(uInterp)-mcExpr2) + mcExpr2 + translateExpr - P();

@@ -782,7 +782,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                     //auto timeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep());
                     if ( !BuildCstPart && !UseJacobianLinearTerms )
                     {
-                        typename Body::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
+                        typename multibody_type::body_type::moment_of_inertia_type termWithTimeDerivativeOfMomentOfInertia;
                         if constexpr ( nDim == 2 )
                             termWithTimeDerivativeOfMomentOfInertia = bpbc.timeDerivativeOfMomentOfInertia_bodyFrame(this->timeStep());
                         else

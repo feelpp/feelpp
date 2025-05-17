@@ -83,6 +83,8 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "solid" )
         return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "multibody" )
+        return std::make_shared<ModelPhysicMultibody<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "fsi" )
         return std::make_shared<ModelPhysicFSI<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "GenericPDE" )
@@ -888,6 +890,160 @@ ModelPhysicSolid<Dim>::BodyForces::tabulateInformations( nl::json const& jsonInf
         .setHasRowSeparator( false );
     return TabulateInformations::New( tabInfo, tabInfoProp );
 }
+
+
+
+
+template <uint16_type Dim>
+ModelPhysicMultibody<Dim>::ModelPhysicMultibody( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& j_setup = model.setup();
+    if ( j_setup.contains( "bodies" ) )
+    {
+        auto const& jBodies = j_setup.at( "bodies" );
+        if ( jBodies.is_object() )
+        {
+            Body body( this );
+            body.setup( jBodies );
+            std::string bodyName = body.name();
+            M_bodies.emplace( bodyName, std::move(body) );
+        }
+        else if ( jBodies.is_array() )
+        {
+            for ( auto const& [key,jval] : jBodies.items() )
+            {
+                Body body( this );
+                body.setup( jval );
+                std::string bodyName = body.name();
+                CHECK( M_bodies.find( bodyName ) == M_bodies.end() ) << fmt::format("body name already registered {}", bodyName );
+                M_bodies.emplace( bodyName, std::move(body) );
+            }
+        }
+    }
+
+    // update materials name from bodies
+    for ( auto const& [bodyName,body] : M_bodies )
+        this->addMaterialNames( body.materialNames( ) );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMultibody<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+    nl::json & pMultibody = p["Multibody"];
+    if ( !M_bodies.empty() )
+    {
+        nl::json & pBodies = pMultibody["Bodies"];
+        for ( auto const& [bodyName,body] : M_bodies )
+        {
+            nl::json phs;
+            body.updateInformationObject( phs );
+            pBodies.push_back( std::move( phs ) );
+        }
+    }
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicMultibody<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        //tabInfo->add( "", super_type::tabulateInformations( jsonInfo.at("Generic"), tabInfoProp ) );
+    }
+
+    if ( jsonInfo.contains("Multibody") )
+    {
+        auto const& jsonInfoMultibody = jsonInfo.at("Multibody");
+        if ( jsonInfoMultibody.contains("Bodies") )
+        {
+            auto tabInfoBodies = TabulateInformationsSections::New( tabInfoProp );
+            for ( auto const& [key,jval] : jsonInfoMultibody.at("Bodies").items() )
+                tabInfoBodies->add( "", Body::tabulateInformations( jval, tabInfoProp ) );
+            tabInfo->add( "Multibody Sources", tabInfoBodies );
+        }
+    }
+
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+
+    return tabInfo;
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMultibody<Dim>::Body::setup( nl::json const& jarg )
+{
+    if ( jarg.contains("name") )
+        M_name = jarg.at("name").template get<std::string>();
+
+    if ( jarg.contains("materials") )
+    {
+        auto const& jMaterials = jarg.at("materials");
+        if ( jMaterials.is_array() )
+        {
+            for ( auto const& [key,jval] : jMaterials.items() )
+                M_materialNames.insert( jval.template get<std::string>() );
+        }
+        else
+            M_materialNames.insert( jMaterials.template get<std::string>() );
+    }
+
+    if ( jarg.contains("mass-center") )
+    {
+        auto const& jMassCenter = jarg.at("mass-center");
+        if ( jMassCenter.contains("expr") )
+            M_parent->addParameter( this->massCenterImposedExprName(), jMassCenter.at("expr") );
+        if ( jMassCenter.contains("evaluate-on-materials") )
+        {
+            auto const& jMassCenterEvalOnMat = jMassCenter.at("evaluate-on-materials");
+            if ( jMassCenterEvalOnMat.is_array() )
+            {
+                for ( auto const& [key,jval] : jMassCenterEvalOnMat.items() )
+                    M_massCenterEvaluateOnMaterials.insert( jval.template get<std::string>() );
+            }
+            else
+                M_massCenterEvaluateOnMaterials.insert( jMassCenterEvalOnMat.template get<std::string>() );
+        }
+    }
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMultibody<Dim>::Body::updateInformationObject( nl::json & p ) const
+{
+    if ( this->hasMassCenterImposed() )
+    {
+        auto [exprStr,compInfo] = M_parent->parameterModelExpr( this->massCenterImposedExprName() ).exprInformations();
+        p["mass_center_imposed_expr"] = exprStr;
+    }
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicMultibody<Dim>::Body::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+
+    // Feel::Table tabInfoSolidEquation;
+    // TabulateInformationTools::FromJSON::addKeyToValues( tabInfoSolidEquation, jsonInfoSolid, tabInfoProp, { "Equation" } );
+    // tabInfo->add( "", TabulateInformations::New( tabInfoSolidEquation, tabInfoProp ) );
+
+
+    if ( jsonInfo.contains("mass_center_imposed_expr") )
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "mass_center_imposed_expr" } );
+
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+
 
 template <uint16_type Dim>
 ModelPhysicFSI<Dim>::ModelPhysicFSI( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )

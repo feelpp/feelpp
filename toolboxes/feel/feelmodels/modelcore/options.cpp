@@ -287,7 +287,7 @@ fluidMechanics_options(std::string const& prefix)
         .add( pcd_options( prefix ) )
         .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
 
-        .add( modelnumerical_options( prefixvm(prefix,"body") ) )
+        .add( modelnumerical_options( prefixvm(prefix,"multibody") ) )
         ;
 
     return fluidOptions;

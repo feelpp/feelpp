@@ -265,6 +265,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
     if ( this->algebraicFactory() )
         this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
+
+
+    if ( M_multibody )
+        p["Toolbox Multibody"] = M_multibody->journalSection().to_string();
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -693,6 +697,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     // move mesh if available
     if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve )
         this->updateALEmesh();
+
+    for ( auto & [bpname,bbc] : M_bodySetBC )
+    {
+        if ( bbc.hasElasticBehaviorFromExpr() )
+        {
+            auto mmt = this->meshMotionTool();
+            bbc.body().fieldElasticVelocity().on(_expr=idv(mmt->velocity()),_close=true);
+        }
+    }
 
     // update boundary condition for use
     this->updateFluidInletVelocity( se );
