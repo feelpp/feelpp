@@ -370,6 +370,9 @@ public :
     void createMesh();
     void init();
     void solve();
+
+    void applyRemeshFluid( std::shared_ptr<mesh_fluid_type> oldMesh, std::shared_ptr<mesh_fluid_type> newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
+
 private :
     void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 

@@ -355,7 +355,7 @@ FSI<FluidType,SolidType>::transfertDisplacement()
     else
         CHECK( false ) << "something wrong";
 
-    this->fluidModel()->meshMotionTool()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFSI_fluid );
+    this->fluidModel()->meshMotionTool()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFsiWall_fluid /*M_rangeFSI_fluid*/ );
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertDisplacement", "finish",
                                                this->worldComm(),this->verboseAllProc());

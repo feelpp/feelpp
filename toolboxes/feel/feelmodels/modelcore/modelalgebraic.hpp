@@ -533,6 +533,10 @@ public :
             M_startSubBlockSpaceIndex.clear();
         }
 
+    void clearDofEliminationIds() { M_dofEliminationIds.clear(); }
+
+    void clearStartSubBlockSpaceIndex() { M_startSubBlockSpaceIndex.clear(); }
+
 private :
     // verbose
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;

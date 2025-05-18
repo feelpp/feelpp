@@ -1055,6 +1055,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
         this->updateStabilizationGLSRange();
     }
 
+    // clear rangeDistributionByMaterialName mapping (should be reinit)
+    M_rangeDistributionByMaterialName.reset();
 
     // TODO : post process ??
 
@@ -1062,7 +1064,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::applyRemesh( mesh_ptrtype oldMesh, mesh_ptrt
     bool buildModelAlgebraicFactory = this->algebraicFactory() ? true : false;
     vector_ptrtype old_vectorPreviousSolution = M_vectorPreviousSolution;
     vector_ptrtype old_timeStepThetaSchemePreviousContrib = M_timeStepThetaSchemePreviousContrib;
-    this->removeAllAlgebraicDataAndTools();
+    //this->removeAllAlgebraicDataAndTools();
+    this->clearDofEliminationIds();
     this->initAlgebraicModel();
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
@@ -1163,8 +1166,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
-    this->setAlgebraicFactory( algebraicFactory );
+    auto algebraicFactory = this->algebraicFactory();
+    if ( !algebraicFactory )
+    {
+        algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
+        this->setAlgebraicFactory( algebraicFactory );
+    }
+    else
+    {
+        // reset algebraic factory (but keep all setup and callback)
+        algebraicFactory->init( this->shared_from_this(),this->backend() );
+    }
 
     if ( !M_bodySetBC.empty() )
     {

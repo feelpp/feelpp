@@ -334,6 +334,14 @@ FSI<FluidType,SolidType>::init()
     }
 
 
+    M_fluidModel->modelMesh( M_fluidModel->keyword() ).setFunctionApplyRemesh(
+        [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype mold,
+                typename super_type::super_model_meshes_type::mesh_base_ptrtype mnew ) {
+            this->applyRemeshFluid( std::dynamic_pointer_cast<mesh_fluid_type>( mold ),
+                                    std::dynamic_pointer_cast<mesh_fluid_type>( mnew ) );
+        } );
+
+
 
     // solid model build
     //if ( !M_solidModel )
@@ -587,6 +595,77 @@ FSI<FluidType,SolidType>::init()
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::applyRemeshFluid( std::shared_ptr<mesh_fluid_type> oldMesh, std::shared_ptr<mesh_fluid_type> newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp )
+{
+    M_fluidModel->applyRemesh( oldMesh, newMesh, remeshInterp );
+
+
+    // get interfaces markers
+    std::set<std::string> markersFSI_fluid, markersFSI_solid, markersFSI_body_fluid, markersFSI_wall_fluid;
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFSIData = std::static_pointer_cast<ModelPhysicFSI<mesh_fluid_type::nRealDim>>(physicData);
+
+        if ( physicFSIData->hasInterface("body") )
+        {
+            auto const& markers = physicFSIData->interfaceMarkers( "body" );
+            markersFSI_body_fluid.insert( markers.begin(),markers.end() );
+            markersFSI_fluid.insert( markers.begin(),markers.end() );
+        }
+        else if ( physicFSIData->hasInterface("wall") )
+        {
+            auto const& markers = physicFSIData->interfaceMarkers( "wall" );
+            markersFSI_wall_fluid.insert( markers.begin(),markers.end() );
+            markersFSI_fluid.insert( markers.begin(),markers.end() );
+        }
+    }
+    markersFSI_solid = markersFSI_fluid;
+
+
+
+    M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_fluid );
+    //M_rangeFsiBody_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_body_fluid );
+    M_rangeFsiWall_fluid = markedfaces( this->fluidModel()->mesh(),markersFSI_wall_fluid );
+
+    auto submeshfsi_fluid = createSubmesh( _mesh=this->fluidModel()->mesh(),_range=M_rangeFSI_fluid,_view=1 );
+    M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
+    M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
+
+    M_XhMeshVelocityInterface = space_fluid_meshvelocityonboundary_type::New(_mesh=submeshfsi_fluid );
+    // mesh velocity only on moving interface
+    M_meshVelocityInterface.reset(new element_fluid_meshvelocityonboundary_type( M_XhMeshVelocityInterface ) );
+
+    M_meshDisplacementOnInterface_fluid = this->fluidModel()->meshMotionTool()->displacement()->functionSpace()->elementPtr();
+
+
+    this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
+
+    // we use body displacement in order to keep conformining mesh
+    auto dispSolidMesh = this->solidModel()->fieldDisplacement().functionSpace()->element();
+    auto solidMesh = this->solidModel()->mesh();
+    dispSolidMesh = *M_fieldBodyDisplacementOnSolid;//this->solidModel()->fieldDisplacement();
+    meshMove( solidMesh, dispSolidMesh );
+    this->solidModel()->fieldDisplacement().functionSpace()->rebuildDofPoints();
+    M_spaceNormalStressFromFluid_solid->rebuildDofPoints();
+
+    this->initInterpolation();
+
+    M_elasticBodies.clear();
+    for ( auto & [bname,bbc] : this->fluidModel()->bodySetBC() )
+        M_elasticBodies.emplace( bname, std::make_unique<ElasticBodyBehavior>( std::addressof( bbc ), this ) );
+
+    // revert moving
+    dispSolidMesh.scale(-1);
+    meshMove( solidMesh, dispSolidMesh );
+    this->solidModel()->fieldDisplacement().functionSpace()->rebuildDofPoints();
+    M_spaceNormalStressFromFluid_solid->rebuildDofPoints();
+}
+
+
 
 template< class FluidType, class SolidType >
 void
