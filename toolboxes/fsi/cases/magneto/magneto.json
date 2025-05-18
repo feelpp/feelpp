@@ -40,6 +40,16 @@
             }
         }
     },
+    "Parameters":
+    {
+        "hfar":0.04,//0.03,
+        "hclose_wall1":"hfar/5:hfar",
+        "hclose_wall2":"hfar/10:hfar",
+        "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
+        "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
+        "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+    },
     "Meshes":
     {
         "fluid":
@@ -54,7 +64,37 @@
                 {
                     "Zero":["fluid-inlet","fluid-wall","fluid-outlet"]
                 }
-            }
+            },
+            "DistanceToRange":
+            {
+                "wall1":
+                {
+                    "markers":["fluid-inlet","fluid-wall","fluid-outlet"],
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["fsi-wall"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":[
+                // {
+                //     "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+                //     "events":{
+                //         "after_import":{}
+                //         //"after_init":{}
+                //     }
+                // },
+                {
+                    "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+                    "required_markers":["fsi-wall","Solid","Head"],
+                    "events":{
+                        "each_time_step":{
+                            "frequency":4 //15
+                        }
+                    }
+                }]
         }
     },
     "Materials":
@@ -64,7 +104,7 @@
             "mu":"152"
         },
         "Solid": {
-            "E":"2e6",
+            "E":1e6,//"2e6",
             //"E":"200000",
             "nu":"0.40",
             //"rho":"1000"
@@ -121,7 +161,7 @@
             {
                 "torqueParam":
                 {
-                    "freq":3,
+                    "freq":4,//3,
                     "amp":0.1,
                     "mx":1000000,
                     "my":1000000,
