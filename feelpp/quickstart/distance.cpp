@@ -84,10 +84,10 @@ int main(int argc, char**argv )
             double thetak = alpha * k;
             directions[k] << rk*std::cos(thetak), rk*std::sin(thetak), zk;
         }
-
+        
         // Ray Casting
         Eigen::Vector3d origin;
-        BVHRaysDistributed<FEELPP_DIM> allrays;
+        //BVHRaysDistributed<FEELPP_DIM> allrays;
         std::vector<size_type> pointIDs;
 
         for ( auto const& eltWrap : elements(mesh_) ) // on parcourt tous les éléments du maillage
@@ -107,9 +107,28 @@ int main(int argc, char**argv )
                     {
                         pointIDs.push_back(id_p);
                         origin << point.node()[0], point.node()[1], point.node()[2]; // définir l'origin du rayon
-                
+                        BVHRaysDistributed<FEELPP_DIM> allrays;
+
                         for (int k = 0; k < M; k++) // on stocke tous les rayons pour cet origin
                             allrays.push_back(bvh_ray_type(origin,directions[k]));
+                        
+                        // Get intersection
+                        auto multiRayIntersectionResult = bvhThirdParty->intersect(_ray=allrays);
+        
+
+                        // Get minimum
+                        std::vector<double> dist(M, 0.0);
+        
+                        for (auto const& [fid,rirs] : enumerate(multiRayIntersectionResult))
+                        {
+                            if (!rirs.empty()) // on check l'intersection
+                                dist[fid] = rirs.front().distance();
+                        }
+
+                        d_BVH[id_p] = *(std::min_element(dist.begin(), dist.end()));
+          
+        
+        
                     
                     }
                 }
@@ -117,20 +136,27 @@ int main(int argc, char**argv )
         }
 
         // Get intersection
-        auto multiRayIntersectionResult = bvhThirdParty->intersect(_ray=allrays);
-    
+        //auto multiRayIntersectionResult = bvhThirdParty->intersect(_ray=allrays);
+
         // Get distance 
-        std::vector<std::vector<double>> dist(pointIDs.size(), std::vector<double>(M, 0.0));
+        //std::vector<std::vector<double>> dist(pointIDs.size(), std::vector<double>(M, 0.0));
         
+        /*
+        std::vector<double> dist(M, 0.0);
+        
+
         for (auto const& [fid,rirs] : enumerate(multiRayIntersectionResult))
         {
             if (!rirs.empty()) // on check l'intersection
-                dist[static_cast<int>(fid / M)][fid % M] = rirs.front().distance();
-        }   
-        
+                dist[fid % M] = rirs.front().distance();
+            
+            if (fid % M == M - 1)
+                d_BVH[pointIDs[static_cast<int>(fid / M)]] = *(std::min_element(dist.begin(), dist.end()));
+        }  
+        */
         // Get min for each point
-        for (int k = 0; k < pointIDs.size(); k++)
-            d_BVH[pointIDs[k]] = *(std::min_element(dist[k].begin(), dist[k].end())); 
+        //for (int k = 0; k < pointIDs.size(); k++)
+        //    d_BVH[pointIDs[k]] = *(std::min_element(dist[k].begin(), dist[k].end())); 
         
 
         e_->add( "d_BVH", d_BVH );
