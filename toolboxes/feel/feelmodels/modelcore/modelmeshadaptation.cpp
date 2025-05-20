@@ -230,7 +230,14 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
             auto outputMeshSeq = r.execute();
             using io_t = PartitionIO<MeshType>;
             io_t io( omeshParaPath );
-            io.write( partitionMesh( outputMeshSeq, nPartition/*, partitionByRange, partconfig*/ ) );
+            nl::json partConfig = {
+                { "partitioner", {
+                        { "constraints", {
+                                {"no_interprocess_faces", "fsi-wall" }
+                            }}
+                    }}
+            };
+            io.write( partitionMesh( outputMeshSeq, nPartition, {}, partConfig ) );
 #else
             CHECK( false ) << "no mmg/parmmg support";
 #endif

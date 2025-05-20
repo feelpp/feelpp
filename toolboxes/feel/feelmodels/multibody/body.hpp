@@ -145,9 +145,10 @@ public :
     template <typename RangeType, typename ExprT>
     void updateDisplacement( RangeType const& range, Expr<ExprT> const& e )
         {
+            bool close = true;
             if ( !M_fieldDisplacement )
                 M_fieldDisplacement = M_spaceDisplacement->elementPtr();
-            M_fieldDisplacement->on(_range=range,_expr=e);
+            M_fieldDisplacement->on(_range=range,_expr=e,_close=close);
         }
 
     //! return the current translation
@@ -263,18 +264,20 @@ public :
     template <typename RangeType, typename ExprT>
     void updateElasticDisplacement( RangeType const& range, Expr<ExprT> const& e )
         {
+            bool close = true;
             if ( !M_fieldElasticDisplacement )
                 this->initElasticDisplacement();
-            M_fieldElasticDisplacement->on(_range=range,_expr=e);
+            M_fieldElasticDisplacement->on(_range=range,_expr=e,_close=close);
         }
 
     //! update the elastic displacement from an expression \e on entities \range
     template <typename RangeType, typename ExprT>
     void updateElasticVelocity( RangeType const& range, Expr<ExprT> const& e )
         {
+            bool close = true;
             if ( !M_fieldElasticVelocity )
                 this->initElasticVelocity();
-            M_fieldElasticVelocity->on(_range=range,_expr=e);
+            M_fieldElasticVelocity->on(_range=range,_expr=e,_close=close);
         }
 
 
