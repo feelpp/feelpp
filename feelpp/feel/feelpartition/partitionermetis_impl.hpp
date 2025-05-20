@@ -313,6 +313,47 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} different pid\n", fmt::localtime( std::time(nullptr) ), name, agg.markers() ) << std::endl;
         }
     }
+
+
+    // get constraints
+    std::set<std::string> noInterprocessFacesMarkers;
+    if ( this->M_config.contains("partitioner") )
+    {
+        auto const& jPartitioner = this->M_config.at("partitioner");
+        if ( jPartitioner.contains("constraints") )
+        {
+            auto const& jConstraints = jPartitioner.at("constraints");
+            if ( jConstraints.contains("no_interprocess_faces") )
+            {
+                auto const& jNoInterprocessFaces = jConstraints.at("no_interprocess_faces");
+                if ( jNoInterprocessFaces.is_array() )
+                    for ( auto const& [key,jval] : jNoInterprocessFaces.items() )
+                        noInterprocessFacesMarkers.insert( jval.template get<std::string>() );
+                else if ( jNoInterprocessFaces.is_string() )
+                    noInterprocessFacesMarkers.insert( jNoInterprocessFaces.template get<std::string>() );
+            }
+        }
+    }
+
+    // apply constraints
+    if ( !noInterprocessFacesMarkers.empty() )
+    {
+        auto rangeFaces = markedfaces(mesh, noInterprocessFacesMarkers );
+        for ( auto const& faceWrap : rangeFaces )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            if ( !face.isConnectedTo0() || !face.isConnectedTo1() )
+                continue;
+            rank_type pidElt0 = face.pidElement0();
+            rank_type pidElt1 = face.pidElement1();
+            if ( pidElt0 == pidElt1 )
+                continue;
+            rank_type pidUsed = std::min(pidElt0,pidElt1);
+            auto const& eltModified = pidElt0 < pidElt1 ? face.element1() : face.element0();
+            const_cast<std::decay_t<decltype(eltModified)>&>(eltModified).setProcessId( pidUsed );
+        }
+    }
+
 }
 
 
