@@ -73,6 +73,9 @@ public :
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+private:
+    using dof_elimination_ids_value_type = std::map<ElementsType,std::tuple<std::set<size_type>>>;
+public:
 
     class DataUpdateBase
     {
@@ -442,14 +445,14 @@ public :
                 this->updateDofEliminationIds( spaceName, dofIds, data );
             }
         }
-    void updateDofEliminationIds( std::string const& spaceName, std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds, DataNewtonInitialGuess & data ) const;
-    void updateDofEliminationIds( std::string const& spaceName, std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds, DataUpdateResidual & data ) const;
-    void updateDofEliminationIds( std::string const& spaceName, std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds, DataUpdateJacobian & data ) const;
+    void updateDofEliminationIds( std::string const& spaceName, dof_elimination_ids_value_type const& dofIds, DataNewtonInitialGuess & data ) const;
+    void updateDofEliminationIds( std::string const& spaceName, dof_elimination_ids_value_type const& dofIds, DataUpdateResidual & data ) const;
+    void updateDofEliminationIds( std::string const& spaceName, dof_elimination_ids_value_type const& dofIds, DataUpdateJacobian & data ) const;
     std::set<size_type> & dofEliminationIdsAll( std::string const& spaceName, ElementsType e ) { return std::get<0>( M_dofEliminationIds[spaceName][e] ); }
-    std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return std::get<1>( M_dofEliminationIds[spaceName][e] ); }
+    //std::set<size_type> & dofEliminationIdsMultiProcess( std::string const& spaceName, ElementsType e ) { return std::get<1>( M_dofEliminationIds[spaceName][e] ); }
 
-    std::map<std::string,std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>>> const& dofEliminationIds() const { return M_dofEliminationIds; }
-    std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofEliminationIds( std::string const& spaceName ) const
+    std::map<std::string,dof_elimination_ids_value_type> const& dofEliminationIds() const { return M_dofEliminationIds; }
+    dof_elimination_ids_value_type const& dofEliminationIds( std::string const& spaceName ) const
         {
             CHECK( this->hasDofEliminationIds( spaceName ) ) << "no space name registered : " << spaceName;
             return M_dofEliminationIds.find( spaceName )->second;
@@ -461,10 +464,10 @@ public :
         {
             ElementsType et = (ElementsType)therange.entities();
             auto dofsToAdd = thespace->dofs( therange, c1 );
-            thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            //thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
             this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
-            this->dofEliminationIdsMultiProcess(spaceName,et).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+            // auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
+            // this->dofEliminationIdsMultiProcess(spaceName,et).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
         }
 
 
@@ -557,7 +560,9 @@ private :
     size_type M_startBlockSpaceIndexMatrixRow, M_startBlockSpaceIndexMatrixCol, M_startBlockSpaceIndexVector;
     std::map<std::string,size_type> M_startSubBlockSpaceIndex;
     //! dofs eliminiation ( spaceName -> ( ElementsType -> ( all dofs, only dofs at interprocess that the value can be used) ) )
-    std::map<std::string,std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type> > > > M_dofEliminationIds;
+    //std::map<std::string,std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type> > > > M_dofEliminationIds;
+    //! dofs eliminiation ( spaceName -> ( ElementsType -> ( dofs used ) ) )
+    std::map<std::string, dof_elimination_ids_value_type> M_dofEliminationIds;
 
     // data and tools
     std::map<std::string,std::tuple<backend_ptrtype,block_vector_ptrtype,model_algebraic_factory_ptrtype>> M_algebraicDataAndTools;

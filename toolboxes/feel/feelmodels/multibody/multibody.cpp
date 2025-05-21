@@ -24,7 +24,6 @@ Multibody<ConvexType>::init()
 {
     this->initModelProperties();
 
-    std::cout << "Multibody<ConvexType>::init" << std::endl;
     this->initPhysics( this->shared_from_this(), this->modelProperties().models() );
 
     // physical properties

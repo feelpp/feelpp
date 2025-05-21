@@ -89,6 +89,17 @@ public:
         bool M_loadByMasterRankOnly;
     };
 
+    class PartitioningSetup
+    {
+    public:
+        PartitioningSetup() = default;
+        PartitioningSetup( PartitioningSetup const& ) = default;
+        PartitioningSetup( PartitioningSetup && ) = default;
+        nl::json const& json() const { return M_json; }
+        void updateForUse( nl::json const& j ) { M_json = j; }
+    private:
+        nl::json M_json;
+    };
 
     ModelMeshCommon() = default;
     ModelMeshCommon( ModelMeshes<IndexType> const& mMeshes ) : M_importConfig( mMeshes ) {}
@@ -97,6 +108,9 @@ public:
 
     ImportConfig & importConfig() { return M_importConfig; }
     ImportConfig const& importConfig() const { return M_importConfig; }
+
+    PartitioningSetup & partitioningSetup() noexcept { return M_partitioningSetup; }
+    PartitioningSetup const& partitioningSetup() const noexcept { return M_partitioningSetup; }
 
     bool hasMesh() const { return M_mesh? true : false; }
 
@@ -169,6 +183,7 @@ public:
 
 private:
     ImportConfig M_importConfig;
+    PartitioningSetup M_partitioningSetup;
     mesh_base_ptrtype M_mesh;
     std::string M_meshFilename;
     std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
@@ -192,6 +207,7 @@ public :
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
     using collection_data_by_mesh_entity_type = CollectionOfDataByMeshEntity<index_type>;
     using import_config_type = typename ModelMeshCommon<IndexType>::ImportConfig;
+    using partitioning_setup_type = typename ModelMeshCommon<IndexType>::PartitioningSetup;
 private :
     /**
      * @brief A struct that represents the setup of fields.
@@ -388,7 +404,7 @@ public :
 
         struct Setup
         {
-            Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+            Setup( ModelMesh const* parentModelMesh, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
 
             ModelExpression const& metricExpr() const { return M_metric; }
 
@@ -435,7 +451,7 @@ public :
 
             friend struct Execute;
         private:
-
+            ModelMesh const* M_parentModelMesh = nullptr;
             nl::json M_remesherSetup;
             std::set<std::string> M_requiredMarkers;
             std::set<typename Event::Type> M_executionEvents;
@@ -514,6 +530,7 @@ public :
 
     import_config_type & importConfig() { return M_mmeshCommon->importConfig(); }
     import_config_type const& importConfig() const { return M_mmeshCommon->importConfig(); }
+    partitioning_setup_type const& partitioningSetup() const { return M_mmeshCommon->partitioningSetup(); }
 
     template <typename MeshType>
     void updateForUse( ModelMeshes<IndexType> const& mMeshes );

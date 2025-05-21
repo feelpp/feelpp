@@ -495,26 +495,14 @@ FSI<FluidType,SolidType>::init()
     }
     else if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        auto dofsToAdd = XhFluidVelocity->dofs( M_rangeFsiWall_fluid );
-        XhFluidVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("fluid.velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        //auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( M_dofsMultiProcessVelocitySpaceOnFSI_fluid/*dofsMultiProcessToAdd*/.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_fluid/*dofsMultiProcessToAdd*/.end() );
-
+        if ( !markersFSI_wall_fluid.empty() )
+            this->updateDofEliminationIds("fluid.velocity", XhFluidVelocity, M_rangeFsiWall_fluid );
         // Magneto
-        auto XhSolidDisplacement = this->solidModel()->functionSpaceDisplacement();
-        //auto range_magneto = markedfaces( this->solidModel()->mesh(),"magneto" );
-        auto range_magneto = markedelements( this->solidModel()->mesh(),"Head" );
-        auto M_dofsMultiProcessVelocitySpaceOnFSI_magneto = XhSolidDisplacement->dofs( range_magneto, ComponentType::NO_COMPONENT, true );
-
-        auto dofsToAdd_magneto = XhSolidDisplacement->dofs(  range_magneto );
-        XhSolidDisplacement->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd_magneto );
-        this->dofEliminationIdsAll("solid.displacement",MESH_ELEMENTS).insert( dofsToAdd_magneto.begin(), dofsToAdd_magneto.end() );
-        this->dofEliminationIdsMultiProcess("solid.displacement",MESH_ELEMENTS).insert( M_dofsMultiProcessVelocitySpaceOnFSI_magneto.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_magneto.end() );
-
-        //this->dofEliminationIdsAll("solid.displacement",MESH_FACES).insert( dofsToAdd_magneto.begin(), dofsToAdd_magneto.end() );
-        //this->dofEliminationIdsMultiProcess("solid.displacement",MESH_FACES).insert( M_dofsMultiProcessVelocitySpaceOnFSI_magneto.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_magneto.end() );
-
+        if ( true )
+        {
+            auto range_magneto = markedelements( this->solidModel()->mesh(),"Head" );
+            this->updateDofEliminationIds("solid.displacement", this->solidModel()->functionSpaceDisplacement(), range_magneto );
+        }
     }
 
     if ( ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
@@ -641,6 +629,8 @@ FSI<FluidType,SolidType>::applyRemeshFluid( std::shared_ptr<mesh_fluid_type> old
 
     M_meshDisplacementOnInterface_fluid = this->fluidModel()->meshMotionTool()->displacement()->functionSpace()->elementPtr();
 
+    if ( !markersFSI_wall_fluid.empty() )
+        this->updateDofEliminationIds("fluid.velocity", this->fluidModel()->functionSpaceVelocity(), M_rangeFsiWall_fluid );
 
     this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
 

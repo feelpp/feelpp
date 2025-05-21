@@ -370,6 +370,9 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
     if ( jarg.contains("Import") )
         M_mmeshCommon->importConfig().setup( jarg.at("Import"), mMeshes );
 
+    if ( jarg.contains("Partitioning") )
+        M_mmeshCommon->partitioningSetup().updateForUse( jarg.at("Partitioning") );
+
     if ( jarg.contains("Data") )
     {
         for ( auto const& el : jarg.at("Data").items() )
@@ -413,14 +416,14 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         auto const& j_meshadapt = jarg.at("MeshAdaptation");
         if ( j_meshadapt.is_object() )
         {
-            typename MeshAdaptation::Setup mas( mMeshes, j_meshadapt );
+            typename MeshAdaptation::Setup mas( this, mMeshes, j_meshadapt );
             M_meshAdaptationSetup.push_back( std::move( mas ) );
         }
         else if ( j_meshadapt.is_array() )
         {
             for ( auto const& [j_meshadaptkey,j_meshadaptval] : j_meshadapt.items() )
             {
-                typename MeshAdaptation::Setup mas( mMeshes, j_meshadaptval );
+                typename MeshAdaptation::Setup mas( this, mMeshes, j_meshadaptval );
                 M_meshAdaptationSetup.push_back( std::move( mas ) );
             }
         }

@@ -315,7 +315,7 @@ public :
                 auto const& bbc = *M_bodyBoundaryCondition;
                 auto const& body = bbc.body();
                 M_opI_f2s_disp->apply( body.fieldDisplacement(), *M_fsiToolbox->M_fieldTmpOnSolid );
-                M_fsiToolbox->M_fieldBodyDisplacementOnSolid->on(_expr=idv(*M_fsiToolbox->M_fieldTmpOnSolid),_close=true);
+                *M_fsiToolbox->M_fieldBodyDisplacementOnSolid = *M_fsiToolbox->M_fieldTmpOnSolid;
             }
 
     private:

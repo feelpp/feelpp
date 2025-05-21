@@ -21,8 +21,9 @@ namespace FeelModels
 {
 
 template <typename IndexType>
-ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMesh const* parentModelMesh, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
     :
+    M_parentModelMesh( parentModelMesh ),
     M_eventEachTimeStep_frequency( 1 ),
     M_eventEachTimeStep_lastExecutionIndex( invalid_v<size_type> )
 {
@@ -231,11 +232,7 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
             using io_t = PartitionIO<MeshType>;
             io_t io( omeshParaPath );
             nl::json partConfig = {
-                { "partitioner", {
-                        { "constraints", {
-                                {"no_interprocess_faces", "fsi-wall" }
-                            }}
-                    }}
+                { "partitioner", M_mas.M_parentModelMesh->partitioningSetup().json() }
             };
             io.write( partitionMesh( outputMeshSeq, nPartition, {}, partConfig ) );
 #else
