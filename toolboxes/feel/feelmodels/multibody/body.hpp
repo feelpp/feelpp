@@ -203,7 +203,7 @@ public :
     rotation_angles_type const& rigidRotationAnglesAtPreviousTime() const { return M_rigidRotationAnglesAtPreviousTime; }
 
 
-
+#if 0
     void updateDisplacementFromRigidVelocity( translational_velocity_type const& translationVelocity,
                                               angular_velocity_type const& angularVelocity,
                                               double dt )
@@ -213,6 +213,7 @@ public :
             rotation_angles_type rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
             this->updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
         }
+#endif
 
     void updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles );
 

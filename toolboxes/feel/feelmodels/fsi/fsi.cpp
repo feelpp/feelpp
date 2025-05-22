@@ -498,7 +498,7 @@ FSI<FluidType,SolidType>::init()
         if ( !markersFSI_wall_fluid.empty() )
             this->updateDofEliminationIds("fluid.velocity", XhFluidVelocity, M_rangeFsiWall_fluid );
         // Magneto
-        if ( true )
+        if ( boption(_name="solve-dirichlet",_prefix=this->prefix()) )
         {
             auto range_magneto = markedelements( this->solidModel()->mesh(),"Head" );
             this->updateDofEliminationIds("solid.displacement", this->solidModel()->functionSpaceDisplacement(), range_magneto );

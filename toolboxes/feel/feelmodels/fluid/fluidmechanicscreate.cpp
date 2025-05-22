@@ -2442,160 +2442,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 #endif
 }
 
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( nl::json const& jarg, ModelMaterials const& mats, mesh_ptrtype mesh )
-{
-    M_mesh = mesh;
-    std::set<std::string> matNames;
-    if ( jarg.contains( "names" ) )
-    {
-        auto const& j_names = jarg.at( "names" );
-        if ( j_names.is_string() )
-            matNames.insert( j_names.template get<std::string>() );
-        else if ( j_names.is_array() )
-        {
-            for ( auto const& [j_nameskey,j_namesval] : j_names.items() )
-            {
-                CHECK( j_namesval.is_string() ) << "should be a string";
-                matNames.insert( j_namesval.template get<std::string>() );
-            }
-        }
-    }
-
-    ModelMarkers onlyMarkers;
-    if ( jarg.contains( "markers" ) )
-        onlyMarkers.setup( jarg.at( "markers" ) /*, indexes*/ );
-
-    M_materialsProperties.reset( new materialsproperties_type( M_modelPhysics ) );
-    M_materialsProperties->updateForUse( mats, matNames, onlyMarkers );
-    M_materialsProperties->addMesh( M_mesh );
-
-    // init displacement space
-    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
-    auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
-    M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
-    M_fieldDisplacement = M_spaceDisplacement->elementPtr();
-    M_fieldDisplacementAtPreviousTime = M_spaceDisplacement->elementPtr();
-
-    this->updateForUse();
-}
-
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::applyRemesh( mesh_ptrtype const& newMesh )
-{
-    if ( M_mesh )
-    {
-        mesh_ptrtype oldMesh = this->mesh();
-
-        // material prop
-        this->materialsProperties()->removeMesh( oldMesh );
-        this->materialsProperties()->addMesh( newMesh );
-
-        M_mesh = newMesh;
-
-        // function space and fields
-        space_displacement_ptrtype old_spaceDisplacement = M_spaceDisplacement;
-        element_displacement_ptrtype old_fieldDisplacement = M_fieldDisplacement;
-        element_displacement_ptrtype old_fieldDisplacementAtPreviousTime = M_fieldDisplacementAtPreviousTime;
-        element_displacement_ptrtype old_fieldElasticDisplacement = M_fieldElasticDisplacement;
-
-        auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
-        auto M_rangeMeshElements = markedelements(this->mesh(), mom->markers( M_modelPhysics->physicsAvailableFromCurrentType() ) );
-        M_spaceDisplacement = space_displacement_type::New(_mesh=M_mesh,_range=M_rangeMeshElements);
-        M_fieldDisplacement = M_spaceDisplacement->elementPtr();
-        M_fieldDisplacementAtPreviousTime = M_spaceDisplacement->elementPtr();
-
-        // createInterpolationOp
-        auto opI_displacement = opInterpolation(_domainSpace=old_spaceDisplacement,
-                                                _imageSpace=M_spaceDisplacement,
-                                                _range=M_rangeMeshElements
-                                                );
-
-        auto matrixInterpolation_displacement = opI_displacement->matPtr();
-        matrixInterpolation_displacement->multVector( *old_fieldDisplacement, *M_fieldDisplacement );
-        matrixInterpolation_displacement->multVector( *old_fieldDisplacementAtPreviousTime, *M_fieldDisplacementAtPreviousTime );
-
-        if ( old_fieldElasticDisplacement )
-        {
-            M_fieldElasticDisplacement = M_spaceDisplacement->elementPtr();
-            matrixInterpolation_displacement->multVector( *old_fieldElasticDisplacement, *M_fieldElasticDisplacement );
-        }
-
-        if ( M_fieldElasticVelocity )
-        {
-            space_velocity_ptrtype old_spaceElasticVelocity = M_spaceElasticVelocity;
-            element_velocity_ptrtype old_fieldElasticVelocity = M_fieldElasticVelocity;
-            M_fieldElasticVelocity.reset();
-            this->initElasticVelocity();
-
-            auto opI_elasticVelocity = opInterpolation(_domainSpace=old_spaceElasticVelocity,
-                                                       _imageSpace=M_spaceElasticVelocity,
-                                                       _range=M_rangeMeshElements );
-
-            auto matrixInterpolation_elasticVelocity = opI_elasticVelocity->matPtr();
-            matrixInterpolation_elasticVelocity->multVector( *old_fieldElasticVelocity, *M_fieldElasticVelocity );
-
-        }
-
-    }
-}
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
-{
-    CHECK( M_materialsProperties ) << "no materialsProperties defined";
-
-    auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
-    M_mass = 0;
-    M_massCenter = eigen_vector_type<nRealDim>::Zero();
-    for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = std::get<0>( rangeData.second );
-        auto const& density = M_materialsProperties->density( matName );
-        auto const& densityExpr = density.exprScalar();
-
-        M_mass += integrate(_range=range,_expr=densityExpr).evaluate()(0,0);
-        M_massCenter += integrate(_range=range,_expr=densityExpr*P()).evaluate();
-    }
-    M_massCenter /= M_mass;
-
-    if constexpr ( nRealDim == 2 )
-        M_massCenter = eigen_vector_type<nRealDim>(0.2,0.2); //WARNING VINCENT!!!!!!!!!!!!!!!!!!
-
-    this->computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame );
-}
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles )
-{
-    M_rigidTranslationDisplacement = rigidTranslation;
-    M_rigidRotationAngles = rigidRotationAngles;
-    // we compute new displacement from current mesh position + rigid body displacement update
-    // TODO: check is on moving mesh
-    //auto T = Feel::vf::toExpr( M_rigidTranslationDisplacement - M_rigidTranslationDisplacementAtPreviousTime ); // NOT COMPILE, should be fixed!!
-    auto T = this->rigidTranslationExpr() - Feel::vf::toExpr( M_rigidTranslationDisplacementAtPreviousTime );
-    auto R = Feel::vf::toExpr( Body::rigidRotationMatrix( M_rigidRotationAngles-M_rigidRotationAnglesAtPreviousTime ) );
-    auto M = this->massCenterExpr();
-
-    auto tmp = M_spaceDisplacement->element();
-    tmp = this->fieldDisplacement();
-
-    this->updateDisplacement( elements(support(M_spaceDisplacement)), idv(tmp) + R*( P() - M ) + M + T - P() );
-}
-
-
-#endif
-
-
-
-
 
 
 
@@ -2614,55 +2460,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
 {
     M_name = bodyName;
     M_markers.insert( bi.markers().begin(), bi.markers().end() );
-
-    if ( !bi.jsonMaterials().is_null() )
-    {
-        M_body = std::addressof( fluidToolbox.multibody()->body( bodyName ) );
-#if 0
-        auto bodyPhysics = std::make_shared<ModelPhysics<nRealDim>>( "body", fluidToolbox );
-#if 0 /// VINCENT
-        if ( bodyPhysics->physics().empty() )
-            bodyPhysics->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
-#else
-        if ( bodyPhysics->physics().empty() )
-            bodyPhysics->initPhysics( bodyPhysics, ModelModels{} );
-#endif
-
-        //if ( M_body->physics().empty() )
-        //M_body->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
-        M_body.reset( new Body( bodyPhysics ) );
-        M_body->setup( bi.jsonMaterials(), fluidToolbox.modelProperties().materials(), fluidToolbox.mesh() );
-#endif
-    }
-    else
-    {
-#if 0 // VINCENT
-        M_body.reset( new Body );
-
-        ModelExpression massExpr, momentOfInertiaExpr, initialMassCenterExpr;
-        massExpr.setExpr( "mass", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
-        if ( massExpr.template hasExpr<1,1>() )
-            M_body->setMass( massExpr.template expr<1,1>().evaluate()(0,0) );
-        momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
-        if constexpr ( nDim == 2 )
-        {
-            if ( momentOfInertiaExpr.template hasExpr<1,1>() )
-                M_body->setMomentOfInertia_bodyFrame( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
-        }
-        else
-        {
-            if ( momentOfInertiaExpr.template hasExpr<nDim,nDim>() )
-                M_body->setMomentOfInertia_bodyFrame( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
-        }
-        initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
-        if ( initialMassCenterExpr.template hasExpr<nRealDim,1>() )
-        {
-            auto initMassCenter = initialMassCenterExpr.template expr<nRealDim,1>();
-            M_massCenterRef = initMassCenter.evaluate();
-            M_body->setMassCenter( M_massCenterRef );
-        }
-#endif
-    }
+    M_body = std::addressof( fluidToolbox.multibody()->body( bodyName ) );
 
     M_translationalVelocityExpr = bi.mexprTranslationalVelocity();
     M_angularVelocityExpr = bi.mexprAngularVelocity();
@@ -3019,6 +2817,46 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::applyRemesh( self_typ
     }
 
 }
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateRigidDisplacement( double dt )
+{
+    typename multibody_type::body_type::translational_velocity_type translationalVelocity = multibody_type::body_type::translational_velocity_type::Zero();
+    typename multibody_type::body_type::angular_velocity_type angularVelocity = multibody_type::body_type::angular_velocity_type::Zero();
+    if ( this->hasTranslationalVelocityExpr() )
+        translationalVelocity = this->translationalVelocityExpr().evaluate();
+    else
+        translationalVelocity = idv(M_fieldTranslationalVelocity).evaluate();
+
+    if ( !this->isInNBodyArticulated() )
+    {
+        if ( this->hasAngularVelocityExpr() )
+            angularVelocity = this->angularVelocityExpr().evaluate();
+        else
+            angularVelocity = idv(M_fieldAngularVelocity).evaluate();
+        //angularVelocity = idv(M_bdfAngularVelocity->poly()).evaluate();
+    }
+
+    //this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
+#if 0
+    // get translation disp and angles from Euler time scheme
+    eigen_vector_type<nRealDim> rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
+    rotation_angles_type rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+    this->body().updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
+#else
+    // Method des trapèzes (Crank-Nicolson)
+    typename multibody_type::body_type::translational_velocity_type translationalVelocityAtPreviousTime = idv(M_bdfTranslationalVelocity->unknown(0)).evaluate();
+    typename multibody_type::body_type::angular_velocity_type angularVelocityAtPreviousTime = idv(M_bdfAngularVelocity->unknown(0)).evaluate();
+    eigen_vector_type<nRealDim> rigidTranslationDisplacement = this->body().rigidTranslationDisplacementAtPreviousTime() + 0.5*dt*(translationalVelocity + translationalVelocityAtPreviousTime );
+    typename multibody_type::body_type::rotation_angles_type rigidRotationAngles = this->body().rigidRotationAnglesAtPreviousTime() + 0.5*dt*(angularVelocity + angularVelocityAtPreviousTime );
+    this->body().updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
+#endif
+
+}
+
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
