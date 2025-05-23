@@ -54,13 +54,13 @@
     },
     "Meshes":
     {
-        // "fsi":{
-        //     "Import":
-        //     {
-        //         "filename":"$cfgdir/cfd.geo",
-        //         "hsize":0.03
-        //     },
-        // },
+        "fsi":{
+            "Import":
+            {
+                "filename":"$cfgdir/swimmertrue.geo",
+                "hsize":0.00008
+            }
+        },
         "fluid":
         {
             "MeshMotion":
