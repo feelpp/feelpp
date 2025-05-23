@@ -276,6 +276,7 @@ using periodic = NA::named_argument_t<struct periodic_tag>;
 using collect_garbage = NA::named_argument_t<struct collect_garbage_tag>;
 
 using savehdf5 = NA::named_argument_t<struct savehdf5_tag>;
+using partitioning = NA::named_argument_t<struct partitioning_tag>;
 using partitions = NA::named_argument_t<struct partitions_tag>;
 using partition_file = NA::named_argument_t<struct partition_file_tag>;
 using respect_partition = NA::named_argument_t<struct respect_partition_tag>;
@@ -587,6 +588,7 @@ inline constexpr auto& _periodic = NA::identifier<na::periodic>;
 inline constexpr auto& _collect_garbage = NA::identifier<na::collect_garbage>;
 
 inline constexpr auto& _savehdf5 = NA::identifier<na::savehdf5>;
+inline constexpr auto& _partitioning = NA::identifier<na::partitioning>;
 inline constexpr auto& _partitions = NA::identifier<na::partitions>;
 inline constexpr auto& _partition_file = NA::identifier<na::partition_file>;
 inline constexpr auto& _respect_partition = NA::identifier<na::respect_partition>;

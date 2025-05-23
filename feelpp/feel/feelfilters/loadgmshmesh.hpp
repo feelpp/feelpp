@@ -50,7 +50,7 @@ template <typename MeshType>
 std::shared_ptr<MeshType>
 loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, std::string const& prefix, po::variables_map const& vm,
                   double scale, bool straighten, int refine, size_type update, bool physical_are_elementary_regions, worldcomm_ptr_t const& worldcomm,
-                  bool respect_partition, bool rebuild_partitions, std::string const& rebuild_partitions_filename, int partitions,int partitioner, int partition_file, int verbose )
+                  nl::json const& partitioning, bool respect_partition, bool rebuild_partitions, std::string const& rebuild_partitions_filename, int partitions,int partitioner, int partition_file, int verbose )
 {
     using _mesh_type = MeshType;
     using _mesh_ptrtype = std::shared_ptr<_mesh_type>;
@@ -125,7 +125,10 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
             _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
             _meshSeq->accept( import );
             _meshSeq->components().reset();
-            _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
+            size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
+            if ( true ) // TODO: only required if partitioning has constraints
+                update_ |= MESH_UPDATE_FACES_MINIMAL;
+            _meshSeq->components().set( update_ );
             _meshSeq->updateForUse();
 #if defined(FEELPP_HAS_HDF5)
             using io_t = PartitionIO<_mesh_type>;
@@ -135,8 +138,8 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
                 fnamePartitioned = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
 
             io_t io( fnamePartitioned );
-            std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
-            io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
+            //std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
+            io.write( partitionMesh( _meshSeq, partitions, {}, partitioning ) );
 #endif
         }
         else
@@ -180,6 +183,7 @@ auto loadGMSHMesh( Ts && ... v )
     size_type update = args.get_else( _update, MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     bool physical_are_elementary_regions = args.get_else_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } );
     worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );
+    nl::json const& partitioning = args.get_else( _partitioning, nl::json{} );
     bool respect_partition = args.get_else_invocable(_respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } );
     bool rebuild_partitions = args.get_else_invocable(_rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } );
     std::string const& rebuild_partitions_filename = args.get_else(_rebuild_partitions_filename, "");
@@ -191,7 +195,7 @@ auto loadGMSHMesh( Ts && ... v )
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
     return loadGMSHMeshImpl( std::shared_ptr<mesh_type>( mesh ), filename, prefix, vm,
                              scale, straighten, refine, update, physical_are_elementary_regions, worldcomm,
-                             respect_partition, rebuild_partitions, rebuild_partitions_filename, partitions, partitioner, partition_file, verbose );
+                             partitioning, respect_partition, rebuild_partitions, rebuild_partitions_filename, partitions, partitioner, partition_file, verbose );
 }
 
 
