@@ -88,6 +88,20 @@ ModelMeshCommon<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly
     M_loadByMasterRankOnly = true;
 }
 
+
+template <typename IndexType>
+void
+ModelMeshCommon<IndexType>::ImportConfig::setupFromSubmesh( mesh_base_ptrtype m, std::set<std::string> const& markers )
+{
+    int codim = 0;
+    // M_inputMesh = m;
+    // M_submeshCoDimMarkers = { codim, markers };
+    // std::make_optional<std::tuple<mesh_base_ptrtype,int,std::set<std::string>>>( )
+    M_importFromSubmeshData = std::make_optional<std::tuple<mesh_base_ptrtype,int,std::set<std::string>>>( m, codim, markers );
+        //std::make_tuple< m,  codim, markers >
+    // TODO VINCENT
+}
+
 template <typename IndexType>
 void
 ModelMeshCommon<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
@@ -468,6 +482,9 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 {
     using mesh_type = MeshType;
 
+    mMeshes.log("ModelMesh","updateForUse", "start");
+
+
     if ( !M_mmeshCommon->hasMesh() )
     {
         std::shared_ptr<mesh_type> meshLoaded;
@@ -475,9 +492,63 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         std::string meshFilenameBase = fmt::format("{}.mesh",mMeshes.keyword());
         auto & importConfig = M_mmeshCommon->importConfig();
         importConfig.updateForUse( mMeshes );
+        nl::json partConfig = {
+            { "partitioner", this->partitioningSetup().json() }
+        };
+
 
         auto wcPtr = ( importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
-        if ( importConfig.hasMeshFilename() )
+        if ( importConfig.importFromSubmesh() )
+        {
+            mMeshes.log("ModelMesh","updateForUse", fmt::format("load from submesh : nMarkers={}",importConfig.submeshMarkers().size()) );
+
+            if ( !importConfig.submeshMarkers().empty() )
+            {
+                switch ( importConfig.submeshCoDim() )
+                {
+                case 0:
+                {
+                    auto inputMesh = importConfig.template submeshInputMesh<mesh_type>();
+                    bool doRepartitioning = true;
+                    size_type updateSubmeshCtx = importConfig.meshComponents();
+                    if ( doRepartitioning )
+                    {
+                        updateSubmeshCtx = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
+                        if ( true ) // TODO: only required if partitioning has constraints
+                            updateSubmeshCtx |= MESH_UPDATE_FACES_MINIMAL;
+                    }
+
+                    std::shared_ptr<mesh_type> submesh;
+                    if ( inputMesh )
+                        submesh = createSubmesh(_range=markedelements(inputMesh, importConfig.submeshMarkers() ),
+                                                _context=size_type(EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT), // WARNING not use relation, put an option!
+                                                _update=updateSubmeshCtx );
+
+                    if ( doRepartitioning )
+                    {
+                        if ( submesh )
+                            submesh->saveHDF5( "toto.json" );
+                        meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr ),
+                                              _filename="toto.json",
+                                              _update=importConfig.meshComponents(),
+                                              _partitioning=partConfig,
+                                              //_partitions=importConfig.numberOfPartition(),
+                                              _rebuild_partitions=true );
+                    }
+                    else
+                        meshLoaded = submesh;
+
+                    // TODO straighten
+                    break;
+                }
+                default:
+                    CHECK( false ) << "TODO";
+                }
+            }
+            else
+                CHECK( false ) << "missing data for mesh import with an inputMesh";
+        }
+        else if ( importConfig.hasMeshFilename() )
         {
             std::string const& inputMeshFilename = importConfig.meshFilename();
             mMeshes.log("ModelMesh","updateForUse", "load mesh file : " + inputMeshFilename);
@@ -492,16 +563,17 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
             if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
                 meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
-                                  _filename=inputMeshFilename,
-                                  _prefix=mMeshes.prefix(),
-                                  _vm=mMeshes.clovm(),
-                                  _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                  _straighten=importConfig.straightenMesh(),
-                                  _rebuild_partitions=generatePartitioning,
-                                  _rebuild_partitions_filename=meshPartitionedFilename,
-                                  _partitions=importConfig.numberOfPartition(),
-                                  _savehdf5=0,
-                                  _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+                                      _filename=inputMeshFilename,
+                                      _prefix=mMeshes.prefix(),
+                                      _vm=mMeshes.clovm(),
+                                      _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                      _straighten=importConfig.straightenMesh(),
+                                      _partitioning=partConfig,
+                                      _rebuild_partitions=generatePartitioning,
+                                      _rebuild_partitions_filename=meshPartitionedFilename,
+                                      _partitions=importConfig.numberOfPartition(),
+                                      _savehdf5=0,
+                                      _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
             }
 
             meshFilename = (generatePartitioning)? meshPartitionedFilename : importConfig.meshFilename();
@@ -527,15 +599,16 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                 // allow to have a geo and msh file with a filename equal to prefix
                 geodesc->setPrefix(meshFilenameBase);
                 meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
-                                        _desc=geodesc,
-                                        _prefix=mMeshes.prefix(),
-                                        _vm=mMeshes.clovm(),
-                                        _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                        _h=importConfig.meshSize(),
-                                        _straighten=importConfig.straightenMesh(),
-                                        _partitions=importConfig.numberOfPartition(),
-                                        _update=importConfig.meshComponents(),
-                                        _directory=mMeshes.rootRepository() );
+                                            _desc=geodesc,
+                                            _prefix=mMeshes.prefix(),
+                                            _vm=mMeshes.clovm(),
+                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                            _h=importConfig.meshSize(),
+                                            _straighten=importConfig.straightenMesh(),
+                                            _partitions=importConfig.numberOfPartition(),
+                                            _partitioning=partConfig,
+                                            _update=importConfig.meshComponents(),
+                                            _directory=mMeshes.rootRepository() );
             }
             meshFilename = mshfile;
         }

@@ -28,7 +28,7 @@
  */
 
 #include <feel/feelmodels/fsi/fsi.hpp>
-#include <feel/feelmodels/modelmesh/fsimesh.hpp>
+//#include <feel/feelmodels/modelmesh/fsimesh.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
 #include <feel/feelpde/operatorpmm.hpp>
 
@@ -93,6 +93,32 @@ FSI<FluidType,SolidType>::FSI( std::string const& prefix,
 
 //---------------------------------------------------------------------------------------------------------//
 
+
+template <typename FluidType,typename SolidType>
+void
+FSI<FluidType,SolidType>::initMesh()
+{
+    if ( this->modelProperties().jsonData().contains("Meshes") )
+        super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
+    this->modelMesh( this->keyword() ).importConfig().setStraightenMesh( false );
+#if 1
+    this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
+#endif
+#if 0
+    this->modelMesh( this->keyword() ).importConfig().setMeshComponents( MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES );
+#endif
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_fluid_type>( this->keyword() );
+
+    auto fsimesh = this->modelMesh( this->keyword() ).template mesh<mesh_fluid_type>();
+    M_fluidModel->modelMesh( M_fluidModel->keyword() ).importConfig().setupFromSubmesh( fsimesh, M_markersNameFluid );
+
+    bool doExtractSubmesh = boption(_name="solid-mesh.extract-1d-from-fluid-mesh",_prefix=this->prefix() );
+    if ( !doExtractSubmesh )
+        M_solidModel->modelMesh( M_solidModel->keyword() ).importConfig().setupFromSubmesh( fsimesh, M_markersNameSolid );
+}
+#if 0
 template <typename FluidType,typename SolidType>
 void
 FSI<FluidType,SolidType>::createMesh()
@@ -174,7 +200,7 @@ FSI<FluidType,SolidType>::createMesh()
 
     this->log("FSI","createMesh","finish");
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 namespace detail
@@ -268,10 +294,12 @@ FSI<FluidType,SolidType>::init()
 
     if ( this->modelProperties().jsonData().contains("Meshes") )
         super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
-
+#if 0
     // create fsimesh and partitioned meshes if require
     if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
         this->createMesh();
+#endif
+    this->initMesh();
 
     // get interfaces markers
     std::set<std::string> markersFSI_fluid, markersFSI_solid, markersFSI_body_fluid, markersFSI_wall_fluid;
@@ -294,7 +322,6 @@ FSI<FluidType,SolidType>::init()
     }
     markersFSI_solid = markersFSI_fluid;
 
-
     // fluid model build
     //if ( !M_fluidModel )
     {
@@ -302,8 +329,10 @@ FSI<FluidType,SolidType>::init()
         // if ( this->hasModelMesh( M_fluidModel->keyword() ) )
         //     M_heatModel->setModelMeshAsShared( this->modelMesh() );
         //M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
+#if 0
         if ( !M_mshfilepathFluidPartN.empty() )
             M_fluidModel->modelMesh( M_fluidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathFluidPartN.string() );
+#endif
 
         M_fluidModel->setManageParameterValues( false );
         if ( !M_fluidModel->modelPropertiesPtr() )
@@ -368,8 +397,10 @@ FSI<FluidType,SolidType>::init()
         }
         else
         {
+#if 0
             if ( !M_mshfilepathSolidPartN.empty() )
                 M_solidModel->modelMesh( M_solidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathSolidPartN.string() );
+#endif
         }
 
 

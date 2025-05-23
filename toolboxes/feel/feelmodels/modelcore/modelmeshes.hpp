@@ -38,6 +38,16 @@ public:
     using index_type = IndexType;
     using mesh_base_type = MeshBase<index_type>;
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
+private:
+    template <typename MeshType, typename InputMeshType>
+    static auto toMesh( InputMeshType const& m )
+        {
+            if constexpr( std::is_same_v<MeshType,mesh_base_type> )
+                return m;
+            else
+                return std::dynamic_pointer_cast<MeshType>( m );
+        }
+public:
 
     class ImportConfig
     {
@@ -64,6 +74,13 @@ public:
         size_type meshComponents() const { return M_meshComponents; }
         bool loadByMasterRankOnly() const { return M_loadByMasterRankOnly; }
 
+        bool importFromSubmesh() const { return M_importFromSubmeshData.has_value(); }
+        template <typename MeshType = mesh_base_type>
+        auto submeshInputMesh() const { return ModelMeshCommon::template toMesh<MeshType>( std::get<0>( M_importFromSubmeshData.value() ) ); }
+        int submeshCoDim() const { return std::get<1>( M_importFromSubmeshData.value() ); }
+        std::set<std::string> const& submeshMarkers() const { return std::get<2>( M_importFromSubmeshData.value() ); }
+
+
         void setStraightenMesh( bool b ) { M_straightenMesh = b; }
         void setMeshComponents( size_type c ) { M_meshComponents = c; }
 
@@ -75,12 +92,14 @@ public:
 
         void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
         void setupSequentialAndLoadByMasterRankOnly();
+        void setupFromSubmesh( mesh_base_ptrtype m, std::set<std::string> const& markers );
 
         void updateInformationObject( nl::json & p ) const;
         static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
     private :
         std::string M_inputFilename, M_meshFilename, M_geoFilename;
+        std::optional<std::tuple<mesh_base_ptrtype,int,std::set<std::string>>> M_importFromSubmeshData;
         bool M_generatePartitioning;
         int M_numberOfPartition;
         double M_meshSize;
@@ -117,10 +136,12 @@ public:
     template <typename MeshType = mesh_base_type>
     auto mesh() const
         {
-            if constexpr( std::is_same_v<MeshType,mesh_base_type> )
-                return M_mesh;
-            else
-                return std::dynamic_pointer_cast<MeshType>( M_mesh );
+
+            return ModelMeshCommon::template toMesh<MeshType>( M_mesh );
+            // if constexpr( std::is_same_v<MeshType,mesh_base_type> )
+            //     return M_mesh;
+            // else
+            //     return std::dynamic_pointer_cast<MeshType>( M_mesh );
         }
 
     std::string const& meshFilename() const { return M_meshFilename; }
