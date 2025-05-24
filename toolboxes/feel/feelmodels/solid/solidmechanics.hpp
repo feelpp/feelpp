@@ -818,7 +818,7 @@ private :
     double M_genAlpha_beta;
 
 
-    bdf_displacement_ptrtype M_timeStepBdfDisplacement, M_timeStepBdfVelocity;
+    bdf_displacement_ptrtype M_timeStepBdfDisplacement, M_timeStepBdfVelocity, M_saveTsAcceleration;
     double M_timeStepThetaValue;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
