@@ -397,7 +397,7 @@ public:
             M_use_single_transient_file = s;
         }
     void
-    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE )
         {
             M_ex_geometry = exgeo;
             M_ts_set.back()->setMesh( mesh );
