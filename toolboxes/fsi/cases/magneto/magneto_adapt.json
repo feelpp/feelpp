@@ -5,15 +5,20 @@
     {
         "fluid":{
             "materials":["Fluid"],
-            "equations":"Stokes",
-            "equationsAA":"Navier-Stokes"
+            "equationsAA":"Stokes",
+            "equations":"Navier-Stokes"
             //"submodels":{ "multibody":["toto"] }
         },
         "solid":
         {
             "materials":["Solid","Head"],
-            "equations":"Hyper-Elasticity",
-            "equationsAA":"Elasticity"
+            //"equations":"Hyper-Elasticity",
+            //"equationsAA":"Elasticity"
+            "setup":{
+                "equations":"Hyper-Elasticity",
+                "material-model":"StVenantKirchhoff",
+                "formulation":"displacement-pressure"
+            }
         },
         "multibody":{
             "name":"toto",
@@ -118,11 +123,11 @@
             "mu":"1.52"
         },
         "Solid": {
-            "E":8e4,//5e4,//"2e5",
+            "E":5e4,//1e5,// 8e4,//5e4,//"2e5",
             //"E":"200000",
-            "nu":"0.40",
+            "nu":0.4,//0.4999999,//"0.40",
             //"rho":"1000"
-            "rho":"120"
+            "rho":800//"120"
         },
         "Head": {
             "E":"4.1e10",
