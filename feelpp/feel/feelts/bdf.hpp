@@ -65,38 +65,41 @@ enum BDFTimeScheme { BDF_ORDER_ONE=1, BDF_ORDER_TWO, BDF_ORDER_THREE, BDF_ORDER_
 /**
  * \class Bdf
  * \ingroup SpaceTime
- * \brief Backward differencing formula time discretization
+ * \brief Backward Differentiation Formula (BDF) time discretization
+ *
+ * This class implements the Backward Differentiation Formula (BDF) method for solving time-dependent problems using a multistep, implicit time-stepping scheme.
  *
  * A differential equation of the form
  *
- * \f$ M u' = A u + f \f$
+ * \f$ M \frac{du}{dt} = A u + f \f$
  *
- * is discretized in time as
+ * is discretized in time using a polynomial \f$ p(t) \f$ of order \f$ n \f$ that interpolates the past state vectors \f$ (t_i, u_i) \f$ for \f$ i = k-n+1,\dots,k+1 \f$.
  *
- * \f$ M p'(t_{k+1}) = A u_{k+1} + f_{k+1} \f$
+ * The first derivative is approximated as:
  *
- * where p denotes the polynomial of order n in t that interpolates
- * \f$ (t_i,u_i) \f$ for \f$ i = k-n+1,...,k+1\f$.
+ * \f$ p'(t_{k+1}) = \frac{1}{\Delta t} \left( \alpha_0 u_{k+1} - \sum_{i=1}^n \alpha_i u_{k+1-i} \right) \f$
  *
- * The approximative time derivative \f$ p'(t_{k+1}) \f$ is a linear
- * combination of state vectors \f$u_i\f$:
+ * Leading to the discrete equation:
  *
- * \f$ p'(t_{k+1}) = \frac{1}{\Delta t} (\alpha_0 u_{k+1} - \sum_{i=0}^n \alpha_i u_{k+1-i} )\f$
+ * \f$ \frac{\alpha_0}{\Delta t} M u_{k+1} = A u_{k+1} + f_{k+1} + M \bar{p} \f$
  *
- * Thus we have
- *
- * \f$ \frac{\alpha_0}{\Delta t} M u_{k+1} = A u_{k+1} + f + M \bar{p} \f$
- *
- * with
+ * where:
  *
  * \f$ \bar{p} = \frac{1}{\Delta t} \sum_{i=1}^n \alpha_i u_{k+1-i} \f$
  *
- * This class stores the n last state vectors in order to be able to
- * calculate \f$ \bar{p} \f$. It also provides \f$ \alpha_i \f$
- * and can extrapolate the new state from the n last states with a
- * polynomial of order n-1:
+ * The class provides access to:
+ * - The BDF coefficients \f$ \alpha_i \f$
+ * - The extrapolation coefficients \f$ \beta_i \f$ used to predict \f$ u_{k+1} \f$
  *
  * \f$ u_{k+1} \approx \sum_{i=0}^{n-1} \beta_i u_{k-i} \f$
+ *
+ * Additionally, the class supports the approximation of the second-order time derivative using:
+ *
+ * \f$ \frac{d^2 u}{dt^2}(t_{k+1}) \approx \frac{1}{\Delta t^2} \sum_{i=0}^{n+1} \alpha_i^{(2)} u_{k+1-i} \f$
+ *
+ * This is particularly useful for solving hyperbolic problems such as wave equations.
+ *
+ * The class manages the history of time states and time stamps, and supports both extrapolation and variational RHS assembly through `poly()`, `polyDeriv()`, and `polySecondDeriv()`.
  */
 template<typename SpaceType>
 class Bdf : public TSBase
@@ -144,15 +147,15 @@ public:
             M_space = space;
 
             // not yet init : do nothing
-            if ( M_unknowns.empty() )
+            if ( M_history.empty() )
                 return;
 
             // interpolate unknown fields
-            unknowns_type oldUnknowns = M_unknowns;
-            for ( int k=0;k< M_unknowns.size();++k )
+            unknowns_type oldUnknowns = M_history;
+            for ( int k=0;k< M_history.size();++k )
             {
-                M_unknowns[k] = M_space->elementPtr();
-                matInterp->multVector( unwrap_ptr(oldUnknowns[k]), unwrap_ptr(M_unknowns[k]) );
+                M_history[k] = M_space->elementPtr();
+                matInterp->multVector( unwrap_ptr(oldUnknowns[k]), unwrap_ptr(M_history[k]) );
             }
 
             //! recompute poly and polyDeriv
@@ -168,7 +171,7 @@ public:
     {
         auto b = bdf_ptrtype( new bdf_type( *this ) );
 
-        for ( auto it = b->M_unknowns.begin(), en = b->M_unknowns.end(); it != en; ++ it )
+        for ( auto it = b->M_history.begin(), en = b->M_history.end(); it != en; ++ it )
         {
             *it = element_ptrtype( new element_type( M_space ) );
         }
@@ -231,18 +234,24 @@ public:
 
     //! return a vector of the times prior to timeInitial() (included)
     std::map<int,double> priorTimes() const override
-        {
-            std::map<int,double> prior;
-            for( int i = 0; i < this->M_order; ++i )
-                prior[i]=timeInitial()-i*timeStep();
-            return prior;
-        }
+    {
+        std::map<int,double> prior;
+        for( int i = 0; i < this->M_order+2; ++i )
+            prior[i]=timeInitial()-i*timeStep();
+        return prior;
+    }
 
     /**
        Initialize all the entries of the unknown vector to be derived with the
        vector u0 (duplicated)
     */
     void initialize( element_type const& u0 );
+
+    /**
+     * Initialize all the entries of the unknown vector to be derived with the
+     * vector u0 (duplicated) and set the time step to dt
+     */
+    void initialize( std::vector<element_type> const& u0 );
 
     /**
        Initialize all the entries of the unknown vector to be derived with a
@@ -254,7 +263,23 @@ public:
        start the bdf
     */
     double start();
+
+    /**
+       start the bdf with a given initial value
+       @param u0 initial value of the state vector
+    */
     double start( element_type const& u0 );
+
+    /**
+       start the bdf with a given initial value
+       @param u0 history of initial values of the state vector
+    */
+    double start( std::vector<element_type> const& u0 );
+
+    /**
+       start the bdf with a given initial value
+       @param uv0 history of initial values of the state vector
+    */
     double start( unknowns_type const& uv0 );
 
     /**
@@ -307,6 +332,43 @@ public:
         return tcur;
     }
 
+    //! Return the first derivative at time t_{k}
+    element_type const& firstDerivative() const
+    {
+        if (!M_firstDeriv)
+            M_firstDeriv = M_space->elementPtr();
+        M_firstDeriv->zero();
+        for (int i = 0; i <= this->timeOrder(); ++i)
+            M_firstDeriv->add(this->polyDerivCoefficient(i), *M_history[i]);
+        return *M_firstDeriv;
+    }
+
+    //! Return the first derivative at time t_{k+1}
+    element_type const& firstDerivative( element_type const& u ) const
+    {
+        if (!M_firstDeriv)
+            M_firstDeriv = M_space->elementPtr();
+        M_firstDeriv->zero();
+        M_firstDeriv->add(this->polyDerivCoefficient(0), u);
+        for (int i = 0; i < this->timeOrder(); ++i)
+            M_firstDeriv->add(this->polyDerivCoefficient(i+1), *M_history[i]);
+        return *M_firstDeriv;
+    }
+
+
+    //! Return the second derivative at time t_{k+1}
+    element_type const& secondDerivative() const
+    {
+        if (!M_secondDeriv)
+            M_secondDeriv = M_space->elementPtr();
+        M_secondDeriv->zero();
+        for (int i = 0; i < M_alpha2[this->timeOrder() - 1].size(); ++i)
+            M_secondDeriv->add(this->polySecondDerivCoefficient(i), *M_history[i]);
+        return *M_secondDeriv;
+    }
+
+    element_type const& extrapolation() const { return this->poly(); }
+
     /**
      * Return \f$ \alpha_i \f$
      */
@@ -326,11 +388,32 @@ public:
         //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
 
+    /**
+     * Return \f$ \frac{\alpha_i^{(2)}}{\Delta t^2} \f$
+     */
+    double polySecondDerivCoefficient(int i) const
+    {
+        int order = this->timeOrder();
+        CHECK(order >= 2 && order <= BDF_MAX_ORDER);
+        CHECK(i >= 0 && i < M_alpha2[order - 1].size());
+
+        return M_alpha2[order - 1][i] / (this->timeStep() * this->timeStep());
+    }
+
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_type const& polyDeriv() const;
 
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_ptrtype const& polyDerivPtr() const { return M_polyDeriv; }
+
+    //! Returns the right hand side \f$ \bar{p}^{(2)} \f$ of the second order time derivative formula
+    element_type const& polySecondDeriv() const
+    {
+        return *M_polySecondDeriv;
+    }
+
+    //! Returns the right hand side \f$ \bar{p}^{(2)} \f$ of the second order time derivative formula
+    element_ptrtype const& polySecondDerivPtr() const { return M_polySecondDeriv; }
 
     //! Compute the polynomial extrapolation approximation of order n-1 of
     //! u^{n+1} defined by the n stored state vectors
@@ -341,30 +424,82 @@ public:
     element_ptrtype const& polyPtr() const { return M_poly; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const { return M_unknowns; }
+    unknowns_type const& history() const { return M_history; }
+    FEELPP_DEPRECATED unknowns_type const& unknowns() const { return M_history; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type& unknowns() { return M_unknowns; }
+    unknowns_type& history() { return M_history; }
+    FEELPP_DEPRECATED unknowns_type& unknowns() { return M_history; }
 
     //! Return the previous element at previous time i-1
-    element_type& unknown( int i );
+    element_type const& history( int i ) const
+    {
+        CHECK( i >= 0 && i < M_history.size() ) << "[BDF] invalid index " << i;
+        return *M_history[i];
+    }
+    FEELPP_DEPRECATED element_type& unknown( int i );
 
     //! Return the previous element at previous time i-1
-    element_ptrtype unknownPtr( int i );
+    element_ptrtype historyPtr( int i ) const
+    {
+        CHECK( i >= 0 && i < M_history.size() ) << "[BDF] invalid index " << i;
+        return M_history[i];
+    }
+    FEELPP_DEPRECATED element_ptrtype unknownPtr( int i );
+
 
     //! update field \u with derivative at previous time indexed by \i (i.e. curent_time - i - 1)
     void updateDerivative( element_type & u, int i = 0 ) const;
 
-    element_type const& prior() const { return *M_unknowns[0]; }
+    element_type const& prior() const { return *M_history[0]; }
 
-    element_type& prior() { return *M_unknowns[0]; }
+    element_type& prior() { return *M_history[0]; }
 
     template<typename container_type>
-    void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
+    FEELPP_DEPRECATED void setUnknown( int i,  typename space_type::template Element<value_type, container_type> const& e )
     {
-        *M_unknowns[i] = e;
+        *M_history[i] = e;
+    }
+    template<typename container_type>
+    void setHistory( int i,  typename space_type::template Element<value_type, container_type> const& e )
+    {
+        *M_history[i] = e;
     }
 
+    /**
+     * \brief Set history and update polynomial and derivatives
+     *
+     * Accepts n+1 unknowns (from u_{k+1}, u_k, ..., u_{k+1-n}) and fills M_history.
+     * Automatically recomputes poly(), polyDeriv(), and polySecondDeriv().
+     *
+     * Usage:
+     *   bdf->setHistory(u0, u1, u2);
+     */
+    template<typename... Elements>
+    void setHistory(Elements const&... elems)
+    {
+        static_assert(sizeof...(elems) <= BDF_MAX_ORDER + 2, "Too many unknowns for BDF");
+
+        std::array<element_type const*, sizeof...(elems)> args = { &elems... };
+        M_history.resize( args.size() );
+        for ( uint8_type __i = 0; __i < M_history.size(); ++__i )
+        {
+            M_history[__i] = M_space->elementPtr();
+            *M_history[__i] = *args[__i];
+            M_history[__i]->printMatlab(fmt::format("u{}", __i));
+        }
+
+        this->computePolyAndPolyDeriv();
+    }
+    void setHistory(std::vector<element_type> const& vec)
+    {
+        M_history.resize(vec.size());
+        for (std::size_t i = 0; i < vec.size(); ++i)
+        {
+            M_history[i] = M_space->elementPtr();
+            *M_history[i] = vec[i];
+        }
+    }
     void showMe( std::ostream& __out = std::cout ) const;
 
     //! Load current unknown in a file (hdf5, binary, ...)
@@ -423,16 +558,20 @@ private:
     space_ptrtype M_space;
 
     //! Last n state vectors
-    unknowns_type M_unknowns;
+    unknowns_type M_history;
 
     //! Coefficients \f$ \alpha_i \f$ of the time bdf discretization
-    std::vector<ublas::vector<double> > M_alpha;
+    std::vector<ublas::vector<double>> M_alpha;
+    //! Coefficients \f$ \alpha_i^{(2)} \f$ for second time derivative
+    std::vector<ublas::vector<double>> M_alpha2;
 
     //! Coefficients \f$ \beta_i \f$ of the extrapolation
     std::vector<ublas::vector<double> > M_beta;
 
     //! extrapolation field and rhs part of bdf scheme
-    element_ptrtype M_poly, M_polyDeriv;
+    mutable element_ptrtype M_poly, M_polyDeriv, M_firstDeriv;
+    //! Storage of the second derivative vector
+    mutable element_ptrtype M_polySecondDeriv, M_secondDeriv;
 
     int M_numberOfConsecutiveSave;
 };
@@ -451,16 +590,16 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
     M_space( __space ),
     M_alpha( BDF_MAX_ORDER ),
     M_beta( BDF_MAX_ORDER ),
-    M_numberOfConsecutiveSave( M_order )
+    M_numberOfConsecutiveSave( M_order+2 )
 {
     computeCoefficients();
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
-    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
-    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+    M_history.resize( std::max(this->bdfOrder()+2, this->numberOfConsecutiveSave()) );
+    for ( uint8_type __i = 0; __i < M_history.size(); ++__i )
     {
-        M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
-        M_unknowns[__i]->zero();
+        M_history[__i] = element_ptrtype( new element_type( M_space ) );
+        M_history[__i]->zero();
     }
 
     this->computePolyAndPolyDeriv();
@@ -485,11 +624,11 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space, std::string const& name, std:
     computeCoefficients();
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
-    M_unknowns.resize( std::max(this->bdfOrder(), this->numberOfConsecutiveSave()) );
-    for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+    M_history.resize( std::max(this->bdfOrder()+2, this->numberOfConsecutiveSave()) );
+    for ( uint8_type __i = 0; __i < M_history.size(); ++__i )
     {
-        M_unknowns[__i] = element_ptrtype( new element_type( M_space ) );
-        M_unknowns[__i]->zero();
+        M_history[__i] = element_ptrtype( new element_type( M_space ) );
+        M_history[__i]->zero();
     }
 
     this->computePolyAndPolyDeriv();
@@ -507,7 +646,7 @@ Bdf<SpaceType>::Bdf( Bdf const& b )
         M_last_iteration_since_order_change( b.M_last_iteration_since_order_change ),
         M_iterations_between_order_change( b.M_iterations_between_order_change ),
         M_space( b.M_space ),
-        M_unknowns( b.M_unknowns ),
+        M_history( b.M_history ),
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta ),
         M_numberOfConsecutiveSave( b.M_numberOfConsecutiveSave )
@@ -517,54 +656,81 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::computeCoefficients()
 {
-    for ( int i = 0; i < BDF_MAX_ORDER; ++i )
+    M_alpha.resize(BDF_MAX_ORDER);
+    M_beta.resize(BDF_MAX_ORDER);
+    M_alpha2.resize(BDF_MAX_ORDER);
+
+    for (int i = 0; i < BDF_MAX_ORDER; ++i)
     {
-        M_alpha[ i ].resize( i+2 );
-        M_beta[ i ].resize( i+1 );
+        M_alpha[i].clear();
+        M_beta[i].clear();
+        M_alpha2[i].clear();
     }
 
-    for ( int i = 0; i < BDF_MAX_ORDER; ++i )
-    {
-        if (  i == 0 ) // BDF_ORDER_ONE:
-        {
-            M_alpha[i][ 0 ] = 1.; // Backward Euler
-            M_alpha[i][ 1 ] = 1.;
-            M_beta[i][ 0 ] = 1.; // u^{n+1} \approx u^n
-        }
+    // BDF1
+    M_alpha[0].resize(2);
+    M_alpha[0][0] = 1.0;
+    M_alpha[0][1] = -1.0;
 
-        else if ( i == 1 ) // BDF_ORDER_TWO:
-        {
-            M_alpha[i][ 0 ] = 3. / 2.;
-            M_alpha[i][ 1 ] = 2.;
-            M_alpha[i][ 2 ] = -1. / 2.;
-            M_beta[i][ 0 ] = 2.;
-            M_beta[i][ 1 ] = -1.;
-        }
+    M_beta[0].resize(1);
+    M_beta[0][0] = 1.0;
 
-        else if ( i == 2 ) // BDF_ORDER_THREE:
-        {
-            M_alpha[i][ 0 ] = 11. / 6.;
-            M_alpha[i][ 1 ] = 3.;
-            M_alpha[i][ 2 ] = -3. / 2.;
-            M_alpha[i][ 3 ] = 1. / 3.;
-            M_beta[i][ 0 ] = 3.;
-            M_beta[i][ 1 ] = -3.;
-            M_beta[i][ 2 ] = 1.;
-        }
+    // BDF2
+    M_alpha[1].resize(3);
+    M_alpha[1][0] = 3.0 / 2.0;
+    M_alpha[1][1] = -2.0;
+    M_alpha[1][2] = 0.5;
 
-        else if ( i == 3 ) /// BDF_ORDER_FOUR:
-        {
-            M_alpha[i][ 0 ] = 25. / 12.;
-            M_alpha[i][ 1 ] = 4.;
-            M_alpha[i][ 2 ] = -3.;
-            M_alpha[i][ 3 ] = 4. / 3.;
-            M_alpha[i][ 4 ] = -1. / 4.;
-            M_beta[i][ 0 ] = 4.;
-            M_beta[i][ 1 ] = -6.;
-            M_beta[i][ 2 ] = 4.;
-            M_beta[i][ 3 ] = -1.;
-        }
-    }
+    M_beta[1].resize(2);
+    M_beta[1][0] = 2.0;
+    M_beta[1][1] = -1.0;
+
+    M_alpha2[1].resize(4);
+    M_alpha2[1][0] = 2.0;
+    M_alpha2[1][1] = -5.0;
+    M_alpha2[1][2] = 4.0;
+    M_alpha2[1][3] = -1.0;
+
+    // BDF3
+    M_alpha[2].resize(4);
+    M_alpha[2][0] = 11.0 / 6.0;
+    M_alpha[2][1] = -3.0;
+    M_alpha[2][2] = 1.5;
+    M_alpha[2][3] = -1.0 / 3.0;
+
+    M_beta[2].resize(3);
+    M_beta[2][0] = 3.0;
+    M_beta[2][1] = -3.0;
+    M_beta[2][2] = 1.0;
+
+    M_alpha2[2].resize(5);
+    M_alpha2[2][0] = 35.0 / 12.0;
+    M_alpha2[2][1] = -104.0 / 12.0;
+    M_alpha2[2][2] = 114.0 / 12.0;
+    M_alpha2[2][3] = -56.0 / 12.0;
+    M_alpha2[2][4] = 11.0 / 12.0;
+
+    // BDF4
+    M_alpha[3].resize(5);
+    M_alpha[3][0] = 25.0 / 12.0;
+    M_alpha[3][1] = -4.0;
+    M_alpha[3][2] = 3.0;
+    M_alpha[3][3] = -4.0 / 3.0;
+    M_alpha[3][4] = 1.0 / 4.0;
+
+    M_beta[3].resize(4);
+    M_beta[3][0] = 4.0;
+    M_beta[3][1] = -6.0;
+    M_beta[3][2] = 4.0;
+    M_beta[3][3] = -1.0;
+
+    M_alpha2[3].resize(6);
+    M_alpha2[3][0] = 45.0 / 12.0;
+    M_alpha2[3][1] = -154.0 / 12.0;
+    M_alpha2[3][2] = 214.0 / 12.0;
+    M_alpha2[3][3] = -156.0 / 12.0;
+    M_alpha2[3][4] = 61.0 / 12.0;
+    M_alpha2[3][5] = -10.0 / 12.0;
 }
 
 template <typename SpaceType>
@@ -573,16 +739,16 @@ Bdf<SpaceType>::init()
 {
 
     CHECK( this->numberOfConsecutiveSave() >= this->bdfOrder() ) << "numberOfConsecutiveSave is too small, should be >= bdfOrder";
-    int sizeUnknowns = std::max(this->bdfOrder(), this->numberOfConsecutiveSave());
-    if ( M_unknowns.size() != sizeUnknowns )
+    int sizeUnknowns = std::max(this->bdfOrder()+2, this->numberOfConsecutiveSave());
+    if ( M_history.size() != sizeUnknowns )
     {
-        M_unknowns.resize( sizeUnknowns );
-        for ( uint8_type __i = 0; __i < M_unknowns.size(); ++__i )
+        M_history.resize( sizeUnknowns );
+        for ( uint8_type __i = 0; __i < M_history.size(); ++__i )
         {
-            if ( !M_unknowns[__i] )
+            if ( !M_history[__i] )
             {
-                M_unknowns[__i] = M_space->elementPtr();
-                M_unknowns[__i]->zero();
+                M_history[__i] = M_space->elementPtr();
+                M_history[__i]->zero();
             }
         }
     }
@@ -659,7 +825,7 @@ Bdf<SpaceType>::init()
                 VLOG(1) << "BDF HDF5 load solution iteration " << iteration
                         << " time " << M_time
                         << " from " << fname.string();
-                M_unknowns[p]->loadHDF5( fname.string() );
+                M_history[p]->loadHDF5( fname.string() );
 #else
                 CHECK( false ) << "hdf5 not detected";
 #endif
@@ -679,7 +845,7 @@ Bdf<SpaceType>::init()
 
                 // load data from archive
                 boost::archive::binary_iarchive ia( ifs );
-                ia >> *M_unknowns[p];
+                ia >> *M_history[p];
             }
         }
     }
@@ -705,12 +871,28 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0 );
     M_time_values_map.push_back( M_Ti );
-    std::for_each(M_unknowns.begin(), M_unknowns.end(), 
+    std::for_each(M_history.begin(), M_history.end(), 
                   [u0](auto& element) { *element = u0; });
     this->computePolyAndPolyDeriv();
     this->saveCurrent();
 }
+template <typename SpaceType>
+void
+Bdf<SpaceType>::initialize( std::vector<element_type> const& u0 )
+{
+    M_time_values_map.clear();
+    std::ostringstream ostr;
 
+    if( M_rankProcInNameOfFiles )
+        ostr << M_name << "-" << 0<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
+    else
+        ostr << M_name << "-" << 0;
+    //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
+    //M_time_values_map.push_back( 0 );
+    setHistory( u0 );
+    this->computePolyAndPolyDeriv();
+    this->saveCurrent();
+}
 template <typename SpaceType>
 void
 Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
@@ -728,12 +910,12 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
 
     if ( uv0.size() == 1 )
     {
-        std::for_each( M_unknowns.begin(), M_unknowns.end(), 
+        std::for_each( M_history.begin(), M_history.end(), 
                        [value = *uv0[0]]( auto& element ) { *element = value; } );
     }
     else if ( uv0.size() > 1 )
     {
-        std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
+        std::copy( uv0.begin(), uv0.end(), M_history.begin() );
     }
 
     this->computePolyAndPolyDeriv();
@@ -756,6 +938,19 @@ Bdf<SpaceType>::start()
 template <typename SpaceType>
 double
 Bdf<SpaceType>::start( element_type const& u0 )
+{
+    if ( this->isRestart() )
+        return this->restart();
+
+    this->init();
+    this->initialize( u0 );
+    double ti = super::start();
+    return ti;
+}
+
+template <typename SpaceType>
+double
+Bdf<SpaceType>::start( std::vector<element_type> const& u0 )
 {
     if ( this->isRestart() )
         return this->restart();
@@ -795,16 +990,16 @@ template <typename SpaceType>
 typename Bdf<SpaceType>::element_type&
 Bdf<SpaceType>::unknown( int i )
 {
-    DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
-    return *M_unknowns[i];
+    DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_history[i]->l2Norm() << "\n";
+    return *M_history[i];
 }
 
 template <typename SpaceType>
 typename Bdf<SpaceType>::element_ptrtype
 Bdf<SpaceType>::unknownPtr( int i )
 {
-    DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
-    return M_unknowns[i];
+    DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_history[i]->l2Norm() << "\n";
+    return M_history[i];
 }
 
 
@@ -832,7 +1027,7 @@ Bdf<SpaceType>::saveCurrent()
         if ( this->fileFormat() == "hdf5")
         {
 #ifdef FEELPP_HAS_HDF5
-            M_unknowns[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
+            M_history[0]->saveHDF5( (M_path_save / (boost::format("%1%-%2%.h5")%M_name %iteration).str() ).string() );
 #else
             CHECK( false ) << "hdf5 not detected";
 #endif
@@ -848,7 +1043,7 @@ Bdf<SpaceType>::saveCurrent()
             // load data from archive
             std::ofstream ofs( M_path_save / ostr.str() );
             boost::archive::binary_oarchive oa( ofs );
-            oa << *M_unknowns[0];
+            oa << *M_history[0];
         }
 
     }
@@ -888,7 +1083,7 @@ Bdf<SpaceType>::loadCurrent()
                       << " time " << M_time
                       << " from " << fname.string();
             if ( fs::exists( fname ) )
-                M_unknowns[0]->loadHDF5( fname.string() );
+                M_history[0]->loadHDF5( fname.string() );
             else
                 throw std::invalid_argument( fname.string() + " not found" );
 #else
@@ -909,7 +1104,7 @@ Bdf<SpaceType>::loadCurrent()
 
             // load data from archive
             boost::archive::binary_iarchive ia( ifs );
-            ia >> *M_unknowns[0];
+            ia >> *M_history[0];
         }
     }
 }
@@ -922,16 +1117,16 @@ void Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_typ
     super::shiftRight();
 
     // Shift all previously stored BDF data
-    auto it = std::next( M_unknowns.rbegin() );
-    std::for_each( M_unknowns.rbegin(), std::prev( M_unknowns.rend() ), 
+    auto it = std::next( M_history.rbegin() );
+    std::for_each( M_history.rbegin(), std::prev( M_history.rend() ), 
                    [&it]( auto& element ) { *element = *(*it); ++it; } );
 
-    // u(t^{n}) coefficient is in M_unknowns[0]
-    *M_unknowns[0] = new_unk;
+    // u(t^{n}) coefficient is in M_history[0]
+    *M_history[0] = new_unk;
 
     // Log the l2 norm for each unknown
     int i = 0;
-    for ( const auto& t : M_unknowns )
+    for ( const auto& t : M_history )
     {
         DVLOG( 2 ) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
         ++i;
@@ -965,23 +1160,30 @@ Bdf<SpaceType>::computePolyAndPolyDeriv()
         M_polyDeriv = M_space->elementPtr();
 
     M_poly->zero();
-    for ( uint8_type i = 0; i < this->timeOrder(); ++i )
-        M_poly->add(  this->polyCoefficient( i ),  *M_unknowns[ i ] );
+    for ( int i = 0; i < this->timeOrder(); ++i )
+        M_poly->add(  this->polyCoefficient( i ),  *M_history[ i ] );
 
     M_polyDeriv->zero();
-    for ( uint8_type i = 0; i < this->timeOrder(); ++i )
-        M_polyDeriv->add( this->polyDerivCoefficient( i+1 ), *M_unknowns[i] );
+    for (int i = 1; i <= this->timeOrder(); ++i)
+        M_polyDeriv->add(-this->polyDerivCoefficient(i), *M_history[i-1]);  // known part only
+
+    // Compute second derivative polynomial
+    if (!M_polySecondDeriv)
+        M_polySecondDeriv = M_space->elementPtr();
+    M_polySecondDeriv->zero();
+
+    if (this->timeOrder() >= 2)
+    {
+        for (uint8_type i = 1; i < M_alpha2[this->timeOrder() - 1].size(); ++i)
+            M_polySecondDeriv->add(-this->polySecondDerivCoefficient(i), *M_history[i-1]);
+    }
 }
 
 template <typename SpaceType>
 void
 Bdf<SpaceType>::updateDerivative( element_type & u, int i ) const
 {
-    CHECK( M_unknowns.size() >= (this->timeOrder()+1+i) );
-    u.zero();
-    u.add( this->polyDerivCoefficient( 0 ), *M_unknowns[i] );
-    for ( uint8_type k = 0; k < this->timeOrder(); ++k )
-        u.add( -this->polyDerivCoefficient( k+1 ), *M_unknowns[i+k+1] );
+    u = firstDerivative( u );
 }
 
 template <typename ... Ts>
