@@ -204,6 +204,8 @@ add_subdirectory(cmake)
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
 
+add_subdirectory(python/feelpp/sympy)
+
 add_subdirectory(tools)
 include(feelpp.module.quickstart)
 if ( FEELPP_HAS_QUICKSTART )

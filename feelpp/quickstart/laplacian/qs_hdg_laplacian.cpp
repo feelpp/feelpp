@@ -41,8 +41,18 @@
 #include <feel/feelpython/pyexpr.hpp>
 
 #include <feel/feelpde/cg_laplacian.hpp>
+#include <fmt/format.h>
+#include <fmt/ranges.h>    // for fmt::join
 
 namespace Feel {
+
+// somewhere in your .cpp or in a header:
+static const std::string zero_vec = [](){
+    // default‐initialize an array of FEELPP_DIM zeros
+    std::array<int,FEELPP_DIM> a{};  // all elements == 0
+    // join with commas and wrap in braces:
+    return fmt::format("{{{}}}", fmt::join(a, ","));
+}();
 
 
 inline
@@ -52,16 +62,13 @@ makeOptions()
     po::options_description hdgoptions( "HDG options" );
     hdgoptions.add_options()
         ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
+        ( "beta", po::value<std::string>()->default_value( zero_vec ), "advection coefficient" )
         ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin lhs coefficient" )
         ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
         ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
         ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )
-#if (FEELPP_DIM==2)
-        ( "solution.u", po::value<std::string>()->default_value( "{0,0}" ), "solution u exact" )
-#else
-        ( "solution.u", po::value<std::string>()->default_value( "{0,0,0}" ), "solution u exact" )
-#endif
+        ( "solution.u", po::value<std::string>()->default_value( zero_vec ), "solution u exact" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
@@ -93,7 +100,7 @@ int hdg_laplacian()
 {
     using Feel::cout;
 
-    auto tau_constant =  cst(doption("hdg.tau.constant"));
+
     int tau_order =  ioption("hdg.tau.order");
 
     int proc_rank = Environment::worldComm().globalRank();
@@ -102,7 +109,68 @@ int hdg_laplacian()
 
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    // 1) Start the interpreter
+    //py::scoped_interpreter guard{}; 
+
+    // 2) Import our API module
+    auto sympy_api = py::module_::import("feelpp.sympy.api");
+    auto get_coeffs = sympy_api.attr("get_coefficients");
+
+    // 3) Build the inputs map
+    std::map<std::string,std::string> inputs{
+        {"dim",std::to_string(Dim)},
+        {"k",soption("k")},
+        {"p",soption("checker.solution")},
+        {"r_1",soption("r_1")}, 
+        {"r_2",soption("r_2")}, 
+        {"beta","{1,1}"}};
+    // 4) Call into Python: mode "adr" for advection–diffusion–reaction, or "laplacian", etc.
+    //    All kwargs are passed as strings and sympified on the Python side.
+    py::dict py_kwargs;
+    for ( auto const& [k,v] : inputs )
+        py_kwargs[k.c_str()] = v;
+
+    // e.g. "adr" — change to "laplacian" or "wave" or your new "stokes"/"darcy"
+    py::object result = get_coeffs(py::str("adr"), py_kwargs);
+
+    // 5) Cast back to a C++ map<string,string>
+    auto locals = result.cast<std::map<std::string,std::string>>();
+    // 6) Extract exactly as before, but now it's coming straight from Python objects:
+    auto p_exact_str = locals.at("p");
+    auto u_exact_str = locals.at("u");
+    auto f_str       = locals.at("f");
+    auto un_str      = locals.at("un");
+    auto g_str       = locals.at("g");
+    auto r1_str      = locals.at("r_1");
+    auto r2_str      = locals.at("r_2");
+
+    std::cout << fmt::format("p_exact_str: {}\nu_exact_str: {}\nf_str: {}\nun_str: {}\ng_str: {}\nr1_str: {}\nr2_str: {}",
+                     p_exact_str, u_exact_str, f_str, un_str, g_str, r1_str, r2_str) << std::endl;
+    // 7) Convert to Feel++ expressions
+    auto p_exact = expr(p_exact_str);
+    auto u_exact = expr<FEELPP_DIM,1>(u_exact_str);
+    auto k        = expr(locals.at("k"));
+    auto lambda   = cst(1.)/k;
+    auto un       = expr(un_str);
+    auto f        = expr(f_str);
+    auto g        = expr(g_str);
+    auto r_1      = expr(r1_str);
+    auto r_2      = expr(r2_str);
+    auto beta     = expr<FEELPP_DIM,1>(locals.at("beta"));
+#if 0    
+    std::map<std::string,std::string> inputs{
+            {"dim",std::to_string(Dim)},
+            {"k",soption("k")},
+            {"beta", soption("beta")},
+            {"p",soption("checker.solution")},
+            {"grad_p",""},
+            {"u",""},
+            {"un",""},
+            {"f",""},
+            {"g",""},
+            {"r_1",soption("r_1")},
+            {"r_2",soption("r_2")}
+    };
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
     auto thechecker = checker( _name= "L2/H1 convergence",
@@ -117,18 +185,25 @@ int hdg_laplacian()
     auto p_exact = expr( p_exact_str );
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
+    auto beta = expr<FEELPP_DIM,1>( locals.at("beta") );
     auto lambda = cst(1.)/k;
     auto un = expr( locals.at("un") );
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") );
+#endif
+
+    // 8) Print the coefficients
+    //std::cout << fmt::format("p_exact: {}\nu_exact: {}\nk: {}\nbeta: {}\nlambda: {}\nun: {}\nf: {}\ng: {}\nr_1: {}\nr_2: {}",
+    //                 p_exact_str, u_exact_str, k, beta, lambda, un, f, g, r_1, r_2) << std::endl;    
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
     auto p_exact = expr(p_exact_str);
     auto u_exact = expr<Dim,1>(u_exact_str);
     auto k = expr(soption("k"));
+    auto beta = expr<Dim,1>(soption("beta"));
     auto lambda = cst(1.)/k;
     auto un = trans(u_exact)*N();
     auto f = expr( soption( "functions.f") );
@@ -136,6 +211,7 @@ int hdg_laplacian()
     auto r_1 = cst(0.);
     auto r_2 = un;
 #endif
+    auto beta_n = trans(beta) * N();
     tic();
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
     toc("mesh",true);
@@ -233,40 +309,55 @@ int hdg_laplacian()
     toc("a(0,0)",FLAGS_v>0);
 
     tic();
-    a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
+    auto inflow = chi(beta_n < 0.); // inflow: trace comes from p_hat
+    auto outflow = chi(beta_n >= 0.); // outflow: trace comes from p
+    auto tau_D =  cst(doption("hdg.tau.constant"));
+    auto tau_S = max(beta_n,0)+tau_D/h();
+    a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)) + (trans(beta)*idt(p))*id(v) );
+    a(0_c,1_c) += integrate(_range=internalfaces(mesh),
+                            _expr=( leftfacet( outflow*idt(p) )*leftface(normal(v)) +
+                                                    rightfacet( outflow*idt(p) )*rightface(normal(v)) ));
+    a(0_c,1_c) += integrate(_range=boundaryfaces(mesh),
+                            _expr=outflow*idt(p)*normal(v));
     toc("a(0,1)",FLAGS_v>0);
 
     tic();
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=( idt(phat)*(leftface(normal(v))+
+                            _expr=( inflow*idt(phat)*(leftface(normal(v))+
                                                rightface(normal(v)))) );
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=idt(phat)*(normal(v)));
+                            _expr=inflow*idt(phat)*(normal(v)));
     toc("a(0,2)",FLAGS_v>0);
 
     //
     // Second row a(1_c,:)
     //
     tic();
-    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=(id(w)*divt(u)));
+    
+    a(1_c,0_c) += integrate(_range=elements(mesh),_expr=(grad(w)*idt(u)) );
     toc("a(1,0)",FLAGS_v>0);
 
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant *
+                            _expr=tau_S *
                             ( leftfacet( idt(p))*leftface(id(w)) +
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=(tau_constant * id(w)*idt(p)));
+                            _expr=(tau_S * id(w)*idt(p)));
     toc("a(1,1)",FLAGS_v>0);
 
     tic();
+
+
+    // Use λ on inflow, u on outflow
+    auto upwind_trace = inflow*idt(phat) + outflow*idt(p);
+
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-tau_constant * idt(phat) *
+                            _expr=-tau_S * idt(phat) *
                             ( leftface( id(w) )+
                               rightface( id(w) )));
     a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
-                            _expr=-tau_constant * idt(phat) * id(w) );
+                            _expr=-tau_S * idt(phat) * id(w) );
     toc("a(1,2)",FLAGS_v>0);
 
     //
@@ -288,27 +379,27 @@ int hdg_laplacian()
 
     tic();
     a(2_c,1_c) += integrate(_range=internalfaces(mesh),
-                            _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
+                            _expr=tau_S * id(l) * ( leftfacet( idt(p) )+
                                                            rightfacet( idt(p) )));
 
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=tau_constant * id(l) * ( idt(p) ) );
+                            _expr=tau_S * id(l) * ( idt(p) ) );
     toc("a(2,1)",FLAGS_v>0);
 
     tic();
     a(2_c,2_c) += integrate(_range=internalfaces(mesh),
-                            _expr=-(1.-0.5*boption("sc.condense"))*tau_constant * idt(phat) * id(l) );
+                            _expr=-(1.-0.5*boption("sc.condense"))*tau_S * idt(phat) * id(l) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=-tau_constant * idt(phat) * id(l)  );
+                            _expr=-tau_S * idt(phat) * id(l)  );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                             _expr=idt(phat) * id(l) );
     // Robin
     a( 2_c, 0_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=id(l)*normalt(u) );
     a( 2_c, 1_c ) += integrate(_range=markedfaces(mesh,"Robin"),
-                               _expr=tau_constant * id(l) * idt(p)  );
+                               _expr=tau_S * id(l) * idt(p)  );
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
-                               _expr=-tau_constant * idt(phat) * id(l) );
+                               _expr=-tau_S * idt(phat) * id(l) );
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=-r_1*idt(phat) * id(l) );
 

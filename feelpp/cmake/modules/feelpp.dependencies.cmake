@@ -577,11 +577,11 @@ if(FEELPP_ENABLE_PYTHON)
     # Check that sympy is available
     include(FindPythonModules)
     find_python_module(sympy 1.1 FEELPP_SYMPY_FOUND)
-    if ( FEELPP_SYMPY_FOUND )
-      set( FEELPP_HAS_SYMPY 1 )
-      message(STATUS "[feelpp] sympy (at least 1.1) has been found")
+    if(FEELPP_SYMPY_FOUND)
+       set(FEELPP_HAS_SYMPY 1)
+       message(STATUS "✅ [feelpp] sympy ≥ 1.1 is installed")
     else()
-      message(STATUS "[feelpp] sympy (at least 1.1) has not been  found")
+       message(FATAL_ERROR "❌ [feelpp] sympy ≥ 1.1 is required")
     endif()
 
 
