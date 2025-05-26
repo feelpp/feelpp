@@ -169,7 +169,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const
 {
-    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" &&  this->hasDofEliminationIds( "fluid.velocity" ) )
     {
         this->log("FSI","updateNewtonInitialGuess_Fluid", "start" );
 
@@ -194,8 +194,8 @@ FSI<FluidType,SolidType>::updateJacobianDofElimination_Fluid( DataUpdateJacobian
         return;
 
     this->log("FSI","updateJacobianDofElimination_Fluid", "start" );
-
-    M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
+    if ( this->hasDofEliminationIds( "fluid.velocity" ) )
+        M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
     this->log("FSI","updateJacobianDofElimination_Fluid", "finish" );
 }
@@ -209,7 +209,8 @@ FSI<FluidType,SolidType>::updateResidualDofElimination_Fluid( DataUpdateResidual
 
     this->log("FSI","updateResidualDofElimination_Fluid", "start" );
 
-    M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
+    if ( this->hasDofEliminationIds( "fluid.velocity" ) )
+        M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
     this->log("FSI","updateResidualDofElimination_Fluid", "finish" );
 }
@@ -812,10 +813,6 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) const
 {
-    if ( this->fsiCouplingBoundaryCondition() != "robin-robin" && this->fsiCouplingBoundaryCondition() != "robin-robin-genuine" &&
-         this->fsiCouplingBoundaryCondition() != "nitsche" )
-        return;
-
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     bool buildCstPart = data.buildCstPart();
@@ -836,11 +833,25 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
                                _rowstart=M_solidModel->rowStartInMatrix(),
                                _colstart=M_solidModel->colStartInMatrix() );
 
+    auto rangeFSI = M_rangeFSI_solid;
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
         timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
+#if 0
+    if ( buildNonCstPart )
+    {
+        auto normalStessExpr = idv(this->fieldNormalStressFromFluidPtr_solid());
+        bilinearForm +=
+            integrate( _range=rangeFSI,
+                       _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*normalStessExpr,id(u) ),
+                       _geomap=this->geomap() );
+    }
+#endif
+    if ( this->fsiCouplingBoundaryCondition() != "robin-robin" && this->fsiCouplingBoundaryCondition() != "robin-robin-genuine" &&
+         this->fsiCouplingBoundaryCondition() != "nitsche" )
+        return;
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
 
@@ -857,7 +868,6 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
         auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
         auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr,*physicFluidData,matProps/*,se*/);
 
-        auto rangeFSI = M_rangeFSI_solid;
 
         if ( this->solidModel()->timeStepping() == "Newmark" )
         {
@@ -913,12 +923,34 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     auto rangeFSI = M_rangeFSI_solid;
 
     // neumann boundary condition with normal stress (fsi boundary condition)
-    if ( buildCstPart )
+    if ( M_evaluateFluidNormalStressOnReferenceMesh )
     {
-        linearForm +=
-            integrate( _range=rangeFSI,
-                       _expr= timeSteppingScaling*inner(idv(this->fieldNormalStressFromFluidPtr_solid()),id(u)),
-                       _geomap=this->geomap() );
+        if ( buildCstPart )
+        {
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= timeSteppingScaling*inner(idv(this->fieldNormalStressFromFluidPtr_solid()),id(u)),
+                           _geomap=this->geomap() );
+        }
+    }
+    else
+    {
+        if ( buildNonCstPart )
+        {
+            // First version : we use a linerarized form (use last solid solution (in fsi algo) instead of the current solution -> non linear)
+            auto normalStessExpr = idv(this->fieldNormalStressFromFluidPtr_solid());
+            auto Id = eye<mesh_solid_type::nDim,mesh_solid_type::nDim>();
+            //auto F = Id + gradv(u);
+            auto F = Id + gradv(this->aitkenRelaxTool()->oldSol());
+            auto J = det(F);
+            auto FinvTn = trans(inv(F));
+            auto tttExpr = norm2(FinvTn)*J*normalStessExpr;
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           //_expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*normalStessExpr,id(u) ),
+                           _expr= timeSteppingScaling*inner( tttExpr,id(u) ),
+                           _geomap=this->geomap() );
+        }
     }
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||

@@ -284,11 +284,16 @@ public :
                 auto spaceDisp = body.fieldDisplacement().functionSpace();
                 auto uInterp = spaceDisp->element();
                 M_opI_disp->apply( M_fsiToolbox->solidModel()->fieldDisplacement(), uInterp );
+
                 // remove rigid disp from previous time
                 auto translateExpr = Feel::vf::toExpr( body.rigidTranslationDisplacementAtPreviousTime() ) - body.rigidTranslationExpr();
                 auto R2 = Feel::vf::toExpr( fluid_type::multibody_type::body_type::rigidRotationMatrix( body.rigidRotationAnglesAtPreviousTime()-body.rigidRotationAngles() ) );
+#if 0
                 auto [newMass,newMassCenter] = body.computeMassAndMassCenterFromDisplacementField( uInterp );
                 auto mcExpr2 = Feel::vf::toExpr( newMassCenter );
+#else
+                auto mcExpr2 = body.massCenterExpr();
+#endif
                 auto elasticDispExpr = R2*(P()+idv(uInterp)-mcExpr2) + mcExpr2 + translateExpr - P();
 
                 bbc.initElasticBehavior();
@@ -504,9 +509,12 @@ private :
     //std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
 
 
+
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
     bool M_interfaceFSIisConforme;
+    bool M_evaluateFluidNormalStressOnReferenceMesh = true;
+
     double M_fixPointTolerance, M_fixPointInitialTheta, M_fixPointMinTheta;
     int M_fixPointMaxIt, M_fixPointMinItConvergence;
 

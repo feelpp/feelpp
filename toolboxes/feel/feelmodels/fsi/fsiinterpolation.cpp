@@ -386,7 +386,10 @@ FSI<FluidType,SolidType>::transfertStress()
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStress", "start",
                                                this->worldComm(),this->verboseAllProc());
     M_fieldNormalStressRefMesh_fluid->zero();
-    M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
+    if ( M_evaluateFluidNormalStressOnReferenceMesh )
+        M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
+    else
+        M_fluidModel->updateNormalStressOnCurrentMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
 
     if (M_solidModel->isStandardModel())
     {

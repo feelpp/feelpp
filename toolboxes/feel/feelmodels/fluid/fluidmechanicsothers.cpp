@@ -1231,10 +1231,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::string
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
         auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
+        // set connection markers if has partial mesh support (i.e. physics not in whole mesh)
+        std::set<std::string> requiresMarkersConnection;
+        auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+        if ( !mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
+            requiresMarkersConnection = mom->markers( this->physicsAvailableFromCurrentType() );
+
         auto const sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
+        auto normalStressRefExpr = evalOnFaces( sigmav*N(),requiresMarkersConnection ); // CHECK if work with trace mesh
+        //auto normalStressRefExpr = sigmav*N();
+
         fieldToUpdate->on(_range=rangeFaces,
-                          _expr=sigmav*N(),
-                          _geomap=this->geomap() );
+                          _expr=normalStressRefExpr,
+                          _geomap=this->geomap(), _close=true );
     }
     this->log("FluidMechanics","updateNormalStressOnCurrentMesh", "finish" );
 }
