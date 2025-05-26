@@ -412,6 +412,14 @@ po::options_description bdf_options( std::string const& prefix )
     ( prefixvm( prefix, "bdf.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "order in time" )
     ( prefixvm( prefix, "bdf.strategy-high-order-start" ).c_str(), Feel::po::value<int>()->default_value( 0 ), " 0 : fixe order, 1 : increase step by step order" )
     ;
+
+    po::options_description bdfadaptiveOpts("BDF Adaptive options");
+    bdfadaptiveOpts.add_options()
+        ("bdfadaptive.adapt", po::value<bool>()->default_value(true), "Enable adaptive time stepping")
+        ("bdfadaptive.dt-min", po::value<double>()->default_value(1e-10), "Minimum dt")
+        ("bdfadaptive.dt-max", po::value<double>()->default_value(1e3), "Maximum dt")
+        ("bdfadaptive.initial-dt", po::value<double>()->default_value(1e-2), "Initial dt");
+    _options.add(bdfadaptiveOpts);
     return _options;
 }
 
@@ -971,7 +979,7 @@ exporter_options( std::string const& prefix )
 
 
         //  geometry
-        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "change_coords_only" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
+        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "change" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
 
         // prefix options
         ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )
