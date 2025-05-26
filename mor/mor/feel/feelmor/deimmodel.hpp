@@ -322,22 +322,18 @@ private :
             std::set<int> r2;
             for ( auto index : m_index )
             {
-                auto searchGpDof = m_Xh->dof()->searchGlobalProcessDof( index );
-                if (  boost::get<0>( searchGpDof ) )
+                size_type gpdof = m_Xh->dof()->worldIndexToProcessIndex( index );
+                int space = m_Xh->dof()->databaseIndexFromContainerId( gpdof );
+                if ( space==T::value )
                 {
-                    size_type gpdof = boost::get<1>( searchGpDof );
-                    int space = m_Xh->dof()->databaseIndexFromContainerId( gpdof );
-                    if ( space==T::value )
+                    gpdof = m_Xh->dof()->containerIdToDofId( space, gpdof );
+                    CHECK( gpdof!=invalid_v<size_type> ) <<"Dof not found\n";
+                    for ( auto const& dof : subXh->dof()->globalDof( gpdof ) )
                     {
-                        gpdof = m_Xh->dof()->containerIdToDofId( space, gpdof );
-                        CHECK( gpdof!=invalid_v<size_type> ) <<"Dof not found\n";
-                        for ( auto const& dof : subXh->dof()->globalDof( gpdof ) )
-                        {
-                            size_type eltId = dof.second.elementId();
-                            if ( mesh->element( eltId ).isGhostCell() )
-                                continue;
-                            r1.insert( eltId );
-                        }
+                        size_type eltId = dof.second.elementId();
+                        if ( mesh->element( eltId ).isGhostCell() )
+                            continue;
+                        r1.insert( eltId );
                     }
                 }
             }
@@ -531,17 +527,13 @@ DEIMModel<ModelType,TensorType>::updateEltsId( std::vector<int> const& index_lis
 
     for ( auto index : index_list )
     {
-        auto searchGpDof = Xh->dof()->searchGlobalProcessDof( index );
-        if ( boost::get<0>( searchGpDof ) )
+        size_type gpdof = Xh->dof()->worldIndexToProcessIndex( index );
+        for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
         {
-            size_type gpdof = boost::get<1>( searchGpDof );
-            for ( auto const& dof : Xh->dof()->globalDof( gpdof ) )
-            {
-                size_type eltId = dof.second.elementId();
-                if ( mesh->element( eltId ).isGhostCell() )
-                    continue;
-                this->M_elts_ids.insert( eltId );
-            }
+            size_type eltId = dof.second.elementId();
+            if ( mesh->element( eltId ).isGhostCell() )
+                continue;
+            this->M_elts_ids.insert( eltId );
         }
     }
 }

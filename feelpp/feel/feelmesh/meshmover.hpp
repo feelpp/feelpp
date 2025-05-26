@@ -118,7 +118,7 @@ public:
 
 private:
     void applyGhostElements( mesh_ptrtype& imesh,
-                             std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > const& dataToSend,
+                             std::map<rank_type,std::vector< std::tuple<size_type,std::vector< ublas::vector<value_type> > > > > & dataToSend,
                              std::unordered_set<size_type> & points_done );
 
     void updateForUse( mesh_ptrtype& imesh );
@@ -160,7 +160,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename DisplType::functionspace_type::fe_type fe_type;
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 
-    std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > dataToSend;
+    std::map<rank_type,std::vector< std::tuple<size_type,std::vector< ublas::vector<value_type> > > > > dataToSend;
     std::unordered_set<size_type> points_done;
 
     auto rangeElt = elements( imesh );
@@ -234,7 +234,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
         }
         if ( isGhostInOtherPart )
             for ( auto const& idOtherPart : curElt.idInOthersPartitions() )
-                dataToSend[idOtherPart.first].push_back( boost::make_tuple( idOtherPart.second, dataEltToSend ) );
+                dataToSend[idOtherPart.first].push_back( std::make_tuple( idOtherPart.second, dataEltToSend ) );
     }
 
     if ( imesh->worldComm().localSize() > 1 )
@@ -246,7 +246,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 template<typename MeshType>
 void
 MeshMover<MeshType>::applyGhostElements( mesh_ptrtype& imesh,
-                                         std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > const& dataToSend,
+                                         std::map<rank_type,std::vector< std::tuple<size_type,std::vector< ublas::vector<value_type> > > > > & dataToSend,
                                          std::unordered_set<size_type> & points_done )
 {
     // mpi comm
@@ -254,11 +254,10 @@ MeshMover<MeshType>::applyGhostElements( mesh_ptrtype& imesh,
     int nbRequest = 2*neighborSubdomains;
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
-    std::map<rank_type,std::vector< boost::tuple<size_type,std::vector< ublas::vector<value_type> > > > > dataToRecv;
+    std::map<rank_type,std::vector< std::tuple<size_type,std::vector< ublas::vector<value_type> > > > > dataToRecv;
     for ( rank_type neighborRank : imesh->neighborSubdomains() )
     {
-        CHECK( dataToSend.find( neighborRank ) != dataToSend.end() ) << "something wrong in parallel datastructure of mesh";
-        reqs[cptRequest++] = imesh->worldComm().localComm().isend( neighborRank , 0, dataToSend.find( neighborRank )->second );
+        reqs[cptRequest++] = imesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
         reqs[cptRequest++] = imesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
     }
     mpi::wait_all(reqs, reqs + nbRequest);
@@ -269,8 +268,8 @@ MeshMover<MeshType>::applyGhostElements( mesh_ptrtype& imesh,
     {
         for ( auto const& dataRecvByElt : dataRecvByProc.second )
         {
-            size_type eltId = boost::get<0>( dataRecvByElt );
-            auto const& pointsData =  boost::get<1>( dataRecvByElt );
+            size_type eltId = std::get<0>( dataRecvByElt );
+            auto const& pointsData = std::get<1>( dataRecvByElt );
             auto & eltModified = imesh->elementIterator( eltId )->second;
             for ( uint16_type p=0;p<mesh_type::element_type::numPoints;++p )
             {

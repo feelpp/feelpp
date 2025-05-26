@@ -1,6 +1,7 @@
 {
     "editor.tabSize": 4,
     "editor.insertSpaces": true,
+    "diffEditor.ignoreTrimWhitespace": true,
     "files.associations": {
         "iterator": "cpp",
         "*.ipp": "cpp",

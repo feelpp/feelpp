@@ -57,7 +57,7 @@ namespace FeelModels
 template< typename MeshType, int Order >
 HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend_ptrtype const& backend, std::string const& prefix,
                                                       worldcomm_ptr_t const& worldcomm,
-                                                      bool useGhostEltFromExtendedStencil,
+                                                      DofTableExtendedType dte,
                                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldcomm,"",modelRep ),
@@ -66,8 +66,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
 {
     this->setAlgebraicBackend( backend );
-    M_Xh = space_type::New(_mesh=this->mesh(),
-                           _extended_doftable=std::vector<bool>(1,useGhostEltFromExtendedStencil) );
+    M_Xh = space_type::New(_mesh=this->mesh(), _extended_doftable=dte );
     M_displacement = M_Xh->elementPtr();
     M_dispImposedOnBoundary = M_Xh->elementPtr();
     M_XhP0 = space_P0_type::New( _mesh=this->mesh() );
@@ -289,4 +288,3 @@ template class HarmonicExtension< Mesh<Simplex<3,1> >, 1 >;
 
 } // namespace FeelModels
 } // namespace Feel
-

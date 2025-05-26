@@ -2857,8 +2857,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
     mapColInterp->setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
-    mapColInterp->setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
-    mapColInterp->setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
+    //mapColInterp->setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
+    //mapColInterp->setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
     mapColInterp->setFirstDofGlobalCluster( proc_id, new_firstdofcol );
     mapColInterp->setLastDofGlobalCluster( proc_id, new_lastdofcol );
     mapColInterp->setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);

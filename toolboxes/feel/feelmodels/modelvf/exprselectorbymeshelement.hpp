@@ -24,6 +24,8 @@
 #ifndef FEELPP_MODELS_VF_ExprSelectorByMeshElement_H
 #define FEELPP_MODELS_VF_ExprSelectorByMeshElement_H 1
 
+#include <feel/feelmesh/meshbase.hpp>
+
 namespace Feel
 {
 namespace vf
@@ -33,12 +35,17 @@ template <typename IndexType>
 class ExprSelectorByMeshElementMapping
 {
 public :
+    using mesh_type = MeshBase<IndexType>;
+    using index_type = typename mesh_type::index_type;
     using tag_type = uint16_type;
     ExprSelectorByMeshElementMapping() = default;
 
     template <typename MeshType>
     void updateForUse( std::map<std::string, std::tuple<Range<MeshType,MESH_ELEMENTS>,Range<MeshType,MESH_ELEMENTS>> > const& data )
         {
+            this->clear();
+            if ( !data.empty() )
+                M_mesh = std::get<0>( data.begin()->second ).mesh();
             uint16_type cpt=0;
             for ( auto const& [name,pairRangeElt] : data )
             {
@@ -49,6 +56,8 @@ public :
                 M_nameToTag[name] = cpt++;
             }
         }
+
+    mesh_type const* mesh() const noexcept { return M_mesh; }
 
     tag_type idToTag( IndexType id ) const
         {
@@ -68,10 +77,12 @@ public :
 
     void clear()
         {
+            M_mesh = nullptr;
             M_eltIdToTag.clear();
             M_nameToTag.clear();
         }
 private :
+    mesh_type const* M_mesh = nullptr;
     std::unordered_map<index_type,tag_type> M_eltIdToTag;
     std::map<std::string,tag_type> M_nameToTag;
 };
@@ -431,13 +442,23 @@ public :
                 // first, reset all current tensors
                 hana::for_each( M_tupleTensorExprs, []( auto & e ) { e.second = nullptr; } );
 
-                IndexType eid = vf::detail::ExtractGm<Geo_t>::get( geom )->id();
+                // get mesh element id for the mapping (maybe by using mesh relation)
+                auto const& meshElt = vf::detail::ExtractGm<Geo_t>::get( geom )->element();
+                IndexType eid = meshElt.id();
+                if ( !meshElt.mesh()->isSameMesh( M_mapping.mesh() ) )
+                {
+                    if ( meshElt.mesh()->isSubMeshFrom( M_mapping.mesh() ) )
+                        eid = meshElt.mesh()->subMeshToMesh( eid );
+                    else if ( meshElt.mesh()->isParentMeshOf( M_mapping.mesh() ) )
+                        eid = M_mapping.mesh()->meshToSubMesh( eid );
+                }
+
+                // in function of tag found, set appropriate tensor
                 mapping_tag_type tag = M_mapping.idToTag( eid );
                 if ( tag != invalid_v<mapping_tag_type> )
                 {
                     hana::for_each( M_tupleTensorExprs, [&tag]( auto & e )
                                     {
-                                        //e.second = nullptr;
                                         auto & tensorExprs = e.first;
                                         auto itFindTensorExpr = tensorExprs.find( tag );
                                         if ( itFindTensorExpr !=  tensorExprs.end() )

@@ -37,14 +37,12 @@ If ( dim == 2 )
   Physical Line("outlet") = {5, 4};
   Physical Surface("fluid") = {10};
 EndIf 
-If (dim == 3 )
+If ( dim == 3 )
   Extrude {0, 0, W} {
     Surface{10};
   }
-  Surface Loop(53) = {52, 23, 10, 27, 31, 35, 39, 43, 47, 51};
-  Volume(54) = {53};
   Physical Surface("inlet") = {31};
   Physical Surface("outlet") = {51, 47};
-  Physical Surface("wall") = {23, 10, 52, 43, 27, 39, 35};
+  Physical Surface("wall") = {23, 10, 52, 35, 43, 39, 27};
   Physical Volume("fluid") = {1};
 EndIf
