@@ -33,9 +33,11 @@
 #include "contactforce.hpp"
 #include "torque.hpp"
 #include "force.hpp"
+#include "innerstrainrates.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
+using mesh_t = Mesh<Simplex<2, 1>>;
 
 template<typename MeshT>
 std::shared_ptr<MeshT>
@@ -103,7 +105,17 @@ void defFM(py::module &m)
             std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>();
             self->applyRemesh(meshOld,meshNew,remeshInterp);            
         }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
-        
+
+        .def( "computeInnerStrainRates", []( const fm_t& t, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u1, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u2 )
+        {
+            return innerStrainRates<0>(t, u1, u2);
+        }, "compute inner strain rates", py::arg("u1"), py::arg("u2") )
+
+        .def ("saveHDF5InnerStrainRates", []( const fm_t& t, Pch_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& e1_inner_e2, const std::string& path )
+        {
+            saveinnerStrainRates<0>(t, e1_inner_e2, path);
+        }, "save inner strain rates to HDF5", py::arg("e1_inner_e2"), py::arg("path") )
+
         .def(
             "addContactForceModel",[](const fm_t& t)
             {

@@ -1,0 +1,43 @@
+
+#include <feel/feelmodels/fluid/fluidmechanics.hpp>
+#include <feel/feelcore/json.hpp>
+#include <feel/feelvf/vf.hpp>
+
+
+// /!\ Pourvoir chosir la bonne dimension 
+using namespace Feel;
+using namespace Feel::FeelModels;
+using json = nl::json;
+using mesh_t = Mesh<Simplex<2, 1>>;
+
+
+
+
+
+
+
+template<std::size_t residualType, typename FluidMechanics, typename Pchv>
+auto
+innerStrainRates(FluidMechanics &t, Pchv &u1, Pchv &u2)
+{ 
+    auto Xh = Pch<2>(u1.functionSpace()->mesh());;
+    auto r = Xh->element();
+
+    auto e1 = gradv(u1)+trans(gradv(u1))/2;
+    auto e2 = gradv(u2)+trans(gradv(u2))/2;
+
+    auto e1_inner_e2 = inner(e1,e2);
+
+    r.on( _range=elements(u1.functionSpace()->mesh()), _expr=e1_inner_e2 );
+    return r;
+
+}
+
+
+template<std::size_t residualType, typename FluidMechanics, typename Pch>
+void
+saveinnerStrainRates(FluidMechanics &t, Pch &e1_inner_e2, const std::string& path)
+{
+    e1_inner_e2.saveHDF5( path );
+}
+

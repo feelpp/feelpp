@@ -120,3 +120,4 @@ rigidTorqueModel(FluidMechanics &t, DataType & data)
     TorqueRigid<residualType>(t, data, rigidTorqueParam);
 
 }
+
