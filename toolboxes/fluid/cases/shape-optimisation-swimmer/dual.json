@@ -101,6 +101,21 @@
                 "Quantities":
                 {
                     "names":"all"
+                },
+                "Statistics":
+                {
+                    "volumeswimmer":
+                    {
+                        "type": "integrate",
+                        "expr":"1.",
+                        "markers": "EllipsoidVolume"
+                    },
+                    "centermass":
+                    {
+                        "type": "integrate",
+                        "expr":"{x,y,z}:x:y:z",
+                        "markers": "EllipsoidVolume"
+                    }
                 }
             },
             "Save" :

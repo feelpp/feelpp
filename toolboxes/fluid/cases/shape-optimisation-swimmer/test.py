@@ -2,7 +2,8 @@ import sys
 
 
 import feelpp.core as feelpp
-import feelpp.core.quality as q
+
+import feelpp.core.quality as quality
 import feelpp.toolboxes.core as tb
 import feelpp.core.interpolation as I
 from feelpp.toolboxes.fluid import *
@@ -12,6 +13,9 @@ import json
 import mpi4py
 mpi4py.rc.thread_level="single"
 import pandas as pd
+import json
+import matplotlib.pyplot as plt
+import numpy as np
 
 ## Utils 
 
@@ -43,37 +47,56 @@ e = feelpp.Environment(
                                 .add(tb.toolboxes_options("fluid", "pfluid"))
                                 .add(tb.toolboxes_options("fluid", "dfluid"))
                                 .add(tb.toolboxes_options("coefficient-form-pdes", "expansion")),
-                config=feelpp.localRepository(folder)
-                                )
+                config=feelpp.localRepository(folder))
 
-hfar = 0.6
+cst = 0.98
+hfar = 0.005
 hclose = 0.01
+qual = 0.4  #lower bound for the quality of the mesh
+al, bl, cl = 0.05, 0.5, 1000
+ar, br, cr = 0.05, 0.5, 1000
+l, r = -20, 20
 
-required_facets=["Ellipsoid"]
-required_elts=["EllipsoidVolume"]
 
-mesh1 = feelpp.load(feelpp.mesh(dim=3,realdim=3), "fluidandswimmer.geo" , 0.1)
-mesh2 = feelpp.load(feelpp.mesh(dim=3,realdim=3), "fluid.geo" , 0.1)
-#interpolation between mesh1 and mesh2
-Pchv1_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=1)
-Pchv1_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pchv", order=1)
-# interp = I.interpolator(domain = Pchv1_mesh2, image = Pchv1_mesh1,  range = feelpp.elements(mesh1)) PCHV3D PAS PRIS EN COMPTE
+
+required_facets1=["BoxWalls"]
+required_elts1=[]#["EllipsoidVolume"]
+required_facets2=["BoxWalls"]
+required_elts2=[]#["EllipsoidVolume"]
+
+mesh1 = feelpp.load(feelpp.mesh(dim=3,realdim=3), "fluidandswimmer.geo" , 0.05)
+mesh2 = feelpp.load(feelpp.mesh(dim=3,realdim=3), "fluid.geo" , 0.05)
 
 
 feelpp.Environment.setConfigFile('test.cfg')
 exporter1 = feelpp.exporter(mesh=mesh1, name="fluidandswimmer", geo="change")
 exporter2 = feelpp.exporter(mesh=mesh2, name="fluid", geo="change")
-## Primal problem =====================================================================
 
-for i in range(1) :
+List_of_translational_velocity_dot_Text= []
+List_of_angular_velocity_dot_Text = []
+List_of_remesh_mesh1 = []
+List_of_remesh_mesh2 = []
+List_of_centermass = []
+List_of_volume_swimmer = []
+
+for i in range(40) :
+    #interpolation between mesh1 and mesh2
+    Pchv1_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=1)
+    Pch2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pch", order=2)
+    Pchv1_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pchv", order=1)
+    Pch2_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pch", order=2)
+    interp_laplacian_to_swimmer = I.interpolator(domain = Pchv1_mesh2, image = Pchv1_mesh1,  range = feelpp.elements(mesh1)) #PCHV3D PAS PRIS EN COMPTE
+    interp_swimmer_to_laplacian = I.interpolator(domain = Pch2_mesh1, image = Pch2_mesh2,  range = feelpp.elements(mesh2)) #PCHV3D PAS PRIS EN COMPTE
+
+    ## Primal problem =====================================================================
 
     #Primal 
     fp = fluid(dim=3, orderVelocity=2, orderPressure=1, keyword="pfluid", prefix="pfluid")
     fp.setMesh(mesh1)
     fp.init()
-    fp.printAndSaveInfo()
+    #fp.printAndSaveInfo()
 
-    #remesh_toolbox(f, hclose, hfar, required_facets, required_elts, None, None)
+    #remesh_toolbox(fp, hclose, hfar, required_facets1, required_elts1, None, None)
 
     # Reset execution time parameters
     fp.reset_executionTime()
@@ -94,18 +117,42 @@ for i in range(1) :
     fp.exportResults()
     up = fp.fieldVelocity()
 
+    #translationnl velocity
+    fp.updateTimeStep()
+    print("============================================================\n")
+    print("time simulation: ", fp.time(), "s \n")
+    print("============================================================\n")
+    fp.solve()
+    fp.exportResults()
 
+    table_of_fpvalues = pd.read_csv("pfluid.measures/values.csv")
+    time_fp = table_of_fpvalues["time"]
+    dt_fp = time_fp.values
+    dt_fp = dt_fp[0]
+
+    center_of_mass_fp = table_of_fpvalues[["Quantities_body_Ellipsoid.mass_center_0", "Quantities_body_Ellipsoid.mass_center_1", "Quantities_body_Ellipsoid.mass_center_2"]]
+    center_of_mass_fp = center_of_mass_fp.values
+    translational_velocity_fp = (center_of_mass_fp[0]-center_of_mass_fp[1])/dt_fp
+    List_of_translational_velocity_dot_Text.append(np.dot(translational_velocity_fp, np.array([1,0,0])))
+
+    rotation_angle_fp = table_of_fpvalues[["Quantities_body_Ellipsoid.rigid_rotation_angles_0", "Quantities_body_Ellipsoid.rigid_rotation_angles_1", "Quantities_body_Ellipsoid.rigid_rotation_angles_2"]]
+    rotation_angle_fp = rotation_angle_fp.values
+    angular_velocity_fp = (rotation_angle_fp[0]-rotation_angle_fp[1])/dt_fp
+    List_of_angular_velocity_dot_Text.append(np.dot(angular_velocity_fp, np.array([1,0,0])))
+
+
+ 
     ## Dual Problem =======================================================================================
 
     ## Dual Problem
     fd = fluid(dim=3, orderVelocity=2, orderPressure=1, keyword="dfluid", prefix="dfluid")
     fd.setMesh(mesh1)
     fd.init()
-    fd.printAndSaveInfo()
+    #fd.printAndSaveInfo()
 
 
     #/!\ faire qu'un seul remaillaige pour avoir un maillage uniforme pour chaque toolboxe
-    #remesh_toolbox(fd, hclose, hfar, required_facets, required_elts, None, None)
+    #remesh_toolbox(fd, hclose, hfar, required_facets2, required_elts2, None, None)
 
 
     # Reset execution time parameters
@@ -127,33 +174,70 @@ for i in range(1) :
     fd.exportResults()
     ud = fd.fieldVelocity()
 
+    
+
 
     ## Expansion ===============================================================
+    mes = fd.postProcessMeasures().values()
+    dfd_mes = pd.DataFrame(mes, index=[0])
+    volume_swimmer = dfd_mes["Statistics_volumeswimmer_integrate"][0]
+    centermass1 = dfd_mes["Statistics_centermass_integrate_0"][0]/ volume_swimmer
+    centermass2 = dfd_mes["Statistics_centermass_integrate_1"][0]/ volume_swimmer
+    centermass3 = dfd_mes["Statistics_centermass_integrate_2"][0]/ volume_swimmer
+    centermass = np.array([centermass1, centermass2, centermass3])
+    Textcrossw = np.cross(np.array([1,0,0]), angular_velocity_fp)
+
+    List_of_volume_swimmer.append(volume_swimmer)
+    List_of_centermass.append(centermass)
+
+    inner_up_ud = fd.computeInnerStrainRates(up, ud)
+    inner_up_ud_interp = interp_swimmer_to_laplacian.interpolate(inner_up_ud)
+    fd.saveHDF5InnerStrainRates(inner_up_ud_interp, "inner_up_ud_interp.h5")
+
+
     exp = cfpdes(dim=3, keyword="expansion", prefix="expansion")
     exp.setMesh(mesh2)
-    exp.addParameterInModelProperties("Mu",1.13)
-    exp.addParameterInModelProperties("t",1.)
-    exp.addParameterInModelProperties("l",0)
+    #f_expjson = open("/user/lpalazzo/home/Documents/These/Swimmers_feel/feelpp/toolboxes/fluid/cases/shape-optimisation-swimmer/expansion.json", "r") 
+    #expjson = json.loads(f_expjson.read())
+    #f_expjson.close()
+    #exp.setModelProperties(expjson)
     exp.init()
-    exp.printAndSaveInfo()
-
+    exp.addParameterInModelProperties("Mu",1.13)
+    exp.addParameterInModelProperties("volumeswimmer",volume_swimmer)
+    exp.addParameterInModelProperties("xCM1", centermass[0])
+    exp.addParameterInModelProperties("xCM2", centermass[1])
+    exp.addParameterInModelProperties("xCM3", centermass[2])
+    exp.addParameterInModelProperties("x01", 0.5)
+    exp.addParameterInModelProperties("x02", 0.5)
+    exp.addParameterInModelProperties("x03", 0.5)
+    exp.addParameterInModelProperties("Textcrossw1", Textcrossw[0])
+    exp.addParameterInModelProperties("Textcrossw2", Textcrossw[1])
+    exp.addParameterInModelProperties("Textcrossw3", Textcrossw[2])
+    exp.addParameterInModelProperties("t",0.002)
+    exp.addParameterInModelProperties("l",l)
+    exp.addParameterInModelProperties("r", r)
+    exp.updateParameterValues()
+    #exp.printAndSaveInfo()
     exp.solve()
     exp.exportResults()
     theta = exp.pde("Expansion").fieldUnknown()
-    
-    print(dir(theta))
-    #theta_interp = interp.interpolate(theta) PCHV3D PAS PRIS EN COMPTE
+    theta_interp = interp_laplacian_to_swimmer.interpolate(theta) 
 
-    #thetax = theta.comp("X") NE MARCHE PAS EN PYTHON
-    #/!\ changer espace d'interpolation en Pch !
-    # theta_interp_x = interp.interpolate(xtheta)
-    # theta_interp_y = interp.interpolate(ytheta)
-    # theta_interp_z = interp.interpolate(ztheta)
+    mes_exp = exp.postProcessMeasures().values()
+    dfexp_mes = pd.DataFrame(mes_exp, index=[0])
+    int_grad = dfexp_mes["Statistics_grad_integrate"][0]
+    int_surf = dfexp_mes["Statistics_surf_integrate"][0]
 
+    volume0 = np.pi * 0.08**3
+    l = al* l + bl*int_grad/int_surf + cl * (volume_swimmer-volume0)/volume0
+    r = ar* r + bl*int_grad/int_surf + cr * np.linalg.norm(centermass-np.array([0.5, 0.5, 0.5]))/np.linalg.norm(np.array([0.5, 0.5, 0.5]))
+
+    ## Exporter on the 2 meshes ==========================================================
     exporter1.step(i).setMesh(mesh1)
-    exporter1.step(i).add("theta", theta)
+    exporter1.step(i).add("theta_interp", theta_interp)
     exporter1.step(i).add("up", up)
     exporter1.step(i).add("ud", ud)
+    exporter1.step(i).add("inner_up_ud", inner_up_ud)
     exporter1.save()
 
 
@@ -161,23 +245,79 @@ for i in range(1) :
     exporter2.step(i).add("theta", theta)
     exporter2.step(i).add("up", up)
     exporter2.step(i).add("ud", ud)
+    exporter2.step(i).add("inner_up_ud", inner_up_ud)
     exporter2.save()
 
 
-    #mesh1 = mm.meshMove(mesh1,theta)
+    ## Move the meshes ===================================================================
+    mesh1 = mm.meshMove(mesh1,theta_interp)
     mesh2 = mm.meshMove(mesh2,theta)
 
-
+    ## Remesh the meshes ==========================================================
+    q1 = quality.etaQ(mesh1).min()
+    print(f"q1={q1}")
+    if q1 < qual : 
+        mesh1, cpt1 = feelpp.remesh(mesh=mesh1, metric=f"gradedls({hclose}, {hfar}, {cst})",required_elts = required_elts1, required_facets=required_facets1,parent=None)
+        List_of_remesh_mesh1.append(i)
+    print(f"q1 = {quality.etaQ(mesh1).min()}")
     
+    q2 = quality.etaQ(mesh2).min()
+    print(f"q2={q2}")
+    if q2 < qual : 
+        mesh2, cpt2 = feelpp.remesh(mesh=mesh2, metric=f"gradedls({hclose}, {hfar}, {cst})",required_elts = required_elts2, required_facets=required_facets2,parent=None)
+        List_of_remesh_mesh2.append(i)
+    print(f"q2 = {quality.etaQ(mesh2).min()}")
+
+
+
+    fig, axs = plt.subplots(3, 2, figsize=(10, 15))
+    ax = axs[:,0]
+
+
+    ax[0].plot(np.array(List_of_translational_velocity_dot_Text)/np.array(List_of_angular_velocity_dot_Text), label=r"$\frac{U\cdot T_{ext}}{\omega\cdot T_{ext}}$")
+    ax[1].plot(List_of_translational_velocity_dot_Text, label=r"$U\cdot T_{ext}$")
+    ax[2].plot(List_of_angular_velocity_dot_Text, label=r"$\omega\cdot T_{ext}$")
+
+    ax[0].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1]/np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='x', label='Remesh Mesh1')
+    ax[0].scatter(List_of_remesh_mesh2, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh2]/np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
+    ax[1].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='x', label='Remesh Mesh1')
+    ax[1].scatter(List_of_remesh_mesh2, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
+    ax[2].scatter(List_of_remesh_mesh1, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='x', label='Remesh Mesh1')
+    ax[2].scatter(List_of_remesh_mesh2, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
+    
+    ax[0].legend()
+    ax[1].legend()
+    ax[2].legend()
+    ax[0].grid()
+    ax[1].grid()
+    ax[2].grid()
+
+
+    axs[0, 1].plot(np.array(List_of_volume_swimmer)-volume0, label="Error in volume swimmer")
+    axs[0, 1].legend()
+    axs[0, 1].grid()
+    axs[1, 1].plot(np.array(List_of_centermass)[:, 0], label="Centermass x")
+    axs[1, 1].plot(np.array(List_of_centermass)[:, 1], label="Centermass y")
+    axs[1, 1].plot(np.array(List_of_centermass)[:, 2], label="Centermass z")
+    axs[1, 1].legend()
+    axs[1, 1].grid()
+    axs[2, 1].plot(np.linalg.norm(np.array(List_of_centermass)-np.array([0.5, 0.5, 0.5]), axis=1), label="Error in centermass")
+    axs[2, 1].legend()
+    axs[2, 1].grid()
+
+    plt.savefig(f"plot.png")
+    plt.close(fig)
 
 exporter1.step(i+1).setMesh(mesh1)
-exporter1.step(i+1).add("theta", theta)
+exporter1.step(i+1).add("theta_interp", theta_interp)
 exporter1.step(i+1).add("up", up)
 exporter1.step(i+1).add("ud", ud)
+exporter1.step(i+1).add("inner_up_ud", inner_up_ud)
 exporter1.save()
 
 exporter2.step(i+1).setMesh(mesh2)
 exporter2.step(i+1).add("theta", theta)
 exporter2.step(i+1).add("up", up)
 exporter2.step(i+1).add("ud", ud)
+exporter2.step(i+1).add("inner_up_ud", inner_up_ud)
 exporter2.save()
