@@ -51,11 +51,11 @@ e = feelpp.Environment(
 
 cst = 0.98
 hfar = 0.005
-hclose = 0.01
+hclose = 0.005
 qual = 0.4  #lower bound for the quality of the mesh
-al, bl, cl = 0.05, 0.5, 1000
-ar, br, cr = 0.05, 0.5, 1000
-l, r = -20, 20
+al, bl, cl = 0.05, 0.5, 10
+ar, br, cr = 0.05, 0.5, 10
+l, r = 10, 10
 
 
 
@@ -79,7 +79,7 @@ List_of_remesh_mesh2 = []
 List_of_centermass = []
 List_of_volume_swimmer = []
 
-for i in range(40) :
+for i in range(200) :
     #interpolation between mesh1 and mesh2
     Pchv1_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=1)
     Pch2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pch", order=2)
@@ -190,18 +190,24 @@ for i in range(40) :
     List_of_volume_swimmer.append(volume_swimmer)
     List_of_centermass.append(centermass)
 
+    #print("Computation of the inner strain rates")
     inner_up_ud = fd.computeInnerStrainRates(up, ud)
+    #print("Computation of the inner strain rates done")
+    #print("Interpolation of the inner strain rates")
     inner_up_ud_interp = interp_swimmer_to_laplacian.interpolate(inner_up_ud)
+    #print("Interpolation of the inner strain rates done")
+    #print("Saving the inner strain rates in HDF5 format")
     fd.saveHDF5InnerStrainRates(inner_up_ud_interp, "inner_up_ud_interp.h5")
+    #print("Inner strain rates saved in HDF5 format")
+    
 
-
+    #print("Starting the expansion toolbox")
     exp = cfpdes(dim=3, keyword="expansion", prefix="expansion")
+    #print("Setting the mesh for the expansion toolbox")
     exp.setMesh(mesh2)
-    #f_expjson = open("/user/lpalazzo/home/Documents/These/Swimmers_feel/feelpp/toolboxes/fluid/cases/shape-optimisation-swimmer/expansion.json", "r") 
-    #expjson = json.loads(f_expjson.read())
-    #f_expjson.close()
-    #exp.setModelProperties(expjson)
+    print("Initializing the expansion toolbox")
     exp.init()
+    print("Adding parameters in the model properties")
     exp.addParameterInModelProperties("Mu",1.13)
     exp.addParameterInModelProperties("volumeswimmer",volume_swimmer)
     exp.addParameterInModelProperties("xCM1", centermass[0])
@@ -213,7 +219,7 @@ for i in range(40) :
     exp.addParameterInModelProperties("Textcrossw1", Textcrossw[0])
     exp.addParameterInModelProperties("Textcrossw2", Textcrossw[1])
     exp.addParameterInModelProperties("Textcrossw3", Textcrossw[2])
-    exp.addParameterInModelProperties("t",0.002)
+    exp.addParameterInModelProperties("t",0.001)
     exp.addParameterInModelProperties("l",l)
     exp.addParameterInModelProperties("r", r)
     exp.updateParameterValues()
