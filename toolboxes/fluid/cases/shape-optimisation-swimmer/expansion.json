@@ -29,7 +29,7 @@
                 "primal_inner_dual" :
                 {
                     "filename":"$cfgdir/feelppdb/shaposwimmer/np_1/inner_up_ud_interp.h5",
-                    "basis":"Pch2"
+                    "basis":"Pdh1"
                 }
             }
         }
