@@ -111,7 +111,7 @@ void defFM(py::module &m)
             return innerStrainRates<0>(t, u1, u2);
         }, "compute inner strain rates", py::arg("u1"), py::arg("u2") )
 
-        .def ("saveHDF5InnerStrainRates", []( const fm_t& t, Pch_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& e1_inner_e2, const std::string& path )
+        .def ("saveHDF5InnerStrainRates", []( const fm_t& t, Pdh_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 1> const& e1_inner_e2, const std::string& path )
         {
             saveinnerStrainRates<0>(t, e1_inner_e2, path);
         }, "save inner strain rates to HDF5", py::arg("e1_inner_e2"), py::arg("path") )
