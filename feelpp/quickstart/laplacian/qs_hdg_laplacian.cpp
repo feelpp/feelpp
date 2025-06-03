@@ -56,7 +56,7 @@ makeOptions()
         ( "r_2", po::value<std::string>()->default_value( "" ), "Robin rhs coefficient" )
         ( "pyexpr.filename", po::value<std::string>()->default_value( "${top_srcdir}/quickstart/laplacian.py" ), "python filename to execute" )
         ( "solution.p", po::value<std::string>()->default_value( "1" ), "solution p exact" )
-        ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )        
+        ( "solution.sympy.p", po::value<std::string>()->default_value( "1" ), "solution p exact (if we use sympy)" )
 #if (FEELPP_DIM==2)
         ( "solution.u", po::value<std::string>()->default_value( "{0,0}" ), "solution u exact" )
 #else
@@ -72,7 +72,7 @@ makeOptions()
         ;
     return hdgoptions;
 }
- 
+
 inline
 AboutData
 makeAbout()
@@ -98,14 +98,14 @@ int hdg_laplacian()
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
-    
-    
+
+
 #if defined(FEELPP_HAS_SYMPY)
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
-    auto thechecker = checker( _name= "L2/H1 convergence", 
+    auto thechecker = checker( _name= "L2/H1 convergence",
                                _solution_key="p",
                                _gradient_key="grad_p",
                                _inputs=inputs
@@ -122,7 +122,7 @@ int hdg_laplacian()
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") ); 
+    auto r_2 = expr( locals.at("r_2") );
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -144,10 +144,10 @@ int hdg_laplacian()
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhv<OrderP>( mesh, true );
-    auto Wh = Pdh<OrderP>( mesh, true );
+    auto Vh = Pdhv<OrderP>( mesh );
+    auto Wh = Pdh<OrderP>( mesh );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
-    auto Mh = Pdh<OrderP>( face_mesh,true );
+    auto Mh = Pdh<OrderP>( face_mesh );
 
     toc("spaces",true);
     auto P0dh = Pdh<0>(mesh);
@@ -174,8 +174,8 @@ int hdg_laplacian()
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
         auto u = cgLaplacian( _space=cgXh, _data=std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
-        if ( u )        
-            status_cg = check( checker( _name= "L2/H1 convergence cG", 
+        if ( u )
+            status_cg = check( checker( _name= "L2/H1 convergence cG",
                                         _solution_key="p",
                                         _gradient_key="grad_p",
                                         _inputs=locals
@@ -218,7 +218,7 @@ int hdg_laplacian()
                           _expr=id(l)*p_exact, _quad=ioption("rhs_quad") );
     rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
                            _expr=id(l)*r_2);
-    
+
     toc("rhs",true);
     tic();
     //
@@ -272,7 +272,7 @@ int hdg_laplacian()
     //
     // Third row a(2_c,:)
     //
-    
+
     tic();
     a(2_c,0_c) += integrate(_range=internalfaces(mesh),
                             _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u))))
@@ -317,21 +317,21 @@ int hdg_laplacian()
 
     toc("matrices",true);
     toc("assembly",true);
-    
+
     tic(); // solver+postpro time
     tic();
     auto U=ps.element();
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
 
-    
+
     // ****** Compute error ******
     auto up = U(0_c);
     auto pp = U(1_c);
 
     tic();
     tic();
-    auto Whp = Pdh<OrderP+1>( mesh, true );
+    auto Whp = Pdh<OrderP+1>( mesh );
     auto pps = product( Whp );
     auto PP = pps.element();
     auto ppp = PP(0_c);
@@ -346,7 +346,7 @@ int hdg_laplacian()
     ell(0_c) = integrate( _range=elements(mesh), _expr=-lambda*grad(ppp)*idv(up));
     toc("postprocessing.assembly.l",FLAGS_v>0);
     toc("postprocessing.assembly",FLAGS_v>0);
-    
+
     tic();
     tic();
     b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true);
@@ -365,7 +365,7 @@ int hdg_laplacian()
 
     toc("solver+postprocessing");
     toc("assembly+solver+postprocessing");
-    
+
 
     tic();
     v.on( _range=elements(mesh), _expr=u_exact );
@@ -386,20 +386,20 @@ int hdg_laplacian()
 #if defined(FEELPP_HAS_SYMPY)
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
     solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-    status1 = check( checker( _name= "L2/H1 convergence of potential", 
+    status1 = check( checker( _name= "L2/H1 convergence of potential",
                               _solution_key="p",
                               _gradient_key="grad_p",
                               _inputs=locals
                               ), pp, s_t );
-    status2 = check( checker( _name= "L2 convergence of the flux", 
+    status2 = check( checker( _name= "L2 convergence of the flux",
                               _solution_key="u",
                               _inputs=locals
                               ), up );
-    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+    status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential",
                               _solution_key="p",
                               _gradient_key="grad_p",
                               _inputs=locals
-                              ), ppp, s_t );    
+                              ), ppp, s_t );
     // end::check[]
 #endif
 
@@ -415,7 +415,7 @@ int main( int argc, char** argv )
     // tag::env[]
     using namespace Feel;
 
-    try 
+    try
     {
 	    Environment env( _argc=argc, _argv=argv,
                          _desc=makeOptions(),
@@ -428,7 +428,7 @@ int main( int argc, char** argv )
         if ( ioption( "order" ) == 2 )
             return hdg_laplacian<FEELPP_DIM,2>();
 
- #if 0   
+ #if 0
         if ( ioption( "order" ) == 3 )
             return hdg_laplacian<FEELPP_DIM,3>();
 

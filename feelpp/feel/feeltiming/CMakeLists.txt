@@ -26,4 +26,4 @@
 SET(SRC now.cpp  )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feeltiming "${SRC};${HDR}")
+feel_append_src(feeltiming "${SRC}")

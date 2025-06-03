@@ -49,297 +49,7 @@ struct MeshContiguousNumberingMapping
             this->updateForUse( meshFragmentation );
         }
 
-    void updateForUse( MeshFragmentation<mesh_type> const& meshFragmentation )
-        {
-            mesh_type* mesh = M_mesh;
-            rank_type currentPid = mesh->worldComm().localRank();
-            rank_type worldSize = mesh->worldComm().localSize();
-
-            M_partIdToRangeElement = meshFragmentation.toContainer( *M_mesh );
-
-            // point id -> (  ( map of idsInOtherPart ), ( vector of ( marker, element id, id in elt) ) )
-            std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<int,index_type,uint16_type>> >> dataPointsInterProcess;
-
-            for ( auto const& [part,nameAndRangeElt] : M_partIdToRangeElement )
-            {
-                auto const& rangeElt  = std::get<1>( nameAndRangeElt );
-                index_type nEltInRange = nelements(rangeElt);
-                auto & elementIdToContiguous = M_elementIdToContiguous[part];
-                auto & pointIdsInElements = M_pointIdsInElements[part];
-                auto & pointIdToContiguous = M_pointIdToContiguous[part];
-                pointIdsInElements.resize( nEltInRange*mesh_type::element_type::numPoints, invalid_v<index_type> );
-                index_type countPtId = 0, countEltId = 0;
-                for ( auto const& eltWrap : rangeElt )
-                {
-                    auto const& elt = unwrap_ref( eltWrap );
-                    index_type eltId = elt.id();
-                    auto [itElt,eltIsInserted] = elementIdToContiguous.try_emplace( eltId, countEltId++ );
-                    DCHECK( eltIsInserted ) << "something wrong, element already inserted";
-                    index_type newEltId = itElt->second;
-                    for ( uint16_type j = 0; j < mesh_type::element_type::numPoints; j++ )
-                    {
-                        auto const& pt = elt.point( j );
-                        index_type ptid = pt.id();
-                        auto const& ptIdnOthersPartitions = pt.idInOthersPartitions();
-                        if ( M_interprocessPointAreDuplicated || ptIdnOthersPartitions.empty() ) // not a interprocess point
-                        {
-                            auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptid,std::make_pair(countPtId,boost::cref(pt)) );
-                            if ( isInserted )
-                                ++countPtId;
-                            index_type newPtId = itPt->second.first;
-
-                            DCHECK( (newEltId*mesh_type::element_type::numPoints+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*mesh_type::element_type::numPoints+j) << " vs " <<  pointIdsInElements.size();
-                            pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
-                        }
-                        else
-                        {
-                            auto infoIpElt = std::make_tuple( part, newEltId/*eltId*/, j );
-                            auto itFindPtIP = dataPointsInterProcess.find( ptid );
-                            if ( itFindPtIP == dataPointsInterProcess.end() )
-                            {
-                                dataPointsInterProcess.emplace( ptid,  std::make_tuple( ptIdnOthersPartitions,  std::vector< std::tuple<int,index_type,uint16_type>>( { infoIpElt } ) ) );
-                            }
-                            else
-                                std::get<1>( itFindPtIP->second ).push_back( infoIpElt );
-                        }
-                    }
-                }
-            }
-
-            // --------------------------------------------------------------------------------------- //
-            // treatment of interprocess point
-            std::map<int,std::map<rank_type,std::map<index_type,index_type>>> dataPointsNotInProcess;
-            if ( !M_interprocessPointAreDuplicated && worldSize > 1 )
-            {
-                std::map<rank_type, std::vector<std::pair<int,index_type>>> dataToSend;
-                std::map<rank_type, std::vector<std::pair<int,index_type>>> dataToRecv;
-                for ( auto const& [ ptId, dataIP ] : dataPointsInterProcess )
-                {
-                    auto const& dataIdInOtherPartition =  std::get<0>( dataIP );
-                    auto const& dataEltInfo = std::get<1>( dataIP );
-                    for ( auto const& [ procId, ptIdOtherPart ] : dataIdInOtherPartition )
-                    {
-                        for ( auto const& [marker,eltId,ptIdInElt ] : dataEltInfo )
-                            dataToSend[procId].push_back( std::make_pair(marker, ptIdOtherPart) );
-                    }
-                }
-                int neighborSubdomains = mesh->neighborSubdomains().size();
-                int nbRequest = 2 * neighborSubdomains;
-                mpi::request* reqs = new mpi::request[nbRequest];
-                int cptRequest = 0;
-                std::map<rank_type,std::size_t> sizeRecv;
-                std::map<rank_type,std::size_t> sizeSend;
-
-                // get size of data to transfer
-                for ( rank_type neighborRank : mesh->neighborSubdomains() )
-                {
-                    sizeSend[neighborRank] = dataToSend[neighborRank].size();
-                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
-                    reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
-                }
-                // wait all requests
-                mpi::wait_all(reqs, reqs + cptRequest);
-
-                cptRequest = 0;
-                for ( rank_type neighborRank : mesh->neighborSubdomains() )
-                {
-                    std::size_t nSendData = dataToSend[neighborRank].size();
-                    if ( nSendData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank].data(), nSendData );
-                    std::size_t nRecvData = sizeRecv[neighborRank];
-                    dataToRecv[neighborRank].resize( nRecvData );
-                    if ( nRecvData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
-                }
-                // wait all requests
-                mpi::wait_all( reqs, reqs + cptRequest );
-
-                std::map<int,std::map<index_type, std::set<rank_type> > > treatRecv;
-                // others process
-                for ( auto const& [pid, ptData ] : dataToRecv )
-                {
-                    for ( auto const& [marker, ptId] : ptData )
-                        treatRecv[marker][ptId].insert( pid );
-                }
-                // self process
-                for ( auto const& [ ptId, dataIP ] : dataPointsInterProcess )
-                {
-                    auto const& dataEltInfo = std::get<1>( dataIP );
-                    for ( auto const& [marker,eltId,ptIdInElt ] : dataEltInfo )
-                        treatRecv[marker][ptId].insert( currentPid );
-                }
-                // determine which process have points
-                std::map<int,std::set<index_type>> ipPointsOnCurrentProcess;
-                for ( auto const& [marker, mapIdToPids] : treatRecv )
-                {
-                    for ( auto const& [ptId,allPids] : mapIdToPids )
-                        if ( currentPid == *allPids.begin() )
-                            ipPointsOnCurrentProcess[marker].insert( ptId );
-                }
-                // update M_pointIdToContiguous
-                std::map<rank_type,std::vector<boost::tuple<int,index_type,index_type>>> dataToReSend;
-                std::map<rank_type,std::vector<boost::tuple<int,index_type,index_type>>> dataToReRecv;
-                for ( auto const& [marker, ptIds] : ipPointsOnCurrentProcess )
-                {
-                    auto & pointIdToContiguous = M_pointIdToContiguous[marker];
-                    auto & pointIdsInElements = M_pointIdsInElements[marker];
-                    index_type countPtId = pointIdToContiguous.size();
-                    for ( index_type ptId : ptIds )
-                    {
-                        auto const& pt = mesh->point( ptId );
-                        auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptId,std::make_pair(countPtId,boost::cref(pt)) );
-                        index_type newPtId = itPt->second.first;
-                        if ( isInserted )
-                        {
-                            ++countPtId;
-                            for (auto const& [opid, optId] : pt.idInOthersPartitions() )
-                                dataToReSend[opid].push_back( boost::make_tuple( marker,optId,newPtId ) );
-                        }
-
-                        auto itFindDataIP = dataPointsInterProcess.find( ptId );
-                        CHECK( itFindDataIP != dataPointsInterProcess.end() ) << "point not register";
-                        auto const& infoEltAssociated = std::get<1>( itFindDataIP->second );
-                        for ( auto const& [ marker2, newEltId, j ] : infoEltAssociated )
-                        {
-                            if ( marker != marker2 )
-                                continue;
-                            pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
-                        }
-                    }
-                }
-
-
-                // get size of data to transfer
-                cptRequest = 0;
-                for ( rank_type neighborRank : mesh->neighborSubdomains() )
-                {
-                    sizeSend[neighborRank] = dataToReSend[neighborRank].size();
-                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank , 0, sizeSend[neighborRank] );
-                    reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
-                }
-                // wait all requests
-                mpi::wait_all(reqs, reqs + cptRequest);
-
-                cptRequest = 0;
-                for ( rank_type neighborRank : mesh->neighborSubdomains() )
-                {
-                    int nSendData = dataToReSend[neighborRank].size();
-                    if ( nSendData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToReSend[neighborRank].data(), nSendData );
-                    int nRecvData = sizeRecv[neighborRank];
-                    dataToReRecv[neighborRank].resize( nRecvData );
-                    if ( nRecvData > 0 )
-                        reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToReRecv[neighborRank].data(), nRecvData );
-                }
-                // wait all requests
-                mpi::wait_all( reqs, reqs + cptRequest );
-                // delete reqs because finish comm
-                delete[] reqs;
-
-
-                for ( auto const& [pid, dataByProc] : dataToReRecv )
-                {
-                    for ( auto const&  dataPt : dataByProc )
-                    {
-                        int marker = boost::get<0>( dataPt );
-                        index_type ptId =  boost::get<1>( dataPt );
-                        index_type newPtId =  boost::get<2>( dataPt );
-                        dataPointsNotInProcess[marker][pid][ptId] = newPtId;
-                    }
-                }
-
-            }
-
-            // --------------------------------------------------------------------------------------- //
-            // build nodes vector
-            for ( auto const& [markerId,pointIdToContiguous] : M_pointIdToContiguous )
-            {
-                auto & nodes = M_nodes[markerId];
-                nodes.resize( 3*pointIdToContiguous.size(),0 );
-                for ( auto const& [ptId,ptData] : pointIdToContiguous )
-                {
-                    index_type newPtId = ptData.first;
-                    auto const& pt = unwrap_ref( ptData.second );
-                    for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
-                    {
-                        DCHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
-                        nodes[3*newPtId+d] = pt.node()[d];
-                    }
-                }
-            }
-
-            // --------------------------------------------------------------------------------------- //
-            // information in world comm
-            int k=0;
-            std::vector<boost::tuple<index_type,index_type>> nPointElementByMarker( M_pointIdToContiguous.size() );
-            for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
-            {
-                nPointElementByMarker[k] = boost::make_tuple( pointIdToContiguous.size(), M_elementIdToContiguous.find( marker)->second.size() );
-                ++k;
-            }
-
-            std::vector<std::vector<boost::tuple<index_type,index_type>>> recvInfos;
-            mpi::all_gather( mesh->worldComm().comm(), nPointElementByMarker, recvInfos );
-
-            k=0;
-            for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
-            {
-                auto & numberOfPointElement = M_numberOfPointElement[marker];
-                numberOfPointElement.resize( worldSize );
-                index_type startPtId = 0, startEltId = 0;
-                for ( rank_type p=0;p<worldSize;++p )
-                {
-                    index_type nPt = boost::get<0>( recvInfos[p][k] );
-                    index_type nElt = boost::get<1>( recvInfos[p][k] );
-                    numberOfPointElement[p] = std::make_tuple( startPtId, nPt, startEltId, nElt );
-                    startPtId+=nPt;
-                    startEltId+=nElt;
-                }
-                ++k;
-                M_numberOfPointElementAllProcess[marker] = std::make_tuple( startPtId,startEltId );
-            }
-
-            // --------------------------------------------------------------------------------------- //
-            // shift ids
-            for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
-            {
-                index_type spi = this->startPointIds(marker,currentPid);
-                index_type sei = this->startElementIds(marker,currentPid);
-                for ( auto & [ptId,newPtData] :  M_pointIdToContiguous[marker] )
-                    newPtData.first += spi;
-                for ( auto & [eltId,newEltId] : M_elementIdToContiguous[marker] )
-                    newEltId += sei;
-                for ( index_type & ptId : M_pointIdsInElements[marker] )
-                {
-                    if ( ptId != invalid_v<index_type> )
-                        ptId += spi;
-                }
-            }
-
-            // --------------------------------------------------------------------------------------- //
-            // update M_pointIdsInElements with interprocess points
-            for ( auto const& [marker, dataByMarker ] : dataPointsNotInProcess )
-            {
-                auto & pointIdsInElements = M_pointIdsInElements[marker];
-                for( auto const& [pid,dataByProc] : dataByMarker )
-                {
-                    index_type shiftPointId = this->startPointIds( marker, pid );
-                    for ( auto const& [ ptId,newPtId ] : dataByProc )
-                    {
-                        auto itFindPtIp = dataPointsInterProcess.find( ptId );
-                        CHECK( itFindPtIp != dataPointsInterProcess.end() ) << "invalid point ";
-                        auto const& infosElt = std::get<1>( itFindPtIp->second );
-                        // up pointIdsInElements
-                        for (auto const& [ marker2, newEltId, j ] : infosElt )
-                        {
-                            if ( marker == marker2 )
-                                pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId + shiftPointId;
-                        }
-                    }
-                }
-            }
-
-        }
+    void updateForUse( MeshFragmentation<mesh_type> const& meshFragmentation );
 
     const mesh_type* mesh() const { return M_mesh; }
 
@@ -482,6 +192,347 @@ private:
     std::map<int,std::vector<std::tuple<index_type,index_type,index_type,index_type>>> M_numberOfPointElement;
     std::map<int,std::tuple<index_type,index_type>> M_numberOfPointElementAllProcess;
 };
+
+
+
+template <typename MeshType,typename StorageNodeValueType>
+void
+MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( MeshFragmentation<mesh_type> const& meshFragmentation )
+{
+    mesh_type* mesh = M_mesh;
+    rank_type currentPid = mesh->worldComm().localRank();
+    rank_type worldSize = mesh->worldComm().localSize();
+
+    M_partIdToRangeElement = meshFragmentation.toContainer( *M_mesh );
+
+    // interprocess point mapping ( part id -> ( point id -> ( idOtherProcess mapping, vec(Eid,j) ) ) )
+    std::map<int, std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<index_type,uint16_type>> > > > dataPointsInterProcessRequest;
+
+    for ( auto const& [part,nameAndRangeElt] : M_partIdToRangeElement )
+    {
+        auto const& rangeElt  = std::get<1>( nameAndRangeElt );
+        index_type nEltInRange = nelements(rangeElt);
+        auto & elementIdToContiguous = M_elementIdToContiguous[part];
+        auto & pointIdsInElements = M_pointIdsInElements[part];
+        auto & pointIdToContiguous = M_pointIdToContiguous[part];
+        auto & dataPointsInterProcess = dataPointsInterProcessRequest[part];
+        pointIdsInElements.resize( nEltInRange*mesh_type::element_type::numPoints, invalid_v<index_type> );
+        index_type countPtId = 0, countEltId = 0;
+        for ( auto const& eltWrap : rangeElt )
+        {
+            auto const& elt = unwrap_ref( eltWrap );
+            index_type eltId = elt.id();
+            auto [itElt,eltIsInserted] = elementIdToContiguous.try_emplace( eltId, countEltId++ );
+            DCHECK( eltIsInserted ) << "something wrong, element already inserted";
+            index_type newEltId = itElt->second;
+            for ( uint16_type j = 0; j < mesh_type::element_type::numPoints; j++ )
+            {
+                auto const& pt = elt.point( j );
+                index_type ptid = pt.id();
+                auto const& ptIdnOthersPartitions = pt.idInOthersPartitions();
+                if ( M_interprocessPointAreDuplicated || ptIdnOthersPartitions.empty() ) // not a interprocess point
+                {
+                    auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptid,std::make_pair(countPtId,boost::cref(pt)) );
+                    if ( isInserted )
+                        ++countPtId;
+                    index_type newPtId = itPt->second.first;
+
+                    DCHECK( (newEltId*mesh_type::element_type::numPoints+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*mesh_type::element_type::numPoints+j) << " vs " <<  pointIdsInElements.size();
+                    pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                }
+                else
+                {
+                    auto infoIpElt = std::make_tuple( newEltId, j );
+                    auto itFindPtIP = dataPointsInterProcess.find( ptid );
+                    if ( itFindPtIP == dataPointsInterProcess.end() )
+                        dataPointsInterProcess.emplace( ptid, std::make_tuple( ptIdnOthersPartitions,
+                                                                               std::vector< std::tuple<index_type,uint16_type>>( { infoIpElt } ) ) );
+                    else
+                        std::get<1>( itFindPtIP->second ).push_back( infoIpElt );
+                }
+            }
+        }
+    }
+
+
+    if ( !M_interprocessPointAreDuplicated && worldSize > 1 )
+    {
+        int neighborSubdomains = mesh->neighborSubdomains().size();
+        int nbMaxRequest = 2 * neighborSubdomains;
+        std::vector<mpi::request> reqs( nbMaxRequest );
+        int countRequest = 0;
+
+        // step 1a : prepare data to send
+        std::map<rank_type, std::map<int,std::vector<index_type> >> dataToSendStep1a, dataToRecvStep1a, dataToSendStep1aMemory;
+        for ( auto const& [partId,partData] : dataPointsInterProcessRequest )
+        {
+            for ( auto const& [ptId,ptData] : partData )
+            {
+                for ( auto const& [ptPid,ptIdInPid] : std::get<0>( ptData ) )
+                {
+                    dataToSendStep1a[ptPid][partId].push_back( ptIdInPid );
+                    dataToSendStep1aMemory[ptPid][partId].push_back( ptId );
+                }
+            }
+        }
+        // step 1a : send/recv
+        for ( rank_type neighborRank : mesh->neighborSubdomains() )
+        {
+            reqs[countRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep1a[neighborRank] );
+            reqs[countRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSendStep1a[neighborRank] );
+        }
+        // step 1a : wait all requests
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
+
+        // step 1b : treat recv data and prepare data to re-send
+        std::map<rank_type, std::map<int,std::vector<bool> >> dataToSendStep1b, dataToRecvStep1b;
+        for ( auto const& [rankRecv,currentDataRecv] : dataToRecvStep1a )
+        {
+            for ( auto const& [partId,partData] : currentDataRecv )
+            {
+                auto & dataToSendInPart = dataToSendStep1b[rankRecv][partId];
+                dataToSendInPart.reserve( partData.size() );
+                auto itFind = M_pointIdToContiguous.find( partId );
+                if ( itFind != M_pointIdToContiguous.end() )
+                {
+                    auto const& pointIdToContiguous = itFind->second;
+                    for ( auto const& pointId : partData )
+                        dataToSendInPart.push_back( pointIdToContiguous.find( pointId ) != pointIdToContiguous.end() );
+                }
+                else
+                {
+                    // no part, so no points
+                    for ( auto const& pointId : partData )
+                        dataToSendInPart.push_back( false );
+                }
+            }
+        }
+        // step 1b : send/recv
+        for ( rank_type neighborRank : mesh->neighborSubdomains() )
+        {
+            reqs[countRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep1b[neighborRank] );
+            reqs[countRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSendStep1b[neighborRank] );
+        }
+        // wait all requests
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
+
+
+        // step 1c : treat recv data and update dataPointsInterProcessRequest
+        for ( auto const& [rankRecv,currentDataRecv] : dataToRecvStep1b )
+        {
+            for ( auto const& [partId,partData] : currentDataRecv )
+            {
+                auto & partDataToSendStep1aMemory = dataToSendStep1aMemory[rankRecv][partId];
+                auto & dataPointsInterProcessPart = dataPointsInterProcessRequest[partId];
+                for (int k=0;k<partData.size();++k)
+                {
+                    if ( !partData[k] )
+                    {
+                        index_type ptId = partDataToSendStep1aMemory[k];
+                        auto & ptIdInOtherProcess = std::get<0>( dataPointsInterProcessPart[ptId] );
+                        ptIdInOtherProcess.erase( rankRecv );
+                    }
+                }
+            }
+        }
+
+        // step 1d : update pointIdToContiguous and pointIdsInElements
+        for ( auto & [partId,partData] : dataPointsInterProcessRequest )
+        {
+            auto & pointIdToContiguous = M_pointIdToContiguous[partId];
+            auto & pointIdsInElements = M_pointIdsInElements[partId];
+            for ( auto & [ptId,ptData] : partData )
+            {
+                // take min rank
+                auto & pidToPtIdOtherProcesses = std::get<0>( ptData );
+                rank_type minRank = currentPid;
+                for ( auto const& [ptPid,ptIdInPid] : pidToPtIdOtherProcesses )
+                    minRank = std::min( minRank,ptPid );
+                if ( minRank == currentPid )
+                {
+                    // no need other pid
+                    pidToPtIdOtherProcesses.clear();
+                    auto const& pt = mesh->point( ptId );
+                    index_type countPtId = pointIdToContiguous.size();
+                    auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptId,std::make_pair(countPtId,boost::cref(pt)) );
+                    DCHECK( isInserted ) << "something wrong";
+                    index_type newPtId = itPt->second.first;
+                    for ( auto const& [newEltId, j] : std::get<1>( ptData ) )
+                        pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                }
+                else
+                {
+                    // erase all pid that not correspond to minRank
+                    for( auto iter =  pidToPtIdOtherProcesses.begin(); iter != pidToPtIdOtherProcesses.end(); )
+                    {
+                        if ( minRank != iter->first )
+                            iter = pidToPtIdOtherProcesses.erase(iter);
+                        else
+                            ++iter;
+                    }
+                }
+            }
+        }
+    }
+    // --------------------------------------------------------------------------------------- //
+    // build nodes vector (important before shift id)
+    for ( auto const& [markerId,pointIdToContiguous] : M_pointIdToContiguous )
+    {
+        auto & nodes = M_nodes[markerId];
+        nodes.resize( 3*pointIdToContiguous.size(),0 );
+        for ( auto const& [ptId,ptData] : pointIdToContiguous )
+        {
+            index_type newPtId = ptData.first;
+            auto const& pt = unwrap_ref( ptData.second );
+            for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
+            {
+                DCHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
+                CHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
+                nodes[3*newPtId+d] = pt.node()[d];
+            }
+        }
+    }
+
+    // --------------------------------------------------------------------------------------- //
+    // update statistic and start index in world
+    std::size_t k = 0;
+    std::vector<std::tuple<index_type,index_type>> nPointElementByMarker( M_pointIdToContiguous.size() );
+    for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
+    {
+        nPointElementByMarker[k] = std::make_tuple( pointIdToContiguous.size(), M_elementIdToContiguous.find( marker)->second.size() );
+        ++k;
+    }
+
+    std::vector<std::vector<std::tuple<index_type,index_type>>> recvInfos;
+    mpi::all_gather( mesh->worldComm().comm(), nPointElementByMarker, recvInfos );
+
+    k=0;
+    for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
+    {
+        auto & numberOfPointElement = M_numberOfPointElement[marker];
+        numberOfPointElement.resize( worldSize );
+        index_type startPtId = 0, startEltId = 0;
+        for ( rank_type p=0;p<worldSize;++p )
+        {
+            // index_type nPt = std::get<0>( recvInfos[p][k] );
+            // index_type nElt = std::get<1>( recvInfos[p][k] );
+            auto const& [nPt,nElt] = recvInfos[p][k];
+            numberOfPointElement[p] = std::make_tuple( startPtId, nPt, startEltId, nElt );
+            startPtId+=nPt;
+            startEltId+=nElt;
+        }
+        ++k;
+        M_numberOfPointElementAllProcess[marker] = std::make_tuple( startPtId,startEltId );
+    }
+    // --------------------------------------------------------------------------------------- //
+    // shift ids
+    for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
+    {
+        index_type spi = this->startPointIds(marker,currentPid);
+        index_type sei = this->startElementIds(marker,currentPid);
+        for ( auto & [ptId,newPtData] :  M_pointIdToContiguous[marker] )
+            newPtData.first += spi;
+        for ( auto & [eltId,newEltId] : M_elementIdToContiguous[marker] )
+            newEltId += sei;
+        for ( index_type & ptId : M_pointIdsInElements[marker] )
+        {
+            if ( ptId != invalid_v<index_type> )
+                ptId += spi;
+        }
+    }
+
+    // --------------------------------------------------------------------------------------- //
+    // update parallelism
+    if ( !M_interprocessPointAreDuplicated && worldSize > 1 )
+    {
+        int neighborSubdomains = mesh->neighborSubdomains().size();
+        int nbMaxRequest = 2 * neighborSubdomains;
+        std::vector<mpi::request> reqs( nbMaxRequest );
+        int countRequest = 0;
+
+        // step 2a : prepare data to send
+        std::map<rank_type, std::map<int,std::vector<index_type> >> dataToSendStep2a, dataToRecvStep2a, dataToSendStep2aMemory;
+        for ( auto const& [partId,partData] : dataPointsInterProcessRequest )
+        {
+            for ( auto const& [ptId,ptData] : partData )
+            {
+                for ( auto const& [ptPid,ptIdInPid] : std::get<0>( ptData ) )
+                {
+                    dataToSendStep2a[ptPid][partId].push_back( ptIdInPid );
+                    dataToSendStep2aMemory[ptPid][partId].push_back( ptId );
+                }
+            }
+        }
+        // step 2a : send/recv
+        for ( rank_type neighborRank : mesh->neighborSubdomains() )
+        {
+            reqs[countRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep2a[neighborRank] );
+            reqs[countRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSendStep2a[neighborRank] );
+        }
+        // step 2a : wait all requests
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
+
+        // step 2b : treat recv data and prepare data to re-send
+        std::map<rank_type, std::map<int,std::vector<index_type> >> dataToSendStep2b, dataToRecvStep2b;
+        for ( auto const& [rankRecv,currentDataRecv] : dataToRecvStep2a )
+        {
+            for ( auto const& [partId,partData] : currentDataRecv )
+            {
+                auto const& pointIdToContiguous = M_pointIdToContiguous[partId];
+                auto & dataToSendStep2bPart = dataToSendStep2b[rankRecv][partId];
+                dataToSendStep2bPart.reserve( partData.size() );
+                for ( auto const& pointId : partData )
+                    dataToSendStep2bPart.push_back( std::get<0>( pointIdToContiguous.at( pointId ) ) );
+            }
+        }
+        // step 2b : send/recv
+        for ( rank_type neighborRank : mesh->neighborSubdomains() )
+        {
+            reqs[countRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecvStep2b[neighborRank] );
+            reqs[countRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSendStep2b[neighborRank] );
+        }
+        // step 2b : wait all requests
+        mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
+        countRequest = 0;
+
+        // step 2b : treat recv and update pointIdsInElements
+        for ( auto const& [rankRecv,currentDataRecv] : dataToRecvStep2b )
+        {
+            for ( auto const& [partId,partDataRecv] : currentDataRecv )
+            {
+                auto & partDataToSendStep2aMemory = dataToSendStep2aMemory[rankRecv][partId];
+                auto & dataPointsInterProcessPart = dataPointsInterProcessRequest[partId];
+                auto & pointIdsInElements = M_pointIdsInElements[partId];
+                for (int k=0;k<partDataRecv.size();++k)
+                {
+                    index_type newPtId = partDataRecv[k];
+                    index_type ptId = partDataToSendStep2aMemory[k];
+                    auto & dataPointsInterProcessPointData = dataPointsInterProcessPart.at( ptId );
+                    for ( auto const& [ newEltId, j ] : std::get<1>( dataPointsInterProcessPointData ) )
+                        pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                }
+            }
+        }
+
+    } // end update parallism
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

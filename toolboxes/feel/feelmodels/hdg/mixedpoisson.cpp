@@ -182,18 +182,18 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_Vh = space_flux_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
-        M_Wh = space_potential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
-        M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
-        M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm() );
+        M_Vh = space_flux_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_Wh = space_potential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_Vh = space_flux_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
-        M_Wh = space_potential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
-        M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
-        M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _extended_doftable=true, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_Vh = space_flux_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_Wh = space_potential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_Whp = space_postpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_P0dh = space_p0dh_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_up = std::make_shared<element_flux_type>(M_Vh, M_physicMap["fluxSymbol"]);
     M_pp = std::make_shared<element_potential_type>(M_Wh, M_physicMap["potentialSymbol"]);
@@ -230,11 +230,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
                                           return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) );
                                       });
     auto face_mesh = createSubmesh( _mesh=this->mesh(), _range=complement_integral_faces, _update=0 );
-    M_Mh = space_trace_type::New( _mesh=face_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
+    M_Mh = space_trace_type::New( _mesh=face_mesh, _worldscomm=this->worldsComm() );
     M_phat = std::make_shared<element_trace_type>(M_Mh, "phat");
 
     auto ibc_mesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(), ibcMarkers), _update=0 );
-    M_Ch = space_traceibc_type::New( _mesh=ibc_mesh, _extended_doftable=true, _worldscomm=this->worldsComm() );
+    M_Ch = space_traceibc_type::New( _mesh=ibc_mesh, _worldscomm=this->worldsComm() );
     M_mup = element_traceibc_vector_type(this->constantSpacesSize(),
                                          std::make_shared<element_traceibc_type>(M_Ch, "mup"));
 

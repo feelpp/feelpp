@@ -366,7 +366,7 @@ public:
      */
     virtual size_type firstLocalIndex() const
     {
-        return M_map->minMyGID();
+        return M_map->firstDof();
     }
 
     /**
@@ -376,7 +376,7 @@ public:
      */
     virtual size_type lastLocalIndex() const
     {
-        return M_map->maxMyGID()+1;
+        return M_map->lastDof();
     }
 
     virtual bool localIndexIsGhost(size_type localDof) const
@@ -408,7 +408,7 @@ public:
     /**
      * \return the communicator
      */
-    worldcomm_ptr_t & worldCommPtr() 
+    worldcomm_ptr_t & worldCommPtr()
     {
         return M_map->worldCommPtr();
     }

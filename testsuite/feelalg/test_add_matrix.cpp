@@ -30,8 +30,8 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto mesh = loadMesh( _mesh=new mesh_type);
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
 
-    auto Vh = Pdh<1>( mesh, true );
-    auto Mh = Pdh<1>( face_mesh, true );
+    auto Vh = Pdh<1>( mesh );
+    auto Mh = Pdh<1>( face_mesh );
 
     backend_ptrtype b = backend( _rebuild=true);
 

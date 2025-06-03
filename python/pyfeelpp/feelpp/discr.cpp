@@ -43,6 +43,7 @@ namespace py = pybind11;
 using namespace Feel;
 
 //PYBIND11_MAKE_OPAQUE(Feel::worldscomm_ptr_t);
+PYBIND11_MAKE_OPAQUE(std::vector<DofTableExtendedType>);
 
 template<typename MeshT, int Order = 1>
 class MyElement: public Pch_type<MeshT,Order,double,PointSetFekete>::element_type
@@ -54,27 +55,27 @@ public:
 
 template<typename RangeT, typename FunctionT>
 double
-f_norml2( RangeT const& elts, FunctionT const& f ) 
+f_norml2( RangeT const& elts, FunctionT const& f )
 {
     return normL2( _range=elts, _expr=idv(f) );
 }
 template<typename RangeT, typename FunctionT>
 double
-f_normh1( RangeT const& elts, FunctionT const& f ) 
+f_normh1( RangeT const& elts, FunctionT const& f )
 {
     return normH1( _range=elts, _expr=idv(f), _grad_expr=gradv(f) );
 }
 using eigen_v_t = Eigen::Matrix<double,Eigen::Dynamic,1>;
 template<typename RangeT, typename FunctionT>
 eigen_v_t
-f_mean( RangeT const& elts, FunctionT const& f ) 
+f_mean( RangeT const& elts, FunctionT const& f )
 {
     return mean( _range=elts, _expr=idv(f) );
 }
 using eigen_v2_t = Eigen::Matrix<double,Eigen::Dynamic,2>;
 template<typename RangeT, typename FunctionT>
 std::tuple<double,double,eigen_v2_t>
-f_minmax( RangeT const& elts, FunctionT const& f ) 
+f_minmax( RangeT const& elts, FunctionT const& f )
 {
     auto e = minmax( _range=elts, _pset=_Q<3>(), _expr=idv(f) );
     return std::tuple{e.min(),e.max(),e.coords()};
@@ -84,7 +85,7 @@ template<typename SpaceT>
 void defDiscr(py::module &m, std::string const& suffix = "")
 {
     using namespace Feel;
-    
+
     using space_t = SpaceT;
     using space_ptr_t = std::shared_ptr<space_t>;
     using mesh_support_vector_t = typename space_t::mesh_support_vector_type;
@@ -106,15 +107,16 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         pyclass_name = std::string("Pdh_") + suffix2;
     if ( !space_t::is_continuous && space_t::is_vectorial )
         pyclass_name = std::string("Pdhv_") + suffix2;
-    
+
     py::class_<space_t,std::shared_ptr<space_t>>(m,pyclass_name.c_str())
-        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, worldscomm_ptr_t const&, std::vector<bool>>(),
+        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, worldscomm_ptr_t const&, std::vector<DofTableExtendedType> >(),
              py::arg("mesh"),
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
              py::arg("periodicity")=periodicity_t(),
              py::arg("worldsComm"),
-             py::arg("extendedDofTable") = std::vector<bool>(1,false) )
+             py::arg("extendedDofTable") = std::vector<DofTableExtendedType>(space_t::nSpaces,DofTableExtendedType::DEFAULT)
+             )
         .def("nDof",static_cast<size_type(space_t::*)() const>(&space_t::nDof), "get the number of degrees of freedom over the whole domain")
         .def("nLocalDof",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDof), "get the number of degrees of freedom over the current subdomain")
         .def("nLocalDofWithGhost",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDofWithGhost), "get the number of degrees of freedom over the current subdomain withthe ghost")
@@ -126,9 +128,9 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def("element",static_cast<element_t (space_t::*)(std::string const&, std::string const&)>(&space_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
         .def("elementFromExpr",static_cast<element_t (space_t::*)(std::string const&, std::string const&, std::string const& )>(&space_t::elementFromExpr), "get an element of the function space interpolating the expression", py::arg("expr"),py::arg("name")="u", py::arg("desc")="u")
         .def("element", []( std::shared_ptr<space_t> & Xh, Vector<double> const& v, int blockIdStart ) { return Xh->element( v );
-            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")     
+            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")
         .def("element", []( std::shared_ptr<space_t> & Xh, VectorPetsc<double> const& v, int blockIdStart ) { return Xh->element( v, blockIdStart );
-            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")      
+            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")
         ;
 
     // Element
@@ -168,7 +170,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
                  py::arg( "range" ), py::arg( "expr" ), py::arg( "prefix" ) = "",
                  py::arg( "geomap" ) = GeomapStrategyType::GEOMAP_OPT, py::arg( "accumulate" ) = false, py::arg( "verbose" ) = false, "build the interpolant of the expression expr on a range of elements" );
     }
-    elt.def( "on", []( element_t& element, Range<mesh_ptr_t,MESH_ELEMENTS> const& r, 
+    elt.def( "on", []( element_t& element, Range<mesh_ptr_t,MESH_ELEMENTS> const& r,
                         Expr<GinacMatrix<element_t::nComponents1,element_t::nComponents2,2>> const& e, std::string const& p, GeomapStrategyType g, bool a, bool v ){
                             element.on( _range=r, _expr=e );
                     },
@@ -180,7 +182,7 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def(py::init<>())
         //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
         ;
-#endif        
+#endif
     m.def( "normL2", static_cast<double (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_norml2<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "normH1", static_cast<double (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_normh1<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
     m.def( "mean", static_cast<eigen_v_t (*)( Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&)>( &f_mean<Range<mesh_ptr_t,MESH_ELEMENTS> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
@@ -197,7 +199,7 @@ void defDiscrDiscontinuous(py::module &m )
         //m.def( "marker", &regionMarker<space_t>, "get an piecewise constant function storing the marker of the mesh", py::arg("space") );
     }
 }
-    
+
 PYBIND11_MODULE(_discr, m )
 {
     using namespace Feel;
@@ -218,6 +220,14 @@ PYBIND11_MODULE(_discr, m )
         .value("TY", ComponentType::TY )
         .value("TZ", ComponentType::TZ )
         .export_values();
+
+    pyclass_name = std::string("DofTableExtendedType");
+    py::enum_<DofTableExtendedType>(m,pyclass_name.c_str())
+        .value("NONE", DofTableExtendedType::NONE )
+        .value("VERTICES", DofTableExtendedType::VERTICES )
+        .value("DEFAULT", DofTableExtendedType::DEFAULT )
+        .export_values();
+    py::bind_vector<std::vector<DofTableExtendedType>>(m, "VectorDofTableExtendedType");
 
     pyclass_name = std::string("Periodic");
     py::class_<Periodic<double>>(m,pyclass_name.c_str()).def(py::init<>());
@@ -245,4 +255,3 @@ PYBIND11_MODULE(_discr, m )
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
 }
-

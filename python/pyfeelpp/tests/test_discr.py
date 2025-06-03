@@ -78,7 +78,7 @@ def run_vectorial(m, geo):
 
 def run_element(m, geo):
     mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy=geo
-    
+
     m2d= fppc.load(m, mesh_name, 0.1)
 
     Xh = fppc.functionSpace(mesh=m2d)
@@ -96,7 +96,7 @@ def run_element(m, geo):
 
     b = fppc.backend(worldcomm=fppc.Environment.worldCommPtr())
     v = b.newVector(dm=Xh.mapPtr())
-    
+
     # test constant
     v.setConstant(1.0)
     # create u which use the same memory storage as v
@@ -105,7 +105,7 @@ def run_element(m, geo):
     l2_w = fppc.normL2(range=fppc.elements(m2d), expr=w)
     print("norm(w)", l2_w)
     assert abs(l2_w) < 1e-12
-    
+
     uu = Xh.element()
     uu.on(range=fppc.elements(m2d), expr=fppc.expr("x:x"))
     vv = uu.to_petsc()
@@ -114,7 +114,7 @@ def run_element(m, geo):
     l2_w = fppc.normL2(range=fppc.elements(m2d), expr=w)
     print("norm(uu-u)={}, uu.l2={}, u.l2={}".format(l2_w, uu.l2Norm(), u.l2Norm()))
     assert abs(l2_w) < 1e-12
-    
+
     vv-=v
     l2_w = w.l2Norm()
     print("norm(vv_petsc-v_petsc)={}, vv.l2={}, v.l2={}".format(l2_w, vv.l2Norm(), v.l2Norm()))
@@ -122,7 +122,7 @@ def run_element(m, geo):
 
 geo_cases=[(2, fppc.create_rectangle),
             (3, fppc.create_box)]
- 
+
 @pytest.mark.parametrize("dim,geo", geo_cases)
 def test_discr(dim,geo,init_feelpp):
     fppc.Environment.changeRepository(

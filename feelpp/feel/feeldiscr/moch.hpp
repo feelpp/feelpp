@@ -46,7 +46,7 @@ std::shared_ptr<FunctionSpace<MeshType,
                                 T,
                                 Periodicity <NoPeriodicity>,
                                 mortars<Mortar>>>
-Moch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
+Moch( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return FunctionSpace<MeshType,
                          bases<Lagrange<Order,Scalar,Continuous,Pts>>,
@@ -54,7 +54,7 @@ Moch( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false )
                          Periodicity <NoPeriodicity>,
                          mortars<Mortar>>::New( _mesh=mesh,
                                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
+                                                _extended_doftable=dte );
 }
 
 }

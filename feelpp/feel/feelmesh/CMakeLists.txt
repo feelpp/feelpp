@@ -31,4 +31,4 @@ SET( SRC
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
-feel_append_src(feelmesh "${SRC};${HDR}")
+feel_append_src(feelmesh "${SRC}")
