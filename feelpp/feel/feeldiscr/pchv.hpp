@@ -39,7 +39,7 @@ namespace meta
 {
 
 template<typename MeshType,
-         int Order,         
+         int Order,
          template<class, uint16_type, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
@@ -83,11 +83,11 @@ template<int Order,
          int Tag = 0>
 inline
 Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
-Pchv( std::shared_ptr<MeshType> const& mesh, bool buildExtendedDofTable=false  )
+Pchv( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
     return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
                                                    _worldscomm=makeWorldsComm(1,mesh->worldComm() ),
-                                                   _extended_doftable=buildExtendedDofTable );
+                                                   _extended_doftable=dte );
 }
 
 /**
@@ -102,12 +102,12 @@ template<int Order,
          int Tag = 0>
 inline
 Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
-Pchv( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, bool buildExtendedDofTable=false  )
+Pchv( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
     return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
                                                    _range=std::forward<RangeType>(rangeElt),
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                   _extended_doftable=buildExtendedDofTable );
+                                                   _extended_doftable=dte );
 }
 
 

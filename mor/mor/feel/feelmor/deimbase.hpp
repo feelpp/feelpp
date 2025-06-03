@@ -870,9 +870,7 @@ DEIMBase<ParameterSpaceType,SpaceType,TensorType>::vectorMaxAbs( sparse_matrix_p
     int proc_number = V->map().procOnGlobalCluster(i_row);
     if ( Environment::worldComm().globalRank()==proc_number )
     {
-        auto searchGpDof = V->map().searchGlobalProcessDof( i_row );
-        CHECK( boost::get<0>( searchGpDof ) ) << "Did not find p_dof "<< i_row <<" when it should be here\n";
-        auto gpdof = boost::get<1>( searchGpDof );
+        auto gpdof = V->map().worldIndexToProcessIndex( i_row );
         i_col = idx[gpdof];
         //i_col = idx[i_row - V->map().firstDofGlobalCluster()];
 

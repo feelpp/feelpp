@@ -43,5 +43,5 @@ PYBIND11_MODULE( _mesh, m )
     mesh2( m );
     mesh3( m );
 
-    defMesh<MeshStructured<Hypercube<2>>>(m);
+    //defMesh<MeshStructured<Hypercube<2>>>(m);
 }

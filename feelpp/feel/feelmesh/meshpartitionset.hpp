@@ -35,6 +35,9 @@ public:
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
+    using index_type = typename mesh_type::index_type;
+    using size_type = typename mesh_type::size_type;
+
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<mesh_type>::point_type const> > point_container_type;
     typedef typename point_container_type::const_iterator point_const_iterator;
     typedef std::vector<boost::reference_wrapper<typename MeshTraits<mesh_type>::edge_type const> > edge_container_type;
@@ -262,7 +265,7 @@ MeshPartitionSet<MeshType>::updateMarkedSubEntitiesOnePartPerProcess( typename s
     }
 }
 
-
+#if 0
 template<typename MeshType>
 void
 MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
@@ -358,7 +361,7 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
             }
         }
         // update containers
-        auto rangePoints = M_mesh->pointsWithProcessId( partId );
+        auto rangePoints = M_mesh->template pointsWithProcessId<entity_process_t::LOCAL_AND_INTERPROCESS_ONLY>( partId );
         auto pt_it = std::get<0>( rangePoints );
         auto const pt_en = std::get<1>( rangePoints );
         for ( ; pt_it != pt_en ; ++pt_it )
@@ -399,7 +402,125 @@ MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
 
 }
 
+#else
+template<typename MeshType>
+void
+MeshPartitionSet<MeshType>::buildAllPartInOneProcess()
+{
+    // update mapping from elt id to part id
+    // TODO: this mapping should be output of partitioner
+    std::map<size_type,rank_type> mapEltIdToPartId;
+    std::for_each( M_mesh->beginElement(), M_mesh->endElement(),
+                   [this,&mapEltIdToPartId]( auto const& eltPair ) {
+                       auto const& [eltId,elt] = eltPair;
+                       mapEltIdToPartId.emplace( std::make_pair( elt.id(), elt.processId() ) );
+                   });
 
+    // step 1 : traverse all elements and define active elements + points to parts mapping
+    std::unordered_map<index_type,std::set<rank_type>> mapPointIdToPartsId;
+    std::for_each( M_mesh->beginElement(), M_mesh->endElement(),
+                   [this,&mapEltIdToPartId,&mapPointIdToPartsId]( auto const& eltPair ) {
+                       auto const& [eltId,elt] = eltPair;
+                       rank_type partId = mapEltIdToPartId.at( elt.id() );
+                       M_containerActiveElements[partId].push_back(boost::cref(elt));
+                       for ( uint16_type n=0; n < elt.nPoints(); n++ )
+                       {
+                           auto const& point = elt.point( n );
+                           auto const& [itPt2Parts,isInserted] = mapPointIdToPartsId.try_emplace( point.id(), std::set<rank_type>{} );
+                           itPt2Parts->second.insert( partId );
+                       }
+                   });
+
+    // step 2 : traverse all elements and define ghosts element + points
+    std::vector< std::unordered_set<index_type> > ptsDone( M_numGlobalPartition );
+    std::for_each( M_mesh->beginElement(), M_mesh->endElement(),
+                   [this,&mapEltIdToPartId,&mapPointIdToPartsId,&ptsDone]( auto const& eltPair ) {
+                       auto const& [eltId,elt] = eltPair;
+                       rank_type partId = mapEltIdToPartId.at( elt.id() );
+                       std::set<rank_type> eltPartNeighbours;
+                       for ( uint16_type n=0; n < elt.nPoints(); n++ )
+                       {
+                           auto const& point = elt.point( n );
+                           auto [itPtDone,isPtDoneInserted] = ptsDone[partId].insert( point.id() );
+                           if ( isPtDoneInserted )
+                               M_containerPoints[partId].push_back(boost::cref(point));
+                           for ( auto ptPartId : mapPointIdToPartsId.at( point.id() ) )
+                           {
+                               if ( partId != ptPartId )
+                                   eltPartNeighbours.insert( ptPartId );
+                           }
+                       }
+                       for ( rank_type p : eltPartNeighbours )
+                       {
+                           M_containerGhostElements[p].push_back(boost::cref(elt));
+                           for ( uint16_type n=0; n < elt.nPoints(); n++ )
+                           {
+                               auto const& point = elt.point( n );
+                               auto [itPtDone,isPtDoneInserted] = ptsDone[p].insert( point.id() );
+                               if ( isPtDoneInserted )
+                                   M_containerPoints[p].push_back(boost::cref(point));
+                           }
+                       }
+                   });
+
+    auto updateMarkedSubEntities =
+        [&mapPointIdToPartsId](auto it, auto en, auto & containerMarkedEntities){
+            for ( ; it!=en ; ++it )
+            {
+                auto const& entity = unwrap_ref( *it );
+                if ( !entity.hasMarker() ) continue;
+                std::set<rank_type> entityPartIds;
+                for ( uint16_type vLocId = 0 ; vLocId < entity.nPoints(); ++vLocId )
+                {
+                    auto const& point = entity.point( vLocId );
+                    auto const& partIdsAtPt = mapPointIdToPartsId.at( point.id() );
+                    entityPartIds.insert( partIdsAtPt.begin(), partIdsAtPt.end() );
+                }
+                rank_type partId = *entityPartIds.begin();
+                containerMarkedEntities[partId].push_back(boost::cref(entity));
+            }
+        };
+
+    if constexpr ( mesh_type::nDim >= 2 )
+    {
+        updateMarkedSubEntities( M_mesh->beginOrderedFace(), M_mesh->endOrderedFace(), M_containerMarkedFaces );
+    }
+    if constexpr ( mesh_type::nDim == 3 )
+    {
+        updateMarkedSubEntities( M_mesh->beginOrderedEdge(), M_mesh->endOrderedEdge(), M_containerMarkedEdges );
+    }
+    updateMarkedSubEntities( M_mesh->beginOrderedPoint(), M_mesh->endOrderedPoint(), M_containerMarkedPoints );
+
+#if 0
+    //this->updateMarkedSubEntitiesAllPartInOneProcess<mesh_type>( mapPointInterProcess );
+    std::for_each( M_mesh->beginPoint(), M_mesh->endPoint(),
+                   [this]( auto const& eltPair ) {
+                       auto const& [ptId,point] = eltPair;
+                       for ( rank_type p=0;p<M_numGlobalPartition;++p )
+                           M_containerPoints[p].push_back(boost::cref(point));
+                   });
+#endif
+
+    for ( rank_type p=0;p<M_numGlobalPartition;++p )
+    {
+        // really necessary??
+        std::sort( M_containerPoints[p].begin(), M_containerPoints[p].end(),
+                   []( auto const& a, auto const& b) -> bool
+                       {
+                           return unwrap_ref( a ).id() < unwrap_ref( b ).id();
+                       });
+
+        M_statistic[p].resize( 6 );
+        M_statistic[p][0] = M_containerPoints[p].size();
+        M_statistic[p][1] = M_containerActiveElements[p].size() + M_containerGhostElements[p].size();
+        M_statistic[p][2] = M_containerActiveElements[p].size();
+        M_statistic[p][3] = M_containerMarkedFaces[p].size();
+        M_statistic[p][4] = M_containerMarkedEdges[p].size();
+        M_statistic[p][5] = M_containerMarkedPoints[p].size();
+    }
+
+}
+#endif
 
 template<typename MeshType>
 template<typename MT>

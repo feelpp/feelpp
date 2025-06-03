@@ -91,7 +91,7 @@ struct test_integration_internal_faces_v: public Application
 
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 
-        space_ptrtype Xh = space_type::New( _mesh=mesh,_extended_doftable=std::vector<bool>(1,true) );
+        space_ptrtype Xh = space_type::New( _mesh=mesh );
 
         // int ([-1,1],[-1,x]) 1 dx
         value_type meas = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0, 0 );
@@ -222,7 +222,7 @@ struct test_integration_internal_faces_lf : public Application
         const value_type eps = 1e-10;
 
 
-        space_ptrtype Xh = space_type::New( _mesh=mesh,_extended_doftable=std::vector<bool>(1,true) );
+        space_ptrtype Xh = space_type::New( _mesh=mesh );
 
         auto u = Xh->element( "u" );
         //auto u_exact = Px()+Py()+Pz();

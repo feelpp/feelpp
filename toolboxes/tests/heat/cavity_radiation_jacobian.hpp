@@ -3,13 +3,13 @@
 #include "rht_readers.hpp"
 
 namespace Feel
-{      
+{
 
 // Build the time-invariant part of the heat equation
     template<int Dim, int Order>
     void RHT<Dim,Order>::initHeatEquation()
     {
-        auto a = form2( _test = M_Xh, _trial = M_Xh,_matrix=M_a,_backend=backend(_name="heatEq") );    
+        auto a = form2( _test = M_Xh, _trial = M_Xh,_matrix=M_a,_backend=backend(_name="heatEq") );
         auto l = form1( _test = M_Xh,_vector=M_l );
 
         auto u = M_Xh->element();
@@ -18,8 +18,8 @@ namespace Feel
         M_e=exporter(_mesh=M_mesh,_name="HeatEqn");
 
         M_bdf->initialize( unwrap_ptr(M_currentTemp.T()) );
-        M_bdf->start();    
-        
+        M_bdf->start();
+
         // For each material, integrate rho*C*idt(u)*id(v)/dt + \int_MAT k_MAT * grad(u) * grad(v)
         for ( auto [key, material] : specs["/Models/heat/materials"_json_pointer].items() )
         {
@@ -31,14 +31,14 @@ namespace Feel
             auto Rho = specs[nl::json::json_pointer( matRho )].get<std::string>();
             auto Cp = specs[nl::json::json_pointer( matCp )].get<std::string>();
 
-            a += integrate( _range = markedelements( M_mesh, material.get<std::string>() ), 
+            a += integrate( _range = markedelements( M_mesh, material.get<std::string>() ),
                     _expr =  inner( expr( k ) * gradt( u ) , grad( v ) ) );
-            a += integrate(_range = markedelements( M_mesh, material.get<std::string>() ), 
+            a += integrate(_range = markedelements( M_mesh, material.get<std::string>() ),
                     _expr = M_bdf->polyDerivCoefficient( 0 ) *expr( Rho ) * expr( Cp ) * idt( u ) * id( v ) );
 
             M_conductivity->on( _range = markedelements(M_mesh, material.get<std::string>() ),
                                _expr = expr(k) );
-        }  
+        }
 
         // ===== BC RHT =====
         // Blackbody radiative condition (no view factors)
@@ -48,8 +48,8 @@ namespace Feel
             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_blackbody_heat_flux"_json_pointer].items() )
             {
                 LOG( INFO ) << fmt::format( "radiative_blackbody_heat_flux {}: {}", bc, value.dump() );
-                            
-                auto sigma = expr(value["sigma"].get<std::string>());                
+
+                auto sigma = expr(value["sigma"].get<std::string>());
                 auto Tref = expr(value["Tref"].get<std::string>());
                 Tref.setParameterValues({{"Tref_C",specs["/Parameters/Tref_C"_json_pointer].get<double>()}});
                 sigma.setParameterValues({{"sigma",specs["/Parameters/sigma"_json_pointer].get<double>()}});
@@ -63,13 +63,13 @@ namespace Feel
                     for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
                     {
                         for ( auto markcoat : coat.at("markers") )
-                        {                        
+                        {
                             if ( mark == markcoat )
                             {
                                 std::cout << mark << " "<<markcoat <<std::endl;
                                 auto epsilon = coat["epsilon"].get<std::string>();
 
-                                l += integrate( _range = markedfaces( M_mesh, mark ), 
+                                l += integrate( _range = markedfaces( M_mesh, mark ),
                                         _expr =  sigma * expr( epsilon ) * Tref4 * id( v ) );
                                 done = 1;
                                 break;
@@ -79,13 +79,13 @@ namespace Feel
                     }
                 }
             }
-        }   
+        }
     } // end RHT<Dim,Order>::initHeatEquation
 
 // Export the temperature and the radiative flux
     template<int Dim, int Order>
     void RHT<Dim,Order>::exportHeat()
-    {               
+    {
         M_e->step(M_bdf->time())->add( "T", idv(M_currentTemp.T()) );
         M_e->save();
     } // end RHT<Dim,Order>::exportHeat()
@@ -96,30 +96,30 @@ namespace Feel
     {
         // Initialize mesh, spaces, marker list and view factor matrix
         M_mesh = loadMesh( _mesh = new mesh_t, _filename = this->specs["/Meshes/heat/Import/filename"_json_pointer].template get<std::string>() );
-        M_Xh = space_t::New(_mesh=M_mesh);        
+        M_Xh = space_t::New(_mesh=M_mesh);
         M_Xhds0 = spacedisc_surf_t::New(_mesh=M_mesh);
         M_conductivity = M_Xhds0->elementPtr();
         tic();
-        this->computeVF_and_save();        
-        toc("Computation of view factors");  
-              
+        this->computeVF_and_save();
+        toc("Computation of view factors");
+
         int n_cavities = M_markers_map.size();
         if(n_cavities != 0)
         {
             for(const auto& [cavity_name,markers]: M_markers_map)
-            {            
+            {
                 auto cavity_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,markers),_update=0);
-                
+
                 // Create a discontinuous space, linear per face, over the view-factor markers
-                M_Xhd0 = Pdh<Order-1>(cavity_submesh,true);
+                M_Xhd0 = Pdh<Order-1>(cavity_submesh);
                 M_Xhd0_map.insert(std::make_pair(cavity_name,M_Xhd0));
             }
         }
 
-        
+
         // Create the bdf structure
         M_bdf = bdf( _space = M_Xh );
-        
+
         auto T = M_Xh->elementPtr();
         auto q = M_Xh->elementPtr();
 
@@ -127,7 +127,7 @@ namespace Feel
         auto T_init=expr(specs["/InitialConditions/heat/temperature/Expression/Tini/expr"_json_pointer].get<std::string>());
         T_init.setParameterValues({{"Tinit_C",specs["/Parameters/Tinit_C"_json_pointer].get<double>()}});
         for(auto & [bc,value]: specs["/InitialConditions/heat/temperature/Expression"_json_pointer].items())
-        {            
+        {
             for(std::string mark : value.at("markers") )
             {
                 T->on(_range=markedelements(M_mesh,mark),_expr=T_init);
@@ -138,13 +138,13 @@ namespace Feel
 
         // Initialize matrix and right-hand sides of the heat transfer problem
         M_lt = backend()->newVector(M_Xh);
-        M_l = backend()->newVector(M_Xh); 
+        M_l = backend()->newVector(M_Xh);
         auto cg_graph = stencil( _test=M_Xh,_trial=M_Xh)->graph();
-        M_a = backend()->newMatrix(0,0,0,0,cg_graph);  
-        M_at = backend()->newMatrix(0,0,0,0,cg_graph);  
+        M_a = backend()->newMatrix(0,0,0,0,cg_graph);
+        M_at = backend()->newMatrix(0,0,0,0,cg_graph);
 
         LOG(INFO) << fmt::format("Init routine finished")<< std::endl;
-    
+
     }  // end RHT<Dim,Order>::init
 
 
@@ -169,10 +169,10 @@ namespace Feel
 
                             auto at = form2(_trial=M_Xh, _test= M_Xh, _matrix=at_mat,_backend=backend(_name="heatEq"));
                             auto a = form2(_trial=M_Xh, _test= M_Xh, _matrix=M_a,_backend=backend(_name="heatEq"));
-                            
+
                             // Start from the time-independent forms computed in initHeatEquation
                             at = a;
-                            
+
                             auto u = M_Xh->element();
                             auto v = M_Xh->element();
                             u=*T_vec;
@@ -181,11 +181,11 @@ namespace Feel
                             if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
                             {
                                 for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
-                                {                
+                                {
                                     auto sigma = expr(value["sigma"].get<std::string>());
 
                                     sigma.setParameterValues({{"sigma",specs["/Parameters/sigma"_json_pointer].get<double>()}});
-                                    
+
                                     // Recover the emissivity epsilon of the coating material associated to the marked face
                                     for ( std::string mark :  M_markers_map[bc] )
                                     {
@@ -196,19 +196,19 @@ namespace Feel
                                             {
                                                 if ( mark == markcoat )
                                                 {
-                                                    auto epsilon = coat["epsilon"].get<std::string>();                            
-                                                    auto idvu3 = idv( u ) * idv( u ) * idv( u );                                                            
+                                                    auto epsilon = coat["epsilon"].get<std::string>();
+                                                    auto idvu3 = idv( u ) * idv( u ) * idv( u );
                                                     // Term 4 sigma * epsilon * T^3 * increment
                                                     at += integrate( _range = markedfaces( M_mesh, mark ),
                                                             _expr = cst(4) *  sigma * expr( epsilon ) * idvu3 * idt( u ) * id( v ));
                                                     // Term - 4 sigma * epsilon \int T^3 dFij * increment
 
-                                                    // auto cavity_markers = M_markers_map[bc];   
+                                                    // auto cavity_markers = M_markers_map[bc];
 
                                                     // int i_marker_to_bb=0;
 
                                                     // // If the cavity is open, and it is assumed that a black body of fixed temperature
-                                                    // // T_ref exchances heat with the cavity, and additional term is added: 
+                                                    // // T_ref exchances heat with the cavity, and additional term is added:
                                                     // // - the view factor is computed using the reciprocity formula FijAi = FjiAj
                                                     // // - the contribution is of the form \sigma T^4 * Fij
                                                     // if(value["enclosure"]=="open")
@@ -221,12 +221,12 @@ namespace Feel
                                                     //     auto T_bb = value["Tref"].get<double>();
                                                     //     auto T_bb3 = cst(T_bb)*cst(T_bb)*cst(T_bb);
 
-                                                        
+
                                                     //     at += integrate( _range = markedfaces( M_mesh, mark ),
                                                     //         _expr = cst(4) *  sigma * expr( epsilon ) * T_bb3 * cst(vf_bb_to_marker) * idt( u ) * id( v ));
 
                                                     // }
-                                                    
+
                                                     // i_marker_to_bb++;
 
                                                     done = 1;
@@ -234,7 +234,7 @@ namespace Feel
                                                 }
                                             }
                                             if ( done ){ break; }
-                                        }    
+                                        }
                                     }
                                 }
                             }
@@ -245,8 +245,8 @@ namespace Feel
                                 auto dirichletBc = expr(value["expr"].get<std::string>());
                                 at+=on( _range=markedfaces(M_mesh,bc), _rhs=RR, _element=u, _expr=cst(0)*dirichletBc );
                             }
-        
-        
+
+
         };
 
         auto update_residual = [=,this]( const vector_ptrtype& T_vec, vector_ptrtype& lt_vec ) {
@@ -257,7 +257,7 @@ namespace Feel
                             // Start from the time-independent forms computed in initHeatEquation
                             lt.zero();
                             lt += l;
-                        
+
                             auto u = M_Xh->element();
                             auto v = M_Xh->element();
 
@@ -274,13 +274,13 @@ namespace Feel
                                     auto Rho = specs[nl::json::json_pointer( matRho )].get<std::string>();
                                     auto Cp = specs[nl::json::json_pointer( matCp )].get<std::string>();
 
-                                    lt += integrate( _range = markedelements( M_mesh, material.get<std::string>() ), 
+                                    lt += integrate( _range = markedelements( M_mesh, material.get<std::string>() ),
                                             _expr =  inner( expr( k ) * gradv( u ) , grad( v ) ) );
-                                    lt += integrate(_range = markedelements( M_mesh, material.get<std::string>() ), 
+                                    lt += integrate(_range = markedelements( M_mesh, material.get<std::string>() ),
                                             _expr = M_bdf->polyDerivCoefficient( 0 ) *expr( Rho ) * expr( Cp ) * idv( u ) * id( v ) );
-                                    lt += integrate( _range = markedelements( M_mesh, material.get<std::string>() ),                                                     
-                                                        _expr = - expr( Rho ) * expr( Cp ) * idv(M_bdf->polyDeriv())  * id( v ) );    
-                                }  
+                                    lt += integrate( _range = markedelements( M_mesh, material.get<std::string>() ),
+                                                        _expr = - expr( Rho ) * expr( Cp ) * idv(M_bdf->polyDeriv())  * id( v ) );
+                                }
 
                                 if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "flux" ) )
                                 {
@@ -298,11 +298,11 @@ namespace Feel
                                 if ( specs["/BoundaryConditions/heat"_json_pointer].contains( "radiative_enclosure_heat_flux" ) )
                                 {
                                     for ( auto& [bc, value] : specs["/BoundaryConditions/heat/radiative_enclosure_heat_flux"_json_pointer].items() )
-                                    {                
+                                    {
                                         auto sigma = expr(value["sigma"].get<std::string>());
 
                                         sigma.setParameterValues({{"sigma",specs["/Parameters/sigma"_json_pointer].get<double>()}});
-                                        
+
                                         // Recover the emissivity epsilon of the coating material associated to the marked face
                                         for ( std::string mark :  M_markers_map[bc] )
                                         {
@@ -313,39 +313,39 @@ namespace Feel
                                                 {
                                                     if ( mark == markcoat )
                                                     {
-                                                        auto epsilon = coat["epsilon"].get<std::string>();                            
-                                                        auto idvu4 = idv( u ) * idv( u ) * idv( u )* idv( u ) ;                                                            
-                                                        // Term sigma * epsilon * T^4 
+                                                        auto epsilon = coat["epsilon"].get<std::string>();
+                                                        auto idvu4 = idv( u ) * idv( u ) * idv( u )* idv( u ) ;
+                                                        // Term sigma * epsilon * T^4
                                                         lt += integrate( _range = markedfaces( M_mesh, mark ),
                                                                 _expr = sigma * expr( epsilon ) * idvu4 *id( v ));
 
-                                                        auto cavity_markers = M_markers_map[bc];   
+                                                        auto cavity_markers = M_markers_map[bc];
 
                                                         int i_marker_to_bb=0;
-                                                        int i_mark=0; 
-                                                        int j_mark=0; 
+                                                        int i_mark=0;
+                                                        int j_mark=0;
                                                         auto vf_field = M_Xhd0_map[bc]->element();
                                                         for ( std::string mark2 : cavity_markers ) // Loop on index j
                                                         {
                                                             // Compute the index relative to marker mark
-                                                            auto it = std::find(cavity_markers.begin(),cavity_markers.end(),mark);                    
+                                                            auto it = std::find(cavity_markers.begin(),cavity_markers.end(),mark);
                                                             i_mark = it - cavity_markers.begin();
                                                             // Compute the index relative to marker mark2
-                                                            auto jt = std::find(cavity_markers.begin(),cavity_markers.end(),mark2);                    
+                                                            auto jt = std::find(cavity_markers.begin(),cavity_markers.end(),mark2);
                                                             j_mark = jt - cavity_markers.begin();
-                                                            
-                                                            vf_field.zero();                                                       
-                                                            
+
+                                                            vf_field.zero();
+
                                                             vf_field.on(_range=markedfaces(M_mesh,mark2),_expr=cst(M_matrix_vf_map[bc](j_mark,i_mark)));
-                                                            
+
                                                             auto T4residual_scal_vf = integrate(_range=markedfaces(M_mesh,mark2), _expr=inner(sigma * expr( epsilon ) * idvu4,idv(vf_field))).evaluate()(0,0);
 
                                                             auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0);
 
-                                                            // Term - sigma * epsilon \int T^4 dFij 
-                                                            
+                                                            // Term - sigma * epsilon \int T^4 dFij
+
                                                             lt += integrate( _range=markedfaces(M_mesh,mark),
-                                                                            _expr= cst(-1)*cst(T4residual_scal_vf)/cst(measure_mark1) *id(v) );  
+                                                                            _expr= cst(-1)*cst(T4residual_scal_vf)/cst(measure_mark1) *id(v) );
 
                                                             auto done2=0;
                                                             for ( auto& [key2, coat2] : specs["/Coating"_json_pointer].items() )
@@ -354,26 +354,26 @@ namespace Feel
                                                                 {
                                                                     if ( mark2 == markcoat2 )
                                                                     {
-                                                                        auto epsilon_mark2 = coat2["epsilon"].get<std::string>(); 
+                                                                        auto epsilon_mark2 = coat2["epsilon"].get<std::string>();
 
                                                                         auto flux_other_surface = integrate(_range=markedfaces(M_mesh,mark2), _expr= idv(M_conductivity) * gradv(u) * idv(vf_field) * N() ).evaluate()(0,0);
 
-                                                                        // Term - \int sigma * (1/epsilon-1) * q dFij 
+                                                                        // Term - \int sigma * (1/epsilon-1) * q dFij
 
                                                                         lt += integrate( _range=markedfaces(M_mesh,mark),
                                                                                         _expr = cst(-1)*expr(epsilon)* (cst(1. ) /expr(epsilon_mark2)-cst(1.))/cst(measure_mark1) * cst(flux_other_surface) * id(v) );
-                                                                        
+
                                                                         done2 = 1;
                                                                         break;
                                                                     }
                                                                 }
                                                                 if ( done ){ break; }
                                                             }
-                                                                                
+
                                                         }
 
                                                         // If the cavity is open, and it is assumed that a black body of fixed temperature
-                                                        // T_ref exchances heat with the cavity, and additional term is added: 
+                                                        // T_ref exchances heat with the cavity, and additional term is added:
                                                         // - the view factor is computed using the reciprocity formula FijAi = FjiAj
                                                         // - the contribution is of the form \sigma T^4 * Fij
                                                         if(value["enclosure"]=="open")
@@ -386,12 +386,12 @@ namespace Feel
                                                             auto T_bb = value["Tref"].get<double>();
                                                             auto T_bb4 = cst(T_bb)*cst(T_bb)*cst(T_bb)*cst(T_bb);
 
-                                                            
+
                                                             lt += integrate( _range = markedfaces( M_mesh, mark ),
                                                                 _expr = cst(-1) * sigma * expr( epsilon ) * T_bb4 * cst(vf_bb_to_marker)/cst(measure_mark1) * id( v ));
 
                                                         }
-                                                        
+
                                                         i_marker_to_bb++;
 
                                                         done = 1;
@@ -399,11 +399,11 @@ namespace Feel
                                                     }
                                                 }
                                                 if ( done ){ break; }
-                                            }    
+                                            }
                                         }
                                     }
                                 }
-                            
+
                             lt_vec->close();
 
                             auto temp = M_Xh->element();
@@ -418,7 +418,7 @@ namespace Feel
                             *lt_vec = temp;
 
         };
-        
+
         // Impose Dirichlet boundary confitions on the initial guess
         for ( auto& [bc, value] : specs["/BoundaryConditions/heat/temperature"_json_pointer].items())
         {
@@ -437,7 +437,7 @@ namespace Feel
         M_currentTemp.setT(T_sol);
         // Update the solution in the BDF data structure
         auto newT = unwrap_ptr(M_currentTemp.T());
-        M_bdf->next(newT);    
+        M_bdf->next(newT);
 
     } // end RHT<Dim,Order>::solveHeatEquationNonLinear()
 
@@ -465,7 +465,7 @@ namespace Feel
             // Export the temperature, and flux on the radiating surfaces
             if(!boption(_name="deactivate-exporters"))
                 this->exportHeat();
-        }        
+        }
     } // end RHT<Dim,Order>::executeNonLinear()
 
     // Routine comparing the results with literature
@@ -480,7 +480,7 @@ namespace Feel
                 auto markers = struc["markers"].get<std::vector<std::string>>();
                 auto value = struc["exact_value"].get<double>();
                 auto tol = struc["rel_tolerance"].get<double>();
-                
+
                 if (struc["quantity"]=="temperature")
                 {
                     // average temperature on surface
@@ -510,7 +510,7 @@ namespace Feel
                     auto rel_difference = (average_q-value)/value;
 
                     CHECK( math::abs(rel_difference) < tol );
-                    
+
                     std::cout << "average_q" << average_q << std::endl;
                     std::cout << "markers" << markers << std::endl;
                     std::cout << "value" << value << std::endl;
@@ -527,7 +527,7 @@ namespace Feel
                 std::cout << fmt::format("Non average checker not supported ");
             }
         }
-        
+
     }
 
 

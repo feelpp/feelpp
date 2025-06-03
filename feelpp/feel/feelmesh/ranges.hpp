@@ -60,7 +60,7 @@ using container_reference_wrapper_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_E
                                                                                       typename MeshTraits<MeshType>::points_reference_wrapper_ptrtype
                                                                                      >
                                                                         >
-                                                          >;                                                          
+                                                          >;
 template<typename MeshType, int MESH_ENTITIES,std::enable_if_t<std::is_base_of_v<MeshBase<>,decay_type<std::remove_pointer_t<MeshType>>>,int> = 0>
 using entities_t = boost::mp11::mp_if_c<MESH_ENTITIES==MESH_ELEMENTS,
                                         typename MeshTraits<MeshType>::element_type,
@@ -227,7 +227,7 @@ class FEELPP_EXPORT Range
     // Constructor for when OtherMeshType is a std::shared_ptr<MeshType>
     template <typename OtherMeshType>
     Range( const Range<OtherMeshType, MESH_ENTITIES>& other )
-        : super_range( other.mesh() ), mesh_( static_cast<const mesh_non_const_t*>(other.mesh()) ), mesh_support_( nullptr ), cont_( other.container() ) 
+        : super_range( other.mesh() ), mesh_( static_cast<const mesh_non_const_t*>(other.mesh()) ), mesh_support_( nullptr ), cont_( other.container() )
     {
         //printTypeInformation<MeshType, OtherMeshType>();
         if constexpr (!std::is_base_of_v<MeshStructuredBase, std::decay_t<std::remove_pointer_t<MeshType>>>) {
@@ -295,11 +295,11 @@ class FEELPP_EXPORT Range
     bool isEmpty() const { return cont_->empty(); }
 
     template<int N>
-    auto get() 
-    { 
-        if constexpr ( N==1 ) 
+    auto get()
+    {
+        if constexpr ( N==1 )
             return cont_->begin();
-        else 
+        else
             return cont_->end();
     }
     auto begin() { return cont_->begin(); }
@@ -311,7 +311,7 @@ class FEELPP_EXPORT Range
     element_t const& back() const { return boost::unwrap_ref(cont_->back()); }
 
     int size() const { return cont_->size(); }
-    
+
     container_ptr_t const& container() const { return cont_; }
     container_ptr_t container() { return cont_; }
     void clear()
@@ -371,8 +371,8 @@ struct value_type_trait<Type, std::enable_if_t<is_range_v<Type>>>
 
 /**
  * @brief Specialization for Range
- * 
- * @tparam RangeType 
+ *
+ * @tparam RangeType
  */
 template <typename RangeType>
 struct element_type_helper<RangeType, std::enable_if_t<is_range_v<RangeType>>> {
@@ -476,14 +476,17 @@ auto countWithoutGhost(Predicate is_ghost)
  * @tparam RangeT Type of the range.
  * @param r The range.
  * @param global Whether to compute the number globally.
+ * @param ignoreGhosts Indicates whether the number should be calculated without the ghost entities
  *
  * @return Number of elements.
  */
 template <typename RangeT, std::enable_if_t<is_filter_v<RangeT>,int> = 0>
 size_type
-nelements(RangeT const& r, bool global = false)
+nelements(RangeT const& r, bool global = false, bool ignoreGhosts = true )
 {
-    size_type d = std::accumulate(r.begin(), r.end(), 0, countWithoutGhost(isGhostCell<RangeT>()));
+    size_type d = r.size();
+    if ( ignoreGhosts )
+        d = std::accumulate(r.begin(), r.end(), 0, countWithoutGhost(isGhostCell<RangeT>()));
     return globalReduce(d, global, r);
 }
 
@@ -494,14 +497,15 @@ nelements(RangeT const& r, bool global = false)
  * @tparam Entities The entity type.
  * @param r The list of ranges.
  * @param global Whether to compute the number globally.
+ * @param ignoreGhosts Indicates whether the number should be calculated without the ghost entities
  *
  * @return Number of elements.
  */
 template<typename MeshType, int Entities>
 FEELPP_DEPRECATED size_type
-nelements(std::list<Range<MeshType,Entities>> const& r, bool global)
+nelements(std::list<Range<MeshType,Entities>> const& r, bool global, bool ignoreGhosts = true)
 {
-    return nelements(r, global);
+    return nelements(r, global, ignoreGhosts );
 }
 
 /**
@@ -510,18 +514,19 @@ nelements(std::list<Range<MeshType,Entities>> const& r, bool global)
  * @tparam CollectionOfRangeT Collection type (e.g., list, vector).
  * @param its The collection of ranges.
  * @param global Whether to compute the number globally.
+ * @param ignoreGhosts Indicates whether the number should be calculated without the ghost entities
  *
  * @return Number of elements.
  */
 template <typename CollectionOfRangeT, std::enable_if_t<is_range_v<typename CollectionOfRangeT::value_type>,int> = 0>
 size_type
-nelements(CollectionOfRangeT const& its, bool global = false)
+nelements(CollectionOfRangeT const& its, bool global = false, bool ignoreGhosts = true )
 {
     size_type d = 0;
     std::for_each(its.begin(), its.end(),
-                  [&d](auto const& t)
+                  [&d,&ignoreGhosts](auto const& t)
                   {
-                      d += nelements(t, false);
+                      d += nelements(t, false, ignoreGhosts );
                   });
     return globalReduce(d, global, its.front());  // Assuming all ranges in the collection have the same WorldComm
 }
@@ -550,11 +555,11 @@ std::ostream& operator<<(std::ostream& os, const Range<MeshType, MESH_ENTITIES>&
 }
 
 /**
- * @brief 
+ * @brief
  */
 template <typename RangeType, std::enable_if_t<is_range_v<RangeType>,int> = 0>
 std::vector<decay_type<RangeType>>
-partitionRange(RangeType&& range, int nParts) 
+partitionRange(RangeType&& range, int nParts)
 {
     using range_t = decay_type<RangeType>;
     std::vector<range_t> partitions;
@@ -563,12 +568,12 @@ partitionRange(RangeType&& range, int nParts)
     auto partSize = std::forward<RangeType>(range).size() / nParts;
     auto partBegin = std::forward<RangeType>(range).begin();
 
-    for (int i = 0; i < nParts; ++i) 
+    for (int i = 0; i < nParts; ++i)
     {
         auto start = partBegin;
         std::advance(partBegin, partSize); // Advance partBegin for the next iteration
         auto end = (i == nParts - 1) ? std::forward<RangeType>(range).end() : partBegin;
-        
+
         partitions.emplace_back( std::forward<RangeType>(range).mesh(), start, end );
     }
 

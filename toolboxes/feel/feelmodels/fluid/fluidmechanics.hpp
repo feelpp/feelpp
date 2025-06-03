@@ -333,7 +333,7 @@ public:
     /**
      * @brief Body base  class
      * @ingroup Fluid
-     * 
+     *
      */
     class Body //: public ModelPhysics<nDim>,
     //  public std::enable_shared_from_this<Body>
@@ -716,7 +716,7 @@ public:
     };
 
     /**
-     * @brief Body Articulation 
+     * @brief Body Articulation
      * @ingroup Fluid
      */
     class BodyArticulation
@@ -1420,7 +1420,7 @@ public:
     /**
      * @brief boundary conditions for a set of bodies
      * @ingroup Fluid
-     * 
+     *
      */
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
@@ -1855,9 +1855,6 @@ public :
     vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorPreviousVelocityExtrapolated; }
 
 
-    bool useExtendedDofTable() const;
-
-
     //___________________________________________________________________________________//
     // algebraic data
     typename super_type::block_pattern_type blockPattern() const override;
@@ -2111,6 +2108,7 @@ public :
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
             auto const& u = mfields.field( FieldTag::velocity(this), "velocity" );
+            auto const& p = mfields.field( FieldTag::pressure(this), "pressure" );
 
             using _expr_viscosity_type =  std::decay_t<decltype( this->dynamicViscosityExpr(u,std::string{}) )>;
             symbol_expression_t<_expr_viscosity_type> se_viscosity;
@@ -2126,7 +2124,19 @@ public :
             symbol_expression_t<_expr_strain_rate_magnitude_type> se_strainRateMagnitude;
             se_strainRateMagnitude.add( (boost::format("%1%_strain_rate_magnitude")%this->keyword()).str(), sqrt(2*inner(sym(gradv(u)))) );
 
-            return Feel::vf::symbolsExpr( se_viscosity, se_strainRateMagnitude );
+            auto sigmaExpr = this->stressTensorExpr( u,p/*,se*/ );
+
+            auto normalStressExpr = sigmaExpr*N();
+            using _expr_normalstress_type = std::decay_t<decltype( normalStressExpr )>;
+            symbol_expression_t<_expr_normalstress_type> se_normaStress;
+            se_normaStress.add( (boost::format("%1%_normal_stress")%this->keyword()).str(), normalStressExpr, SymbolExprComponentSuffix( nDim,1 ) );
+
+            auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            using _expr_wss_type = std::decay_t<decltype( wssExpr )>;
+            symbol_expression_t<_expr_wss_type> se_wallShearStress;
+            se_wallShearStress.add( (boost::format("%1%_wall_shear_stress")%this->keyword()).str(), wssExpr, SymbolExprComponentSuffix( nDim,1 ) );
+
+            return Feel::vf::symbolsExpr( se_viscosity, se_strainRateMagnitude, se_normaStress, se_wallShearStress );
         }
 
     //___________________________________________________________________________________//
@@ -2174,14 +2184,25 @@ public :
             if ( this->hasMeshMotion() )
                 mapExprMeshDisp[prefixvm(prefix,"mesh-displacement")].push_back( std::make_tuple( idv(this->meshMotionTool()->displacement()), elements(support(this->meshMotionTool()->displacement()->functionSpace())), "nodal" ) );
 
-            auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
+            //auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
+            //! WARNING use a temporary fix
+            //auto rangeTrace = !M_tmpExporterTraceRangeFaces? this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces() : *M_tmpExporterTraceRangeFaces;
+            auto rangeTrace = boundaryfaces( this->functionSpaceVelocity()->template meshSupport<0>() );
+
             auto sigmaExpr = this->stressTensorExpr( u,p,se );
+            // set connection markers if has partial mesh support (i.e. physics not in whole mesh)
+            std::set<std::string> requiresMarkersConnection;
+            auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+            if ( !mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
+                requiresMarkersConnection = mom->markers( this->physicsAvailableFromCurrentType() );
 
-            using _expr_normalstresstensor_type = std::decay_t<decltype(sigmaExpr*N())>;
-            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, Range<mesh_type,MESH_FACES>, std::string > > > mapExprNormalStressTensor;
-            mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( sigmaExpr*N(), rangeTrace, "element" ) );
+            auto normalStressExprOriginal = sigmaExpr*N();
+            auto normalStressExpr = evalOnFaces( std::move(normalStressExprOriginal),requiresMarkersConnection );
+            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(normalStressExpr)>, Range<mesh_type,MESH_FACES>, std::string > > > mapExprNormalStressTensor;
+            mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( normalStressExpr, rangeTrace, "element" ) );
 
-            auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            auto wssExprOriginal = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            auto wssExpr = evalOnFaces( std::move(wssExprOriginal),requiresMarkersConnection );
             std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , Range<mesh_type,MESH_FACES>, std::string > > > mapExprWallShearStress;
             mapExprWallShearStress[prefixvm(prefix,"trace.wall-shear-stress")].push_back( std::make_tuple( wssExpr, rangeTrace, "element" ) );
 
@@ -2333,19 +2354,19 @@ public :
     template < typename ExprT >
     void updateVelocity(vf::Expr<ExprT> const& __expr)
     {
-        M_fieldVelocity->on(_range=M_rangeMeshElements,_expr=__expr );
+        M_fieldVelocity->on(_range=M_rangeMeshElements,_expr=__expr,_close=true );
     }
     template < typename ExprT >
     void updatePressure(vf::Expr<ExprT> const& __expr)
     {
-        M_fieldPressure->on(_range=M_rangeMeshElements,_expr=__expr );
+        M_fieldPressure->on(_range=M_rangeMeshElements,_expr=__expr,_close=true );
     }
 
     template < typename ExprT >
     void updateSourceAdded(vf::Expr<ExprT> const& __expr)
     {
         if (!M_XhSourceAdded) this->createFunctionSpacesSourceAdded();
-        M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr );
+        M_SourceAdded->on(_range=elements( this->mesh()),_expr=__expr,_close=true );
         M_haveSourceAdded=true;
     }
     template < typename ExprT >
@@ -2644,6 +2665,8 @@ private :
     // exporter fluid
     export_ptrtype M_exporter;
     export_trace_ptrtype M_exporterTrace;
+    mesh_ptrtype M_tmpExporterTraceSubmesh;// M_tmpFluidSubmesh;
+    std::optional<range_faces_type> M_tmpExporterTraceRangeFaces;
     export_trace_ptrtype M_exporterFluidOutlet;
     export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
     // exporter fluid ho
@@ -3046,5 +3069,3 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::BodyBoundaryCond
 #include <feel/feelmodels/fluid/fluidmechanicsothers.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
-
-

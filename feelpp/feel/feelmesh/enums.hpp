@@ -49,7 +49,7 @@ enum ElementsType
 using on_elements_t = boost::mp11::mp_int<MESH_ELEMENTS>;
 using on_facets_t = boost::mp11::mp_int<MESH_FACES>;
 using on_internal_faces_t = boost::mp11::mp_int<MESH_INTERNAL_FACES>;
-using on_edges_t = boost::mp11::mp_int<MESH_FACES>;
+using on_edges_t = boost::mp11::mp_int<MESH_EDGES>;
 using on_points_t = boost::mp11::mp_int<MESH_POINTS>;
 
 
@@ -60,8 +60,24 @@ enum MESH_CHANGES
     MESH_CHANGES_PARTITION          = 2
 };
 
-enum class EntityProcessType {LOCAL_ONLY,GHOST_ONLY,ALL,IGNORE_ENTITY_ON_INTERPROCESS_FACE};
+enum class EntityProcessType
+{
+    LOCAL_ONLY,
+    LOCAL_AND_INTERPROCESS_ONLY,
+    GHOST_ONLY,
+    ALL,
+    IGNORE_ENTITY_ON_INTERPROCESS_FACE
+};
 using entity_process_t = EntityProcessType;
+
+
+enum class EntityFilterType{
+    PROCESS_ID,
+    MARKER,
+    ON_BOUNDARY,
+    INTERNAL
+};
+using entity_filter_t = EntityFilterType;
 
 }
 #endif /* __MeshEnums_H */
