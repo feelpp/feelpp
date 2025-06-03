@@ -82,11 +82,11 @@ List_of_volume_swimmer = []
 for i in range(200) :
     #interpolation between mesh1 and mesh2
     Pchv1_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=1)
-    Pch2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pch", order=2)
+    Pdh2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pdh", order=1)
     Pchv1_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pchv", order=1)
-    Pch2_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pch", order=2)
-    interp_laplacian_to_swimmer = I.interpolator(domain = Pchv1_mesh2, image = Pchv1_mesh1,  range = feelpp.elements(mesh1)) #PCHV3D PAS PRIS EN COMPTE
-    interp_swimmer_to_laplacian = I.interpolator(domain = Pch2_mesh1, image = Pch2_mesh2,  range = feelpp.elements(mesh2)) #PCHV3D PAS PRIS EN COMPTE
+    Pdh2_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pdh", order=1)
+    interp_laplacian_to_swimmer = I.interpolator(domain = Pchv1_mesh2, image = Pchv1_mesh1,  range = feelpp.elements(mesh1)) #PDH3D PAS PRIS EN COMPTE
+    interp_swimmer_to_laplacian = I.interpolator(domain = Pdh2_mesh1, image = Pdh2_mesh2,  range = feelpp.elements(mesh2)) #PDH3D PAS PRIS EN COMPTE
 
     ## Primal problem =====================================================================
 
