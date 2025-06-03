@@ -63,6 +63,7 @@ bool extractZipFile( const std::string& zipFilePath, const std::string& extracti
         }
         else
         {
+            fs::create_directories(extractionPath.parent_path());
             FILE* outFile = fopen( extractionPath.string().c_str(), "wb" );
             if ( !outFile )
             {
