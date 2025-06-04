@@ -30,9 +30,30 @@ innerStrainRates(FluidMechanics &t, Pchv &u1, Pchv &u2)
     std::cout << "Computing inner product of strain rates" << std::endl;
     auto e1_inner_e2 = inner(e1,e2);
 
+    auto nDof_u1 = u1.functionSpace()->nDof();
+    auto nDof_u2 = u2.functionSpace()->nDof();
+    auto size_u1 = u1.size();
+    auto size_u2 = u2.size();
+    std::cout << "nDof of u1: " << nDof_u1 << std::endl;
+    std::cout << "nDof of u2: " << nDof_u2 << std::endl;
+    std::cout << "size of u1: " << size_u1 << std::endl;
+    std::cout << "size of u2: " << size_u2 << std::endl;
+
+    auto mesh = u1.functionSpace()->mesh();
+    auto numGlobalPoints = mesh->numGlobalPoints();
+    auto numGlobalElements = mesh->numGlobalElements(); 
+    auto numGlobalFaces = mesh->numGlobalFaces();
+    auto numGlobalEdges = mesh->numGlobalEdges();
+    auto measure = mesh->measure();
+    std::cout << "Mesh information:" << std::endl;
+    std::cout << "Number of global points: " << numGlobalPoints << std::endl;
+    std::cout << "Number of global elements: " << numGlobalElements << std::endl;
+    std::cout << "Number of global faces: " << numGlobalFaces << std::endl;
+    std::cout << "Number of global edges: " << numGlobalEdges << std::endl;
+    std::cout << "Measure of the mesh: " << measure << std::endl;
 
     std::cout << "Evaluating inner product of strain rates" << std::endl;
-    r.on( _range=elements(u1.functionSpace()->mesh()), _expr=e1_inner_e2 );
+    r.on( _range=elements(mesh), _expr=e1_inner_e2 );
     std::cout << "Inner product of strain rates evaluated" << std::endl;
     return r;
 
