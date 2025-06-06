@@ -22,14 +22,15 @@ bool extractZipFile( const std::string& zipFilePath, const std::string& extracti
     zip* archive = zip_open( zipFilePath.c_str(), 0, nullptr );
     if ( !archive )
     {
-        //throw std::runtime_error( fmt::format("Could not open zip file {}", zipFilePath) );
         LOG(ERROR) << fmt::format( "Could not open zip file {}", zipFilePath ) << std::endl;
         return false;
     }
 
     int numEntries = zip_get_num_entries( archive, 0 );
+    // Browse all files in the archive
     for ( int i = 0; i < numEntries; ++i )
     {
+        // Get filename at position i in the archive
         const char* entryName = zip_get_name( archive, i, 0 );
         if ( !entryName )
         {
@@ -39,50 +40,48 @@ bool extractZipFile( const std::string& zipFilePath, const std::string& extracti
         }
 
         fs::path extractionPath = fs::path(extractionDir) / fs::path( entryName );
-        VLOG(2) << fmt::format( "Extracting {} to {}", entryName, extractionPath.string() ) << std::endl;
-        VLOG(2) << fmt::format( "has {} a filename : {}", entryName, fs::path( entryName ).has_filename() ) << std::endl;
-        if ( !fs::path( entryName ).has_filename() || fs::path( entryName ) == fs::path(".") )
+        std::cout << fmt::format( "Extracting {} to {}", entryName, extractionPath.string() ) << std::endl;
+
+        // If it's a folder
+        struct zip_stat st;
+        zip_stat_index(archive, i, 0, &st);
+        bool isDirectory = (st.name[strlen(st.name) - 1] == '/');
+
+        if (isDirectory)
         {
             VLOG(2) << fmt::format( "Creating directory {}", extractionPath.string() ) << std::endl;
             fs::create_directories( extractionPath );
-            CHECK( fs::is_directory( extractionPath ) ) << fmt::format( "Could not create directory {}", extractionPath.string() );
             continue;
         }
 
+        // If it's a file
         zip_file* file = zip_fopen_index( archive, i, 0 );
-        if ( file && fs::is_directory( extractionPath ) )
-        {
-            zip_fclose( file );
-            continue;
-        }
-        else if ( !file )
+        if ( !file )
         {
             zip_close( archive );
             LOG(ERROR) << fmt::format( "Could not open file {} in zip file", entryName ) << std::endl;
             return false;
         }
-        else
+
+        fs::create_directories( extractionPath.parent_path() ); // create extractionPath's parent folder if it doesn't exist
+        std::ofstream outFile(extractionPath, std::ios::binary);
+        if ( !outFile )
         {
-            fs::create_directories(extractionPath.parent_path());
-            FILE* outFile = fopen( extractionPath.string().c_str(), "wb" );
-            if ( !outFile )
-            {
-                zip_fclose( file );
-                zip_close( archive );
-                LOG(ERROR) << fmt::format( "Could not open output file {}", extractionPath.string() ) << std::endl;
-                return false;
-            }
-
-            zip_int64_t bytesRead;
-            char buf[8192];
-            while ( ( bytesRead = zip_fread( file, buf, sizeof( buf ) ) ) > 0 )
-            {
-                fwrite( buf, 1, bytesRead, outFile );
-            }
-
-            fclose( outFile );
             zip_fclose( file );
+            zip_close( archive );
+            LOG(ERROR) << fmt::format( "Could not open output file {}", extractionPath.string() ) << std::endl;
+            return false;
         }
+
+        zip_int64_t bytesRead;
+        char buf[8192];
+        while ( ( bytesRead = zip_fread( file, buf, sizeof( buf ) ) ) > 0 )
+        {
+            outFile.write(buf, bytesRead);
+        }
+
+        outFile.close();
+        zip_fclose( file );
     }
 
     zip_close( archive );
