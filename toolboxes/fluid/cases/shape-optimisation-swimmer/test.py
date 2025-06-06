@@ -9,7 +9,6 @@ import feelpp.core.interpolation as I
 from feelpp.toolboxes.fluid import *
 from feelpp.toolboxes.cfpdes import *
 import feelpp.core.meshmover as mm
-import json
 import mpi4py
 mpi4py.rc.thread_level="single"
 import pandas as pd
@@ -55,7 +54,7 @@ hclose = 0.005
 qual = 0.4  #lower bound for the quality of the mesh
 al, bl, cl = 0.05, 0.5, 10
 ar, br, cr = 0.05, 0.5, 10
-l, r = 10, 10
+l, r = 0, 0
 
 
 
@@ -79,7 +78,7 @@ List_of_remesh_mesh2 = []
 List_of_centermass = []
 List_of_volume_swimmer = []
 
-for i in range(200) :
+for i in range(20) :
     #interpolation between mesh1 and mesh2
     Pchv1_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=1)
     Pdh2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pdh", order=1)
@@ -94,7 +93,7 @@ for i in range(200) :
     fp = fluid(dim=3, orderVelocity=2, orderPressure=1, keyword="pfluid", prefix="pfluid")
     fp.setMesh(mesh1)
     fp.init()
-    #fp.printAndSaveInfo()
+    fp.printAndSaveInfo()
 
     #remesh_toolbox(fp, hclose, hfar, required_facets1, required_elts1, None, None)
 
@@ -219,7 +218,7 @@ for i in range(200) :
     exp.addParameterInModelProperties("Textcrossw1", Textcrossw[0])
     exp.addParameterInModelProperties("Textcrossw2", Textcrossw[1])
     exp.addParameterInModelProperties("Textcrossw3", Textcrossw[2])
-    exp.addParameterInModelProperties("t",0.001)
+    exp.addParameterInModelProperties("t",0.01)
     exp.addParameterInModelProperties("l",l)
     exp.addParameterInModelProperties("r", r)
     exp.updateParameterValues()
@@ -240,7 +239,7 @@ for i in range(200) :
 
     ## Exporter on the 2 meshes ==========================================================
     exporter1.step(i).setMesh(mesh1)
-    exporter1.step(i).add("theta_interp", theta_interp)
+    exporter1.step(i).add("theta_interp", theta)#_interp)
     exporter1.step(i).add("up", up)
     exporter1.step(i).add("ud", ud)
     exporter1.step(i).add("inner_up_ud", inner_up_ud)
@@ -284,11 +283,11 @@ for i in range(200) :
     ax[1].plot(List_of_translational_velocity_dot_Text, label=r"$U\cdot T_{ext}$")
     ax[2].plot(List_of_angular_velocity_dot_Text, label=r"$\omega\cdot T_{ext}$")
 
-    ax[0].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1]/np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='x', label='Remesh Mesh1')
+    ax[0].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1]/np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='o', label='Remesh Mesh1', alpha = 0.8)
     ax[0].scatter(List_of_remesh_mesh2, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh2]/np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
-    ax[1].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='x', label='Remesh Mesh1')
+    ax[1].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='o', label='Remesh Mesh1', alpha = 0.8)
     ax[1].scatter(List_of_remesh_mesh2, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
-    ax[2].scatter(List_of_remesh_mesh1, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='x', label='Remesh Mesh1')
+    ax[2].scatter(List_of_remesh_mesh1, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='o', label='Remesh Mesh1', alaph = 0.8)
     ax[2].scatter(List_of_remesh_mesh2, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
     
     ax[0].legend()
