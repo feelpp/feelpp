@@ -5,19 +5,18 @@
     {
         "fluid":{
             "materials":["Fluid"],
-            "equationsAA":"Stokes",
-            "equations":"Navier-Stokes"
+            "equations":"Stokes",
+            "equationsAA":"Navier-Stokes"
             //"submodels":{ "multibody":["toto"] }
         },
         "solid":
         {
             "materials":["Solid","Head"],
-            //"equations":"Hyper-Elasticity",
-            //"equationsAA":"Elasticity"
             "setup":{
                 "equations":"Hyper-Elasticity",
-                "material-model":"StVenantKirchhoff",
-                "formulation":"displacement-pressure"
+                //"equationsAA":"Elasticity",
+                "material-model":"StVenantKirchhoff"
+                //"formulation":"displacement-pressure"
             }
         },
         "multibody":{
@@ -52,10 +51,17 @@
         "hfar":0.0005,//0.06,//0.04,
         "hclose_wall1":"hfar:hfar",//"hfar/5:hfar",
         "hclose_wall2":0.00005, //"hfar/5:hfar",//"hfar/10:hfar",
+
+        "d2r_bounded_fsi_wall1":"min(meshes_fsi_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fsi_distanceToRange_wall1_normalized_min_max",
+        "mymetric_fsi_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_fsi_wall1:hclose_wall1:hfar:d2r_bounded_fsi_wall1",
+        "d2r_bounded_fsi_wall2":"min(meshes_fsi_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fsi_distanceToRange_wall2_normalized_min_max",
+        "mymetric_fsi_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_fsi_wall2:hclose_wall2:hfar:d2r_bounded_fsi_wall2",
+
         "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
         "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
         "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
         "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+
     },
     "Meshes":
     {
@@ -64,7 +70,34 @@
             {
                 "filename":"$cfgdir/swimmertrue.geo",
                 "hsize":0.00008
-            }
+            },
+            "Partitioning":{
+                "splitting":[ "Fluid", ["Solid","Head"] ],
+                "constraints":{
+                    "no_interprocess_faces":["fsi-wall"]
+                }
+            },
+            "DistanceToRange":
+            {
+                "wall1":
+                {
+                    "markers":["fluid-inlet","fluid-wall","fluid-outlet"],
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["fsi-wall"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":[
+                {
+                    "metric":"min(mymetric_fsi_wall1,mymetric_fsi_wall2):mymetric_fsi_wall1:mymetric_fsi_wall2",
+                    "events":{
+                        "after_import":{}
+                    }
+                }
+            ]
         },
         "fluid":
         {
