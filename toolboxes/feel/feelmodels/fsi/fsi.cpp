@@ -102,9 +102,10 @@ FSI<FluidType,SolidType>::initMesh()
     if ( this->modelProperties().jsonData().contains("Meshes") )
         super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     this->modelMesh( this->keyword() ).importConfig().setStraightenMesh( false );
-#if 1
-    this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
-#endif
+
+    // if true, we load the mesh sequentially by master rank, then each subphysics will build partitioning
+    if ( false )
+        this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
 #if 0
     this->modelMesh( this->keyword() ).importConfig().setMeshComponents( MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES );
 #endif
@@ -1184,7 +1185,8 @@ FSI<FluidType,SolidType>::solveImpl1()
         timerCur.start();
         //--------------------------------------------------------------//
         this->aitkenRelaxTool()->saveOldSolution();
-        this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
+        if ( false )
+            this->updateBackendOptimisation(cptFSI,residualRelativeConvergence);
         //--------------------------------------------------------------//
 
         // update fluid toolbox for use

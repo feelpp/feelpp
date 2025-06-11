@@ -509,7 +509,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                 case 0:
                 {
                     auto inputMesh = importConfig.template submeshInputMesh<mesh_type>();
-                    bool doRepartitioning = true;
+                    bool doRepartitioning = importConfig.generatePartitioning();//true;
                     size_type updateSubmeshCtx = importConfig.meshComponents();
                     if ( doRepartitioning )
                     {
@@ -557,8 +557,8 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
             std::string meshPartitionedFilename = (fs::path( rootpath ) / (meshFilenameBase + ".json")).string();
             std::string meshFileExt = fs::path( inputMeshFilename ).extension().string();
             bool generatePartitioning = importConfig.generatePartitioning();
-            if ( generatePartitioning && meshFileExt != ".msh" )
-                CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
+            // if ( generatePartitioning && meshFileExt != ".msh" )
+            //     CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
             if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
