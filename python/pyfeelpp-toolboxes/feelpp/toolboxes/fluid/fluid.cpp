@@ -106,10 +106,10 @@ void defFM(py::module &m)
             self->applyRemesh(meshOld,meshNew,remeshInterp);            
         }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
 
-        .def( "computeInnerStrainRates", []( const fm_t& t, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u1, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u2 )
+        .def( "computeInnerStrainRates", []( const fm_t& t, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u1, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u2, Pdh_ptrtype<::Feel::Mesh<::Feel::Simplex<3,1>>,1> const& xh) 
         {
-            return innerStrainRates<0>(t, u1, u2);
-        }, "compute inner strain rates", py::arg("u1"), py::arg("u2") )
+            return innerStrainRates<0>(t, u1, u2, xh);
+        }, "compute inner strain rates", py::arg("u1"), py::arg("u2"), py::arg("xh"))
 
         .def ("saveHDF5InnerStrainRates", []( const fm_t& t, Pdh_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 1> const& e1_inner_e2, const std::string& path )
         {

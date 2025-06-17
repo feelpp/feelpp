@@ -174,7 +174,16 @@ for i in range(20) :
     ud = fd.fieldVelocity()
 
     
-
+    #print("Computation of the inner strain rates")
+    xh = feelpp.functionSpace(mesh=mesh1, space = "Pdh", order=1)
+    inner_up_ud = fd.computeInnerStrainRates(ud, up, xh)
+    #print("Computation of the inner strain rates done")
+    #print("Interpolation of the inner strain rates")
+    inner_up_ud_interp = interp_swimmer_to_laplacian.interpolate(inner_up_ud)
+    #print("Interpolation of the inner strain rates done")
+    #print("Saving the inner strain rates in HDF5 format")
+    fd.saveHDF5InnerStrainRates(inner_up_ud_interp, "inner_up_ud_interp.h5")
+    #print("Inner strain rates saved in HDF5 format")
 
     ## Expansion ===============================================================
     mes = fd.postProcessMeasures().values()
@@ -189,15 +198,7 @@ for i in range(20) :
     List_of_volume_swimmer.append(volume_swimmer)
     List_of_centermass.append(centermass)
 
-    #print("Computation of the inner strain rates")
-    inner_up_ud = fd.computeInnerStrainRates(up, ud)
-    #print("Computation of the inner strain rates done")
-    #print("Interpolation of the inner strain rates")
-    inner_up_ud_interp = interp_swimmer_to_laplacian.interpolate(inner_up_ud)
-    #print("Interpolation of the inner strain rates done")
-    #print("Saving the inner strain rates in HDF5 format")
-    fd.saveHDF5InnerStrainRates(inner_up_ud_interp, "inner_up_ud_interp.h5")
-    #print("Inner strain rates saved in HDF5 format")
+    
     
 
     #print("Starting the expansion toolbox")
@@ -287,7 +288,7 @@ for i in range(20) :
     ax[0].scatter(List_of_remesh_mesh2, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh2]/np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
     ax[1].scatter(List_of_remesh_mesh1, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='o', label='Remesh Mesh1', alpha = 0.8)
     ax[1].scatter(List_of_remesh_mesh2, np.array(List_of_translational_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
-    ax[2].scatter(List_of_remesh_mesh1, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='o', label='Remesh Mesh1', alaph = 0.8)
+    ax[2].scatter(List_of_remesh_mesh1, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh1], color='red', marker='o', label='Remesh Mesh1', alpha = 0.8)
     ax[2].scatter(List_of_remesh_mesh2, np.array(List_of_angular_velocity_dot_Text)[List_of_remesh_mesh2], color='green', marker='x', label='Remesh Mesh2')
     
     ax[0].legend()

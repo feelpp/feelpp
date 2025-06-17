@@ -16,11 +16,11 @@ using mesh_t = Mesh<Simplex<2, 1>>;
 
 
 
-template<std::size_t residualType, typename FluidMechanics, typename Pchv>
+template<std::size_t residualType, typename FluidMechanics, typename Pchv, typename space>
 auto
-innerStrainRates(FluidMechanics &t, Pchv &u1, Pchv &u2)
+innerStrainRates(FluidMechanics &t, Pchv &u1, Pchv &u2, space &Xh)
 { 
-    auto Xh = Pdh<1>(u1.functionSpace()->mesh());;
+    //auto Xh = Pdh<1>(u1.functionSpace()->mesh());;
     auto r = Xh->element();
 
     std::cout << "Computing strain rates" << std::endl;
