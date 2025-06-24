@@ -234,8 +234,9 @@ BOOST_AUTO_TEST_CASE(test_unzip_files)
     fs::remove(tmpZip);
 }
 
-std::map<std::string, std::string> datasetToUnzip = { {"item", "684956e6da2d67521b36da86"} };
-std::vector<std::map<std::string, std::string>> items_map = {datasetToUnzip};
+
+std::map<std::string, std::string> datasetToUnzip ={ {"path", "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset"} };
+std::vector<std::map<std::string, std::string>> items_map = {data};
 namespace bdata = boost::unit_test::data;
 
 BOOST_DATA_TEST_CASE(test_remotedata_girder_download_item_and_unzip, bdata::make(items_map), dataset)
