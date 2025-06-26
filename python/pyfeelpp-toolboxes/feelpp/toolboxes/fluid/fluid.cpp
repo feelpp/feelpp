@@ -116,6 +116,11 @@ void defFM(py::module &m)
             saveinnerStrainRates<0>(t, e1_inner_e2, path);
         }, "save inner strain rates to HDF5", py::arg("e1_inner_e2"), py::arg("path") )
 
+        .def ("saveHDF5Velocity", []( const fm_t& t, Pchv_element_t<::Feel::Mesh<::Feel::Simplex<3, 1>>, 2> const& u, const std::string& path )
+        {
+            saveVelocity<0>(t, u, path);
+        }, "save inner strain rates to HDF5", py::arg("u"), py::arg("path") )
+
         .def(
             "addContactForceModel",[](const fm_t& t)
             {

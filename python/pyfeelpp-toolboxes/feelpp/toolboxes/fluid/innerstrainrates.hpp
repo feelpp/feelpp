@@ -39,7 +39,7 @@ innerStrainRates(FluidMechanics &t, Pchv &u1, Pchv &u2, space &Xh)
     std::cout << "size of u1: " << size_u1 << std::endl;
     std::cout << "size of u2: " << size_u2 << std::endl;
 
-    auto mesh = u1.functionSpace()->mesh();
+    auto mesh = Xh->mesh();//u1.functionSpace()->mesh();
     auto numGlobalPoints = mesh->numGlobalPoints();
     auto numGlobalElements = mesh->numGlobalElements(); 
     auto numGlobalFaces = mesh->numGlobalFaces();
@@ -65,4 +65,11 @@ void
 saveinnerStrainRates(FluidMechanics &t, Pdh &e1_inner_e2, const std::string& path)
 {
     e1_inner_e2.saveHDF5( path );
+}
+
+template<std::size_t residualType, typename FluidMechanics, typename Pchv>
+void
+saveVelocity(FluidMechanics &t, Pchv &u, const std::string& path)
+{
+    u.saveHDF5( path );
 }

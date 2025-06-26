@@ -67,7 +67,7 @@ mesh1 = feelpp.load(feelpp.mesh(dim=3,realdim=3), "fluidandswimmer.geo" , 0.05)
 mesh2 = feelpp.load(feelpp.mesh(dim=3,realdim=3), "fluid.geo" , 0.05)
 
 
-feelpp.Environment.setConfigFile('test.cfg')
+feelpp.Environment.setConfigFile('test2.cfg')
 exporter1 = feelpp.exporter(mesh=mesh1, name="fluidandswimmer", geo="change")
 exporter2 = feelpp.exporter(mesh=mesh2, name="fluid", geo="change")
 
@@ -81,11 +81,11 @@ List_of_volume_swimmer = []
 for i in range(200) :
     #interpolation between mesh1 and mesh2
     Pchv1_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=1)
-    Pdh2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pdh", order=1)
+    Pchv2_mesh1 = feelpp.functionSpace(mesh=mesh1, space = "Pchv", order=2)
     Pchv1_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pchv", order=1)
-    Pdh2_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pdh", order=1)
-    interp_laplacian_to_swimmer = I.interpolator(domain = Pchv1_mesh2, image = Pchv1_mesh1,  range = feelpp.elements(mesh1)) #PDH3D PAS PRIS EN COMPTE
-    interp_swimmer_to_laplacian = I.interpolator(domain = Pdh2_mesh1, image = Pdh2_mesh2,  range = feelpp.elements(mesh2)) #PDH3D PAS PRIS EN COMPTE
+    Pchv2_mesh2 = feelpp.functionSpace(mesh=mesh2, space = "Pchv", order=2)
+    interp_laplacian_to_swimmer = I.interpolator(domain = Pchv1_mesh2, image = Pchv1_mesh1,  range = feelpp.elements(mesh1)) 
+    interp_swimmer_to_laplacian = I.interpolator(domain = Pchv2_mesh1, image = Pchv2_mesh2,  range = feelpp.elements(mesh2)) 
 
 
     ## Dual Problem =======================================================================================
@@ -119,6 +119,10 @@ for i in range(200) :
     fd.solve()
     fd.exportResults()
     ud = fd.fieldVelocity()
+    print("Ud interpolation")
+    ud_interp = interp_swimmer_to_laplacian.interpolate(ud)
+    print("Ud save")
+    fd.saveVelocity(ud_interp, "ud_interp.h5")
 
     ## Primal problem =====================================================================
 
@@ -147,18 +151,9 @@ for i in range(200) :
     fp.solve()
     fp.exportResults()
     up = fp.fieldVelocity()
+    up_interp = interp_swimmer_to_laplacian.interpolate(up)
+    fp.saveVelocity(up_interp, "up_interp.h5")
 
-      
-    #print("Computation of the inner strain rates")
-    xh = feelpp.functionSpace(mesh=mesh1, space = "Pdh", order=1)
-    inner_up_ud = fp.computeInnerStrainRates(ud, up, xh)
-    #print("Computation of the inner strain rates done")
-    #print("Interpolation of the inner strain rates")
-    inner_up_ud_interp = interp_swimmer_to_laplacian.interpolate(inner_up_ud)
-    #print("Interpolation of the inner strain rates done")
-    #print("Saving the inner strain rates in HDF5 format")
-    fp.saveHDF5InnerStrainRates(inner_up_ud_interp, "inner_up_ud_interp.h5")
-    #print("Inner strain rates saved in HDF5 format")
 
     #remesh_toolbox(fp, hclose, hfar, ["Ellipsoid"], ["EllipsoidVolume"], None, None)
     #translationnl velocity
@@ -247,15 +242,13 @@ for i in range(200) :
     exporter1.step(i).add("theta_interp", theta)#_interp)
     exporter1.step(i).add("up", up)
     exporter1.step(i).add("ud", ud)
-    exporter1.step(i).add("inner_up_ud", inner_up_ud)
     exporter1.save()
 
 
     exporter2.step(i).setMesh(mesh2)
     exporter2.step(i).add("theta", theta)
-    exporter2.step(i).add("up", up)
-    exporter2.step(i).add("ud", ud)
-    exporter2.step(i).add("inner_up_ud", inner_up_ud)
+    exporter2.step(i).add("up", up_interp)
+    exporter2.step(i).add("ud", ud_interp)
     exporter2.save()
 
 
@@ -322,12 +315,10 @@ exporter1.step(i+1).setMesh(mesh1)
 exporter1.step(i+1).add("theta_interp", theta_interp)
 exporter1.step(i+1).add("up", up)
 exporter1.step(i+1).add("ud", ud)
-exporter1.step(i+1).add("inner_up_ud", inner_up_ud)
 exporter1.save()
 
 exporter2.step(i+1).setMesh(mesh2)
 exporter2.step(i+1).add("theta", theta)
-exporter2.step(i+1).add("up", up)
-exporter2.step(i+1).add("ud", ud)
-exporter2.step(i+1).add("inner_up_ud", inner_up_ud)
+exporter2.step(i+1).add("up", up_interp)
+exporter2.step(i+1).add("ud", ud_interp)
 exporter2.save()
