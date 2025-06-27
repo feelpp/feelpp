@@ -425,27 +425,40 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdat
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), true);
     tic();
     readStats( partIds );
-    toc("PartitionIO reading stats",FLAGS_v>0);
+    double readStats_time = toc("PartitionIO reading stats",FLAGS_v>0);
     tic();
     readPoints( partIds, scale );
-    toc("PartitionIO reading points",FLAGS_v>0);
+    double readPoints_time = toc("PartitionIO reading points",FLAGS_v>0);
     tic();
     std::map<rank_type,std::vector<size_type>> mapGhostHdf5IdToFeelId;
     readElements( partIds, mapGhostHdf5IdToFeelId );
-    toc("PartitionIO reading elements",FLAGS_v>0);
+    double readElements_time = toc("PartitionIO reading elements",FLAGS_v>0);
     tic();
     if  ( nProcess > 1 )
         readGhostElements( partIds,mapGhostHdf5IdToFeelId );
-    toc("PartitionIO reading ghost_elements",FLAGS_v>0);
+    double readGhostElements_time = toc("PartitionIO reading ghost_elements",FLAGS_v>0);
     tic();
     readMarkedSubEntities( partIds );
-    toc("PartitionIO reading marked_subentities",FLAGS_v>0);
+    double readMarkedSubEntities_time = toc("PartitionIO reading marked_subentities",FLAGS_v>0);
 
     M_HDF5IO.closeFile();
-    toc("PartitionIO reading hdf5 file",FLAGS_v>0);
+    double readHdf5_time = toc("PartitionIO reading hdf5 file",FLAGS_v>0);
 
     prepareUpdateForUseStep1();
     prepareUpdateForUseStep2();
+
+    const nl::json time_dataStructure = {{
+        "loadMesh_times", {
+            {"openFile", readHdf5_time},
+            {"readStats_time", readStats_time},
+            {"readPoints_time", readPoints_time},
+            {"readElements_time", readElements_time},
+            {"readGhostElements_time", readGhostElements_time},
+            {"readMarkedSubEntities_time", readMarkedSubEntities_time},
+        }
+    }};
+
+    M_meshPartIn->setInformationObject( time_dataStructure );
 
     tic();
     M_meshPartIn->components().reset();
