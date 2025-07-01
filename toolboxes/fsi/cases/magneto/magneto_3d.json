@@ -43,9 +43,9 @@
     },
     "Parameters":
     {
-        "hfar":0.005,
+        "hfar":0.002, //0.005,
         "hclose_wall1":"hfar:hfar",
-        "hclose_wall2":0.001, 
+        "hclose_wall2":0.0002, //0.001,
 
         "d2r_bounded_fsi_wall1":"min(meshes_fsi_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fsi_distanceToRange_wall1_normalized_min_max",
         "mymetric_fsi_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_fsi_wall1:hclose_wall1:hfar:d2r_bounded_fsi_wall1",
@@ -86,7 +86,7 @@
                     "normalization":"min_max"
                 }
             },
-            "AAMeshAdaptation":[
+            "MeshAdaptation":[
                 {
                     "metric":"min(mymetric_fsi_wall1,mymetric_fsi_wall2):mymetric_fsi_wall1:mymetric_fsi_wall2",
                     "events":{
@@ -121,7 +121,7 @@
                     "normalization":"min_max"
                 }
             },
-            "AAMeshAdaptation":[
+            "MeshAdaptation":[
                 {
                     "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
                     "required_markers":["fsi-wall","Solid","Head"],
@@ -137,7 +137,7 @@
                     "no_interprocess_faces":["fsi-wall"]
                 }
             }
-            
+
         }
     },
     "Materials":
