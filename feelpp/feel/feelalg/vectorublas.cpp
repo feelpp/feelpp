@@ -585,7 +585,7 @@ void VectorUblasBase<T>::loadHDF5( const std::string & filename, const std::stri
 
         hsize_t dimsGlob[2];
         hdf5.openTable( tableName, dimsGlob );
-        CHECK( dimsGlob[dimsComp0] == dm.nDof() ) << "invalid table dimension";
+        CHECK( dimsGlob[dimsComp0] == dm.nDof() ) << fmt::format("invalid table dimension : {} vs {}", dimsGlob[dimsComp0], dm.nDof() );
         CHECK( dimsGlob[dimsComp1] == 1 ) << "invalid table dimension";
 
         if ( mappingFromInput )
