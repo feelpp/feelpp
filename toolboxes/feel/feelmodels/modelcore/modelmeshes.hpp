@@ -248,35 +248,42 @@ private :
                * @brief Default constructor.
                */
               PartSetup() = default;
-  
+
               /**
                * @brief Returns the filename of the part.
                *
                * @return A reference to the filename string.
                */
               std::string const& filename() const { return M_filename; }
-  
+
+              /**
+               * @brief Returns the filename of function space mapping linked to the file stored as filename attribute.
+               *
+               * @return A reference to the space filename string.
+               */
+              std::string const& spaceFilename() const noexcept { return M_spaceFilename; }
+
               /**
                * @brief Returns whether the part has a model expression.
                *
                * @return True if the part has a model expression, false otherwise.
                */
               bool hasExpr() const { return M_mexpr ? true : false; }
-  
+
               /**
                * @brief Returns the model expression of the part.
                *
                * @return A reference to the model expression object.
                */
               ModelExpression const& mExpr() const { return *M_mexpr; }
-  
+
               /**
                * @brief Returns the markers of the part.
                *
                * @return A reference to the model markers object.
                */
               ModelMarkers const& markers() const { return M_markers; }
-  
+
               /**
                * @brief Creates a new PartSetup object from the given model meshes and JSON data.
                *
@@ -285,13 +292,14 @@ private :
                * @return An optional PartSetup object if successful, std::nullopt otherwise.
                */
               static std::optional<PartSetup> create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
-  
+
               private:
               std::string M_filename;                 ///< The filename of the part.
+              std::string M_spaceFilename;
               std::optional<ModelExpression> M_mexpr; ///< The model expression of the part.
               ModelMarkers M_markers;                 ///< The markers of the part.
           };
-  
+
           /**
            * @brief Constructs a new FieldsSetup object from the given name, model meshes, and JSON data.
            *
@@ -300,28 +308,28 @@ private :
            * @param jarg The JSON data.
            */
           FieldsSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
-  
+
           /**
            * @brief Returns the name of the fields.
            *
            * @return A reference to the name string.
            */
           std::string const& name() const { return M_name; }
-  
+
           /**
            * @brief Returns the basis of the fields.
            *
            * @return A reference to the basis string.
            */
           std::string const& basis() const { return M_basis; }
-  
+
           /**
            * @brief Returns the parts of the fields.
            *
            * @return A reference to the vector of part setup objects.
            */
           std::vector<PartSetup> const& parts() const { return M_parts; }
-  
+
           private:
           std::string M_name;             ///< The name of the fields.
           std::string M_basis;            ///< The basis of the fields.

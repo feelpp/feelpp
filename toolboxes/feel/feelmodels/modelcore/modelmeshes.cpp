@@ -225,6 +225,9 @@ ModelMesh<IndexType>::FieldsSetup::PartSetup::create( ModelMeshes<IndexType> con
     if ( jarg.contains("filename") )
         ret.M_filename = Environment::expand( jarg.at("filename") );
 
+    if ( jarg.contains("space-filename") )
+        ret.M_spaceFilename = Environment::expand( jarg.at("space-filename") );
+
     return ret;
 }
 
@@ -676,7 +679,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                     {
                                         // TODO use rangeMeshElt
                                         CHECK( partSetup.markers().empty() ) << "TODO ModelMesh<IndexType>::updateForUse fields : requires the use of range elements with file loading";
-                                        u->load(_path=partSetup.filename(),_type="default");
+                                        u->load(_path=partSetup.filename(),_type="default",_space_path=partSetup.spaceFilename());
                                     }
                                 }
                                 M_fields[fs.name()] = u;
