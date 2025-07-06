@@ -214,20 +214,18 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     for ( auto const& [bcName,bcData] : M_boundaryConditions->couplingODEs() )
         ibcMarkers.insert( bcData->markers().begin(),bcData->markers().end() );
 #endif
-    std::set<int> ibcMeshMarkers;
-    std::for_each(ibcMarkers.begin(), ibcMarkers.end(),
-                  [this,&ibcMeshMarkers](auto const& x) {
-                      ibcMeshMarkers.insert(this->mesh()->markerName(x));
-                  });
+
+    for (auto const& name : ibcMarkers)
+        M_ibcMeshMarkers.insert(this->mesh()->markerId(name));
     auto complement_integral_faces = complement(faces(support(M_Wh)),
-                                                [ibcMeshMarkers]( auto const& ewrap ) {
+                                                [this]( auto const& ewrap ) {
                                                     auto const& e = unwrap_ref( ewrap );
-                                                    return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) ); // WARNING now we can have multiple marker values by entity
+                                                    return ( e.hasMarker() && M_ibcMeshMarkers.count(e.marker().value()) ); // WARNING now we can have multiple marker values by entity
                                                 });
     M_gammaMinusIntegral = complement(boundaryfaces(support(M_Wh)),
-                                      [ibcMeshMarkers]( auto const& ewrap ) {
+                                      [this]( auto const& ewrap ) {
                                           auto const& e = unwrap_ref( ewrap );
-                                          return ( e.hasMarker() && ibcMeshMarkers.count(e.marker().value()) );
+                                          return ( e.hasMarker() && M_ibcMeshMarkers.count(e.marker().value()) );
                                       });
     auto face_mesh = createSubmesh( _mesh=this->mesh(), _range=complement_integral_faces, _update=0 );
     M_Mh = space_trace_type::New( _mesh=face_mesh, _worldscomm=this->worldsComm() );

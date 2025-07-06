@@ -47,6 +47,7 @@
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feelmodels/modelmaterials/materialutils.hpp>
 
 
 #include <feel/feelmodels/hdg/enums.hpp>
@@ -78,6 +79,7 @@ public:
     static inline const uint16_type nRealDim = convex_type::nRealDim;
     using mesh_type = Mesh<convex_type>;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    using face_type = typename mesh_type::face_type;
 
     // face mesh
     using face_mesh_type = trace_mesh_t<mesh_type>;
@@ -169,6 +171,15 @@ public:
 protected:
     Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
     Range<mesh_type,MESH_FACES> M_gammaMinusIntegral;
+    std::set<int> M_ibcMeshMarkers;
+    using FacePredicate = std::function<bool(face_type const&)>;
+
+    FacePredicate isNotIbcFace = [this](face_type const& face)
+    {
+        if (face.hasMarker() && (M_ibcMeshMarkers.count(face.marker().value())))
+            return false;
+        return true;
+    };
 
     space_flux_ptrtype M_Vh; // flux
     space_potential_ptrtype M_Wh; // potential
@@ -273,13 +284,18 @@ public:
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     std::string const& physic() const { return this->keyword(); }
-    std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
-    std::string convectionCoefficientName() const { return prefixvm( this->physic(), "alpha", "_" ); }
-    std::string reactionCoefficientName() const { return prefixvm( this->physic(), "a", "_" ); }
+    std::string diffusionCoefficientName()                  const { return prefixvm(this->physic(), "c", "_"); }
+
+    std::string reactionCoefficientName()                   const { return prefixvm(this->physic(), "a", "_"); }
+
+    std::string sourceCoefficientName()                     const { return prefixvm(this->physic(), "f", "_"); }
+
+    std::string convectionCoefficientName()                 const { return prefixvm(this->physic(), "beta", "_"); }
+    std::string conservativeFluxConvectionCoefficientName() const { return prefixvm(this->physic(), "alpha", "_"); }
+    std::string conservativeFluxSourceCoefficientName()     const { return prefixvm(this->physic(), "gamma", "_"); }
 
     std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
     std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d2", "_" ); }
-    std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
     std::string lameLambdaCoefficientName() const { return prefixvm( this->physic(), "lambda", "_" ); }
     std::string lameMuCoefficientName() const { return prefixvm( this->physic(), "mu", "_" ); }
 
@@ -291,6 +307,68 @@ public:
     bool useNearNullSpace() const { return M_useNearNullSpace; }
     void setUseNearNullSpace(bool use) { M_useNearNullSpace = use; }
 
+    /**
+     * @brief Apply a function to each material in the model.
+     *
+     * @tparam Func The type of the function to apply.
+     * @param f The function to apply to each material.
+     */
+    template<typename Func>
+    void forEachMaterial(Func&& f) const
+    {
+        for ( auto const& [physicName, physicData] : this->physicsFromCurrentType() )
+        {
+            for ( std::string const& matName :
+                    this->materialsProperties()->physicToMaterials(physicName) )
+            {
+                auto const& range =
+                    this->materialsProperties()
+                        ->rangeMeshElementsByMaterial(this->mesh(), matName);
+
+                f(matName, range);
+            }
+        }
+    }
+    template<int M=1, int N=1,typename Functor,typename SymbolsExpr>
+    void forEachMaterialWithCoefficient(std::string const& propName,
+                                    SymbolsExpr const& symbolsExpr,
+                                    Functor&&       functor) const
+    {
+        forEachMaterial(
+            [&](auto const& matName, auto const& range) 
+            {
+                if ( this->materialsProperties()->hasProperty(matName, propName) )
+                {
+                    auto prop = this->materialsProperties()
+                                    ->materialProperty(matName, propName);
+
+                    // Build an expr<M,N> so that the rank matches your coefficient
+                    auto coeffExpr = expr<M, N>(prop.expr(), symbolsExpr);
+
+                    functor(matName, range, coeffExpr);
+                }
+            });
+    }
+    template<int M=1, int N=1,typename Functor,typename SymbolsExpr>
+    void forEachMaterialWithCoefficient1(std::string const& propName,
+                                    SymbolsExpr const& symbolsExpr,
+                                    Functor&&       functor) const
+    {
+        forEachMaterial(
+            [&](auto const& matName, auto const& range) 
+            {
+                if ( this->materialsProperties()->hasProperty(matName, propName) )
+                {
+                    auto prop = this->materialsProperties()
+                                    ->materialProperty(matName, propName);
+#if 0
+                    // Build an expr<M,N> so that the rank matches your coefficient
+                    auto coeffExpr = expr<M, N>(prop.expr(), symbolsExpr);
+#endif
+                    functor(matName, range, prop);
+                }
+            });
+    }
 protected :
     void loadParameterFromOptionsVm();
     void initMesh();
