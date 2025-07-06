@@ -277,26 +277,34 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
         bbf(2_c, 2_c) += integrate(_range = bcRangeFaces,
                                 _expr  = -el_param * tau_D * inner(idt(phat), id(phat)));
 
+        auto const& bcMarkers = bcData->markers();
         // Optional convection stabilization on Gamma_N
         forEachMaterialWithCoefficientExpr<nDim,1>(
             *this, this->conservativeFluxConvectionCoefficientName(), symbolsExpr,
-            [&](std::string const& matName, auto const& range, auto const& coeff_alpha_expr)
+            [&,bcMarkers](std::string const& matName, auto const& range, auto const& coeff_alpha_expr)
             {
                 if constexpr (is_scalar)
                 {
-                    if (!intersectionIsEmpty(range, bcRangeFaces))
-                    {
+                        auto intersectingFaces = faces(support(M_Wh), range, [&,this](auto const& f)
+                        {
+                            for (auto const& marker : bcMarkers)
+                            {
+                                auto markerId = this->mesh()->markerId(marker);
+                                if (f.hasMarker() && f.marker().value() == markerId)
+                                    return true;
+                            }
+                            return false;
+                        });
                         LOG(INFO) << "[hdg] convection Neumann stabilization for material " << matName;
 
                         auto alpha_N = inner(coeff_alpha_expr, N());
                         auto tau_C = max(alpha_N, cst(0.));
 
-                        bbf(2_c, 1_c) += integrate(_range = bcRangeFaces,
+                        bbf(2_c, 1_c) += integrate(_range = intersectingFaces,
                                                 _expr = el_param * tau_C * inner(id(phat), idt(p)));
 
-                        bbf(2_c, 2_c) += integrate(_range = bcRangeFaces,
+                        bbf(2_c, 2_c) += integrate(_range = intersectingFaces,
                                                 _expr = -el_param * tau_C * inner(idt(phat), id(phat)));
-                    }
                 }
             });
 
@@ -320,26 +328,34 @@ MixedPoisson<ConvexType, Order, PolySetType, E_Order>::updateLinearPDE( DataUpda
         bbf(2_c, 2_c) += integrate(_range = bcRangeFaces,
                                 _expr  = -el_param * tau_D * inner(idt(phat), id(phat)));
 
+        auto const& bcMarkers = bcData->markers();
         // Convection stabilization on Robin boundary (filtered by intersection)
         forEachMaterialWithCoefficientExpr<nDim,1>(
             *this, this->conservativeFluxConvectionCoefficientName(), symbolsExpr,
-            [&](std::string const& matName, auto const& range, auto const& coeff_alpha_expr)
+            [&,bcMarkers](std::string const& matName, auto const& range, auto const& coeff_alpha_expr)
             {
                 if constexpr (is_scalar)
                 {
-                    if (!intersectionIsEmpty(range, bcRangeFaces))
+                    auto intersectingFaces = faces(support(M_Wh), range, [&](auto const& f)
                     {
-                        LOG(INFO) << "[hdg] convection Robin stabilization for material " << matName;
+                        for (auto const& marker : bcMarkers)
+                        {
+                            auto markerId = this->mesh()->markerId(marker);
+                            if (f.hasMarker() && f.marker().value() == markerId)
+                                return true;
+                        }
+                        return false;
+                    });
+                    LOG(INFO) << "[hdg] convection Robin stabilization for material " << matName;
 
-                        auto alpha_N = inner(coeff_alpha_expr, N());
-                        auto tau_C   = max(alpha_N, cst(0.));
+                    auto alpha_N = inner(coeff_alpha_expr, N());
+                    auto tau_C   = max(alpha_N, cst(0.));
 
-                        bbf(2_c, 1_c) += integrate(_range = bcRangeFaces,
-                                                _expr  = el_param * tau_C * inner(id(phat), idt(p)));
+                    bbf(2_c, 1_c) += integrate(_range = intersectingFaces,
+                                            _expr  = el_param * tau_C * inner(id(phat), idt(p)));
 
-                        bbf(2_c, 2_c) += integrate(_range = bcRangeFaces,
-                                                _expr  = -el_param * tau_C * inner(idt(phat), id(phat)));
-                    }
+                    bbf(2_c, 2_c) += integrate(_range = intersectingFaces,
+                                            _expr  = -el_param * tau_C * inner(idt(phat), id(phat)));
                 }
             });
 
