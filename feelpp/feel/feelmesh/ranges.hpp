@@ -245,7 +245,7 @@ class FEELPP_EXPORT Range
     static constexpr bool isOnPoints() { return mesh_entities == MESH_POINTS;  }
 
     // Constructors handling both MeshType and MeshType const
-    Range(mesh_non_const_t const& m) : Range(shared_from_this(m)), mesh_(&m)
+    Range(mesh_non_const_t const& m) : Range(shared_from_this(m))//, mesh_(&m)
     {}
 
     Range(mesh_ptr_non_const_t const& m) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>())
