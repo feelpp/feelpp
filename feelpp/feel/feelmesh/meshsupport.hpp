@@ -839,12 +839,95 @@ markedelements( MeshSupportType const& imesh, boost::any markersFlag, entity_pro
     std::set<flag_type> markerFlagSet = imesh->mesh()->markersId( markersFlag );
     return imesh->template elementsFilter<entity_filter_t::MARKER>( ept, 1, markerFlagSet, rank( imesh->mesh() ) );
 }
+#if 0
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
 faces( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LOCAL_ONLY  )
 {
     return imesh->template facesFilter<entity_filter_t::PROCESS_ID>( ept, rank( imesh->mesh() ) );
 }
+#endif
+
+template<
+    typename MeshSupportType,
+    typename Predicate,
+    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0
+>
+auto faces(MeshSupportType const& imesh,
+           Predicate&& predicate,
+           entity_process_t ept = entity_process_t::LOCAL_ONLY)
+{
+    auto allFaces = imesh->template facesFilter<entity_filter_t::PROCESS_ID>(ept, rank(imesh->mesh()));
+    using mesh_type = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
+    using face_type = typename mesh_type::face_type;
+    Range<mesh_type, MESH_FACES> filteredFaces(imesh->mesh());
+
+    for (auto const& fwrap : allFaces)
+    {
+        auto const& f = unwrap_ref(fwrap);
+        if (predicate(f))
+            filteredFaces.push_back(f);
+    }
+
+    filteredFaces.shrink_to_fit();
+    filteredFaces.setMeshSupport(imesh->shared_from_this());
+    return filteredFaces;
+}
+template<
+    typename MeshSupportType,
+    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0
+>
+auto faces(MeshSupportType const& imesh)
+{
+    return faces(imesh, [](auto const&) { return true; });
+}
+
+template<
+    typename MeshSupportType,
+    typename Predicate,
+    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0
+>
+auto faces(MeshSupportType const& imeshSupport,
+           Range<typename unwrap_ptr_t<MeshSupportType>::mesh_type,MESH_ELEMENTS> const& rangeElements,
+           Predicate&& predicate)
+{
+    using mesh_type = typename unwrap_ptr_t<MeshSupportType>::mesh_type;
+    using face_type = typename mesh_type::face_type;
+
+    Range<mesh_type, MESH_FACES> result(imeshSupport->mesh());
+    std::set<size_type> inserted_face_ids;
+
+    for (auto const& ewrap : rangeElements)
+    {
+        auto const& elt = unwrap_ref(ewrap);
+        auto const& eltfaces = elt.faces();
+
+        for (auto it = eltfaces.first, en = eltfaces.second; it != en; ++it)
+        {
+            auto const& face = *it;
+            if (face->isConnectedTo0() && predicate(*face))
+            {
+                auto fid = face->id();
+                if (inserted_face_ids.insert(fid).second)
+                    result.push_back(*face);
+            }
+        }
+    }
+
+    result.shrink_to_fit();
+    result.setMeshSupport(imeshSupport->shared_from_this());
+    return result;
+}
+
+template<
+    typename MeshSupportType,
+    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0
+>
+auto faces(MeshSupportType const& imesh, entity_process_t ept)
+{
+    return faces(imesh, [](auto const&) { return true; }, ept);
+}
+
 template<typename MeshSupportType, std::enable_if_t<std::is_base_of_v<MeshSupportBase,unwrap_ptr_t<MeshSupportType>>,int> = 0>
 auto
 boundaryfaces( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )

@@ -466,12 +466,12 @@ idedelements( MeshType const& mesh, flag_type flag )
  *
  * @return a pair of face iterators (begin,end)
  */
-template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
-auto
-faces( MeshType const& mesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
-{
-    return range(_range=Feel::detail::faces( mesh, rank( mesh ), ept ), _mesh=mesh );
-}
+//template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
+//auto
+//faces( MeshType const& mesh, entity_process_t ept = entity_process_t::LOCAL_ONLY )
+//{
+//    return range(_range=Feel::detail::faces( mesh, rank( mesh ), ept ), _mesh=mesh );
+//}
 
 template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 auto
@@ -480,6 +480,36 @@ faces( MeshType const& mesh, rank_type pid, entity_process_t ept = entity_proces
     return range(_range=Feel::detail::faces( mesh, pid, ept ), _mesh=mesh );
 }
 
+template<
+    typename MeshType,
+    typename Predicate,
+    std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0
+>
+auto faces(MeshType const& mesh,
+           Predicate&& predicate,
+           entity_process_t ept = entity_process_t::LOCAL_ONLY)
+{
+    auto allFaces = range(_range=Feel::detail::faces( mesh, rank( mesh ), ept ), _mesh=mesh );
+    Range<MeshType, MESH_FACES> filteredFaces(mesh);
+
+    for (auto const& fwrap : allFaces)
+    {
+        auto const& f = unwrap_ref(fwrap);
+        if (predicate(f))
+            filteredFaces.push_back(f);
+    }
+
+    filteredFaces.shrink_to_fit();
+    return filteredFaces;
+}
+template<
+    typename MeshType,
+    std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0
+>
+auto faces(MeshType const& mesh, entity_process_t ept = entity_process_t::LOCAL_ONLY)
+{
+    return faces(mesh, [](auto const&) { return true; }, ept);
+}
 /**
  *
  * \ingroup MeshIterators
@@ -699,6 +729,73 @@ internalfaces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
             }
         }
     }
+    res.shrink_to_fit();
+    return res;
+}
+template <typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0>
+Range<MeshType,MESH_FACES>
+faces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
+{
+    Range<MeshType,MESH_FACES> res( mesh );
+    std::set<int> fids;
+    for(auto const&e : r )
+    {
+        auto const& elt = boost::unwrap_ref( e );
+        auto const& eltfaces = elt.faces();
+        for(auto it = eltfaces.first, en = eltfaces.second; it != en; ++it)
+        {
+            auto const& face = *it;
+            if ( face->isConnectedTo0() )
+            {
+                if ( fids.find( face->id() ) == fids.end() )
+                {
+                    fids.insert( face->id() );
+                    res.push_back( *face );
+                }
+            }
+        }
+    }
+    res.shrink_to_fit();
+    return res;
+}
+
+template <
+    typename MeshType,
+    typename Predicate,
+    std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0
+>
+Range<MeshType, MESH_FACES>
+faces(MeshType const& mesh,
+      Range<MeshType, MESH_ELEMENTS> const& r,
+      Predicate&& pred)
+{
+    Range<MeshType, MESH_FACES> res(mesh);
+    std::set<int> fids;
+
+    for (auto const& e : r)
+    {
+        auto const& elt = boost::unwrap_ref(e);
+        auto const& eltfaces = elt.faces();
+
+        for (auto it = eltfaces.first, en = eltfaces.second; it != en; ++it)
+        {
+            auto const& face = *it;
+            if (!face->isConnectedTo0())
+                continue;
+
+            int fid = face->id();
+            if (fids.find(fid) != fids.end())
+                continue;
+
+            // Apply predicate on the face
+            if (pred(*face))
+            {
+                fids.insert(fid);
+                res.push_back(*face);
+            }
+        }
+    }
+
     res.shrink_to_fit();
     return res;
 }
