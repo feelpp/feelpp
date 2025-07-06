@@ -851,7 +851,9 @@ faces( MeshSupportType const& imesh, entity_process_t ept = entity_process_t::LO
 template<
     typename MeshSupportType,
     typename Predicate,
-    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0
+    std::enable_if_t<
+        std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>> &&
+        is_face_predicate_v<Predicate, typename unwrap_ptr_t<MeshSupportType>::mesh_type::face_type>, int> = 0
 >
 auto faces(MeshSupportType const& imesh,
            Predicate&& predicate,
@@ -885,7 +887,9 @@ auto faces(MeshSupportType const& imesh)
 template<
     typename MeshSupportType,
     typename Predicate,
-    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0
+    std::enable_if_t<
+        std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>> &&
+        is_face_predicate_v<Predicate, typename unwrap_ptr_t<MeshSupportType>::mesh_type::face_type>, int> = 0
 >
 auto faces(MeshSupportType const& imeshSupport,
            Range<typename unwrap_ptr_t<MeshSupportType>::mesh_type,MESH_ELEMENTS> const& rangeElements,
@@ -918,7 +922,14 @@ auto faces(MeshSupportType const& imeshSupport,
     result.setMeshSupport(imeshSupport->shared_from_this());
     return result;
 }
-
+template<
+    typename MeshSupportType,
+    std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0>
+auto faces(MeshSupportType const& imeshSupport,
+           Range<typename unwrap_ptr_t<MeshSupportType>::mesh_type,MESH_ELEMENTS> const& rangeElements )
+{
+    return faces(imeshSupport, rangeElements, [](auto const&) { return true; });
+}
 template<
     typename MeshSupportType,
     std::enable_if_t<std::is_base_of_v<MeshSupportBase, unwrap_ptr_t<MeshSupportType>>, int> = 0

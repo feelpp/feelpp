@@ -455,6 +455,40 @@ idedelements( MeshType const& mesh, flag_type flag )
     return range( _range=Feel::detail::idedelements( mesh, flag ), _mesh=mesh );
 }
 
+//
+// Faces
+//
+/**
+ * @brief is_face_predicate
+ *
+ * A type trait to check if a given predicate can be used to filter faces.
+ * It checks if the predicate can be invoked with a const reference to a face type
+ * and returns a boolean.
+ *
+ * @tparam Predicate The type of the predicate to check.
+ * @tparam FaceType The type of the face to check against the predicate.
+ */
+template<typename Predicate, typename FaceType>
+using is_face_predicate = std::is_invocable_r<bool, Predicate, FaceType const&>;
+
+/**
+ * @brief is_face_predicate_v
+ *
+ * A variable template that simplifies the usage of is_face_predicate.
+ *
+ * @tparam Predicate The type of the predicate to check.
+ * @tparam FaceType The type of the face to check against the predicate.
+ */
+template<typename Predicate, typename FaceType>
+constexpr bool is_face_predicate_v = is_face_predicate<Predicate, FaceType>::value;
+
+// C++ 20 version
+#if 0
+template<typename Predicate>
+concept FacePredicate = requires(Predicate p, face_type const& f) {
+    { p(f) } -> std::convertible_to<bool>;
+};
+#endif
 /**
  *
  * \ingroup MeshIterators
@@ -483,7 +517,9 @@ faces( MeshType const& mesh, rank_type pid, entity_process_t ept = entity_proces
 template<
     typename MeshType,
     typename Predicate,
-    std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0
+    std::enable_if_t<
+        std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>> &&
+        is_face_predicate_v<Predicate, typename unwrap_ptr_t<MeshType>::face_type>, int> = 0
 >
 auto faces(MeshType const& mesh,
            Predicate&& predicate,
@@ -762,7 +798,9 @@ faces( MeshType const& mesh, Range<MeshType,MESH_ELEMENTS> const& r )
 template <
     typename MeshType,
     typename Predicate,
-    std::enable_if_t<std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>>, int> = 0
+    std::enable_if_t<
+        std::is_base_of_v<MeshBase<>, unwrap_ptr_t<MeshType>> &&
+        is_face_predicate_v<Predicate, typename unwrap_ptr_t<MeshType>::face_type>, int> = 0
 >
 Range<MeshType, MESH_FACES>
 faces(MeshType const& mesh,
