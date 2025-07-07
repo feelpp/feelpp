@@ -1,9 +1,9 @@
 //+
 h = 0.08;
 SetFactory("OpenCASCADE");
-Box(1) = {0, 0,0, 1.4, 1.4, 1.4};
+Box(1) = {0, 0,0, 1, 1, 1};
 
-Sphere(2) = {0.7, 0.7, 0.7, 0.08};
+Sphere(2) = {0.5, 0.5, 0.5, 0.08};
 
 
 
@@ -14,8 +14,8 @@ Surface Loop(5) = {7};
 
 Volume(4) = {4, 5};
 
-Characteristic Length{ PointsOf{ Volume{2}; } } = 0.08;//+
-Characteristic Length{ PointsOf{ Volume{4}; } } = 0.08;//+
+Characteristic Length{ PointsOf{ Volume{2}; } } = 0.02;//+
+Characteristic Length{ PointsOf{ Volume{4}; } } = 0.04;//+
 
 Physical Surface("BoxWalls") = {3, 1, 4, 2,5,6};
 Physical Surface("Ellipsoid") = {7};
