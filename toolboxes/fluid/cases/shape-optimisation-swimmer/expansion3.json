@@ -1,0 +1,107 @@
+{
+    "Name": "Expansion",
+    "ShortName": "Expansion",
+    "Models":
+    {
+        "expansion":{
+            "equations":"Expansion"
+        },
+        "Expansion":{
+            "setup":{
+                "unknown":{
+                    "basis":"Pchv1",
+                    "name":"theta",
+                    "symbol":"theta"
+                },
+                "coefficients":{
+                    "c":"1", 
+                    "f":"{0.,0.,0.}"
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "expansion":
+        {
+            "Fields":
+            {
+                "up" :
+                {
+                    "filename":"$cfgdir/feelppdb/shaposwimmer/np_1/up_interp.h5",
+                    "basis":"Pchv2"
+                },
+                "ud" :
+                {
+                    "filename":"$cfgdir/feelppdb/shaposwimmer/np_1/ud_interp.h5",
+                    "basis":"Pchv2"
+                }
+
+            }
+        }
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":["Fluid"]
+        }
+    },
+    "BoundaryConditions":
+    {
+        "Expansion":
+        {
+            "Dirichlet":
+            {
+                "zero":
+                {
+                    "markers":["BoxWalls"],
+                    "expr":"{0.,0.,0.}"
+                }
+            }
+            ,
+            "Neumann": 
+            {
+                "expansion": 
+                {
+                    "markers":["Ellipsoid"],
+                    "expr": "{-t*(4*Mu*Mu*((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*(0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz) + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*(0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz) + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*(0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz) - ((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*nz)*((0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz)*nz))+(1/volumeswimmer)*(Textcrossw1*(xCM1 - x) + Textcrossw2*(xCM2 - y) + Textcrossw3*(xCM3 - z)) + l * ((volfluid-volfluidinit) + (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) ) * squarednorm_centermass) + r1 + r2 * (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) )   )*nx,-t*(4*Mu*Mu*((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*(0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz) + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*(0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz) + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*(0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz) - ((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*nz)*((0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz)*nz))+(1/volumeswimmer)*(Textcrossw1*(xCM1 - x) + Textcrossw2*(xCM2 - y) + Textcrossw3*(xCM3 - z)) + l * ((volfluid-volfluidinit) + (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) ) * squarednorm_centermass) + r1 + r2 * (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) )   )*ny, -t*(4*Mu*Mu*((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*(0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz) + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*(0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz) + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*(0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz) - ((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*nz)*((0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz)*nz))+(1/volumeswimmer)*(Textcrossw1*(xCM1 - x) + Textcrossw2*(xCM2 - y) + Textcrossw3*(xCM3 - z)) + l * ((volfluid-volfluidinit) + (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) ) * squarednorm_centermass) + r1 + r2 * (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) )   )*nz}:meshes_expansion_fields_grad_up_00:meshes_expansion_fields_grad_up_01:meshes_expansion_fields_grad_up_10:meshes_expansion_fields_grad_up_11:meshes_expansion_fields_grad_up_12:meshes_expansion_fields_grad_up_21:meshes_expansion_fields_grad_up_22:meshes_expansion_fields_grad_up_20:meshes_expansion_fields_grad_up_02:meshes_expansion_fields_grad_ud_00:meshes_expansion_fields_grad_ud_01:meshes_expansion_fields_grad_ud_10:meshes_expansion_fields_grad_ud_11:meshes_expansion_fields_grad_ud_12:meshes_expansion_fields_grad_ud_21:meshes_expansion_fields_grad_ud_22:meshes_expansion_fields_grad_ud_20:meshes_expansion_fields_grad_ud_02:volfluid:volfluidinit:squarednorm_centermass:volumeswimmer:Textcrossw1:Textcrossw2:Textcrossw3:xCM1:xCM2:xCM3:x01:x02:x03:Mu:l:r1:r2:t:x:y:z:nx:ny:nz"
+                    
+                }   
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "expansion":
+        {
+            "Exports":
+            {
+                "fields":"all"
+            },
+            "Measures":
+            {
+                "Quantities":
+                {
+                    "names":"all"
+                },
+                "Statistics":
+                {
+                    "grad":
+                    {
+                        "type": "integrate",
+                        "expr":"4*Mu*Mu*((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*(0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz) + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*(0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz) + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*(0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz) - ((0.5*(meshes_expansion_fields_grad_up_00 + meshes_expansion_fields_grad_up_00)*nx +0.5*(meshes_expansion_fields_grad_up_01 + meshes_expansion_fields_grad_up_10)*ny +0.5*(meshes_expansion_fields_grad_up_02 + meshes_expansion_fields_grad_up_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_up_10 + meshes_expansion_fields_grad_up_01)*nx +0.5*(meshes_expansion_fields_grad_up_11 + meshes_expansion_fields_grad_up_11)*ny +0.5*(meshes_expansion_fields_grad_up_12 + meshes_expansion_fields_grad_up_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_up_20 + meshes_expansion_fields_grad_up_02)*nx +0.5*(meshes_expansion_fields_grad_up_21 + meshes_expansion_fields_grad_up_12)*ny +0.5*(meshes_expansion_fields_grad_up_22 + meshes_expansion_fields_grad_up_22)*nz)*nz)*((0.5*(meshes_expansion_fields_grad_ud_00 + meshes_expansion_fields_grad_ud_00)*nx +0.5*(meshes_expansion_fields_grad_ud_01 + meshes_expansion_fields_grad_ud_10)*ny +0.5*(meshes_expansion_fields_grad_ud_02 + meshes_expansion_fields_grad_ud_20)*nz)*nx + (0.5*(meshes_expansion_fields_grad_ud_10 + meshes_expansion_fields_grad_ud_01)*nx +0.5*(meshes_expansion_fields_grad_ud_11 + meshes_expansion_fields_grad_ud_11)*ny +0.5*(meshes_expansion_fields_grad_ud_12 + meshes_expansion_fields_grad_ud_21)*nz)*ny + (0.5*(meshes_expansion_fields_grad_ud_20 + meshes_expansion_fields_grad_ud_02)*nx +0.5*(meshes_expansion_fields_grad_ud_21 + meshes_expansion_fields_grad_ud_12)*ny +0.5*(meshes_expansion_fields_grad_ud_22 + meshes_expansion_fields_grad_ud_22)*nz)*nz))+(1/volumeswimmer)*(Textcrossw1*(xCM1 - x) + Textcrossw2*(xCM2 - y) + Textcrossw3*(xCM3 - z)) + l * ((volfluid-volfluidinit) + (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) ) * squarednorm_centermass) + r1 + r2 * (2/volumeswimmer)*((xCM1 - x)*(xCM1 - x01) + (xCM2 - y)*(xCM2 - x02) + (xCM3 - x03)*(xCM3 - z) ) :meshes_expansion_fields_grad_up_00:meshes_expansion_fields_grad_up_01:meshes_expansion_fields_grad_up_10:meshes_expansion_fields_grad_up_11:meshes_expansion_fields_grad_up_12:meshes_expansion_fields_grad_up_21:meshes_expansion_fields_grad_up_22:meshes_expansion_fields_grad_up_20:meshes_expansion_fields_grad_up_02:meshes_expansion_fields_grad_ud_00:meshes_expansion_fields_grad_ud_01:meshes_expansion_fields_grad_ud_10:meshes_expansion_fields_grad_ud_11:meshes_expansion_fields_grad_ud_12:meshes_expansion_fields_grad_ud_21:meshes_expansion_fields_grad_ud_22:meshes_expansion_fields_grad_ud_20:meshes_expansion_fields_grad_ud_02:volfluid:volfluidinit:squarednorm_centermass:volumeswimmer:Textcrossw1:Textcrossw2:Textcrossw3:xCM1:xCM2:xCM3:x01:x02:x03:Mu:l:r1:r2:x:y:z:nx:ny:nz",
+                        "markers": "Ellipsoid"
+                    },
+                    "surf":
+                    {
+                        "type": "integrate",
+                        "expr": "1.",
+                        "markers": "Ellipsoid"
+                    }
+                }
+            }
+        }
+    }
+}
+
