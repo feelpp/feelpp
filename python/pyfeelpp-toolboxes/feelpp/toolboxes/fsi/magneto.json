@@ -161,7 +161,6 @@
             {
                 "torqueParam":
                 {
-                    "trajectory":"droite",
                     "freq":4,//3,
                     "amp":0.1,
                     "mx":1000000,

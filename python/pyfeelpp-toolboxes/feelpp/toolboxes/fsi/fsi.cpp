@@ -25,6 +25,7 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fsi/fsi.hpp>
+#include "magneto.hpp"
 
 namespace py = pybind11;
 using namespace Feel;
@@ -85,8 +86,39 @@ void defToolbox(py::module &m)
         .def("solve",&toolbox_t::solve, "solve the solidfluid mechanics problem, set boolean to true to update velocity and acceleration")
         .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the solidfluid mechanics problem")
         .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the solidfluid mechanics problem", py::arg("time"))
-        ;
 
+        //time
+        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_ptr_t::*)() const>(&toolbox_ptr_t::timeStepBase), "get time stepping base")
+        .def("startTimeStep",static_cast<void (toolbox_ptr_t::*)( bool )>(&toolbox_ptr_t::startTimeStep), "start time stepping", py::arg("preprocess")=true )
+        .def("updateTimeStep",&toolbox_ptr_t::updateTimeStep, "update time stepping")
+
+        .def(
+            "addMagnetoTorqueModelFSI",[](toolbox_ptr_t& FSImodel)
+            {
+                auto add_torque = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateLinear & data)
+                {
+                        auto const& t = unwrap_ptr(FSImodel->fluidModel());
+                        magnetoTorqueModelFSI<nDim,0,model_fsi_type>(t, data);
+                };
+
+               FSImodel->fluidModel()->algebraicFactory()->addFunctionLinearAssembly( add_torque );
+            },
+            "add function linear assembly"
+        ) 
+        
+        .def(
+            "addMagnetoTroqueResModelFSI",[](toolbox_ptr_t& FSImodel)
+            {
+                auto add_torque_residual = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateResidual & data)
+                {
+                            auto const& t = unwrap_ptr(FSImodel->fluidModel());
+                            magnetoTorqueModelFSI<nDim,1,model_fsi_type>(t, data);
+                };
+    
+                FSImodel->fluidModel()->algebraicFactory()->addFunctionResidualAssembly( add_torque_residual );
+            },
+            "add function residual assembly"
+        );
 }
     
 
