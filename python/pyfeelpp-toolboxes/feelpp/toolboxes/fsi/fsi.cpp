@@ -30,14 +30,14 @@
 namespace py = pybind11;
 using namespace Feel;
 
-template<int nDim, int OrderT, int OrderV, int OrderP>
+template<int nDim, int OrderV, int OrderP,int OrderG>
 void defToolbox(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
 
     using model_solid_type = FeelModels::SolidMechanics< Simplex<nDim,1>,
-                                              Lagrange<OrderT, Scalar,Continuous,PointSetFekete> >;
+                                              Lagrange<OrderG, Scalar,Continuous,PointSetFekete> >;
     using model_fluid_type = FeelModels::FluidMechanics< Simplex<nDim,1>,
                                                         Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
                                                         Lagrange<OrderP, Scalar,Continuous,PointSetFekete> >;
@@ -45,12 +45,12 @@ void defToolbox(py::module &m)
     using toolbox_t = FeelModels::solidFluid< model_solid_type,model_fluid_type>;
     using toolbox_ptr_t = std::shared_ptr<toolbox_t>;
 
-    using space_temperature_t = typename toolbox_t::solid_model_type::space_temperature_type;
-    using element_temperature_t = typename toolbox_t::solid_model_type::element_temperature_type;
-    using element_temperature_ptr_t = typename toolbox_t::solid_model_type::element_temperature_ptrtype;
+    using space_displacement_t = typename toolbox_t::solid_model_type::space_displacement_type;
+    using element_displacement_t = typename toolbox_t::solid_model_type::element_displacement_type;
+    using element_displacement_ptr_t = typename toolbox_t::solid_model_type::element_displacement_ptrtype;
 //    using element_solidfluidpotential_ptr_t = typename toolbox_t::electric_model_type::element_electricpotential_ptrtype;
 
-    std::string pyclass_name = fmt::format("solidFluid_{}D_P{}_P{}P{}",nDim,OrderT,OrderV,OrderP);
+    std::string pyclass_name = fmt::format("fsi_{}D_P{}_P{}P{}",nDim,OrderV,OrderP,OrderG);
 
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),

@@ -20,9 +20,9 @@ def fsi( dim=2, orderU=2, orderP=1, orderGeo=1, orderDisp=None, buildMesh=True, 
         orderDisp=orderGeo
     if worldComm is None:
         worldComm = fppc.Environment.worldCommPtr()
-    key='fsi('+str(dim)+','+str(orderPotential)+')'
+    key='fsi('+str(dim)+','+str(orderU)+','+str(orderP)+','+str(orderGeo)+')'
     if worldComm.isMasterRank():
-        print(key)
+        print(f"Instantiate fsi toolbox {key}")
     if key not in _fsis:
         raise RuntimeError('Fsi solver '+key+' not existing')
     return _fsis[key]( "fsi", buildMesh, worldComm )
