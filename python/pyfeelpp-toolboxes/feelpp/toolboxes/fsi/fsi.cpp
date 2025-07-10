@@ -42,7 +42,8 @@ void defToolbox(py::module &m)
                                                         Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
                                                         Lagrange<OrderP, Scalar,Continuous,PointSetFekete> >;
 
-    using toolbox_t = FeelModels::solidFluid< model_solid_type,model_fluid_type>;
+    using toolbox_t = FeelModels::FSI< model_solid_type,model_fluid_type>;
+    
     using toolbox_ptr_t = std::shared_ptr<toolbox_t>;
 
     using space_displacement_t = typename toolbox_t::solid_model_type::space_displacement_type;
@@ -98,7 +99,7 @@ void defToolbox(py::module &m)
                 auto add_torque = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateLinear & data)
                 {
                         auto const& t = unwrap_ptr(FSImodel->fluidModel());
-                        magnetoTorqueModelFSI<nDim,0,model_fsi_type>(t, data);
+                        magnetoTorqueModelFSI<nDim,0,toolbox_t>(t, data);
                 };
 
                FSImodel->fluidModel()->algebraicFactory()->addFunctionLinearAssembly( add_torque );
@@ -112,7 +113,7 @@ void defToolbox(py::module &m)
                 auto add_torque_residual = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateResidual & data)
                 {
                             auto const& t = unwrap_ptr(FSImodel->fluidModel());
-                            magnetoTorqueModelFSI<nDim,1,model_fsi_type>(t, data);
+                            magnetoTorqueModelFSI<nDim,1, toolbox_t>(t, data);
                 };
     
                 FSImodel->fluidModel()->algebraicFactory()->addFunctionResidualAssembly( add_torque_residual );
