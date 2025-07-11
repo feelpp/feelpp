@@ -1,13 +1,21 @@
 import feelpp.core as fppc
-import feelpp.toolboxes as fppt
-from ._fsi import *
+from feelpp.toolboxes.core import *
 
-_fsis={
-    'fsi(2,2,1,1)':Fsi_2DP1,
-    'fsi(2,3,2,1)':Fsi_2DP2,
-    'fsi(3,2,1,1)':Fsi_3DP1,
-    'fsi(3,3,2,1)':Fsi_3DP2,
-}
+has_fsi = False
+_fsis=None
+try :
+    from ._fsi import *
+
+    _fsis={
+        'fsi(2,2,1,1)':Fsi_2DP2P1G1,
+        'fsi(2,3,2,1)':Fsi_2DP3P2G1,
+        'fsi(3,2,1,1)':Fsi_3DP2P1G1,
+        'fsi(3,3,2,1)':Fsi_3DP3P2G1,
+    }
+    has_fsi =True
+except ImportError as e:
+    print('Import feelpp.toolboxes.fsi failed: Feel++ Toolbox Fsi is not avaible')
+    pass #module doesn't exist, deal with it
 
 def fsi( dim=2, orderU=2, orderP=1, orderGeo=1, orderDisp=None, buildMesh=True, worldComm=None ):
     """create a fsi toolbox solver
@@ -16,6 +24,8 @@ def fsi( dim=2, orderU=2, orderP=1, orderGeo=1, orderDisp=None, buildMesh=True, 
     orderPotential -- the polynomial order for the potential (default: 1)
     worldComm -- the parallel communicator for the mesh (default: fppc.Environment::worldCommPtr())
     """
+    if not has_fsi:
+        raise Exception('Fsi toolbox is not enabled in Feel++')
     if orderDisp is None:
         orderDisp=orderGeo
     if worldComm is None:
