@@ -54,15 +54,17 @@ void defToolbox(py::module &m)
     std::string pyclass_name = fmt::format("fsi_{}D_P{}_P{}P{}",nDim,OrderV,OrderP,OrderG);
 
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,
+                      std::string const&,
+                      worldcomm_ptr_t const&,
+                      ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("keyword")=std::string("solid-fluid"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
-             py::arg("subprefix")=std::string(""),
+             py::arg("keyword")=std::string("fsi"),
+             py::arg("worldComm"),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the solidfluid mechanics toolbox"
              )
-        .def("init",&toolbox_t::init, "initialize the solidfluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
+        .def("init",&toolbox_t::init, "initialize the solidfluid mechanics toolbox")
 
         // mesh
         //.def( "mesh", &toolbox_t::mesh, "get the mesh" ) //TODO
