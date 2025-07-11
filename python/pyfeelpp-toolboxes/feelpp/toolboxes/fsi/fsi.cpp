@@ -42,13 +42,13 @@ void defToolbox(py::module &m)
                                                         Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
                                                         Lagrange<OrderP, Scalar,Continuous,PointSetFekete> >;
 
-    using toolbox_t = FeelModels::FSI< model_solid_type,model_fluid_type>;
+    using toolbox_t = FeelModels::FSI<model_fluid_type, model_solid_type>;
     
     using toolbox_ptr_t = std::shared_ptr<toolbox_t>;
 
-    using space_displacement_t = typename toolbox_t::solid_model_type::space_displacement_type;
-    using element_displacement_t = typename toolbox_t::solid_model_type::element_displacement_type;
-    using element_displacement_ptr_t = typename toolbox_t::solid_model_type::element_displacement_ptrtype;
+    //using space_displacement_t = typename toolbox_t::model_solid_type::space_displacement_type;
+    //using element_displacement_t = typename toolbox_t::model_solid_type::element_displacement_type;
+    //using element_displacement_ptr_t = typename toolbox_t::model_solid_type::element_displacement_ptrtype;
 //    using element_solidfluidpotential_ptr_t = typename toolbox_t::electric_model_type::element_electricpotential_ptrtype;
 
     std::string pyclass_name = fmt::format("fsi_{}D_P{}_P{}P{}",nDim,OrderV,OrderP,OrderG);
@@ -65,14 +65,14 @@ void defToolbox(py::module &m)
         .def("init",&toolbox_t::init, "initialize the solidfluid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
 
         // mesh
-        .def( "mesh", &toolbox_t::mesh, "get the mesh" )
-        .def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
+        //.def( "mesh", &toolbox_t::mesh, "get the mesh" )
+        //.def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) )
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
         // temperature space and field
         .def( "modelSolid", []( toolbox_ptr_t& t ) { return t->solidModel(); } , "get the fluid model" )
-        .def( "spaceDisplacement", []( toolbox_ptr_t& t ) { return t->solidModel()->spaceDisplacement(); } , "get the Displacement function space")
+        //.def( "spaceDisplacement", []( toolbox_ptr_t& t ) { return t->solidModel()->spaceDisplacement(); } , "get the Displacement function space")
         .def( "fieldDisplacement", []( toolbox_ptr_t& t ) { return t->solidModel()->fieldDisplacement(); } , "get the Displacement function space")
         .def( "fieldDisplacementPtr", []( toolbox_ptr_t& t ) { return t->solidModel()->fieldDisplacementPtr(); }, "returns the Displacement field shared_ptr" )
 
@@ -89,9 +89,9 @@ void defToolbox(py::module &m)
         .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the solidfluid mechanics problem", py::arg("time"))
 
         //time
-        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_ptr_t::*)() const>(&toolbox_ptr_t::timeStepBase), "get time stepping base")
-        .def("startTimeStep",static_cast<void (toolbox_ptr_t::*)( bool )>(&toolbox_ptr_t::startTimeStep), "start time stepping", py::arg("preprocess")=true )
-        .def("updateTimeStep",&toolbox_ptr_t::updateTimeStep, "update time stepping")
+        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::timeStepBase), "get time stepping base")
+        .def("startTimeStep",static_cast<void (toolbox_t::*)( bool )>(&toolbox_t::startTimeStep), "start time stepping", py::arg("preprocess")=true )
+        .def("updateTimeStep",&toolbox_t::updateTimeStep, "update time stepping")
 
         .def(
             "addMagnetoTorqueModelFSI",[](toolbox_ptr_t& FSImodel)
