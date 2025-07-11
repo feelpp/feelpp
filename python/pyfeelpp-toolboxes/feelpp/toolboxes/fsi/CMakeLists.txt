@@ -23,8 +23,8 @@
 #
 
 feelpp_add_pymodule(fsi SRCS fsi.cpp DESTINATION feelpp/toolboxes/fsi LINK_LIBRARIES Feelpp::feelpp_toolbox_fsi_lib)
+target_include_directories(_fsi PRIVATE ${CMAKE_SOURCE_DIR}/python/pyfeelpp-toolboxes/feelpp/toolboxes/fsi)
 install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fsi)
-
 
 
 #feelpp_add_pymodule(_fsi  SRCS fsi.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_fsi_lib DESTINATION feelpp/toolboxes/fsi )
