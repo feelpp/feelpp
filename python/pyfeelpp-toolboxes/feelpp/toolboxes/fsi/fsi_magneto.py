@@ -21,7 +21,7 @@ e = fppc.Environment(sys.argv, opts=tb.toolboxes_options("fsi"),
 
 fppc.Environment.setConfigFile('magneto.cfg')
 
-fsi_tb = fsi(nDim = 2, OrderT = 1, OrderV = 2, OrderP = 1, OrderGeo = 1)
+fsi_tb = fsi(dim=2, orderU=2, orderP=1, orderGeo=1)
 fsi_tb.init()
 fsi_tb.printAndSaveInfo()
 
