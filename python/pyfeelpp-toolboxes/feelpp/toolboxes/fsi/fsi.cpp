@@ -22,10 +22,14 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <feel/feelpython/pybind11/pybind11.h>
-
+#include <feel/feelpython/pybind11/stl.h>
+#include <feel/feelpython/pybind11/functional.h>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/fsi/fsi.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
 #include "magneto.hpp"
+
+
 
 namespace py = pybind11;
 using namespace Feel;
