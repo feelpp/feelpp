@@ -1,6 +1,6 @@
 {
     "Name": "Magneto-swimmer",
-    "ShortName":"magneto",
+    "ShortName":"magneto2",
     "Models":
     {
         "fluid":{
@@ -11,8 +11,10 @@
         "solid":
         {
             "materials":["Solid","Head"],
-            "equations":"Hyper-Elasticity",
-            "equationsAA":"Elasticity"
+            "setup":{
+                "equations":"Hyper-Elasticity",
+                "material-model":"StVenantKirchhoff"
+            }
         },
         "multibody":{
             "name":"toto",
@@ -32,7 +34,6 @@
         {
             "materials":["Fluid","Solid","Head"],
             "setup":{
-                //"interface":"fsi-wall",
                 "interfaces":[{
                     "markers":"fsi-wall",
                     "type":"body"
@@ -42,16 +43,57 @@
     },
     "Parameters":
     {
-        "hfar":0.04,//0.03,
-        "hclose_wall1":"hfar/5:hfar",
-        "hclose_wall2":"hfar/10:hfar",
+        "hfar":0.0005,
+        "hclose_wall1":"hfar:hfar",
+        "hclose_wall2":0.00005,
+
+        "d2r_bounded_fsi_wall1":"min(meshes_fsi_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fsi_distanceToRange_wall1_normalized_min_max",
+        "mymetric_fsi_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_fsi_wall1:hclose_wall1:hfar:d2r_bounded_fsi_wall1",
+        "d2r_bounded_fsi_wall2":"min(meshes_fsi_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fsi_distanceToRange_wall2_normalized_min_max",
+        "mymetric_fsi_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_fsi_wall2:hclose_wall2:hfar:d2r_bounded_fsi_wall2",
+
         "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
         "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
         "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
         "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+
     },
     "Meshes":
     {
+        "fsi":{
+            "Import":
+            {
+                "filename":"$cfgdir/swimmertrue.geo",
+                "hsize":0.0005
+            },
+            "Partitioning":{
+                "splitting":[ "Fluid", ["Solid","Head"] ],
+                "constraints":{
+                    "no_interprocess_faces":["fsi-wall"]
+                }
+            },
+            "DistanceToRange":
+            {
+                "wall1":
+                {
+                    "markers":["fluid-inlet","fluid-wall","fluid-outlet"],
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["fsi-wall"],
+                    "normalization":"min_max"
+                }
+            },
+            "MeshAdaptation":[
+                {
+                    "metric":"min(mymetric_fsi_wall1,mymetric_fsi_wall2):mymetric_fsi_wall1:mymetric_fsi_wall2",
+                    "events":{
+                        "after_import":{}
+                    }
+                }
+            ]
+        },
         "fluid":
         {
             "MeshMotion":
@@ -79,41 +121,40 @@
                 }
             },
             "MeshAdaptation":[
-                // {
-                //     "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
-                //     "events":{
-                //         "after_import":{}
-                //         //"after_init":{}
-                //     }
-                // },
+
                 {
                     "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
                     "required_markers":["fsi-wall","Solid","Head"],
                     "events":{
                         "each_time_step":{
-                            "frequency":4 //15
+                            "frequency":20
                         }
                     }
-                }]
+                }],
+            "Partitioning":{
+                "splitting":[ "Fluid", ["Solid","Head"] ],
+                "constraints":{
+                    "no_interprocess_faces":["fsi-wall"]
+                }
+            
+            }
         }
     },
     "Materials":
     {
         "Fluid": {
             "rho":"1260",
-            "mu":"152"
+            "mu":"1.52"
         },
         "Solid": {
-            "E":1e6,//"2e6",
-            //"E":"200000",
-            "nu":"0.40",
-            //"rho":"1000"
-            "rho":"1"
+            "E":8e4,
+            "nu":0.4,
+            "rho":1200
         },
         "Head": {
             "E":"4.1e10",
             "nu":"0.281",
-            "rho":"8000"
+            "rho":"7000"
         }
 
     },
@@ -162,13 +203,13 @@
                 "torqueParam":
                 {
                     "trajectory":"droite",
-                    "freq":4,//3,
-                    "amp":0.1,
-                    "mx":1000000,
-                    "my":1000000,
+                    "freq":0.9,
+                    "amp":0.5,
+                    "mx":200000,
+                    "my":200000,
                     "mz":1,
-                    "bx":0.5,
-                    "by":0.5,
+                    "bx":0.005,
+                    "by":0.005,
                     "bz":1
                 }
             }
@@ -203,6 +244,16 @@
                     "pointA":
                     {
                         "coord":"{0.,0.}",
+                        "fields":["displacement","velocity"]
+                    },
+                    "pointB":
+                    {
+                        "coord":"{-0.0077,0.}",
+                        "fields":["displacement","velocity"]
+                    },
+                    "pointC":
+                    {
+                        "coord":"{-0.0076,0.}",
                         "fields":["displacement","velocity"]
                     }
                 }

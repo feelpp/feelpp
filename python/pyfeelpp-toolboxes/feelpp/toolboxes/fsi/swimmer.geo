@@ -1,22 +1,22 @@
 SetFactory("OpenCASCADE");
 
-h = 0.01;
+h = 0.0001;
 
-height = 0.15;
-length_head = 0.05;
-length_tail = 0.75;
+height = 0.0015;
+length_head = 0.0005;
+length_tail = 0.0075;
 
-height_box = 2;
-lenght_box = 4;
+height_box = 0.02;
+lenght_box = 0.04;
 
 Point(1) = {-length_head/2, -height/2, 0, h};
 Point(2) = {-length_head/2, height/2, 0, h};
 Point(3) = {length_head/2, height/2, 0, h};
 Point(4) = {length_head/2, -height/2, 0, h};
 
-Point(5) = {-length_head/2 - length_tail, -0.01, 0, h};  // Point de départ de la queue
-Point(6) = {-length_head/2 - length_tail, 0.01, 0, h};  // Point de fin de la queue
-Point(7) = {-length_head/2 - length_tail + 0.005, 0, 0, h};  // Point pour début de l'arrondi
+Point(5) = {-length_head/2 - length_tail, -0.0001, 0, h};  // Point de départ de la queue
+Point(6) = {-length_head/2 - length_tail, 0.0001, 0, h};  // Point de fin de la queue
+Point(7) = {-length_head/2 - length_tail + 0.00005, 0, 0, h};  // Point pour début de l'arrondi
 
 
 Line(1) = {2, 1};
@@ -29,7 +29,7 @@ Line(29) = {2, 6};
 
 Circle(30) = {6, 7, 5};  
 
-h1 = 0.1;
+h1 = 0.001;
 
 Point(11) = {-lenght_box/2, -height_box/2, 0, h1};
 Point(12) = {lenght_box/2., -height_box/2, 0, h1};
