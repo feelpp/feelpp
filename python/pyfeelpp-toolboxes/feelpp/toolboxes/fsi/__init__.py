@@ -17,7 +17,7 @@ except ImportError as e:
     print('Import feelpp.toolboxes.fsi failed: Feel++ Toolbox Fsi is not avaible')
     pass #module doesn't exist, deal with it
 
-def fsi( dim=2, orderU=2, orderP=1, orderGeo=1, orderDisp=None, buildMesh=True, worldComm=None ):
+def fsi( dim=2, orderU=2, orderP=1, orderGeo=1, orderDisp=None, buildMesh=True, worldComm=None, modelRep = None ):
     """create a fsi toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -35,4 +35,8 @@ def fsi( dim=2, orderU=2, orderP=1, orderGeo=1, orderDisp=None, buildMesh=True, 
         print(f"Instantiate fsi toolbox {key}")
     if key not in _fsis:
         raise RuntimeError('Fsi solver '+key+' not existing')
-    return _fsis[key]( "fsi", buildMesh, worldComm )
+    if modelRep is None:
+        modelRep = ModelBaseRepository()
+    return _fsis[key]( "fsi", "fsi", worldComm, modelRep)
+
+
