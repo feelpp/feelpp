@@ -23,12 +23,10 @@ fppc.Environment.setConfigFile('magneto.cfg')
 
 fsi_tb = fsi(dim=2, orderU=2, orderP=1, orderGeo=1)
 fsi_tb.init()
-fsi_tb.printAndSaveInfo()
+#fsi_tb.printAndSaveInfo()
 
 
-fsi_tb.reset_executionTime()
-
-#Add collision force 
+#Add Torque FSI
 fsi_tb.addMagnetoTorqueModelFSI()
 fsi_tb.addMagnetoTroqueResModelFSI()
 
