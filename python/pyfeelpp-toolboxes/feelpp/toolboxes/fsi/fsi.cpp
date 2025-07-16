@@ -40,8 +40,8 @@ void defToolbox(py::module &m)
     using namespace Feel;
     using namespace Feel::FeelModels;
 
-    using model_solid_type = FeelModels::SolidMechanics< Simplex<nDim,1>,
-                                              Lagrange<OrderG, Scalar,Continuous,PointSetFekete> >;
+    using model_solid_type = FeelModels::SolidMechanics< Simplex<nDim,1>, 
+                                                        Lagrange<OrderG, Vectorial,Continuous,PointSetFekete> >;
     using model_fluid_type = FeelModels::FluidMechanics< Simplex<nDim,1>,
                                                         Lagrange<OrderV, Vectorial,Continuous,PointSetFekete>,
                                                         Lagrange<OrderP, Scalar,Continuous,PointSetFekete> >;
@@ -55,7 +55,7 @@ void defToolbox(py::module &m)
     //using element_displacement_ptr_t = typename toolbox_t::model_solid_type::element_displacement_ptrtype;
 //    using element_solidfluidpotential_ptr_t = typename toolbox_t::electric_model_type::element_electricpotential_ptrtype;
 
-    std::string pyclass_name = fmt::format("fsi_{}D_P{}_P{}P{}",nDim,OrderV,OrderP,OrderG);
+    std::string pyclass_name = fmt::format("Fsi_{}DP{}P{}G{}",nDim,OrderV,OrderP,OrderG);
 
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,
