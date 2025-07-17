@@ -31,6 +31,11 @@ fsi_tb = fsi(dim=2, orderU=2, orderP=1, orderGeo=1)
 fsi_tb.init()
 #fsi_tb.printAndSaveInfo()
 
+
+#Add Torque FSI
+fsi_tb.addMagnetoTorqueModelFSI()
+fsi_tb.addMagnetoTroqueResModelFSI()
+
 fsi_tb.startTimeStep()
 
 while not fsi_tb.timeStepBase().isFinished():
@@ -49,9 +54,6 @@ while not fsi_tb.timeStepBase().isFinished():
     fsi_tb.addParameterInModelProperties("uzt", 0)
     fsi_tb.updateParameterValues()
 
-    #Add Torque FSI
-    fsi_tb.addMagnetoTorqueModelFSI()
-    fsi_tb.addMagnetoTroqueResModelFSI()
 
     #Solve FSI
     fsi_tb.solve()
