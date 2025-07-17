@@ -12,17 +12,11 @@ typedef Eigen::Matrix<double, 1, Eigen::Dynamic> RowVectord;
 namespace ns {
     struct MagnetoParam
     {
-        std::string trajectory;
-        double freq;
-        double amp;
         double mx;
         double my;
         double mz;
-        double bx;
-        double by;
-        double bz;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MagnetoParam,trajectory,freq,amp,mx,my,mz,bx,by,bz);
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MagnetoParam,mx,my,mz);
 }
 
 template<int nDim, std::size_t residualType, typename FSIModel, typename FluidMechanics, typename DataType>
@@ -43,12 +37,13 @@ magnetoTorqueModelFSI(FluidMechanics const& t, DataType & data)
     }
 
     ns::MagnetoParam torqueParam = jsonMagneto["torqueParam"].get<ns::MagnetoParam>();
-    std::string traj = torqueParam.trajectory;
-    double freq = torqueParam.freq;
-    double amp = torqueParam.amp;
-    double bx = torqueParam.bx;
-    double by = torqueParam.by;
-    double bz = torqueParam.bz;
+
+    auto modelProp = t.modelProperties();
+    double uxt = modelProp.parameters()["ux_t"].value();
+    double uyt = modelProp.parameters()["uy_t"].value();
+    double uzt = modelProp.parameters()["uz_t"].value();
+    
+ 
     double mx = torqueParam.mx;
     double my = torqueParam.my;
     double mz = torqueParam.mz;
@@ -84,26 +79,8 @@ magnetoTorqueModelFSI(FluidMechanics const& t, DataType & data)
     double T_head = 0; 
     //std::cout << "Applied torue to head : " << T_head << std::endl;
     
-    if (traj.compare("droite") == 0)
-    {
-        T_head = integrate( _range = markedelements( t.mesh(), "Head" ), _expr = cst(mx) * std::cos(orientation) * cst(by) * std::sin(2 * M_PI * freq * t.currentTime()) - cst(my) * std::sin(orientation) * cst(bx)).evaluate()(0,0);
-    }
-    else if (traj.compare("pipe") == 0)
-    {
-        T_head = 0;
-    }
-    else if (traj.compare("cos") == 0)
-    {
-        // n = (sin(x), 1), t = (1, - sin(x))
-
-        T_head = integrate( _range = markedelements( t.mesh(), "Head" ), _expr = cst(mx) * std::cos(orientation) * (cst(bx) - cst(by) * std::sin(2 * M_PI * freq * t.currentTime()) * std::sin(x_curr)) - cst(my) * std::sin(orientation) * (cst(bx)*std::sin(x_curr) + cst(by) * std::sin(2 * M_PI * freq * t.currentTime()))).evaluate()(0,0);
-    }
-    else if (traj.compare("circular") == 0)
-    {
-        double thetaTraj = (2 * M_PI * t.currentTime())/40.;
-        T_head = integrate( _range = markedelements( t.mesh(), "Head" ), _expr = cst(mx) * std::cos(orientation) * (cst(bx)*std::sin(thetaTraj) + cst(by) * std::sin(2 * M_PI * freq * t.currentTime()) * std::cos(thetaTraj)) - cst(my) * std::sin(orientation) * (cst(bx)*std::cos(thetaTraj) - cst(by) * std::sin(2 * M_PI * freq * t.currentTime())*std::sin(thetaTraj))).evaluate()(0,0);
-    }
-
+    T_head = integrate( _range = markedelements( t.mesh(), "Head" ), _expr = cst(mx) * std::cos(orientation) * cst(uyt) - cst(my) * std::sin(orientation) * cst(uxt)).evaluate()(0,0);
+   
     // Add torque to newton eq
     auto r = [&data]() 
     { 
