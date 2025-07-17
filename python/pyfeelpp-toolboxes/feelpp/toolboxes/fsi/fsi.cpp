@@ -101,29 +101,29 @@ void defToolbox(py::module &m)
         .def("updateTimeStep",&toolbox_t::updateTimeStep, "update time stepping")
 
         .def(
-            "addMagnetoTorqueModelFSI",[](toolbox_ptr_t& FSImodel)
+            "addMagnetoTorqueModelFSI",[](toolbox_t& FSImodel)
             {
                 auto add_torque = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateLinear & data)
                 {
-                        auto const& t = unwrap_ptr(FSImodel->fluidModel());
+                        auto const& t = unwrap_ptr(FSImodel.fluidModel());
                         magnetoTorqueModelFSI<nDim,0,toolbox_t>(t, data);
                 };
 
-               FSImodel->fluidModel()->algebraicFactory()->addFunctionLinearAssembly( add_torque );
+               FSImodel.fluidModel()->algebraicFactory()->addFunctionLinearAssembly( add_torque );
             },
             "add function linear assembly"
         ) 
         
         .def(
-            "addMagnetoTroqueResModelFSI",[](toolbox_ptr_t& FSImodel)
+            "addMagnetoTroqueResModelFSI",[](toolbox_t& FSImodel)
             {
                 auto add_torque_residual = [&FSImodel](FeelModels::ModelAlgebraic::DataUpdateResidual & data)
                 {
-                            auto const& t = unwrap_ptr(FSImodel->fluidModel());
+                            auto const& t = unwrap_ptr(FSImodel.fluidModel());
                             magnetoTorqueModelFSI<nDim,1, toolbox_t>(t, data);
                 };
     
-                FSImodel->fluidModel()->algebraicFactory()->addFunctionResidualAssembly( add_torque_residual );
+                FSImodel.fluidModel()->algebraicFactory()->addFunctionResidualAssembly( add_torque_residual );
             },
             "add function residual assembly"
         );
