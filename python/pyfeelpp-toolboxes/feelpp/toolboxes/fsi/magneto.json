@@ -55,7 +55,11 @@
         "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
         "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
         "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
-        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2",
+
+        "ux_t":"uxt:uxt",
+        "uy_t":"uyt:uyt",
+        "uz_t":"uzt:uzt"
 
     },
     "Meshes":
@@ -202,15 +206,9 @@
             {
                 "torqueParam":
                 {
-                    "trajectory":"droite",
-                    "freq":0.9,
-                    "amp":0.5,
                     "mx":200000,
                     "my":200000,
-                    "mz":1,
-                    "bx":0.005,
-                    "by":0.005,
-                    "bz":1
+                    "mz":1
                 }
             }
         }
