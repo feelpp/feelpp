@@ -21,39 +21,43 @@ e = fppc.Environment(sys.argv, opts=tb.toolboxes_options("fsi"),
 
 fppc.Environment.setConfigFile('magneto.cfg')
 
+#============== Control parameters =======================#
+freq = 0.9
+ux = lambda t : 0.005
+uy = lambda t : 0.005 * np.sin(2*np.pi*freq*t)
+#=========================================================#
+
 fsi_tb = fsi(dim=2, orderU=2, orderP=1, orderGeo=1)
 fsi_tb.init()
 #fsi_tb.printAndSaveInfo()
 
-
-#Add Torque FSI
-fsi_tb.addMagnetoTorqueModelFSI()
-fsi_tb.addMagnetoTroqueResModelFSI()
-
 fsi_tb.startTimeStep()
 
 while not fsi_tb.timeStepBase().isFinished():
-    
-    # min_etaq = quality.etaQ(fsi_tb.mesh()).min()
-    
-    # if min_etaq < 1.0:
-    #     remesh_toolbox(f, hclose, hfar, None)
-    #     f.addContactForceModel()
-    #     f.addContactForceResModel()
  
-
-
-        # nbr_remesh += 1
-        # time_remesh.append(f.time())
-    
-  
     if fppc.Environment.isMasterRank():
         print("============================================================\n")
         print("time simulation: {}s iteration : {}\n".format(fsi_tb.time(), fsi_tb.timeStepBase().iteration()))
-        #print("  -- mesh quality: {}s\n".format(min_etaq))
         print("============================================================\n")
     
+
+    #Update control at time t
+    uxt = ux(fsi_tb.time())
+    uyt = uy(fsi_tb.time())
+    fsi_tb.addParameterInModelProperties("uxt", uxt)
+    fsi_tb.addParameterInModelProperties("uyt", uyt)
+    fsi_tb.addParameterInModelProperties("uzt", 0)
+    fsi_tb.updateParameterValues()
+
+    #Add Torque FSI
+    fsi_tb.addMagnetoTorqueModelFSI()
+    fsi_tb.addMagnetoTroqueResModelFSI()
+
+    #Solve FSI
     fsi_tb.solve()
+
+    #Export results
     fsi_tb.exportResults()
 
+    #Update time : t <- t+dt
     fsi_tb.updateTimeStep()
