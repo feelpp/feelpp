@@ -5,6 +5,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/remotedata.hpp>
 #include <feel/feelcore/json.hpp>
+#include <feel/feelcore/zip.hpp>
 #include <feel/feelcore/testsuite.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
@@ -25,7 +26,7 @@ using namespace Feel;
  * the function returns the value of the environment variable FEELPP_GIRDER_API_KEY,
  * the api key is necessary to access the Girder server
  *
- * @return std::string 
+ * @return std::string
  */
 std::string getGirderApiKey()
 {
@@ -131,7 +132,7 @@ BOOST_AUTO_TEST_CASE(test_remotedata_girder_delete_if_exist_and_upload)
         BOOST_FAIL("Cannot upload data using RemoteData");
     }
 }
-std::map<std::string, std::string> data = 
+std::map<std::string, std::string> data =
     {
         {"path", "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset"},
         {"path", "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/"},
@@ -168,6 +169,108 @@ BOOST_DATA_TEST_CASE(test_remotedata_girder, bdata::make(datasets_map), dataset)
             std::cout << "Downloaded data:";
             for (const auto& file : data)
                 std::cout << " " << file;
+            std::cout << std::endl;
+
+            // Optionally, add assertions to check the downloaded files
+            BOOST_CHECK(!data.empty()); // Check that data was downloaded
+        }
+        else
+        {
+            BOOST_FAIL("Cannot download data using RemoteData");
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_unzip_files)
+{
+    int rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // Create a temporary zip archive and an extraction directory
+    fs::path tmpZip = fs::temp_directory_path() / fmt::format("test_{}.zip", rank);
+    fs::path extractionDir = fs::temp_directory_path() / fmt::format("unzipped_boost_{}", rank);
+
+    int error = 0;
+    zip_t* archive = zip_open(tmpZip.c_str(), ZIP_CREATE | ZIP_TRUNCATE, &error);
+    if (!archive)
+        throw std::runtime_error("Failed to create zip archive");
+
+    // Add a txt file and empty folder
+    const char* fileContent = "Hello Boost Test!";
+    zip_source_t* src = zip_source_buffer(archive, fileContent, strlen(fileContent), 0);
+
+    if (zip_file_add(archive, "folder/file.txt", src, ZIP_FL_ENC_UTF_8) < 0)
+        throw std::runtime_error("Failed to add file to zip");
+
+    if (zip_dir_add(archive, "folder/emptydir/", ZIP_FL_ENC_UTF_8) < 0)
+        throw std::runtime_error("Failed to add directory to zip");
+
+    zip_close(archive);
+
+    // Remove extraction folder if it already exists for testing
+    if (fs::exists(extractionDir))
+        fs::remove_all(extractionDir);
+
+    // call extractZipFile function
+    bool ok = extractZipFile(tmpZip.string(), extractionDir.string());
+    BOOST_REQUIRE(ok);
+
+    // Check if files exist
+    fs::path expectedFile = extractionDir / "folder" / "file.txt";
+    fs::path expectedDir  = extractionDir / "folder" / "emptydir";
+    BOOST_CHECK(fs::exists(expectedFile));
+    BOOST_CHECK(fs::is_regular_file(expectedFile));
+    BOOST_CHECK(fs::exists(expectedDir));
+    BOOST_CHECK(fs::is_directory(expectedDir));
+
+    // Check content
+    std::ifstream in(expectedFile);
+    std::string content;
+    std::getline(in, content);
+    BOOST_CHECK_EQUAL(content, "Hello Boost Test!");
+
+    // Clean up
+    fs::remove_all(extractionDir);
+    fs::remove(tmpZip);
+}
+
+
+std::map<std::string, std::string> datasetToUnzip ={ {"path", "/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset"} };
+std::vector<std::map<std::string, std::string>> items_map = {data};
+namespace bdata = boost::unit_test::data;
+
+BOOST_DATA_TEST_CASE(test_remotedata_girder_download_item_and_unzip, bdata::make(items_map), dataset)
+{
+    std::string girderApiKey = getGirderApiKey();
+    if (girderApiKey.empty())
+    {
+        BOOST_FAIL("FEELPP_GIRDER_API_KEY environment variable is missing.");
+    }
+
+    BOOST_TEST(!dataset.empty());
+    for( auto const& [key, value] : dataset )
+    {
+        BOOST_TEST_MESSAGE(fmt::format("key = {}, value = {}", key, value));
+        RemoteData rd(fmt::format("girder:{{{}:{}}}",key,value), Environment::worldCommPtr());
+
+        // Check if we can download the data
+        if (rd.canDownload())
+        {
+            // Get the downloads repository directory
+            std::string d = Environment::downloadsRepository();
+            std::cout << "Download data in: " << d << std::endl;
+
+            // Perform the download and unzip the downloaded files
+            auto data = rd.download(d);
+            std::cout << "Downloaded data:";
+            std::cout << "data = " << data << std::endl;
+            for (const auto& file : data)
+            {
+                bool ok = extractZipFile( file, Environment::downloadsRepository());
+
+                // Check that data was unzipped correctly
+                BOOST_REQUIRE(ok);
+            }
             std::cout << std::endl;
 
             // Optionally, add assertions to check the downloaded files

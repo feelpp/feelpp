@@ -14,7 +14,7 @@
 	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-20.04",
 	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-22.04",
 	//"image": "ghcr.io/feelpp/feelpp-env:ubuntu-24.04",
-	"image":   "ghcr.io/feelpp/feelpp-python:2233-improve-hdg-toolbox-v0.111.0-preview.10-ubuntu-24.04",
+	"image":   "ghcr.io/feelpp/devcontrainer/feelpp:ubuntu-24.04",
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-11",
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-12",
 	//"image": "ghcr.io/feelpp/feelpp-env:debian-testing",
@@ -24,9 +24,9 @@
 	//"mounts": [
 	//	"source=${localWorkspaceFolder},target=/workspaces/feelpp,type=bind,consistency=cached"
 	//],
-	"remoteUser": "feelpp",
-	"updateRemoteUserUID": true,
-	"postCreateCommand": "/workspaces/feelpp/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
+	//"remoteUser": "feelpp",
+	//"updateRemoteUserUID": true,
+	//"postCreateCommand": "/workspaces/feelpp/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
 	//"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/detect_platform.sh",
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
