@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Downstream may close early (head/awk exit); don't treat EPIPE as fatal.
+trap '' PIPE
 
 # --- Config / Inputs ---------------------------------------------------------
 FEELPP_DIR=${FEELPP_DIR:-$PWD}
