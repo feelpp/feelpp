@@ -84,8 +84,9 @@ jobs:
             include:
               - { target: "ubuntu:24.04", continue-on-error: true }
               - { target: "ubuntu:22.04", continue-on-error: false }
-              - { target: "ubuntu:20.04", continue-on-error: true }
+              - { target: "debian:13", continue-on-error: true }
               - { target: "debian:12", continue-on-error: false }
+              - { target: "fedora:42", continue-on-error: false }
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
