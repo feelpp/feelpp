@@ -143,11 +143,6 @@ esac
 
 # ---- docker build ------------------------------------------------------------
 
-if [[ "$ARCHES" == *","* ]]; then   # multi-arch case
-  EXTRA_ARGS=(--annotation "org.opencontainers.image.description=${DESCRIPTION}")
-else
-  EXTRA_ARGS=()
-fi
 
 run docker build \
   --pull \
@@ -161,7 +156,6 @@ run docker build \
   --build-arg="CONFIGURE_FLAGS=${CONFIGURE_FLAGS}" \
   --build-arg="CMAKE_FLAGS=${CMAKE_FLAGS}" \
   --build-arg="CTEST_FLAGS=${CTEST_FLAGS}" \
-  "${EXTRA_ARGS[@]}" \
   --no-cache=true \
   -f "${tmp_df}" \
   "${script_dir}/docker/${image}"
