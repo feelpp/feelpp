@@ -614,17 +614,18 @@ if(FEELPP_ENABLE_PYTHON)
   else ()
     execute_process(
       COMMAND ${Python3_EXECUTABLE} -c
-        "import sys, sysconfig
-        base = '/home/feelpp/feelpp/install/feelpp'
-        try:
-            # Python ≥3.12 (preferred)
-            print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
-        except Exception:
-          try:
-            from distutils import sysconfig as dsys
-            print(dsys.get_python_lib(plat_specific=True, prefix=base))
-          except Exception as e:
-            sys.exit('Could not compute platlib path: %s' % e)"
+        "
+import sys, sysconfig
+base = '/home/feelpp/feelpp/install/feelpp'
+try:
+    # Python ≥3.12 (preferred)
+    print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+except Exception:
+  try:
+    from distutils import sysconfig as dsys
+    print(dsys.get_python_lib(plat_specific=True, prefix=base))
+  except Exception as e:
+    sys.exit('Could not compute platlib path: %s' % e)"
       OUTPUT_VARIABLE FEELPP_PY_PLATLIB
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
