@@ -118,14 +118,16 @@ case "${component}" in
     ;;
 esac
 
+# Auto-detect platforms + description
+ARCHES="$(arches_for_target "${TARGET}")"
+DESCRIPTION="$(description_for "${image}" "${TARGET}")"
+
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
-  echo "[DRY-RUN] Would generate ${tmp_df} from ${template} (BASE ${base_from})"
-  echo "-------------------- BEGIN DOCKERFILE --------------------"
-  dockerfile_from "${template}" "${base_from}"
-  echo "--------------------- END DOCKERFILE ---------------------"
+  echo "[DRY-RUN] Generate ${tmp_df} from ${template} (BASE ${base_from})"
+  dockerfile_from "${template}" "${base_from}" "${DESCRIPTION}"
 else
   mkdir -p "$(dirname "${tmp_df}")"
-  dockerfile_from "${template}" "${base_from}" > "${tmp_df}"
+  dockerfile_from "${template}" "${base_from}" "${DESCRIPTION}" > "${tmp_df}"
 fi
 
 # ---- ctest flags per component ----------------------------------------------
@@ -140,6 +142,13 @@ case "${component}" in
 esac
 
 # ---- docker build ------------------------------------------------------------
+
+if [[ "$ARCHES" == *","* ]]; then   # multi-arch case
+  EXTRA_ARGS=(--annotation "org.opencontainers.image.description=${DESCRIPTION}")
+else
+  EXTRA_ARGS=()
+fi
+
 run docker build \
   --pull \
   --tag="ghcr.io/feelpp/${image}:${tag}" \
@@ -152,6 +161,7 @@ run docker build \
   --build-arg="CONFIGURE_FLAGS=${CONFIGURE_FLAGS}" \
   --build-arg="CMAKE_FLAGS=${CMAKE_FLAGS}" \
   --build-arg="CTEST_FLAGS=${CTEST_FLAGS}" \
+  "${EXTRA_ARGS[@]}" \
   --no-cache=true \
   -f "${tmp_df}" \
   "${script_dir}/docker/${image}"
