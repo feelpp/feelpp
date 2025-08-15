@@ -151,7 +151,7 @@ endif()
 # # cln
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring CLN")
-option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
+option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" ON)
 
 if(FEELPP_USE_EXTERNAL_CLN)
   pkg_search_module(CLN REQUIRED IMPORTED_TARGET "cln>=1.3.6")
