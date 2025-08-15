@@ -188,33 +188,69 @@ extratags_from_target() {
   require_file "$list" # hard fail otherwise
 }
 
-# Combines a dockerfile template with a generated FROM line
-# - Rewrites any explicit "FROM ghcr.io/feelpp/feelpp-env:*" inside the template
-# - Rewrites any "ARG BASE=ghcr.io/feelpp/feelpp-env:*" too
-# - If the template has no FROM at all, we prepend one
+# --- Arch detection -----------------------------------------------------------
+# Returns buildx platforms for a given TARGET like "ubuntu:24.04"
+arches_for_target() {
+  local target="$1"
+  case "$target" in
+    ubuntu:24.04|debian:13)
+      printf "linux/amd64,linux/arm64"
+      ;;
+    *)
+      printf "linux/amd64"
+      ;;
+  esac
+}
+
+# Optional: make a nice OCI description using detected arches
+description_for() {
+  local image="$1" target="$2"
+  local arches; arches="$(arches_for_target "$target")"
+  printf "Feel++ container for %s (%s) — platforms: %s" "$image" "$target" "$arches"
+}
+
+# dockerfile_from <template> <from_base> [description]
 dockerfile_from() {
-  local dockerfile="$1" from="$2"
+  local dockerfile="$1" from="$2" desc="${3:-}"
   require_file "$dockerfile"
 
-  # Does the template already reference our base image?
-  if grep -Eq '^\s*FROM\s+ghcr\.io/feelpp/feelpp-env:' "$dockerfile" \
-     || grep -Eq '^\s*ARG\s+BASE\s*=\s*ghcr\.io/feelpp/feelpp-env:' "$dockerfile"; then
-    # Rewrite in-place stream (print to stdout)
-    sed -E \
-      -e "s|^(\s*FROM\s+)ghcr\.io/feelpp/feelpp-env:[^[:space:]]+|\1${from}|g" \
-      -e "s|^(\s*ARG\s+BASE\s*=\s*)ghcr\.io/feelpp/feelpp-env:[^[:space:]]+|\1${from}|g" \
-      "$dockerfile"
-  else
-    # If the template has no FROM lines, just prepend one
-    if ! grep -Eq '^\s*FROM\s+' "$dockerfile"; then
-      printf 'FROM %s\n' "$from"
-      cat "$dockerfile"
-    else
-      # Template has FROMs but not feelpp-env ones; safest is to still prepend ours
-      printf 'FROM %s\n' "$from"
-      cat "$dockerfile"
-    fi
+  local label_line=""
+  if [[ -n "$desc" ]]; then
+    label_line="LABEL org.opencontainers.image.description=\"${desc}\""
   fi
+
+  _emit_from_and_label() {
+    printf 'FROM %s\n' "$from"
+    [[ -n "$label_line" ]] && printf '%s\n' "$label_line"
+  }
+
+  if ! grep -Eq '^\s*FROM\s+' "$dockerfile"; then
+    _emit_from_and_label
+    cat "$dockerfile"
+    return
+  fi
+
+  # Replace first FROM if it refers to feelpp-env; otherwise prepend ours.
+  if grep -Eq '^\s*FROM\s+ghcr\.io/feelpp/feelpp-env:' "$dockerfile"; then
+    awk -v from="$from" -v label="$label_line" '
+      BEGIN{done=0}
+      /^[[:space:]]*FROM[[:space:]]+ghcr\.io\/feelpp\/feelpp-env:/ && !done {
+        print "FROM " from
+        if (label != "") print label
+        done=1; next
+      }
+      { print }
+    ' "$dockerfile"
+  else
+    _emit_from_and_label
+    cat "$dockerfile"
+  fi
+}
+
+dockerfile_from_with_label() {
+  local template="$1" base="$2" description="$3"
+  dockerfile_from "$template" "$base" \
+    | sed "1a LABEL org.opencontainers.image.description=\"$description\""
 }
 
 # Export FEELPP_VERSION for callers
