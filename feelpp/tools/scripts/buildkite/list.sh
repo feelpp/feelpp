@@ -25,10 +25,14 @@ DEBIAN_VERSIONS=(13 12 11 testing sid)
 UBUNTU_VERSIONS=(24.04 23.10 22.04 20.04)
 FEDORA_VERSIONS=(42)
 
+# --- Safe print helper -------------------------------------------------------
+safeln() {
+  # print a single line, ignore SIGPIPE and suppress "Broken pipe" noise
+  printf '%s\n' "$1" 2>/dev/null || true
+}
+
 # --- Helpers -----------------------------------------------------------------
 docker_major_version() {
-  # If you ever need the major-only again:
-  # cut -d. -f1 <<< "$1"
   cut -d. -f1 <<< "$1"
 }
 
@@ -50,7 +54,7 @@ print_debian_lines() {
   local branch_version="${branch}-${version}"
 
   for os_version in "${DEBIAN_VERSIONS[@]}"; do
-    printf "%s-%s\n" "$(image_name "$branch_version" "$distro")" "$os_version"
+    safeln "$(printf "%s-%s" "$(image_name "$branch_version" "$distro")" "$os_version")"
   done
 }
 
@@ -63,6 +67,7 @@ print_ubuntu_lines() {
 
   for os_version in "${UBUNTU_VERSIONS[@]}"; do
     # Base tag
+    local line
     line="$(printf "%s-%s" "$(image_name "$branch_version" "$distro")" "$os_version")"
 
     # On the latest Ubuntu only, append extra tags:
@@ -78,27 +83,21 @@ print_ubuntu_lines() {
       fi
     fi
 
-    printf "%s\n" "$line"
+    safeln "$line"
   done
 }
 
-# If you want Fedora printed similarly later, this is ready.
 print_fedora_lines() {
   local branch="$1" version="$2"
   local distro="fedora"
   local branch_version="${branch}-${version}"
 
   for os_version in "${FEDORA_VERSIONS[@]}"; do
-    printf "%s-%s\n" "$(image_name "$branch_version" "$distro")" "$os_version"
+    safeln "$(printf "%s-%s" "$(image_name "$branch_version" "$distro")" "$os_version")"
   done
 }
 
 # --- Output ------------------------------------------------------------------
-# Debian block (no special tag expansions)
 print_debian_lines "$FEELPP_BRANCH" "$FEELPP_VERSION_INPUT"
-
-# Ubuntu block (adds extra tags on latest)
 print_ubuntu_lines "$FEELPP_BRANCH" "$FEELPP_VERSION_INPUT"
-
-# If/when you want Fedora lines too, uncomment:
 print_fedora_lines "$FEELPP_BRANCH" "$FEELPP_VERSION_INPUT"

@@ -188,23 +188,33 @@ extratags_from_target() {
   require_file "$list" # hard fail otherwise
 }
 
-# Prepend a FROM line to a Dockerfile template
+# Combines a dockerfile template with a generated FROM line
+# - Rewrites any explicit "FROM ghcr.io/feelpp/feelpp-env:*" inside the template
+# - Rewrites any "ARG BASE=ghcr.io/feelpp/feelpp-env:*" too
+# - If the template has no FROM at all, we prepend one
 dockerfile_from() {
-  local dockerfile="${1:?missing dockerfile}" from="${2:?missing from}"
-  if [[ "$DRY_RUN" = "1" ]]; then
-    echo "[DRY-RUN] dockerfile_from: FROM ${from} + ${dockerfile}" >&2
-    printf 'FROM %s\n' "$from"
-    if [[ -r "$dockerfile" ]]; then
+  local dockerfile="$1" from="$2"
+  require_file "$dockerfile"
+
+  # Does the template already reference our base image?
+  if grep -Eq '^\s*FROM\s+ghcr\.io/feelpp/feelpp-env:' "$dockerfile" \
+     || grep -Eq '^\s*ARG\s+BASE\s*=\s*ghcr\.io/feelpp/feelpp-env:' "$dockerfile"; then
+    # Rewrite in-place stream (print to stdout)
+    sed -E \
+      -e "s|^(\s*FROM\s+)ghcr\.io/feelpp/feelpp-env:[^[:space:]]+|\1${from}|g" \
+      -e "s|^(\s*ARG\s+BASE\s*=\s*)ghcr\.io/feelpp/feelpp-env:[^[:space:]]+|\1${from}|g" \
+      "$dockerfile"
+  else
+    # If the template has no FROM lines, just prepend one
+    if ! grep -Eq '^\s*FROM\s+' "$dockerfile"; then
+      printf 'FROM %s\n' "$from"
       cat "$dockerfile"
     else
-      echo "[DRY-RUN] (template not present; emitting only FROM)" >&2
+      # Template has FROMs but not feelpp-env ones; safest is to still prepend ours
+      printf 'FROM %s\n' "$from"
+      cat "$dockerfile"
     fi
-    return 0
   fi
-
-  require_file "$dockerfile"
-  printf 'FROM %s\n' "$from"
-  cat "$dockerfile"
 }
 
 # Export FEELPP_VERSION for callers

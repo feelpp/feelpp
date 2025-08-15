@@ -118,8 +118,11 @@ case "${component}" in
     ;;
 esac
 
-if [[ "$DRY_RUN" == "1" ]]; then
-  say "[DRY-RUN] Generate ${tmp_df} from ${template} (FROM ${base_from})"
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+  echo "[DRY-RUN] Would generate ${tmp_df} from ${template} (BASE ${base_from})"
+  echo "-------------------- BEGIN DOCKERFILE --------------------"
+  dockerfile_from "${template}" "${base_from}"
+  echo "--------------------- END DOCKERFILE ---------------------"
 else
   mkdir -p "$(dirname "${tmp_df}")"
   dockerfile_from "${template}" "${base_from}" > "${tmp_df}"
