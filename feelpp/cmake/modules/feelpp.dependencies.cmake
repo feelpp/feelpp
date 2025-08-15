@@ -626,7 +626,8 @@ except Exception:
     print(dsys.get_python_lib(plat_specific=True, prefix=base))
   except Exception as e:
     sys.exit('Could not compute platlib path: %s' % e)"
-      OUTPUT_VARIABLE FEELPP_PY_PLATLIB
+      OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+      RESULT_VARIABLE _PYTHON_pythonlib_result
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
