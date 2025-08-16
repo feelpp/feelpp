@@ -10,34 +10,31 @@ jobs:
   plan_ci:
     runs-on: self-docker
     outputs:
-      message: ${{ steps.plan.outputs.message }}
+      message:      ${{ steps.plan.outputs.message }}
       targets_json: ${{ steps.plan.outputs.targets_json }}
       targets_list: ${{ steps.plan.outputs.targets_list }}
-      only_jobs: ${{ steps.plan.outputs.only_jobs }}
-      skip_jobs: ${{ steps.plan.outputs.skip_jobs }}
+      only_jobs:    ${{ steps.plan.outputs.only_jobs }}
+      skip_jobs:    ${{ steps.plan.outputs.skip_jobs }}
     steps:
-      - name: Checkout (for push fallback & parsing)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || '' }}
 
-      - name: Plan CI (parse directives)
-        id: plan
+      - id: plan
+        name: Plan CI
         shell: bash
         run: |
           set -euo pipefail
 
-          # --- 1) Canonical MESSAGE (PR title+body or last commit message) ---
+          # --- 1) Canonical message (PR title+body or last commit) ---
           if [[ "${{ github.event_name }}" == "push" ]]; then
             MSG="$(git log -1 --pretty=%B || true)"
           else
             PR_TITLE="${{ github.event.pull_request.title || '' }}"
             PR_BODY="${{ github.event.pull_request.body  || '' }}"
             MSG="$(printf "%s\n\n%s" "$PR_TITLE" "$PR_BODY" | sed 's/\r$//')"
-            # Fallback to git log if PR body/title are empty (rare)
-            if [[ -z "${MSG// /}" ]]; then
-              MSG="$(git log -1 --pretty=%B || true)"
-            fi
+            [[ -z "${MSG// /}" ]] && MSG="$(git log -1 --pretty=%B || true)"
           fi
 
           echo "---- canonical message ----"
@@ -52,47 +49,38 @@ jobs:
             echo "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
-          # --- 2) Defaults & helpers ---
+          # Combine PR fields + last commit for directive parsing
+          LAST_COMMIT="$(git log -1 --pretty=%B || true)"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_TITLE="${{ github.event.pull_request.title || '' }}"
+            PR_BODY="${{ github.event.pull_request.body  || '' }}"
+            COMBINED="$(printf "%s\n\n%s\n\n%s" "$PR_TITLE" "$PR_BODY" "$LAST_COMMIT")"
+          else
+            COMBINED="$LAST_COMMIT"
+          fi
+
+          # --- 2) Helpers ---
+          trim() { sed -E 's/^[[:space:]]+|[[:space:]]+$//g'; }
+          csv_to_array() { echo "$1" | tr ', \n' '\n\n\n' | tr -s '\n' | sed '/^$/d'; }
+          array_contains(){ local n="$1"; shift; for x in "$@"; do [[ "$x" == "$n" ]] && return 0; done; return 1; }
+          array_remove_many(){ local -n A="$1"; shift; local R=("$@"); local K=(); for x in "${A[@]}"; do d=0; for r in "${R[@]}"; do [[ "$x" == "$r" ]] && d=1 && break; done; [[ $d -eq 0 ]] && K+=("$x"); done; A=("${K[@]}"); }
+
+          # --- 3) Defaults & directive getters ---
           DEFAULT_TARGETS=("ubuntu:24.04" "ubuntu:22.04" "debian:13" "debian:12" "fedora:42")
 
-          trim() { sed -E 's/^[[:space:]]+|[[:space:]]+$//g'; }
-          csv_to_array() {
-            local csv="$1"
-            # split on comma or whitespace, normalize to one-per-line, drop empties
-            echo "$csv" | tr ', ' '\n\n' | tr -s '\n' | sed '/^$/d'
-          }
-          array_contains() {
-            local needle="$1"; shift
-            for x in "$@"; do [[ "$x" == "$needle" ]] && return 0; done
-            return 1
-          }
-          array_remove_many() {
-            local -n _arr="$1"; shift
-            local to_remove=("$@")
-            local keep=()
-            for x in "${_arr[@]}"; do
-              local drop=0
-              for r in "${to_remove[@]}"; do [[ "$x" == "$r" ]] && drop=1 && break; done
-              [[ $drop -eq 0 ]] && keep+=("$x")
-            done
-            _arr=("${keep[@]}")
-          }
-
-          # --- 3) Extract key=value directives from message (case-insensitive key) ---
           get_val() {
             local key="$1"
-            printf "%s\n" "$MSG" \
+            printf "%s\n" "$COMBINED" \
               | grep -iE "^[[:space:]]*${key}=" \
               | sed -E "s/^[[:space:]]*${key}=//i" \
               | head -n1 | trim
           }
 
-          # Jobs selection
-          VAL_ONLY_JOBS="$(get_val only   || true)"   # e.g. "feelpp" or "feelpp mor"
-          VAL_SKIP_JOBS="$(get_val skip   || true)"   # e.g. "python toolboxes"
-
-          # Targets selection (distinct key!)
-          VAL_TARGETS="$(get_val targets  || true)"   # e.g. "fedora:42" or "ubuntu:24.04, debian:13"
+          VAL_ONLY_JOBS="$(get_val only || true)"
+          VAL_SKIP_JOBS="$(get_val skip || true)"
+          VAL_TARGETS="$(get_val targets || true)"
+          VAL_INCLUDE="$(get_val include || true)"
+          VAL_EXCLUDE="$(get_val exclude || true)"
 
           # --- 4) Resolve TARGETS ---
           WORKING=("${DEFAULT_TARGETS[@]}")
@@ -102,46 +90,42 @@ jobs:
             while read -r t; do [[ -n "$t" ]] && WORKING+=("$t"); done < <(csv_to_array "$VAL_TARGETS")
           fi
 
-          # fall back to defaults if empty
-          if [[ "${#WORKING[@]}" -eq 0 ]]; then
-            WORKING=("${DEFAULT_TARGETS[@]}")
+          if [[ -n "${VAL_INCLUDE:-}" ]]; then
+            while read -r t; do
+              [[ -z "$t" ]] && continue
+              array_contains "$t" "${WORKING[@]}" || WORKING+=("$t")
+            done < <(csv_to_array "$VAL_INCLUDE")
           fi
 
-          # Emit targets (JSON for matrix + space-list for condition checks)
+          if [[ -n "${VAL_EXCLUDE:-}" ]]; then
+            TO_DROP=()
+            while read -r t; do [[ -n "$t" ]] && TO_DROP+=("$t"); done < <(csv_to_array "$VAL_EXCLUDE")
+            array_remove_many WORKING "${TO_DROP[@]}"
+          fi
+
+          [[ "${#WORKING[@]}" -eq 0 ]] && WORKING=("${DEFAULT_TARGETS[@]}")
+
           JSON="["
-          for i in "${!WORKING[@]}"; do
-            [[ $i -gt 0 ]] && JSON+=", "
-            JSON+="\"${WORKING[$i]}\""
-          done
+          for i in "${!WORKING[@]}"; do [[ $i -gt 0 ]] && JSON+=", "; JSON+="\"${WORKING[$i]}\""; done
           JSON+="]"
 
-          echo "Resolved targets: ${WORKING[*]}"
           echo "targets_json=${JSON}"       >> "$GITHUB_OUTPUT"
           echo "targets_list=${WORKING[*]}" >> "$GITHUB_OUTPUT"
 
           # --- 5) Resolve job selection (only_jobs / skip_jobs) ---
-          normalize_jobs() {
-            local raw="$1"
-            # Accept commas, spaces, and/or newlines; normalize to single spaces; lowercased
-            echo "$raw" | tr ',\n' '  ' | tr -s ' ' | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | tr '[:upper:]' '[:lower:]'
-          }
-
+          normalize_jobs(){ echo "$1" | tr ',\n' '  ' | tr -s ' ' | trim | tr '[:upper:]' '[:lower:]'; }
           ONLY_JOBS="$(normalize_jobs "${VAL_ONLY_JOBS:-}")"
           SKIP_JOBS="$(normalize_jobs "${VAL_SKIP_JOBS:-}")"
 
-          # Back-compat tokens inside free text (e.g. "skip toolboxes")
-          LC_MSG="$(printf "%s" "$MSG" | tr '[:upper:]' '[:lower:]')"
-          add_skip_if_token() { grep -qiE "(^|[^a-z])$1([^a-z]|$)" <<< "$LC_MSG" && SKIP_JOBS="$(printf "%s %s" "$SKIP_JOBS" "$2")"; true; }
+          # Legacy free-text tokens (for back-compat)
+          ALL_MSG="$(printf "%s\n\n%s" "$COMBINED" "$LAST_COMMIT" | tr '[:upper:]' '[:lower:]')"
+          add_skip_if_token(){ grep -qiE "(^|[^a-z])$1([^a-z]|$)" <<< "$ALL_MSG" && SKIP_JOBS="$(printf "%s %s" "$SKIP_JOBS" "$2")"; true; }
           add_skip_if_token "skip components" "components"
           add_skip_if_token "skip feelpp"     "feelpp"
           add_skip_if_token "skip tests"      "testsuite"
           add_skip_if_token "skip toolboxes"  "toolboxes"
           add_skip_if_token "skip mor"        "mor"
           add_skip_if_token "skip python"     "python"
-
-          # Trim spaces
-          ONLY_JOBS="$(trim <<<"${ONLY_JOBS}")"
-          SKIP_JOBS="$(trim <<<"${SKIP_JOBS}")"
 
           echo "only_jobs=${ONLY_JOBS}" >> "$GITHUB_OUTPUT"
           echo "skip_jobs=${SKIP_JOBS}" >> "$GITHUB_OUTPUT"
@@ -160,19 +144,12 @@ jobs:
     if: |
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'feelpp')) &&
       !contains(needs.plan_ci.outputs.skip_jobs, 'feelpp')
-    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Workaround checkout Needed single revision issue
-        run: |
-          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf "$PWD"'
-      - name: Re-checkout with submodules
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build and Test Feelpp
@@ -180,10 +157,10 @@ jobs:
           echo "Building Feelpp for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
           feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
@@ -192,12 +169,9 @@ jobs:
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'testsuite')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'testsuite')
-    timeout-minutes: 600
+      !contains(needs.plan_ci.outputs.skip_jobs, 'testsuite') &&
+      needs.feelpp.result == 'success'
     strategy:
       fail-fast: false
       matrix:
@@ -210,10 +184,10 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
@@ -222,12 +196,9 @@ jobs:
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'toolboxes')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'toolboxes')
-    timeout-minutes: 600
+      !contains(needs.plan_ci.outputs.skip_jobs, 'toolboxes') &&
+      needs.feelpp.result == 'success'
     strategy:
       fail-fast: false
       matrix:
@@ -240,10 +211,10 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
@@ -252,12 +223,9 @@ jobs:
     needs: [plan_ci, toolboxes]
     runs-on: self-docker
     if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'mor')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'mor')
-    timeout-minutes: 600
+      !contains(needs.plan_ci.outputs.skip_jobs, 'mor') &&
+      needs.toolboxes.result == 'success'
     strategy:
       fail-fast: false
       matrix:
@@ -270,24 +238,21 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh mor
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
 
   python:
-    needs: [plan_ci, feelpp, toolboxes, mor]
+    needs: [plan_ci, mor]
     runs-on: self-docker
     if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'python')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'python')
-    timeout-minutes: 600
+      !contains(needs.plan_ci.outputs.skip_jobs, 'python') &&
+      needs.mor.result == 'success'
     strategy:
       fail-fast: false
       matrix:
@@ -300,10 +265,10 @@ jobs:
         run: |
           feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
