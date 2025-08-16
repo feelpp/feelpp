@@ -81,7 +81,10 @@ jobs:
           # --- 3) Extract key=value directives from message (case-insensitive key) ---
           get_val() {
             local key="$1"
-            echo "$MSG" | grep -iE "(^|[[:space:]])${key}=" | sed -E "s/.*${key}=([^[:space:]].*)/\1/i" | head -n1 | trim
+            printf "%s\n" "$MSG" \
+              | grep -iE "^[[:space:]]*${key}=" \
+              | sed -E "s/^[[:space:]]*${key}=//i" \
+              | head -n1 | trim
           }
 
           # Jobs selection
