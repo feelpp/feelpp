@@ -4,131 +4,183 @@ on:
   pull_request:
     branches: ['*']
   push:
-    branches: ['master','develop']
+    branches: ['master', 'develop']
 
 jobs:
   plan_ci:
+    name: Plan CI
     runs-on: self-docker
     outputs:
-      message:          ${{ steps.plan.outputs.message }}
-      targets_json:     ${{ steps.plan.outputs.targets_json }}
-      only_jobs:        ${{ steps.plan.outputs.only_jobs }}
-      skip_jobs:        ${{ steps.plan.outputs.skip_jobs }}
+      message:        ${{ steps.plan.outputs.message }}
+      targets_json:   ${{ steps.plan.outputs.targets_json }}
+      targets_list:   ${{ steps.plan.outputs.targets_list }}
+      only_jobs:      ${{ steps.plan.outputs.only_jobs }}
+      skip_jobs:      ${{ steps.plan.outputs.skip_jobs }}
     steps:
-      - name: Checkout (shallow is fine here)
+      - name: Checkout for message resolution
         uses: actions/checkout@v4
+        with:
+          # Pull the subject/description if needed
+          fetch-depth: 2
 
       - id: plan
-        name: Parse commit/PR message for CI directives
+        name: Compute message, targets, and job directives
         shell: bash
         run: |
           set -euo pipefail
 
-          # -------- 1) Canonical MESSAGE (works for push or PR) ----------
+          # --- 1) Canonical MESSAGE (PR title+body or last commit message) ---
           if [[ "${{ github.event_name }}" == "push" ]]; then
             MSG="$(git log -1 --pretty=%B || true)"
           else
+            # pull_request
             PR_TITLE="${{ github.event.pull_request.title || '' }}"
-            PR_BODY="${{ github.event.pull_request.body  || '' }}"
+            PR_BODY="${{ github.event.pull_request.body || '' }}"
             MSG="$(printf "%s\n\n%s" "$PR_TITLE" "$PR_BODY" | sed 's/\r$//')"
-            [[ -z "${MSG// /}" ]] && MSG="$(git log -1 --pretty=%B || true)"
+            # Fallback to git log if PR body/title are empty (rare)
+            if [[ -z "${MSG// /}" ]]; then
+              MSG="$(git log -1 --pretty=%B || true)"
+            fi
           fi
 
           echo "---- canonical message ----"
           printf "%s\n" "$MSG"
           echo "---------------------------"
 
-          # Safe multi-line output block (unique delimiter)
-          DELIM="EOF_MSG_$(date +%s)_$RANDOM"
+          # Emit safely to outputs via EOF-delimited block to preserve newlines
           {
-            echo "message<<$DELIM"
-            printf '%s\n' "$MSG"
-            echo "$DELIM"
+            printf "message<<'EOF'\n"
+            printf "%s\n" "$MSG"
+            printf "EOF\n"
           } >> "$GITHUB_OUTPUT"
 
-          # -------- 2) Defaults & helpers ----------
+          # --- 2) Defaults & helpers ---
           DEFAULT_TARGETS=("ubuntu:24.04" "ubuntu:22.04" "debian:13" "debian:12" "fedora:42")
 
           trim() { sed -E 's/^[[:space:]]+|[[:space:]]+$//g'; }
-          csv_to_array() { echo "$1" | tr ',;|' '\n' | tr -s '\n' | sed '/^$/d'; }
+          csv_to_array() {
+            local csv="$1"
+            # split on comma or whitespace, normalize to one-per-line, drop empties
+            echo "$csv" | tr ', ' '\n\n' | tr -s '\n' | sed '/^$/d'
+          }
+          array_contains() {
+            local needle="$1"; shift
+            for x in "$@"; do [[ "$x" == "$needle" ]] && return 0; done
+            return 1
+          }
+          array_remove_many() {
+            local -n _arr="$1"; shift
+            local to_remove=("$@")
+            local keep=()
+            for x in "${_arr[@]}"; do
+              local drop=0
+              for r in "${to_remove[@]}"; do [[ "$x" == "$r" ]] && drop=1 && break; done
+              [[ $drop -eq 0 ]] && keep+=("$x")
+            done
+            _arr=("${keep[@]}")
+          }
 
-          # -------- 3) Parse directives ----------
+          # --- 3) Extract key=value directives from message (case-insensitive key) ---
           get_val() {
             local key="$1"
             echo "$MSG" | grep -iE "(^|[[:space:]])${key}=" | sed -E "s/.*${key}=([^[:space:]].*)/\1/i" | head -n1 | trim
           }
 
-          # Jobs filters (apply to job names)
           VAL_ONLY_JOBS="$(get_val only || true)"
           VAL_SKIP_JOBS="$(get_val skip || true)"
 
-          # Targets filters (apply to OS targets)
+          VAL_ONLY_TGT="$(get_val only || true)"     # can also be used for targets
           VAL_TARGETS="$(get_val targets || true)"
           VAL_INCLUDE="$(get_val include || true)"
           VAL_EXCLUDE="$(get_val exclude || true)"
 
-          # --- Resolve TARGETS ---
+          # --- 4) Resolve TARGETS ---
           WORKING=("${DEFAULT_TARGETS[@]}")
 
+          # If 'only=' includes targets (e.g. linux platform selectors), respect it for targets too
+          if [[ -n "${VAL_ONLY_TGT:-}" ]]; then
+            # Decide if 'only' looks like jobs or targets; allow both. If tokens look like platform specs (contain ':'), treat as targets.
+            if echo "$VAL_ONLY_TGT" | grep -q ':'; then
+              WORKING=()
+              while read -r t; do [[ -n "$t" ]] && WORKING+=("$t"); done < <(csv_to_array "$VAL_ONLY_TGT")
+            fi
+          fi
+
+          # 'targets=' overrides defaults (unless only targets already replaced them)
           if [[ -n "${VAL_TARGETS:-}" ]]; then
             WORKING=()
             while read -r t; do [[ -n "$t" ]] && WORKING+=("$t"); done < <(csv_to_array "$VAL_TARGETS")
           fi
 
+          # include=
           if [[ -n "${VAL_INCLUDE:-}" ]]; then
             while read -r t; do
               [[ -z "$t" ]] && continue
-              if [[ ! " ${WORKING[*]} " =~ " $t " ]]; then
+              if ! array_contains "$t" "${WORKING[@]}"; then
                 WORKING+=("$t")
               fi
             done < <(csv_to_array "$VAL_INCLUDE")
           fi
 
+          # exclude=
           if [[ -n "${VAL_EXCLUDE:-}" ]]; then
-            TO_DROP=($(csv_to_array "$VAL_EXCLUDE"))
-            keep=()
-            for x in "${WORKING[@]}"; do
-              drop=false
-              for r in "${TO_DROP[@]}"; do [[ "$x" == "$r" ]] && drop=true && break; done
-              $drop || keep+=("$x")
-            done
-            WORKING=("${keep[@]}")
+            TO_DROP=()
+            while read -r t; do [[ -n "$t" ]] && TO_DROP+=("$t"); done < <(csv_to_array "$VAL_EXCLUDE")
+            array_remove_many WORKING "${TO_DROP[@]}"
           fi
 
-          [[ "${#WORKING[@]}" -eq 0 ]] && WORKING=("${DEFAULT_TARGETS[@]}")
+          # fall back to defaults if empty
+          if [[ "${#WORKING[@]}" -eq 0 ]]; then
+            WORKING=("${DEFAULT_TARGETS[@]}")
+          fi
 
-          # Emit JSON array for matrix
+          # Emit targets (JSON for matrix + space-list for condition checks)
           JSON="["
           for i in "${!WORKING[@]}"; do
             [[ $i -gt 0 ]] && JSON+=", "
             JSON+="\"${WORKING[$i]}\""
           done
           JSON+="]"
-          echo "targets_json=${JSON}" >> "$GITHUB_OUTPUT"
 
-          # --- Resolve JOB filters (comma lists) ---
-          if [[ -n "${VAL_ONLY_JOBS:-}" ]]; then
-            ONLY_JOBS="$(csv_to_array "$VAL_ONLY_JOBS" | tr '\n' ',' | sed 's/,$//')"
-          else
-            ONLY_JOBS=""
-          fi
-          if [[ -n "${VAL_SKIP_JOBS:-}" ]]; then
-            SKIP_JOBS="$(csv_to_array "$VAL_SKIP_JOBS" | tr '\n' ',' | sed 's/,$//')"
-          else
-            SKIP_JOBS=""
-          fi
+          echo "Resolved targets: ${WORKING[*]}"
+          echo "targets_json=${JSON}"       >> "$GITHUB_OUTPUT"
+          echo "targets_list=${WORKING[*]}" >> "$GITHUB_OUTPUT"
+
+          # --- 5) Resolve job selection (only_jobs / skip_jobs) ---
+          # Normalize values into space-separated lists
+          normalize_jobs() {
+            local raw="$1"
+            # Accept commas, spaces, and/or newlines; normalize to single spaces; lowercased
+            echo "$raw" | tr ',\n' '  ' | tr -s ' ' | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | tr '[:upper:]' '[:lower:]'
+          }
+
+          ONLY_JOBS="$(normalize_jobs "${VAL_ONLY_JOBS:-}")"
+          SKIP_JOBS="$(normalize_jobs "${VAL_SKIP_JOBS:-}")"
+
+          # Back-compat tokens inside free text (e.g. "skip toolboxes")
+          LC_MSG="$(printf "%s" "$MSG" | tr '[:upper:]' '[:lower:]')"
+          add_skip_if_token() { grep -qiE "(^|[^a-z])$1([^a-z]|$)" <<< "$LC_MSG" && SKIP_JOBS="$(printf "%s %s" "$SKIP_JOBS" "$2")"; true; }
+          add_skip_if_token "skip components" "components"
+          add_skip_if_token "skip feelpp"     "feelpp"
+          add_skip_if_token "skip tests"      "testsuite"
+          add_skip_if_token "skip toolboxes"  "toolboxes"
+          add_skip_if_token "skip mor"        "mor"
+          add_skip_if_token "skip python"     "python"
+
+          # Trim spaces
+          ONLY_JOBS="$(trim <<<"$ONLY_JOBS")"
+          SKIP_JOBS="$(trim <<<"$SKIP_JOBS")"
 
           echo "only_jobs=${ONLY_JOBS}" >> "$GITHUB_OUTPUT"
           echo "skip_jobs=${SKIP_JOBS}" >> "$GITHUB_OUTPUT"
 
   feelpp:
+    name: Build Feelpp
     needs: [plan_ci]
     runs-on: self-docker
     if: |
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'feelpp')) &&
       !contains(needs.plan_ci.outputs.skip_jobs, 'feelpp')
-    continue-on-error: ${{ matrix.continue-on-error }}
-    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -140,10 +192,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - name: Build and Test Feelpp
-        run: |
-          echo "Building Feelpp for branch ${{ env.BRANCH }}"
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
+        # allow failures for certain rolling targets (step-level)
+        continue-on-error: ${{ contains('ubuntu:24.04 debian:13', matrix.target) }}
         env:
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
@@ -152,18 +204,20 @@ jobs:
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
+        run: |
+          echo "Building Feelpp for branch $BRANCH on $TARGET"
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
 
   testsuite:
+    name: Feelpp Testsuite
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'testsuite')) &&
       !contains(needs.plan_ci.outputs.skip_jobs, 'testsuite')
-    continue-on-error: true
-    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -173,7 +227,6 @@ jobs:
         with:
           submodules: recursive
       - name: Run Feelpp Testsuite
-        run: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
         env:
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
@@ -182,18 +235,19 @@ jobs:
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
 
   toolboxes:
+    name: Feelpp Toolboxes
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'toolboxes')) &&
       !contains(needs.plan_ci.outputs.skip_jobs, 'toolboxes')
-    continue-on-error: false
-    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -203,7 +257,6 @@ jobs:
         with:
           submodules: recursive
       - name: Build Feelpp Toolboxes
-        run: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
         env:
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
@@ -212,18 +265,19 @@ jobs:
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
 
   mor:
+    name: Feelpp MOR
     needs: [plan_ci, toolboxes]
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'mor')) &&
       !contains(needs.plan_ci.outputs.skip_jobs, 'mor')
-    continue-on-error: false
-    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -233,7 +287,6 @@ jobs:
         with:
           submodules: recursive
       - name: Build Feelpp MOR
-        run: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
         env:
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
@@ -242,18 +295,19 @@ jobs:
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh mor
 
   python:
+    name: Feelpp Python
     needs: [plan_ci, feelpp, toolboxes, mor]
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
+      !contains ( needs.*.result, 'failure') &&
+      !contains ( needs.*.result, 'cancelled') &&
       (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'python')) &&
       !contains(needs.plan_ci.outputs.skip_jobs, 'python')
-    continue-on-error: false
-    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -263,7 +317,6 @@ jobs:
         with:
           submodules: recursive
       - name: Build Feelpp Python
-        run: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
         env:
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
@@ -272,3 +325,5 @@ jobs:
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
