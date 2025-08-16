@@ -2,184 +2,216 @@ name: Feelpp CI
 
 on:
   pull_request:
-    branches:
-      - '*'
+    branches: ['*']
   push:
-    branches:
-      - master
-      - develop
+    branches: ['master', 'develop']
 
 jobs:
-  # --------------------------------------------------------------------------
-  check_skip:
+  # 1) Plan: unify message (PR or push), parse directives once, expose as outputs
+  plan_ci:
     runs-on: self-docker
     outputs:
-      check_skip_components: ${{ steps.flags.outputs.SKIP_COMPONENTS }}
-      check_skip_feelpp:     ${{ steps.flags.outputs.SKIP_FEELPP }}
-      check_skip_tests:      ${{ steps.flags.outputs.SKIP_TESTS }}
-      check_skip_toolboxes:  ${{ steps.flags.outputs.SKIP_TOOLBOXES }}
-      check_skip_mor:        ${{ steps.flags.outputs.SKIP_MOR }}
-      check_skip_python:     ${{ steps.flags.outputs.SKIP_PYTHON }}
+      message: ${{ steps.collect.outputs.message }}
+      targets_json: ${{ steps.collect.outputs.targets_json }}
+      skip_components: ${{ steps.collect.outputs.skip_components }}
+      skip_feelpp: ${{ steps.collect.outputs.skip_feelpp }}
+      skip_tests: ${{ steps.collect.outputs.skip_tests }}
+      skip_toolboxes: ${{ steps.collect.outputs.skip_toolboxes }}
+      skip_mor: ${{ steps.collect.outputs.skip_mor }}
+      skip_python: ${{ steps.collect.outputs.skip_python }}
     steps:
-      - name: Checkout code
+      - name: Checkout (full history for push commits)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
-      - name: Read message (PR title/body or commit msg)
-        id: msg
+      - name: Collect message + parse directives
+        id: collect
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "${{ github.event.head_commit.message || '' }}" ]; then
-            printf "%s\n" "${{ github.event.head_commit.message }}" > msg.txt
-          elif [ -n "${{ github.event.pull_request.number || '' }}" ]; then
-            printf "%s\n\n%s\n" "${{ github.event.pull_request.title }}" "${{ github.event.pull_request.body }}" > msg.txt
-          fi
-          echo "---- message ----"; cat msg.txt || true; echo "-----------------"
 
-      - name: Derive skip/only flags
-        id: flags
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nocasematch
-          msg="$(cat msg.txt || true)"
-
-          comps=(feelpp tests toolboxes mor python)
-          SKIP_COMPONENTS="false"
-          declare -A SKIP
-          for c in "${comps[@]}"; do SKIP["$c"]="false"; done
-
-          # Global skip
-          if [[ "$msg" =~ (^|[^a-z])ci[[:space:]]*skip([^a-z]|$) ]] \
-             || [[ "$msg" =~ (^|[^a-z])skip[[:space:]]*components([^a-z]|$) ]] \
-             || [[ "$msg" =~ \[ci[[:space:]]*skip\] ]]; then
-            SKIP_COMPONENTS="true"
-          fi
-
-          # only: directive
-          only_line="$(printf "%s" "$msg" | grep -iE '^[[:space:]]*only[[:space:]]*:' | tail -n1 || true)"
-          if [ -n "$only_line" ]; then
-            only_vals="$(printf "%s" "$only_line" \
-              | sed -E 's/^[[:space:]]*only[[:space:]]*:[[:space:]]*//I' \
-              | tr ',;|' ' ' | xargs)"
-            declare -A ONLY
-            for tok in $only_vals; do
-              t="${tok,,}"
-              [[ "$t" == "testsuite" ]] && t="tests"
-              ONLY["$t"]="1"
-            done
-            for c in "${comps[@]}"; do
-              if [ "${ONLY[$c]:-}" != "1" ]; then SKIP["$c"]="true"; fi
-            done
-          fi
-
-          # Per-component skip
-          for c in "${comps[@]}"; do
-            pat1="skip[[:space:]]*${c}"
-            pat2="skip[[:space:]]*:[[:space:]]*${c}"
-            pat3="ci[[:space:]]*skip[[:space:]]*${c}"
-            pat4="\\[skip[[:space:]]*${c}\\]"
-            if [[ "$msg" =~ $pat1 ]] || [[ "$msg" =~ $pat2 ]] || [[ "$msg" =~ $pat3 ]] || [[ "$msg" =~ $pat4 ]]; then
-              SKIP["$c"]="true"
+          # -------- 1) Canonical MESSAGE for both event types ----------
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            MSG="$(git log -1 --pretty=%B || true)"
+          else
+            # pull_request
+            PR_TITLE="${{ github.event.pull_request.title || '' }}"
+            PR_BODY="${{ github.event.pull_request.body  || '' }}"
+            MSG="$(printf "%s\n\n%s" "$PR_TITLE" "$PR_BODY" | sed 's/\r$//')"
+            if [[ -z "${MSG// /}" ]]; then
+              MSG="$(git log -1 --pretty=%B || true)"
             fi
+          fi
+
+          echo "---- canonical message ----"
+          printf "%s\n" "$MSG"
+          echo "---------------------------"
+
+          {
+            printf "message<<'EOF'\n"
+            printf "%s\n" "$MSG"
+            printf "EOF\n"
+          } >> "$GITHUB_OUTPUT"
+
+          # -------- 2) Defaults & helpers ----------
+          DEFAULT_TARGETS=("ubuntu:24.04" "ubuntu:22.04" "debian:13" "debian:12" "fedora:42")
+
+          trim() { sed -E 's/^[[:space:]]+|[[:space:]]+$//g'; }
+          csv_to_array() {
+            local csv="$1"
+            echo "$csv" | tr ', ' '\n\n' | tr -s '\n' | sed '/^$/d'
+          }
+          array_contains() {
+            local needle="$1"; shift
+            for x in "$@"; do [[ "$x" == "$needle" ]] && return 0; done
+            return 1
+          }
+          array_remove_many() {
+            local -n _arr="$1"; shift
+            local to_remove=("$@")
+            local keep=()
+            for x in "${_arr[@]}"; do
+              local drop=0
+              for r in "${to_remove[@]}"; do [[ "$x" == "$r" ]] && drop=1 && break; done
+              [[ $drop -eq 0 ]] && keep+=("$x")
+            done
+            _arr=("${keep[@]}")
+          }
+
+          # -------- 3) Parse directives from MESSAGE ----------
+          get_val() {
+            local key="$1"
+            echo "$MSG" | grep -iE "(^|[[:space:]])${key}=" | sed -E "s/.*${key}=([^[:space:]].*)/\1/i" | head -n1 | trim
+          }
+
+          VAL_ONLY="$(get_val only || true)"
+          VAL_TARGETS="$(get_val targets || true)"
+          VAL_INCLUDE="$(get_val include || true)"
+          VAL_EXCLUDE="$(get_val exclude || true)"
+          VAL_SKIP="$(get_val skip || true)"
+
+          WORKING=("${DEFAULT_TARGETS[@]}")
+
+          if [[ -n "${VAL_ONLY:-}" ]]; then
+            WORKING=()
+            while read -r t; do [[ -n "$t" ]] && WORKING+=("$t"); done < <(csv_to_array "$VAL_ONLY")
+          else
+            if [[ -n "${VAL_TARGETS:-}" ]]; then
+              WORKING=()
+              while read -r t; do [[ -n "$t" ]] && WORKING+=("$t"); done < <(csv_to_array "$VAL_TARGETS")
+            fi
+            if [[ -n "${VAL_INCLUDE:-}" ]]; then
+              while read -r t; do
+                [[ -z "$t" ]] && continue
+                if ! array_contains "$t" "${WORKING[@]}"; then
+                  WORKING+=("$t")
+                fi
+              done < <(csv_to_array "$VAL_INCLUDE")
+            fi
+          fi
+
+          if [[ -n "${VAL_EXCLUDE:-}" ]]; then
+            TO_DROP=()
+            while read -r t; do [[ -n "$t" ]] && TO_DROP+=("$t"); done < <(csv_to_array "$VAL_EXCLUDE")
+            array_remove_many WORKING "${TO_DROP[@]}"
+          fi
+
+          if [[ "${#WORKING[@]}" -eq 0 ]]; then
+            WORKING=("${DEFAULT_TARGETS[@]}")
+          fi
+
+          JSON="["
+          for i in "${!WORKING[@]}"; do
+            [[ $i -gt 0 ]] && JSON+=", "
+            JSON+="\"${WORKING[$i]}\""
           done
+          JSON+="]"
 
-          echo "SKIP_COMPONENTS=$SKIP_COMPONENTS" >> "$GITHUB_OUTPUT"
-          echo "SKIP_FEELPP=${SKIP[feelpp]}"       >> "$GITHUB_OUTPUT"
-          echo "SKIP_TESTS=${SKIP[tests]}"         >> "$GITHUB_OUTPUT"
-          echo "SKIP_TOOLBOXES=${SKIP[toolboxes]}" >> "$GITHUB_OUTPUT"
-          echo "SKIP_MOR=${SKIP[mor]}"             >> "$GITHUB_OUTPUT"
-          echo "SKIP_PYTHON=${SKIP[python]}"       >> "$GITHUB_OUTPUT"
+          echo "Resolved targets: ${WORKING[*]}"
+          echo "targets_json=${JSON}" >> "$GITHUB_OUTPUT"
 
-          echo "---- computed ----"
-          echo "SKIP_COMPONENTS=$SKIP_COMPONENTS"
-          for c in "${comps[@]}"; do echo "SKIP_${c^^}=${SKIP[$c]}"; done
+          # -------- 4) Skip flags ----------
+          lc_msg="$(printf "%s" "$MSG" | tr '[:upper:]' '[:lower:]')"
+          has_token() { grep -qiE "(^|[^a-z])$1([^a-z]|$)" <<< "$lc_msg"; }
 
-  # --------------------------------------------------------------------------
-  select_targets:
+          SKIP_COMPONENTS=false
+          SKIP_FEELPP=false
+          SKIP_TESTS=false
+          SKIP_TOOLBOXES=false
+          SKIP_MOR=false
+          SKIP_PYTHON=false
+
+          if [[ -n "${VAL_SKIP:-}" ]]; then
+            l="$(echo "$VAL_SKIP" | tr '[:upper:]' '[:lower:]')"
+            [[ "$l" == *components* ]] && SKIP_COMPONENTS=true
+            [[ "$l" == *feelpp*     ]] && SKIP_FEELPP=true
+            [[ "$l" == *tests*      ]] && SKIP_TESTS=true
+            [[ "$l" == *toolboxes*  ]] && SKIP_TOOLBOXES=true
+            [[ "$l" == *mor*        ]] && SKIP_MOR=true
+            [[ "$l" == *python*     ]] && SKIP_PYTHON=true
+          fi
+
+          has_token "skip components" && SKIP_COMPONENTS=true
+          has_token "skip feelpp"     && SKIP_FEELPP=true
+          has_token "skip tests"      && SKIP_TESTS=true
+          has_token "skip toolboxes"  && SKIP_TOOLBOXES=true
+          has_token "skip mor"        && SKIP_MOR=true
+          has_token "skip python"     && SKIP_PYTHON=true
+
+          echo "skip_components=${SKIP_COMPONENTS}" >> "$GITHUB_OUTPUT"
+          echo "skip_feelpp=${SKIP_FEELPP}"         >> "$GITHUB_OUTPUT"
+          echo "skip_tests=${SKIP_TESTS}"           >> "$GITHUB_OUTPUT"
+          echo "skip_toolboxes=${SKIP_TOOLBOXES}"   >> "$GITHUB_OUTPUT"
+          echo "skip_mor=${SKIP_MOR}"               >> "$GITHUB_OUTPUT"
+          echo "skip_python=${SKIP_PYTHON}"         >> "$GITHUB_OUTPUT"
+
+  # 2) Legacy adapter so your existing conditionals keep working
+  check_skip:
+    needs: [plan_ci]
     runs-on: self-docker
     outputs:
-      feelpp:     ${{ steps.mk.outputs.FEELPP }}
-      testsuite:  ${{ steps.mk.outputs.TESTSUITE }}
-      toolboxes:  ${{ steps.mk.outputs.TOOLBOXES }}
-      mor:        ${{ steps.mk.outputs.MOR }}
-      python:     ${{ steps.mk.outputs.PYTHON }}
+      check_skip_components: ${{ needs.plan_ci.outputs.skip_components }}
+      check_skip_feelpp:     ${{ needs.plan_ci.outputs.skip_feelpp }}
+      check_skip_tests:      ${{ needs.plan_ci.outputs.skip_tests }}
+      check_skip_toolboxes:  ${{ needs.plan_ci.outputs.skip_toolboxes }}
+      check_skip_mor:        ${{ needs.plan_ci.outputs.skip_mor }}
+      check_skip_python:     ${{ needs.plan_ci.outputs.skip_python }}
     steps:
-      - name: Read commit message / PR text
-        id: msg
+      - name: Echo plan summary
         run: |
-          if [ -n "${{ github.event.head_commit.message || '' }}" ]; then
-            printf "%s\n" "${{ github.event.head_commit.message }}" > msg.txt
-          elif [ -n "${{ github.event.pull_request.number || '' }}" ]; then
-            printf "%s\n\n%s\n" "${{ github.event.pull_request.title }}" "${{ github.event.pull_request.body }}" > msg.txt
-          fi
-          echo "---- message ----"; cat msg.txt || true; echo "-----------------"
+          echo "Message:"
+          printf '%s\n' "${{ needs.plan_ci.outputs.message }}"
+          echo
+          echo "Targets JSON: ${{ needs.plan_ci.outputs.targets_json }}"
+          echo "Skip components: ${{ needs.plan_ci.outputs.skip_components }}"
+          echo "Skip feelpp:     ${{ needs.plan_ci.outputs.skip_feelpp }}"
+          echo "Skip tests:      ${{ needs.plan_ci.outputs.skip_tests }}"
+          echo "Skip toolboxes:  ${{ needs.plan_ci.outputs.skip_toolboxes }}"
+          echo "Skip mor:        ${{ needs.plan_ci.outputs.skip_mor }}"
+          echo "Skip python:     ${{ needs.plan_ci.outputs.skip_python }}"
 
-      - name: Make matrices
-        id: mk
-        shell: bash
-        run: |
-          set -euo pipefail
-          FEELPP_DEF='["ubuntu:24.04","ubuntu:22.04","debian:13","debian:12","fedora:42"]'
-          TESTSUITE_DEF='["ubuntu:24.04","ubuntu:22.04","debian:12"]'
-          TOOLBOXES_DEF='["ubuntu:24.04","ubuntu:22.04","debian:12"]'
-          MOR_DEF='["ubuntu:24.04","ubuntu:22.04","debian:12"]'
-          PYTHON_DEF='["ubuntu:24.04","ubuntu:22.04","debian:12"]'
-
-          msg=$(cat msg.txt)
-
-          extract() {
-            local key="$1"
-            line=$(grep -iE "^[[:space:]]*${key}:" msg.txt | tail -n1 || true)
-            [ -z "$line" ] && return 0
-            vals=$(printf "%s" "$line" \
-              | sed -E "s/^[[:space:]]*${key}:[[:space:]]*//I" \
-              | tr ',;|' ' ' | xargs)
-            echo "$vals"
-          }
-          to_json() {
-            [ -z "${1:-}" ] && echo "[]" && return
-            arr=(); for tok in $1; do arr+=("\"$tok\""); done
-            IFS=, eval 'echo "[${arr[*]}]"'
-          }
-
-          ALL=$(extract "targets")
-          FEELPP=$(extract "targets-feelpp")
-          TESTSUITE=$(extract "targets-testsuite")
-          TOOLBOXES=$(extract "targets-toolboxes")
-          MOR=$(extract "targets-mor")
-          PYTHON=$(extract "targets-python")
-
-          pick() {
-            local specific="$1" all="$2" def="$3"
-            if [ -n "$specific" ]; then to_json "$specific"
-            elif [ -n "$all" ]; then to_json "$all"
-            else echo "$def"; fi
-          }
-
-          echo "FEELPP=$(pick "$FEELPP" "$ALL" "$FEELPP_DEF")"       >> "$GITHUB_OUTPUT"
-          echo "TESTSUITE=$(pick "$TESTSUITE" "$ALL" "$TESTSUITE_DEF")" >> "$GITHUB_OUTPUT"
-          echo "TOOLBOXES=$(pick "$TOOLBOXES" "$ALL" "$TOOLBOXES_DEF")" >> "$GITHUB_OUTPUT"
-          echo "MOR=$(pick "$MOR" "$ALL" "$MOR_DEF")"                   >> "$GITHUB_OUTPUT"
-          echo "PYTHON=$(pick "$PYTHON" "$ALL" "$PYTHON_DEF")"          >> "$GITHUB_OUTPUT"
-
-  # --------------------------------------------------------------------------
+  # 3) Build Feelpp (targets are dynamic)
   feelpp:
-    needs: [check_skip, select_targets]
+    needs: [plan_ci, check_skip]
     runs-on: self-docker
-    if: needs.check_skip.outputs.check_skip_components == 'false' &&
-        needs.check_skip.outputs.check_skip_feelpp == 'false'
+    if: |
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_feelpp == 'false'
+    continue-on-error: false
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON(needs.select_targets.outputs.feelpp) }}
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
+        with:
+          submodules: recursive
       - name: Build and Test Feelpp
-        run: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
+        run: |
+          echo "Building Feelpp for branch ${{ env.BRANCH }} on ${{ matrix.target }}"
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
         env:
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
@@ -189,101 +221,125 @@ jobs:
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
 
-  # --------------------------------------------------------------------------
   testsuite:
-    needs: [check_skip, feelpp, select_targets]
+    needs: [plan_ci, check_skip, feelpp]
     runs-on: self-docker
-    if: always() &&
-        !contains(needs.*.result, 'failure') &&
-        needs.check_skip.outputs.check_skip_components == 'false' &&
-        needs.check_skip.outputs.check_skip_tests == 'false'
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_tests == 'false'
+    continue-on-error: true
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
-        TARGET: ${{ fromJSON(needs.select_targets.outputs.testsuite) }}
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
-      - run: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
+        with:
+          submodules: recursive
+      - name: Run Feelpp Testsuite
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
         env:
-          TARGET: ${{ matrix.TARGET }}
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
 
-  # --------------------------------------------------------------------------
   toolboxes:
-    needs: [check_skip, feelpp, select_targets]
+    needs: [plan_ci, check_skip, feelpp]
     runs-on: self-docker
-    if: always() &&
-        !contains(needs.*.result, 'failure') &&
-        needs.check_skip.outputs.check_skip_components == 'false' &&
-        needs.check_skip.outputs.check_skip_toolboxes == 'false'
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_toolboxes == 'false'
+    continue-on-error: false
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
-        TARGET: ${{ fromJSON(needs.select_targets.outputs.toolboxes) }}
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
-      - run: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
+        with:
+          submodules: recursive
+      - name: Build Feelpp Toolboxes
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
         env:
-          TARGET: ${{ matrix.TARGET }}
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
 
-  # --------------------------------------------------------------------------
   mor:
-    needs: [check_skip, toolboxes, select_targets]
+    needs: [plan_ci, check_skip, toolboxes]
     runs-on: self-docker
-    if: always() &&
-        !contains(needs.*.result, 'failure') &&
-        needs.check_skip.outputs.check_skip_components == 'false' &&
-        needs.check_skip.outputs.check_skip_mor == 'false'
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_mor == 'false'
+    continue-on-error: false
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
-        TARGET: ${{ fromJSON(needs.select_targets.outputs.mor) }}
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
-      - run: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
+        with:
+          submodules: recursive
+      - name: Build Feelpp MOR
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh mor
         env:
-          TARGET: ${{ matrix.TARGET }}
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
 
-  # --------------------------------------------------------------------------
   python:
-    needs: [check_skip, feelpp, toolboxes, mor, select_targets]
+    needs: [plan_ci, check_skip, feelpp, toolboxes, mor]
     runs-on: self-docker
-    if: always() &&
-        !contains(needs.*.result, 'failure') &&
-        needs.check_skip.outputs.check_skip_components == 'false' &&
-        needs.check_skip.outputs.check_skip_python == 'false'
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      needs.check_skip.outputs.check_skip_components == 'false' &&
+      needs.check_skip.outputs.check_skip_python == 'false'
+    continue-on-error: false
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
-        TARGET: ${{ fromJSON(needs.select_targets.outputs.python) }}
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: recursive }
-      - run: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
+        with:
+          submodules: recursive
+      - name: Build Feelpp Python
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
         env:
-          TARGET: ${{ matrix.TARGET }}
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          TARGET: ${{ matrix.target }}
           BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
