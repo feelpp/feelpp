@@ -279,10 +279,18 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( RangeType && rangeF
     mpi::request * mpiRequests = new mpi::request[nRequests];
 
     std::unordered_set< size_type > eltsToVisit, eltsVisited;
-    auto const& intersectingElements = this->intersectingElements();
     auto const rangeMeshBoundaryElements = boundaryelements( this->meshDistance() );
     std::for_each( rangeMeshBoundaryElements.begin(), rangeMeshBoundaryElements.end(),
             [&eltsToVisit]( auto const& elt ) { eltsToVisit.insert( elt.id() ); } );
+
+    // Helper: membership test by element id in the cached touching-elements range
+    auto const is_intersecting = [this]( size_type id ) -> bool {
+        for (auto it = M_eltsTouchingFaces.begin(), en = M_eltsTouchingFaces.end(); it != en; ++it) {
+            auto const& e = boost::unwrap_ref(*it);
+            if ( e.id() == id ) return true;
+        }
+        return false;
+    };
 
     bool eltsToVisitIsEmptyOnAllProc = false;
     while( !eltsToVisitIsEmptyOnAllProc )
@@ -321,7 +329,7 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( RangeType && rangeF
                 }
                 if( eltsVisited.find( neighId ) != eltsVisited.end()
                         // stop when reaching an intersecting elt
-                        || intersectingElements.find( neighId ) != intersectingElements.end() )
+                        || is_intersecting( neighId ) )
                     continue;
                 // need to visit neighbor
                 eltsToVisit.insert( neighId );
@@ -346,7 +354,7 @@ DistanceToRange< FunctionSpaceType >::signedDistanceToFaces( RangeType && rangeF
             {
                 if( eltsVisited.find( eltId ) != eltsVisited.end()
                         // stop when reaching an intersecting elt
-                        || M_eltsTouchingFaces->find( eltId ) != intersectingElements.end() )
+                        || is_intersecting( eltId ) )
                     continue;
                 // need to visit neighbor
                 eltsToVisit.insert( eltId );
@@ -405,7 +413,6 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( RangeType && rangeF
 
     auto const elementDofsNeighbouringFaces = [&]( size_type const faceId, auto const faceDofsBe, auto const faceDofsEn, size_type const eltId )
     {
-        auto const [eltDofsBegin, eltDofsEnd] = this->functionSpaceDistance()->dof()->localDof( eltId );
         for( auto const& [lDof, gDof]: this->functionSpaceDistance()->dof()->localDof( eltId ) )
         {
             size_type const dofId = gDof.index();
@@ -439,25 +446,26 @@ DistanceToRange< FunctionSpaceType >::dofsNeighbouringFaces( RangeType && rangeF
 
 namespace na::distancetorange {
     using max_distance = NA::named_argument_t<struct max_distance_tag>;
-    using fm_stride = NA::named_argument_t<struct fm_stride_tag>;
+    using fm_stride    = NA::named_argument_t<struct fm_stride_tag>;
 }
 inline constexpr auto& _max_distance = NA::identifier<na::distancetorange::max_distance>;
-inline constexpr auto& _fm_stride = NA::identifier<na::distancetorange::fm_stride>;
+inline constexpr auto& _fm_stride    = NA::identifier<na::distancetorange::fm_stride>;
 
 template< typename ... Args >
 auto distanceToRange( Args && ... nargs )
 {
-    auto args = NA::make_arguments( std::forward<Args>(nargs)... );
+    auto args  = NA::make_arguments( std::forward<Args>(nargs)... );
     auto && space = args.get( _space );
     auto && range = args.get( _range );
-    double maxDistance = args.get_else( _max_distance, -1. );
+    double maxDistance        = args.get_else( _max_distance, -1. );
     double fastMarchingStride = args.get_else( _fm_stride, -1. );
+
+    // CTAD should deduce FunctionSpaceType from shared_ptr<FunctionSpaceType>
     DistanceToRange distToRange( std::forward<decltype(space)>(space) );
     distToRange.setMaxDistance( maxDistance );
     distToRange.setFastMarchingStride( fastMarchingStride );
     return distToRange.unsignedDistance( std::forward<decltype(range)>(range) );
 }
-
 
 } // namespace Feel
 
