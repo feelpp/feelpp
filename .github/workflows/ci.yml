@@ -31,10 +31,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          printf "%s\n" "${{ github.event.head_commit.message }}" > msg.txt
           if [ -n "${{ github.event.pull_request.number || '' }}" ]; then
-            printf "%s\n\n%s\n" "${{ github.event.pull_request.title }}" "${{ github.event.pull_request.body }}" > msg.txt
-          else
-            printf "%s\n" "${{ github.event.head_commit.message }}" > msg.txt
+            printf "\nPR: %s\n\n%s\n" "${{ github.event.pull_request.title }}" "${{ github.event.pull_request.body }}" >> msg.txt
           fi
           echo "---- message ----"; cat msg.txt || true; echo "-----------------"
 
