@@ -47,11 +47,12 @@ jobs:
           printf "%s\n" "$MSG"
           echo "---------------------------"
 
-          # Emit safely to outputs via EOF-delimited block to preserve newlines
+          # Emit safely to outputs via an unquoted, unique delimiter
+          DELIM="EOF_$(date +%s%N)"
           {
-            printf "message<<'EOF'\n"
+            echo "message<<$DELIM"
             printf "%s\n" "$MSG"
-            printf "EOF\n"
+            echo "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
           # --- 2) Defaults & helpers ---
