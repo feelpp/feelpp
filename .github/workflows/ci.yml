@@ -8,135 +8,19 @@ on:
 
 jobs:
   plan_ci:
-    runs-on: self-docker
+    runs-on: ubuntu-latest
     outputs:
-      message:      ${{ steps.plan.outputs.message }}
-      targets_json: ${{ steps.plan.outputs.targets_json }}
-      targets_list: ${{ steps.plan.outputs.targets_list }}
+      mode:         ${{ steps.plan.outputs.mode }}
       only_jobs:    ${{ steps.plan.outputs.only_jobs }}
       skip_jobs:    ${{ steps.plan.outputs.skip_jobs }}
+      targets_json: ${{ steps.plan.outputs.targets_json }}
+      targets_list: ${{ steps.plan.outputs.targets_list }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || '' }}
-
       - id: plan
-        name: Plan CI
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # --- 1) Canonical message (PR title+body or last commit) ---
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            MSG="$(git log -1 --pretty=%B || true)"
-          else
-            PR_TITLE="${{ github.event.pull_request.title || '' }}"
-            PR_BODY="${{ github.event.pull_request.body  || '' }}"
-            MSG="$(printf "%s\n\n%s" "$PR_TITLE" "$PR_BODY" | sed 's/\r$//')"
-            [[ -z "${MSG// /}" ]] && MSG="$(git log -1 --pretty=%B || true)"
-          fi
-
-          echo "---- canonical message ----"
-          printf "%s\n" "$MSG"
-          echo "---------------------------"
-
-          # Emit safely to outputs via an unquoted, unique delimiter (DELIM patch)
-          DELIM="EOF_$(date +%s%N)"
-          {
-            echo "message<<$DELIM"
-            printf "%s\n" "$MSG"
-            echo "$DELIM"
-          } >> "$GITHUB_OUTPUT"
-
-          # Combine PR fields + last commit for directive parsing
-          LAST_COMMIT="$(git log -1 --pretty=%B || true)"
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR_TITLE="${{ github.event.pull_request.title || '' }}"
-            PR_BODY="${{ github.event.pull_request.body  || '' }}"
-            COMBINED="$(printf "%s\n\n%s\n\n%s" "$PR_TITLE" "$PR_BODY" "$LAST_COMMIT")"
-          else
-            COMBINED="$LAST_COMMIT"
-          fi
-
-          # --- 2) Helpers ---
-          trim() { sed -E 's/^[[:space:]]+|[[:space:]]+$//g'; }
-          csv_to_array() { echo "$1" | tr ', \n' '\n\n\n' | tr -s '\n' | sed '/^$/d'; }
-          array_contains(){ local n="$1"; shift; for x in "$@"; do [[ "$x" == "$n" ]] && return 0; done; return 1; }
-          array_remove_many(){ local -n A="$1"; shift; local R=("$@"); local K=(); for x in "${A[@]}"; do d=0; for r in "${R[@]}"; do [[ "$x" == "$r" ]] && d=1 && break; done; [[ $d -eq 0 ]] && K+=("$x"); done; A=("${K[@]}"); }
-
-          # --- 3) Defaults & directive getters ---
-          DEFAULT_TARGETS=("ubuntu:24.04" "ubuntu:22.04" "debian:13" "debian:12" "fedora:42")
-
-          get_val() {
-            local key="$1"
-            printf "%s\n" "$COMBINED" \
-              | grep -iE "^[[:space:]]*${key}=" \
-              | sed -E "s/^[[:space:]]*${key}=//i" \
-              | head -n1 | trim
-          }
-
-          VAL_ONLY_JOBS="$(get_val only || true)"
-          VAL_SKIP_JOBS="$(get_val skip || true)"
-          VAL_TARGETS="$(get_val targets || true)"
-          VAL_INCLUDE="$(get_val include || true)"
-          VAL_EXCLUDE="$(get_val exclude || true)"
-
-          # --- 4) Resolve TARGETS ---
-          WORKING=("${DEFAULT_TARGETS[@]}")
-
-          if [[ -n "${VAL_TARGETS:-}" ]]; then
-            WORKING=()
-            while read -r t; do [[ -n "$t" ]] && WORKING+=("$t"); done < <(csv_to_array "$VAL_TARGETS")
-          fi
-
-          if [[ -n "${VAL_INCLUDE:-}" ]]; then
-            while read -r t; do
-              [[ -z "$t" ]] && continue
-              array_contains "$t" "${WORKING[@]}" || WORKING+=("$t")
-            done < <(csv_to_array "$VAL_INCLUDE")
-          fi
-
-          if [[ -n "${VAL_EXCLUDE:-}" ]]; then
-            TO_DROP=()
-            while read -r t; do [[ -n "$t" ]] && TO_DROP+=("$t"); done < <(csv_to_array "$VAL_EXCLUDE")
-            array_remove_many WORKING "${TO_DROP[@]}"
-          fi
-
-          [[ "${#WORKING[@]}" -eq 0 ]] && WORKING=("${DEFAULT_TARGETS[@]}")
-
-          JSON="["
-          for i in "${!WORKING[@]}"; do [[ $i -gt 0 ]] && JSON+=", "; JSON+="\"${WORKING[$i]}\""; done
-          JSON+="]"
-
-          echo "targets_json=${JSON}"       >> "$GITHUB_OUTPUT"
-          echo "targets_list=${WORKING[*]}" >> "$GITHUB_OUTPUT"
-
-          # --- 5) Resolve job selection (only_jobs / skip_jobs) ---
-          normalize_jobs(){ echo "$1" | tr ',\n' '  ' | tr -s ' ' | trim | tr '[:upper:]' '[:lower:]'; }
-          ONLY_JOBS="$(normalize_jobs "${VAL_ONLY_JOBS:-}")"
-          SKIP_JOBS="$(normalize_jobs "${VAL_SKIP_JOBS:-}")"
-
-          # Legacy free-text tokens (for back-compat)
-          ALL_MSG="$(printf "%s\n\n%s" "$COMBINED" "$LAST_COMMIT" | tr '[:upper:]' '[:lower:]')"
-          add_skip_if_token(){ grep -qiE "(^|[^a-z])$1([^a-z]|$)" <<< "$ALL_MSG" && SKIP_JOBS="$(printf "%s %s" "$SKIP_JOBS" "$2")"; true; }
-          add_skip_if_token "skip components" "components"
-          add_skip_if_token "skip feelpp"     "feelpp"
-          add_skip_if_token "skip tests"      "testsuite"
-          add_skip_if_token "skip toolboxes"  "toolboxes"
-          add_skip_if_token "skip mor"        "mor"
-          add_skip_if_token "skip python"     "python"
-
-          echo "only_jobs=${ONLY_JOBS}" >> "$GITHUB_OUTPUT"
-          echo "skip_jobs=${SKIP_JOBS}" >> "$GITHUB_OUTPUT"
-
-          # --- Debug summary ---
-          echo "---- plan_ci summary ----"
-          echo "ONLY_JOBS: ${ONLY_JOBS:-<empty>}"
-          echo "SKIP_JOBS: ${SKIP_JOBS:-<empty>}"
-          echo "TARGETS_LIST: ${WORKING[*]}"
-          echo "TARGETS_JSON: ${JSON}"
-          echo "-------------------------"
+        uses: feelpp/ci-matrix-planner@v1
+        with:
+          config-path: .github/plan-ci.json
 
   feelpp:
     needs: [plan_ci]
@@ -149,6 +33,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
+      - run: echo "Build feelpp on ${{ matrix.target }} in mode=${{ needs.plan_ci.outputs.mode }}"
       - uses: actions/checkout@v4
         with:
           submodules: recursive
