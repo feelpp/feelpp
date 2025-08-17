@@ -18,24 +18,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: msg
+      - name: Collect CI directives
+        id: ci_msg
+        shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            printf '%s\n\n%s\n' "${{ github.event.pull_request.title }}" "${{ github.event.pull_request.body }}" > msg.txt
-          else
-            git log -1 --pretty=%B > msg.txt
+          set -euo pipefail
+          pr_title="${{ github.event.pull_request.title || '' }}"
+          pr_body="${{ github.event.pull_request.body || '' }}"
+          pr_msg="$(printf '%s\n\n%s\n' "$pr_title" "$pr_body" | sed -E 's/\r$//')"
+          commit_msg="$(git log -1 --pretty=%B || true)"
+
+          has_directives() {
+            grep -qiE '(^|[[:space:]])(only|skip|targets|include|exclude|mode)='
+          }
+
+          msg="$pr_msg"
+          if ! printf '%s' "$msg" | has_directives; then
+            if printf '%s' "$commit_msg" | has_directives; then
+              # append commit message only if it has directives
+              msg="${msg:+$msg\n\n---\n}$commit_msg"
+            fi
           fi
-          delim="EOF_${RANDOM}_$(date +%s%N)"
+
+          DELIM="EOF_$(date +%s%N)"
           {
-            echo "message<<$delim"
-            cat msg.txt
-            echo "$delim"
+            echo "message<<$DELIM"
+            printf "%b\n" "$msg"
+            echo "$DELIM"
           } >> "$GITHUB_OUTPUT"
 
       - uses: feelpp/ci-matrix-planner@main
         with:
           config-path: .github/plan-ci.json
-          message-override: ${{ steps.msg.outputs.message }}
+          message-override: ${{ steps.ci_msg.outputs.message }}
 
   feelpp:
     needs: [plan_ci]
