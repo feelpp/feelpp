@@ -8,33 +8,44 @@ on:
 
 jobs:
   plan_ci:
+    name: Plan CI matrix
     runs-on: ubuntu-latest
     outputs:
-      mode:         ${{ steps.plan.outputs.mode }}
-      only_jobs:    ${{ steps.plan.outputs.only_jobs }}
-      skip_jobs:    ${{ steps.plan.outputs.skip_jobs }}
-      targets_json: ${{ steps.plan.outputs.targets_json }}
-      targets_list: ${{ steps.plan.outputs.targets_list }}
+      mode:          ${{ steps.plan.outputs.mode }}
+      only_jobs:     ${{ steps.plan.outputs.only_jobs }}
+      skip_jobs:     ${{ steps.plan.outputs.skip_jobs }}
+      targets_json:  ${{ steps.plan.outputs.targets_json }}
+      targets_list:  ${{ steps.plan.outputs.targets_list }}
+      enabled_jobs:  ${{ steps.plan.outputs.enabled_jobs }}
     steps:
       - uses: actions/checkout@v4
+
+      # Planner reads PR title/body (for pull_request),
+      # or falls back to the latest commit message.
       - uses: feelpp/ci-matrix-planner@main
         id: plan
         with:
           config-path: .github/plan-ci.json
+          # lets the action read PR head commit via API when needed
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   feelpp:
+    name: Build Feelpp (library)
     needs: [plan_ci]
     runs-on: self-docker
     if: |
-      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'feelpp')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'feelpp')
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp')
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - run: echo "Build feelpp on ${{ matrix.target }} in mode=${{ needs.plan_ci.outputs.mode }}"
+      - name: Echo plan
+        run: |
+          echo "Mode: '${{ needs.plan_ci.outputs.mode }}'"
+          echo "Targets: ${{ needs.plan_ci.outputs.targets_list }}"
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -52,12 +63,15 @@ jobs:
           JOBS: 20
 
   testsuite:
+    name: Run Testsuite
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
-      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'testsuite')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'testsuite') &&
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'testsuite') &&
       needs.feelpp.result == 'success'
+    continue-on-error: true
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -79,12 +93,14 @@ jobs:
           JOBS: 20
 
   toolboxes:
+    name: Build Toolboxes
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
-      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'toolboxes')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'toolboxes') &&
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes') &&
       needs.feelpp.result == 'success'
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -106,12 +122,14 @@ jobs:
           JOBS: 20
 
   mor:
+    name: Build MOR
     needs: [plan_ci, toolboxes]
     runs-on: self-docker
     if: |
-      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'mor')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'mor') &&
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'mor') &&
       needs.toolboxes.result == 'success'
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
@@ -133,12 +151,14 @@ jobs:
           JOBS: 20
 
   python:
+    name: Build Python bindings
     needs: [plan_ci, mor]
     runs-on: self-docker
     if: |
-      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'python')) &&
-      !contains(needs.plan_ci.outputs.skip_jobs, 'python') &&
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'python') &&
       needs.mor.result == 'success'
+    timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix:
