@@ -22,12 +22,26 @@ jobs:
 
       # Planner reads PR title/body (for pull_request),
       # or falls back to the latest commit message.
-      - uses: feelpp/ci-matrix-planner@main
+      - uses: feelpp/ci-matrix-planner@v1.1
         id: plan
         with:
           config-path: .github/plan-ci.json
           # lets the action read PR head commit via API when needed
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  diag:
+    name: Planner diagnostics
+    needs: [plan_ci]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo planner outputs
+        run: |
+          echo "MODE=${{ needs.plan_ci.outputs.mode }}"
+          echo "ENABLED_JOBS=${{ needs.plan_ci.outputs.enabled_jobs }}"
+          echo "ONLY_JOBS=${{ needs.plan_ci.outputs.only_jobs }}"
+          echo "SKIP_JOBS=${{ needs.plan_ci.outputs.skip_jobs }}"
+          echo "TARGETS_LIST=${{ needs.plan_ci.outputs.targets_list }}"
+          echo "TARGETS_JSON=${{ needs.plan_ci.outputs.targets_json }}"
 
   feelpp:
     name: Build Feelpp (library)
