@@ -17,10 +17,25 @@ jobs:
       targets_list: ${{ steps.plan.outputs.targets_list }}
     steps:
       - uses: actions/checkout@v4
-      - id: plan
-        uses: feelpp/ci-matrix-planner@main
+
+      - id: msg
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            printf '%s\n\n%s\n' "${{ github.event.pull_request.title }}" "${{ github.event.pull_request.body }}" > msg.txt
+          else
+            git log -1 --pretty=%B > msg.txt
+          fi
+          delim="EOF_${RANDOM}_$(date +%s%N)"
+          {
+            echo "message<<$delim"
+            cat msg.txt
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: feelpp/ci-matrix-planner@main
         with:
           config-path: .github/plan-ci.json
+          message-override: ${{ steps.msg.outputs.message }}
 
   feelpp:
     needs: [plan_ci]
