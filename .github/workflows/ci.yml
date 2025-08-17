@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: plan
-        uses: feelpp/ci-matrix-planner@v1
+        uses: feelpp/ci-matrix-planner@main
         with:
           config-path: .github/plan-ci.json
 
