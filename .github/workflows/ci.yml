@@ -17,6 +17,9 @@ jobs:
       targets_json:  ${{ steps.plan.outputs.targets_json }}
       targets_list:  ${{ steps.plan.outputs.targets_list }}
       enabled_jobs:  ${{ steps.plan.outputs.enabled_jobs }}
+      raw_message:   ${{ steps.plan.outputs.raw_message }}
+      raw_directives: ${{ steps.plan.outputs.raw_directives }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +47,6 @@ jobs:
           echo "TARGETS_JSON=${{ needs.plan_ci.outputs.targets_json }}"
           echo "RAW:     ${{ steps.plan_ci.outputs.raw_message }}"
           echo "DIRS:    ${{ steps.plan_ci.outputs.raw_directives }}"
-          echo "TARGETS: ${{ steps.plan_ci.outputs.targets_list }}"
 
   feelpp:
     name: Build Feelpp (library)
