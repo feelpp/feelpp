@@ -22,7 +22,7 @@ jobs:
 
       # Planner reads PR title/body (for pull_request),
       # or falls back to the latest commit message.
-      - uses: feelpp/ci-matrix-planner@v1.3
+      - uses: feelpp/ci-matrix-planner@main
         id: plan
         with:
           config-path: .github/plan-ci.json
@@ -96,6 +96,7 @@ jobs:
           submodules: recursive
       - name: Run Feelpp Testsuite
         run: |
+          echo "Building Feelpp/Tests for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
           feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
         env:
           TARGET: ${{ matrix.target }}
