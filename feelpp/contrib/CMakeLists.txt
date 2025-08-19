@@ -79,7 +79,7 @@ if ( FEELPP_USE_EXTERNAL_FMT )
   target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
 else()
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9)
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG 11.2.0)
 
 set(FMT_INSTALL ON)
 set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")

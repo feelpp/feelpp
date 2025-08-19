@@ -43,14 +43,14 @@ int main( int argc, char** argv )
     std::cout << fmt::format("version string: {}", Info::versionString() ) << std::endl<< std::endl;
     std::cout << fmt::format("       buildid: {}", Info::buildId() ) << std::endl;
     std::cout << fmt::format("{:-^60}","[ directories ]") << std::endl;
-    std::cout << fmt::format("        prefix: {}", Info::prefix() ) << std::endl;
-    std::cout << fmt::format("        libdir: {}", Info::libdir() ) << std::endl;
-    std::cout << fmt::format("     plugindir: {}", Info::plugindir() ) << std::endl;
-    std::cout << fmt::format("       datadir: {}", Info::datadir() ) << std::endl<< std::endl;
+    std::cout << fmt::format("        prefix: {}", fmt::streamed(Info::prefix()) ) << std::endl;
+    std::cout << fmt::format("        libdir: {}", fmt::streamed(Info::libdir()) ) << std::endl;
+    std::cout << fmt::format("     plugindir: {}", fmt::streamed(Info::plugindir()) ) << std::endl;
+    std::cout << fmt::format("       datadir: {}", fmt::streamed(Info::datadir()) ) << std::endl<< std::endl;
     std::cout << fmt::format("{:-^60}","[ repository ]") << std::endl;
-    std::cout << fmt::format("       root: {}", Environment::rootRepository() ) << std::endl;
-    std::cout << fmt::format("  downloads: {}", Environment::downloadsRepository() ) << std::endl;
-    std::cout << fmt::format("application: {}", Environment::appRepository() ) << std::endl<< std::endl;  
+    std::cout << fmt::format("       root: {}", fmt::streamed(Environment::rootRepository()) ) << std::endl;
+    std::cout << fmt::format("  downloads: {}", fmt::streamed(Environment::downloadsRepository()) ) << std::endl;
+    std::cout << fmt::format("application: {}", fmt::streamed(Environment::appRepository()) ) << std::endl<< std::endl;
     if ( Info::gitMetadata().populated())
     {
         std::cout << fmt::format("{:-^60}","[ git ]") << std::endl;
