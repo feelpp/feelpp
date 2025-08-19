@@ -23,8 +23,10 @@
  */
 #ifndef FEELPP_PARTITIONERMETIS_IMPL_HPP
 #define FEELPP_PARTITIONERMETIS_IMPL_HPP 1
-
+#include <chrono>
 #include <fmt/chrono.h>
+
+
 
 namespace Metis {
 extern "C" {
@@ -39,6 +41,8 @@ extern "C" {
 
 
 namespace Feel {
+
+using clock = std::chrono::system_clock;
 
 template<typename MeshType>
 void
@@ -125,7 +129,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 #endif
             for ( auto const& [name, agg] : this->aggregates() )
             {
-                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ]  aggregate {} markers: {} analysis...\n", fmt::localtime( std::time( nullptr ) ), name, agg.markers() ) << std::endl;
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ]  aggregate {} markers: {} analysis...\n", fmt::gmtime(clock::now()), name, agg.markers() ) << std::endl;
                 LOG(INFO) << " -- aggregate " << name << " markers:" << agg.markers() << std::endl;
                 for ( auto const& eltWrap : rangeMeshElt )
                 {
@@ -139,7 +143,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                     }
                 }
                 LOG(INFO) << " -- aggregate " << name << " size:" << vibc[name].size() << std::endl;
-                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} analysis complete, size: {}\n", fmt::localtime( std::time( nullptr ) ), name, vibc[name].size() ) << std::endl;
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} analysis complete, size: {}\n", fmt::gmtime(clock::now()), name, vibc[name].size() ) << std::endl;
             }
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
@@ -306,11 +310,11 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
         }
         if ( same_pid )
         {
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} same pid {}\n", fmt::localtime( std::time( nullptr ) ), name, agg.markers(), pid ) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} same pid {}\n", fmt::gmtime(clock::now()), name, agg.markers(), pid ) << std::endl;
         }
         else
         {
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} different pid\n", fmt::localtime( std::time(nullptr) ), name, agg.markers() ) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} different pid\n", fmt::gmtime(clock::now()), name, agg.markers() ) << std::endl;
         }
     }
 }
