@@ -14,13 +14,13 @@ execute_process(
 message(STATUS "[feelpp] Ruby interpreter: ${Ruby_EXECUTABLE} (version ${Ruby_VERSION})")
 
 if (NOT Ruby_VERSION MATCHES "^3\\.")
-  message(FATAL_ERROR "Found Ruby ${Ruby_VERSION}, but Ruby 3.x is required.")
+  message(STATUS "Found Ruby ${Ruby_VERSION}, but Ruby 3.x is required.")
 endif()
 
 # --- Bundler ---------------------------------------------------------------
 find_program(BUNDLE_EXECUTABLE NAMES bundle bundle3 bundle3.0)
 if (NOT BUNDLE_EXECUTABLE)
-  message(FATAL_ERROR "Bundler not found. Install it (e.g. `gem install bundler`).")
+  message(STATUS "Bundler not found. Install it (e.g. `gem install bundler`).")
 endif()
 message(STATUS "[feelpp] Bundler: ${BUNDLE_EXECUTABLE}")
 

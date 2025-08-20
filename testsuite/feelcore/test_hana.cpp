@@ -24,6 +24,8 @@
 #define BOOST_TEST_MODULE hana testsuite
 #include <fmt/core.h>
 #include <fmt/compile.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelcore/environment.hpp>
 
@@ -60,7 +62,7 @@ BOOST_AUTO_TEST_CASE( test_hana_discr )
             hana::for_each( discretizationt,
                    [&discretization, &dimension, &found]( auto const& d ) {
                                 auto [_dim, _order,_discr] = d;
-                                BOOST_TEST_MESSAGE( fmt::format( "checking dim:{} order:{}, space:{} // dimension: {} discretization: {}\n", _dim, _order, _discr,dimension,discretization ) );
+                                BOOST_TEST_MESSAGE( fmt::format( "checking dim:{} order:{}, space:{} // dimension: {} discretization: {}\n", fmt::streamed(_dim), fmt::streamed(_order), fmt::streamed(_discr), fmt::streamed(dimension), fmt::streamed(discretization) ) );
                                 if ( _dim == dimension && _discr == discretization )
                                     found = true;
 
