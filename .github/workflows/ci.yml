@@ -25,7 +25,7 @@ jobs:
 
       # Planner reads PR title/body (for pull_request),
       # or falls back to the latest commit message.
-      - uses: feelpp/ci-matrix-planner@v1.5
+      - uses: feelpp/ci-matrix-planner@main
         id: plan
         with:
           config-path: .github/plan-ci.json
