@@ -45,8 +45,8 @@ jobs:
           echo "SKIP_JOBS=${{ needs.plan_ci.outputs.skip_jobs }}"
           echo "TARGETS_LIST=${{ needs.plan_ci.outputs.targets_list }}"
           echo "TARGETS_JSON=${{ needs.plan_ci.outputs.targets_json }}"
-          echo "RAW:     ${{ steps.plan_ci.outputs.raw_message }}"
-          echo "DIRS:    ${{ steps.plan_ci.outputs.raw_directives }}"
+          echo "RAW:     ${{ needs.plan_ci.outputs.raw_message }}"
+          echo "DIRS:    ${{ needs.plan_ci.outputs.raw_directives }}"
 
   feelpp:
     name: Build Feelpp (library)
