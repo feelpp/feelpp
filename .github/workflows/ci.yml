@@ -78,7 +78,7 @@ jobs:
     needs: [plan_ci]
     runs-on: self-docker
     if: |
-      needs.plan_ci.result == 'saccess' &&
+      needs.plan_ci.result == 'success' &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp')
     timeout-minutes: 600
     strategy:
