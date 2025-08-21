@@ -28,16 +28,21 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const {owner, repo} = context.repo;
+            const { owner, repo } = context.repo;
             const pr = context.payload.pull_request.number;
-            const commits = await github.rest.pulls.listCommits({owner, repo, pull_number: pr, per_page: 250});
+            const commits = await github.rest.pulls.listCommits({
+              owner, repo, pull_number: pr, per_page: 250
+            });
+            if (!Array.isArray(commits.data) || commits.data.length === 0) {
+              core.info('No commits returned for this PR.');
+              return;
+            }
             const head = commits.data[commits.data.length - 1];
             core.info(`PR HEAD SHA: ${head.sha}`);
             core.info('PR HEAD MESSAGE:');
-            core.info(head.commit.message);
-            # Planner reads PR title/body (for pull_request),
-            # or falls back to the latest commit message.
+            core.info(head.commit?.message || '<empty>');
       - uses: feelpp/ci-matrix-planner@main
         id: plan
         with:
