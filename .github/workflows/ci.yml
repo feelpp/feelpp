@@ -43,7 +43,7 @@ jobs:
             core.info(`PR HEAD SHA: ${head.sha}`);
             core.info('PR HEAD MESSAGE:');
             core.info(head.commit?.message || '<empty>');
-      - uses: feelpp/ci-matrix-planner@main
+      - uses: feelpp/ci-matrix-planner@v1.7
         id: plan
         with:
           config-path: .github/plan-ci.json
@@ -51,6 +51,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 #          message-override: |
 #            targets=fedora:42,debian:13,ubuntu:24.04,ubuntu:22.04
+      - name: Debug planner sources
+        run: |
+          echo "SOURCE=${{ steps.plan.outputs.raw_message }}"
+          echo "RAW_MESSAGE=${{ steps.plan.outputs.raw_message }}"
+          echo "RAW_DIRECTIVES=${{ steps.plan.outputs.raw_directives }}"
 
   diag:
     name: Planner diagnostics
