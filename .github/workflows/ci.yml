@@ -43,7 +43,7 @@ jobs:
             core.info(`PR HEAD SHA: ${head.sha}`);
             core.info('PR HEAD MESSAGE:');
             core.info(head.commit?.message || '<empty>');
-      - uses: feelpp/ci-matrix-planner@v1.7
+      - uses: feelpp/ci-matrix-planner@v1.10
         id: plan
         with:
           config-path: .github/plan-ci.json
