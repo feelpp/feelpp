@@ -113,7 +113,10 @@ jobs:
     if: |
       needs.plan_ci.result == 'success' &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'testsuite') &&
-      needs.feelpp.result == 'success'
+      (
+        needs.plan_ci.outputs.only_jobs != '' ||
+        needs.feelpp.result == 'success'
+      )
     continue-on-error: true
     timeout-minutes: 600
     strategy:
@@ -144,7 +147,10 @@ jobs:
     if: |
       needs.plan_ci.result == 'success' &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes') &&
-      needs.feelpp.result == 'success'
+      (
+        needs.plan_ci.outputs.only_jobs != '' ||
+        needs.feelpp.result == 'success'
+      )
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -173,7 +179,10 @@ jobs:
     if: |
       needs.plan_ci.result == 'success' &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'mor') &&
-      needs.toolboxes.result == 'success'
+      (
+        needs.plan_ci.outputs.only_jobs != '' ||
+        needs.toolboxes.result == 'success'
+      )
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -202,7 +211,10 @@ jobs:
     if: |
       needs.plan_ci.result == 'success' &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'python') &&
-      needs.mor.result == 'success'
+      (
+        needs.plan_ci.outputs.only_jobs != '' ||
+        needs.mor.result == 'success'
+      )
     timeout-minutes: 600
     strategy:
       fail-fast: false
