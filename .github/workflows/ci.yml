@@ -31,6 +31,8 @@ jobs:
           config-path: .github/plan-ci.json
           # lets the action read PR head commit via API when needed
           github-token: ${{ secrets.GITHUB_TOKEN }}
+#          message-override: |
+#            targets=fedora:42,debian:13,ubuntu:24.04,ubuntu:22.04
 
   diag:
     name: Planner diagnostics
