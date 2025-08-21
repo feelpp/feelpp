@@ -481,7 +481,7 @@ private :
 template<typename... SelectorModelFieldsType>
 struct SelectorModelFieldsTraits
 {
-    static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<SelectorModelFieldsFeelppTag,SelectorModelFieldFeelppTag>::template apply( args... ); };
+    static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<SelectorModelFieldsFeelppTag,SelectorModelFieldFeelppTag>::apply( args... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<SelectorModelFieldsType...>{},  callApply ) )>;
     using type = SelectorModelFields<tuple_type>;
 };
@@ -493,7 +493,7 @@ template<typename... SelectorModelFieldsType>
 selector_model_fields_t<SelectorModelFieldsType...>
 selectorModelFields( const SelectorModelFieldsType&... smf )
 {
-    return selector_model_fields_t<SelectorModelFieldsType...>( Feel::detail::AdvancedConcatOfTupleContainerType<SelectorModelFieldsFeelppTag,SelectorModelFieldFeelppTag>::template apply( smf... ) );
+    return selector_model_fields_t<SelectorModelFieldsType...>( Feel::detail::AdvancedConcatOfTupleContainerType<SelectorModelFieldsFeelppTag,SelectorModelFieldFeelppTag>::apply( smf... ) );
 }
 
 
@@ -684,7 +684,7 @@ private :
 template<typename... MFieldsType>
 struct ModelFieldsTraits
 {
-    static constexpr auto callApply = [](const auto& ...mfields) { return Feel::detail::AdvancedConcatOfTupleContainerType<ModelFieldsFeelppTag,ModelFieldFeelppTag>::template apply( mfields... ); };
+    static constexpr auto callApply = [](const auto& ...mfields) { return Feel::detail::AdvancedConcatOfTupleContainerType<ModelFieldsFeelppTag,ModelFieldFeelppTag>::apply( mfields... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<MFieldsType...>{},  callApply ) )>;
     using type = ModelFields<tuple_type>;
 };
@@ -699,7 +699,7 @@ template<typename... MFieldsType>
 model_fields_t<MFieldsType...>
 modelFields( const MFieldsType&... mfields )
 {
-    return model_fields_t<MFieldsType...>( Feel::detail::AdvancedConcatOfTupleContainerType<ModelFieldsFeelppTag,ModelFieldFeelppTag>::template apply( mfields... ) );
+    return model_fields_t<MFieldsType...>( Feel::detail::AdvancedConcatOfTupleContainerType<ModelFieldsFeelppTag,ModelFieldFeelppTag>::apply( mfields... ) );
 }
 
 
