@@ -111,12 +111,10 @@ jobs:
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
-      needs.plan_ci.result == 'success' &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'testsuite') &&
-      (
-        needs.plan_ci.outputs.only_jobs != '' ||
-        needs.feelpp.result == 'success'
-      )
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'testsuite')
     continue-on-error: true
     timeout-minutes: 600
     strategy:
@@ -145,12 +143,10 @@ jobs:
     needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
-      needs.plan_ci.result == 'success' &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes') &&
-      (
-        needs.plan_ci.outputs.only_jobs != '' ||
-        needs.feelpp.result == 'success'
-      )
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes')
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -177,12 +173,10 @@ jobs:
     needs: [plan_ci, toolboxes]
     runs-on: self-docker
     if: |
-      needs.plan_ci.result == 'success' &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'mor') &&
-      (
-        needs.plan_ci.outputs.only_jobs != '' ||
-        needs.toolboxes.result == 'success'
-      )
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'mor')
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -209,12 +203,10 @@ jobs:
     needs: [plan_ci, mor]
     runs-on: self-docker
     if: |
-      needs.plan_ci.result == 'success' &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'python') &&
-      (
-        needs.plan_ci.outputs.only_jobs != '' ||
-        needs.mor.result == 'success'
-      )
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'python')
     timeout-minutes: 600
     strategy:
       fail-fast: false
