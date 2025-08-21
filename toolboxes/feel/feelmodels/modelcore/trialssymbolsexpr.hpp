@@ -284,7 +284,7 @@ private :
 template<typename... TrialSymbolsExprType>
 struct TrialsSymbolsExprTraits
 {
-    static constexpr auto callApply = [](const auto& ...args) { return Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::template apply( args... ); };
+    static constexpr auto callApply = [](const auto& ...args) { return Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::apply( args... ); };
     using map_type = std::decay_t<decltype( hana::unpack( hana::tuple<TrialSymbolsExprType...>{},  callApply ) )>;
     using type = TrialsSymbolsExpr<map_type>;
 };
@@ -298,7 +298,7 @@ template<typename... TrialSymbolsExprType>
 trials_symbols_expr_t<TrialSymbolsExprType...>
 trialsSymbolsExpr( const TrialSymbolsExprType&... tse )
 {
-    return trials_symbols_expr_t<TrialSymbolsExprType...>( Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::template apply( tse... ) );
+    return trials_symbols_expr_t<TrialSymbolsExprType...>( Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::apply( tse... ) );
 }
 
 
