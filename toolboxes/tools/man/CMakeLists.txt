@@ -2,7 +2,7 @@
 # Try specific ruby3 names first, then generic "ruby"
 find_program(Ruby_EXECUTABLE NAMES ruby3.3 ruby3.2 ruby3.1 ruby3 ruby)
 if (NOT Ruby_EXECUTABLE)
-  message(FATAL_ERROR "Ruby 3 interpreter not found (tried ruby3*, ruby).")
+  message(STATUS "Ruby 3 interpreter not found (tried ruby3*, ruby).")
 endif()
 
 # Query the actual version from the interpreter
@@ -24,7 +24,7 @@ if (NOT BUNDLE_EXECUTABLE)
 endif()
 message(STATUS "[feelpp] Bundler: ${BUNDLE_EXECUTABLE}")
 
-if ( Ruby_EXECUTABLE AND BUNDLE_EXECUTABLE)
+if ( Ruby_EXECUTABLE AND BUNDLE_EXECUTABLE )
   # --- Generate and build the manuals ----------------------------------------
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc.rb.in
                  ${CMAKE_CURRENT_BINARY_DIR}/doc.rb @ONLY)
