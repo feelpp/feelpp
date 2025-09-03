@@ -578,11 +578,6 @@ OpusApp<ModelType,RM,Model>::run()
 
                 this->run( X.data(), X.size(), Y.data(), Y.size() );
                 //std::cout << "output = " << Y[0] << std::endl;
-
-                std::string resultFileName = soption(_name="result-file");
-                std::ofstream res(resultFileName);
-                res << "output="<< Y[0] << "\n";
-                res.close();
             }
             else
             {
@@ -623,9 +618,6 @@ OpusApp<ModelType,RM,Model>::run()
                     h1_error_vector[curpar-1] = h1_error;
                     relative_error_vector[curpar-1] = output_error;
                     time_fem_vector[curpar-1] = ti.elapsed();
-
-                    std::ofstream res(soption(_name="result-file") );
-                    res << "output="<< o[0] << "\n";
 
                     if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                     {
@@ -883,8 +875,6 @@ OpusApp<ModelType,RM,Model>::run()
                                 relative_estimated_error_vector[curpar-1] = relative_estimated_error;
 
                         }
-                        std::ofstream res(soption(_name="result-file") );
-                        res << "output = " << ocrb << "\n";
 
                         if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                         {
