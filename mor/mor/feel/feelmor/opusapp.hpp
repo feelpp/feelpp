@@ -167,14 +167,8 @@ public:
 
     ~OpusApp()
     {
-        if ( Environment::isMasterRank() )
-        {
-            LOG(INFO) << "Exporting time data to time_data.json" << std::endl;
-            std::ofstream time_file("time_data.json");
-            time_file << M_timeData.dump(2) << std::endl;
-            time_file.close();
-        }
-        }
+        JournalManager::journalAdd( M_timeData );
+    }
 
 private:
     void init()
@@ -214,7 +208,7 @@ public:
 
     /* Get parameter space associated to model */
     auto getParameterSpace() const { return model->parameterSpace(); }
-    
+
     /* Returns CRB objects */
     crb_ptrtype getCRB() const { return this->crb; }
 
@@ -407,7 +401,7 @@ public:
 
     /**
      * @brief Compute the FEM solution for a given parameter \p mu
-     * 
+     *
      * @param mu parameter
      * @param use_newton use Newton method (default true)
      * @return element_type solution of the FEM problem
@@ -424,7 +418,7 @@ public:
 
     /**
      * @brief Compute the RB solution for a given parameter mu
-     * 
+     *
      * @param mu parameter
      * @param N size of the reduced basis (default -1, i.e. use the maximum size)
      * @return auto tuple composed of uN, output, errorBound
@@ -445,7 +439,7 @@ public:
 
     /**
      * @brief Compute the effectivity of the RB solution for a given parameter \p mu
-     * 
+     *
      * @param mu parameter
      * @param N size of the reduced basis (default -1, i.e. use the maximum size)
      * @return double effectivity $\eta_N^s(\mu) = \frac{\Delta_N^s(\mu)}{s(\mu) - s_N(\mu)}$
@@ -458,7 +452,7 @@ public:
         double output_fem = model->output( 1, mu, u_pfem, false );
         double error_bound = std::get<2>(sol_rbm);
 
-        return error_bound / math::abs( output_crb - output_fem );        
+        return error_bound / math::abs( output_crb - output_fem );
     }
 
 
