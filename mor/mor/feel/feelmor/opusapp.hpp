@@ -130,6 +130,7 @@ public:
         super(),
         M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) ),
+        M_timeData( {{ "crb", {} }} ),
         use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
@@ -162,6 +163,17 @@ public:
         use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
+        }
+
+    ~OpusApp()
+    {
+        if ( Environment::isMasterRank() )
+        {
+            LOG(INFO) << "Exporting time data to time_data.json" << std::endl;
+            std::ofstream time_file("time_data.json");
+            time_file << M_timeData.dump(2) << std::endl;
+            time_file.close();
+        }
         }
 
 private:
@@ -953,6 +965,7 @@ private:
     std::string M_modelName;
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
+    nl::json M_timeData;
     bool use_newton_;
 
     crb_ptrtype crb;
