@@ -144,6 +144,10 @@ public:
             return S_journal_ptree;
         }
 
+    //! Add data tree to the journal
+    static void
+    journalAdd( nl::json const &j );
+
     //! Save the global property tree into a json file.
     static void
     journalSave( std::string const& filename = "" );
