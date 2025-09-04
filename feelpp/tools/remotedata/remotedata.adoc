@@ -64,6 +64,13 @@ feelpp_remotedata --download "github:{repo:feelpp,path:README.adoc}"
 feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}"
 ----
 
+* Download resource from CKAN
+
+[source,shell]
+----
+feelpp_remotedata --download "ckan:{url:https://ckan.example.com,resource:resource-id}"
+----
+
 * Download into a specific directory
 
 [source,shell]
@@ -80,6 +87,13 @@ feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --data $HO
 feelpp_remotedata --upload "girder:{folder:<a folder id>}" --data $HOME/mydata
 ----
 
+* Upload file/resource to CKAN (require an API key)
+
+[source,shell]
+----
+feelpp_remotedata --upload "ckan:{url:https://ckan.example.com,dataset:dataset-id,api_key:your-api-key}" --data $HOME/mydata
+----
+
 
 === Contents mode
 
@@ -90,6 +104,14 @@ feelpp_remotedata --upload "girder:{folder:<a folder id>}" --data $HOME/mydata
 feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
 feelpp_remotedata --contents "girder:{file:5b1f8707b0e9570499f66bd0}"
 feelpp_remotedata --contents "girder:{folder:[5ac72871b0e9574027047894,5ad4b75db0e9574027047d70],file:5b1f8707b0e9570499f66bd0}"
+----
+
+* With CKAN
+
+[source,shell]
+----
+feelpp_remotedata --contents "ckan:{url:https://ckan.example.com,dataset:dataset-id}"
+feelpp_remotedata --contents "ckan:{url:https://ckan.example.com,dataset:dataset-id,api_key:your-api-key}"
 ----
 
 == REMOTE STORAGE DESCRIPTION

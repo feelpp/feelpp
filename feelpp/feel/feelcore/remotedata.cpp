@@ -497,12 +497,12 @@ RemoteData::RemoteData( std::string const& desc, worldcomm_ptr_t const& worldCom
         M_girder.emplace( girderTool );
         return;
     }
-    //RemoteData::CKAN ckanTool( desc, *worldComm );
-    //if ( ckanTool.isInit() )
-    //{
-    //    M_ckan.emplace( ckanTool );
-    //    return;
-    //}
+    RemoteData::CKAN ckanTool( desc, *worldComm );
+    if ( ckanTool.isInit() )
+    {
+        M_ckan.emplace( ckanTool );
+        return;
+    }
 }
 
 bool RemoteData::canDownload() const
@@ -561,6 +561,8 @@ RemoteData::upload( std::string const& dataPath, std::string const& parentId, bo
 {
     if ( M_girder && M_girder->canUpload() )
         return M_girder->upload( dataPath, parentId, sync );
+    else if ( M_ckan && M_ckan->canUpload() )
+        return M_ckan->upload( dataPath, parentId );
     return {};
 }
 
@@ -621,6 +623,8 @@ RemoteData::contents() const
 {
     if ( M_girder && M_girder->isInit() )
         return ContentsInfo{ M_girder->contents() };
+    else if ( M_ckan && M_ckan->isInit() )
+        return ContentsInfo{ M_ckan->contents() };
     return ContentsInfo{ std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(), std::vector<std::shared_ptr<ItemInfo>>(), std::vector<std::shared_ptr<FileInfo>>() ) };
 }
 

@@ -377,6 +377,10 @@ struct RemoteData
         //! Download data from CKAN
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
 
+        //! Get contents of a CKAN dataset
+        std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
+        contents() const;
+
         //! Upload data to CKAN
         std::vector<std::string> upload( std::string const& dataPath, std::string const& parentId = "" ) const;
 

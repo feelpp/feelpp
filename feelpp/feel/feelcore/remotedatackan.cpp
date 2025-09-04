@@ -67,20 +67,38 @@ RemoteData::CKAN::CKAN( std::string const& desc, WorldComm& worldComm )
     // Use environment variables for the API key if not specified
     if (M_apiKey.empty())
     {
-        char* env = getenv("CKAN_API_KEY");
+        // First try FEELPP_CKAN_API_KEY, then fallback to CKAN_API_KEY
+        char* env = getenv("FEELPP_CKAN_API_KEY");
         if (env != nullptr && env[0] != '\0')
         {
             M_apiKey = env;
+        }
+        else
+        {
+            env = getenv("CKAN_API_KEY");
+            if (env != nullptr && env[0] != '\0')
+            {
+                M_apiKey = env;
+            }
         }
     }
 
     // Use environment variable for organization if not specified
     if (M_organization.empty())
     {
-        char* env = getenv("CKAN_ORGANIZATION");
+        // First try FEELPP_CKAN_ORGANIZATION, then fallback to CKAN_ORGANIZATION
+        char* env = getenv("FEELPP_CKAN_ORGANIZATION");
         if (env != nullptr && env[0] != '\0')
         {
             M_organization = env;
+        }
+        else
+        {
+            env = getenv("CKAN_ORGANIZATION");
+            if (env != nullptr && env[0] != '\0')
+            {
+                M_organization = env;
+            }
         }
     }
     if ( Environment::isMasterRank() )
@@ -127,41 +145,131 @@ RemoteData::CKAN::download(const std::string& dir) const
 
     if (M_worldComm->isMasterRank())
     {
-        std::string resourceUrl = fmt::format("{}/resource_show", M_url);
-        std::vector<std::string> headers = {
-            "Authorization: " + M_apiKey
-        };
-
-        // Query resource metadata
-        std::ostringstream omemfile;
-        cpr::Parameters params{{"id", M_resourceId}};
-        StatusRequestHTTP status = requestHTTPGET(resourceUrl, headers, omemfile, 5000);
-        if (!status.success())
+        // If we have a specific resource ID, download that resource
+        if (!M_resourceId.empty())
         {
-            throw std::runtime_error(fmt::format("CKAN resource query failed: {}", status.msg()));
+            std::string resourceUrl = fmt::format("{}/resource_show", M_url);
+            
+            // Query resource metadata using CPR
+            cpr::Response res = cpr::Get(
+                cpr::Url{resourceUrl},
+                cpr::Parameters{{"id", M_resourceId}},
+                cpr::Header{{"Authorization", M_apiKey}},
+                cpr::VerifySsl{false}
+            );
+
+            if (res.status_code != 200)
+            {
+                throw std::runtime_error(fmt::format("CKAN resource query failed: HTTP {}, {}", res.status_code, res.text));
+            }
+
+            // Parse JSON response
+            nl::json jsonResponse = nl::json::parse(res.text);
+            if (!jsonResponse.contains("result"))
+                throw std::runtime_error("Invalid CKAN resource response structure.");
+
+            std::string downloadUrl = jsonResponse["result"].value("url", "");
+            std::string filename = jsonResponse["result"].value("name", "downloaded_resource");
+            if (downloadUrl.empty())
+                throw std::runtime_error("CKAN resource URL is empty.");
+
+            fs::path filepath = fs::path(dir) / filename;
+            
+            // Download the actual file content
+            cpr::Response downloadRes = cpr::Get(
+                cpr::Url{downloadUrl},
+                cpr::Header{{"Authorization", M_apiKey}},
+                cpr::VerifySsl{false}
+            );
+
+            if (downloadRes.status_code != 200)
+            {
+                throw std::runtime_error(fmt::format("CKAN resource download failed: HTTP {}, {}", downloadRes.status_code, downloadRes.text));
+            }
+
+            // Write the file content to disk
+            std::ofstream file(filepath.string(), std::ios::binary);
+            file.write(downloadRes.text.data(), downloadRes.text.size());
+            file.close();
+
+            if (!file.good())
+            {
+                throw std::runtime_error(fmt::format("Failed to write downloaded file: {}", filepath.string()));
+            }
+
+            downloadedFiles.push_back(filepath.string());
         }
-
-        // Parse JSON response
-        nl::json jsonResponse = nl::json::parse(omemfile.str());
-        if (!jsonResponse.contains("result"))
-            throw std::runtime_error("Invalid CKAN resource response structure.");
-
-        std::string downloadUrl = jsonResponse["result"].value("url", "");
-        std::string filename = jsonResponse["result"].value("name", "downloaded_resource");
-        if (downloadUrl.empty())
-            throw std::runtime_error("CKAN resource URL is empty.");
-
-        fs::path filepath = fs::path(dir) / filename;
-        std::ofstream file(filepath.string(), std::ios::binary);
-        StatusRequestHTTP downloadStatus = requestHTTPGET(downloadUrl, {}, file, 5000);
-        file.close();
-
-        if (!downloadStatus.success())
+        // If we have a dataset, download all resources from that dataset
+        else if (!M_dataset.empty())
         {
-            throw std::runtime_error(fmt::format("CKAN resource download failed: {}", downloadStatus.msg()));
-        }
+            std::string packageUrl = fmt::format("{}/package_show", M_url);
+            
+            // Query dataset metadata using CPR
+            cpr::Response res = cpr::Get(
+                cpr::Url{packageUrl},
+                cpr::Parameters{{"id", M_dataset}},
+                cpr::Header{{"Authorization", M_apiKey}},
+                cpr::VerifySsl{false}
+            );
 
-        downloadedFiles.push_back(filepath.string());
+            if (res.status_code != 200)
+            {
+                throw std::runtime_error(fmt::format("CKAN dataset query failed: HTTP {}, {}", res.status_code, res.text));
+            }
+
+            // Parse JSON response
+            nl::json jsonResponse = nl::json::parse(res.text);
+            if (!jsonResponse.contains("result") || !jsonResponse["result"].contains("resources"))
+                throw std::runtime_error("Invalid CKAN dataset response structure.");
+
+            // Download each resource in the dataset
+            auto resources = jsonResponse["result"]["resources"];
+            for (const auto& resource : resources)
+            {
+                std::string downloadUrl = resource.value("url", "");
+                std::string filename = resource.value("name", "downloaded_resource");
+                
+                if (downloadUrl.empty())
+                {
+                    std::cerr << "Warning: Skipping resource with empty URL: " << filename << std::endl;
+                    continue;
+                }
+
+                fs::path filepath = fs::path(dir) / filename;
+                
+                // Download the actual file content
+                cpr::Response downloadRes = cpr::Get(
+                    cpr::Url{downloadUrl},
+                    cpr::Header{{"Authorization", M_apiKey}},
+                    cpr::VerifySsl{false}
+                );
+
+                if (downloadRes.status_code != 200)
+                {
+                    std::cerr << "Warning: Failed to download resource " << filename 
+                              << ": HTTP " << downloadRes.status_code << std::endl;
+                    continue;
+                }
+
+                // Write the file content to disk
+                std::ofstream file(filepath.string(), std::ios::binary);
+                file.write(downloadRes.text.data(), downloadRes.text.size());
+                file.close();
+
+                if (!file.good())
+                {
+                    std::cerr << "Warning: Failed to write file: " << filepath.string() << std::endl;
+                    continue;
+                }
+
+                downloadedFiles.push_back(filepath.string());
+                std::cout << "Downloaded: " << filename << " (" << downloadRes.text.size() << " bytes)" << std::endl;
+            }
+        }
+        else
+        {
+            throw std::runtime_error("No resource ID or dataset specified for CKAN download.");
+        }
     }
 
     M_worldComm->barrier();
@@ -332,4 +440,80 @@ bool RemoteData::CKAN::deleteDataset(const std::string& datasetId) const
 
     return res.status_code == 200;
 }
+
+std::tuple<std::vector<std::shared_ptr<RemoteData::FolderInfo>>, std::vector<std::shared_ptr<RemoteData::ItemInfo>>, std::vector<std::shared_ptr<RemoteData::FileInfo>>>
+RemoteData::CKAN::contents() const
+{
+    using FolderInfo = RemoteData::FolderInfo;
+    using ItemInfo = RemoteData::ItemInfo;
+    using FileInfo = RemoteData::FileInfo;
+    
+    std::vector<std::shared_ptr<FolderInfo>> folders;
+    std::vector<std::shared_ptr<ItemInfo>> items;
+    std::vector<std::shared_ptr<FileInfo>> files;
+
+    if ( !canDownload() )
+        return std::make_tuple( folders, items, files );
+
+    try 
+    {
+        // Get dataset show API endpoint
+        std::string url = M_url + "/package_show";
+        
+        // Prepare POST data
+        nl::json requestData;
+        requestData["id"] = M_dataset;
+        
+        cpr::Response r = cpr::Post(
+            cpr::Url{url},
+            cpr::Body{requestData.dump()},
+            cpr::Header{{"Authorization", M_apiKey}, {"Content-Type", "application/json"}}
+        );
+
+        if ( r.status_code == 200 )
+        {
+            auto response = nl::json::parse( r.text );
+            if ( response["success"].get<bool>() )
+            {
+                auto dataset = response["result"];
+                
+                // Create a folder representing the dataset itself
+                auto datasetFolder = std::make_shared<FolderInfo>( 
+                    dataset.value("title", dataset.value("name", M_dataset)), 
+                    dataset.value("id", M_dataset), 
+                    dataset.value("num_resources", 0)
+                );
+                folders.push_back( datasetFolder );
+
+                // Process resources as files
+                if ( dataset.contains("resources") && dataset["resources"].is_array() )
+                {
+                    for ( const auto& resource : dataset["resources"] )
+                    {
+                        auto fileInfo = std::make_shared<FileInfo>(
+                            resource.value("name", resource.value("id", "unknown")),
+                            resource.value("id", ""),
+                            resource.value("size", 0)
+                        );
+                        files.push_back( fileInfo );
+                    }
+                }
+            }
+        }
+    }
+    catch ( const std::exception& e )
+    {
+        Feel::cout << "Error getting CKAN dataset contents: " << e.what() << std::endl;
+    }
+
+    return std::make_tuple( folders, items, files );
+}
+
+std::vector<std::string>
+RemoteData::CKAN::upload(const std::string& dataPath, const std::string& parentId) const
+{
+    // Use the dataset as the parent ID context for CKAN uploads
+    return upload(dataPath, parentId.empty() ? M_dataset : parentId, true);
+}
+
 } // namespace Feel
