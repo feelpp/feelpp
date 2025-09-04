@@ -145,8 +145,10 @@ public:
         }
 
     //! Add data tree to the journal
+    //! \param j JSON object to add to journal
+    //! \param merge boolean to enable merging data (default true)
     static void
-    journalAdd( nl::json const &j );
+    journalAdd( nl::json const &j, bool merge = true );
 
     //! Save the global property tree into a json file.
     static void

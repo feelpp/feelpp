@@ -59,12 +59,9 @@ JournalManager::JournalManager()
 
 //! Add data tree into the journal
 void
-JournalManager::journalAdd( nl::json const &j )
+JournalManager::journalAdd( nl::json const &j, bool merge )
 {
-    for (auto it = j.begin(); it != j.end(); ++it)
-    {
-        S_journal_ptree[it.key()] = it.value();
-    }
+    S_journal_ptree.update( j, merge );
 }
 void
 JournalManager::journalSave( std::string const& filename )
