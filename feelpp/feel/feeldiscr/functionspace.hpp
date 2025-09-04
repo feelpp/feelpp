@@ -86,6 +86,7 @@
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/vectorublas.hpp>
+#include <feel/feelalg/petscguard.hpp>
 
 #include <feel/feelmesh/regiontree.hpp>
 #include <feel/feelpoly/geomap.hpp>
@@ -4185,6 +4186,17 @@ public:
 
 
         //@}
+
+    void setBackingGuard( std::shared_ptr<void> guard )
+    {
+        M_backingGuard = std::move( guard );
+    }
+
+    private:
+
+    //! shared_ptr that may be used in case wrapping in a non owning way a VectorPetsc
+    std::shared_ptr<void> M_backingGuard;
+
     private:
 
         /*
@@ -5134,76 +5146,324 @@ public:
     }
 
     /**
-     * \param vec input vector
-     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
-     * \return the element of the function space with value shared by the input vector
+     * @brief Build a read-only element view from a shared vector.
+     *
+     * Convenience overload that forwards to
+     * element(Vector<value_type> const&, int).
+     *
+     * @param vec Shared pointer to an input vector (PETSc-backed).
+     * @param blockIdStart If @p vec was built from a VectorBlock, the
+     *        starting block id inside the distribution map (default: 0).
+     * @return element_type Read-only element view backed by @p vec.
+     *
+     * @see element(Vector<value_type> const&, int)
      */
     element_type
-    element( std::shared_ptr<Vector<value_type> > const& vec, int blockIdStart = 0 )
+    element( std::shared_ptr<Vector<value_type>> const& vec, int blockIdStart = 0 )
     {
         return this->element( *vec, blockIdStart );
     }
 
     /**
-     * \param vec input vector
-     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
-     * \return the element of the function space which use the storage values of the input vector
+     * @brief Build a read-only element whose storage directly views a PETSc Vec.
+     *
+     * This returns an element that reads from the local portion of the PETSc vector
+     * without copying. A RAII guard keeps a PETSc array lock (VecGetArrayRead /
+     * VecRestoreArrayRead) active for the lifetime of the returned element, thereby
+     * avoiding dangling pointers and complying with PETSc ≥ 3.22 lock checks.
+     *
+     * Layout follows the distribution map: active DOFs first, then ghost DOFs.
+     *
+     * @param vec Input vector (must be PETSc-backed VectorPetsc<value_type>).
+     * @param blockIdStart If @p vec was built from a VectorBlock, the starting
+     *        block id inside the distribution map (default: 0). Must satisfy
+     *        0 ≤ blockIdStart < vec.map().numberOfDofIdToContainerId().
+     * @return element_type Read-only element view backed by @p vec.
+     *
+     * @pre Feel++ built with PETSc support.
+     * @pre std::is_same_v<value_type, PetscScalar>.
+     * @pre The vector distribution map matches this function space.
+     *
+     * @post The returned element holds an internal backing guard keeping the PETSc
+     *       array valid until the element is destroyed.
+     *
+     * @warning Do not nest unrelated VecGetArray* calls on the same Vec while this
+     *          element exists; PETSc 3.22 enforces lock correctness.
+     *
+     * @see setBackingGuard(std::shared_ptr<void>)
      */
     element_type
     element( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
-#if FEELPP_HAS_PETSC
-        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
-        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
-        CHECK( vecPetsc ) << "only petsc vector";
+    #if FEELPP_HAS_PETSC
+        static_assert( std::is_same_v<value_type, PetscScalar>,
+                    "value_type must equal PetscScalar when using PETSc views" );
+
+        auto const* vecPetscConst = dynamic_cast<VectorPetsc<value_type> const*>( &vec );
+        CHECK( vecPetscConst ) << "only petsc vector";
 
         auto const& dmVec = vec.map();
-        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
-        size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
-        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
-        size_type nGhostDof = this->dof()->nLocalGhosts();
-        size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
-        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() )
+            << "invalid blockId : " << blockIdStart
+            << " must be less than " << dmVec.numberOfDofIdToContainerId();
+
+        size_type const nActiveDof = this->dof()->nLocalDofWithoutGhost();
+        size_type const nGhostDof  = this->dof()->nLocalGhosts();
+        size_type const nActiveDofFirstSubSpace =
+            ( is_composite )
+                ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
+                : nActiveDof;
+
+        // Hold PETSc read-only array for the whole lifetime of the element
+        auto guard = std::make_shared<Feel::PetscReadArrayGuard>( vecPetscConst->vec() );
+
+        size_type const firstLocal = static_cast<size_type>( guard->firstLocal() );
+        auto const* base = guard->data(); // const PetscScalar* == const value_type*
+
+        value_type const* arrayActiveDof = nullptr;
+        value_type const* arrayGhostDof  = nullptr;
+
+        if ( nActiveDof > 0 )
+        {
+            auto const off = dmVec.dofIdToContainerId( blockIdStart, 0 );
+            arrayActiveDof = base + ( off - firstLocal );
+        }
+        if ( nGhostDof > 0 )
+        {
+            auto const off = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
+            arrayGhostDof = base + ( off - firstLocal );
+        }
+
+        // If your element constructor has a const-pointer overload, use it.
+        // If not, keep this const_cast and consider adding a const ctor later.
         element_type u( this->shared_from_this(),
-                nActiveDof, arrayActiveDof,
-                nGhostDof, arrayGhostDof );
-#else
-        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
-        element_type u;
-#endif
+                        nActiveDof, const_cast<value_type*>( arrayActiveDof ),
+                        nGhostDof,  const_cast<value_type*>( arrayGhostDof ) );
+
+        u.setBackingGuard( std::move( guard ) );
         return u;
+    #else
+        LOG( WARNING ) << "element(Vector<value_type> const&, int): disabled without PETSc";
+        element_type u;
+        return u;
+    #endif
     }
 
     /**
-     * \param vec input vector
-     * \param blockIdStart if vec was built from a VectorBlock, need to specify the id of first block
-     * \return the element of the function space which use the storage values of the input vector
+     * @brief Create a read-only finite element view backed by a PETSc Vec (const overload).
+     *
+     * This function builds an @c element_type that directly views the underlying PETSc
+     * vector storage for the local process. The view is read-only and remains valid
+     * for the lifetime of the returned element thanks to an internal RAII guard
+     * that holds a PETSc array lock (@c VecGetArrayRead / @c VecRestoreArrayRead).
+     *
+     * Offsets are computed using the vector’s distribution map so that
+     *   - @p blockIdStart selects the (sub-)block,
+     *   - active DOFs come first, followed by ghost DOFs.
+     *
+     * @param[in] vec
+     *     The source vector. Must be a PETSc-backed @c VectorPetsc<value_type>.
+     * @param[in] blockIdStart
+     *     Starting block index inside the distribution map (default: 0). Must satisfy
+     *     @c 0 <= blockIdStart < vec.map().numberOfDofIdToContainerId().
+     *
+     * @return element_ptrtype
+     *     A smart pointer to an @c element_type that provides read-only access
+     *     to the local active and ghost DOFs of @p vec.
+     *
+     * @pre Feel++ built with PETSc support.
+     * @pre @c std::is_same_v<value_type, PetscScalar> (enforced via static_assert).
+     * @pre @p vec is initialized and its distribution map matches this function space.
+     * @pre @p blockIdStart is in range; see parameter description.
+     *
+     * @post The returned element holds an internal backing guard that keeps the
+     *       PETSc array lock active; the guard is released when the element is destroyed.
+     *
+     * @note This overload never writes into the PETSc Vec. Any attempt to modify the
+     *       element data must use the non-const overload (writeable view) instead.
+     *
+     * @warning Do not store raw pointers into external data structures that outlive
+     *          the returned element. Pointers are only valid while the element (and
+     *          its backing guard) is alive.
+     *
+     * @par MPI / Thread Safety
+     *   The view is local to the calling process and only covers the range
+     *   @c [firstLocal, lastLocal). It is not thread-safe to concurrently call
+     *   other PETSc Get/Restore operations on the same Vec from different threads.
+     *
+     * @par Complexity
+     *   O(1) excluding distribution-map lookups.
+     *
+     * @exception aborts
+     *   Aborts via @c CHKERRABORT if PETSc reports an error (e.g., invalid state,
+     *   mismatched distribution, lock conflicts).
+     *
+     * @since PETSc 3.22-safe implementation (array locks enforced).
+     *
+     * @see elementPtr(Vector<value_type>&, int), setBackingGuard(std::shared_ptr<void>)
      */
     element_ptrtype
     elementPtr( Vector<value_type> const& vec, int blockIdStart = 0 )
     {
-#if FEELPP_HAS_PETSC
-        VectorPetsc<value_type> * vecPetsc = const_cast< VectorPetsc<value_type> *>( dynamic_cast< VectorPetsc<value_type> const*>( &vec ) );
-        //VectorPetscMPI<value_type> * vecPetsc = const_cast< VectorPetscMPI<value_type> *>( dynamic_cast< VectorPetscMPI<value_type> const*>( &vec ) );
+    #if FEELPP_HAS_PETSC
+        static_assert( std::is_same_v<value_type, PetscScalar>,
+                       "value_type must equal PetscScalar when using PETSc views" );
+
+        auto const* vecPetscConst = dynamic_cast< VectorPetsc<value_type> const* >( &vec );
+        CHECK( vecPetscConst ) << "only petsc vector";
+
+        auto const& dmVec = vec.map();
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() )
+            << "invalid blockId : " << blockIdStart
+            << " must be less than " << dmVec.numberOfDofIdToContainerId();
+
+        size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
+        size_type nGhostDof  = this->dof()->nLocalGhosts();
+        size_type nActiveDofFirstSubSpace =
+            ( is_composite )
+                ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
+                : nActiveDof;
+
+        auto guard = std::make_shared<Feel::PetscReadArrayGuard>( vecPetscConst->vec() );
+
+        size_type const firstLocal = static_cast<size_type>( guard->firstLocal() );
+        auto const* base = guard->data(); // type: const PetscScalar* == const value_type*
+
+        value_type const* arrayActiveDof = nullptr;
+        value_type const* arrayGhostDof  = nullptr;
+
+        if ( nActiveDof > 0 )
+        {
+            auto const off = dmVec.dofIdToContainerId( blockIdStart, 0 );
+            arrayActiveDof = base + ( off - firstLocal );
+        }
+        if ( nGhostDof > 0 )
+        {
+            auto const off = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
+            arrayGhostDof = base + ( off - firstLocal );
+        }
+
+        element_ptrtype u( new element_type(
+            this->shared_from_this(),
+            nActiveDof, const_cast<value_type*>( arrayActiveDof ), // ctor may need const overload
+            nGhostDof,  const_cast<value_type*>( arrayGhostDof ) ) );
+
+        u->setBackingGuard( std::move( guard ) );
+        return u;
+    #else
+        LOG( WARNING ) << "element(Vector<value_type> const&, int): disabled without PETSc";
+        element_ptrtype u( new element_type( /* … */ ) );
+        return u;
+    #endif
+    }
+
+    /**
+     * @brief Create a writeable finite element view backed by a PETSc Vec (non-const overload).
+     *
+     * This function builds an @c element_type that directly views (and can modify)
+     * the underlying PETSc vector storage for the local process. The view remains
+     * valid for the lifetime of the returned element via an internal RAII guard that
+     * holds a PETSc array lock (@c VecGetArray / @c VecRestoreArray).
+     *
+     * Offsets are computed using the vector’s distribution map so that
+     *   - @p blockIdStart selects the (sub-)block,
+     *   - active DOFs come first, followed by ghost DOFs.
+     *
+     * @param[in,out] vec
+     *     The source vector. Must be a PETSc-backed @c VectorPetsc<value_type>.
+     * @param[in] blockIdStart
+     *     Starting block index inside the distribution map (default: 0). Must satisfy
+     *     @c 0 <= blockIdStart < vec.map().numberOfDofIdToContainerId().
+     *
+     * @return element_ptrtype
+     *     A smart pointer to an @c element_type that provides write access
+     *     to the local active and ghost DOFs of @p vec.
+     *
+     * @pre Feel++ built with PETSc support.
+     * @pre @c std::is_same_v<value_type, PetscScalar> (enforced via static_assert).
+     * @pre @p vec is initialized and its distribution map matches this function space.
+     * @pre @p blockIdStart is in range; see parameter description.
+     *
+     * @post The returned element holds an internal backing guard that keeps the
+     *       PETSc array lock active; the guard is released when the element is destroyed.
+     *
+     * @note The caller is responsible for any required PETSc assembly or synchronization
+     *       after modifying the element (e.g., @c VecAssemblyBegin/End if values are
+     *       set through PETSc APIs elsewhere).
+     *
+     * @warning PETSc 3.22 introduces strict lock checking. Do not nest other calls to
+     *          @c VecGetArray*, @c VecGetArrayRead* or @c VecLockPush/Pop on the same
+     *          Vec while this element exists; such usage will trigger lock errors.
+     *
+     * @par MPI / Thread Safety
+     *   The view is local to the calling process and only covers the range
+     *   @c [firstLocal, lastLocal). It is not thread-safe to concurrently call
+     *   other PETSc Get/Restore operations on the same Vec from different threads.
+     *
+     * @par Complexity
+     *   O(1) excluding distribution-map lookups.
+     *
+     * @exception aborts
+     *   Aborts via @c CHKERRABORT if PETSc reports an error (e.g., invalid state,
+     *   mismatched distribution, lock conflicts).
+     *
+     * @since PETSc 3.22-safe implementation (array locks enforced).
+     *
+     * @see elementPtr(Vector<value_type> const&, int), setBackingGuard(std::shared_ptr<void>)
+     */
+    element_ptrtype
+    elementPtr( Vector<value_type>& vec, int blockIdStart = 0 )
+    {
+    #if FEELPP_HAS_PETSC
+        static_assert( std::is_same_v<value_type, PetscScalar>,
+                    "value_type must equal PetscScalar when using PETSc views" );
+
+        auto* vecPetsc = dynamic_cast< VectorPetsc<value_type>* >( &vec );
         CHECK( vecPetsc ) << "only petsc vector";
 
         auto const& dmVec = vec.map();
-        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() ) << "invalid blockId : " << blockIdStart << " must be less than " << dmVec.numberOfDofIdToContainerId();
+        CHECK( blockIdStart < dmVec.numberOfDofIdToContainerId() )
+            << "invalid blockId : " << blockIdStart
+            << " must be less than " << dmVec.numberOfDofIdToContainerId();
+
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
-        value_type* arrayActiveDof = (nActiveDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,0) ) ) : nullptr;
-        size_type nGhostDof = this->dof()->nLocalGhosts();
-        size_type nActiveDofFirstSubSpace = (is_composite)? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost() : nActiveDof;
-        value_type* arrayGhostDof = (nGhostDof>0)? std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId(blockIdStart,nActiveDofFirstSubSpace) ) ) : nullptr;
+        size_type nGhostDof  = this->dof()->nLocalGhosts();
+        size_type nActiveDofFirstSubSpace =
+            ( is_composite )
+                ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
+                : nActiveDof;
+
+        auto guard = std::make_shared<Feel::PetscWriteArrayGuard>( vecPetsc->vec() );
+
+        size_type const firstLocal = static_cast<size_type>( guard->firstLocal() );
+        auto* base = guard->data(); // type: PetscScalar* == value_type*
+
+        value_type* arrayActiveDof = nullptr;
+        value_type* arrayGhostDof  = nullptr;
+
+        if ( nActiveDof > 0 )
+        {
+            auto const off = dmVec.dofIdToContainerId( blockIdStart, 0 );
+            arrayActiveDof = base + ( off - firstLocal );
+        }
+        if ( nGhostDof > 0 )
+        {
+            auto const off = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
+            arrayGhostDof = base + ( off - firstLocal );
+        }
+
         element_ptrtype u( new element_type(
-                    this->shared_from_this(),
-                    nActiveDof, arrayActiveDof,
-                    nGhostDof, arrayGhostDof )
-                );
-#else
-        LOG(WARNING) << "element(Vector<value_type> const& vec, int blockIdStart): This function is disabled when Feel++ is not built with PETSc";
-        element_type u;
-#endif
+            this->shared_from_this(),
+            nActiveDof, arrayActiveDof,
+            nGhostDof,  arrayGhostDof ) );
+
+        u->setBackingGuard( std::move( guard ) );
         return u;
+    #else
+        LOG( WARNING ) << "element(Vector<value_type>&, int): disabled without PETSc";
+        element_ptrtype u( new element_type( /* … */ ) );
+        return u;
+    #endif
     }
 
     /**

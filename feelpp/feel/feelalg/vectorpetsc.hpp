@@ -407,12 +407,10 @@ public:
      */
     Vec vec () const
     {
-        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
         return M_vec;
     }
     Vec& vec ()
     {
-        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
         return M_vec;
     }
 
@@ -818,7 +816,7 @@ protected:
     /**
      * Petsc vector datatype to store values
      */
-    Vec M_vec;
+    Vec M_vec = nullptr;
 
     /**
      * This boolean value should only be set to false
