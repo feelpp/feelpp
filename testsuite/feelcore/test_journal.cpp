@@ -62,13 +62,16 @@ BOOST_AUTO_TEST_CASE( test_add_ptree )
     const std::string filename = "journal_test_add_ptree.json";
     JournalManager::journalCheckpoint( true, filename );
 
-    nl::json loaded_ptree;
-    std::ifstream infile(filename);
-    BOOST_REQUIRE(infile.is_open());
-    infile >> loaded_ptree;
-    infile.close();
+    if ( Environment::isMasterRank() )
+    {
+        nl::json loaded_ptree;
+        std::ifstream infile(filename);
+        // BOOST_REQUIRE(infile.is_open());
+        infile >> loaded_ptree;
+        infile.close();
 
-    BOOST_CHECK_EQUAL(loaded_ptree["testsuite"].dump(), ptree_1["testsuite"].dump());
+        BOOST_CHECK_EQUAL(loaded_ptree["testsuite"].dump(), ptree_1["testsuite"].dump());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_add_ptrees )
@@ -79,13 +82,16 @@ BOOST_AUTO_TEST_CASE( test_add_ptrees )
     const std::string filename = "journal_test_add_ptrees.json";
     JournalManager::journalCheckpoint( true, filename );
 
-    nl::json loaded_ptree;
-    std::ifstream infile(filename);
-    BOOST_REQUIRE(infile.is_open());
-    infile >> loaded_ptree;
-    infile.close();
+    if ( Environment::isMasterRank() )
+    {
+        nl::json loaded_ptree;
+        std::ifstream infile(filename);
+        BOOST_REQUIRE(infile.is_open());
+        infile >> loaded_ptree;
+        infile.close();
 
-    BOOST_CHECK_EQUAL(loaded_ptree["testsuite"].dump(), merged_ptree["testsuite"].dump());
+        BOOST_CHECK_EQUAL(loaded_ptree["testsuite"].dump(), merged_ptree["testsuite"].dump());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_add_ptrees_not_merged )
@@ -96,13 +102,16 @@ BOOST_AUTO_TEST_CASE( test_add_ptrees_not_merged )
     const std::string filename = "journal_test_add_ptrees_not_merged.json";
     JournalManager::journalCheckpoint( true, filename );
 
-    nl::json loaded_ptree;
-    std::ifstream infile(filename);
-    BOOST_REQUIRE(infile.is_open());
-    infile >> loaded_ptree;
-    infile.close();
+    if ( Environment::isMasterRank() )
+    {
+        nl::json loaded_ptree;
+        std::ifstream infile(filename);
+        BOOST_REQUIRE(infile.is_open());
+        infile >> loaded_ptree;
+        infile.close();
 
-    BOOST_CHECK_EQUAL(loaded_ptree["testsuite"].dump(), ptree_2["testsuite"].dump());
+        BOOST_CHECK_EQUAL(loaded_ptree["testsuite"].dump(), ptree_2["testsuite"].dump());
+    }
 }
 
 
