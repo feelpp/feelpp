@@ -26,3 +26,5 @@ endif()
 
 feelpp_add_test( ptap )
 feelpp_add_test( tensor )
+feelpp_add_test( functionspace_element_guard )
+

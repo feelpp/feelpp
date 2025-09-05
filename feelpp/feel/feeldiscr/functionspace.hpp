@@ -5214,34 +5214,49 @@ public:
                 ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
                 : nActiveDof;
 
-        // Hold PETSc read-only array for the whole lifetime of the element
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
+        // PETSc >= 3.22: Use guards for safe array access
         auto guard = std::make_shared<Feel::PetscReadArrayGuard>( vecPetscConst->vec() );
-
-        size_type const firstLocal = static_cast<size_type>( guard->firstLocal() );
-        auto const* base = guard->data(); // const PetscScalar* == const value_type*
-
-        value_type const* arrayActiveDof = nullptr;
-        value_type const* arrayGhostDof  = nullptr;
-
+        
+        value_type* arrayActiveDof = nullptr;
+        value_type* arrayGhostDof = nullptr;
+        
         if ( nActiveDof > 0 )
         {
-            auto const off = dmVec.dofIdToContainerId( blockIdStart, 0 );
-            arrayActiveDof = base + ( off - firstLocal );
+            auto const activeIndex = dmVec.dofIdToContainerId( blockIdStart, 0 );
+            arrayActiveDof = const_cast<value_type*>( guard->data() + activeIndex - guard->firstLocal() );
         }
         if ( nGhostDof > 0 )
         {
-            auto const off = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
-            arrayGhostDof = base + ( off - firstLocal );
+            auto const ghostIndex = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
+            arrayGhostDof = const_cast<value_type*>( guard->data() + ghostIndex - guard->firstLocal() );
         }
 
-        // If your element constructor has a const-pointer overload, use it.
-        // If not, keep this const_cast and consider adding a const ctor later.
         element_type u( this->shared_from_this(),
-                        nActiveDof, const_cast<value_type*>( arrayActiveDof ),
-                        nGhostDof,  const_cast<value_type*>( arrayGhostDof ) );
-
+                        nActiveDof, arrayActiveDof,
+                        nGhostDof, arrayGhostDof );
         u.setBackingGuard( std::move( guard ) );
         return u;
+#else
+        // PETSc < 3.22: Use original direct pointer access (working code)
+        VectorPetsc<value_type>* vecPetsc = const_cast<VectorPetsc<value_type>*>(vecPetscConst);
+        
+        value_type* arrayActiveDof = nullptr;
+        value_type* arrayGhostDof = nullptr;
+
+        if ( nActiveDof > 0 )
+        {
+            arrayActiveDof = std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId( blockIdStart, 0 ) ) );
+        }
+        if ( nGhostDof > 0 )
+        {
+            arrayGhostDof = std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace ) ) );
+        }
+
+        return element_type( this->shared_from_this(),
+                            nActiveDof, arrayActiveDof,
+                            nGhostDof, arrayGhostDof );
+#endif
     #else
         LOG( WARNING ) << "element(Vector<value_type> const&, int): disabled without PETSc";
         element_type u;
@@ -5324,32 +5339,52 @@ public:
                 ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
                 : nActiveDof;
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
+        // PETSc >= 3.22: Use guards for safe array access
         auto guard = std::make_shared<Feel::PetscReadArrayGuard>( vecPetscConst->vec() );
-
-        size_type const firstLocal = static_cast<size_type>( guard->firstLocal() );
-        auto const* base = guard->data(); // type: const PetscScalar* == const value_type*
-
-        value_type const* arrayActiveDof = nullptr;
-        value_type const* arrayGhostDof  = nullptr;
-
+        
+        value_type* arrayActiveDof = nullptr;
+        value_type* arrayGhostDof = nullptr;
+        
         if ( nActiveDof > 0 )
         {
-            auto const off = dmVec.dofIdToContainerId( blockIdStart, 0 );
-            arrayActiveDof = base + ( off - firstLocal );
+            auto const activeIndex = dmVec.dofIdToContainerId( blockIdStart, 0 );
+            arrayActiveDof = const_cast<value_type*>( guard->data() + activeIndex - guard->firstLocal() );
         }
         if ( nGhostDof > 0 )
         {
-            auto const off = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
-            arrayGhostDof = base + ( off - firstLocal );
+            auto const ghostIndex = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
+            arrayGhostDof = const_cast<value_type*>( guard->data() + ghostIndex - guard->firstLocal() );
         }
 
         element_ptrtype u( new element_type(
             this->shared_from_this(),
-            nActiveDof, const_cast<value_type*>( arrayActiveDof ), // ctor may need const overload
-            nGhostDof,  const_cast<value_type*>( arrayGhostDof ) ) );
+            nActiveDof, arrayActiveDof,
+            nGhostDof, arrayGhostDof ) );
 
         u->setBackingGuard( std::move( guard ) );
         return u;
+#else
+        // PETSc < 3.22: Use original direct pointer access (working code)
+        VectorPetsc<value_type>* vecPetsc = const_cast<VectorPetsc<value_type>*>(vecPetscConst);
+        
+        value_type* arrayActiveDof = nullptr;
+        value_type* arrayGhostDof = nullptr;
+
+        if ( nActiveDof > 0 )
+        {
+            arrayActiveDof = std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId( blockIdStart, 0 ) ) );
+        }
+        if ( nGhostDof > 0 )
+        {
+            arrayGhostDof = std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace ) ) );
+        }
+
+        return element_ptrtype( new element_type(
+            this->shared_from_this(),
+            nActiveDof, arrayActiveDof,
+            nGhostDof, arrayGhostDof ) );
+#endif
     #else
         LOG( WARNING ) << "element(Vector<value_type> const&, int): disabled without PETSc";
         element_ptrtype u( new element_type( /* … */ ) );
@@ -5433,32 +5468,50 @@ public:
                 ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
                 : nActiveDof;
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
+        // PETSc >= 3.22: Use guards for safe array access
         auto guard = std::make_shared<Feel::PetscWriteArrayGuard>( vecPetsc->vec() );
-
-        size_type const firstLocal = static_cast<size_type>( guard->firstLocal() );
-        auto* base = guard->data(); // type: PetscScalar* == value_type*
-
+        
         value_type* arrayActiveDof = nullptr;
-        value_type* arrayGhostDof  = nullptr;
-
+        value_type* arrayGhostDof = nullptr;
+        
         if ( nActiveDof > 0 )
         {
-            auto const off = dmVec.dofIdToContainerId( blockIdStart, 0 );
-            arrayActiveDof = base + ( off - firstLocal );
+            auto const activeIndex = dmVec.dofIdToContainerId( blockIdStart, 0 );
+            arrayActiveDof = guard->data() + activeIndex - guard->firstLocal();
         }
         if ( nGhostDof > 0 )
         {
-            auto const off = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
-            arrayGhostDof = base + ( off - firstLocal );
+            auto const ghostIndex = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
+            arrayGhostDof = guard->data() + ghostIndex - guard->firstLocal();
         }
 
         element_ptrtype u( new element_type(
             this->shared_from_this(),
             nActiveDof, arrayActiveDof,
-            nGhostDof,  arrayGhostDof ) );
+            nGhostDof, arrayGhostDof ) );
 
         u->setBackingGuard( std::move( guard ) );
         return u;
+#else
+        // PETSc < 3.22: Use original direct pointer access (working code)
+        value_type* arrayActiveDof = nullptr;
+        value_type* arrayGhostDof = nullptr;
+
+        if ( nActiveDof > 0 )
+        {
+            arrayActiveDof = std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId( blockIdStart, 0 ) ) );
+        }
+        if ( nGhostDof > 0 )
+        {
+            arrayGhostDof = std::addressof( (*vecPetsc)( dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace ) ) );
+        }
+
+        return element_ptrtype( new element_type(
+            this->shared_from_this(),
+            nActiveDof, arrayActiveDof,
+            nGhostDof, arrayGhostDof ) );
+#endif
     #else
         LOG( WARNING ) << "element(Vector<value_type>&, int): disabled without PETSc";
         element_ptrtype u( new element_type( /* … */ ) );
