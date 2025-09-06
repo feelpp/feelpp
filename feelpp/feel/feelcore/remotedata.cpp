@@ -634,7 +634,7 @@ RemoteData::download( std::string const& dir, std::string const& filename, int t
     else if ( M_girder )
         return M_girder->download( dir, timeout );
     else if ( M_ckan )
-        return M_ckan->download( dir ); // TODO: Add timeout support for CKAN
+        return M_ckan->download( dir, timeout );
     return downloadedData;
 }
 
@@ -668,7 +668,7 @@ RemoteData::upload( std::string const& dataPath, std::string const& parentId, bo
     if ( M_girder && M_girder->canUpload() )
         return M_girder->upload( dataPath, parentId, sync, timeout );
     else if ( M_ckan && M_ckan->canUpload() )
-        return M_ckan->upload( dataPath, parentId ); // TODO: Add timeout support for CKAN
+        return M_ckan->upload( dataPath, parentId, timeout );
     return {};
 }
 

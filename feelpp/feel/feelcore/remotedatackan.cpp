@@ -192,7 +192,8 @@ RemoteData::CKAN::download(const std::string& dir) const
                 cpr::Url{resourceUrl},
                 cpr::Parameters{{"id", M_resourceId}},
                 cpr::Header{{"Authorization", M_apiKey}},
-                cpr::VerifySsl{false}
+                cpr::VerifySsl{false},
+                cpr::Timeout{30000}  // 30 second default timeout
             );
 
             if (res.status_code != 200)
@@ -240,7 +241,8 @@ RemoteData::CKAN::download(const std::string& dir) const
             cpr::Response downloadRes = cpr::Get(
                 cpr::Url{downloadUrl},
                 cpr::Header{{"Authorization", M_apiKey}},
-                cpr::VerifySsl{false}
+                cpr::VerifySsl{false},
+                cpr::Timeout{30000}  // 30 second default timeout
             );
 
             if (downloadRes.status_code != 200)
@@ -278,7 +280,8 @@ RemoteData::CKAN::download(const std::string& dir) const
                 cpr::Url{packageUrl},
                 cpr::Parameters{{"id", M_dataset}},
                 cpr::Header{{"Authorization", M_apiKey}},
-                cpr::VerifySsl{false}
+                cpr::VerifySsl{false},
+                cpr::Timeout{30000}  // 30 second default timeout
             );
 
             if (res.status_code != 200)
@@ -336,7 +339,8 @@ RemoteData::CKAN::download(const std::string& dir) const
                 cpr::Response downloadRes = cpr::Get(
                     cpr::Url{downloadUrl},
                     cpr::Header{{"Authorization", M_apiKey}},
-                    cpr::VerifySsl{false}
+                    cpr::VerifySsl{false},
+                    cpr::Timeout{30000}  // 30 second default timeout
                 );
 
                 if (downloadRes.status_code != 200)
@@ -374,6 +378,185 @@ RemoteData::CKAN::download(const std::string& dir) const
 }
 
 std::vector<std::string>
+RemoteData::CKAN::download(const std::string& dir, int timeout) const
+{
+    std::vector<std::string> downloadedFiles;
+    if (!isInit())
+        throw std::runtime_error("CKAN remote data object is not initialized.");
+
+    if (M_worldComm->isMasterRank())
+    {
+        // Determine progress level
+        RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+        if (Environment::vm().count("quiet")) {
+            progressLevel = RemoteDataProgress::Level::QUIET;
+        } else if (Environment::vm().count("debug")) {
+            progressLevel = RemoteDataProgress::Level::DEBUG;
+        } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+            progressLevel = RemoteDataProgress::Level::VERBOSE;
+        }
+        
+        RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+        
+        // If we have a specific resource ID, download that resource
+        if (!M_resourceId.empty())
+        {
+            progress.startOperation("Download CKAN resource " + M_resourceId);
+            
+            std::string resourceUrl = fmt::format("{}/resource_show", M_url);
+            
+            auto response = cpr::Get(cpr::Url{resourceUrl},
+                                     cpr::Parameters{{"id", M_resourceId}},
+                                     cpr::Timeout{timeout});
+            
+            if (response.status_code != 200)
+                throw std::runtime_error(fmt::format("CKAN API request failed: {}", response.status_code));
+            
+            auto json = nl::json::parse(response.text);
+            auto resource = json["result"];
+            
+            std::string fileName = resource["name"];
+            std::string url = resource["url"];
+            
+            auto progressCallback = [&](cpr::cpr_pf_arg_t downloadTotal, cpr::cpr_pf_arg_t downloadNow, 
+                                     cpr::cpr_pf_arg_t uploadTotal, cpr::cpr_pf_arg_t uploadNow, 
+                                     intptr_t userdata) -> bool {
+                std::streamsize downloadedBytes = static_cast<std::streamsize>(downloadNow);
+                std::streamsize totalBytes = static_cast<std::streamsize>(downloadTotal);
+                
+                static auto lastUpdate = std::chrono::steady_clock::now();
+                static cpr::cpr_pf_arg_t lastProgress = 0;
+                
+                auto now = std::chrono::steady_clock::now();
+                auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate).count();
+                double progressDiff = (totalBytes > 0) ? (static_cast<double>(downloadNow - lastProgress) / totalBytes * 100.0) : 0.0;
+                
+                bool shouldUpdate = (timeDiff >= 100) || (progressDiff >= 0.5) || (downloadNow == downloadTotal);
+                
+                if (shouldUpdate) {
+                    progress.showProgressBar(fileName, downloadedBytes, totalBytes);
+                    lastUpdate = now;
+                    lastProgress = downloadNow;
+                }
+                return true;
+            };
+            
+            auto writeCallback = [&](const std::string_view& data, intptr_t userdata) -> size_t {
+                return data.size();
+            };
+            
+            fs::path downloadPath = fs::path(dir) / fileName;
+            std::ofstream file(downloadPath, std::ios::binary);
+            
+            if (!file) {
+                throw std::runtime_error(fmt::format("Cannot create file: {}", downloadPath.string()));
+            }
+            
+            auto fileResponse = cpr::Get(cpr::Url{url},
+                                         cpr::WriteCallback{writeCallback},
+                                         cpr::ProgressCallback{progressCallback},
+                                         cpr::Timeout{timeout});
+            
+            if (fileResponse.status_code == 200) {
+                // Redownload to file since we used a custom write callback
+                std::ofstream finalFile(downloadPath, std::ios::binary);
+                auto finalResponse = cpr::Get(cpr::Url{url}, cpr::Timeout{timeout});
+                finalFile << finalResponse.text;
+                finalFile.close();
+                
+                downloadedFiles.push_back(downloadPath.string());
+                // progress.info(fmt::format("Downloaded: {} ({} bytes)", fileName, fs::file_size(downloadPath)));
+            } else {
+                throw std::runtime_error(fmt::format("Download failed: {}", fileResponse.status_code));
+            }
+            
+            progress.completeOperation();
+        }
+        // Handle dataset downloads (multiple resources)
+        else if (!M_dataset.empty())
+        {
+            progress.startOperation("Download CKAN dataset " + M_dataset);
+            
+            std::string packageUrl = fmt::format("{}/package_show", M_url);
+            
+            auto response = cpr::Get(cpr::Url{packageUrl},
+                                     cpr::Parameters{{"id", M_dataset}},
+                                     cpr::Timeout{timeout});
+            
+            if (response.status_code != 200)
+                throw std::runtime_error(fmt::format("CKAN API request failed: {}", response.status_code));
+            
+            auto json = nl::json::parse(response.text);
+            auto package = json["result"];
+            auto resources = package["resources"];
+            
+            for (const auto& resource : resources)
+            {
+                std::string fileName = resource["name"];
+                std::string url = resource["url"];
+                
+                auto progressCallback = [&](cpr::cpr_pf_arg_t downloadTotal, cpr::cpr_pf_arg_t downloadNow, 
+                                         cpr::cpr_pf_arg_t uploadTotal, cpr::cpr_pf_arg_t uploadNow, 
+                                         intptr_t userdata) -> bool {
+                    std::streamsize downloadedBytes = static_cast<std::streamsize>(downloadNow);
+                    std::streamsize totalBytes = static_cast<std::streamsize>(downloadTotal);
+                    
+                    static auto lastUpdate = std::chrono::steady_clock::now();
+                    static cpr::cpr_pf_arg_t lastProgress = 0;
+                    
+                    auto now = std::chrono::steady_clock::now();
+                    auto timeDiff = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastUpdate).count();
+                    double progressDiff = (totalBytes > 0) ? (static_cast<double>(downloadNow - lastProgress) / totalBytes * 100.0) : 0.0;
+                    
+                    bool shouldUpdate = (timeDiff >= 100) || (progressDiff >= 0.5) || (downloadNow == downloadTotal);
+                    
+                    if (shouldUpdate) {
+                        progress.showProgressBar(fileName, downloadedBytes, totalBytes);
+                        lastUpdate = now;
+                        lastProgress = downloadNow;
+                    }
+                    return true;
+                };
+                
+                auto writeCallback = [&](const std::string_view& data, intptr_t userdata) -> size_t {
+                    return data.size();
+                };
+                
+                fs::path downloadPath = fs::path(dir) / fileName;
+                std::ofstream file(downloadPath, std::ios::binary);
+                
+                if (!file) {
+                    throw std::runtime_error(fmt::format("Cannot create file: {}", downloadPath.string()));
+                }
+                
+                auto fileResponse = cpr::Get(cpr::Url{url},
+                                             cpr::WriteCallback{writeCallback},
+                                             cpr::ProgressCallback{progressCallback},
+                                             cpr::Timeout{timeout});
+                
+                if (fileResponse.status_code == 200) {
+                    // Redownload to file since we used a custom write callback
+                    std::ofstream finalFile(downloadPath, std::ios::binary);
+                    auto finalResponse = cpr::Get(cpr::Url{url}, cpr::Timeout{timeout});
+                    finalFile << finalResponse.text;
+                    finalFile.close();
+                    
+                    downloadedFiles.push_back(downloadPath.string());
+                    // progress.info(fmt::format("Downloaded: {} ({} bytes)", fileName, fs::file_size(downloadPath)));
+                } else {
+                    throw std::runtime_error(fmt::format("Download failed: {}", fileResponse.status_code));
+                }
+            }
+            
+            progress.completeOperation();
+        }
+    }
+
+    M_worldComm->barrier();
+    return downloadedFiles;
+}
+
+std::vector<std::string>
 RemoteData::CKAN::upload(const std::string& dataPath, const std::string& datasetId, bool sync) const
 {
     CHECK(isInit()) << "CKAN remote data object is not initialized.";
@@ -391,6 +574,8 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& dataset
     RemoteDataProgress progress(RemoteDataProgress::Operation::UPLOAD, progressLevel);
     progress.startOperation("CKAN", fmt::format("dataset: {}", datasetId));
 
+    // Use default timeout for non-timeout enabled upload method  
+    int defaultTimeout = 30000; // 30 seconds
     std::vector<std::string> uploadedResources;
     if (M_worldComm->isMasterRank())
     {
@@ -398,7 +583,7 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& dataset
         if (fs::is_regular_file(dataFsPath))
         {
             // Upload single file
-            uploadFileWithProgress(dataPath, datasetId, uploadedResources, progress, 1, 1);
+            uploadFileWithProgress(dataPath, datasetId, uploadedResources, progress, 1, 1, defaultTimeout);
         }
         else if (fs::is_directory(dataFsPath))
         {
@@ -419,7 +604,7 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& dataset
             for (const auto& entry : files)
             {
                 fileNum++;
-                uploadFileWithProgress(entry.path().string(), datasetId, uploadedResources, progress, fileNum, fileCount);
+                uploadFileWithProgress(entry.path().string(), datasetId, uploadedResources, progress, fileNum, fileCount, defaultTimeout);
             }
         }
         else
@@ -437,7 +622,7 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& dataset
 }
 
 void
-RemoteData::CKAN::uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles) const
+RemoteData::CKAN::uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles, int timeout) const
 {
     fs::path filepath(filePath);
     std::string filename = filepath.filename().string();
@@ -469,7 +654,8 @@ RemoteData::CKAN::uploadFileWithProgress(const std::string& filePath, const std:
             cpr::Url{url},
             headers,
             multipart,
-            cpr::VerifySsl{false}
+            cpr::VerifySsl{false},
+            cpr::Timeout{timeout}
         );
         
         if (res.status_code != 200)
@@ -537,6 +723,7 @@ RemoteData::CKAN::createDataset(const std::string& name, const std::string& orga
             {"title", name},
             {"notes", description}
         },
+        cpr::Timeout{30000},  // 30 second default timeout
         cpr::VerifySsl{false}
     );
 
@@ -574,7 +761,8 @@ nl::json RemoteData::CKAN::createDataset(const std::string& datasetName) const
         cpr::Url{url},
         headers,
         cpr::Body{payload.dump()},
-        cpr::VerifySsl{false}
+        cpr::VerifySsl{false},
+        cpr::Timeout{30000}  // 30 second default timeout
     );
 
     if (res.status_code != 200)
@@ -608,6 +796,7 @@ bool RemoteData::CKAN::deleteDataset(const std::string& datasetId) const
         cpr::Payload{
             {"id", datasetId}
         },
+        cpr::Timeout{30000},  // 30 second default timeout
         cpr::VerifySsl{false}
     );
 
@@ -640,7 +829,8 @@ RemoteData::CKAN::contents() const
         cpr::Response r = cpr::Post(
             cpr::Url{url},
             cpr::Body{requestData.dump()},
-            cpr::Header{{"Authorization", M_apiKey}, {"Content-Type", "application/json"}}
+            cpr::Header{{"Authorization", M_apiKey}, {"Content-Type", "application/json"}},
+            cpr::Timeout{30000}  // 30 second default timeout
         );
 
         if ( r.status_code == 200 )
@@ -696,6 +886,69 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& parentI
 }
 
 std::vector<std::string>
+RemoteData::CKAN::upload(const std::string& dataPath, const std::string& parentId, int timeout) const
+{
+    CHECK(isInit()) << "CKAN remote data object is not initialized.";
+    CHECK(fs::exists(dataPath)) << fmt::format("Data path '{}' does not exist.", dataPath);
+
+    // Use the dataset as the parent ID context for CKAN uploads
+    std::string datasetId = parentId.empty() ? M_dataset : parentId;
+    
+    // Create progress reporter based on command-line options
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet"))
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    else if (Environment::vm().count("debug"))
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    else if (Environment::vm().count("verbose") || Environment::vm().count("progress"))
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::UPLOAD, progressLevel);
+    progress.startOperation("CKAN", fmt::format("dataset: {}", datasetId));
+
+    std::vector<std::string> uploadedResources;
+    if (M_worldComm->isMasterRank())
+    {
+        fs::path dataFsPath(dataPath);
+        if (fs::is_regular_file(dataFsPath))
+        {
+            // Upload single file
+            uploadFileWithProgress(dataPath, datasetId, uploadedResources, progress, 1, 1, timeout);
+        }
+        else if (fs::is_directory(dataFsPath))
+        {
+            // Count files for progress reporting
+            int fileCount = 0;
+            std::vector<fs::directory_entry> files;
+            for (const auto& entry : fs::recursive_directory_iterator(dataPath))
+            {
+                if (entry.is_regular_file())
+                {
+                    files.push_back(entry);
+                    fileCount++;
+                }
+            }
+            
+            // Upload each file with progress
+            int fileNum = 0;
+            for (const auto& entry : files)
+            {
+                fileNum++;
+                uploadFileWithProgress(entry.path().string(), datasetId, uploadedResources, progress, fileNum, fileCount, timeout);
+            }
+        }
+        else
+        {
+            progress.error(fmt::format("Unsupported file system object: {}", dataPath));
+        }
+        
+        progress.completeOperation();
+    }
+
+    return uploadedResources;
+}
+
+std::vector<std::string>
 RemoteData::CKAN::listOrganizations() const
 {
     std::vector<std::string> organizations;
@@ -723,7 +976,8 @@ RemoteData::CKAN::listOrganizations() const
             cpr::Response res = cpr::Get(
                 cpr::Url{url},
                 headers,
-                cpr::VerifySsl{false}
+                cpr::VerifySsl{false},
+                cpr::Timeout{30000}  // 30 second default timeout
             );
 
             if (res.status_code == 200)
