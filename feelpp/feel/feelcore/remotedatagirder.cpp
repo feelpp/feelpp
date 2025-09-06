@@ -203,6 +203,7 @@ void RemoteDataProgress::debug(const std::string& message) const
 #include <boost/algorithm/string.hpp>
 #include <cpr/cpr.h>
 #include <feel/feelcore/remotedata.hpp>
+#include <feel/feelcore/zip.hpp>
 #include <fstream>
 #include <regex>
 
@@ -426,13 +427,55 @@ Feel::RemoteData::Girder::download( const std::string& dir, const std::string& p
     {
         std::string result = downloadFolderWithProgress( resourceId, dir, token, progress );
         progress.completeOperation();
-        return result.empty() ? std::vector<std::string>{} : std::vector<std::string>{ result };
+        
+        if (result.empty()) {
+            return {};
+        }
+        
+        // If result is a directory (extracted folder), enumerate all files in it
+        if (fs::is_directory(result)) {
+            std::vector<std::string> extractedFiles;
+            for (const auto& entry : fs::recursive_directory_iterator(result)) {
+                if (entry.is_regular_file()) {
+                    std::string filePath = entry.path().string();
+                    // Skip metadata files
+                    if (filePath.size() < 14 || filePath.substr(filePath.size() - 14) != ".metadata.json") {
+                        extractedFiles.push_back(filePath);
+                    }
+                }
+            }
+            return extractedFiles.empty() ? std::vector<std::string>{ result } : extractedFiles;
+        } else {
+            // Single file (probably ZIP fallback)
+            return std::vector<std::string>{ result };
+        }
     }
     else if ( resourceType == "item" )
     {
         std::string result = downloadItemWithProgress( resourceId, dir, token, progress );
         progress.completeOperation();
-        return result.empty() ? std::vector<std::string>{} : std::vector<std::string>{ result };
+        
+        if (result.empty()) {
+            return {};
+        }
+        
+        // If result is a directory (extracted item), enumerate all files in it
+        if (fs::is_directory(result)) {
+            std::vector<std::string> extractedFiles;
+            for (const auto& entry : fs::recursive_directory_iterator(result)) {
+                if (entry.is_regular_file()) {
+                    std::string filePath = entry.path().string();
+                    // Skip metadata files
+                    if (filePath.size() < 14 || filePath.substr(filePath.size() - 14) != ".metadata.json") {
+                        extractedFiles.push_back(filePath);
+                    }
+                }
+            }
+            return extractedFiles.empty() ? std::vector<std::string>{ result } : extractedFiles;
+        } else {
+            // Single file (probably ZIP fallback)
+            return std::vector<std::string>{ result };
+        }
     }
     else
     {
@@ -821,6 +864,77 @@ Feel::RemoteData::Girder::downloadFolder( std::string const& folderId, std::stri
     return downloadedFolder;
 }
 
+// Helper function to extract ZIP file and show progress for individual files
+std::vector<std::string>
+Feel::RemoteData::Girder::extractZipWithProgress(const std::string& zipFilePath, const std::string& extractDir, const RemoteDataProgress& progress) const
+{
+    std::vector<std::string> extractedFiles;
+    
+    // Get the ZIP filename without extension for progress display
+    fs::path zipPath(zipFilePath);
+    std::string zipName = zipPath.stem().string();
+    
+    if (progress.showDebugOutput()) {
+        progress.debug("Extracting ZIP file: " + zipFilePath + " to: " + extractDir);
+    }
+    
+    // Create extraction directory if it doesn't exist
+    fs::path extractPath(extractDir);
+    if (!fs::exists(extractPath)) {
+        fs::create_directories(extractPath);
+    }
+    
+    // Use the existing Feel++ extractZipFile function
+    bool extractionSuccess = extractZipFile(zipFilePath, extractDir);
+    
+    if (extractionSuccess) {
+        // Successfully extracted, now enumerate the extracted files
+        if (progress.isVerbose()) {
+            progress.debug("✓ Extracted ZIP contents from " + zipName);
+        }
+        
+        // Recursively find all extracted files
+        for (const auto& entry : fs::recursive_directory_iterator(extractDir)) {
+            if (entry.is_regular_file()) {
+                std::string extractedFile = entry.path().string();
+                // Skip the original ZIP file and metadata files
+                if (extractedFile != zipFilePath && 
+                    (extractedFile.size() < 14 || extractedFile.substr(extractedFile.size() - 14) != ".metadata.json")) {
+                    extractedFiles.push_back(extractedFile);
+                    
+                    // Get relative path for better display
+                    fs::path relativePath = fs::relative(entry.path(), extractPath);
+                    std::streamsize fileSize = fs::file_size(entry.path());
+                    
+                    if (progress.isVerbose()) {
+                        progress.debug(fmt::format("  └─ {} ({})", 
+                                                relativePath.string(), 
+                                                progress.formatSize(fileSize)));
+                    }
+                }
+            }
+        }
+        
+        // Clean up the ZIP file after successful extraction
+        if (fs::exists(zipFilePath)) {
+            fs::remove(zipFilePath);
+            if (progress.showDebugOutput()) {
+                progress.debug("Removed ZIP file: " + zipFilePath);
+            }
+        }
+        
+        if (progress.isVerbose()) {
+            progress.debug(fmt::format("✓ Extracted {} files from {}", extractedFiles.size(), zipName));
+        }
+    } else {
+        progress.error("Failed to extract ZIP file: " + zipFilePath);
+        // Return the ZIP file path as fallback
+        extractedFiles.push_back(zipFilePath);
+    }
+    
+    return extractedFiles;
+}
+
 std::string
 Feel::RemoteData::Girder::downloadFolderWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const
 {
@@ -921,7 +1035,18 @@ Feel::RemoteData::Girder::downloadFolderWithProgress( std::string const& folderI
     ofileMetadata << jsonResponse.dump( 4 ); // Write the JSON with indentation
     ofileMetadata.close();
 
-    downloadedFolder = filepath;
+    // Extract ZIP contents and return the extraction directory instead of ZIP file
+    std::vector<std::string> extractedFiles = extractZipWithProgress(filepath, dir, progress);
+    
+    if (!extractedFiles.empty()) {
+        // Return the extraction directory path (or first file) for compatibility
+        // The calling code will handle converting to vector if needed
+        downloadedFolder = dir; // Return the directory containing extracted files
+    } else {
+        // Fallback to ZIP file if extraction failed
+        downloadedFolder = filepath;
+    }
+    
     return downloadedFolder;
 }
 
@@ -1100,8 +1225,17 @@ Feel::RemoteData::Girder::downloadItemWithProgress(const std::string& resourceId
     ofileMetadata << jsonResponse.dump(4); // Write the JSON with indentation
     ofileMetadata.close();
 
-    // Return the downloaded file path
-    return filepath;
+    // Extract ZIP contents and return the extraction directory instead of ZIP file
+    std::vector<std::string> extractedFiles = extractZipWithProgress(filepath, dir, progress);
+    
+    if (!extractedFiles.empty()) {
+        // Return the extraction directory path for compatibility
+        // The calling code will handle converting to vector if needed
+        return dir; // Return the directory containing extracted files
+    } else {
+        // Fallback to ZIP file if extraction failed
+        return filepath;
+    }
 }
 
 std::vector<std::string>

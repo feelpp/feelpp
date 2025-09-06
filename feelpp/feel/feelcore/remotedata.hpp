@@ -424,6 +424,7 @@ struct RemoteData
         std::string downloadFileWithProgress( std::string const& fileId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
         std::string downloadFolderWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
         std::string downloadItemWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
+        std::vector<std::string> extractZipWithProgress( const std::string& zipFilePath, const std::string& extractDir, const RemoteDataProgress& progress ) const;
         std::vector<std::string> uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         //std::string uploadFileImpl( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
         std::string uploadFileImpl(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType) const;
@@ -484,12 +485,18 @@ struct RemoteData
         //! Download data from CKAN
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
 
+        //! Download data from CKAN with timeout
+        std::vector<std::string> download( std::string const& dir, int timeout ) const;
+
         //! Get contents of a CKAN dataset
         std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
         contents() const;
 
         //! Upload data to CKAN
         std::vector<std::string> upload( std::string const& dataPath, std::string const& parentId = "" ) const;
+
+        //! Upload data to CKAN with timeout
+        std::vector<std::string> upload( std::string const& dataPath, std::string const& parentId, int timeout ) const;
 
         //! Replace a resource
         void replaceResource( std::string const& resourcePath, std::string const& resourceId ) const;
@@ -525,7 +532,7 @@ struct RemoteData
         std::string uploadFile( const std::string& filePath, const std::string& resourceId ) const;
 
         //! Upload a file with progress reporting
-        void uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles) const;
+        void uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles, int timeout) const;
 
         //! Parse resource metadata from JSON
         nl::json parseResourceMetadata( const std::string& metadata ) const;

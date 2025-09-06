@@ -132,6 +132,17 @@ Girder is a data management platform that provides a web-based interface for sto
 | `token` | <no default value> | a direct authentication token
 |===
 
+=== Automatic ZIP Extraction
+
+When downloading folders or items from Girder, the tool automatically handles ZIP archives:
+
+* **Automatic extraction**: ZIP files are automatically extracted without manual intervention
+* **Individual file listing**: Shows progress and details for each extracted file rather than just the ZIP
+* **Clean file access**: Extracted files are immediately available for use
+* **Progress tracking**: Displays extraction progress and lists all extracted files in verbose mode
+
+NOTE: This enhancement provides a seamless experience similar to direct file downloads, eliminating the need for manual ZIP extraction when working with Girder folders and items.
+
 === Authentication
 
 Girder authentication is required for private data access and upload operations.
@@ -160,6 +171,24 @@ NOTE: Using api_key is recommended over token as the remotedata app automaticall
 ----
 feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --progress
 ----
+
+* Download folder with automatic ZIP extraction:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{folder:5ac72871b0e9574027047894}" --verbose
+----
++
+This automatically extracts the folder contents and shows individual file progress.
+
+* Download item with automatic extraction:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{item:5ac72871b0e9574027047895}" --progress
+----
++
+Items containing multiple files are automatically extracted and listed.
 
 * Upload data to Girder:
 +
@@ -191,6 +220,17 @@ CKAN (Comprehensive Knowledge Archive Network) is an open-source data management
 | `dataset` | <no default value> | dataset name or ID
 | `resource` | <no default value> | resource ID for specific file operations
 |===
+
+=== Enhanced Progress Reporting
+
+CKAN downloads now feature enhanced progress reporting:
+
+* **Filename-aware progress**: Shows the actual filename being downloaded instead of just generic progress
+* **Real-time updates**: Live progress bars with transfer rates and completion percentages
+* **Timeout support**: Configurable timeout handling for robust downloads
+* **Detailed progress format**: Progress bars show format like `filename.ext: [=====>] 42.3% (1.81 MB/1.81 MB)`
+
+NOTE: This provides the same comprehensive progress reporting as Girder downloads, ensuring consistent user experience across platforms.
 
 === Environment Variables
 
