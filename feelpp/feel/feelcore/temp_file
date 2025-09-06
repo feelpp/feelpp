@@ -84,55 +84,6 @@ void RemoteDataProgress::updateProgress(std::streamsize transferred, std::stream
                              formatSize(transferred), formatSize(total));
 }
 
-void RemoteDataProgress::showProgressBar(const std::string& filename, std::streamsize transferred, std::streamsize total) const
-{
-    if (isQuiet()) return;
-    
-    // Throttle updates to avoid too much output (update every 100ms or 0.5% change for better responsiveness)
-    auto now = std::chrono::steady_clock::now();
-    bool timeForUpdate = (now - M_lastUpdateTime) > std::chrono::milliseconds(100);
-    bool significantProgress = (transferred - M_lastTransferred) > (total / 200); // 0.5% change
-    
-    if (!timeForUpdate && !significantProgress && transferred != total) return;
-    
-    M_lastUpdateTime = now;
-    M_lastTransferred = transferred;
-    
-    double percentage = total > 0 ? (static_cast<double>(transferred) / total) * 100.0 : 0.0;
-    
-    if (isVerbose() || isDebug()) {
-        // Show detailed progress bar for verbose mode
-        const int barWidth = 50;
-        int progress = static_cast<int>(percentage * barWidth / 100.0);
-        
-        std::cout << fmt::format("\r[{}] {}: [", operationName(), filename);
-        for (int i = 0; i < barWidth; ++i) {
-            if (i < progress) std::cout << "=";
-            else if (i == progress) std::cout << ">";
-            else std::cout << " ";
-        }
-        std::cout << fmt::format("] {:.1f}% ({}/{})", percentage, 
-                                formatSize(transferred), formatSize(total));
-        
-        if (transferred == total) {
-            std::cout << "\n";  // New line when complete
-        } else {
-            std::cout << std::flush;  // Flush for real-time updates
-        }
-    } else {
-        // Simple progress for normal mode
-        std::cout << fmt::format("\r[{}] {} - {:.1f}% ({}/{})", 
-                                operationName(), filename, percentage,
-                                formatSize(transferred), formatSize(total));
-        
-        if (transferred == total) {
-            std::cout << "\n";  // New line when complete
-        } else {
-            std::cout << std::flush;  // Flush for real-time updates
-        }
-    }
-}
-
 void RemoteDataProgress::completeFile(const std::string& filename, const std::string& id) const
 {
     M_successCount++;
@@ -518,14 +469,6 @@ Feel::RemoteData::Girder::download( std::string const& dir ) const
     return downloadedFileOrFolder;
 }
 
-std::vector<std::string>
-Feel::RemoteData::Girder::download( std::string const& dir, int timeout ) const
-{
-    // This method delegates to the main download method since timeout 
-    // is now handled at the HTTP request level in downloadFileWithProgress
-    return this->download( dir );
-}
-
 std::string
 Feel::RemoteData::Girder::errorMessage( nl::json const& jsonResponse, std::string const& defaultMsg, uint16_type statusCode )
 {
@@ -712,15 +655,7 @@ Feel::RemoteData::Girder::downloadFileWithProgress( std::string const& fileId, s
         }
 
         std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
-        // Use longer timeout for large files (10 minutes = 600000ms)
-        int timeout = 600000; // 10 minutes for large files
-        
-        // Create progress callback for real-time progress bar
-        auto progressCallback = [&progress](const std::string& filename, std::streamsize transferred, std::streamsize total) {
-            progress.showProgressBar(filename, transferred, total);
-        };
-        
-        status = requestHTTPGETWithProgress( urlFileDownload, headersFileDownload, ofile, filename, progressCallback, timeout );
+        status = requestHTTPGET( urlFileDownload, headersFileDownload, ofile );
         ofile.close();
         if ( !status.success() )
         {
@@ -795,9 +730,7 @@ Feel::RemoteData::Girder::downloadFolder( std::string const& folderId, std::stri
         headersFolderDownload.push_back( "Girder-Token: " + token );
     std::string filepath = ( fs::path( dir ) / ( foldername + ".zip" ) ).string();
     std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
-    // Use longer timeout for large ZIP files (10 minutes = 600000ms)
-    int timeout = 600000; // 10 minutes for large files
-    status = requestHTTPGET( urlFolderDownload, headersFolderDownload, ofile, timeout );
+    status = requestHTTPGET( urlFolderDownload, headersFolderDownload, ofile );
     ofile.close();
     if ( !status.success() )
     {
@@ -886,15 +819,7 @@ Feel::RemoteData::Girder::downloadFolderWithProgress( std::string const& folderI
 
     std::string filepath = ( fs::path( dir ) / ( foldername + ".zip" ) ).string();
     std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
-    // Use longer timeout for large ZIP files (10 minutes = 600000ms)
-    int timeout = 600000; // 10 minutes for large files
-    
-    // Create progress callback for real-time progress bar
-    auto progressCallback = [&progress](const std::string& filename, std::streamsize transferred, std::streamsize total) {
-        progress.showProgressBar(filename, transferred, total);
-    };
-    
-    status = requestHTTPGETWithProgress( urlFolderDownload, headersFolderDownload, ofile, foldername + ".zip", progressCallback, timeout );
+    status = requestHTTPGET( urlFolderDownload, headersFolderDownload, ofile );
     ofile.close();
     if ( !status.success() )
     {
@@ -979,9 +904,7 @@ Feel::RemoteData::Girder::downloadItem(const std::string& resourceId, const std:
     // Download the item
     std::string filepath = (fs::path(dir) / (itemName + ".zip")).string();
     std::ofstream ofile(filepath, std::ios::out | std::ios::binary);
-    // Use longer timeout for large ZIP files (10 minutes = 600000ms)
-    int timeout = 600000; // 10 minutes for large files
-    status = requestHTTPGET(urlItemDownload, headersItemDownload, ofile, timeout);
+    status = requestHTTPGET(urlItemDownload, headersItemDownload, ofile);
     ofile.close();
     if (!status.success())
     {
@@ -1071,9 +994,7 @@ Feel::RemoteData::Girder::downloadItemWithProgress(const std::string& resourceId
     // Download the item
     std::string filepath = (fs::path(dir) / (itemName + ".zip")).string();
     std::ofstream ofile(filepath, std::ios::out | std::ios::binary);
-    // Use longer timeout for large ZIP files (10 minutes = 600000ms)
-    int timeout = 600000; // 10 minutes for large files
-    status = requestHTTPGET(urlItemDownload, headersItemDownload, ofile, timeout);
+    status = requestHTTPGET(urlItemDownload, headersItemDownload, ofile);
     ofile.close();
     if (!status.success())
     {
@@ -1246,14 +1167,6 @@ Feel::RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::s
         mpi::broadcast(M_worldComm->globalComm(), res, M_worldComm->masterRank());
 
     return res;
-}
-
-std::vector<std::string>
-Feel::RemoteData::Girder::upload(const std::string& dataPath, const std::string& destination, bool sync, int timeout) const
-{
-    // For now, delegate to the main upload method since timeout will be passed down to HTTP requests
-    // TODO: Implement timeout parameter passing through the call chain
-    return this->upload(dataPath, destination, sync);
 }
 
 std::string
@@ -2754,3 +2667,5 @@ Feel::RemoteData::Girder::deleteResource(const nl::json& resource, const std::st
     std::cout << "Resource deleted successfully: " << resourceId << " (" << resourceType << ")\n";
     return true;
 }
+
+} // namespace Feel

@@ -27,6 +27,8 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/json.hpp>
+#include <chrono>
+#include <functional>
 
 namespace Feel
 {
@@ -47,7 +49,8 @@ public:
     enum class Level { QUIET, NORMAL, VERBOSE, DEBUG };
     
     RemoteDataProgress(Operation op, Level level = Level::NORMAL) 
-        : M_operation(op), M_level(level), M_hasErrors(false), M_successCount(0), M_totalCount(0) {}
+        : M_operation(op), M_level(level), M_hasErrors(false), M_successCount(0), M_totalCount(0), 
+          M_lastTransferred(0), M_lastUpdateTime(std::chrono::steady_clock::now()) {}
     
     void setLevel(Level level) { M_level = level; }
     
@@ -66,6 +69,7 @@ public:
     void startOperation(const std::string& description) const;
     void startFile(const std::string& filename, std::streamsize size, int fileNum = 0, int totalFiles = 0) const;
     void updateProgress(std::streamsize transferred, std::streamsize total) const;
+    void showProgressBar(const std::string& filename, std::streamsize transferred, std::streamsize total) const;
     void completeFile(const std::string& filename, const std::string& id = "") const;
     void completeFile(const std::string& filename, std::streamsize size, bool skipped = false) const;
     void completeOperation() const;
@@ -78,6 +82,8 @@ private:
     mutable bool M_hasErrors;
     mutable int M_successCount;
     mutable int M_totalCount;
+    mutable std::streamsize M_lastTransferred;  // For progress bar updates
+    mutable std::chrono::steady_clock::time_point M_lastUpdateTime;  // For throttling updates
     
     std::string operationName() const { return M_operation == Operation::UPLOAD ? "UPLOAD" : "DOWNLOAD"; }
 };
@@ -112,6 +118,14 @@ StatusRequestHTTP requestHTTPPOST( const std::string& url, const std::vector<std
                                    int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
 StatusRequestHTTP requestHTTPCUSTOM( const std::string& customRequest, const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
 StatusRequestHTTP requestDownloadURL( const std::string& url, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+
+// Progress callback type for HTTP downloads
+using ProgressCallback = std::function<void(std::string filename, std::streamsize transferred, std::streamsize total)>;
+
+// HTTP GET with progress callback
+StatusRequestHTTP requestHTTPGETWithProgress( const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, 
+                                            const std::string& filename, const ProgressCallback& progressCallback,
+                                            int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
 
 std::pair<bool, nl::json> convertDescToJson( std::string const& desc );
 /**
@@ -148,6 +162,13 @@ struct RemoteData
     //! @return : the path of the downloaded file
     std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
 
+    //! Download the file with timeout
+    //! @param dir : the directory where the file is downloaded
+    //! @param filename : the filename of the downloaded file
+    //! @param timeout : timeout in milliseconds for HTTP requests (default: 30000)
+    //! @return : the path of the downloaded file
+    std::vector<std::string> download( std::string const& dir, std::string const& filename, int timeout ) const;
+
     //! Upload data on a remote storage
     //! @param dataPath : a path of a file or a folder
     //! @param parentId : id where folder is created, empty means to use folder id in the desc
@@ -155,6 +176,15 @@ struct RemoteData
     //! @return : vector of paths of the uploaded files or folders
     std::vector<std::string>
     upload( std::string const& dataPath, std::string const& parentId = "", bool sync = true ) const;
+
+    //! Upload data on a remote storage with timeout
+    //! @param dataPath : a path of a file or a folder
+    //! @param parentId : id where folder is created, empty means to use folder id in the desc
+    //! @param sync : apply MPI synchronization with returned infos (else only master rank has these infos)
+    //! @param timeout : timeout in milliseconds for HTTP requests (default: 30000)
+    //! @return : vector of paths of the uploaded files or folders
+    std::vector<std::string>
+    upload( std::string const& dataPath, std::string const& parentId, bool sync, int timeout ) const;
 
     //! Upload data on Girder
     //! @param dataToUpload : vector of (paths of a file or a folder, ids where folder is created, empty means to use folder id in the desc)
@@ -302,11 +332,24 @@ struct RemoteData
         //! @return : vector of paths of the downloaded files or the path of downloaded folder
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
 
+        //! Download file/folder from the Girder desc with timeout
+        //! @param dir : the directory where the file is downloaded
+        //! @param timeout : timeout in milliseconds for HTTP requests
+        //! @return : vector of paths of the downloaded files or the path of downloaded folder
+        std::vector<std::string> download( std::string const& dir, int timeout ) const;
+
         //! Download file/folder/item from the Girder desc
         //! @param dir : the directory where the file is downloaded
         //! @param path : the path of the file/folder/item
         //! @return : vector of paths of the downloaded files or the path of downloaded folder
         std::vector<std::string> download( const std::string& dir, const std::string& path ) const;
+
+        //! Download file/folder/item from the Girder desc with timeout
+        //! @param dir : the directory where the file is downloaded
+        //! @param path : the path of the file/folder/item
+        //! @param timeout : timeout in milliseconds for HTTP requests
+        //! @return : vector of paths of the downloaded files or the path of downloaded folder
+        std::vector<std::string> download( const std::string& dir, const std::string& path, int timeout ) const;
 
         //! Upload data on Girder
         //! @param dataPath : a path of a file or a folder
@@ -315,6 +358,15 @@ struct RemoteData
         //! @return : vector of file ids uploaded
         std::vector<std::string>
         upload( std::string const& dataPath, std::string const& parentId = "", bool sync = true ) const;
+
+        //! Upload data on Girder with timeout
+        //! @param dataPath : a path of a file or a folder
+        //! @param parentId : id where folder is created, empty means to use folder id in the desc
+        //! @param sync : apply MPI synchronization with returned infos (else only master rank has these infos)
+        //! @param timeout : timeout in milliseconds for HTTP requests
+        //! @return : vector of file ids uploaded
+        std::vector<std::string>
+        upload( std::string const& dataPath, std::string const& parentId, bool sync, int timeout ) const;
 
         //! Upload data on Girder
         //! @param dataToUpload : vector of (paths of a file or a folder, ids where folder is created, empty means to use folder id in the desc)
