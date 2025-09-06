@@ -39,6 +39,7 @@ int main( int argc, char** argv )
         ( "quiet,q", "suppress progress output" )
         ( "progress", "show detailed progress information" )
         ( "debug", "enable debug output with API details" )
+        ( "timeout", po::value<int>()->default_value(30000), "timeout in milliseconds for HTTP requests (default: 30000)" )
 		;
 
     fs::path initialCurrentPath = fs::current_path();
@@ -66,7 +67,17 @@ int main( int argc, char** argv )
         std::string data = soption(_name="data");
         if ( fs::path(data).is_relative() )
             data = (initialCurrentPath/fs::path(data)).string();
-        rd.upload( data );
+        
+        // Use timeout if specified
+        if ( Environment::vm().count("timeout") )
+        {
+            int timeout = Environment::vm()["timeout"].as<int>();
+            rd.upload( data, "", true, timeout );
+        }
+        else
+        {
+            rd.upload( data );
+        }
     }
     else if ( Environment::vm().count("download") )
     {
@@ -80,7 +91,17 @@ int main( int argc, char** argv )
         if ( Environment::vm().count("data") )
             dir = soption(_name="data");
         Feel::cout << "download data in : " << dir << "\n";
-        rd.download( dir );
+        
+        // Use timeout if specified
+        if ( Environment::vm().count("timeout") )
+        {
+            int timeout = Environment::vm()["timeout"].as<int>();
+            rd.download( dir, "", timeout );
+        }
+        else
+        {
+            rd.download( dir );
+        }
     }
     else if ( Environment::vm().count("contents") )
     {

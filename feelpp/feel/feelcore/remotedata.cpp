@@ -260,6 +260,87 @@ StatusRequestHTTP requestHTTPGET( const std::string& url, const std::vector<std:
 
     return StatusRequestHTTP( false, 0, fmt::format( "Unknown error occurred after retries to get url {}", url ) );
 }
+
+StatusRequestHTTP requestHTTPGETWithProgress( const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, 
+                                            const std::string& filename, const ProgressCallback& progressCallback,
+                                            int timeout, int max_retries, int backoff_delay )
+{
+    // Convert headers to cpr::Header
+    cpr::Header cpr_headers;
+    for ( const auto& header : headers )
+    {
+        auto pos = header.find( ": " );
+        if ( pos != std::string::npos )
+        {
+            cpr_headers[header.substr( 0, pos )] = header.substr( pos + 2 );
+        }
+    }
+
+    int retries = 0;
+    while ( retries <= max_retries )
+    {
+        // Reset stream position for retries
+        if (retries > 0) {
+            ofile.clear();
+            ofile.seekp(0);
+        }
+
+        // Track downloaded bytes for progress
+        std::streamsize totalDownloaded = 0;
+        
+        // Perform the GET request with timeout, progress callback, and write callback
+        auto response = cpr::Get( 
+            cpr::Url{ url }, 
+            cpr_headers, 
+            cpr::Timeout{ timeout },
+            cpr::ProgressCallback([&](cpr::cpr_pf_arg_t downloadTotal, cpr::cpr_pf_arg_t downloadNow, 
+                                     cpr::cpr_pf_arg_t uploadTotal, cpr::cpr_pf_arg_t uploadNow, intptr_t userdata) -> bool {
+                if (progressCallback && downloadTotal > 0) {
+                    // Debug: Uncomment next line to see all progress calls
+                    // std::cerr << "Progress: " << downloadNow << "/" << downloadTotal << std::endl;
+                    progressCallback(filename, static_cast<std::streamsize>(downloadNow), 
+                                   static_cast<std::streamsize>(downloadTotal));
+                }
+                return true; // Continue download
+            }),
+            cpr::WriteCallback([&](const std::string_view& data, intptr_t userdata) -> bool {
+                ofile.write(data.data(), data.size());
+                totalDownloaded += data.size();
+                return true; // Continue download
+            })
+        );
+
+        // Check if the request was successful
+        if ( response.status_code == 200 )
+        {
+            // Final progress update to show completion
+            if (progressCallback && totalDownloaded > 0) {
+                progressCallback(filename, totalDownloaded, totalDownloaded);
+            }
+            return StatusRequestHTTP( true, response.status_code, "" );
+        }
+
+        // Retry on certain failure conditions (e.g., timeout or server errors)
+        if ( response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500 )
+        {
+            ++retries;
+            if ( retries > max_retries )
+            {
+                return StatusRequestHTTP( false, response.status_code, fmt::format( "Max retries reached {} for url {}", response.error.message, url ) );
+            }
+            // Wait before retrying
+            std::this_thread::sleep_for( std::chrono::milliseconds( backoff_delay ) );
+        }
+        else
+        {
+            // Non-retryable error
+            return StatusRequestHTTP( false, response.status_code, response.error.message );
+        }
+    }
+
+    return StatusRequestHTTP( false, 0, fmt::format( "Unknown error occurred after retries to get url {}", url ) );
+}
+
 StatusRequestHTTP requestHTTPPOST( const std::string& url, const std::vector<std::string>& headers,
                                    std::ostream& ofile, int timeout, int max_retries, int backoff_delay )
 {
@@ -542,6 +623,21 @@ RemoteData::download( std::string const& dir, std::string const& filename ) cons
     return downloadedData;
 }
 
+std::vector<std::string>
+RemoteData::download( std::string const& dir, std::string const& filename, int timeout ) const
+{
+    std::vector<std::string> downloadedData;
+    if ( M_url )
+        downloadedData.push_back( M_url->download( dir, filename ) ); // TODO: Add timeout support for URL
+    else if ( M_github )
+        return M_github->download( dir ); // TODO: Add timeout support for GitHub
+    else if ( M_girder )
+        return M_girder->download( dir, timeout );
+    else if ( M_ckan )
+        return M_ckan->download( dir ); // TODO: Add timeout support for CKAN
+    return downloadedData;
+}
+
 nl::json
 RemoteData::resourceLookup( std::string const& path, std::string const& token ) const
 {
@@ -563,6 +659,16 @@ RemoteData::upload( std::string const& dataPath, std::string const& parentId, bo
         return M_girder->upload( dataPath, parentId, sync );
     else if ( M_ckan && M_ckan->canUpload() )
         return M_ckan->upload( dataPath, parentId );
+    return {};
+}
+
+std::vector<std::string>
+RemoteData::upload( std::string const& dataPath, std::string const& parentId, bool sync, int timeout ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return M_girder->upload( dataPath, parentId, sync, timeout );
+    else if ( M_ckan && M_ckan->canUpload() )
+        return M_ckan->upload( dataPath, parentId ); // TODO: Add timeout support for CKAN
     return {};
 }
 
