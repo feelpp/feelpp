@@ -19,6 +19,135 @@
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@cemosis.fr>
 //! @date 2024-12-01
+
+#include <feel/feelcore/remotedata.hpp>
+#include <feel/feelcore/environment.hpp>
+
+namespace Feel
+{
+
+//! Implementation of RemoteDataProgress utility class
+std::string RemoteDataProgress::formatSize(std::streamsize bytes) const
+{
+    const std::streamsize KB = 1024;
+    const std::streamsize MB = KB * 1024;
+    const std::streamsize GB = MB * 1024;
+    
+    if (bytes >= GB)
+        return fmt::format("{:.2f} GB", static_cast<double>(bytes) / GB);
+    else if (bytes >= MB)
+        return fmt::format("{:.2f} MB", static_cast<double>(bytes) / MB);
+    else if (bytes >= KB)
+        return fmt::format("{:.2f} KB", static_cast<double>(bytes) / KB);
+    else
+        return fmt::format("{} bytes", bytes);
+}
+
+void RemoteDataProgress::startOperation(const std::string& platform, const std::string& target) const
+{
+    if (isQuiet()) return;
+    std::cout << fmt::format("[{}] Starting {} to {} platform: {}\n", 
+                             operationName(), 
+                             M_operation == Operation::UPLOAD ? "upload" : "download",
+                             platform, target);
+}
+
+void RemoteDataProgress::startOperation(const std::string& description) const
+{
+    if (isQuiet()) return;
+    std::cout << fmt::format("[{}] {}\n", operationName(), description);
+}
+
+void RemoteDataProgress::startFile(const std::string& filename, std::streamsize size, int fileNum, int totalFiles) const
+{
+    if (isQuiet()) return;
+    
+    M_totalCount++;
+    
+    std::string prefix = fmt::format("[{}]", operationName());
+    if (totalFiles > 1)
+        prefix += fmt::format(" ({}/{})", fileNum, totalFiles);
+    
+    std::cout << fmt::format("{} {} file: {} ({})\n", 
+                             prefix,
+                             M_operation == Operation::UPLOAD ? "Uploading" : "Downloading",
+                             filename, formatSize(size));
+}
+
+void RemoteDataProgress::updateProgress(std::streamsize transferred, std::streamsize total) const
+{
+    if (!isVerbose()) return;
+    
+    double percentage = total > 0 ? (static_cast<double>(transferred) / total) * 100.0 : 0.0;
+    std::cout << fmt::format("[{}] Progress: {:.1f}% ({}/{})\n", 
+                             operationName(), percentage, 
+                             formatSize(transferred), formatSize(total));
+}
+
+void RemoteDataProgress::completeFile(const std::string& filename, const std::string& id) const
+{
+    M_successCount++;
+    
+    if (isQuiet()) return;
+    
+    std::string message = fmt::format("[{}] ✓ Completed: {}", operationName(), filename);
+    if (!id.empty() && isVerbose())
+        message += fmt::format(" (ID: {})", id);
+    std::cout << message << "\n";
+}
+
+void RemoteDataProgress::completeFile(const std::string& filename, std::streamsize size, bool skipped) const
+{
+    if (!skipped) M_successCount++;
+    
+    if (isQuiet()) return;
+    
+    std::string action = skipped ? "Skipped" : "Downloaded";
+    std::string message = fmt::format("[{}] {} {}: {}", operationName(), 
+                                     skipped ? "⊘" : "✓", action, filename);
+    if (size > 0)
+        message += fmt::format(" ({})", formatSize(size));
+    std::cout << message << "\n";
+}
+
+void RemoteDataProgress::completeOperation() const
+{
+    if (isQuiet()) return;
+    
+    if (M_hasErrors)
+    {
+        int failedCount = M_totalCount - M_successCount;
+        if (M_successCount > 0)
+        {
+            std::cout << fmt::format("[{}] ⚠ Operation completed with errors: {} successful, {} failed\n", 
+                                    operationName(), M_successCount, failedCount);
+        }
+        else
+        {
+            std::cout << fmt::format("[{}] ✗ All operations failed ({} errors)\n", 
+                                    operationName(), failedCount);
+        }
+    }
+    else
+    {
+        std::cout << fmt::format("[{}] ✓ All operations completed successfully ({} files)\n", 
+                                operationName(), M_successCount);
+    }
+}
+
+void RemoteDataProgress::error(const std::string& message) const
+{
+    M_hasErrors = true;
+    std::cout << fmt::format("[{}] ✗ Error: {}\n", operationName(), message);
+}
+
+void RemoteDataProgress::debug(const std::string& message) const
+{
+    if (!isDebug()) return;
+    std::cout << fmt::format("[{}] DEBUG: {}\n", operationName(), message);
+}
+
+} // namespace Feel
 //! @copyright 2024 Feel++ Consortium
 //!
 
@@ -30,7 +159,7 @@
 
 namespace Feel
 {
-RemoteData::Girder::Girder( std::string const& desc, WorldComm& worldComm )
+Feel::RemoteData::Girder::Girder( std::string const& desc, WorldComm& worldComm )
     : M_worldComm( worldComm.shared_from_this() )
 {
     std::regex ex("([ ]*)girder([ ]*):([ ]*)([{])([^]*)([}])");
@@ -131,60 +260,63 @@ RemoteData::Girder::Girder( std::string const& desc, WorldComm& worldComm )
 #endif
 }
 
-void RemoteData::Girder::setFolderIds( std::string const& folderId )
+void Feel::RemoteData::Girder::setFolderIds( std::string const& folderId )
 {
     M_folderIds.clear();
     M_folderIds.insert( folderId );
 }
 
-bool RemoteData::Girder::isInit() const
+bool Feel::RemoteData::Girder::isInit() const
 {
     return !M_url.empty();
 }
-bool RemoteData::Girder::canDownload() const
+bool Feel::RemoteData::Girder::canDownload() const
 {
     return this->isInit() && ( !M_fileIds.empty() || !M_folderIds.empty() || !M_itemIds.empty() || !M_path.empty() );
 }
-bool RemoteData::Girder::canUpload() const
+bool Feel::RemoteData::Girder::canUpload() const
 {
     return this->isInit() && ( !M_token.empty() || !M_apiKey.empty() );
 }
 
-nl::json RemoteData::Girder::getResourceInfoById(const std::string& resourceId, const std::string& token) const
+nl::json Feel::RemoteData::Girder::getResourceInfoById(const std::string& resourceId, const std::string& token, const RemoteDataProgress& progress) const
 {
-    // List of possible resource types to check
-    const std::vector<std::string> resourceTypes = { "item", "file", "folder" };
+    // Try folder first, then item, then file
+    const std::vector<std::pair<std::string, std::string>> endpoints = {
+        {"folder", "/api/v1/folder/" + resourceId},
+        {"item", "/api/v1/item/" + resourceId},
+        {"file", "/api/v1/file/" + resourceId}
+    };
 
-    for (const auto& resourceType : resourceTypes)
+    for (const auto& [resourceType, endpoint] : endpoints)
     {
         try
         {
-            // Construct the URL for the resource endpoint with query parameters
-            std::string url = fmt::format("{}/api/v1/resource/{}", M_url, resourceId);
+            std::string url = M_url + endpoint;
 
             cpr::Response res = cpr::Get(
                 cpr::Url{url},
                 cpr::Header{ {"Girder-Token", token} },
-                cpr::Parameters{
-                    {"id", resourceId},
-                    {"type", resourceType}
-                },
-                cpr::VerifySsl{false} // Disable SSL verification for debugging (enable in production)
+                cpr::VerifySsl{false}
             );
 
             // If the request succeeds, return the parsed JSON
             if (res.status_code == 200)
             {
                 auto j = nl::json::parse(res.text);
+                // Ensure _modelType is set correctly
                 j["_modelType"] = resourceType;
-                std::cout << fmt::format("Resource found with type '{}': {}", resourceType, j.dump()) << "\n";
+                if (progress.showDebugOutput())
+                {
+                    std::cout << fmt::format("Resource found with type '{}': {}", resourceType, j.dump()) << "\n";
+                }
                 return j;
             }
         }
         catch (const std::exception& e)
         {
             // Log the exception for debugging but continue with the next resource type
-            std::cerr << fmt::format("Error fetching resource with type '{}': {}", resourceType, e.what()) << "\n";
+            std::cerr << fmt::format("Error fetching resource '{}' with endpoint '{}': {}", resourceType, endpoint, e.what()) << "\n";
         }
     }
 
@@ -193,8 +325,20 @@ nl::json RemoteData::Girder::getResourceInfoById(const std::string& resourceId, 
 }
 
 std::vector<std::string>
-RemoteData::Girder::download( const std::string& dir, const std::string& path ) const
+Feel::RemoteData::Girder::download( const std::string& dir, const std::string& path ) const
 {
+    // Determine progress level
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet")) {
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    } else if (Environment::vm().count("debug")) {
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    }
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+    
     std::string token = (M_token.empty() && !M_apiKey.empty()) ? createToken() : std::string{};
     nl::json resourceInfo;
     try
@@ -203,100 +347,120 @@ RemoteData::Girder::download( const std::string& dir, const std::string& path ) 
     }
     catch ( const std::exception& e )
     {
-        std::cout << "Error in resourceLookup: " << e.what() << "\n";
+        progress.error("Error in resourceLookup: " + std::string(e.what()));
         return {};
     }
 
     if ( !resourceInfo.contains( "_modelType" ) || !resourceInfo.contains( "_id" ) )
     {
-        std::cout << "Invalid resource info: missing _modelType or _id\n";
+        progress.error("Invalid resource info: missing _modelType or _id");
         return {};
     }
 
     std::string resourceType = resourceInfo["_modelType"].get<std::string>();
     std::string resourceId = resourceInfo["_id"].get<std::string>();
     std::string name = resourceInfo["name"];
-    //std::cout << fmt::format( "Downloading resource {} type: {} id: {}\n", name, resourceType, resourceId );
+
+    if (progress.showDebugOutput()) {
+        progress.debug("Resource lookup response: " + resourceInfo.dump(2));
+    }
+
+    progress.startOperation("Download " + name + " (" + resourceType + ")");
+
     if ( resourceType == "file" )
     {
-        return { downloadFile( resourceId, dir, token ) };
+        std::string result = downloadFileWithProgress( resourceId, dir, token, progress );
+        progress.completeOperation();
+        return result.empty() ? std::vector<std::string>{} : std::vector<std::string>{ result };
     }
     else if ( resourceType == "folder" )
     {
-        return { downloadFolder( resourceId, dir, token ) };
+        std::string result = downloadFolderWithProgress( resourceId, dir, token, progress );
+        progress.completeOperation();
+        return result.empty() ? std::vector<std::string>{} : std::vector<std::string>{ result };
     }
     else if ( resourceType == "item" )
     {
-        std::string url =  fmt::format("{}/api/v1/{}/{}/download",M_url,resourceType,resourceId);
-        std::cout << fmt::format( "Downloading item {} from url: {}\n", name, url );
-        cpr::Header headers;
-        if ( !token.empty() )
-            headers.insert( { "Girder-Token", token } );
-        cpr::Response fileRes = cpr::Get(
-            cpr::Url{url},
-            headers,
-            cpr::VerifySsl{false} // Add this if SSL verification causes issues
-        );
-
-        if (fileRes.status_code != 200) 
-        {
-            throw std::runtime_error(fmt::format("Failed to download file. HTTP status code: {}\n error message: {} ", fileRes.status_code, fileRes.text) );
-        }
-
-        // Save the file content to a local file
-        std::string outputFileName = fmt::format("{}.zip",name); // Set desired output file name
-        fs::path outputFilePath = fs::path(dir) / outputFileName;
-        std::ofstream outputFile(outputFilePath, std::ios::binary);
-        outputFile << fileRes.text;
-        outputFile.close();
-
-        //std::cout << "File downloaded successfully: " << outputFilePath << std::endl;
-        return {outputFilePath.string()}; // Placeholder for item download implementation
+        std::string result = downloadItemWithProgress( resourceId, dir, token, progress );
+        progress.completeOperation();
+        return result.empty() ? std::vector<std::string>{} : std::vector<std::string>{ result };
     }
     else
     {
-        throw std::runtime_error( "Unsupported resource type for download" );
+        progress.error("Unsupported resource type for download: " + resourceType);
+        return {};
     }
     return {};
 }
+}
 std::vector<std::string>
-RemoteData::Girder::download( std::string const& dir ) const
+Feel::RemoteData::Girder::download( std::string const& dir ) const
 {
     std::vector<std::string> downloadedFileOrFolder;
     if ( M_worldComm->isMasterRank() )
     {
+        // Determine progress level
+        RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+        if (Environment::vm().count("quiet")) {
+            progressLevel = RemoteDataProgress::Level::QUIET;
+        } else if (Environment::vm().count("debug")) {
+            progressLevel = RemoteDataProgress::Level::DEBUG;
+        } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+            progressLevel = RemoteDataProgress::Level::VERBOSE;
+        }
+        
+        RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+        
         if ( !fs::exists( dir ) )
             fs::create_directories( dir );
         // use token if given else create token if api key given
         std::string token = M_token;
         if ( M_token.empty() && !M_apiKey.empty() )
             token = this->createToken();
+
+        // Count total items for progress tracking
+        int totalItems = M_fileIds.size() + M_folderIds.size() + M_itemIds.size() + (!M_path.empty() ? 1 : 0);
+        
+        if (totalItems > 0) {
+            progress.startOperation("Download " + std::to_string(totalItems) + " resource(s)");
+        }
+
+        int currentItem = 0;
+
         // download girder files
         for ( std::string const& fileId : M_fileIds )
         {
-            std::string file = this->downloadFile( fileId, dir, token );
+            std::string file = this->downloadFileWithProgress( fileId, dir, token, progress );
             if ( !file.empty() )
                 downloadedFileOrFolder.push_back( file );
+            currentItem++;
         }
         // download girder folders
         for ( std::string const& folderId : M_folderIds )
         {
-            std::string file = this->downloadFolder( folderId, dir, token );
+            std::string file = this->downloadFolderWithProgress( folderId, dir, token, progress );
             if ( !file.empty() )
                 downloadedFileOrFolder.push_back( file );
+            currentItem++;
         }
         // download girder items
         for ( std::string const& itemId : M_itemIds )
         {
-            std::string file = this->downloadItem( itemId, dir, token );
+            std::string file = this->downloadItemWithProgress( itemId, dir, token, progress );
             if ( !file.empty() )
                 downloadedFileOrFolder.push_back( file );
+            currentItem++;
         }
         if ( !M_path.empty() )
         {
             auto vs = download( dir, M_path );
             downloadedFileOrFolder.insert( downloadedFileOrFolder.end(), vs.begin(), vs.end() );
         }
+
+        if (totalItems > 0) {
+            progress.completeOperation();
+        }
+
         // delete token if created
         if ( M_token.empty() && !M_apiKey.empty() && !token.empty() )
             this->removeToken( token );
@@ -306,7 +470,7 @@ RemoteData::Girder::download( std::string const& dir ) const
 }
 
 std::string
-RemoteData::Girder::errorMessage( nl::json const& jsonResponse, std::string const& defaultMsg, uint16_type statusCode )
+Feel::RemoteData::Girder::errorMessage( nl::json const& jsonResponse, std::string const& defaultMsg, uint16_type statusCode )
 {
     std::string errMsg = defaultMsg;
     if ( jsonResponse.contains( "message" ) )
@@ -330,7 +494,7 @@ RemoteData::Girder::errorMessage( nl::json const& jsonResponse, std::string cons
 }
 
 std::string
-RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const
+Feel::RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const
 {
     std::string downloadedFile;
     // Get metadata info
@@ -411,8 +575,112 @@ RemoteData::Girder::downloadFile( std::string const& fileId, std::string const& 
     downloadedFile = filepath;
     return downloadedFile;
 }
+
 std::string
-RemoteData::Girder::downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const
+Feel::RemoteData::Girder::downloadFileWithProgress( std::string const& fileId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const
+{
+    std::string downloadedFile;
+    // Get metadata info
+    std::string urlFileInfo = M_url + "/api/v1/file/" + fileId;
+    std::vector<std::string> headersFileInfo;
+    headersFileInfo.push_back( "Accept: application/json" );
+    if ( !token.empty() )
+        headersFileInfo.push_back( "Girder-Token: " + token );
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( urlFileInfo, headersFileInfo, omemfile );
+    if ( !status.success() )
+    {
+        progress.error("Error getting file metadata: " + status.msg());
+        return {};
+    }
+    // Parse JSON
+    nl::json jsonResponse = nl::json::parse( omemfile.str() );
+    if ( status.code() != 200 )
+    {
+        progress.error(Girder::errorMessage( jsonResponse, "Getting metadata (before download) fails", status.code() ));
+        return {};
+    }
+
+    if (progress.showDebugOutput()) {
+        progress.debug("File metadata response: " + jsonResponse.dump(2));
+    }
+
+    // Extract info from JSON
+    if ( !jsonResponse.contains( "name" ) )
+    {
+        progress.error("Invalid ID: Not a file or does not exist");
+        return {};
+    }
+    std::string filename = jsonResponse["name"].get<std::string>();
+    std::string mimeType = jsonResponse.value( "mimeType", "" );
+    std::string sha512 = jsonResponse.value( "sha512", "" );
+    std::streamsize fileSize = jsonResponse.value( "size", 0 );
+
+    std::string filepath = ( fs::path( dir ) / filename ).string();
+    std::string metadatapath = ( fs::path( dir ) / ( filename + ".metadata.json" ) ).string();
+
+    // Check if download is necessary
+    bool doDownload = true;
+    if ( !sha512.empty() && fs::exists( filepath ) && fs::is_regular_file( filepath ) && fs::exists( metadatapath ) )
+    {
+        nl::json existingMetadata;
+        std::ifstream metadataFile( metadatapath );
+        metadataFile >> existingMetadata;
+        if ( existingMetadata.contains( "sha512" ) )
+        {
+            if ( sha512 == existingMetadata["sha512"].get<std::string>() )
+            {
+                doDownload = false;
+                if (!progress.isQuiet()) {
+                    progress.completeFile(filename, fileSize, true); // skipped = true
+                }
+            }
+        }
+    }
+    
+    // Download the file
+    if ( doDownload )
+    {
+        progress.startFile(filename, fileSize);
+        
+        std::string urlFileDownload = M_url + "/api/v1/file/" + fileId + "/download";
+        std::vector<std::string> headersFileDownload;
+        if ( !mimeType.empty() )
+            headersFileDownload.push_back( "Accept: " + mimeType );
+        if ( !token.empty() )
+            headersFileDownload.push_back( "Girder-Token: " + token );
+
+        if (progress.showDebugOutput()) {
+            progress.debug("Download URL: " + urlFileDownload);
+        }
+
+        std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
+        status = requestHTTPGET( urlFileDownload, headersFileDownload, ofile );
+        ofile.close();
+        if ( !status.success() )
+        {
+            progress.error("Error downloading file: " + status.msg());
+            return {};
+        }
+        if ( status.code() != 200 )
+        {
+            progress.error(Girder::errorMessage( nl::json{}, "Downloading file fails", status.code() ));
+            return {};
+        }
+        
+        progress.completeFile(filename, fileSize);
+        
+        // Save metadata
+        std::ofstream ofileMetadata( metadatapath, std::ios::out );
+        ofileMetadata << omemfile.str();
+        ofileMetadata.close();
+    }
+
+    downloadedFile = filepath;
+    return downloadedFile;
+}
+std::string
+Feel::RemoteData::Girder::downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const
 {
     std::string downloadedFolder;
     // Get metadata info
@@ -487,7 +755,103 @@ RemoteData::Girder::downloadFolder( std::string const& folderId, std::string con
 }
 
 std::string
-RemoteData::Girder::downloadItem(const std::string& resourceId, const std::string& dir, const std::string& token) const
+Feel::RemoteData::Girder::downloadFolderWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const
+{
+    std::string downloadedFolder;
+    // Get metadata info
+    std::string urlFolderInfo = M_url + "/api/v1/folder/" + folderId;
+    std::vector<std::string> headersFolderInfo;
+    headersFolderInfo.push_back( "Accept: application/json" );
+    if ( !token.empty() )
+        headersFolderInfo.push_back( "Girder-Token: " + token );
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET( urlFolderInfo, headersFolderInfo, omemfile );
+    if ( !status.success() )
+    {
+        progress.error("Error getting folder metadata: " + status.msg());
+        return {};
+    }
+
+    // Parse the JSON response
+    nl::json jsonResponse;
+    try
+    {
+        jsonResponse = nl::json::parse( omemfile.str() );
+    }
+    catch ( nl::json::parse_error& e )
+    {
+        progress.error("Error parsing JSON response: " + std::string(e.what()));
+        return {};
+    }
+
+    if ( status.code() != 200 )
+    {
+        progress.error(Girder::errorMessage( jsonResponse, "Getting metadata (before download) fails", status.code() ));
+        return {};
+    }
+
+    if (progress.showDebugOutput()) {
+        progress.debug("Folder metadata response: " + jsonResponse.dump(2));
+    }
+
+    // Extract folder name from jsonResponse
+    if ( !jsonResponse.contains( "name" ) )
+    {
+        progress.error("Invalid ID: Not a folder or does not exist");
+        return {};
+    }
+    std::string foldername = jsonResponse["name"].get<std::string>();
+    
+    // Try to get folder size if available (for progress estimation)
+    std::streamsize folderSize = jsonResponse.value( "size", 0 );
+    
+    progress.startFile(foldername + ".zip", folderSize);
+
+    // Download the folder
+    std::string urlFolderDownload = M_url + "/api/v1/folder/" + folderId + "/download";
+    std::vector<std::string> headersFolderDownload;
+    if ( !token.empty() )
+        headersFolderDownload.push_back( "Girder-Token: " + token );
+
+    if (progress.showDebugOutput()) {
+        progress.debug("Download URL: " + urlFolderDownload);
+    }
+
+    std::string filepath = ( fs::path( dir ) / ( foldername + ".zip" ) ).string();
+    std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
+    status = requestHTTPGET( urlFolderDownload, headersFolderDownload, ofile );
+    ofile.close();
+    if ( !status.success() )
+    {
+        progress.error("Error downloading folder: " + status.msg());
+        return {};
+    }
+    if ( status.code() != 200 )
+    {
+        progress.error(Girder::errorMessage( nl::json{}, "Downloading folder fails", status.code() ));
+        return {};
+    }
+
+    // Get actual file size for progress completion
+    if (fs::exists(filepath)) {
+        std::streamsize actualSize = fs::file_size(filepath);
+        progress.completeFile(foldername + ".zip", actualSize);
+    } else {
+        progress.completeFile(foldername + ".zip", folderSize);
+    }
+
+    // Save metadata
+    std::string metadatapath = ( fs::path( dir ) / ( foldername + ".metadata.json" ) ).string();
+    std::ofstream ofileMetadata( metadatapath, std::ios::out );
+    ofileMetadata << jsonResponse.dump( 4 ); // Write the JSON with indentation
+    ofileMetadata.close();
+
+    downloadedFolder = filepath;
+    return downloadedFolder;
+}
+
+std::string
+Feel::RemoteData::Girder::downloadItem(const std::string& resourceId, const std::string& dir, const std::string& token) const
 {
     // Construct the URL to get item metadata
     std::string urlItemInfo = M_url + "/api/v1/item/" + resourceId;
@@ -563,8 +927,106 @@ RemoteData::Girder::downloadItem(const std::string& resourceId, const std::strin
     return filepath;
 }
 
+std::string
+Feel::RemoteData::Girder::downloadItemWithProgress(const std::string& resourceId, const std::string& dir, const std::string& token, const RemoteDataProgress& progress) const
+{
+    // Construct the URL to get item metadata
+    std::string urlItemInfo = M_url + "/api/v1/item/" + resourceId;
+    std::vector<std::string> headersItemInfo;
+    headersItemInfo.push_back("Accept: application/json");
+    if (!token.empty())
+        headersItemInfo.push_back("Girder-Token: " + token);
+    
+    // Fetch item metadata
+    std::ostringstream omemfile;
+    StatusRequestHTTP status = requestHTTPGET(urlItemInfo, headersItemInfo, omemfile);
+    if (!status.success())
+    {
+        progress.error("Error getting item metadata: " + status.msg());
+        return {};
+    }
+
+    // Parse the JSON response
+    nl::json jsonResponse;
+    try
+    {
+        jsonResponse = nl::json::parse(omemfile.str());
+    }
+    catch (nl::json::parse_error& e)
+    {
+        progress.error("Error parsing JSON response: " + std::string(e.what()));
+        return {};
+    }
+
+    if (status.code() != 200)
+    {
+        progress.error(Girder::errorMessage(jsonResponse, "Getting metadata (before download) fails", status.code()));
+        return {};
+    }
+
+    if (progress.showDebugOutput()) {
+        progress.debug("Item metadata response: " + jsonResponse.dump(2));
+    }
+
+    // Extract item name from metadata
+    if (!jsonResponse.contains("name"))
+    {
+        progress.error("Invalid ID: Not an item or does not exist");
+        return {};
+    }
+    std::string itemName = jsonResponse["name"].get<std::string>();
+    
+    // Try to get item size if available (for progress estimation)
+    std::streamsize itemSize = jsonResponse.value( "size", 0 );
+    
+    progress.startFile(itemName + ".zip", itemSize);
+
+    // Construct the URL to download the item
+    std::string urlItemDownload = M_url + "/api/v1/item/" + resourceId + "/download";
+    std::vector<std::string> headersItemDownload;
+    if (!token.empty())
+        headersItemDownload.push_back("Girder-Token: " + token);
+
+    if (progress.showDebugOutput()) {
+        progress.debug("Download URL: " + urlItemDownload);
+    }
+    
+    // Download the item
+    std::string filepath = (fs::path(dir) / (itemName + ".zip")).string();
+    std::ofstream ofile(filepath, std::ios::out | std::ios::binary);
+    status = requestHTTPGET(urlItemDownload, headersItemDownload, ofile);
+    ofile.close();
+    if (!status.success())
+    {
+        progress.error("Error downloading item: " + status.msg());
+        return {};
+    }
+    if (status.code() != 200)
+    {
+        progress.error(Girder::errorMessage(nl::json{}, "Downloading item fails", status.code()));
+        return {};
+    }
+
+    // Get actual file size for progress completion
+    if (fs::exists(filepath)) {
+        std::streamsize actualSize = fs::file_size(filepath);
+        progress.completeFile(itemName + ".zip", actualSize);
+    } else {
+        progress.completeFile(itemName + ".zip", itemSize);
+    }
+
+    // Save item metadata
+    std::string metadatapath = (fs::path(dir) / (itemName + ".metadata.json")).string();
+    std::ofstream ofileMetadata(metadatapath, std::ios::out);
+    ofileMetadata << jsonResponse.dump(4); // Write the JSON with indentation
+    ofileMetadata.close();
+
+    // Return the downloaded file path
+    return filepath;
+}
+
 std::vector<std::string>
-RemoteData::Girder::upload(const std::string& dataPath, const std::string& destination, bool sync) const
+Feel::RemoteData::Girder::upload(const std::string& dataPath, const std::string& destination, bool sync) const
 {
     auto res = this->upload(std::vector<std::pair<std::string, std::string>>(1, std::make_pair(dataPath, destination)), sync);
     CHECK(res.size() == 1) << "Wrong size " << res.size() << " : must be 1";
@@ -572,12 +1034,24 @@ RemoteData::Girder::upload(const std::string& dataPath, const std::string& desti
 }
 
 std::vector<std::vector<std::string>>
-RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>>& dataToUpload, bool sync) const
+Feel::RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>>& dataToUpload, bool sync) const
 {
     if (dataToUpload.empty())
         return {};
 
     CHECK(canUpload()) << "Authentication unavailable";
+
+    // Create progress reporter based on command-line options
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet"))
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    else if (Environment::vm().count("debug"))
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    else if (Environment::vm().count("verbose") || Environment::vm().count("progress"))
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::UPLOAD, progressLevel);
+    progress.startOperation("Girder", fmt::format("{} items", dataToUpload.size()));
 
     std::vector<std::vector<std::string>> res;
     res.reserve(dataToUpload.size());
@@ -589,16 +1063,31 @@ RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>
         if (M_token.empty())
             token = this->createToken();
 
+        int itemCount = 0;
         for ( auto [dataPath,destination] : dataToUpload )
         {
+            itemCount++;
             if (!fs::exists(dataPath))
             {
-                std::cout << "Warning in Girder upload, data path does not exist: " << dataPath << "\n";
+                progress.error(fmt::format("Data path does not exist: {}", dataPath));
                 continue;
             }
             std::string resourceType;
             std::string resourceId;
-            std::cout << fmt::format("Uploading data from {} to {}\n", dataPath, destination) << "\n";
+            
+            // If destination is empty, use the folder ID from the descriptor
+            if (destination.empty() && !M_folderIds.empty())
+            {
+                destination = *M_folderIds.begin();
+            }
+            
+            // If destination is still empty, we can't proceed
+            if (destination.empty())
+            {
+                progress.error("No destination specified and no folder ID in descriptor");
+                continue;
+            }
+            
             // Check if destination starts with '/', indicating a path
             if (!destination.empty() && destination[0] == '/')
             {
@@ -607,17 +1096,16 @@ RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>
                 try
                 {
                     resourceInfo = resourceLookup(destination, token);
-                    std::cout << fmt::format("resourceInfo: {}\n", resourceInfo.dump(4)) << "\n";
                 }
                 catch (const std::exception& e)
                 {
-                    std::cout << "Error in resourceLookup: " << e.what() << "\n";
+                    progress.error(fmt::format("Resource lookup failed for '{}': {}", destination, e.what()));
                     continue;
                 }
 
                 if (!resourceInfo.contains("_modelType") || !resourceInfo.contains("_id"))
                 {
-                    std::cout << "Invalid resource info: missing _modelType or _id\n";
+                    progress.error(fmt::format("Invalid resource info for '{}'", destination));
                     continue;
                 }
 
@@ -629,10 +1117,10 @@ RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>
                 // Destination is an ID; determine the resource type
                 try
                 {
-                    nl::json resourceInfo = getResourceInfoById(destination, token);
+                    nl::json resourceInfo = getResourceInfoById(destination, token, progress);
                     if (!resourceInfo.contains("_modelType") || !resourceInfo.contains("_id"))
                     {
-                        std::cout << "Invalid resource info: missing _modelType or _id\n";
+                        progress.error(fmt::format("Invalid resource info for ID '{}'", destination));
                         continue;
                     }
 
@@ -641,7 +1129,7 @@ RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>
                 }
                 catch (const std::exception& e)
                 {
-                    std::cout << "Error fetching resource info by ID: " << e.what() << "\n";
+                    progress.error(fmt::format("Failed to fetch resource info for ID '{}': {}", destination, e.what()));
                     continue;
                 }
             }
@@ -651,22 +1139,24 @@ RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>
             {
                 // Upload to folder
                 std::vector<std::string> uploadedResources;
-                uploadDirectoryToFolder(dataPath, resourceId, token, uploadedResources);
+                uploadDirectoryToFolderWithProgress(dataPath, resourceId, token, uploadedResources, progress, itemCount, dataToUpload.size());
                 res.push_back( uploadedResources );
             }
             else if (resourceType == "item")
             {
                 // Upload to item
                 std::vector<std::string> uploadedResources;
-                uploadFilesToItem(dataPath, resourceId, token, uploadedResources);
+                uploadFilesToItemWithProgress(dataPath, resourceId, token, uploadedResources, progress, itemCount, dataToUpload.size());
                 res.push_back( uploadedResources );
             }
             else
             {
-                std::cout << "Unsupported resource type for upload: " << resourceType << "\n";
+                progress.error(fmt::format("Unsupported resource type: {}", resourceType));
                 continue;
             }
         }
+
+        progress.completeOperation();
 
         // Delete token if created
         if (M_token.empty() && !token.empty())
@@ -680,11 +1170,14 @@ RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::string>
 }
 
 std::string
-RemoteData::Girder::createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token) const
+Feel::RemoteData::Girder::createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token, const RemoteDataProgress& progress) const
 {
     // Construct the URL for creating an item
     std::string urlCreateItem = M_url + "/api/v1/item";
-    std::cout << fmt::format("Creating item {} in folder {} using token: {}\n", itemName, parentFolderId, token) << "\n";
+    if (progress.showDebugOutput())
+    {
+        std::cout << fmt::format("Creating item {} in folder {} using token: {}\n", itemName, parentFolderId, token) << "\n";
+    }
     // Set up the headers
     cpr::Header headers = {
        // {"Accept", "application/json"},
@@ -703,7 +1196,10 @@ RemoteData::Girder::createItemImpl(const std::string& itemName, const std::strin
         },
         cpr::VerifySsl{false} // Set to true in production
     );
-    std::cout << fmt::format("Create item response: {}\n", res.text) << "\n";
+    if (progress.showDebugOutput())
+    {
+        std::cout << fmt::format("Create item response: {}\n", res.text) << "\n";
+    }
     // Check if the request was successful
     if (res.status_code != 200)
     {
@@ -742,7 +1238,7 @@ RemoteData::Girder::createItemImpl(const std::string& itemName, const std::strin
 
 
 std::vector<std::pair<std::string, std::string>>
-RemoteData::Girder::createItem( std::string const& itemPath, std::string const& parentId, bool sync ) const
+Feel::RemoteData::Girder::createItem( std::string const& itemPath, std::string const& parentId, bool sync ) const
 {
     
     std::vector<std::tuple<std::string, std::string>> itemInfo;
@@ -751,8 +1247,12 @@ RemoteData::Girder::createItem( std::string const& itemPath, std::string const& 
         std::string token = ( M_token.empty() && !M_apiKey.empty() )
                                  ? createToken()
                                  : std::string{};
-        std::cout << fmt::format( "Creating item from {} in folder {} using toekn: {}\n", itemPath, parentId, token ) << "\n";
-        std::string itemId = createItemImpl( fs::path( itemPath ).filename().string(), parentId, token );
+        RemoteDataProgress quietProgress(RemoteDataProgress::Operation::UPLOAD, RemoteDataProgress::Level::QUIET);
+        if (quietProgress.showDebugOutput())
+        {
+            std::cout << fmt::format( "Creating item from {} in folder {} using toekn: {}\n", itemPath, parentId, token ) << "\n";
+        }
+        std::string itemId = createItemImpl( fs::path( itemPath ).filename().string(), parentId, token, quietProgress );
         if ( !itemId.empty() )
             itemInfo.push_back( std::make_tuple( itemPath, itemId ) );
     }
@@ -765,31 +1265,22 @@ RemoteData::Girder::createItem( std::string const& itemPath, std::string const& 
 }
 
 std::string
-RemoteData::Girder::createFolderImpl(const std::string& folderName, const std::string& parentId, const std::string& token, const std::string& parentType ) const
+Feel::RemoteData::Girder::createFolderImpl(const std::string& folderName, const std::string& parentId, const std::string& token, const std::string& parentType ) const
 {
-    // Construct the URL for creating a folder
+    // Construct the URL for creating a folder with parameters
     std::string urlCreateFolder = M_url + "/api/v1/folder";
+    std::string urlParams = "?parentType=" + parentType + "&parentId=" + parentId + "&name=" + folderName + "&reuseExisting=true";
     
     // Set up the headers
     cpr::Header headers = {
         {"Accept", "application/json"},
-        {"Content-Type", "application/json"},
         {"Girder-Token", token}
     };
     
-    // Create the JSON body for the POST request
-    nl::json requestBody = {
-        {"name", folderName},
-        {"parentId", parentId},
-        {"parentType", parentType},
-        {"reuseExisting", true}
-    };
-    
-    // Send the POST request to create the folder
+    // Send the POST request to create the folder using URL parameters
     cpr::Response res = cpr::Post(
-        cpr::Url{urlCreateFolder},
+        cpr::Url{urlCreateFolder + urlParams},
         headers,
-        cpr::Body{requestBody.dump()},
         cpr::VerifySsl{false} // Set to true in production
     );
     
@@ -829,7 +1320,7 @@ RemoteData::Girder::createFolderImpl(const std::string& folderName, const std::s
     return folderId;
 }
 void
-RemoteData::Girder::uploadDirectoryToFolder(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources) const
+Feel::RemoteData::Girder::uploadDirectoryToFolder(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources) const
 {
     fs::path dataFsPath(localDir);
     if (fs::is_regular_file(dataFsPath))
@@ -837,7 +1328,8 @@ RemoteData::Girder::uploadDirectoryToFolder(const std::string& localDir, const s
         // Upload the file to a new item within the folder
         std::string itemName = dataFsPath.filename().string();
 
-        std::string itemId = createItemImpl(itemName, parentFolderId, token);
+        RemoteDataProgress quietProgress(RemoteDataProgress::Operation::UPLOAD, RemoteDataProgress::Level::QUIET);
+        std::string itemId = createItemImpl(itemName, parentFolderId, token, quietProgress);
         if (!itemId.empty())
         {
             std::string fileId = uploadFileImpl(dataFsPath.string(), itemId, token, "item");
@@ -866,8 +1358,127 @@ RemoteData::Girder::uploadDirectoryToFolder(const std::string& localDir, const s
         std::cout << "Unsupported file system object: " << localDir << "\n";
     }
 }
+
 void
-RemoteData::Girder::uploadFilesToItem(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources) const
+Feel::RemoteData::Girder::uploadDirectoryToFolderWithProgress(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int itemNum, int totalItems) const
+{
+    fs::path dataFsPath(localDir);
+    if (fs::is_regular_file(dataFsPath))
+    {
+        // Upload the file to a new item within the folder
+        std::string itemName = dataFsPath.filename().string();
+        std::streamsize fileSize = fs::file_size(dataFsPath);
+        
+        progress.startFile(itemName, fileSize, itemNum, totalItems);
+
+        std::string itemId = createItemImpl(itemName, parentFolderId, token, progress);
+        if (!itemId.empty())
+        {
+            std::string fileId = uploadFileImplWithProgress(dataFsPath.string(), itemId, token, "item", progress);
+            if (!fileId.empty())
+            {
+                uploadedResources.push_back(fileId);
+                progress.completeFile(itemName, fileId);
+            }
+            else
+            {
+                progress.error(fmt::format("Failed to upload file: {}", itemName));
+            }
+        }
+        else
+        {
+            progress.error(fmt::format("Failed to create item for file: {}", itemName));
+        }
+    }
+    else if (fs::is_directory(dataFsPath))
+    {
+        // Create a folder in Girder
+        std::string folderName = dataFsPath.filename().string();
+        progress.startFile(fmt::format("folder: {}", folderName), 0, itemNum, totalItems);
+        
+        std::string subfolderId = createFolderImpl(folderName, parentFolderId, token);
+        if (!subfolderId.empty())
+        {
+            // Count files for progress reporting
+            int fileCount = 0;
+            std::vector<fs::directory_entry> entries;
+            for (const fs::directory_entry& entry : fs::directory_iterator(dataFsPath))
+            {
+                entries.push_back(entry);
+                fileCount++;
+            }
+            
+            // Recursively upload the contents of the subfolder
+            int fileNum = 0;
+            for (const fs::directory_entry& entry : entries)
+            {
+                fileNum++;
+                uploadDirectoryToFolderWithProgress(entry.path().string(), subfolderId, token, uploadedResources, progress, fileNum, fileCount);
+            }
+            
+            progress.completeFile(fmt::format("folder: {}", folderName), subfolderId);
+        }
+        else
+        {
+            progress.error(fmt::format("Failed to create folder: {}", folderName));
+        }
+    }
+    else
+    {
+        progress.error(fmt::format("Unsupported file system object: {}", localDir));
+    }
+}
+
+void
+Feel::RemoteData::Girder::uploadFilesToItemWithProgress(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int itemNum, int totalItems) const
+{
+    fs::path dataFsPath(localPath);
+    if (fs::is_regular_file(dataFsPath))
+    {
+        // Upload the file to the item
+        std::string filename = dataFsPath.filename().string();
+        std::streamsize fileSize = fs::file_size(dataFsPath);
+        
+        progress.startFile(filename, fileSize, itemNum, totalItems);
+        
+        std::string fileId = uploadFileImplWithProgress(dataFsPath.string(), itemId, token, "item", progress);
+        if (!fileId.empty())
+        {
+            uploadedResources.push_back(fileId);
+            progress.completeFile(filename, fileId);
+        }
+        else
+        {
+            progress.error(fmt::format("Failed to upload file: {}", filename));
+        }
+    }
+    else if (fs::is_directory(dataFsPath))
+    {
+        // Count files for progress reporting
+        int fileCount = 0;
+        std::vector<fs::directory_entry> entries;
+        for (const fs::directory_entry& entry : fs::directory_iterator(dataFsPath))
+        {
+            entries.push_back(entry);
+            fileCount++;
+        }
+        
+        // Upload subdirectory files
+        int fileNum = 0;
+        for (const fs::directory_entry& entry : entries)
+        {
+            fileNum++;
+            uploadFilesToItemWithProgress(entry.path().string(), itemId, token, uploadedResources, progress, fileNum, fileCount);
+        }
+    }
+    else
+    {
+        progress.error(fmt::format("Unsupported file system object: {}", localPath));
+    }
+}
+
+void
+Feel::RemoteData::Girder::uploadFilesToItem(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources) const
 {
     fs::path dataFsPath(localPath);
     if (fs::is_regular_file(dataFsPath))
@@ -892,12 +1503,12 @@ RemoteData::Girder::uploadFilesToItem(const std::string& localPath, const std::s
         std::cout << "Unsupported file system object: " << localPath << "\n";
     }
 }
-void RemoteData::Girder::replaceFile( std::string const& filePath, std::string const& fileId ) const
+void Feel::RemoteData::Girder::replaceFile( std::string const& filePath, std::string const& fileId ) const
 {
     this->replaceFile( std::vector<std::pair<std::string, std::string>>( 1, std::make_pair( filePath, fileId ) ) );
 }
 
-void RemoteData::Girder::replaceFile( std::vector<std::pair<std::string, std::string>> const& filesToReplace ) const
+void Feel::RemoteData::Girder::replaceFile( std::vector<std::pair<std::string, std::string>> const& filesToReplace ) const
 {
     if ( filesToReplace.empty() )
         return;
@@ -924,7 +1535,7 @@ void RemoteData::Girder::replaceFile( std::vector<std::pair<std::string, std::st
 }
 
 std::vector<std::pair<std::string, std::string>>
-RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
+Feel::RemoteData::Girder::createFolder( std::string const& folderPath, std::string const& parentId, bool sync ) const
 {
     CHECK( !M_token.empty() || !M_apiKey.empty() ) << "authentication unavailable";
     std::string currentParentId = parentId;
@@ -961,7 +1572,7 @@ RemoteData::Girder::createFolder( std::string const& folderPath, std::string con
 }
 
 std::vector<std::string>
-RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const
+Feel::RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const
 {
     std::vector<std::string> res;
     fs::path dataFsPath( dataPath );
@@ -989,7 +1600,7 @@ RemoteData::Girder::uploadRecursively( std::string const& dataPath, std::string 
 }
 #if 1
 std::string
-RemoteData::Girder::uploadFileImpl(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType) const
+Feel::RemoteData::Girder::uploadFileImpl(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType) const
 {
     // Ensure parentType is either "folder" or "item"
     if (parentType != "folder" && parentType != "item")
@@ -1058,8 +1669,77 @@ RemoteData::Girder::uploadFileImpl(const std::string& filepath, const std::strin
     std::cout << fmt::format("File uploaded successfully. File ID: {}\n", fileId);
     return fileId;
 }
+
 std::string
-RemoteData::Girder::initializeUpload(const std::string& filename, std::streamsize fileSize, const std::string& parentId, const std::string& parentType, const std::string& token) const
+Feel::RemoteData::Girder::uploadFileImplWithProgress(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType, const RemoteDataProgress& progress) const
+{
+    // Ensure parentType is either "folder" or "item"
+    if (parentType != "folder" && parentType != "item")
+    {
+        throw std::invalid_argument("Invalid parentType. Must be 'folder' or 'item'.");
+    }
+
+    // Extract filename and file size
+    fs::path filePathObj(filepath);
+    std::string filename = filePathObj.filename().string();
+
+    // Open the file
+    std::ifstream fileStream(filepath, std::ios::binary);
+    if (!fileStream)
+    {
+        progress.error(fmt::format("Failed to open file: {}", filepath));
+        return {};
+    }
+
+    // Get file size
+    fileStream.seekg(0, std::ios::end);
+    std::streamsize fileSize = fileStream.tellg();
+    fileStream.seekg(0, std::ios::beg);
+
+    // Initialize the upload
+    std::string uploadId;
+    try
+    {
+        uploadId = initializeUpload(filename, fileSize, parentId, parentType, token);
+    }
+    catch (const std::exception& e)
+    {
+        progress.error(fmt::format("Error initializing upload for {}: {}", filename, e.what()));
+        return {};
+    }
+
+    // Upload the file in chunks
+    const std::streamsize chunkSize = 64 * 1024 * 1024; // 64 MB
+    std::streamsize offset = 0;
+    std::vector<char> buffer(chunkSize);
+    std::string fileId;
+    
+    while (offset < fileSize)
+    {
+        std::streamsize bytesToRead = std::min(chunkSize, fileSize - offset);
+        fileStream.read(buffer.data(), bytesToRead);
+
+        // Update progress
+        progress.updateProgress(offset + bytesToRead, fileSize);
+
+        try
+        {
+            fileId = uploadChunk(uploadId, offset, buffer.data(), bytesToRead, token);
+        }
+        catch (const std::exception& e)
+        {
+            progress.error(fmt::format("Error uploading chunk at offset {} for {}: {}", offset, filename, e.what()));
+            return {};
+        }
+
+        offset += bytesToRead;
+    }
+    
+    return fileId;
+}
+
+std::string
+Feel::RemoteData::Girder::initializeUpload(const std::string& filename, std::streamsize fileSize, const std::string& parentId, const std::string& parentType, const std::string& token) const
 {
     std::string url = M_url + "/api/v1/file";
 
@@ -1108,7 +1788,7 @@ RemoteData::Girder::initializeUpload(const std::string& filename, std::streamsiz
     return uploadId;
 }
 std::string
-RemoteData::Girder::uploadChunk(const std::string& uploadId, std::streamsize offset, const char* data, std::streamsize size, const std::string& token, bool isFinalChunk) const
+Feel::RemoteData::Girder::uploadChunk(const std::string& uploadId, std::streamsize offset, const char* data, std::streamsize size, const std::string& token, bool isFinalChunk) const
 {
     std::string url = M_url + "/api/v1/file/chunk";
 
@@ -1164,7 +1844,11 @@ RemoteData::Girder::uploadChunk(const std::string& uploadId, std::streamsize off
     }
 
     nl::json jsonResponse = nl::json::parse(res.text);
-    std::cout << fmt::format("response: {}", jsonResponse.dump(4)) << "\n";
+    // TODO: Add debug output when progress context is available
+    // if (progress.showDebugOutput())
+    // {
+    //     std::cout << fmt::format("response: {}", jsonResponse.dump(4)) << "\n";
+    // }
     if ( jsonResponse.contains( "_id" ) )
     {
         std::string fileId = jsonResponse["_id"].get<std::string>();
@@ -1175,7 +1859,7 @@ RemoteData::Girder::uploadChunk(const std::string& uploadId, std::streamsize off
 }
 #else
 std::string
-RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string const& parentId, std::string const& token ) const
+Feel::RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string const& parentId, std::string const& token ) const
 {
     std::string filename = fs::path( filepath ).filename().string();
     std::string fileExtension = fs::path( filepath ).extension().string();
@@ -1300,7 +1984,7 @@ RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string con
     return fileIdCreated;
 }
 #endif // 0
-void RemoteData::Girder::replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const
+void Feel::RemoteData::Girder::replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const
 {
     CHECK( !token.empty() ) << "A token is required for upload";
     CHECK( fs::is_regular_file( filePath ) ) << "Must be a file";
@@ -1388,7 +2072,7 @@ void RemoteData::Girder::replaceFileImpl( std::string const& filePath, std::stri
 
 #if 0
 std::string
-RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const
+Feel::RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const
 {
     std::string urlCreateFolder = M_url + "/api/v1/folder?parentType=folder&parentId=" + parentId;
     urlCreateFolder += "&name=" + folderName;
@@ -1432,7 +2116,7 @@ RemoteData::Girder::createFolderImpl( std::string const& folderName, std::string
 }
 #endif
 std::string
-RemoteData::Girder::createToken( int duration ) const
+Feel::RemoteData::Girder::createToken( int duration ) const
 {
     std::string urlCreateToken = M_url + "/api/v1/api_key/token";
     urlCreateToken += "?key=" + M_apiKey;
@@ -1473,7 +2157,9 @@ RemoteData::Girder::createToken( int duration ) const
     {
         tokenCreated = jsonResponse["authToken"]["token"].get<std::string>();
     }
-    if (!validateToken(tokenCreated))
+    // Create a quiet progress object for internal authentication
+    RemoteDataProgress authProgress(RemoteDataProgress::Operation::UPLOAD, RemoteDataProgress::Level::QUIET);
+    if (!validateToken(tokenCreated, authProgress))
     {
         std::cout << Girder::errorMessage( jsonResponse, "Validation token fails", status.code() ) << "\n";
         return {};
@@ -1481,11 +2167,14 @@ RemoteData::Girder::createToken( int duration ) const
     return tokenCreated;
 }
 
-bool RemoteData::Girder::validateToken(const std::string& token) const
+bool Feel::RemoteData::Girder::validateToken(const std::string& token, const RemoteDataProgress& progress) const
 {
     try
     {
-        std::cout << fmt::format("Validating token: {}", token) << "\n";
+        if (progress.showDebugOutput())
+        {
+            std::cout << fmt::format("Validating token: {}", token) << "\n";
+        }
         std::string url = M_url + "/api/v1/user/me";
         cpr::Response res = cpr::Get(
             cpr::Url{url},
@@ -1495,7 +2184,10 @@ bool RemoteData::Girder::validateToken(const std::string& token) const
 
         if (res.status_code == 200)
         {
-            std::cout << "Token is valid.\n";
+            if (progress.showDebugOutput())
+            {
+                std::cout << "Token is valid.\n";
+            }
             return true;
         }
         else
@@ -1510,7 +2202,7 @@ bool RemoteData::Girder::validateToken(const std::string& token) const
         return false;
     }
 }
-void RemoteData::Girder::removeToken( std::string const& token ) const
+void Feel::RemoteData::Girder::removeToken( std::string const& token ) const
 {
     std::string urlRemoveToken = M_url + "/api/v1/token/session";
     std::vector<std::string> headers{
@@ -1543,8 +2235,8 @@ void RemoteData::Girder::removeToken( std::string const& token ) const
     }
 }
 
-std::tuple<std::vector<std::shared_ptr<RemoteData::FolderInfo>>, std::vector<std::shared_ptr<RemoteData::ItemInfo>>, std::vector<std::shared_ptr<RemoteData::FileInfo>>>
-RemoteData::Girder::contents() const
+std::tuple<std::vector<std::shared_ptr<Feel::RemoteData::FolderInfo>>, std::vector<std::shared_ptr<Feel::RemoteData::ItemInfo>>, std::vector<std::shared_ptr<Feel::RemoteData::FileInfo>>>
+Feel::RemoteData::Girder::contents() const
 {
     auto res = std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(),
                                 std::vector<std::shared_ptr<ItemInfo>>(),
@@ -1585,8 +2277,8 @@ RemoteData::Girder::contents() const
     return res;
 }
 
-std::shared_ptr<RemoteData::FileInfo>
-RemoteData::Girder::fileInfoImpl( std::string const& fileId, std::string const& token ) const
+std::shared_ptr<Feel::RemoteData::FileInfo>
+Feel::RemoteData::Girder::fileInfoImpl( std::string const& fileId, std::string const& token ) const
 {
     std::shared_ptr<FileInfo> res;
 
@@ -1635,8 +2327,8 @@ RemoteData::Girder::fileInfoImpl( std::string const& fileId, std::string const& 
         res->setChecksum( "sha512", sha512 );
     return res;
 }
-std::shared_ptr<RemoteData::FolderInfo>
-RemoteData::Girder::folderInfoImpl( std::string const& folderId, std::string const& token ) const
+std::shared_ptr<Feel::RemoteData::FolderInfo>
+Feel::RemoteData::Girder::folderInfoImpl( std::string const& folderId, std::string const& token ) const
 {
     std::shared_ptr<FolderInfo> res;
 
@@ -1680,8 +2372,8 @@ RemoteData::Girder::folderInfoImpl( std::string const& folderId, std::string con
     res = std::make_shared<FolderInfo>( name, id, size );
     return res;
 }
-std::shared_ptr<RemoteData::ItemInfo>
-RemoteData::Girder::itemInfoImpl( std::string const& itemId, std::string const& token ) const
+std::shared_ptr<Feel::RemoteData::ItemInfo>
+Feel::RemoteData::Girder::itemInfoImpl( std::string const& itemId, std::string const& token ) const
 {
     std::shared_ptr<ItemInfo> res;
 
@@ -1726,8 +2418,8 @@ RemoteData::Girder::itemInfoImpl( std::string const& itemId, std::string const& 
     return res;
 }
 
-std::shared_ptr<RemoteData::FolderInfo>
-RemoteData::Girder::folderContentsImpl( std::string const& folderId, std::string const& token ) const
+std::shared_ptr<Feel::RemoteData::FolderInfo>
+Feel::RemoteData::Girder::folderContentsImpl( std::string const& folderId, std::string const& token ) const
 {
     auto res = folderInfoImpl( folderId, token );
     if ( !res )
@@ -1821,7 +2513,7 @@ RemoteData::Girder::folderContentsImpl( std::string const& folderId, std::string
     return res;
 }
 
-void RemoteData::Girder::updateFilesImpl( std::shared_ptr<RemoteData::ItemInfo> itemInfo, std::string const& token ) const
+void Feel::RemoteData::Girder::updateFilesImpl( std::shared_ptr<Feel::RemoteData::ItemInfo> itemInfo, std::string const& token ) const
 {
     if ( !itemInfo )
         return;
@@ -1878,8 +2570,8 @@ void RemoteData::Girder::updateFilesImpl( std::shared_ptr<RemoteData::ItemInfo> 
     }
 }
 
-nl::json
-RemoteData::Girder::resourceLookup( const std::string& path, const std::string& token ) const
+Feel::nl::json
+Feel::RemoteData::Girder::resourceLookup( const std::string& path, const std::string& token ) const
 {
     // Construct the URL
     std::string url = fmt::format( "{}/api/v1/resource/lookup", M_url);
@@ -1912,7 +2604,7 @@ RemoteData::Girder::resourceLookup( const std::string& path, const std::string& 
     return jsonResponse;
 }
 bool
-RemoteData::Girder::deleteResource(const nl::json& resource, const std::string& _token) const
+Feel::RemoteData::Girder::deleteResource(const nl::json& resource, const std::string& _token) const
 {
     // Use token if given else create token if API key given
     std::string token = M_token;
@@ -1975,5 +2667,3 @@ RemoteData::Girder::deleteResource(const nl::json& resource, const std::string& 
     std::cout << "Resource deleted successfully: " << resourceId << " (" << resourceType << ")\n";
     return true;
 }
-
-} // namespace Feel

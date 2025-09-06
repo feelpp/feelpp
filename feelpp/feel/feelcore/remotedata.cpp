@@ -628,6 +628,16 @@ RemoteData::contents() const
     return ContentsInfo{ std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(), std::vector<std::shared_ptr<ItemInfo>>(), std::vector<std::shared_ptr<FileInfo>>() ) };
 }
 
+std::vector<std::string>
+RemoteData::listOrganizations() const
+{
+    if ( M_ckan && M_ckan->isInit() )
+        return M_ckan->listOrganizations();
+    
+    // Only CKAN supports listing organizations
+    return std::vector<std::string>();
+}
+
 RemoteData::URL::URL( std::string const& url, WorldComm& worldComm )
     : M_worldComm( worldComm.shared_from_this() )
 {

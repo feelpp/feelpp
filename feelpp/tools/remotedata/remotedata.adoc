@@ -12,16 +12,29 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 
 == SYNOPSIS
 
-{manmanual} is a simple application which can download data, upload data and print remote data listing.
+{manmanual} is a simple application which can download data, upload data and print remote data listing from multiple platforms including GitHub, Girder, and CKAN.
 
 
 == DESCRIPTION
 
+The {manmanual} tool provides a unified interface for managing data across different remote storage platforms. It supports downloading, uploading, and browsing data with comprehensive progress reporting and multiple verbosity levels.
 
+== SUPPORTED PLATFORMS
+
+{manmanual} supports three major remote data platforms:
+
+.Platform Support Matrix
+|===
+| Platform | Download | Upload | Contents | List Organizations | Authentication
+
+| *GitHub* | ✓ | ✗ | ✗ | ✗ | Token
+| *Girder* | ✓ | ✓ | ✓ | ✗ | API Key
+| *CKAN* | ✓ | ✓ | ✓ | ✓ | API Key
+|===
 
 == OPTIONS
 
-=== Options
+=== Common Options
 
 {manmanual} requires some options.
 
@@ -37,86 +50,26 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 * with download mode : the path of downloaded datas
 |
 | contents | specify data contents to print in the terminal |
+| list-organizations | list available organizations (CKAN only) |
 |===
 
-== EXAMPLES
+=== Progress and Verbosity Options
 
-=== Download mode
+.Progress Control Options
+|===
+| Option | Description
 
-* Download file from an url
+| `--quiet, -q` | Suppress progress output, show only errors
+| `--verbose, -v` | Enable verbose progress output
+| `--progress` | Show detailed progress information with file sizes
+| `--debug` | Enable debug output with full API details and responses
+|===
 
-[source,shell]
-----
-feelpp_remotedata --download https://raw.githubusercontent.com/feelpp/feelpp/develop/README.adoc
-----
+== GITHUB
 
-* Download file/folder from Github
+GitHub integration allows downloading files and folders from public and private repositories.
 
-[source,shell]
-----
-feelpp_remotedata --download "github:{repo:feelpp,path:README.adoc}"
-----
-
-* Download file/folder from Girder
-
-[source,shell]
-----
-feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}"
-----
-
-* Download resource from CKAN
-
-[source,shell]
-----
-feelpp_remotedata --download "ckan:{url:https://ckan.example.com,resource:resource-id}"
-----
-
-* Download into a specific directory
-
-[source,shell]
-----
-feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --data $HOME/mydir
-----
-
-=== Upload mode
-
-* Upload file/folder on Girder (require an authentication)
-
-[source,shell]
-----
-feelpp_remotedata --upload "girder:{folder:<a folder id>}" --data $HOME/mydata
-----
-
-* Upload file/resource to CKAN (require an API key)
-
-[source,shell]
-----
-feelpp_remotedata --upload "ckan:{url:https://ckan.example.com,dataset:dataset-id,api_key:your-api-key}" --data $HOME/mydata
-----
-
-
-=== Contents mode
-
-* With Girder
-
-[source,shell]
-----
-feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
-feelpp_remotedata --contents "girder:{file:5b1f8707b0e9570499f66bd0}"
-feelpp_remotedata --contents "girder:{folder:[5ac72871b0e9574027047894,5ad4b75db0e9574027047d70],file:5b1f8707b0e9570499f66bd0}"
-----
-
-* With CKAN
-
-[source,shell]
-----
-feelpp_remotedata --contents "ckan:{url:https://ckan.example.com,dataset:dataset-id}"
-feelpp_remotedata --contents "ckan:{url:https://ckan.example.com,dataset:dataset-id,api_key:your-api-key}"
-----
-
-== REMOTE STORAGE DESCRIPTION
-
-=== Github
+=== Configuration Options
 
 |===
 | Option | Default value | Description
@@ -128,7 +81,45 @@ feelpp_remotedata --contents "ckan:{url:https://ckan.example.com,dataset:dataset
 | `token` | <no default value> | an authentication token
 |===
 
-=== Girder
+=== Authentication
+
+GitHub authentication is required for private repositories or to increase API rate limits.
+
+* Environment variable:
++
+[source,shell]
+----
+export FEELPP_GITHUB_TOKEN=xxxxx
+----
+
+* Inline token:
++
+[source,shell]
+----
+github:{repo:feelpp,path:README.adoc,token:xxxx}
+----
+
+=== Examples
+
+* Download file from GitHub:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{repo:feelpp,path:README.adoc}"
+----
+
+* Download from private repository:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{owner:myorg,repo:myrepo,path:data/,token:xxxx}"
+----
+
+== GIRDER
+
+Girder is a data management platform that provides a web-based interface for storing, managing, and sharing scientific data.
+
+=== Configuration Options
 
 |===
 | Option | Default value | Description
@@ -136,51 +127,240 @@ feelpp_remotedata --contents "ckan:{url:https://ckan.example.com,dataset:dataset
 | `url` | https://girder.math.unistra.fr | url of a Girder platform
 | `file` | <no default value> | one or several file id(s)
 | `folder` | <no default value> | one or several folder id(s)
+| `item` | <no default value> | one or several item id(s)
 | `api_key` | <no default value> | an authentication key
+| `token` | <no default value> | a direct authentication token
 |===
 
+=== Authentication
 
-== AUTHENTICATION
+Girder authentication is required for private data access and upload operations.
 
-=== Github
-You need to give a token for access to private repository or increase the for example. Two ways to specify the token :
-
-* Define the environment variable FEELPP_GITHUB_TOKEN.
-+
-[source,shell]
-----
-export FEELPP_GITHUB_TOKEN=xxxxx
-----
-* Add token option in the github description.
-+
-[source,shell]
-----
-github:{repo:feelpp,path:README.adoc,token:xxxx}
-----
-
-=== Girder
-You need to give an api key for access to private data or upload data. Two ways to specify the token :
-
-* Define the environment variable FEELPP_GIRDER_API_KEY.
+* Environment variable:
 +
 [source,shell]
 ----
 export FEELPP_GIRDER_API_KEY=xxxxx
 ----
-* Add api_key option in the girder description.
+
+* Inline API key:
 +
 [source,shell]
 ----
 girder:{folder:5ac72871b0e9574027047894,api_key:xxxx}
 ----
 
-Remark: another possibility for is to give directly the token generated from an api key (replace api_key by token).
-But it's quite difficult to get a token from the web interface of Girder, and you a responsible to delete the token.
-With the api key system, the remotedata apps generate and delete token automatically.
+NOTE: Using api_key is recommended over token as the remotedata app automatically manages token lifecycle.
 
+=== Examples
+
+* Download file from Girder:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --progress
+----
+
+* Upload data to Girder:
++
+[source,shell]
+----
+feelpp_remotedata --upload "girder:{folder:5ac72871b0e9574027047894}" --data $HOME/mydata
+----
+
+* Browse Girder contents:
++
+[source,shell]
+----
+feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
+feelpp_remotedata --contents "girder:{file:5b1f8707b0e9570499f66bd0}"
+----
+
+== CKAN
+
+CKAN (Comprehensive Knowledge Archive Network) is an open-source data management system used for publishing, sharing and finding data.
+
+=== Configuration Options
+
+|===
+| Option | Default value | Description
+
+| `url` | <from environment> | URL of a CKAN instance
+| `api_key` | <from environment> | API key for authentication
+| `organization` | <from environment> | organization name
+| `dataset` | <no default value> | dataset name or ID
+| `resource` | <no default value> | resource ID for specific file operations
+|===
+
+=== Environment Variables
+
+CKAN operations can be configured using environment variables:
+
+[source,shell]
+----
+export FEELPP_CKAN_URL="https://ckan.example.com"
+export FEELPP_CKAN_API_KEY="your-api-key"
+export FEELPP_CKAN_ORGANIZATION="your-org"
+----
+
+=== Authentication
+
+CKAN authentication is required for private datasets and upload operations.
+
+* Environment variables (recommended):
++
+[source,shell]
+----
+export FEELPP_CKAN_API_KEY=xxxxx
+export FEELPP_CKAN_ORGANIZATION=myorg
+----
+
+* Inline credentials:
++
+[source,shell]
+----
+ckan:{url:https://ckan.example.com,api_key:xxxx,organization:myorg}
+----
+
+=== Examples
+
+* List available organizations:
++
+[source,shell]
+----
+feelpp_remotedata --list-organizations="ckan:{}"
+feelpp_remotedata --list-organizations="ckan:{url:https://demo.ckan.org}"
+----
+
+* Download entire dataset:
++
+[source,shell]
+----
+feelpp_remotedata --download "ckan:{dataset:my-dataset}" --progress
+----
+
+* Download specific resource:
++
+[source,shell]
+----
+feelpp_remotedata --download "ckan:{resource:resource-id}" --debug
+----
+
+* Upload data to CKAN:
++
+[source,shell]
+----
+feelpp_remotedata --upload "ckan:{dataset:my-dataset}" --data $HOME/mydata
+----
+
+* Browse dataset contents:
++
+[source,shell]
+----
+feelpp_remotedata --contents "ckan:{dataset:my-dataset}"
+----
+
+== GENERAL EXAMPLES
+
+=== Download Examples
+
+* Download file from URL:
++
+[source,shell]
+----
+feelpp_remotedata --download https://raw.githubusercontent.com/feelpp/feelpp/develop/README.adoc
+----
+
+* Download with custom directory:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --data $HOME/mydir
+----
+
+* Download with different verbosity levels:
++
+[source,shell]
+----
+# Quiet mode (errors only)
+feelpp_remotedata --download "ckan:{dataset:sample}" --quiet
+
+# Normal mode (default)
+feelpp_remotedata --download "ckan:{dataset:sample}"
+
+# Progress mode (detailed progress)
+feelpp_remotedata --download "ckan:{dataset:sample}" --progress
+
+# Debug mode (full API details)
+feelpp_remotedata --download "ckan:{dataset:sample}" --debug
+----
+
+=== Upload Examples
+
+* Upload to Girder:
++
+[source,shell]
+----
+feelpp_remotedata --upload "girder:{folder:folder-id}" --data $HOME/mydata --verbose
+----
+
+* Upload to CKAN:
++
+[source,shell]
+----
+feelpp_remotedata --upload "ckan:{dataset:my-dataset}" --data $HOME/mydata --progress
+----
+
+=== Browse Examples
+
+* Browse with different platforms:
++
+[source,shell]
+----
+# Girder folder contents
+feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
+
+# CKAN dataset contents
+feelpp_remotedata --contents "ckan:{dataset:my-dataset}"
+
+# Multiple Girder items
+feelpp_remotedata --contents "girder:{folder:[id1,id2],file:id3}"
+----
+
+== PROGRESS REPORTING
+
+The {manmanual} tool provides comprehensive progress reporting with four verbosity levels:
+
+.Progress Levels
+|===
+| Level | Option | Description | Output
+
+| *Quiet* | `--quiet, -q` | Minimal output | Errors only
+| *Normal* | (default) | Standard progress | Operation status, file names
+| *Verbose* | `--verbose, -v` or `--progress` | Detailed progress | File sizes, transfer rates, detailed status
+| *Debug* | `--debug` | Full diagnostic | API requests/responses, URLs, technical details
+|===
+
+=== Progress Features
+
+* **File-by-file progress**: Shows individual file download/upload progress
+* **Size reporting**: Displays file sizes in human-readable format (KB, MB, GB)
+* **Error handling**: Clear error messages with specific failure reasons
+* **Operation summaries**: Final status with success/failure counts
+* **API debugging**: Full request/response logging in debug mode
+
+== ERROR HANDLING
+
+The tool provides robust error handling:
+
+* **Network errors**: HTTP status codes and connection issues
+* **Authentication errors**: Clear messages for invalid credentials
+* **Resource not found**: Specific error messages for missing files/datasets
+* **Permission errors**: Access denied messages with suggestions
+* **Data validation**: JSON parsing errors and malformed responses
 
 == COPYING
 
-Copyright \(C) 2017-2024 {feelpp} Consortium. +
+Copyright \(C) 2017-2025 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
 

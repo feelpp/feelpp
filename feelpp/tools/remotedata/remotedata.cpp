@@ -34,6 +34,11 @@ int main( int argc, char** argv )
         ( "download", po::value<std::string>(), "download desc" )
         ( "data", po::value<std::string>(), "specify the datas to upload or the download directory" )
         ( "contents", po::value<std::string>(), "contents desc" )
+        ( "list-organizations", po::value<std::string>(), "list organizations for CKAN instance" )
+        ( "verbose,v", "enable verbose progress output" )
+        ( "quiet,q", "suppress progress output" )
+        ( "progress", "show detailed progress information" )
+        ( "debug", "enable debug output with API details" )
 		;
 
     fs::path initialCurrentPath = fs::current_path();
@@ -90,6 +95,24 @@ int main( int argc, char** argv )
         for ( auto const& fileInfo : std::get<2>( res ) )
             std::cout << "-------------------------------------------------------\n"
                       << fileInfo->print().str() << "\n";
+    }
+    else if ( Environment::vm().count("list-organizations") )
+    {
+        RemoteData rd( soption(_name="list-organizations") );
+        auto organizations = rd.listOrganizations();
+        
+        if (organizations.empty())
+        {
+            Feel::cout << "No organizations found or access denied\n";
+        }
+        else
+        {
+            Feel::cout << "Available organizations:\n";
+            for (const auto& org : organizations)
+            {
+                Feel::cout << "  - " << org << "\n";
+            }
+        }
     }
     return 0;
 }

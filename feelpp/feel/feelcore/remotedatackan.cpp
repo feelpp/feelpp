@@ -62,7 +62,26 @@ RemoteData::CKAN::CKAN( std::string const& desc, WorldComm& worldComm )
         M_resourceId = jsonObj["resource"].get<std::string>();
 
     if (M_url.empty())
-        M_url = "https://ckan.default.url";
+    {
+        // Check environment variable for URL if not specified in JSON
+        char* env = getenv("FEELPP_CKAN_URL");
+        if (env != nullptr && env[0] != '\0')
+        {
+            M_url = std::string(env) + "/api/3/action";
+        }
+        else
+        {
+            env = getenv("CKAN_URL");
+            if (env != nullptr && env[0] != '\0')
+            {
+                M_url = std::string(env) + "/api/3/action";
+            }
+            else
+            {
+                M_url = "https://ckan.default.url";
+            }
+        }
+    }
 
     // Use environment variables for the API key if not specified
     if (M_apiKey.empty())
@@ -145,10 +164,28 @@ RemoteData::CKAN::download(const std::string& dir) const
 
     if (M_worldComm->isMasterRank())
     {
+        // Determine progress level
+        RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+        if (Environment::vm().count("quiet")) {
+            progressLevel = RemoteDataProgress::Level::QUIET;
+        } else if (Environment::vm().count("debug")) {
+            progressLevel = RemoteDataProgress::Level::DEBUG;
+        } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+            progressLevel = RemoteDataProgress::Level::VERBOSE;
+        }
+        
+        RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+        
         // If we have a specific resource ID, download that resource
         if (!M_resourceId.empty())
         {
+            progress.startOperation("Download CKAN resource " + M_resourceId);
+            
             std::string resourceUrl = fmt::format("{}/resource_show", M_url);
+            
+            if (progress.showDebugOutput()) {
+                progress.debug("Resource metadata URL: " + resourceUrl);
+            }
             
             // Query resource metadata using CPR
             cpr::Response res = cpr::Get(
@@ -160,20 +197,44 @@ RemoteData::CKAN::download(const std::string& dir) const
 
             if (res.status_code != 200)
             {
+                progress.error(fmt::format("CKAN resource query failed: HTTP {}, {}", res.status_code, res.text));
                 throw std::runtime_error(fmt::format("CKAN resource query failed: HTTP {}, {}", res.status_code, res.text));
             }
 
             // Parse JSON response
             nl::json jsonResponse = nl::json::parse(res.text);
+            if (progress.showDebugOutput()) {
+                progress.debug("Resource metadata response: " + jsonResponse.dump(2));
+            }
+            
             if (!jsonResponse.contains("result"))
+            {
+                progress.error("Invalid CKAN resource response structure.");
                 throw std::runtime_error("Invalid CKAN resource response structure.");
+            }
 
             std::string downloadUrl = jsonResponse["result"].value("url", "");
             std::string filename = jsonResponse["result"].value("name", "downloaded_resource");
+            
+            // Handle null or missing size values safely
+            std::streamsize fileSize = 0;
+            if (jsonResponse["result"].contains("size") && !jsonResponse["result"]["size"].is_null()) {
+                fileSize = jsonResponse["result"]["size"].get<std::streamsize>();
+            }
+            
             if (downloadUrl.empty())
+            {
+                progress.error("CKAN resource URL is empty.");
                 throw std::runtime_error("CKAN resource URL is empty.");
+            }
 
             fs::path filepath = fs::path(dir) / filename;
+            
+            progress.startFile(filename, fileSize);
+            
+            if (progress.showDebugOutput()) {
+                progress.debug("Download URL: " + downloadUrl);
+            }
             
             // Download the actual file content
             cpr::Response downloadRes = cpr::Get(
@@ -184,6 +245,7 @@ RemoteData::CKAN::download(const std::string& dir) const
 
             if (downloadRes.status_code != 200)
             {
+                progress.error(fmt::format("CKAN resource download failed: HTTP {}, {}", downloadRes.status_code, downloadRes.text));
                 throw std::runtime_error(fmt::format("CKAN resource download failed: HTTP {}, {}", downloadRes.status_code, downloadRes.text));
             }
 
@@ -194,15 +256,22 @@ RemoteData::CKAN::download(const std::string& dir) const
 
             if (!file.good())
             {
+                progress.error(fmt::format("Failed to write downloaded file: {}", filepath.string()));
                 throw std::runtime_error(fmt::format("Failed to write downloaded file: {}", filepath.string()));
             }
 
+            progress.completeFile(filename, downloadRes.text.size());
             downloadedFiles.push_back(filepath.string());
+            progress.completeOperation();
         }
         // If we have a dataset, download all resources from that dataset
         else if (!M_dataset.empty())
         {
             std::string packageUrl = fmt::format("{}/package_show", M_url);
+            
+            if (progress.showDebugOutput()) {
+                progress.debug("Dataset metadata URL: " + packageUrl);
+            }
             
             // Query dataset metadata using CPR
             cpr::Response res = cpr::Get(
@@ -214,28 +283,54 @@ RemoteData::CKAN::download(const std::string& dir) const
 
             if (res.status_code != 200)
             {
+                progress.error(fmt::format("CKAN dataset query failed: HTTP {}, {}", res.status_code, res.text));
                 throw std::runtime_error(fmt::format("CKAN dataset query failed: HTTP {}, {}", res.status_code, res.text));
             }
 
             // Parse JSON response
             nl::json jsonResponse = nl::json::parse(res.text);
+            if (progress.showDebugOutput()) {
+                progress.debug("Dataset metadata response: " + jsonResponse.dump(2));
+            }
+            
             if (!jsonResponse.contains("result") || !jsonResponse["result"].contains("resources"))
+            {
+                progress.error("Invalid CKAN dataset response structure.");
                 throw std::runtime_error("Invalid CKAN dataset response structure.");
+            }
 
             // Download each resource in the dataset
             auto resources = jsonResponse["result"]["resources"];
+            int totalFiles = resources.size();
+            
+            progress.startOperation(fmt::format("Download {} files from CKAN dataset {}", totalFiles, M_dataset));
+            
+            int fileNum = 0;
             for (const auto& resource : resources)
             {
+                fileNum++;
                 std::string downloadUrl = resource.value("url", "");
                 std::string filename = resource.value("name", "downloaded_resource");
                 
+                // Handle null or missing size values safely
+                std::streamsize fileSize = 0;
+                if (resource.contains("size") && !resource["size"].is_null()) {
+                    fileSize = resource["size"].get<std::streamsize>();
+                }
+                
                 if (downloadUrl.empty())
                 {
-                    std::cerr << "Warning: Skipping resource with empty URL: " << filename << std::endl;
+                    progress.error("Skipping resource with empty URL: " + filename);
                     continue;
                 }
 
                 fs::path filepath = fs::path(dir) / filename;
+                
+                progress.startFile(filename, fileSize);
+                
+                if (progress.showDebugOutput()) {
+                    progress.debug("Download URL: " + downloadUrl);
+                }
                 
                 // Download the actual file content
                 cpr::Response downloadRes = cpr::Get(
@@ -246,8 +341,7 @@ RemoteData::CKAN::download(const std::string& dir) const
 
                 if (downloadRes.status_code != 200)
                 {
-                    std::cerr << "Warning: Failed to download resource " << filename 
-                              << ": HTTP " << downloadRes.status_code << std::endl;
+                    progress.error(fmt::format("Failed to download resource {}: HTTP {}", filename, downloadRes.status_code));
                     continue;
                 }
 
@@ -258,16 +352,19 @@ RemoteData::CKAN::download(const std::string& dir) const
 
                 if (!file.good())
                 {
-                    std::cerr << "Warning: Failed to write file: " << filepath.string() << std::endl;
+                    progress.error(fmt::format("Failed to write file: {}", filepath.string()));
                     continue;
                 }
 
+                progress.completeFile(filename, downloadRes.text.size());
                 downloadedFiles.push_back(filepath.string());
-                std::cout << "Downloaded: " << filename << " (" << downloadRes.text.size() << " bytes)" << std::endl;
             }
+            
+            progress.completeOperation();
         }
         else
         {
+            progress.error("No resource ID or dataset specified for CKAN download.");
             throw std::runtime_error("No resource ID or dataset specified for CKAN download.");
         }
     }
@@ -282,49 +379,55 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& dataset
     CHECK(isInit()) << "CKAN remote data object is not initialized.";
     CHECK(fs::exists(dataPath)) << fmt::format("Data path '{}' does not exist.", dataPath);
 
+    // Create progress reporter based on command-line options
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet"))
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    else if (Environment::vm().count("debug"))
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    else if (Environment::vm().count("verbose") || Environment::vm().count("progress"))
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::UPLOAD, progressLevel);
+    progress.startOperation("CKAN", fmt::format("dataset: {}", datasetId));
+
     std::vector<std::string> uploadedResources;
     if (M_worldComm->isMasterRank())
     {
-        std::string url = fmt::format("{}/resource_create", M_url);
-        cpr::Header headers = {
-            {"Authorization", M_apiKey}//,
-            //{"Accept", "application/json"}
-        };
-
-        // Prepare file payload
-        fs::path filepath(dataPath);
-        std::ifstream fileStream(dataPath, std::ios::binary | std::ios::ate);
-        std::streamsize fileSize = fileStream.tellg();
-        fileStream.seekg(0, std::ios::beg);
-        std::vector<char> fileData(fileSize);
-        fileStream.read(fileData.data(), fileSize);
-
-        // HTTP POST request
-        cpr::Multipart multipart = {
-            {"package_id", datasetId},
-            {"name", filepath.filename().string()},
-            {"upload", cpr::Buffer(fileData.begin(), fileData.end(), filepath.filename().string())}
-        };
-
-        cpr::Response res = cpr::Post(
-            cpr::Url{url},
-            headers,
-            multipart,
-            cpr::VerifySsl{false}
-        );
-        std::cout << fmt::format("CKAN upload response: {}", res.text) << "\n";
-        if (res.status_code != 200)
+        fs::path dataFsPath(dataPath);
+        if (fs::is_regular_file(dataFsPath))
         {
-            nl::json errorResponse = nl::json::parse(res.text);
-            std::string errorMsg = errorResponse.contains("error") ? errorResponse["error"].dump() : "Unknown error";
-            throw std::runtime_error(fmt::format("CKAN upload failed: {}", errorMsg));
+            // Upload single file
+            uploadFileWithProgress(dataPath, datasetId, uploadedResources, progress, 1, 1);
         }
-
-        // Parse the JSON response for the uploaded resource details
-        nl::json jsonResponse = nl::json::parse(res.text);
-        uploadedResources.push_back(jsonResponse["result"].value("id", ""));
-
-        std::cout << fmt::format("Uploaded resource with ID: {}", uploadedResources[0]) << "\n";
+        else if (fs::is_directory(dataFsPath))
+        {
+            // Count files for progress reporting
+            int fileCount = 0;
+            std::vector<fs::directory_entry> files;
+            for (const auto& entry : fs::recursive_directory_iterator(dataPath))
+            {
+                if (entry.is_regular_file())
+                {
+                    files.push_back(entry);
+                    fileCount++;
+                }
+            }
+            
+            // Upload each file with progress
+            int fileNum = 0;
+            for (const auto& entry : files)
+            {
+                fileNum++;
+                uploadFileWithProgress(entry.path().string(), datasetId, uploadedResources, progress, fileNum, fileCount);
+            }
+        }
+        else
+        {
+            progress.error(fmt::format("Unsupported file system object: {}", dataPath));
+        }
+        
+        progress.completeOperation();
     }
 
     if (sync)
@@ -332,6 +435,76 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& dataset
 
     return uploadedResources;
 }
+
+void
+RemoteData::CKAN::uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles) const
+{
+    fs::path filepath(filePath);
+    std::string filename = filepath.filename().string();
+    std::streamsize fileSize = fs::file_size(filePath);
+    
+    progress.startFile(filename, fileSize, fileNum, totalFiles);
+    
+    std::string url = fmt::format("{}/resource_create", M_url);
+    cpr::Header headers = {
+        {"Authorization", M_apiKey}
+    };
+
+    // Prepare file payload
+    std::ifstream fileStream(filePath, std::ios::binary | std::ios::ate);
+    fileStream.seekg(0, std::ios::beg);
+    std::vector<char> fileData(fileSize);
+    fileStream.read(fileData.data(), fileSize);
+
+    // HTTP POST request
+    cpr::Multipart multipart = {
+        {"package_id", datasetId},
+        {"name", filename},
+        {"upload", cpr::Buffer(fileData.begin(), fileData.end(), std::move(filename))}
+    };
+
+    try
+    {
+        cpr::Response res = cpr::Post(
+            cpr::Url{url},
+            headers,
+            multipart,
+            cpr::VerifySsl{false}
+        );
+        
+        if (res.status_code != 200)
+        {
+            std::string errorMsg = fmt::format("HTTP {}: {}", res.status_code, res.text.empty() ? "No response" : res.text);
+            progress.error(fmt::format("Upload failed for {}: {}", filename, errorMsg));
+            return;
+        }
+
+        if (res.text.empty())
+        {
+            progress.error(fmt::format("Upload failed for {}: Empty response from server", filename));
+            return;
+        }
+
+        // Parse the JSON response for the uploaded resource details
+        nl::json jsonResponse = nl::json::parse(res.text);
+        
+        if (!jsonResponse.contains("result") || !jsonResponse["result"].contains("id"))
+        {
+            progress.error(fmt::format("Upload failed for {}: Invalid response format", filename));
+            return;
+        }
+        
+        std::string resourceId = jsonResponse["result"]["id"];
+        uploadedResources.push_back(resourceId);
+        
+        progress.completeFile(filename, resourceId);
+    }
+    catch (const std::exception& e)
+    {
+        progress.error(fmt::format("Upload failed for {}: {}", filename, e.what()));
+    }
+}
+
 std::string
 RemoteData::CKAN::createDataset(const std::string& name, const std::string& organization, const std::string& description) const
 {
@@ -490,10 +663,16 @@ RemoteData::CKAN::contents() const
                 {
                     for ( const auto& resource : dataset["resources"] )
                     {
+                        // Handle null or missing size values safely
+                        std::streamsize fileSize = 0;
+                        if (resource.contains("size") && !resource["size"].is_null()) {
+                            fileSize = resource["size"].get<std::streamsize>();
+                        }
+                        
                         auto fileInfo = std::make_shared<FileInfo>(
                             resource.value("name", resource.value("id", "unknown")),
                             resource.value("id", ""),
-                            resource.value("size", 0)
+                            fileSize
                         );
                         files.push_back( fileInfo );
                     }
@@ -514,6 +693,81 @@ RemoteData::CKAN::upload(const std::string& dataPath, const std::string& parentI
 {
     // Use the dataset as the parent ID context for CKAN uploads
     return upload(dataPath, parentId.empty() ? M_dataset : parentId, true);
+}
+
+std::vector<std::string>
+RemoteData::CKAN::listOrganizations() const
+{
+    std::vector<std::string> organizations;
+    
+    if (!isInit())
+    {
+        if (M_worldComm->isMasterRank())
+            std::cout << "CKAN is not initialized" << std::endl;
+        return organizations;
+    }
+
+    if (M_worldComm->isMasterRank())
+    {
+        try 
+        {
+            // CKAN API endpoint for listing organizations
+            std::string url = fmt::format("{}/organization_list", M_url);
+            
+            // Create headers - API key is optional for public organization list
+            cpr::Header headers = {{"Content-Type", "application/json"}};
+            if (!M_apiKey.empty()) {
+                headers["Authorization"] = M_apiKey;
+            }
+            
+            cpr::Response res = cpr::Get(
+                cpr::Url{url},
+                headers,
+                cpr::VerifySsl{false}
+            );
+
+            if (res.status_code == 200)
+            {
+                nl::json jsonResponse = nl::json::parse(res.text);
+                
+                if (jsonResponse.contains("success") && jsonResponse["success"].get<bool>())
+                {
+                    if (jsonResponse.contains("result") && jsonResponse["result"].is_array())
+                    {
+                        for (const auto& org : jsonResponse["result"])
+                        {
+                            if (org.is_string())
+                            {
+                                organizations.push_back(org.get<std::string>());
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    std::string errorMsg = "Unknown error";
+                    if (jsonResponse.contains("error"))
+                    {
+                        errorMsg = jsonResponse["error"].dump();
+                    }
+                    std::cout << "CKAN organization list failed: " << errorMsg << std::endl;
+                }
+            }
+            else
+            {
+                std::cout << fmt::format("CKAN organization list failed: HTTP {}, {}", res.status_code, res.text) << std::endl;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << "Error listing CKAN organizations: " << e.what() << std::endl;
+        }
+    }
+
+    // Broadcast results to all processes
+    mpi::broadcast(M_worldComm->globalComm(), organizations, M_worldComm->masterRank());
+    
+    return organizations;
 }
 
 } // namespace Feel
