@@ -37,6 +37,51 @@ std::string preprocessCustomFormat(const std::string& input);
 // parse JSON-like input
 nl::json parseCustomFormat(const std::string& customInput);
 
+/**
+ * @brief Progress utility class for remote data operations
+ */
+class RemoteDataProgress
+{
+public:
+    enum class Operation { UPLOAD, DOWNLOAD };
+    enum class Level { QUIET, NORMAL, VERBOSE, DEBUG };
+    
+    RemoteDataProgress(Operation op, Level level = Level::NORMAL) 
+        : M_operation(op), M_level(level), M_hasErrors(false), M_successCount(0), M_totalCount(0) {}
+    
+    void setLevel(Level level) { M_level = level; }
+    
+    // Check verbosity levels
+    bool isQuiet() const { return M_level == Level::QUIET; }
+    bool isNormal() const { return M_level >= Level::NORMAL; }
+    bool isVerbose() const { return M_level >= Level::VERBOSE; }
+    bool isDebug() const { return M_level >= Level::DEBUG; }
+    bool showDebugOutput() const { return M_level >= Level::DEBUG; }
+    
+    // Format file size in human readable format
+    std::string formatSize(std::streamsize bytes) const;
+    
+    // Progress messages
+    void startOperation(const std::string& platform, const std::string& target) const;
+    void startOperation(const std::string& description) const;
+    void startFile(const std::string& filename, std::streamsize size, int fileNum = 0, int totalFiles = 0) const;
+    void updateProgress(std::streamsize transferred, std::streamsize total) const;
+    void completeFile(const std::string& filename, const std::string& id = "") const;
+    void completeFile(const std::string& filename, std::streamsize size, bool skipped = false) const;
+    void completeOperation() const;
+    void error(const std::string& message) const;
+    void debug(const std::string& message) const;
+    
+private:
+    Operation M_operation;
+    Level M_level;
+    mutable bool M_hasErrors;
+    mutable int M_successCount;
+    mutable int M_totalCount;
+    
+    std::string operationName() const { return M_operation == Operation::UPLOAD ? "UPLOAD" : "DOWNLOAD"; }
+};
+
 class StatusRequestHTTP : public std::tuple<bool, uint16_type, std::string>
 {
     typedef std::tuple<bool, uint16_type, std::string> super_type;
@@ -175,6 +220,10 @@ struct RemoteData
     //! Get contents of remote data (folder, item, file)
     //! @return : (Folders info, Items info, Files info)
     ContentsInfo contents() const;
+
+    //! List organizations available on the remote data platform (CKAN only)
+    //! @return : vector of organization names
+    std::vector<std::string> listOrganizations() const;
 
     class URL
     {
@@ -320,19 +369,25 @@ struct RemoteData
         std::string downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const;
         std::string downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const;
         std::string downloadItem( std::string const& folderId, std::string const& dir, std::string const& token ) const;
+        std::string downloadFileWithProgress( std::string const& fileId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
+        std::string downloadFolderWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
+        std::string downloadItemWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
         std::vector<std::string> uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         //std::string uploadFileImpl( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
         std::string uploadFileImpl(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType) const;
-        nl::json getResourceInfoById(const std::string& resourceId, const std::string& token) const;
+        std::string uploadFileImplWithProgress(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType, const RemoteDataProgress& progress) const;
+        nl::json getResourceInfoById(const std::string& resourceId, const std::string& token, const RemoteDataProgress& progress) const;
 
         void uploadDirectoryToFolder(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources) const;
+        void uploadDirectoryToFolderWithProgress(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int itemNum, int totalItems) const;
         void uploadFilesToItem(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources) const;
+        void uploadFilesToItemWithProgress(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int itemNum, int totalItems) const;
         void replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const;
         //std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
         std::string createToken( int duration = 1 ) const;
-        bool validateToken(const std::string& token) const;
+        bool validateToken(const std::string& token, const RemoteDataProgress& progress) const;
         void removeToken( std::string const& token ) const;
-        std::string createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token) const;
+        std::string createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token, const RemoteDataProgress& progress) const;
         std::string createFolderImpl(const std::string& folderName, const std::string& parentId, const std::string& token, const std::string& parentType = "folder") const;
         std::string initializeUpload(const std::string& filename, std::streamsize fileSize, const std::string& parentId, const std::string& parentType, const std::string& token) const;
         std::string uploadChunk(const std::string& uploadId, std::streamsize offset, const char* data, std::streamsize size, const std::string& token, bool isFinalChunk = false) const;
@@ -396,6 +451,9 @@ struct RemoteData
         //! Delete a resource by ID
         bool deleteResource( const std::string& resourceId ) const;
 
+        //! List all organizations available on the CKAN instance
+        std::vector<std::string> listOrganizations() const;
+
         std::vector<std::string> upload(const std::string& dataPath, const std::string& datasetId, bool sync) const;
         std::string createDataset(const std::string& name, const std::string& organization, const std::string& description) const;
         nl::json createDataset(const std::string& datasetName) const;
@@ -413,6 +471,9 @@ struct RemoteData
 
         //! Upload a file to CKAN
         std::string uploadFile( const std::string& filePath, const std::string& resourceId ) const;
+
+        //! Upload a file with progress reporting
+        void uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles) const;
 
         //! Parse resource metadata from JSON
         nl::json parseResourceMetadata( const std::string& metadata ) const;
