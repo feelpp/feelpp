@@ -213,27 +213,24 @@ public:
     crb_ptrtype getCRB() const { return this->crb; }
 
     void setMode( std::string const& mode )
-        {
-            if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
+    {
+        if ( mode == "pfem" ) this->setMode( CRBModelMode::PFEM );
+        if ( mode == "crb" ) this->setMode( CRBModelMode::CRB );
+        if ( mode == "scm" ) this->setMode( CRBModelMode::SCM );
+        if ( mode == "scm_online" ) this->setMode( CRBModelMode::SCM_ONLINE );
+        if ( mode == "crb_online" ) this->setMode( CRBModelMode::CRB_ONLINE );
+    }
 
-            if ( mode == "crb" ) M_mode = CRBModelMode::CRB;
-
-            if ( mode == "scm" ) M_mode = CRBModelMode::SCM;
-
-            if ( mode == "scm_online" ) M_mode = CRBModelMode::SCM_ONLINE;
-
-            if ( mode == "crb_online" ) M_mode = CRBModelMode::CRB_ONLINE;
-        }
     void setMode( CRBModelMode mode )
-        {
-            M_mode = mode;
-        }
+    {
+        M_mode = mode;
+    }
 
     void loadDB()
         {
             int proc_number = Environment::worldComm().globalRank();
             int global_size = Environment::worldComm().globalSize();
-            std::string pslogfile = ( boost::format("PsLogCrbOffline-%1%_%2%") %global_size %proc_number ).str();
+            std::string pslogfile = ( fmt::format("PsLogCrbOffline-{}_{}", global_size, proc_number) );
 
             bool only_master=boption(_name="crb.system-memory-evolution");
             bool all_procs  =boption(_name="crb.system-memory-evolution-on-all-procs");
@@ -298,7 +295,7 @@ public:
                     crb->setOfflineStep( true );
                     do  // SER r-adaptation for RB
                     {
-                        crb->setAdaptationSER( false ); //re-init to false
+                    crb->setAdaptationSER( false ); //re-init to false
                         crb->offline();
                     }
                     while(crb->adaptationSER());

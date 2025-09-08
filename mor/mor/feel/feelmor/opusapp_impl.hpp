@@ -35,19 +35,20 @@ OpusApp<ModelType,RM,Model>::run()
 {
     bool export_solution = boption(_name=_o( this->about().appName(),"export-solution" ));
     int proc_number =  Environment::worldComm().globalRank();
-    bool load_elements_db= boption(_name="crb.load-elements-database");
-    bool rebuild_db= boption(_name="crb.rebuild-database");
+    bool load_elements_db = boption(_name="crb.load-elements-database");
+    bool rebuild_db = boption(_name="crb.rebuild-database");
     int exportNameSize = ioption(_name="crb.export-name-max-size"); //paraview reads max 49 characters
 
     //check options (does it make sens ?)
     bool option_checked=true;
     if( !load_elements_db && rebuild_db )
         option_checked=false;
-    CHECK( option_checked )<<"options crb.load-elements-database : "<<load_elements_db<<" and crb.rebuild-database : "<<rebuild_db<<". If you don't want to load elements database maybe you want to apply RB approximation on a laptop wherease the RB was built on a super-computer ? If it's the case put crb.rebuild-database=false !! Else, you have to choose if you want to rebuild a RB database or to reload an existing one but not the elements database.\n";
+    CHECK( option_checked ) << "options crb.load-elements-database : " << load_elements_db << " and crb.rebuild-database : " << rebuild_db <<
+        ". If you don't want to load elements database maybe you want to apply RB approximation on a laptop wherease the RB was built on a super-computer ? If it's the case put crb.rebuild-database=false !! Else, you have to choose if you want to rebuild a RB database or to reload an existing one but not the elements database.\n";
 
-    if( ! load_elements_db  )
+    if( !load_elements_db  )
     {
-        M_mode = CRBModelMode::CRB_ONLINE;
+        this->setMode( CRBModelMode::CRB_ONLINE );
         if( Environment::worldComm().isMasterRank() )
         {
             std::cout<<"[OpusApp Information] You have choosen to reload an existing RB database without loading elments database. If the RB was built on an other computer make sure that database have been moved on in the right repositories.\n";

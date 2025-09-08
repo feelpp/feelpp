@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE( test_add_ptree )
     {
         nl::json loaded_ptree;
         std::ifstream infile(filename);
-        // BOOST_REQUIRE(infile.is_open());
+        BOOST_REQUIRE(infile.is_open());
         infile >> loaded_ptree;
         infile.close();
 
