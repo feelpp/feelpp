@@ -250,6 +250,11 @@ struct RemoteData
     //! Get contents of remote data (folder, item, file)
     //! @return : (Folders info, Items info, Files info)
     ContentsInfo contents() const;
+    
+    //! Get contents of remote data (folder, item, file) with progress reporting
+    //! @param progress : progress reporter for debug output
+    //! @return : (Folders info, Items info, Files info)
+    ContentsInfo contents( RemoteDataProgress& progress ) const;
 
     //! List organizations available on the remote data platform (CKAN only)
     //! @return : vector of organization names
@@ -289,6 +294,12 @@ struct RemoteData
         //! Return true if the GitHub is initialized from a desc
         bool isInit() const;
 
+        //! Return true if enough information is available to download a file
+        bool canDownload() const { return isInit(); }
+
+        //! Return true if enough information is available to upload data (GitHub uploads not supported)
+        bool canUpload() const { return false; }
+
         //! Download file/folder from the GitHub desc
         //! @param dir : the directory where the file is downloaded
         //! @return : vector of paths of the downloaded files or the path of downloaded folder
@@ -296,7 +307,7 @@ struct RemoteData
 
       private:
         std::vector<std::string> downloadImpl( std::string const& dir ) const;
-        std::tuple<bool, std::string> downloadFolderRecursively( nl::json const& jsonResponse, std::string const& dir ) const;
+        std::tuple<bool, std::string> downloadFolderRecursively( nl::json const& jsonResponse, std::string const& dir, const RemoteDataProgress& progress ) const;
 
         static std::string errorMessage( nl::json const& jsonResponse, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
 
@@ -404,12 +415,26 @@ struct RemoteData
         //! @return : (Folders info, Items info, Files info)
         std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
         contents() const;
+        
+        //! Get contents of remote data (folder, item, file) with progress reporting
+        //! @param progress : progress reporter for debug output
+        //! @return : (Folders info, Items info, Files info)
+        std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
+        contents( RemoteDataProgress& progress ) const;
 
         //! Lookup a resource by path
+        //! Lookup a resource by path with progress reporting
         //! @param path : the path to the resource in Girder
         //! @param token : authentication token
         //! @return : JSON object containing resource information
         nl::json resourceLookup( const std::string& path, const std::string& token = "" ) const;
+
+        //! Lookup a resource by path with progress reporting
+        //! @param path : the path to the resource in Girder
+        //! @param token : authentication token
+        //! @param progress : progress reporter for debug/verbose output
+        //! @return : JSON object containing resource information
+        nl::json resourceLookup( const std::string& path, const std::string& token, const RemoteDataProgress& progress ) const;
 
         //! Delete a resource by id
         //! @param resourceId : the id of the resource in Girder

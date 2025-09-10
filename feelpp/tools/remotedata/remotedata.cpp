@@ -56,7 +56,19 @@ int main( int argc, char** argv )
         RemoteData rd( soption(_name="upload") );
         if ( !rd.canUpload() )
         {
-            Feel::cout << "invalid upload\n";
+            std::string uploadDesc = soption(_name="upload");
+            if ( uploadDesc.find("github:") != std::string::npos )
+            {
+                Feel::cout << "GitHub uploads are not supported. Use Girder or CKAN for upload operations.\n";
+            }
+            else if ( uploadDesc.find("url:") != std::string::npos || uploadDesc.substr(0, 4) == "http" )
+            {
+                Feel::cout << "URL/HTTP uploads are not supported. Use Girder or CKAN for upload operations.\n";
+            }
+            else
+            {
+                Feel::cout << "invalid upload - platform may not support uploads or configuration is incorrect\n";
+            }
             return 0;
         }
         if ( !Environment::vm().count("data") )
@@ -106,7 +118,19 @@ int main( int argc, char** argv )
     else if ( Environment::vm().count("contents") )
     {
         RemoteData rd( soption(_name="contents") );
-        auto res = rd.contents();
+        
+        // Create progress reporter based on debug settings
+        RemoteDataProgress::Level level = RemoteDataProgress::Level::NORMAL;
+        if ( Environment::vm().count("quiet") )
+            level = RemoteDataProgress::Level::QUIET;
+        else if ( Environment::vm().count("verbose") )
+            level = RemoteDataProgress::Level::VERBOSE;
+        else if ( Environment::vm().count("debug") )
+            level = RemoteDataProgress::Level::DEBUG;
+        
+        RemoteDataProgress progress( RemoteDataProgress::Operation::DOWNLOAD, level );
+        auto res = rd.contents( progress );
+        
         for ( auto const& folderInfo : std::get<0>( res ) )
             std::cout << "-------------------------------------------------------\n"
                       << folderInfo->print().str() << "\n";

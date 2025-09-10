@@ -605,6 +605,8 @@ bool RemoteData::canUpload() const
         return true;
     else if ( M_ckan && M_ckan->canUpload() )
         return true;
+    else if ( M_github && M_github->canUpload() )
+        return true;  // This will always be false for GitHub
     return false;
 }
 
@@ -734,6 +736,16 @@ RemoteData::contents() const
     return ContentsInfo{ std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(), std::vector<std::shared_ptr<ItemInfo>>(), std::vector<std::shared_ptr<FileInfo>>() ) };
 }
 
+RemoteData::ContentsInfo
+RemoteData::contents( RemoteDataProgress& progress ) const
+{
+    if ( M_girder && M_girder->isInit() )
+        return ContentsInfo{ M_girder->contents( progress ) };
+    else if ( M_ckan && M_ckan->isInit() )
+        return ContentsInfo{ M_ckan->contents() };
+    return ContentsInfo{ std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(), std::vector<std::shared_ptr<ItemInfo>>(), std::vector<std::shared_ptr<FileInfo>>() ) };
+}
+
 std::vector<std::string>
 RemoteData::listOrganizations() const
 {
@@ -802,23 +814,79 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
 
     if ( M_worldComm->isMasterRank() )
     {
+        // Determine progress level
+        RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+        if (Environment::vm().count("quiet")) {
+            progressLevel = RemoteDataProgress::Level::QUIET;
+        } else if (Environment::vm().count("debug")) {
+            progressLevel = RemoteDataProgress::Level::DEBUG;
+        } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+            progressLevel = RemoteDataProgress::Level::VERBOSE;
+        }
+        
+        RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+        
         if ( !fs::exists( dir ) )
             fs::create_directories( dir );
+
+        progress.startOperation("Downloading URL: " + url);
 
         std::ofstream ofile( thefilename, std::ios::out | std::ios::binary );
         /* open the file */
         if ( ofile )
         {
-            StatusRequestHTTP status = requestDownloadURL( url, ofile );
-            if ( !status.success() )
-                std::cout << "Download error : " << status.msg() << "\n";
-            if ( status.code() != 200 ) // is it really true for all type http,ftp,... ???
-                std::cout << "Download error : returned code " << status.code() << "\n";
+            if (progress.isVerbose() || progress.isDebug()) {
+                // Use progress-enabled download
+                auto progressCallback = [&progress](const std::string& filename, std::streamsize transferred, std::streamsize total) {
+                    if (progress.isVerbose()) {
+                        progress.updateProgress(transferred, total);
+                    }
+                };
+                
+                StatusRequestHTTP status = requestHTTPGETWithProgress(url, {}, ofile, filename, progressCallback);
+                if ( !status.success() )
+                {
+                    progress.error("Download error: " + status.msg());
+                }
+                if ( status.code() != 200 )
+                {
+                    progress.error("Download error: returned code " + std::to_string(status.code()));
+                }
+                else if (progress.isNormal() || progress.isVerbose())
+                {
+                    progress.completeFile(filename);
+                }
+            } else {
+                // Use standard download for normal/quiet mode
+                StatusRequestHTTP status = requestDownloadURL( url, ofile );
+                if ( !status.success() )
+                {
+                    if (!progress.isQuiet()) {
+                        std::cout << "Download error : " << status.msg() << "\n";
+                    }
+                }
+                if ( status.code() != 200 )
+                {
+                    if (!progress.isQuiet()) {
+                        std::cout << "Download error : returned code " << status.code() << "\n";
+                    }
+                }
+                else if (progress.isNormal())
+                {
+                    progress.completeFile(filename);
+                }
+            }
 
             ofile.close();
         }
         else
-            std::cout << "Download error : failure when create file  " << thefilename << "\n";
+        {
+            progress.error("Download error: failure when create file " + thefilename);
+        }
+        
+        if (progress.isNormal() || progress.isVerbose()) {
+            progress.completeOperation();
+        }
     }
 
     M_worldComm->barrier();
