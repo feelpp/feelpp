@@ -69,7 +69,7 @@ aGradGrad( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
     auto mesh_=Xh->mesh();
     if ( markers.empty() )
     {
-        LOG( INFO ) << fmt::format( "assemble grad.grad on all elements with coeffs: {}", coeffs );
+        LOG( INFO ) << fmt::format( "assemble grad.grad on all elements with coeffs: {}", fmt::streamed(coeffs) );
             a += integrate( _range = elements( support( Xh ) ),
                             _expr = trans(constant<XhT::nDim,XhT::nDim>(coeffs) * trans(gradt( u_ ))) * trans(grad( v_ )) );
     }
@@ -77,7 +77,7 @@ aGradGrad( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
     {
         for( auto marker : markers )
         {
-            LOG( INFO ) << fmt::format( "assemble grad.grad on marker {} with coeffs: {}", marker, coeffs );
+            LOG( INFO ) << fmt::format( "assemble grad.grad on marker {} with coeffs: {}", fmt::streamed(marker), fmt::streamed(coeffs) );
             a += integrate( _range = markedelements( support( Xh ), marker ),
                             _expr = trans(constant<XhT::nDim,XhT::nDim>(coeffs) * trans(gradt( u_ ))) * trans(grad( v_ )) );
         }
@@ -99,13 +99,13 @@ mass( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
     {
         if ( boundary )
         {
-            LOG( INFO ) << fmt::format( "assemble mass on all boundary faces with coeff: {}", coeff );
+            LOG( INFO ) << fmt::format( "assemble mass on all boundary faces with coeff: {}", fmt::streamed(coeff) );
             a += integrate( _range = boundaryfaces( support( Xh ) ),
                             _expr = coeff * idt( u_ ) * id( v_ ) );
         }
         else
         {
-            LOG( INFO ) << fmt::format( "assemble mass on all elements with coeff: {}", coeff );
+            LOG( INFO ) << fmt::format( "assemble mass on all elements with coeff: {}", fmt::streamed(coeff) );
             a += integrate( _range = elements( support( Xh ) ),
                             _expr = coeff * idt( u_ ) * id( v_ ) );
         }
@@ -116,13 +116,13 @@ mass( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
         {
             if ( mesh_->markerNames().at(marker)[1] == XhT::nDim )
             {
-                LOG( INFO ) << fmt::format( "assemble mass on volume marker {} with coeff: {}", marker, coeff );
+                LOG( INFO ) << fmt::format( "assemble mass on volume marker {} with coeff: {}", fmt::streamed(marker), fmt::streamed(coeff) );
                 a += integrate( _range = markedelements( support( Xh ), marker ),
                             _expr = coeff * idt( u_ ) * id( v_ ) );
             }
             else if ( mesh_->markerNames().at(marker)[1] == XhT::nDim-1 )
             {
-                LOG( INFO ) << fmt::format( "assemble mass on face marker {} with coeff: {}", marker, coeff );
+                LOG( INFO ) << fmt::format( "assemble mass on face marker {} with coeff: {}", fmt::streamed(marker), fmt::streamed(coeff) );
                 a += integrate( _range = markedfaces( support( Xh ), marker ),
                             _expr = coeff * idt( u_ ) * id( v_ ) );
             }
@@ -145,13 +145,13 @@ advect( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
     {
         if ( boundary )
         {
-            LOG( INFO ) << fmt::format( "assemble advect on all boundary faces with beta: {}", beta );
+            LOG( INFO ) << fmt::format( "assemble advect on all boundary faces with beta: {}", fmt::streamed(beta) );
             a += integrate( _range = boundaryfaces( support( Xh ) ),
                             _expr =  (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
         }
         else
         {
-            LOG( INFO ) << fmt::format( "assemble advect on all elements with beta: {}", beta );
+            LOG( INFO ) << fmt::format( "assemble advect on all elements with beta: {}", fmt::streamed(beta) );
             a += integrate( _range = elements( support( Xh ) ),
                             _expr = (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
         }
@@ -162,13 +162,13 @@ advect( std::shared_ptr<XhT> const& Xh, std::shared_ptr<YhT> const& Yh,
         {
             if ( mesh_->markerNames().at(marker)[1] == XhT::nDim )
             {
-                LOG( INFO ) << fmt::format( "assemble advect on volume marker {} with beta: {}", marker, beta );
+                LOG( INFO ) << fmt::format( "assemble advect on volume marker {} with beta: {}", fmt::streamed(marker), fmt::streamed(beta) );
                 a += integrate( _range = markedelements( support( Xh ), marker ),
                             _expr = (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
             }
             else if ( mesh_->markerNames().at(marker)[1] == XhT::nDim-1 )
             {
-                LOG( INFO ) << fmt::format( "assemble advec on face marker {} with beta: {}", marker, beta );
+                LOG( INFO ) << fmt::format( "assemble advect on face marker {} with beta: {}", fmt::streamed(marker), fmt::streamed(beta) );
                 a += integrate( _range = markedfaces( support( Xh ), marker ),
                             _expr = (gradt( u_ ) * constant<XhT::nDim,1>(beta)) * id( v_ ) );
             }

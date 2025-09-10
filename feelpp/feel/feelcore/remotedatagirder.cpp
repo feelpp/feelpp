@@ -203,7 +203,7 @@ void RemoteDataProgress::debug(const std::string& message) const
 #include <boost/algorithm/string.hpp>
 #include <cpr/cpr.h>
 #include <feel/feelcore/remotedata.hpp>
-#include <feel/feelcore/zip.hpp>
+#include <zip.h>
 #include <fstream>
 #include <regex>
 
@@ -393,7 +393,7 @@ Feel::RemoteData::Girder::download( const std::string& dir, const std::string& p
     nl::json resourceInfo;
     try
     {
-        resourceInfo = resourceLookup( path, token );
+        resourceInfo = resourceLookup( path, token, progress );
     }
     catch ( const std::exception& e )
     {
@@ -884,52 +884,83 @@ Feel::RemoteData::Girder::extractZipWithProgress(const std::string& zipFilePath,
         fs::create_directories(extractPath);
     }
     
-    // Use the existing Feel++ extractZipFile function
-    bool extractionSuccess = extractZipFile(zipFilePath, extractDir);
+    // Custom ZIP extraction implementation to avoid stdout spam
+    zip* archive = zip_open(zipFilePath.c_str(), 0, nullptr);
+    if (!archive) {
+        progress.debug("Error: Could not open ZIP file: " + zipFilePath);
+        return extractedFiles;
+    }
     
-    if (extractionSuccess) {
-        // Successfully extracted, now enumerate the extracted files
-        if (progress.isVerbose()) {
-            progress.debug("✓ Extracted ZIP contents from " + zipName);
+    int numEntries = zip_get_num_entries(archive, 0);
+    if (progress.isVerbose()) {
+        progress.debug(fmt::format("ZIP contains {} entries", numEntries));
+    }
+    
+    // Extract each file with our own progress reporting
+    for (int i = 0; i < numEntries; ++i) {
+        const char* entryName = zip_get_name(archive, i, 0);
+        if (!entryName) {
+            continue;
         }
         
-        // Recursively find all extracted files
-        for (const auto& entry : fs::recursive_directory_iterator(extractDir)) {
-            if (entry.is_regular_file()) {
-                std::string extractedFile = entry.path().string();
-                // Skip the original ZIP file and metadata files
-                if (extractedFile != zipFilePath && 
-                    (extractedFile.size() < 14 || extractedFile.substr(extractedFile.size() - 14) != ".metadata.json")) {
-                    extractedFiles.push_back(extractedFile);
-                    
-                    // Get relative path for better display
-                    fs::path relativePath = fs::relative(entry.path(), extractPath);
-                    std::streamsize fileSize = fs::file_size(entry.path());
-                    
-                    if (progress.isVerbose()) {
-                        progress.debug(fmt::format("  └─ {} ({})", 
-                                                relativePath.string(), 
-                                                progress.formatSize(fileSize)));
-                    }
-                }
+        fs::path extractionPath = extractPath / fs::path(entryName);
+        
+        // Check if it's a directory
+        struct zip_stat st;
+        zip_stat_index(archive, i, 0, &st);
+        bool isDirectory = (st.name[strlen(st.name) - 1] == '/');
+        
+        if (isDirectory) {
+            if (progress.isVerbose()) {
+                progress.debug(fmt::format("  Creating directory: {}", entryName));
             }
+            fs::create_directories(extractionPath);
+            continue;
         }
         
-        // Clean up the ZIP file after successful extraction
-        if (fs::exists(zipFilePath)) {
-            fs::remove(zipFilePath);
-            if (progress.showDebugOutput()) {
-                progress.debug("Removed ZIP file: " + zipFilePath);
-            }
-        }
-        
+        // Extract file with progress feedback
         if (progress.isVerbose()) {
-            progress.debug(fmt::format("✓ Extracted {} files from {}", extractedFiles.size(), zipName));
+            progress.debug(fmt::format("  Extracting: {} ({})", entryName, progress.formatSize(st.size)));
         }
-    } else {
-        progress.error("Failed to extract ZIP file: " + zipFilePath);
-        // Return the ZIP file path as fallback
-        extractedFiles.push_back(zipFilePath);
+        
+        zip_file* file = zip_fopen_index(archive, i, 0);
+        if (!file) {
+            continue;
+        }
+        
+        fs::create_directories(extractionPath.parent_path());
+        std::ofstream outFile(extractionPath, std::ios::binary);
+        if (!outFile) {
+            zip_fclose(file);
+            continue;
+        }
+        
+        // Extract file content
+        zip_int64_t bytesRead;
+        char buf[8192];
+        while ((bytesRead = zip_fread(file, buf, sizeof(buf))) > 0) {
+            outFile.write(buf, bytesRead);
+        }
+        
+        outFile.close();
+        zip_fclose(file);
+        
+        // Add to extracted files list
+        extractedFiles.push_back(extractionPath.string());
+    }
+    
+    zip_close(archive);
+    
+    if (progress.isVerbose()) {
+        progress.debug(fmt::format("✓ Successfully extracted {} files from {}", extractedFiles.size(), zipName));
+    }
+    
+    // Clean up the ZIP file after successful extraction
+    if (fs::exists(zipFilePath)) {
+        fs::remove(zipFilePath);
+        if (progress.showDebugOutput()) {
+            progress.debug("Removed ZIP file: " + zipFilePath);
+        }
     }
     
     return extractedFiles;
@@ -1242,6 +1273,10 @@ std::vector<std::string>
 Feel::RemoteData::Girder::upload(const std::string& dataPath, const std::string& destination, bool sync) const
 {
     auto res = this->upload(std::vector<std::pair<std::string, std::string>>(1, std::make_pair(dataPath, destination)), sync);
+    if (res.empty()) {
+        // Return empty vector if upload failed
+        return std::vector<std::string>();
+    }
     CHECK(res.size() == 1) << "Wrong size " << res.size() << " : must be 1";
     return res[0];
 }
@@ -1252,7 +1287,22 @@ Feel::RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::s
     if (dataToUpload.empty())
         return {};
 
-    CHECK(canUpload()) << "Authentication unavailable";
+    if (!canUpload()) {
+        // Create progress reporter to show error message
+        RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+        if (Environment::vm().count("quiet"))
+            progressLevel = RemoteDataProgress::Level::QUIET;
+        else if (Environment::vm().count("debug"))
+            progressLevel = RemoteDataProgress::Level::DEBUG;
+        else if (Environment::vm().count("verbose") || Environment::vm().count("progress"))
+            progressLevel = RemoteDataProgress::Level::VERBOSE;
+        
+        RemoteDataProgress progress(RemoteDataProgress::Operation::UPLOAD, progressLevel);
+        progress.startOperation("Girder", fmt::format("{} items", dataToUpload.size()));
+        progress.error("Authentication unavailable - invalid upload - platform may not support uploads or configuration is incorrect");
+        progress.completeOperation();
+        return {};
+    }
 
     // Create progress reporter based on command-line options
     RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
@@ -1294,6 +1344,13 @@ Feel::RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::s
                 destination = *M_folderIds.begin();
             }
             
+            // If destination is still empty, check if we have a path from the descriptor
+            if (destination.empty() && !M_path.empty())
+            {
+                destination = M_path;
+                progress.debug(fmt::format("Using path from descriptor: '{}'", destination));
+            }
+            
             // If destination is still empty, we can't proceed
             if (destination.empty())
             {
@@ -1308,7 +1365,7 @@ Feel::RemoteData::Girder::upload(const std::vector<std::pair<std::string, std::s
                 nl::json resourceInfo;
                 try
                 {
-                    resourceInfo = resourceLookup(destination, token);
+                    resourceInfo = resourceLookup(destination, token, progress);
                 }
                 catch (const std::exception& e)
                 {
@@ -2459,6 +2516,23 @@ void Feel::RemoteData::Girder::removeToken( std::string const& token ) const
 std::tuple<std::vector<std::shared_ptr<Feel::RemoteData::FolderInfo>>, std::vector<std::shared_ptr<Feel::RemoteData::ItemInfo>>, std::vector<std::shared_ptr<Feel::RemoteData::FileInfo>>>
 Feel::RemoteData::Girder::contents() const
 {
+    // Determine progress level for debug output
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet")) {
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    } else if (Environment::vm().count("debug")) {
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    }
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+    return contents( progress );
+}
+
+std::tuple<std::vector<std::shared_ptr<Feel::RemoteData::FolderInfo>>, std::vector<std::shared_ptr<Feel::RemoteData::ItemInfo>>, std::vector<std::shared_ptr<Feel::RemoteData::FileInfo>>>
+Feel::RemoteData::Girder::contents( RemoteDataProgress& progress ) const
+{
     auto res = std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(),
                                 std::vector<std::shared_ptr<ItemInfo>>(),
                                 std::vector<std::shared_ptr<FileInfo>>() );
@@ -2468,6 +2542,46 @@ Feel::RemoteData::Girder::contents() const
         std::string token = M_token;
         if ( M_token.empty() && !M_apiKey.empty() )
             token = this->createToken();
+
+        // Handle path-based resource lookup first
+        if ( !M_path.empty() )
+        {
+            try
+            {
+                progress.startOperation("Looking up resource path: " + M_path);
+                nl::json resourceInfo = resourceLookup( M_path, token, progress );
+                
+                if ( resourceInfo.contains("_modelType") )
+                {
+                    std::string modelType = resourceInfo["_modelType"].get<std::string>();
+                    std::string resourceId = resourceInfo["_id"].get<std::string>();
+                    
+                    if ( modelType == "folder" )
+                    {
+                        auto resFolder = folderContentsImpl( resourceId, token );
+                        if ( resFolder )
+                            std::get<0>( res ).push_back( resFolder );
+                    }
+                    else if ( modelType == "item" )
+                    {
+                        auto resItem = itemInfoImpl( resourceId, token );
+                        if ( resItem )
+                            std::get<1>( res ).push_back( resItem );
+                    }
+                    else if ( modelType == "file" )
+                    {
+                        auto resFile = fileInfoImpl( resourceId, token );
+                        if ( resFile )
+                            std::get<2>( res ).push_back( resFile );
+                    }
+                }
+                progress.completeOperation();
+            }
+            catch ( const std::exception& e )
+            {
+                progress.error("Path lookup failed: " + std::string(e.what()));
+            }
+        }
 
         for ( std::string const& folderId : M_folderIds )
         {
@@ -2794,6 +2908,24 @@ void Feel::RemoteData::Girder::updateFilesImpl( std::shared_ptr<Feel::RemoteData
 Feel::nl::json
 Feel::RemoteData::Girder::resourceLookup( const std::string& path, const std::string& token ) const
 {
+    // Determine progress level from environment
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet")) {
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    } else if (Environment::vm().count("debug")) {
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    }
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+    
+    return resourceLookup(path, token, progress);
+}
+
+Feel::nl::json
+Feel::RemoteData::Girder::resourceLookup( const std::string& path, const std::string& token, const RemoteDataProgress& progress ) const
+{
     // Construct the URL
     std::string url = fmt::format( "{}/api/v1/resource/lookup", M_url);
 
@@ -2804,23 +2936,69 @@ Feel::RemoteData::Girder::resourceLookup( const std::string& path, const std::st
     {
         headers["Girder-Token"] = token;
     }
-    //std::cout << fmt::format( "Resource lookup: {}, path; {}", url, path ) << std::endl;
+
+    if (progress.showDebugOutput()) {
+        progress.debug(fmt::format("Resource lookup URL: {}", url));
+        progress.debug(fmt::format("Resource lookup path: {}", path));
+        if (!token.empty()) {
+            progress.debug(fmt::format("Using authentication token: {}...", token.substr(0, 8)));
+        } else {
+            progress.debug("No authentication token provided");
+        }
+    }
+
     // Make the GET request
     cpr::Response res = cpr::Get(
         cpr::Url{url},
-        cpr::Parameters{{"path", path}}
-        // If authentication is needed:
-        , headers
+        cpr::Parameters{{"path", path}},
+        headers,
+        cpr::VerifySsl{false}
     );
+
+    if (progress.isVerbose()) {
+        progress.debug(fmt::format("Resource lookup response: HTTP {}", res.status_code));
+    }
 
     if ( res.status_code != 200 )
     {
-        LOG(INFO) << fmt::format( "Failed to lookup resource: HTTP {}", res.status_code );
+        std::string errorMsg = fmt::format("Failed to lookup resource '{}': HTTP {}", path, res.status_code);
+        
+        // Try to parse error response for more details
+        if (!res.text.empty()) {
+            try {
+                nl::json errorResponse = nl::json::parse(res.text);
+                if (errorResponse.contains("message")) {
+                    errorMsg += fmt::format(" - {}", errorResponse["message"].get<std::string>());
+                }
+            } catch (const std::exception& e) {
+                // Error response is not JSON, use raw text
+                if (progress.showDebugOutput()) {
+                    progress.debug(fmt::format("Raw error response: {}", res.text));
+                }
+            }
+        }
+        
+        if (!progress.isQuiet()) {
+            progress.error(errorMsg);
+        }
+        
+        LOG(INFO) << errorMsg;
         return {};
     }
 
     // Parse the JSON response
     nl::json jsonResponse = nl::json::parse( res.text );
+
+    if (progress.showDebugOutput()) {
+        progress.debug("Resource lookup successful:");
+        progress.debug(jsonResponse.dump(2));
+    } else if (progress.isVerbose()) {
+        // Show basic info in verbose mode
+        std::string resourceType = jsonResponse.value("_modelType", "unknown");
+        std::string resourceId = jsonResponse.value("_id", "unknown");
+        std::string resourceName = jsonResponse.value("name", "unknown");
+        progress.debug(fmt::format("Found resource: {} '{}' (ID: {})", resourceType, resourceName, resourceId));
+    }
 
     return jsonResponse;
 }
