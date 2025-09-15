@@ -616,7 +616,7 @@ if(FEELPP_ENABLE_PYTHON)
       COMMAND ${Python3_EXECUTABLE} -c
         "
 import sys, sysconfig
-base = '/home/feelpp/feelpp/install/feelpp'
+base = '${CMAKE_INSTALL_PREFIX}'
 try:
     # Python ≥3.12 (preferred)
     print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
