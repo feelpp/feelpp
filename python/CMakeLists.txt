@@ -79,6 +79,28 @@ message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
 message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")
 message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
 
+# When building the Python component standalone against an existing Feel++
+# installation, FEELPP_PYTHON_MODULE_PATH comes from the installed
+# Feel++Config.cmake and may be baked for a different prefix (often
+# "local/lib/..." relative to "/usr"). For packaging, honor an explicit
+# PYTHON_SITE_PACKAGES override and otherwise recompute the module path
+# for the current CMAKE_INSTALL_PREFIX using Python's sysconfig.
+if (DEFINED PYTHON_SITE_PACKAGES)
+  set(FEELPP_PYTHON_MODULE_PATH "${PYTHON_SITE_PACKAGES}" CACHE STRING "Python module install path" FORCE)
+elseif (DEFINED FEELPP_PYTHON_MODULE_PATH)
+  if (FEELPP_PYTHON_MODULE_PATH MATCHES "^local/")
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} -c
+        "import sys, sysconfig; base='${CMAKE_INSTALL_PREFIX}'; print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))"
+      OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if (NOT "${_ABS_PYTHON_MODULE_PATH}" STREQUAL "")
+      get_filename_component(_ABS_PYTHON_MODULE_PATH "${_ABS_PYTHON_MODULE_PATH}" ABSOLUTE)
+      file(RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH "${CMAKE_INSTALL_PREFIX}" "${_ABS_PYTHON_MODULE_PATH}")
+    endif()
+  endif()
+endif()
+
 if ( FEELPP_HAS_PYTHON )
   message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
   find_package(MPI4PY REQUIRED)
