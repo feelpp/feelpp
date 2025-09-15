@@ -212,14 +212,16 @@ namespace Feel
 Feel::RemoteData::Girder::Girder( std::string const& desc, WorldComm& worldComm )
     : M_worldComm( worldComm.shared_from_this() )
 {
-    std::regex ex("([ ]*)girder([ ]*):([ ]*)([{])([^]*)([}])");
+    // Robustly parse strings like: "girder:{key:value,...}"
+    // Use a simple, safe regex that captures the JSON-like body between the braces
+    std::regex ex(R"(^\s*girder\s*:\s*\{([^}]*)\}\s*$)");
     std::cmatch what;
-    if( !regex_match(desc.c_str(), what, ex) )
+    if (!std::regex_match(desc.c_str(), what, ex))
         return;
 
-    CHECK( what.size() == 7 ) << "invalid size";
+    // what[1] contains the content inside the braces
     std::vector<std::string> keysvalues;
-    std::string exprtosplit = std::string(what[5].first, what[5].second);
+    std::string exprtosplit = std::string(what[1].first, what[1].second);
     //std::cout << fmt::format( "exprtosplit: {}", exprtosplit ) << "\n";
     auto resConvertion = convertDescToJson( exprtosplit );
     if ( !resConvertion.first )

@@ -27,4 +27,34 @@ foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf forms measu
 endforeach()
 
 set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py plotly.py forms.py )
+
+# Copy all .py files to build directory for testing without install
+add_custom_target(copy_pyfiles_to_build ALL)
+
+# Copy the configured __init__.py file
+add_custom_command(
+  TARGET copy_pyfiles_to_build POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/python/pyfeelpp/feelpp/core
+  COMMAND ${CMAKE_COMMAND} -E copy
+          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+          ${CMAKE_BINARY_DIR}/python/pyfeelpp/feelpp/core/__init__.py
+)
+
+foreach(PYFILE ${PYFILES})
+  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${PYFILE})
+    add_custom_command(
+      TARGET copy_pyfiles_to_build POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/python/pyfeelpp/feelpp/core
+      COMMAND ${CMAKE_COMMAND} -E copy
+              ${CMAKE_CURRENT_SOURCE_DIR}/${PYFILE}
+              ${CMAKE_BINARY_DIR}/python/pyfeelpp/feelpp/core/${PYFILE}
+    )
+  endif()
+endforeach()
+
+# Ensure .py files are copied after modules are built
+foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf forms measure models integrate interpolation operators quality timing meshmover plot)
+  add_dependencies(copy_pyfiles_to_build _${MODULE})
+endforeach()
+
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/core)
