@@ -54,6 +54,7 @@ A case name of the case can be given as an argument, to save data in a subdirect
 | local-dir | local path where files are copied              | feel directory / server name
 | casename  | name of the case synchronized                  | ""
 | vb        | display rsync log                              | 0
+| skip-h5   | skip files at h5 format                        | 0
 |===
 
 == EXAMPLES
@@ -84,5 +85,5 @@ feelpp_sync_case --dir /home/user/feel/toolboxes/heatfluid/ForcedConvection/Ture
 
 == COPYING
 
-Copyright \(C) 2022 {feelpp} Consortium. +
+Copyright \(C) 2022-2025 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
