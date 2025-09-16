@@ -46,12 +46,14 @@ var searchData=
   ['globalreduce_43',['globalReduce',['../namespaceFeel.html#a33e95fb4a450969631ae2b11bcb05da4',1,'Feel']]],
   ['globalroot_44',['globalRoot',['../classFeel_1_1Repository.html#adaf5c7944cc0b208504e0cf2f83d5003',1,'Feel::Repository']]],
   ['globaltolocal_45',['globalToLocal',['../classFeel_1_1DofTable.html#ab2116c54d2185858f2b38da37c007aca',1,'Feel::DofTable']]],
-  ['gm_46',['gm',['../classFeel_1_1Mesh.html#ae60d8d5b182524a34df968aa7b0cc2e2',1,'Feel::Mesh::gm() const'],['../classFeel_1_1Mesh.html#a761e8973d10c9071b9fd632b20c5d640',1,'Feel::Mesh::gm()'],['../classFeel_1_1FunctionSpace.html#a9602f7a5930b12884121c03322954d08',1,'Feel::FunctionSpace::gm()'],['../classFeel_1_1GeoND.html#aa8890808b8b9c91fea90965fee08853e',1,'Feel::GeoND::gm()']]],
+  ['gm_46',['gm',['../classFeel_1_1Mesh.html#a761e8973d10c9071b9fd632b20c5d640',1,'Feel::Mesh::gm()'],['../classFeel_1_1Mesh.html#ae60d8d5b182524a34df968aa7b0cc2e2',1,'Feel::Mesh::gm() const'],['../classFeel_1_1FunctionSpace.html#a9602f7a5930b12884121c03322954d08',1,'Feel::FunctionSpace::gm()'],['../classFeel_1_1GeoND.html#aa8890808b8b9c91fea90965fee08853e',1,'Feel::GeoND::gm()']]],
   ['gm1_47',['gm1',['../classFeel_1_1Mesh.html#a1dbccf4dbeac44a2f0a95b61d0fbb9f9',1,'Feel::Mesh::gm1()'],['../classFeel_1_1Mesh.html#a0a990a27fa7b2048ab505a19b71dd0ff',1,'Feel::Mesh::gm1() const'],['../classFeel_1_1FunctionSpace.html#ae819c04ff6a2f4d39651912b8d6bdf71',1,'Feel::FunctionSpace::gm1()'],['../classFeel_1_1GeoND.html#ac931cf0d42140a603e81cefaf74274d4',1,'Feel::GeoND::gm1()']]],
-  ['godrank_48',['godRank',['../classFeel_1_1WorldComm.html#ac201d83fde370eb11165503973bc19d0',1,'Feel::WorldComm']]],
-  ['grad_49',['grad',['../classFeel_1_1FunctionSpace_1_1Element.html#a92091b2347bda703c61f2cdfba289960',1,'Feel::FunctionSpace::Element']]],
-  ['grad_5f_50',['grad_',['../classFeel_1_1FunctionSpace_1_1Element.html#ae958b3881ab8780f3dcff0e04abd128f',1,'Feel::FunctionSpace::Element']]],
-  ['gradedfromls_51',['gradedfromls',['../namespaceFeel.html#ae16df60e04cea82d896c615630ac4197',1,'Feel']]],
-  ['grisu2_5fdigit_5fgen_52',['grisu2_digit_gen',['../namespacenlohmann_1_1detail_1_1dtoa__impl.html#a9b899c72b0e1e3dd46d75c2b4e6bcdfb',1,'nlohmann::detail::dtoa_impl']]],
-  ['gtag_53',['gTag',['../classFeel_1_1Geo0D.html#aa3738da6a03a077f15d3c4eac8260b79',1,'Feel::Geo0D']]]
+  ['gmtimefrom_48',['gmtimeFrom',['../namespaceFeel.html#a97601b408c9394658593a50533885676',1,'Feel']]],
+  ['gmtimenow_49',['gmtimeNow',['../namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54',1,'Feel']]],
+  ['godrank_50',['godRank',['../classFeel_1_1WorldComm.html#ac201d83fde370eb11165503973bc19d0',1,'Feel::WorldComm']]],
+  ['grad_51',['grad',['../classFeel_1_1FunctionSpace_1_1Element.html#a92091b2347bda703c61f2cdfba289960',1,'Feel::FunctionSpace::Element']]],
+  ['grad_5f_52',['grad_',['../classFeel_1_1FunctionSpace_1_1Element.html#ae958b3881ab8780f3dcff0e04abd128f',1,'Feel::FunctionSpace::Element']]],
+  ['gradedfromls_53',['gradedfromls',['../namespaceFeel.html#ae16df60e04cea82d896c615630ac4197',1,'Feel']]],
+  ['grisu2_5fdigit_5fgen_54',['grisu2_digit_gen',['../namespacenlohmann_1_1detail_1_1dtoa__impl.html#a9b899c72b0e1e3dd46d75c2b4e6bcdfb',1,'nlohmann::detail::dtoa_impl']]],
+  ['gtag_55',['gTag',['../classFeel_1_1Geo0D.html#aa3738da6a03a077f15d3c4eac8260b79',1,'Feel::Geo0D']]]
 ];

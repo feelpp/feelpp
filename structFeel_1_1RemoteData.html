@@ -152,6 +152,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac66c1817dcd1b6e4695cae5fbd9bd147"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1RemoteData_1_1ContentsInfo.html">ContentsInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#ac66c1817dcd1b6e4695cae5fbd9bd147">contents</a> () const</td></tr>
 <tr class="memdesc:ac66c1817dcd1b6e4695cae5fbd9bd147"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get contents of remote data (folder, item, file)  <a href="structFeel_1_1RemoteData.html#ac66c1817dcd1b6e4695cae5fbd9bd147">More...</a><br /></td></tr>
 <tr class="separator:ac66c1817dcd1b6e4695cae5fbd9bd147"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97882d37572879fb029684d54304628d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1RemoteData_1_1ContentsInfo.html">ContentsInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#a97882d37572879fb029684d54304628d">contents</a> (<a class="el" href="classFeel_1_1RemoteDataProgress.html">RemoteDataProgress</a> &amp;progress) const</td></tr>
+<tr class="memdesc:a97882d37572879fb029684d54304628d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get contents of remote data (folder, item, file) with progress reporting.  <a href="structFeel_1_1RemoteData.html#a97882d37572879fb029684d54304628d">More...</a><br /></td></tr>
+<tr class="separator:a97882d37572879fb029684d54304628d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ca2ff65f2fa9a48eb60a79e54933cf6"><td class="memItemLeft" align="right" valign="top"><a id="a9ca2ff65f2fa9a48eb60a79e54933cf6" name="a9ca2ff65f2fa9a48eb60a79e54933cf6"></a>
 <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>createDataset</b> (const std::string &amp;datasetName) const</td></tr>
 <tr class="separator:a9ca2ff65f2fa9a48eb60a79e54933cf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -167,9 +170,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a67f7a15e878b3dc4cc9f0ec242d0e0bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#a67f7a15e878b3dc4cc9f0ec242d0e0bc">deleteResource</a> (const <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> &amp;resourceId, const std::string &amp;token=&quot;&quot;) const</td></tr>
 <tr class="memdesc:a67f7a15e878b3dc4cc9f0ec242d0e0bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a resource by id.  <a href="structFeel_1_1RemoteData.html#a67f7a15e878b3dc4cc9f0ec242d0e0bc">More...</a><br /></td></tr>
 <tr class="separator:a67f7a15e878b3dc4cc9f0ec242d0e0bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7fae3ebc87c716661f904f47fc5617d5"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#a7fae3ebc87c716661f904f47fc5617d5">download</a> (std::string const &amp;dir, std::string const &amp;filename, <a class="el" href="classint.html">int</a> timeout) const</td></tr>
+<tr class="memdesc:a7fae3ebc87c716661f904f47fc5617d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download the file with timeout.  <a href="structFeel_1_1RemoteData.html#a7fae3ebc87c716661f904f47fc5617d5">More...</a><br /></td></tr>
+<tr class="separator:a7fae3ebc87c716661f904f47fc5617d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7aca8c7d3f15edf5032c0d1bb4403ae"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#ae7aca8c7d3f15edf5032c0d1bb4403ae">download</a> (std::string const &amp;dir=<a class="el" href="classFeel_1_1Environment.html#ae42b6f934fb8fb12d4b8d45c9b5b380e">Environment::downloadsRepository</a>(), std::string const &amp;filename=&quot;&quot;) const</td></tr>
 <tr class="memdesc:ae7aca8c7d3f15edf5032c0d1bb4403ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download the file.  <a href="structFeel_1_1RemoteData.html#ae7aca8c7d3f15edf5032c0d1bb4403ae">More...</a><br /></td></tr>
 <tr class="separator:ae7aca8c7d3f15edf5032c0d1bb4403ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7ba2390d14d2a5f8226ca8497bfca97"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#ac7ba2390d14d2a5f8226ca8497bfca97">listOrganizations</a> () const</td></tr>
+<tr class="memdesc:ac7ba2390d14d2a5f8226ca8497bfca97"><td class="mdescLeft">&#160;</td><td class="mdescRight">List organizations available on the remote data platform (<a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a> only)  <a href="structFeel_1_1RemoteData.html#ac7ba2390d14d2a5f8226ca8497bfca97">More...</a><br /></td></tr>
+<tr class="separator:ac7ba2390d14d2a5f8226ca8497bfca97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7bf64bd71794cd448302f62e411370f"><td class="memItemLeft" align="right" valign="top"><a id="ae7bf64bd71794cd448302f62e411370f" name="ae7bf64bd71794cd448302f62e411370f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>RemoteData</b> (<a class="el" href="structFeel_1_1RemoteData.html">RemoteData</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:ae7bf64bd71794cd448302f62e411370f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,6 +204,9 @@ FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>RemoteDa
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;wc)</td></tr>
 <tr class="memdesc:add27428178a71cf639d02d79914ae00b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>. <br /></td></tr>
 <tr class="separator:add27428178a71cf639d02d79914ae00b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8204b0e53ee2102da1354dc148487505"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#a8204b0e53ee2102da1354dc148487505">upload</a> (std::string const &amp;dataPath, std::string const &amp;parentId, <a class="el" href="classbool.html">bool</a> sync, <a class="el" href="classint.html">int</a> timeout) const</td></tr>
+<tr class="memdesc:a8204b0e53ee2102da1354dc148487505"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload data on a remote storage with timeout.  <a href="structFeel_1_1RemoteData.html#a8204b0e53ee2102da1354dc148487505">More...</a><br /></td></tr>
+<tr class="separator:a8204b0e53ee2102da1354dc148487505"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3210c2403d750d708245a5dd0d5850a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html#ad3210c2403d750d708245a5dd0d5850a">upload</a> (std::string const &amp;dataPath, std::string const &amp;parentId=&quot;&quot;, <a class="el" href="classbool.html">bool</a> sync=true) const</td></tr>
 <tr class="memdesc:ad3210c2403d750d708245a5dd0d5850a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload data on a remote storage.  <a href="structFeel_1_1RemoteData.html#ad3210c2403d750d708245a5dd0d5850a">More...</a><br /></td></tr>
 <tr class="separator:ad3210c2403d750d708245a5dd0d5850a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -210,7 +222,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a 
 <div class="textblock"><p >Class which manages downloads from a <a class="el" href="classFeel_1_1RemoteData_1_1URL.html">URL</a> or GitHub and download/upload with the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> database by using libcurl. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="ac66c1817dcd1b6e4695cae5fbd9bd147" name="ac66c1817dcd1b6e4695cae5fbd9bd147"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac66c1817dcd1b6e4695cae5fbd9bd147">&#9670;&nbsp;</a></span>contents()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac66c1817dcd1b6e4695cae5fbd9bd147">&#9670;&nbsp;</a></span>contents() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -225,6 +237,35 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a 
 </div><div class="memdoc">
 
 <p>Get contents of remote data (folder, item, file) </p>
+<dl class="section return"><dt>Returns</dt><dd>: (Folders info, Items info, Files info) </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#ad0286b66db6b26b91513dd2c9dd1fd20">Feel::RemoteData::Girder::contents()</a>.</p>
+
+</div>
+</div>
+<a id="a97882d37572879fb029684d54304628d" name="a97882d37572879fb029684d54304628d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97882d37572879fb029684d54304628d">&#9670;&nbsp;</a></span>contents() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1RemoteData_1_1ContentsInfo.html">ContentsInfo</a> Feel::RemoteData::contents </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1RemoteDataProgress.html">RemoteDataProgress</a> &amp;&#160;</td>
+          <td class="paramname"><em>progress</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get contents of remote data (folder, item, file) with progress reporting. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">progress</td><td>: progress reporter for debug output </td></tr>
+  </table>
+  </dd>
+</dl>
 <dl class="section return"><dt>Returns</dt><dd>: (Folders info, Items info, Files info) </dd></dl>
 
 </div>
@@ -356,8 +397,53 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a 
 
 </div>
 </div>
+<a id="a7fae3ebc87c716661f904f47fc5617d5" name="a7fae3ebc87c716661f904f47fc5617d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fae3ebc87c716661f904f47fc5617d5">&#9670;&nbsp;</a></span>download() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::string &gt; Feel::RemoteData::download </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>timeout</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Download the file with timeout. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dir</td><td>: the directory where the file is downloaded </td></tr>
+    <tr><td class="paramname">filename</td><td>: the filename of the downloaded file </td></tr>
+    <tr><td class="paramname">timeout</td><td>: timeout in milliseconds for HTTP requests (default: 30000) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>: the path of the downloaded file </dd></dl>
+
+</div>
+</div>
 <a id="ae7aca8c7d3f15edf5032c0d1bb4403ae" name="ae7aca8c7d3f15edf5032c0d1bb4403ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7aca8c7d3f15edf5032c0d1bb4403ae">&#9670;&nbsp;</a></span>download()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7aca8c7d3f15edf5032c0d1bb4403ae">&#9670;&nbsp;</a></span>download() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -392,7 +478,27 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>: the path of the downloaded file </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#a8653cd5a4e77b02b67e406e205d959d9">Feel::RemoteData::Girder::download()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#aba925a92575942d6948275d06fbc4db8">Feel::RemoteData::Girder::download()</a>.</p>
+
+</div>
+</div>
+<a id="ac7ba2390d14d2a5f8226ca8497bfca97" name="ac7ba2390d14d2a5f8226ca8497bfca97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7ba2390d14d2a5f8226ca8497bfca97">&#9670;&nbsp;</a></span>listOrganizations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::string &gt; Feel::RemoteData::listOrganizations </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>List organizations available on the remote data platform (<a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a> only) </p>
+<dl class="section return"><dt>Returns</dt><dd>: vector of organization names </dd></dl>
 
 </div>
 </div>
@@ -499,8 +605,60 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a 
 
 </div>
 </div>
+<a id="a8204b0e53ee2102da1354dc148487505" name="a8204b0e53ee2102da1354dc148487505"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8204b0e53ee2102da1354dc148487505">&#9670;&nbsp;</a></span>upload() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::string &gt; Feel::RemoteData::upload </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>dataPath</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>parentId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>sync</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>timeout</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Upload data on a remote storage with timeout. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dataPath</td><td>: a path of a file or a folder </td></tr>
+    <tr><td class="paramname">parentId</td><td>: id where folder is created, empty means to use folder id in the desc </td></tr>
+    <tr><td class="paramname">sync</td><td>: apply MPI synchronization with returned infos (else only master rank has these infos) </td></tr>
+    <tr><td class="paramname">timeout</td><td>: timeout in milliseconds for HTTP requests (default: 30000) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>: vector of paths of the uploaded files or folders </dd></dl>
+
+</div>
+</div>
 <a id="ad3210c2403d750d708245a5dd0d5850a" name="ad3210c2403d750d708245a5dd0d5850a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3210c2403d750d708245a5dd0d5850a">&#9670;&nbsp;</a></span>upload() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3210c2403d750d708245a5dd0d5850a">&#9670;&nbsp;</a></span>upload() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -542,12 +700,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>: vector of paths of the uploaded files or folders </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#af0b51a0f238308da09027b7555196c2a">Feel::RemoteData::Girder::upload()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html#a8cb6cbd2c8bacb0381038144184a458b">Feel::RemoteData::CKAN::upload()</a>, and <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html#af0b51a0f238308da09027b7555196c2a">Feel::RemoteData::Girder::upload()</a>.</p>
 
 </div>
 </div>
 <a id="acb6595d6a4f64b1cc0180943ac33e094" name="acb6595d6a4f64b1cc0180943ac33e094"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acb6595d6a4f64b1cc0180943ac33e094">&#9670;&nbsp;</a></span>upload() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acb6595d6a4f64b1cc0180943ac33e094">&#9670;&nbsp;</a></span>upload() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

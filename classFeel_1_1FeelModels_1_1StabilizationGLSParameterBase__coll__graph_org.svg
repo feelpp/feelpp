@@ -231,7 +231,7 @@
 <text text-anchor="start" x="835.5" y="-525.5" font-family="Helvetica,sans-Serif" font-size="10.00">* periodicity()</text>
 <text text-anchor="start" x="835.5" y="-514.5" font-family="Helvetica,sans-Serif" font-size="10.00">* qDim()</text>
 <text text-anchor="start" x="835.5" y="-503.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nDof()</text>
-<text text-anchor="start" x="835.5" y="-492.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 75 more...</text>
+<text text-anchor="start" x="835.5" y="-492.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 76 more...</text>
 <text text-anchor="start" x="835.5" y="-481.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ComponentSpace</text>
 <text text-anchor="start" x="835.5" y="-470.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_functionspaces</text>
 <text text-anchor="start" x="835.5" y="-459.5" font-family="Helvetica,sans-Serif" font-size="10.00">* procDistMap</text>

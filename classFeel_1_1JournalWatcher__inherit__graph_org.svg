@@ -1569,7 +1569,7 @@
 <text text-anchor="start" x="3551" y="-982.5" font-family="Helvetica,sans-Serif" font-size="10.00">* periodicity()</text>
 <text text-anchor="start" x="3551" y="-971.5" font-family="Helvetica,sans-Serif" font-size="10.00">* qDim()</text>
 <text text-anchor="start" x="3551" y="-960.5" font-family="Helvetica,sans-Serif" font-size="10.00">* nDof()</text>
-<text text-anchor="start" x="3551" y="-949.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 75 more...</text>
+<text text-anchor="start" x="3551" y="-949.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 76 more...</text>
 <text text-anchor="start" x="3551" y="-938.5" font-family="Helvetica,sans-Serif" font-size="10.00">* ComponentSpace</text>
 <text text-anchor="start" x="3551" y="-927.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_worldsComm</text>
 <text text-anchor="start" x="3551" y="-916.5" font-family="Helvetica,sans-Serif" font-size="10.00">* M_mesh</text>

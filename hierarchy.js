@@ -804,6 +804,7 @@ var hierarchy =
     [ "Feel::RemoteData::Girder", "classFeel_1_1RemoteData_1_1Girder.html", null ],
     [ "Feel::RemoteData::Github", "classFeel_1_1RemoteData_1_1Github.html", null ],
     [ "Feel::RemoteData::URL", "classFeel_1_1RemoteData_1_1URL.html", null ],
+    [ "Feel::RemoteDataProgress", "classFeel_1_1RemoteDataProgress.html", null ],
     [ "Feel::remove_shared_ptr< T >", "structFeel_1_1remove__shared__ptr.html", null ],
     [ "Feel::remove_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
     [ "Feel::remove_std_vector< T >", "structFeel_1_1remove__std__vector.html", null ],

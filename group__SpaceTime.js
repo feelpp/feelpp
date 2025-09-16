@@ -209,6 +209,7 @@ var group__SpaceTime =
       [ "elementPtr", "classFeel_1_1FunctionSpace.html#acbc1435f5a2cb5b582355fb988b894e4", null ],
       [ "elementPtr", "classFeel_1_1FunctionSpace.html#ae5721ff8b0828d317a95965a4640b323", null ],
       [ "elementPtr", "classFeel_1_1FunctionSpace.html#a2f39de281337553dfcefbaa97a7268b9", null ],
+      [ "elementPtr", "classFeel_1_1FunctionSpace.html#aa483f79bac08fe6574f7cb318619adf3", null ],
       [ "elementPtr", "classFeel_1_1FunctionSpace.html#a418ca820cd908c16178bf4ed0c865f0e", null ],
       [ "elementsMap", "classFeel_1_1FunctionSpace.html#a6a446a2d42334b929e98a4d7b3915194", null ],
       [ "elementsPtr", "classFeel_1_1FunctionSpace.html#a4f17dde0dc3da5a88915781d8d8d62cb", null ],

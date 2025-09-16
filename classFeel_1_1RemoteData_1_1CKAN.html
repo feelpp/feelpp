@@ -135,6 +135,10 @@ Public Member Functions</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><b>CKAN</b> (std::string const &amp;desc, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;<a class="el" href="structFeel_1_1RemoteData.html#a8c80f497f1b97f28fb21b079a5efdba9">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Environment::worldComm</a>())</td></tr>
 <tr class="memdesc:a79a67b44d36459333803bcf8dae3971b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize from a description: ckan:{url:https://ckan.example.com,api_key:xxx,token:yyy,...}. <br /></td></tr>
 <tr class="separator:a79a67b44d36459333803bcf8dae3971b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a135ff04c28e801e2e64dba636b028365"><td class="memItemLeft" align="right" valign="top"><a id="a135ff04c28e801e2e64dba636b028365" name="a135ff04c28e801e2e64dba636b028365"></a>
+std::tuple&lt; std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1RemoteData_1_1FolderInfo.html">FolderInfo</a> &gt; &gt;, std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1RemoteData_1_1ItemInfo.html">ItemInfo</a> &gt; &gt;, std::vector&lt; std::shared_ptr&lt; <a class="el" href="structFeel_1_1RemoteData_1_1FileInfo.html">FileInfo</a> &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>contents</b> () const</td></tr>
+<tr class="memdesc:a135ff04c28e801e2e64dba636b028365"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get contents of a <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a> dataset. <br /></td></tr>
+<tr class="separator:a135ff04c28e801e2e64dba636b028365"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e944a4e8c673adf8b683e27555b5a9d"><td class="memItemLeft" align="right" valign="top"><a id="a3e944a4e8c673adf8b683e27555b5a9d" name="a3e944a4e8c673adf8b683e27555b5a9d"></a>
 <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>createDataset</b> (const std::string &amp;datasetName) const</td></tr>
 <tr class="separator:a3e944a4e8c673adf8b683e27555b5a9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -152,6 +156,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>createResource
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>deleteResource</b> (const std::string &amp;resourceId) const</td></tr>
 <tr class="memdesc:ab8066615f45d169136d6a955643fcda5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete a resource by ID. <br /></td></tr>
 <tr class="separator:ab8066615f45d169136d6a955643fcda5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2c90d39ad973d8c7a0a0835ee114236"><td class="memItemLeft" align="right" valign="top"><a id="ac2c90d39ad973d8c7a0a0835ee114236" name="ac2c90d39ad973d8c7a0a0835ee114236"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>download</b> (std::string const &amp;dir, <a class="el" href="classint.html">int</a> timeout) const</td></tr>
+<tr class="memdesc:ac2c90d39ad973d8c7a0a0835ee114236"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download data from <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a> with timeout. <br /></td></tr>
+<tr class="separator:ac2c90d39ad973d8c7a0a0835ee114236"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34813c0aa4ca15cb322595a0ca24c089"><td class="memItemLeft" align="right" valign="top"><a id="a34813c0aa4ca15cb322595a0ca24c089" name="a34813c0aa4ca15cb322595a0ca24c089"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>download</b> (std::string const &amp;dir=<a class="el" href="classFeel_1_1Environment.html#ae42b6f934fb8fb12d4b8d45c9b5b380e">Environment::downloadsRepository</a>()) const</td></tr>
 <tr class="memdesc:a34813c0aa4ca15cb322595a0ca24c089"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download data from <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a>. <br /></td></tr>
@@ -160,6 +168,10 @@ std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bott
 <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isInit</b> () const</td></tr>
 <tr class="memdesc:a223962b741e15bab59281aadbfff09cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if initialized. <br /></td></tr>
 <tr class="separator:a223962b741e15bab59281aadbfff09cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a331cd3f76c0b620308b2036f3f777550"><td class="memItemLeft" align="right" valign="top"><a id="a331cd3f76c0b620308b2036f3f777550" name="a331cd3f76c0b620308b2036f3f777550"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>listOrganizations</b> () const</td></tr>
+<tr class="memdesc:a331cd3f76c0b620308b2036f3f777550"><td class="mdescLeft">&#160;</td><td class="mdescRight">List all organizations available on the <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a> instance. <br /></td></tr>
+<tr class="separator:a331cd3f76c0b620308b2036f3f777550"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50d9ebe5b99d8634b98ca975908916f0"><td class="memItemLeft" align="right" valign="top"><a id="a50d9ebe5b99d8634b98ca975908916f0" name="a50d9ebe5b99d8634b98ca975908916f0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>replaceResource</b> (std::string const &amp;resourcePath, std::string const &amp;resourceId) const</td></tr>
 <tr class="memdesc:a50d9ebe5b99d8634b98ca975908916f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace a resource. <br /></td></tr>
@@ -171,6 +183,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>replaceResource</b> (
 <tr class="memitem:af8a40d8896a7edaf2eff841267112fe7"><td class="memItemLeft" align="right" valign="top"><a id="af8a40d8896a7edaf2eff841267112fe7" name="af8a40d8896a7edaf2eff841267112fe7"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>upload</b> (const std::string &amp;dataPath, const std::string &amp;datasetId, <a class="el" href="classbool.html">bool</a> sync) const</td></tr>
 <tr class="separator:af8a40d8896a7edaf2eff841267112fe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac896dea02415e9024cc4bf7cf88bf9de"><td class="memItemLeft" align="right" valign="top"><a id="ac896dea02415e9024cc4bf7cf88bf9de" name="ac896dea02415e9024cc4bf7cf88bf9de"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>upload</b> (std::string const &amp;dataPath, std::string const &amp;parentId, <a class="el" href="classint.html">int</a> timeout) const</td></tr>
+<tr class="memdesc:ac896dea02415e9024cc4bf7cf88bf9de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload data to <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a> with timeout. <br /></td></tr>
+<tr class="separator:ac896dea02415e9024cc4bf7cf88bf9de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cb6cbd2c8bacb0381038144184a458b"><td class="memItemLeft" align="right" valign="top"><a id="a8cb6cbd2c8bacb0381038144184a458b" name="a8cb6cbd2c8bacb0381038144184a458b"></a>
 std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>upload</b> (std::string const &amp;dataPath, std::string const &amp;parentId=&quot;&quot;) const</td></tr>
 <tr class="memdesc:a8cb6cbd2c8bacb0381038144184a458b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload data to <a class="el" href="classFeel_1_1RemoteData_1_1CKAN.html">CKAN</a>. <br /></td></tr>

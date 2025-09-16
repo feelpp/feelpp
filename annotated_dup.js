@@ -517,6 +517,7 @@ var annotated_dup =
       [ "RegionProcess", "structFeel_1_1RegionProcess.html", null ],
       [ "RegionTree", "classFeel_1_1RegionTree.html", "classFeel_1_1RegionTree" ],
       [ "RemoteData", "structFeel_1_1RemoteData.html", "structFeel_1_1RemoteData" ],
+      [ "RemoteDataProgress", "classFeel_1_1RemoteDataProgress.html", "classFeel_1_1RemoteDataProgress" ],
       [ "remove_shared_ptr", "structFeel_1_1remove__shared__ptr.html", null ],
       [ "remove_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
       [ "remove_std_vector", "structFeel_1_1remove__std__vector.html", null ],

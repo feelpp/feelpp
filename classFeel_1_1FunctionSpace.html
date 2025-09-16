@@ -787,11 +787,17 @@ std::shared_ptr&lt; IndexSplit &gt; const &amp;&#160;</td><td class="memItemRigh
 <tr class="memitem:ae5721ff8b0828d317a95965a4640b323"><td class="memTemplItemLeft" align="right" valign="top">element_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#ae5721ff8b0828d317a95965a4640b323">elementPtr</a> (<a class="el" href="classint.html">int</a> r, ExprT e, std::string const &amp;name=&quot;u&quot;, typename std::enable_if&lt; std::is_base_of&lt; <a class="el" href="classFeel_1_1ExprBase.html">ExprBase</a>, ExprT &gt;::value &gt;::type *=0)</td></tr>
 <tr class="separator:ae5721ff8b0828d317a95965a4640b323"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adbdaa8351237976e9fcfd2d0a4679a54"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#adbdaa8351237976e9fcfd2d0a4679a54">element</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="memdesc:adbdaa8351237976e9fcfd2d0a4679a54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build a read-only element view from a shared vector.  <a href="classFeel_1_1FunctionSpace.html#adbdaa8351237976e9fcfd2d0a4679a54">More...</a><br /></td></tr>
 <tr class="separator:adbdaa8351237976e9fcfd2d0a4679a54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa25c7309fb99c6d2bb219ca4b2769de4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#aa25c7309fb99c6d2bb219ca4b2769de4">element</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="memdesc:aa25c7309fb99c6d2bb219ca4b2769de4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build a read-only element whose storage directly views a PETSc Vec.  <a href="classFeel_1_1FunctionSpace.html#aa25c7309fb99c6d2bb219ca4b2769de4">More...</a><br /></td></tr>
 <tr class="separator:aa25c7309fb99c6d2bb219ca4b2769de4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a418ca820cd908c16178bf4ed0c865f0e"><td class="memItemLeft" align="right" valign="top">element_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#a418ca820cd908c16178bf4ed0c865f0e">elementPtr</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; const &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="memdesc:a418ca820cd908c16178bf4ed0c865f0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a read-only finite element view backed by a PETSc Vec (const overload).  <a href="classFeel_1_1FunctionSpace.html#a418ca820cd908c16178bf4ed0c865f0e">More...</a><br /></td></tr>
 <tr class="separator:a418ca820cd908c16178bf4ed0c865f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa483f79bac08fe6574f7cb318619adf3"><td class="memItemLeft" align="right" valign="top">element_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace.html#aa483f79bac08fe6574f7cb318619adf3">elementPtr</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;vec, <a class="el" href="classint.html">int</a> blockIdStart=0)</td></tr>
+<tr class="memdesc:aa483f79bac08fe6574f7cb318619adf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a writeable finite element view backed by a PETSc Vec (non-const overload).  <a href="classFeel_1_1FunctionSpace.html#aa483f79bac08fe6574f7cb318619adf3">More...</a><br /></td></tr>
+<tr class="separator:aa483f79bac08fe6574f7cb318619adf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7da42fb02766941c0d95bb4fad42d55b"><td class="memTemplParams" colspan="2"><a id="a7da42fb02766941c0d95bb4fad42d55b" name="a7da42fb02766941c0d95bb4fad42d55b"></a>
 template&lt;<a class="el" href="classint.html">int</a> i&gt; </td></tr>
 <tr class="memitem:a7da42fb02766941c0d95bb4fad42d55b"><td class="memTemplItemLeft" align="right" valign="top">mpl::at_c&lt; functionspace_vector_type, i &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>functionSpace</b> ()</td></tr>
@@ -1132,6 +1138,8 @@ template&lt;typename MeshTypes , typename BasisTypes  = Feel::bases&lt;Lagrange&
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the finite element space associated with the n-th component </dd></dl>
 
+<p class="reference">References <a class="el" href="matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e">Feel::vf::vec()</a>.</p>
+
 </div>
 </div>
 <a id="a8549708798d142416a1e15729673ee33" name="a8549708798d142416a1e15729673ee33"></a>
@@ -1353,14 +1361,18 @@ template&lt;typename MeshTypes , typename BasisTypes  = Feel::bases&lt;Lagrange&
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Build a read-only element view from a shared vector. </p>
+<p >Convenience overload that forwards to <a class="el" href="classFeel_1_1FunctionSpace.html#aa25c7309fb99c6d2bb219ca4b2769de4" title="Build a read-only element whose storage directly views a PETSc Vec.">element(Vector&lt;value_type&gt; const&amp;, int)</a>.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">vec</td><td>input vector </td></tr>
-    <tr><td class="paramname">blockIdStart</td><td>if vec was built from a VectorBlock, need to specify the id of first block </td></tr>
+    <tr><td class="paramname">vec</td><td>Shared pointer to an input vector (PETSc-backed). </td></tr>
+    <tr><td class="paramname">blockIdStart</td><td>If <code>vec</code> was built from a VectorBlock, the starting block id inside the distribution map (default: 0). </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>the element of the function space with value shared by the input vector </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>element_type Read-only element view backed by <code>vec</code>.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1FunctionSpace.html#aa25c7309fb99c6d2bb219ca4b2769de4" title="Build a read-only element whose storage directly views a PETSc Vec.">element(Vector&lt;value_type&gt; const&amp;, int)</a> </dd></dl>
 
 </div>
 </div>
@@ -1422,19 +1434,31 @@ template&lt;typename MeshTypes , typename BasisTypes  = Feel::bases&lt;Lagrange&
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Build a read-only element whose storage directly views a PETSc Vec. </p>
+<p >This returns an element that reads from the local portion of the PETSc vector without copying. <a class="el" href="classA.html">A</a> RAII guard keeps a PETSc array lock (VecGetArrayRead / VecRestoreArrayRead) active for the lifetime of the returned element, thereby avoiding dangling pointers and complying with PETSc ≥ 3.22 lock checks.</p>
+<p >Layout follows the distribution map: active DOFs first, then ghost DOFs.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">vec</td><td>input vector </td></tr>
-    <tr><td class="paramname">blockIdStart</td><td>if vec was built from a VectorBlock, need to specify the id of first block </td></tr>
+    <tr><td class="paramname">vec</td><td>Input vector (must be PETSc-backed VectorPetsc&lt;value_type&gt;). </td></tr>
+    <tr><td class="paramname">blockIdStart</td><td>If <code>vec</code> was built from a VectorBlock, the starting block id inside the distribution map (default: 0). Must satisfy 0 ≤ blockIdStart &lt; vec.map().numberOfDofIdToContainerId(). </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>the element of the function space which use the storage values of the input vector </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>element_type Read-only element view backed by <code>vec</code>.</dd></dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Feel++ built with PETSc support. </dd>
+<dd>
+std::is_same_v&lt;value_type, PetscScalar&gt;. </dd>
+<dd>
+The vector distribution map matches this function space.</dd></dl>
+<dl class="section post"><dt>Postcondition</dt><dd>The returned element holds an internal backing guard keeping the PETSc array valid until the element is destroyed.</dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Do not nest unrelated VecGetArray* calls on the same Vec while this element exists; PETSc 3.22 enforces lock correctness.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd>setBackingGuard(std::shared_ptr&lt;void&gt;) </dd></dl>
 
 </div>
 </div>
 <a id="acbc1435f5a2cb5b582355fb988b894e4" name="acbc1435f5a2cb5b582355fb988b894e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acbc1435f5a2cb5b582355fb988b894e4">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acbc1435f5a2cb5b582355fb988b894e4">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1486,7 +1510,7 @@ template&lt;typename ExprT &gt; </div>
 </div>
 </div>
 <a id="ae5721ff8b0828d317a95965a4640b323" name="ae5721ff8b0828d317a95965a4640b323"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5721ff8b0828d317a95965a4640b323">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5721ff8b0828d317a95965a4640b323">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[2/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1538,7 +1562,7 @@ template&lt;typename ExprT &gt; </div>
 </div>
 </div>
 <a id="a2f39de281337553dfcefbaa97a7268b9" name="a2f39de281337553dfcefbaa97a7268b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f39de281337553dfcefbaa97a7268b9">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f39de281337553dfcefbaa97a7268b9">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1568,8 +1592,73 @@ template&lt;typename MeshTypes , typename BasisTypes  = Feel::bases&lt;Lagrange&
 
 </div>
 </div>
+<a id="aa483f79bac08fe6574f7cb318619adf3" name="aa483f79bac08fe6574f7cb318619adf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa483f79bac08fe6574f7cb318619adf3">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshTypes , typename BasisTypes  = Feel::bases&lt;Lagrange&lt;1,Scalar&gt; &gt;, typename T  = double, typename PeriodicityType  = Periodicity&lt;NoPeriodicity&gt;, typename MortarType  = mortars&lt;NoMortar&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">element_ptrtype <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; MeshTypes, BasisTypes, T, PeriodicityType, MortarType &gt;::elementPtr </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>blockIdStart</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create a writeable finite element view backed by a PETSc Vec (non-const overload). </p>
+<p >This function builds an <code>element_type</code> that directly views (and can modify) the underlying PETSc vector storage for the local process. The view remains valid for the lifetime of the returned element via an internal RAII guard that holds a PETSc array lock (<code>VecGetArray</code> / <code>VecRestoreArray</code>).</p>
+<p >Offsets are computed using the vector’s distribution map so that</p><ul>
+<li><code>blockIdStart</code> selects the (sub-)block,</li>
+<li>active DOFs come first, followed by ghost DOFs.</li>
+</ul>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">vec</td><td>The source vector. Must be a PETSc-backed <code>VectorPetsc&lt;value_type&gt;</code>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">blockIdStart</td><td>Starting block index inside the distribution map (default: 0). Must satisfy <code>0</code> &lt;= blockIdStart &lt; vec.map().numberOfDofIdToContainerId().</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>element_ptrtype <a class="el" href="classA.html">A</a> smart pointer to an <code>element_type</code> that provides write access to the local active and ghost DOFs of <code>vec</code>.</dd></dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Feel++ built with PETSc support. </dd>
+<dd>
+<code>std::is_same_v&lt;value_type, PetscScalar&gt;</code> (enforced via static_assert). </dd>
+<dd>
+<code>vec</code> is initialized and its distribution map matches this function space. </dd>
+<dd>
+<code>blockIdStart</code> is in range; see parameter description.</dd></dl>
+<dl class="section post"><dt>Postcondition</dt><dd>The returned element holds an internal backing guard that keeps the PETSc array lock active; the guard is released when the element is destroyed.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>The caller is responsible for any required PETSc assembly or synchronization after modifying the element (e.g., <code>VecAssemblyBegin/End</code> if values are set through PETSc APIs elsewhere).</dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>PETSc 3.22 introduces strict lock checking. Do not nest other calls to <code>VecGetArray*</code>, <code>VecGetArrayRead*</code> or <code>VecLockPush/Pop</code> on the same Vec while this element exists; such usage will trigger lock errors.</dd></dl>
+<dl class="section user"><dt>MPI / Thread Safety</dt><dd>The view is local to the calling process and only covers the range <code></code>[firstLocal, lastLocal). It is not thread-safe to concurrently call other PETSc Get/Restore operations on the same Vec from different threads.</dd></dl>
+<dl class="section user"><dt>Complexity</dt><dd>O(1) excluding distribution-map lookups.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">aborts</td><td>Aborts via <code>CHKERRABORT</code> if PETSc reports an error (e.g., invalid state, mismatched distribution, lock conflicts).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section since"><dt>Since</dt><dd>PETSc 3.22-safe implementation (array locks enforced).</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1FunctionSpace.html#a418ca820cd908c16178bf4ed0c865f0e" title="Create a read-only finite element view backed by a PETSc Vec (const overload).">elementPtr(Vector&lt;value_type&gt; const&amp;, int)</a>, setBackingGuard(std::shared_ptr&lt;void&gt;) </dd></dl>
+
+</div>
+</div>
 <a id="a418ca820cd908c16178bf4ed0c865f0e" name="a418ca820cd908c16178bf4ed0c865f0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a418ca820cd908c16178bf4ed0c865f0e">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a418ca820cd908c16178bf4ed0c865f0e">&#9670;&nbsp;</a></span>elementPtr() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1595,14 +1684,41 @@ template&lt;typename MeshTypes , typename BasisTypes  = Feel::bases&lt;Lagrange&
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Create a read-only finite element view backed by a PETSc Vec (const overload). </p>
+<p >This function builds an <code>element_type</code> that directly views the underlying PETSc vector storage for the local process. The view is read-only and remains valid for the lifetime of the returned element thanks to an internal RAII guard that holds a PETSc array lock (<code>VecGetArrayRead</code> / <code>VecRestoreArrayRead</code>).</p>
+<p >Offsets are computed using the vector’s distribution map so that</p><ul>
+<li><code>blockIdStart</code> selects the (sub-)block,</li>
+<li>active DOFs come first, followed by ghost DOFs.</li>
+</ul>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">vec</td><td>input vector </td></tr>
-    <tr><td class="paramname">blockIdStart</td><td>if vec was built from a VectorBlock, need to specify the id of first block </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">vec</td><td>The source vector. Must be a PETSc-backed <code>VectorPetsc&lt;value_type&gt;</code>. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">blockIdStart</td><td>Starting block index inside the distribution map (default: 0). Must satisfy <code>0</code> &lt;= blockIdStart &lt; vec.map().numberOfDofIdToContainerId().</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>the element of the function space which use the storage values of the input vector </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>element_ptrtype <a class="el" href="classA.html">A</a> smart pointer to an <code>element_type</code> that provides read-only access to the local active and ghost DOFs of <code>vec</code>.</dd></dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Feel++ built with PETSc support. </dd>
+<dd>
+<code>std::is_same_v&lt;value_type, PetscScalar&gt;</code> (enforced via static_assert). </dd>
+<dd>
+<code>vec</code> is initialized and its distribution map matches this function space. </dd>
+<dd>
+<code>blockIdStart</code> is in range; see parameter description.</dd></dl>
+<dl class="section post"><dt>Postcondition</dt><dd>The returned element holds an internal backing guard that keeps the PETSc array lock active; the guard is released when the element is destroyed.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This overload never writes into the PETSc Vec. Any attempt to modify the element data must use the non-const overload (writeable view) instead.</dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Do not store raw pointers into external data structures that outlive the returned element. Pointers are only valid while the element (and its backing guard) is alive.</dd></dl>
+<dl class="section user"><dt>MPI / Thread Safety</dt><dd>The view is local to the calling process and only covers the range <code></code>[firstLocal, lastLocal). It is not thread-safe to concurrently call other PETSc Get/Restore operations on the same Vec from different threads.</dd></dl>
+<dl class="section user"><dt>Complexity</dt><dd>O(1) excluding distribution-map lookups.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">aborts</td><td>Aborts via <code>CHKERRABORT</code> if PETSc reports an error (e.g., invalid state, mismatched distribution, lock conflicts).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section since"><dt>Since</dt><dd>PETSc 3.22-safe implementation (array locks enforced).</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1FunctionSpace.html#aa483f79bac08fe6574f7cb318619adf3" title="Create a writeable finite element view backed by a PETSc Vec (non-const overload).">elementPtr(Vector&lt;value_type&gt;&amp;, int)</a>, setBackingGuard(std::shared_ptr&lt;void&gt;) </dd></dl>
 
 </div>
 </div>
@@ -2306,8 +2422,6 @@ template&lt;typename TT  = functionspace_type, std::enable_if_t&lt; !TT::is_comp
   </table>
   </dd>
 </dl>
-
-<p class="reference">References <a class="el" href="trace_8hpp.html#a63271d11f31a90d805f14f9128986e22">Feel::vf::trace()</a>.</p>
 
 </div>
 </div>

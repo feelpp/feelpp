@@ -700,6 +700,9 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1RemoteData.html">RemoteData</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Class which manages downloads from a <a class="el" href="classFeel_1_1RemoteData_1_1URL.html">URL</a> or GitHub and download/upload with the <a class="el" href="classFeel_1_1RemoteData_1_1Girder.html">Girder</a> database by using libcurl.  <a href="structFeel_1_1RemoteData.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1RemoteDataProgress.html">RemoteDataProgress</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Progress utility class for remote data operations.  <a href="classFeel_1_1RemoteDataProgress.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1remove__shared__ptr.html">remove_shared_ptr</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html">remove_shared_ptr&lt; std::shared_ptr&lt; T &gt; &gt;</a></td></tr>
@@ -1534,6 +1537,9 @@ template&lt;typename... SpaceList&gt; </td></tr>
 template&lt;typename... SpaceList&gt; </td></tr>
 <tr class="memitem:affd8fa28a0a566c15cee4a9c1e731656"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>product_spaces_t</b> = <a class="el" href="classFeel_1_1ProductSpaces.html">ProductSpaces</a>&lt; SpaceList... &gt;</td></tr>
 <tr class="separator:affd8fa28a0a566c15cee4a9c1e731656"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24eb87e4112016cb47f8c47b3f44daa3"><td class="memItemLeft" align="right" valign="top"><a id="a24eb87e4112016cb47f8c47b3f44daa3" name="a24eb87e4112016cb47f8c47b3f44daa3"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ProgressCallback</b> = std::function&lt; void(std::string filename, std::streamsize transferred, std::streamsize total)&gt;</td></tr>
+<tr class="separator:a24eb87e4112016cb47f8c47b3f44daa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae8282f3715e84803c9cc6a881086b8f"><td class="memTemplParams" colspan="2"><a id="aae8282f3715e84803c9cc6a881086b8f" name="aae8282f3715e84803c9cc6a881086b8f"></a>
 template&lt;class DomainSpace , class DualImageSpace &gt; </td></tr>
 <tr class="memitem:aae8282f3715e84803c9cc6a881086b8f"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>projector_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1Projector.html">Projector</a>&lt; DomainSpace, DualImageSpace &gt; &gt;</td></tr>
@@ -2580,6 +2586,12 @@ template&lt;typename... Ts&gt; </td></tr>
 <tr class="memitem:a3edc1348cac783469192c8cb03e0b4b6"><td class="memItemLeft" align="right" valign="top"><a id="a3edc1348cac783469192c8cb03e0b4b6" name="a3edc1348cac783469192c8cb03e0b4b6"></a>
 <a class="el" href="structFeel_1_1Repository_1_1Config.html">Repository::Config</a>&#160;</td><td class="memItemRight" valign="bottom"><b>globalRepository</b> (std::string reldir, <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> d={})</td></tr>
 <tr class="separator:a3edc1348cac783469192c8cb03e0b4b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97601b408c9394658593a50533885676"><td class="memItemLeft" align="right" valign="top">std::tm&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a97601b408c9394658593a50533885676">gmtimeFrom</a> (std::chrono::system_clock::time_point tp)</td></tr>
+<tr class="memdesc:a97601b408c9394658593a50533885676"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a std::tm in UTC from a given system_clock::time_point.  <a href="namespaceFeel.html#a97601b408c9394658593a50533885676">More...</a><br /></td></tr>
+<tr class="separator:a97601b408c9394658593a50533885676"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f94fab8a8f9e152ed982d379579db54"><td class="memItemLeft" align="right" valign="top">std::tm&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">gmtimeNow</a> ()</td></tr>
+<tr class="memdesc:a2f94fab8a8f9e152ed982d379579db54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return current time as std::tm in UTC for use with {fmt}.  <a href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">More...</a><br /></td></tr>
+<tr class="separator:a2f94fab8a8f9e152ed982d379579db54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9098d8759307106ebbd5d3288dbc789"><td class="memTemplParams" colspan="2"><a id="aa9098d8759307106ebbd5d3288dbc789" name="aa9098d8759307106ebbd5d3288dbc789"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:aa9098d8759307106ebbd5d3288dbc789"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Grad</b> (Ts &amp;&amp;... v)</td></tr>
@@ -3551,6 +3563,9 @@ FEELPP_EXPORT std::string&#160;</td><td class="memItemRight" valign="bottom"><b>
 <tr class="memitem:a4d057c3fe85f6a0aa9a8c493be7aa36b"><td class="memItemLeft" align="right" valign="top"><a id="a4d057c3fe85f6a0aa9a8c493be7aa36b" name="a4d057c3fe85f6a0aa9a8c493be7aa36b"></a>
 <a class="el" href="classFeel_1_1StatusRequestHTTP.html">StatusRequestHTTP</a>&#160;</td><td class="memItemRight" valign="bottom"><b>requestHTTPGET</b> (const std::string &amp;url, const std::vector&lt; std::string &gt; &amp;headers, std::ostream &amp;ofile, <a class="el" href="classint.html">int</a> timeout=5000, <a class="el" href="classint.html">int</a> max_retries=3, <a class="el" href="classint.html">int</a> backoff_delay=1000)</td></tr>
 <tr class="separator:a4d057c3fe85f6a0aa9a8c493be7aa36b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bf4e95062b06fb9dde4036707d04145"><td class="memItemLeft" align="right" valign="top"><a id="a9bf4e95062b06fb9dde4036707d04145" name="a9bf4e95062b06fb9dde4036707d04145"></a>
+<a class="el" href="classFeel_1_1StatusRequestHTTP.html">StatusRequestHTTP</a>&#160;</td><td class="memItemRight" valign="bottom"><b>requestHTTPGETWithProgress</b> (const std::string &amp;url, const std::vector&lt; std::string &gt; &amp;headers, std::ostream &amp;ofile, const std::string &amp;filename, const ProgressCallback &amp;progressCallback, <a class="el" href="classint.html">int</a> timeout=5000, <a class="el" href="classint.html">int</a> max_retries=3, <a class="el" href="classint.html">int</a> backoff_delay=1000)</td></tr>
+<tr class="separator:a9bf4e95062b06fb9dde4036707d04145"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75b9679c3462ec8651e46210b9a30c92"><td class="memItemLeft" align="right" valign="top"><a id="a75b9679c3462ec8651e46210b9a30c92" name="a75b9679c3462ec8651e46210b9a30c92"></a>
 <a class="el" href="classFeel_1_1StatusRequestHTTP.html">StatusRequestHTTP</a>&#160;</td><td class="memItemRight" valign="bottom"><b>requestHTTPPOST</b> (const std::string &amp;url, const std::vector&lt; std::string &gt; &amp;headers, std::istream &amp;ifile, <a class="el" href="classint.html">int</a> fsize, std::ostream &amp;ofile, <a class="el" href="classint.html">int</a> timeout=5000, <a class="el" href="classint.html">int</a> max_retries=3, <a class="el" href="classint.html">int</a> backoff_delay=1000)</td></tr>
 <tr class="separator:a75b9679c3462ec8651e46210b9a30c92"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5008,7 +5023,8 @@ template&lt;typename <a class="el" href="classE.html">E</a> , typename T &gt; </
 <p >This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 of the License, or (at your option) any later version.</p>
 <p >This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR <a class="el" href="classA.html">A</a> PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.</p>
 <p >You should have received a copy of the GNU Lesser General Public License along with this library; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</p>
-<p >include function space class include gmsh mesh importer include the header for the variational formulation language (vf) aka FEEL++</p>
+<dl class="section copyright"><dt>Copyright</dt><dd>2024 Feel++ Consortium</dd></dl>
+<p>include function space class include gmsh mesh importer include the header for the variational formulation language (vf) aka FEEL++</p>
 <p >This file is part of the <a class="el" href="namespaceFeel.html" title="-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...">Feel</a> library Author(s): Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> Date: 2011-12-23 Copyright (<a class="el" href="classC.html">C</a>) 2011 Université Joseph Fourier (Grenoble I) Copyright (<a class="el" href="classC.html">C</a>) 2011-2016 Feel++ Consortium This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 of the License, or (at your option) any later version. This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR <a class="el" href="classA.html">A</a> PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General Public License along with this library; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA</p>
 <p >This file is part of the Feel++ library</p>
 <p >This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 of the License, or (at your option) any later version.</p>
@@ -5549,6 +5565,10 @@ template&lt;typename MeshType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>constexpr int </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#a836ab2c61887858548d7a4ec9783ca76">cantor_pairing()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a836ab2c61887858548d7a4ec9783ca76">cantor_pairing()</a>.</p>
+
 </div>
 </div>
 <a id="a1645407bb64a135dc3e67a7b15e912c5" name="a1645407bb64a135dc3e67a7b15e912c5"></a>
@@ -5870,8 +5890,6 @@ template&lt;typename Predicate &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Lambda function. </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a>, and <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a>.</p>
 
 </div>
 </div>
@@ -6806,6 +6824,60 @@ template&lt;typename T , typename RangeT , std::enable_if_t&lt; is_range_v&lt; R
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Reduced result. </dd></dl>
 
+<p class="reference">References <a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range()</a>.</p>
+
+</div>
+</div>
+<a id="a97601b408c9394658593a50533885676" name="a97601b408c9394658593a50533885676"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97601b408c9394658593a50533885676">&#9670;&nbsp;</a></span>gmtimeFrom()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::tm Feel::gmtimeFrom </td>
+          <td>(</td>
+          <td class="paramtype">std::chrono::system_clock::time_point&#160;</td>
+          <td class="paramname"><em>tp</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return a std::tm in UTC from a given system_clock::time_point. </p>
+<p >Example: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> tp = std::chrono::system_clock::now();</div>
+<div class="line">fmt::print(<span class="stringliteral">&quot;[{:%Y-%m-%d %H:%M:%S}] checkpoint\\n&quot;</span>, <a class="code hl_function" href="namespaceFeel.html#a97601b408c9394658593a50533885676">Feel::gmtimeFrom</a>(tp));</div>
+<div class="ttc" id="anamespaceFeel_html_a97601b408c9394658593a50533885676"><div class="ttname"><a href="namespaceFeel.html#a97601b408c9394658593a50533885676">Feel::gmtimeFrom</a></div><div class="ttdeci">std::tm gmtimeFrom(std::chrono::system_clock::time_point tp)</div><div class="ttdoc">Return a std::tm in UTC from a given system_clock::time_point.</div><div class="ttdef"><b>Definition:</b> timeutils.hpp:64</div></div>
+</div><!-- fragment --> 
+</div>
+</div>
+<a id="a2f94fab8a8f9e152ed982d379579db54" name="a2f94fab8a8f9e152ed982d379579db54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f94fab8a8f9e152ed982d379579db54">&#9670;&nbsp;</a></span>gmtimeNow()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::tm Feel::gmtimeNow </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return current time as std::tm in UTC for use with {fmt}. </p>
+<p >Example: </p><div class="fragment"><div class="line"><span class="preprocessor">#include &lt;feel/feelcore/time_utils.hpp&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;fmt/core.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;fmt/chrono.h&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> main()</div>
+<div class="line">{</div>
+<div class="line">    fmt::print(<span class="stringliteral">&quot;[{:%Y-%m-%d %H:%M:%S}] hello from Feel++!\\n&quot;</span>, <a class="code hl_function" href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">Feel::gmtimeNow</a>());</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="ttc" id="anamespaceFeel_html_a2f94fab8a8f9e152ed982d379579db54"><div class="ttname"><a href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">Feel::gmtimeNow</a></div><div class="ttdeci">std::tm gmtimeNow()</div><div class="ttdoc">Return current time as std::tm in UTC for use with {fmt}.</div><div class="ttdef"><b>Definition:</b> timeutils.hpp:47</div></div>
+</div><!-- fragment --> 
 </div>
 </div>
 <a id="ae16df60e04cea82d896c615630ac4197" name="ae16df60e04cea82d896c615630ac4197"></a>
@@ -6899,7 +6971,7 @@ template&lt;typename SpaceT , typename RangeType , std::enable_if_t&lt; std::is_
 <div class="line">{</div>
 <div class="line">  <a class="code hl_function" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">handleExceptions</a>()</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:165</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:167</div></div>
 <div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition:</b> exceptions.cpp:79</div></div>
 </div><!-- fragment --> 
 </div>
@@ -8081,8 +8153,6 @@ template&lt;typename CollectionOfRangeT , std::enable_if_t&lt; is_range_v&lt; ty
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of elements. </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">global</a>, and <a class="el" href="namespaceFeel.html#a4e2bdd6b420a1a530ec78ca7000f5922">nelements()</a>.</p>
-
 </div>
 </div>
 <a id="ae915e9b349bfe11d7ecdfcd630afd2aa" name="ae915e9b349bfe11d7ecdfcd630afd2aa"></a>
@@ -8181,8 +8251,6 @@ template&lt;typename RangeT , std::enable_if_t&lt; is_filter_v&lt; RangeT &gt;, 
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of elements. </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#ab499330771e4e5c00d6b4c7df96b2d47">nelements()</a>.</p>
 
 </div>
 </div>
