@@ -1157,7 +1157,7 @@ public:
     trace_mesh_ptr_t<mesh_type,Tag>
     trace( RangeT && range ) const
     {
-        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range );
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", fmt::streamed(range));
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 
@@ -1172,7 +1172,7 @@ public:
     trace_trace_mesh_ptr_t<mesh_type,TheTag>
     wireBasket( RangeT && range, mpl::int_<TheTag> ) const
     {
-        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", range );
+        DVLOG( 2 ) << fmt::format("[trace] extracting range: {}", fmt::streamed(range) );
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 
@@ -1180,7 +1180,7 @@ public:
     trace_trace_mesh_ptr_t<mesh_type,Tag>
     wireBasket( RangeT && range ) const
     {
-        DVLOG( 2 ) << fmt::format("[wirebasked] extracting range: {}", range );
+        DVLOG( 2 ) << fmt::format("[wirebasked] extracting range: {}", fmt::streamed(range) );
         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=std::forward<RangeT>(range) );
     }
 

@@ -770,7 +770,7 @@ constexpr bool is_symbols_expression_tensor_context_v = is_symbols_expression_te
 template<typename T1,typename... ExprT>
 struct SymbolsExprTraits
 {
-    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ); };
+    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::apply( exprs... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<T1,ExprT...>{},  callApply ) )>;
     using type = SymbolsExpr<tuple_type>;
 };
@@ -814,7 +814,7 @@ template<typename... ExprT>
 symbols_expression_t<ExprT...>
 symbolsExpr( const ExprT&... exprs )
 {
-    return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ) );
+    return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::apply( exprs... ) );
 }
 template<typename T>
 symbols_expression_t<T> const&

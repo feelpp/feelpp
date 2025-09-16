@@ -348,7 +348,8 @@
                 "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
                 "FEELPP_ENABLE_TESTS": "OFF",
                 "FEELPP_ENABLE_FMILIB": "OFF",
-                "FEELPP_ENABLE_BENCHMARKS": "OFF"
+                "FEELPP_ENABLE_BENCHMARKS": "OFF",
+                "FEELPP_USE_EXTERNAL_CLN": "ON"
             }
         },
         {
