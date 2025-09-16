@@ -48,6 +48,10 @@ if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STRE
     # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
     SET(CMAKE_SKIP_RPATH ON)
   endif()
+
+  # Normalize python module path to current prefix if needed
+  include(FeelppPythonNormalize)
+  feelpp_python_normalize_module_path()
 else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()

@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#include <fmt/chrono.h>
+#include <feel/feelcore/timeutils.hpp>
 
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
@@ -65,7 +65,7 @@ PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void** ctx)
     if ( solver )
     {
         if ( solver->worldCommPtr()->isMasterRank() )
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", fmt::localtime( std::time(nullptr) ), solver->prefix(), 0.0 ) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", Feel::gmtimeNow(), solver->prefix(), 0.0 ) << std::endl;
         delete solver;
     }
     ctx = nullptr;
@@ -100,7 +100,7 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
     Feel::ConfigureKSP* solver = static_cast<Feel::ConfigureKSP*>( ctx );
     if ( !solver ) return 0;
     if ( solver->worldCommPtr()->isMasterRank() )
-        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), solver->prefix(), it, rnorm ) << std::endl;
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", Feel::gmtimeNow(), solver->prefix(), it, rnorm ) << std::endl;
 #endif
     return 0;
 }

@@ -158,7 +158,7 @@ public :
         M_store_pod_matrix( o.M_store_pod_matrix ),
         M_store_pod_matrix_format_octave( o.M_store_pod_matrix_format_octave ),
         M_Nm( o.M_Nm ),
-        M_pod_matrix( o.M_matrix ),
+        M_pod_matrix( o.M_pod_matrix ),
         M_model( o.M_model ),
         M_use_solutions( o.M_use_solutions )
     {}

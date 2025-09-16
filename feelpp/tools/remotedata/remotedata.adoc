@@ -12,16 +12,30 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 
 == SYNOPSIS
 
-{manmanual} is a simple application which can download data, upload data and print remote data listing.
+{manmanual} is a simple application which can download data, upload data and print remote data listing from multiple platforms including GitHub, Girder, and CKAN.
 
 
 == DESCRIPTION
 
+The {manmanual} tool provides a unified interface for managing data across different remote storage platforms. It supports downloading, uploading, and browsing data with comprehensive progress reporting and multiple verbosity levels.
 
+== SUPPORTED PLATFORMS
+
+{manmanual} supports three major remote data platforms:
+
+.Platform Support Matrix
+|===
+| Platform | Download | Upload | Contents | List Organizations | Authentication | Progress Support
+
+| *GitHub* | ✓ | ✗ | ✗ | ✗ | Token | ✓ Enhanced
+| *Girder* | ✓ | ✓ | ✓ | ✗ | API Key | ✓ Full
+| *CKAN* | ✓ | ✓ | ✓ | ✓ | API Key | ✓ Full
+| *URL/HTTP* | ✓ | ✗ | ✗ | ✗ | None | ✓ Enhanced
+|===
 
 == OPTIONS
 
-=== Options
+=== Common Options
 
 {manmanual} requires some options.
 
@@ -37,64 +51,38 @@ Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
 * with download mode : the path of downloaded datas
 |
 | contents | specify data contents to print in the terminal |
+| list-organizations | list available organizations (CKAN only) |
 |===
 
-== EXAMPLES
+=== Progress and Verbosity Options
 
-=== Download mode
+.Progress Control Options
+|===
+| Option | Description
 
-* Download file from an url
+| `--quiet, -q` | Suppress progress output, show only errors
+| `--verbose, -v` | Enable verbose progress output
+| `--progress` | Show detailed progress information with file sizes
+| `--debug` | Enable debug output with full API details and responses
+|===
 
-[source,shell]
-----
-feelpp_remotedata --download https://raw.githubusercontent.com/feelpp/feelpp/develop/README.adoc
-----
+== GITHUB
 
-* Download file/folder from Github
+GitHub integration allows downloading files and folders from public and private repositories with comprehensive progress reporting.
 
-[source,shell]
-----
-feelpp_remotedata --download "github:{repo:feelpp,path:README.adoc}"
-----
+=== Enhanced Progress Support
 
-* Download file/folder from Girder
+GitHub downloads now feature enhanced progress reporting similar to CKAN and Girder:
 
-[source,shell]
-----
-feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}"
-----
+* **Repository-aware progress**: Shows repository information and branch details
+* **File-by-file tracking**: Individual file progress for folders with item counts
+* **Real-time status updates**: Live progress updates with file sizes after download
+* **Directory processing**: Shows progress when processing subdirectories recursively
+* **Debug information**: Full API request details and response debugging in debug mode
 
-* Download into a specific directory
+NOTE: Progress reporting works seamlessly for both single files and entire repository folders, providing consistent user experience across all download types.
 
-[source,shell]
-----
-feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --data $HOME/mydir
-----
-
-=== Upload mode
-
-* Upload file/folder on Girder (require an authentication)
-
-[source,shell]
-----
-feelpp_remotedata --upload "girder:{folder:<a folder id>}" --data $HOME/mydata
-----
-
-
-=== Contents mode
-
-* With Girder
-
-[source,shell]
-----
-feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
-feelpp_remotedata --contents "girder:{file:5b1f8707b0e9570499f66bd0}"
-feelpp_remotedata --contents "girder:{folder:[5ac72871b0e9574027047894,5ad4b75db0e9574027047d70],file:5b1f8707b0e9570499f66bd0}"
-----
-
-== REMOTE STORAGE DESCRIPTION
-
-=== Github
+=== Configuration Options
 
 |===
 | Option | Default value | Description
@@ -106,59 +94,516 @@ feelpp_remotedata --contents "girder:{folder:[5ac72871b0e9574027047894,5ad4b75db
 | `token` | <no default value> | an authentication token
 |===
 
-=== Girder
+=== Authentication
 
-|===
-| Option | Default value | Description
+GitHub authentication is required for private repositories or to increase API rate limits.
 
-| `url` | https://girder.math.unistra.fr | url of a Girder platform
-| `file` | <no default value> | one or several file id(s)
-| `folder` | <no default value> | one or several folder id(s)
-| `api_key` | <no default value> | an authentication key
-|===
-
-
-== AUTHENTICATION
-
-=== Github
-You need to give a token for access to private repository or increase the for example. Two ways to specify the token :
-
-* Define the environment variable FEELPP_GITHUB_TOKEN.
+* Environment variable:
 +
 [source,shell]
 ----
 export FEELPP_GITHUB_TOKEN=xxxxx
 ----
-* Add token option in the github description.
+
+* Inline token:
 +
 [source,shell]
 ----
 github:{repo:feelpp,path:README.adoc,token:xxxx}
 ----
 
-=== Girder
-You need to give an api key for access to private data or upload data. Two ways to specify the token :
+=== Examples
 
-* Define the environment variable FEELPP_GIRDER_API_KEY.
+* Download file from GitHub:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{repo:feelpp,path:README.adoc}"
+----
+
+* Download with progress reporting:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{repo:feelpp,path:toolboxes/}" --progress
+----
+
+* Download from private repository with debug output:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{owner:myorg,repo:myrepo,path:data/,token:xxxx}" --debug
+----
+
+* Download specific branch with verbose progress:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{repo:feelpp,branch:develop,path:examples/}" --verbose
+----
+
+== URL/HTTP DOWNLOADS
+
+Direct URL downloads support various protocols (HTTP, HTTPS, FTP) with enhanced progress reporting.
+
+=== Enhanced Progress Support
+
+URL downloads now feature comprehensive progress reporting:
+
+* **Real-time progress bars**: Live download progress with transfer rates and completion percentages
+* **Filename-aware progress**: Shows the actual filename being downloaded
+* **Size reporting**: Displays file sizes in human-readable format during and after download
+* **Error handling**: Clear error messages for network issues, HTTP status codes, and file creation problems
+* **Adaptive progress**: Automatically switches between progress-enabled and standard downloads based on verbosity level
+
+NOTE: Progress reporting provides the same detailed information as Girder and CKAN downloads, ensuring consistent user experience across all platforms.
+
+=== Examples
+
+* Basic URL download:
++
+[source,shell]
+----
+feelpp_remotedata --download https://raw.githubusercontent.com/feelpp/feelpp/develop/README.adoc
+----
+
+* URL download with progress reporting:
++
+[source,shell]
+----
+feelpp_remotedata --download https://example.com/largefile.zip --progress
+----
+
+* URL download with custom directory and verbose output:
++
+[source,shell]
+----
+feelpp_remotedata --download https://example.com/data.tar.gz --data $HOME/downloads --verbose
+----
+
+* URL download with debug information:
++
+[source,shell]
+----
+feelpp_remotedata --download https://example.com/dataset.csv --debug
+----
+
+== GIRDER
+
+Girder is a data management platform that provides a web-based interface for storing, managing, and sharing scientific data.
+
+=== Configuration Options
+
+|===
+| Option | Default value | Description
+
+| `url` | https://girder.math.unistra.fr | url of a Girder platform
+| `file` | <no default value> | one or several file id(s) or path(s)
+| `folder` | <no default value> | one or several folder id(s) or path(s)
+| `item` | <no default value> | one or several item id(s) or path(s)
+| `path` | <no default value> | generic resource path (alternative to file/folder/item)
+| `api_key` | <no default value> | an authentication key
+| `token` | <no default value> | a direct authentication token
+|===
+
+=== Resource Identification: IDs vs Collection Paths
+
+Girder resources can be identified in two ways:
+
+==== Using Resource IDs
+Resource IDs are unique identifiers assigned by Girder:
+
+* **File ID**: `girder:{file:5b1f8707b0e9570499f66bd0}`
+* **Folder ID**: `girder:{folder:6743a47bb0e95728eb010c47}`
+* **Item ID**: `girder:{item:5ac72871b0e9574027047895}`
+
+==== Using Collection-Based Resource Paths
+Resource paths provide a human-readable way to identify resources using their hierarchical location within collections:
+
+* **Folder collection path**: `girder:{folder:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata}`
+* **File collection path**: `girder:{file:/collection/feelpp/data/simulation-results.csv}`
+* **Item collection path**: `girder:{item:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset}`
+* **Generic collection path**: `girder:{path:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata}`
+
+NOTE: Collection paths must start with `/collection/` followed by the collection name and resource path. The system automatically converts collection paths to IDs using Girder's resource lookup API.
+
+.Collection Path Format Examples
+|===
+| Path Type | Example | Description
+
+| Collection folder | `/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata` | Folder within Feel++ collection
+| Collection file | `/collection/feelpp/data/simulation-results.csv` | File within Feel++ collection
+| Nested resource | `/collection/feelpp/datasets/cfd/results` | Deeply nested resource
+| Item with files | `/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata` | Item containing multiple files
+|===
+
+==== Advantages of Using Paths
+
+* **Human-readable**: Easier to understand and remember
+* **Hierarchical**: Shows the organizational structure
+* **Stable**: Less likely to change than auto-generated IDs
+* **Self-documenting**: Path describes the content location
+
+=== Automatic ZIP Extraction
+
+When downloading folders or items from Girder, the tool automatically handles ZIP archives:
+
+* **Automatic extraction**: ZIP files are automatically extracted without manual intervention
+* **Individual file listing**: Shows progress and details for each extracted file rather than just the ZIP
+* **Clean file access**: Extracted files are immediately available for use
+* **Progress tracking**: Displays extraction progress and lists all extracted files in verbose mode
+
+NOTE: This enhancement provides a seamless experience similar to direct file downloads, eliminating the need for manual ZIP extraction when working with Girder folders and items.
+
+=== Authentication
+
+Girder authentication is required for private data access and upload operations.
+
+* Environment variable:
 +
 [source,shell]
 ----
 export FEELPP_GIRDER_API_KEY=xxxxx
 ----
-* Add api_key option in the girder description.
+
+* Environment variable (recommended):
++
+[source,shell]
+----
+export FEELPP_GIRDER_API_KEY=your-api-key-here
+girder:{folder:5ac72871b0e9574027047894}
+----
+
+* Inline API key (deprecated):
 +
 [source,shell]
 ----
 girder:{folder:5ac72871b0e9574027047894,api_key:xxxx}
 ----
 
-Remark: another possibility for is to give directly the token generated from an api key (replace api_key by token).
-But it's quite difficult to get a token from the web interface of Girder, and you a responsible to delete the token.
-With the api key system, the remotedata apps generate and delete token automatically.
+NOTE: Using FEELPP_GIRDER_API_KEY environment variable is recommended over inline api_key as it's more secure and the remotedata app automatically manages token lifecycle.
 
+=== Examples
+
+* Download file from Girder using ID:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --progress
+----
+
+* Download file from Girder using collection path:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{file:/collection/feelpp/data/simulation-results.csv}" --progress
+----
+
+* Download folder with automatic ZIP extraction using ID:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{folder:5ac72871b0e9574027047894}" --verbose
+----
++
+This automatically extracts the folder contents and shows individual file progress.
+
+* Download folder using collection path:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{folder:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata}" --verbose
+----
++
+Downloads entire folder using human-readable collection path.
+
+* Download item with automatic extraction using collection path:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{item:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset}" --progress
+----
++
+Items containing multiple files are automatically extracted and listed.
+
+* Upload data to Girder using ID:
++
+[source,shell]
+----
+feelpp_remotedata --upload "girder:{folder:5ac72871b0e9574027047894}" --data $HOME/mydata
+----
+
+* Upload data to Girder using collection path:
++
+[source,shell]
+----
+feelpp_remotedata --upload "girder:{folder:/collection/feelpp/uploads}" --data $HOME/mydata --verbose
+----
+
+* Browse Girder contents using IDs:
++
+[source,shell]
+----
+feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
+feelpp_remotedata --contents "girder:{file:5b1f8707b0e9570499f66bd0}"
+----
+
+* Browse Girder contents using collection paths:
++
+[source,shell]
+----
+feelpp_remotedata --contents "girder:{folder:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata}"
+feelpp_remotedata --contents "girder:{path:/collection/feelpp/data}"
+feelpp_remotedata --contents "girder:{item:/collection/feelpp/testsuite/feelcore/feelpp_test_remotedata/dataset}"
+----
+
+* Mixed ID and collection path usage:
++
+[source,shell]
+----
+# Upload to collection path-specified folder
+feelpp_remotedata --upload "girder:{folder:/collection/feelpp/incoming}" --data results.txt
+
+# Download using generic collection path
+feelpp_remotedata --download "girder:{path:/collection/feelpp/datasets/cfd-simulations}" --data ./downloads
+----
+
+== CKAN
+
+CKAN (Comprehensive Knowledge Archive Network) is an open-source data management system used for publishing, sharing and finding data.
+
+=== Configuration Options
+
+|===
+| Option | Default value | Description
+
+| `url` | <from environment> | URL of a CKAN instance
+| `api_key` | <from environment> | API key for authentication
+| `organization` | <from environment> | organization name
+| `dataset` | <no default value> | dataset name or ID
+| `resource` | <no default value> | resource ID for specific file operations
+|===
+
+=== Enhanced Progress Reporting
+
+CKAN downloads now feature enhanced progress reporting:
+
+* **Filename-aware progress**: Shows the actual filename being downloaded instead of just generic progress
+* **Real-time updates**: Live progress bars with transfer rates and completion percentages
+* **Timeout support**: Configurable timeout handling for robust downloads
+* **Detailed progress format**: Progress bars show format like `filename.ext: [=====>] 42.3% (1.81 MB/1.81 MB)`
+
+NOTE: This provides the same comprehensive progress reporting as Girder downloads, ensuring consistent user experience across platforms.
+
+=== Environment Variables
+
+CKAN operations can be configured using environment variables:
+
+[source,shell]
+----
+export FEELPP_CKAN_URL="https://ckan.example.com"
+export FEELPP_CKAN_API_KEY="your-api-key"
+export FEELPP_CKAN_ORGANIZATION="your-org"
+----
+
+=== Authentication
+
+CKAN authentication is required for private datasets and upload operations.
+
+* Environment variables (recommended):
++
+[source,shell]
+----
+export FEELPP_CKAN_API_KEY=xxxxx
+export FEELPP_CKAN_ORGANIZATION=myorg
+----
+
+* Inline credentials:
++
+[source,shell]
+----
+ckan:{url:https://ckan.example.com,api_key:xxxx,organization:myorg}
+----
+
+=== Examples
+
+* List available organizations:
++
+[source,shell]
+----
+feelpp_remotedata --list-organizations="ckan:{}"
+feelpp_remotedata --list-organizations="ckan:{url:https://demo.ckan.org}"
+----
+
+* Download entire dataset:
++
+[source,shell]
+----
+feelpp_remotedata --download "ckan:{dataset:my-dataset}" --progress
+----
+
+* Download specific resource:
++
+[source,shell]
+----
+feelpp_remotedata --download "ckan:{resource:resource-id}" --debug
+----
+
+* Upload data to CKAN:
++
+[source,shell]
+----
+feelpp_remotedata --upload "ckan:{dataset:my-dataset}" --data $HOME/mydata
+----
+
+* Browse dataset contents:
++
+[source,shell]
+----
+feelpp_remotedata --contents "ckan:{dataset:my-dataset}"
+----
+
+== GENERAL EXAMPLES
+
+=== Download Examples
+
+* Download file from URL with progress:
++
+[source,shell]
+----
+feelpp_remotedata --download https://raw.githubusercontent.com/feelpp/feelpp/develop/README.adoc --progress
+----
+
+* Download GitHub repository with progress:
++
+[source,shell]
+----
+feelpp_remotedata --download "github:{repo:feelpp,path:examples/}" --verbose
+----
+
+* Download with custom directory:
++
+[source,shell]
+----
+feelpp_remotedata --download "girder:{file:5b1f8707b0e9570499f66bd0}" --data $HOME/mydir
+----
+
+* Download with different verbosity levels:
++
+[source,shell]
+----
+# Quiet mode (errors only)
+feelpp_remotedata --download "ckan:{dataset:sample}" --quiet
+
+# Normal mode (default) - shows operation status and file names
+feelpp_remotedata --download "github:{repo:feelpp,path:README.adoc}"
+
+# Progress mode (detailed progress) - shows file sizes, transfer rates
+feelpp_remotedata --download "ckan:{dataset:sample}" --progress
+
+# Debug mode (full API details) - shows URLs, API requests/responses
+feelpp_remotedata --download "ckan:{dataset:sample}" --debug
+----
+
+=== Upload Examples
+
+* Upload to Girder:
++
+[source,shell]
+----
+feelpp_remotedata --upload "girder:{folder:folder-id}" --data $HOME/mydata --verbose
+----
+
+* Upload to CKAN:
++
+[source,shell]
+----
+feelpp_remotedata --upload "ckan:{dataset:my-dataset}" --data $HOME/mydata --progress
+----
+
+=== Browse Examples
+
+* Browse with different platforms:
++
+[source,shell]
+----
+# Girder folder contents
+feelpp_remotedata --contents "girder:{folder:5ac72871b0e9574027047894}"
+
+# CKAN dataset contents
+feelpp_remotedata --contents "ckan:{dataset:my-dataset}"
+
+# Multiple Girder items
+feelpp_remotedata --contents "girder:{folder:[id1,id2],file:id3}"
+----
+
+== PROGRESS REPORTING
+
+The {manmanual} tool provides comprehensive progress reporting with four verbosity levels across all supported platforms (GitHub, Girder, CKAN, and URL/HTTP):
+
+.Progress Levels
+|===
+| Level | Option | Description | Output
+
+| *Quiet* | `--quiet, -q` | Minimal output | Errors only
+| *Normal* | (default) | Standard progress | Operation status, file names, completion messages
+| *Verbose* | `--verbose, -v` or `--progress` | Detailed progress | File sizes, transfer rates, detailed status, progress bars
+| *Debug* | `--debug` | Full diagnostic | API requests/responses, URLs, technical details, all verbose output
+|===
+
+=== Universal Progress Features
+
+All platforms now support consistent progress reporting:
+
+* **File-by-file progress**: Shows individual file download/upload progress with transfer rates
+* **Size reporting**: Displays file sizes in human-readable format (KB, MB, GB)
+* **Platform-specific information**: 
+  ** GitHub: Repository details, branch information, directory structure
+  ** Girder: Item/folder metadata, automatic ZIP extraction progress
+  ** CKAN: Dataset information, resource details, organization context
+  ** URL/HTTP: Direct download progress with HTTP status information
+* **Error handling**: Clear error messages with specific failure reasons and status codes
+* **Operation summaries**: Final status with success/failure counts and timing information
+* **API debugging**: Full request/response logging in debug mode with URLs and headers
+
+=== Platform-Specific Enhancements
+
+.GitHub Progress Features
+* Repository and branch information display
+* Recursive directory download progress with item counts
+* File size reporting after download completion
+* API rate limit and authentication status
+
+.Girder Progress Features  
+* Automatic ZIP extraction with individual file progress
+* Folder/item structure visualization
+* Upload progress with chunk transfer status
+* Authentication token management
+
+.CKAN Progress Features
+* Dataset and resource metadata display
+* Organization context information
+* Enhanced filename-aware progress bars
+* Resource listing with detailed information
+
+.URL/HTTP Progress Features
+* Real-time download progress bars
+* HTTP status code reporting
+* Network error handling and retry information
+* Protocol-agnostic support (HTTP, HTTPS, FTP)
+
+== ERROR HANDLING
+
+The tool provides robust error handling:
+
+* **Network errors**: HTTP status codes and connection issues
+* **Authentication errors**: Clear messages for invalid credentials
+* **Resource not found**: Specific error messages for missing files/datasets
+* **Permission errors**: Access denied messages with suggestions
+* **Data validation**: JSON parsing errors and malformed responses
 
 == COPYING
 
-Copyright \(C) 2017-2024 {feelpp} Consortium. +
+Copyright \(C) 2017-2025 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
 

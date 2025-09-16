@@ -27,8 +27,7 @@
    \date 2007-07-02
  */
 #include <feel/feelcore/feel.hpp>
-
-#include <fmt/chrono.h>
+#include <feel/feelcore/timeutils.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
 #include <feel/feelcore/feelpetsc.hpp>
@@ -175,18 +174,18 @@ extern "C"
             {
                 if ( reason> 0 )
                     std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] SNES KSP converged with #{} iterations, residual norm {:.4e}, reason: {}",
-                                               fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
+                                               Feel::gmtimeNow(), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
                               << std::endl;
                 else
                     std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] SNES KSP did not converge due to {} iterations, residual norm {:.4e}, reason: {}",
-                                               fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
+                                               Feel::gmtimeNow(), solver->prefix(), its, fnorm, Feel::PetscConvertKSPReasonToString( reason ) )
                               << std::endl;
             }
         }
         else
         {
             if ( solver->worldComm().isMasterRank() )
-                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES Residual norm {:.4e}", fmt::localtime( std::time( nullptr ) ), solver->prefix(), its, fnorm ) << std::endl;
+                std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES Residual norm {:.4e}", Feel::gmtimeNow(), solver->prefix(), its, fnorm ) << std::endl;
         }
 
         return 0;
@@ -196,7 +195,7 @@ extern "C"
         Feel::SolverNonLinearPetsc<double> *solver  = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
         if ( !solver ) return 0;
         if ( solver->worldComm().isMasterRank() )
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES/KSP Residual norm {:.4e}", fmt::localtime( std::time( nullptr ) ), solver->prefix(), it, rnorm ) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} SNES/KSP Residual norm {:.4e}", Feel::gmtimeNow(), solver->prefix(), it, rnorm ) << std::endl;
 
         return 0;
     }

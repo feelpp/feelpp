@@ -46,12 +46,20 @@ std::string findUser()
 }
 fs::path findHome()
 {
-    const char * home = getenv ("HOME");
-    if (home == NULL)
+    const char* home = getenv("HOME");
+    if (home == nullptr || home[0] == '\0')
     {
-        home = getpwuid( getuid() )->pw_dir;
+        if (auto pw = getpwuid(getuid()); pw && pw->pw_dir)
+        {
+            home = pw->pw_dir;
+        }
+        else
+        {
+            // Fallback to a writable temporary directory when user entry is missing
+            home = "/tmp";
+        }
     }
-    return fs::path( home );
+    return fs::path(home);
 }
 std::optional<fs::path> findGitDirectory( fs::path p )
 {
