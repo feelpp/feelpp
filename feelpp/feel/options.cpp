@@ -1011,6 +1011,9 @@ exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.vtk.insitu.hostname" ).c_str(), Feel::po::value<std::string>()->default_value( "localhost" ), "Specify a hostname to which the simulation will connect for coprocessing." )
         ( prefixvm( prefix,"exporter.vtk.insitu.port" ).c_str(), Feel::po::value<int>()->default_value( 22222 ), "Specify the connection port used for coprocessing." )
 #endif
+        ( prefixvm( prefix,"exporter.ensightgold.collective-io" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Collective IO (0: off, 1: on)" )
+        ( prefixvm( prefix,"exporter.ensightgold.profile" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable profiling (0: off, 1: on)" )
+        ( prefixvm( prefix,"exporter.ensightgold.mpiio.hints" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Hints for MPIO-IO" )
 
         ;
     return _options;

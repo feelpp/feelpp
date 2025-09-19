@@ -33,6 +33,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdint>
 
 
 #include <feel/feelmesh/filters.hpp>
@@ -212,6 +213,20 @@ private:
     std::string M_face_type;
     bool M_mergeTimeSteps;
     int M_packTimeSteps;
+    // enable collective MPI-IO (write_at_all) instead of independent I/O
+    bool M_collectiveIO;
+    // optional: MPI-IO hints parsed from env or options
+    std::string M_mpiioHints;
+    // enable lightweight profiling of MPI-IO helpers
+    bool M_profile;
+
+    // mutable profiling accumulators (seconds)
+    mutable double M_profileExscanTime;
+    mutable double M_profileAllreduceTime;
+    mutable double M_profileCollectiveWriteTime;
+    mutable double M_profileIndependentWriteTime;
+    mutable unsigned long long M_profileCollectiveWriteCalls;
+    mutable unsigned long long M_profileIndependentWriteCalls;
 
     // mapping allow to get ordering between Feel++ and Ensight format with curve element
     std::map<std::string,std::vector<uint16_type>> M_nodesOrderingInElementToEnsight;
@@ -224,6 +239,15 @@ private:
     mutable std::map<std::string, mesh_contiguous_numbering_mapping_ptrtype > M_cache_mp;
     mutable std::map<int,std::vector<size_type>> M_mapNodalArrayToDofId;
     mutable std::map<int,std::vector<size_type>> M_mapElementArrayToDofId;
+private:
+    // Build MPI_Info from env var FEELPP_MPIIO_HINTS (format: key=val;key2=val2)
+    FEELPP_NO_EXPORT MPI_Info buildMpiInfoFromEnv() const;
+    // Wrapper to select collective vs independent I/O
+    FEELPP_NO_EXPORT int mpiFileWriteAtMaybeAll(MPI_File fh, MPI_Offset offset, const void* buf, int count, MPI_Datatype datatype, MPI_Status* status) const;
+    // Utility: compute local byte offset with exclusive scan and total bytes with allreduce
+    FEELPP_NO_EXPORT void computeOffsetsBytes(int localBytes, long long& localOffsetBytes, long long& totalBytes) const;
+    FEELPP_NO_EXPORT void resetProfilingAccumulators() const;
+    FEELPP_NO_EXPORT void reportProfilingMetrics() const;
 };
 
 

@@ -31,6 +31,11 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/timeset.hpp>
 #include <feel/feelfilters/exporterensightgold.hpp>
+#include <feel/feeltiming/timer.hpp>
+#include <cstdlib>
+#include <cctype>
+#include <algorithm>
+#include <fmt/format.h>
 
 namespace Feel
 {
@@ -122,6 +127,12 @@ ExporterEnsightGold<MeshType,N>::init()
 
     M_mergeTimeSteps = boption( _name="exporter.ensightgold.merge.timesteps" );
     M_packTimeSteps = ioption( _name="exporter.ensightgold.pack.timesteps" );
+    M_collectiveIO = boption( _name="exporter.ensightgold.collective-io" );
+    // optional: hints as semicolon separated key=value
+    try { M_mpiioHints = soption(_name="exporter.ensightgold.mpiio.hints"); }
+    catch(...) { M_mpiioHints.clear(); }
+    M_profile = boption( _name="exporter.ensightgold.profile" );
+    resetProfilingAccumulators();
     if ( M_mergeTimeSteps && ( M_packTimeSteps == 1 ) )
         M_mergeTimeSteps = false;
 }
@@ -165,6 +176,9 @@ ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWr
     tic();
     writeSoSFile();
     toc("ExporterEnsightGold::save sos",FLAGS_v>1);
+
+    if ( M_profile )
+        reportProfilingMetrics();
 
     toc("ExporterEnsightGold::save", FLAGS_v > 0 );
 }
@@ -577,9 +591,17 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     }
 
     if( M_mergeTimeSteps && !writeNewGeoFile )
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+    {
+        MPI_Info info = this->buildMpiInfoFromEnv();
+        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, info , &fh );
+        if ( info != MPI_INFO_NULL ) MPI_Info_free(&info);
+    }
     else
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+    {
+        MPI_Info info = this->buildMpiInfoFromEnv();
+        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, info , &fh );
+        if ( info != MPI_INFO_NULL ) MPI_Info_free(&info);
+    }
 
     //MPI_Info_free(&info);
     free(str);
@@ -615,6 +637,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp, bool writeHeaderBeginFile, bool writeBeginEndTimeSet, Feel::detail::FileIndex & index ) const
 {
+    tic();
     /* Function WriteGeoMarker(Timestep T, MPI_File f) */
         /* P0 : Write "C Binary", part, #, desc, coords */
         /* for each part Marker in T */
@@ -717,6 +740,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_contiguous_nu
         posInFile+=80;
     }
 
+    toc("ExporterEnsightGold::writeGeoMarkers", FLAGS_v>1);
+
 }
 
 template<typename MeshType, int N>
@@ -799,36 +824,30 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     tic();
     // all procs writing :
     // - calculate mp.ids.size()*sizeOfInt32_t
-    int ptIdWritingSize = mp.ids.size()*sizeOfInt32_t;
-    localOffset = 0;
-    // - calculate every proc offset "localOffset" with Mpi_Exscan(...)
-    MPI_Exscan(&ptIdWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
-    // - write in file on cursor : posInFile + localOffset
-    MPI_File_write_at(fh, posInFile+localOffset, mp.ids.data(), mp.ids.size(),MPI_INT32_T, &status);
-    // - calculate the whole offset to increment posInFile :
-    sumOffsets = localOffset + ptIdWritingSize;
-    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
-    posInFile += sumOffsets;
+    {
+        int localBytes = mp.ids.size()*sizeOfInt32_t;
+        long long localOffLL=0, totalBytesLL=0;
+        this->computeOffsetsBytes(localBytes, localOffLL, totalBytesLL);
+        this->mpiFileWriteAtMaybeAll(fh, posInFile + localOffLL, mp.ids.data(), (int)mp.ids.size(), MPI_INT32_T, &status);
+        posInFile += totalBytesLL;
+    }
     toc("ExporterEnsightGold writeVariableFiles write ids",FLAGS_v>0);
 
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
     tic();
     // All procs write :
     // - calculate every proc size of part to write
-    int coordsWritingSize = __nv*sizeOfFloat;
-    localOffset = 0;
-    // - calculate every proc offset "localOffset" with Mpi_Exscan
-    MPI_Exscan(&coordsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
-    sumOffsets = localOffset + coordsWritingSize;
-    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
-    // - write in file on cursor : posInFile + localOffset + i*sumOffsets
-    for(int i = 0; i < 3; i++)
     {
-        MPI_File_write_at(fh, posInFile + i*sumOffsets + localOffset, \
-                          mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
-        //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
+        int localBytes = __nv*sizeOfFloat;
+        long long localOffLL=0, totalBytesLL=0;
+        this->computeOffsetsBytes(localBytes, localOffLL, totalBytesLL);
+        for(int i = 0; i < 3; i++)
+        {
+            this->mpiFileWriteAtMaybeAll(fh, posInFile + i*totalBytesLL + localOffLL,
+                                         mp.coords.data() + i * __nv, (int)__nv, MPI_FLOAT, &status );
+        }
+        posInFile += 3*totalBytesLL;
     }
-    posInFile += 3*sumOffsets;
     toc("ExporterEnsightGold writeVariableFiles write coords",FLAGS_v>0);
 
     // write connectivity
@@ -868,17 +887,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
     // All procs write :
     // - calculate every proc size of part to write
-    int idnodeWritingSize = idnode.size()*sizeOfInt32_t;
-    localOffset = 0;
-    // - calculate every proc offset "localOffset" with Mpi_Exscan
-    MPI_Exscan(&idnodeWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
-    // - write in file on cursor : posInFile + localOffset
-    MPI_File_write_at(fh, posInFile+localOffset, idnode.data(), idnode.size(), MPI_INT32_T, &status);
-    //MPI_File_write_ordered(fh, idnode.data(), idnode.size(), MPI_INT32_T, &status);
-
-    sumOffsets = localOffset + idnodeWritingSize;
-    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
-    posInFile += sumOffsets; // all procs go to the end of last writing.
+    {
+        int localBytes = idnode.size()*sizeOfInt32_t;
+        long long localOffLL=0, totalBytesLL=0;
+        this->computeOffsetsBytes(localBytes, localOffLL, totalBytesLL);
+        this->mpiFileWriteAtMaybeAll(fh, posInFile+localOffLL, idnode.data(), (int)idnode.size(), MPI_INT32_T, &status);
+        posInFile += totalBytesLL; // all procs go to the end of last writing.
+    }
 
 
 
@@ -900,18 +915,13 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
     // All procs write :
     // - calculate every proc size of part to write
-    int idelemWritingSize = idelem.size()*sizeOfInt32_t;
-    localOffset = 0;
-    // - calculate every proc offset "localOffset" with Mpi_Exscan
-    MPI_Exscan(&idelemWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
-    // - write in file on cursor : posInFile + localOffset
-
-    MPI_File_write_at(fh, posInFile+localOffset, idelem.data(), idelem.size(), MPI_INT32_T, &status);
-    //MPI_File_write_ordered(fh, idelem.data(), idelem.size(), MPI_INT32_T, &status);
-
-    sumOffsets = localOffset + idelemWritingSize;
-    MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
-    posInFile += sumOffsets; // all procs go to the end of last writing.
+    {
+        int localBytes = idelem.size()*sizeOfInt32_t;
+        long long localOffLL=0, totalBytesLL=0;
+        this->computeOffsetsBytes(localBytes, localOffLL, totalBytesLL);
+        this->mpiFileWriteAtMaybeAll(fh, posInFile+localOffLL, idelem.data(), (int)idelem.size(), MPI_INT32_T, &status);
+        posInFile += totalBytesLL; // all procs go to the end of last writing.
+    }
 }
 
 #if 0
@@ -1222,6 +1232,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp, int part ) const
 {
+    tic();
     MPI_Status status;
     char buffer[80];
     int sizeOfInt32_t;
@@ -1230,6 +1241,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
 
     auto mesh = mp.mesh();
+    std::string timerLabel = "ExporterEnsightGold::writeGeoMarkedElements part " + std::to_string(part);
 
     rank_type currentPid = mesh->worldComm().localRank();
 
@@ -1264,7 +1276,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         //sprintf(buffer2, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
         std::string partName = mp.name( part );
         if( partName.empty() )
-            partName = (boost::format("marker_%1%")%part).str();
+            partName = fmt::format("marker_{}", part);
         partName.resize( std::min((int)partName.size(),(int)80) );
         strcpy( buffer2, partName.c_str() );
             //sprintf(buffer2, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
@@ -1353,7 +1365,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     }
     else
     {
-        auto itFindOrdering = M_nodesOrderingInElementToEnsight.find( (boost::format("%1%_%2%d_g%3%") %mesh_type::shape_type::type() %mesh_type::shape_type::nDim %mesh_type::shape_type::nOrder ).str() );
+        auto key = fmt::format("{}_{}d_g{}", mesh_type::shape_type::type(), mesh_type::shape_type::nDim, mesh_type::shape_type::nOrder);
+        auto itFindOrdering = M_nodesOrderingInElementToEnsight.find( key );
         CHECK( itFindOrdering != M_nodesOrderingInElementToEnsight.end() ) << "not found an ordering";
         auto const& mappingWithThisKindOfElement = itFindOrdering->second;
         nPointsUsedInElt = mappingWithThisKindOfElement.size();
@@ -1362,6 +1375,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     localOffset = mp.startElementIds( part,currentPid )*nPointsUsedInElt*sizeOfInt32_t;
     MPI_File_write_at(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );
     posInFile += gnole*nPointsUsedInElt*sizeOfInt32_t;
+
+    toc(timerLabel, FLAGS_v>1);
 }
 #endif
 
@@ -1847,8 +1862,13 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             {
                 for ( uint16_type c = 0; c < nComponents; ++c )
                 {
-                    MPI_File_write_at(fh, posInFile + (offsetValuesPerComponent + c*nValuesPerComponentAllProcess)*sizeOfFloat,
-                                      &__field.data()[c*nValuesPerComponent], nValuesPerComponent, MPI_FLOAT, &status);
+                    this->mpiFileWriteAtMaybeAll(
+                        fh,
+                        posInFile + (offsetValuesPerComponent + c*nValuesPerComponentAllProcess)*sizeOfFloat,
+                        &__field.data()[c*nValuesPerComponent],
+                        nValuesPerComponent,
+                        MPI_FLOAT,
+                        &status);
                 }
             }
             posInFile += nComponents*nValuesPerComponentAllProcess*sizeOfFloat;
@@ -1882,6 +1902,170 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 {
+}
+
+// Build MPI_Info from env var FEELPP_MPIIO_HINTS (key=val;key2=val2)
+template<typename MeshType, int N>
+MPI_Info ExporterEnsightGold<MeshType,N>::buildMpiInfoFromEnv() const
+{
+    // Prefer explicit hints via option if provided; else environment
+    std::string hints = M_mpiioHints;
+    if ( hints.empty() )
+    {
+        const char* env = std::getenv("FEELPP_MPIIO_HINTS");
+        if ( env ) hints = env;
+    }
+    if ( hints.empty() )
+        return MPI_INFO_NULL;
+
+    MPI_Info info;
+    MPI_Info_create(&info);
+
+    auto setHint = [&](std::string k, std::string v){
+        if ( !k.empty() )
+        {
+            // trim spaces
+            auto ltrim = [](std::string& s){ s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch){return !std::isspace(ch);})); };
+            auto rtrim = [](std::string& s){ s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch){return !std::isspace(ch);}).base(), s.end()); };
+            ltrim(k); rtrim(k); ltrim(v); rtrim(v);
+            if ( !v.empty() ) MPI_Info_set(info, k.c_str(), v.c_str());
+        }
+    };
+
+    size_t start = 0;
+    while ( start < hints.size() )
+    {
+        size_t sep = hints.find(';', start);
+        std::string token = hints.substr(start, sep == std::string::npos ? std::string::npos : sep - start);
+        if ( !token.empty() )
+        {
+            size_t eq = token.find('=');
+            if ( eq != std::string::npos )
+                setHint(token.substr(0, eq), token.substr(eq+1));
+        }
+        if ( sep == std::string::npos ) break;
+        start = sep + 1;
+    }
+
+    return info;
+}
+
+template<typename MeshType, int N>
+int ExporterEnsightGold<MeshType,N>::mpiFileWriteAtMaybeAll(MPI_File fh, MPI_Offset offset, const void* buf, int count, MPI_Datatype datatype, MPI_Status* status) const
+{
+    Feel::Timer timer;
+    int rc = MPI_SUCCESS;
+    if ( M_collectiveIO )
+        rc = MPI_File_write_at_all(fh, offset, const_cast<void*>(buf), count, datatype, status);
+    else
+        rc = MPI_File_write_at(fh, offset, const_cast<void*>(buf), count, datatype, status);
+
+    if ( M_profile )
+    {
+        double elapsed = timer.elapsed();
+        if ( M_collectiveIO )
+        {
+            M_profileCollectiveWriteTime += elapsed;
+            ++M_profileCollectiveWriteCalls;
+        }
+        else
+        {
+            M_profileIndependentWriteTime += elapsed;
+            ++M_profileIndependentWriteCalls;
+        }
+    }
+
+    return rc;
+}
+
+template<typename MeshType, int N>
+void ExporterEnsightGold<MeshType,N>::computeOffsetsBytes(int localBytes, long long& localOffsetBytes, long long& totalBytes) const
+{
+    long long loc = localBytes;
+    long long ex = 0;
+    Feel::Timer timer;
+    MPI_Exscan(&loc, &ex, 1, MPI_LONG_LONG, MPI_SUM, this->worldComm());
+    if ( M_profile )
+        M_profileExscanTime += timer.elapsed();
+    timer.start();
+    long long sum = 0;
+    MPI_Allreduce(&loc, &sum, 1, MPI_LONG_LONG, MPI_SUM, this->worldComm());
+    if ( M_profile )
+        M_profileAllreduceTime += timer.elapsed();
+    localOffsetBytes = ex;
+    totalBytes = sum;
+}
+
+template<typename MeshType, int N>
+void ExporterEnsightGold<MeshType,N>::resetProfilingAccumulators() const
+{
+    M_profileExscanTime = 0.0;
+    M_profileAllreduceTime = 0.0;
+    M_profileCollectiveWriteTime = 0.0;
+    M_profileIndependentWriteTime = 0.0;
+    M_profileCollectiveWriteCalls = 0;
+    M_profileIndependentWriteCalls = 0;
+}
+
+template<typename MeshType, int N>
+void ExporterEnsightGold<MeshType,N>::reportProfilingMetrics() const
+{
+    if ( !M_profile )
+        return;
+
+    auto const& world = this->worldComm();
+    int root = world.masterRank();
+
+    double localTimes[4] = { M_profileExscanTime, M_profileAllreduceTime, M_profileCollectiveWriteTime, M_profileIndependentWriteTime };
+    double sumTimes[4] = { 0.0, 0.0, 0.0, 0.0 };
+    double maxTimes[4] = { 0.0, 0.0, 0.0, 0.0 };
+
+    MPI_Reduce(localTimes, sumTimes, 4, MPI_DOUBLE, MPI_SUM, root, world.comm());
+    MPI_Reduce(localTimes, maxTimes, 4, MPI_DOUBLE, MPI_MAX, root, world.comm());
+
+    unsigned long long localCounts[2] = { M_profileCollectiveWriteCalls, M_profileIndependentWriteCalls };
+    unsigned long long sumCounts[2] = { 0ull, 0ull };
+    MPI_Reduce(localCounts, sumCounts, 2, MPI_UNSIGNED_LONG_LONG, MPI_SUM, root, world.comm());
+
+    if ( world.isMasterRank() )
+    {
+        double n = static_cast<double>( world.globalSize() );
+        auto logReduction = [&](std::string const& tag, double total, double maximum)
+        {
+            double avg = n > 0.0 ? total / n : 0.0;
+            LOG(INFO) << "[ExporterEnsightGold::profile] " << tag
+                      << " total=" << total << "s avg=" << avg << "s max=" << maximum << "s";
+        };
+
+        logReduction("MPI_Exscan", sumTimes[0], maxTimes[0]);
+        logReduction("MPI_Allreduce", sumTimes[1], maxTimes[1]);
+
+        if ( sumCounts[0] > 0 )
+        {
+            double avgCall = sumTimes[2] / static_cast<double>( sumCounts[0] );
+            LOG(INFO) << "[ExporterEnsightGold::profile] Collective writes calls=" << sumCounts[0]
+                      << " total=" << sumTimes[2] << "s avg-call=" << avgCall
+                      << "s max-rank=" << maxTimes[2] << "s";
+        }
+        else
+        {
+            LOG(INFO) << "[ExporterEnsightGold::profile] Collective writes calls=0";
+        }
+
+        if ( sumCounts[1] > 0 )
+        {
+            double avgCall = sumTimes[3] / static_cast<double>( sumCounts[1] );
+            LOG(INFO) << "[ExporterEnsightGold::profile] Independent writes calls=" << sumCounts[1]
+                      << " total=" << sumTimes[3] << "s avg-call=" << avgCall
+                      << "s max-rank=" << maxTimes[3] << "s";
+        }
+        else
+        {
+            LOG(INFO) << "[ExporterEnsightGold::profile] Independent writes calls=0";
+        }
+    }
+
+    resetProfilingAccumulators();
 }
 
 #if 0
