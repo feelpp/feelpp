@@ -260,6 +260,87 @@ StatusRequestHTTP requestHTTPGET( const std::string& url, const std::vector<std:
 
     return StatusRequestHTTP( false, 0, fmt::format( "Unknown error occurred after retries to get url {}", url ) );
 }
+
+StatusRequestHTTP requestHTTPGETWithProgress( const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, 
+                                            const std::string& filename, const ProgressCallback& progressCallback,
+                                            int timeout, int max_retries, int backoff_delay )
+{
+    // Convert headers to cpr::Header
+    cpr::Header cpr_headers;
+    for ( const auto& header : headers )
+    {
+        auto pos = header.find( ": " );
+        if ( pos != std::string::npos )
+        {
+            cpr_headers[header.substr( 0, pos )] = header.substr( pos + 2 );
+        }
+    }
+
+    int retries = 0;
+    while ( retries <= max_retries )
+    {
+        // Reset stream position for retries
+        if (retries > 0) {
+            ofile.clear();
+            ofile.seekp(0);
+        }
+
+        // Track downloaded bytes for progress
+        std::streamsize totalDownloaded = 0;
+        
+        // Perform the GET request with timeout, progress callback, and write callback
+        auto response = cpr::Get( 
+            cpr::Url{ url }, 
+            cpr_headers, 
+            cpr::Timeout{ timeout },
+            cpr::ProgressCallback([&](cpr::cpr_pf_arg_t downloadTotal, cpr::cpr_pf_arg_t downloadNow, 
+                                     cpr::cpr_pf_arg_t uploadTotal, cpr::cpr_pf_arg_t uploadNow, intptr_t userdata) -> bool {
+                if (progressCallback && downloadTotal > 0) {
+                    // Debug: Uncomment next line to see all progress calls
+                    // std::cerr << "Progress: " << downloadNow << "/" << downloadTotal << std::endl;
+                    progressCallback(filename, static_cast<std::streamsize>(downloadNow), 
+                                   static_cast<std::streamsize>(downloadTotal));
+                }
+                return true; // Continue download
+            }),
+            cpr::WriteCallback([&](const std::string_view& data, intptr_t userdata) -> bool {
+                ofile.write(data.data(), data.size());
+                totalDownloaded += data.size();
+                return true; // Continue download
+            })
+        );
+
+        // Check if the request was successful
+        if ( response.status_code == 200 )
+        {
+            // Final progress update to show completion
+            if (progressCallback && totalDownloaded > 0) {
+                progressCallback(filename, totalDownloaded, totalDownloaded);
+            }
+            return StatusRequestHTTP( true, response.status_code, "" );
+        }
+
+        // Retry on certain failure conditions (e.g., timeout or server errors)
+        if ( response.error.code == cpr::ErrorCode::OPERATION_TIMEDOUT || response.status_code >= 500 )
+        {
+            ++retries;
+            if ( retries > max_retries )
+            {
+                return StatusRequestHTTP( false, response.status_code, fmt::format( "Max retries reached {} for url {}", response.error.message, url ) );
+            }
+            // Wait before retrying
+            std::this_thread::sleep_for( std::chrono::milliseconds( backoff_delay ) );
+        }
+        else
+        {
+            // Non-retryable error
+            return StatusRequestHTTP( false, response.status_code, response.error.message );
+        }
+    }
+
+    return StatusRequestHTTP( false, 0, fmt::format( "Unknown error occurred after retries to get url {}", url ) );
+}
+
 StatusRequestHTTP requestHTTPPOST( const std::string& url, const std::vector<std::string>& headers,
                                    std::ostream& ofile, int timeout, int max_retries, int backoff_delay )
 {
@@ -497,12 +578,12 @@ RemoteData::RemoteData( std::string const& desc, worldcomm_ptr_t const& worldCom
         M_girder.emplace( girderTool );
         return;
     }
-    //RemoteData::CKAN ckanTool( desc, *worldComm );
-    //if ( ckanTool.isInit() )
-    //{
-    //    M_ckan.emplace( ckanTool );
-    //    return;
-    //}
+    RemoteData::CKAN ckanTool( desc, *worldComm );
+    if ( ckanTool.isInit() )
+    {
+        M_ckan.emplace( ckanTool );
+        return;
+    }
 }
 
 bool RemoteData::canDownload() const
@@ -524,6 +605,8 @@ bool RemoteData::canUpload() const
         return true;
     else if ( M_ckan && M_ckan->canUpload() )
         return true;
+    else if ( M_github && M_github->canUpload() )
+        return true;  // This will always be false for GitHub
     return false;
 }
 
@@ -539,6 +622,21 @@ RemoteData::download( std::string const& dir, std::string const& filename ) cons
         return M_girder->download( dir );
     else if ( M_ckan )
         return M_ckan->download( dir );
+    return downloadedData;
+}
+
+std::vector<std::string>
+RemoteData::download( std::string const& dir, std::string const& filename, int timeout ) const
+{
+    std::vector<std::string> downloadedData;
+    if ( M_url )
+        downloadedData.push_back( M_url->download( dir, filename ) ); // TODO: Add timeout support for URL
+    else if ( M_github )
+        return M_github->download( dir ); // TODO: Add timeout support for GitHub
+    else if ( M_girder )
+        return M_girder->download( dir, timeout );
+    else if ( M_ckan )
+        return M_ckan->download( dir, timeout );
     return downloadedData;
 }
 
@@ -561,6 +659,18 @@ RemoteData::upload( std::string const& dataPath, std::string const& parentId, bo
 {
     if ( M_girder && M_girder->canUpload() )
         return M_girder->upload( dataPath, parentId, sync );
+    else if ( M_ckan && M_ckan->canUpload() )
+        return M_ckan->upload( dataPath, parentId );
+    return {};
+}
+
+std::vector<std::string>
+RemoteData::upload( std::string const& dataPath, std::string const& parentId, bool sync, int timeout ) const
+{
+    if ( M_girder && M_girder->canUpload() )
+        return M_girder->upload( dataPath, parentId, sync, timeout );
+    else if ( M_ckan && M_ckan->canUpload() )
+        return M_ckan->upload( dataPath, parentId, timeout );
     return {};
 }
 
@@ -621,7 +731,29 @@ RemoteData::contents() const
 {
     if ( M_girder && M_girder->isInit() )
         return ContentsInfo{ M_girder->contents() };
+    else if ( M_ckan && M_ckan->isInit() )
+        return ContentsInfo{ M_ckan->contents() };
     return ContentsInfo{ std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(), std::vector<std::shared_ptr<ItemInfo>>(), std::vector<std::shared_ptr<FileInfo>>() ) };
+}
+
+RemoteData::ContentsInfo
+RemoteData::contents( RemoteDataProgress& progress ) const
+{
+    if ( M_girder && M_girder->isInit() )
+        return ContentsInfo{ M_girder->contents( progress ) };
+    else if ( M_ckan && M_ckan->isInit() )
+        return ContentsInfo{ M_ckan->contents() };
+    return ContentsInfo{ std::make_tuple( std::vector<std::shared_ptr<FolderInfo>>(), std::vector<std::shared_ptr<ItemInfo>>(), std::vector<std::shared_ptr<FileInfo>>() ) };
+}
+
+std::vector<std::string>
+RemoteData::listOrganizations() const
+{
+    if ( M_ckan && M_ckan->isInit() )
+        return M_ckan->listOrganizations();
+    
+    // Only CKAN supports listing organizations
+    return std::vector<std::string>();
 }
 
 RemoteData::URL::URL( std::string const& url, WorldComm& worldComm )
@@ -682,23 +814,79 @@ RemoteData::URL::download( std::string const& _dir, std::string const& _filename
 
     if ( M_worldComm->isMasterRank() )
     {
+        // Determine progress level
+        RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+        if (Environment::vm().count("quiet")) {
+            progressLevel = RemoteDataProgress::Level::QUIET;
+        } else if (Environment::vm().count("debug")) {
+            progressLevel = RemoteDataProgress::Level::DEBUG;
+        } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+            progressLevel = RemoteDataProgress::Level::VERBOSE;
+        }
+        
+        RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+        
         if ( !fs::exists( dir ) )
             fs::create_directories( dir );
+
+        progress.startOperation("Downloading URL: " + url);
 
         std::ofstream ofile( thefilename, std::ios::out | std::ios::binary );
         /* open the file */
         if ( ofile )
         {
-            StatusRequestHTTP status = requestDownloadURL( url, ofile );
-            if ( !status.success() )
-                std::cout << "Download error : " << status.msg() << "\n";
-            if ( status.code() != 200 ) // is it really true for all type http,ftp,... ???
-                std::cout << "Download error : returned code " << status.code() << "\n";
+            if (progress.isVerbose() || progress.isDebug()) {
+                // Use progress-enabled download
+                auto progressCallback = [&progress](const std::string& filename, std::streamsize transferred, std::streamsize total) {
+                    if (progress.isVerbose()) {
+                        progress.updateProgress(transferred, total);
+                    }
+                };
+                
+                StatusRequestHTTP status = requestHTTPGETWithProgress(url, {}, ofile, filename, progressCallback);
+                if ( !status.success() )
+                {
+                    progress.error("Download error: " + status.msg());
+                }
+                if ( status.code() != 200 )
+                {
+                    progress.error("Download error: returned code " + std::to_string(status.code()));
+                }
+                else if (progress.isNormal() || progress.isVerbose())
+                {
+                    progress.completeFile(filename);
+                }
+            } else {
+                // Use standard download for normal/quiet mode
+                StatusRequestHTTP status = requestDownloadURL( url, ofile );
+                if ( !status.success() )
+                {
+                    if (!progress.isQuiet()) {
+                        std::cout << "Download error : " << status.msg() << "\n";
+                    }
+                }
+                if ( status.code() != 200 )
+                {
+                    if (!progress.isQuiet()) {
+                        std::cout << "Download error : returned code " << status.code() << "\n";
+                    }
+                }
+                else if (progress.isNormal())
+                {
+                    progress.completeFile(filename);
+                }
+            }
 
             ofile.close();
         }
         else
-            std::cout << "Download error : failure when create file  " << thefilename << "\n";
+        {
+            progress.error("Download error: failure when create file " + thefilename);
+        }
+        
+        if (progress.isNormal() || progress.isVerbose()) {
+            progress.completeOperation();
+        }
     }
 
     M_worldComm->barrier();

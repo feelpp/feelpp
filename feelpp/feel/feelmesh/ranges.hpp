@@ -138,7 +138,7 @@ public:
     {
         if ( m )
         {
-            this->setWorldCommPtr( m->worldCommPtr() );
+            this->setWorldComm( m->worldCommPtr() );
             M_mesh_base = m.get();
         }
     }

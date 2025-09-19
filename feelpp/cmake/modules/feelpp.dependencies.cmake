@@ -612,10 +612,24 @@ if(FEELPP_ENABLE_PYTHON)
   if (DEFINED PYTHON_SITE_PACKAGES)
     set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
   else ()
-    execute_process (COMMAND ${Python3_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
-                      OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
-                      RESULT_VARIABLE _PYTHON_pythonlib_result
-                      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} -c
+        "
+import sys, sysconfig
+base = '${CMAKE_INSTALL_PREFIX}'
+try:
+    # Python ≥3.12 (preferred)
+    print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+except Exception:
+  try:
+    from distutils import sysconfig as dsys
+    print(dsys.get_python_lib(plat_specific=True, prefix=base))
+  except Exception as e:
+    sys.exit('Could not compute platlib path: %s' % e)"
+      OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+      RESULT_VARIABLE _PYTHON_pythonlib_result
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
 
     if (_PYTHON_pythonlib_result)
       message (SEND_ERROR "Could not run ${Python3_EXECUTABLE}")

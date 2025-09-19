@@ -729,10 +729,10 @@ public:
         auto opt = fmt::memory_buffer();
 
         if ( !prefix.empty() )
-            fmt::format_to( opt, "{}.",prefix);
+            fmt::format_to( fmt::appender(opt), "{}.", prefix);
         if ( !sub.empty() )
-            fmt::format_to( std::back_inserter( opt ), "{}-",sub);
-        fmt::format_to( std::back_inserter( opt ), "{}",name);
+            fmt::format_to( fmt::appender(opt), "{}-", sub);
+        fmt::format_to( fmt::appender(opt), "{}", name);
         std::string optname = fmt::to_string(opt);
         auto it = vm.find( optname );
         if ( it == vm.end() )

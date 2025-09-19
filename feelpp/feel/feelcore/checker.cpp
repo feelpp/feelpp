@@ -197,7 +197,7 @@ Checker::setScript( std::string const& s, variables_t const& in, std::map<std::s
     M_script = s;
     std::cout << fmt::format( "script: {}", s ) << std::endl;
     M_param_values= p;
-    std::cout << fmt::format( "param_values: {}", M_param_values ) << std::endl;
+    std::cout << fmt::format( "param_values: {}", fmt::streamed(M_param_values) ) << std::endl;
 }
 Checker::variables_t
 Checker::runScript()
