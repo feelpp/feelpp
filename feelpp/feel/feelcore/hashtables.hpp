@@ -26,6 +26,7 @@
 #ifndef FEELPP_HASHTABLES_HPP
 #define FEELPP_HASHTABLES_HPP 1
 
+#include <array>
 #include <boost/functional/hash.hpp>
 
 namespace Feel {
@@ -42,6 +43,11 @@ struct HasherContainers
     size_t operator()(const std::vector<T>& v) const
         {
             return boost::hash_range( v.begin(),v.end() );
+        }
+    template<std::size_t N>
+    size_t operator()(const std::array<T,N>& v) const
+        {
+            return boost::hash_range( v.begin(), v.end() );
         }
 };
 

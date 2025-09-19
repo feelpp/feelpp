@@ -400,26 +400,12 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdat
     rank_type nProcess =  M_meshPartIn->worldComm().localSize();
 
     std::set<rank_type> partIdsSet;
-    std::vector<rank_type> countPartByPid(nProcess,0);
-    for ( rank_type p=0;p<M_meshPartIn->numberOfPartitions();++p )
+    for ( rank_type p = 0; p < M_meshPartIn->numberOfPartitions(); ++p )
     {
-        for ( rank_type pid=0;pid<nProcess;++pid )
-        {
-            if ( pid == (p%nProcess) )
-                ++countPartByPid[pid];
-        }
-        if ( processId == (p%nProcess) )
+        if ( processId == (p % nProcess) )
             partIdsSet.insert( p );
     }
-    rank_type maxCount = *std::max_element(countPartByPid.begin(),countPartByPid.end());
-    std::vector<rank_type> partIds( maxCount, invalid_rank_type_value );
-    rank_type theId = 0;
-    for ( rank_type p : partIdsSet )
-        partIds[theId++] = p;
-    //std::cout <<  "partIds.size()="  << partIds.size() << " : " <<  partIds << std::endl;
-
-    if ( partIds.size() > 1 && nProcess > 1 )
-        CHECK( false ) << "TODO";
+    std::vector<rank_type> partIds( partIdsSet.begin(), partIdsSet.end() );
 
     tic();
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), true);
@@ -1283,7 +1269,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
             if ( partId != invalid_rank_type_value )
                 numberOfLocalElementsInProcess += M_numLocalElements[partId];
         }
-        M_meshPartIn->reserveNumberOfPoint( numberOfLocalElementsInProcess ); // WARNING : NOT EXACT IF A PROCESS HAS MORE THAN ONE PARTITION
+        M_meshPartIn->reserveNumberOfElement( numberOfLocalElementsInProcess );
 
         for ( rank_type partId : partIds )
         {

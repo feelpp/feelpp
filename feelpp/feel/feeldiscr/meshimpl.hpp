@@ -32,6 +32,8 @@
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <boost/preprocessor/list/first_n.hpp>
+#include <algorithm>
+#include <array>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -111,6 +113,27 @@ initGm1( typename MeshType::gm_ptrtype gm, mpl::false_ /**/ )
 {
     return typename MeshType::gm1_ptrtype( new typename MeshType::gm1_type );
 }
+
+/**
+ * @brief Normalize a key array by sorting it if not already sorted
+ * @param key Container to normalize (std::array, std::vector, etc.)
+ */
+template<typename Container>
+void normalizeKey( Container& key )
+{
+    bool isSorted = true;
+    for (std::size_t idx = 1; idx < key.size(); ++idx)
+    {
+        if ( key[idx] < key[idx-1] )
+        {
+            isSorted = false;
+            break;
+        }
+    }
+    if ( !isSorted )
+        std::sort( key.begin(), key.end() );
+}
+
 } // namespace meshdetail
 
 template <typename MeshT>
@@ -1027,7 +1050,7 @@ void
     rank_type numPartition = MeshBase<IndexT>::worldComm().localSize();
 
     // stores local vertex ids of the faces to identify them
-    std::vector<size_type> lids( face_type::numVertices );
+    std::array<size_type, face_type::numVertices> lids{};
 
     size_type next_face = 0;
     bool faceinserted = false;
@@ -1038,7 +1061,8 @@ void
     auto en = this->endOrderedElement();
 
     size_type nElt = std::distance( iv, en );
-    typedef std::unordered_map<std::vector /*set*/<size_type>, std::tuple<element_type*, uint16_type, face_type*>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
+    using face_key_type = std::array<size_type, face_type::numVertices>;
+    typedef std::unordered_map<face_key_type, std::tuple<element_type*, uint16_type, face_type*>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
     pointstoface_container_type _faces( nElt * _numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
@@ -1056,11 +1080,9 @@ void
             {
                 lids[f] = face.point( f ).id();
             }
-            std::sort( lids.begin(), lids.end() );
+            meshdetail::normalizeKey( lids );
 
-            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple( lids ),
-                                                                  std::forward_as_tuple( nullptr, invalid_uint16_type_value, &face ) );
+            boost::tie( _faceit, faceinserted ) = _faces.emplace( lids, std::make_tuple( nullptr, invalid_uint16_type_value, &face ) );
 
             DVLOG_IF( 2, faceinserted ) << "added face with id " << face.id() << "\n";
             DVLOG_IF( 2, !faceinserted ) << "not added face with id " << face.id()
@@ -1137,12 +1159,10 @@ void
                               << " global id " << myfToP[j * face_type::numVertices + f] /*__element.point( pt_localid ).id()*/ << "\n";
 #endif
                 }
-                std::sort( lids.begin(), lids.end() );
+                meshdetail::normalizeKey( lids );
 
                 //boost::tie( _faceit, faceinserted ) = _faces.insert( std::make_pair( lids, nullptr/*next_face*/ ) );
-                boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                      std::forward_as_tuple( lids ),
-                                                                      std::forward_as_tuple( eltPtr, j, nullptr ) );
+                boost::tie( _faceit, faceinserted ) = _faces.emplace( lids, std::make_tuple( eltPtr, j, nullptr ) );
 
                 if ( faceinserted )
                 {
@@ -1364,13 +1384,14 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
     bool faceinserted = false;
 
     Eigen::Matrix<size_type, element_type::numVertices, 1> pointIdInElt;
-    std::vector<size_type> lids( face_type::numVertices );
+    std::array<size_type, face_type::numVertices> lids{};
 
     element_iterator iv, en;
     boost::tie( iv, en ) = this->elementsRange();
     size_type nElt = std::distance( iv, en );
 
-    typedef std::unordered_map<std::vector /*set*/<size_type>, std::tuple<element_type*, uint16_type, face_type*>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
+    using face_key_type = std::array<size_type, face_type::numVertices>;
+    typedef std::unordered_map<face_key_type, std::tuple<element_type*, uint16_type, face_type*>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
     pointstoface_container_type _faces( nElt * _numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
@@ -1389,11 +1410,9 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
             {
                 lids[f] = face.point( f ).id();
             }
-            std::sort( lids.begin(), lids.end() );
+            meshdetail::normalizeKey( lids );
 
-            boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                  std::forward_as_tuple( lids ),
-                                                                  std::forward_as_tuple( nullptr, invalid_uint16_type_value, &face ) );
+            boost::tie( _faceit, faceinserted ) = _faces.emplace( lids, std::make_tuple( nullptr, invalid_uint16_type_value, &face ) );
 
             DVLOG_IF( 2, faceinserted ) << "added face with id " << face.id() << "\n";
             DVLOG_IF( 2, !faceinserted ) << "not added face with id " << face.id()
@@ -1438,11 +1457,9 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
             {
                 for ( uint16_type f = 0; f < face_type::numVertices; ++f )
                     lids[f] = pointIdInElt[myfToP[j * face_type::numVertices + f]];
-                std::sort( lids.begin(), lids.end() );
+                meshdetail::normalizeKey( lids );
 
-                boost::tie( _faceit, faceinserted ) = _faces.emplace( std::piecewise_construct,
-                                                                      std::forward_as_tuple( lids ),
-                                                                      std::forward_as_tuple( eltPtr, j, nullptr ) );
+                boost::tie( _faceit, faceinserted ) = _faces.emplace( lids, std::make_tuple( eltPtr, j, nullptr ) );
                 if ( faceinserted )
                 {
                     //DVLOG(2) << "Connection0 face id: " << next_face << " to element id: " << eltId << " local face id: " << j << "\n";
@@ -1672,7 +1689,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
     VLOG( 2 ) << "Compute adjacency graph\n";
     //typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
     //typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<size_type,uint16_type>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
-    typedef std::unordered_map<std::vector /*set*/<size_type>, std::tuple<element_type*, uint16_type>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
+    using face_key_type = std::array<size_type, face_type::numVertices>;
+    typedef std::unordered_map<face_key_type, std::tuple<element_type*, uint16_type>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
 
     std::vector<uint16_type> myfToP( face_type::numVertices * this->numLocalFaces() );
     for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
@@ -1684,7 +1702,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
     bool faceinserted = false;
 
     Eigen::Matrix<size_type, element_type::numVertices, 1> pointIdInElt;
-    std::vector<size_type> lids( face_type::numVertices );
+    std::array<size_type, face_type::numVertices> lids{};
 
     const uint16_type _numLocalFaces = this->numLocalFaces();
 
@@ -1708,7 +1726,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
         {
             for ( uint16_type f = 0; f < face_type::numVertices; ++f )
                 lids[f] = pointIdInElt[myfToP[j * face_type::numVertices + f]];
-            std::sort( lids.begin(), lids.end() );
+            meshdetail::normalizeKey( lids );
 
             auto [_faceit, faceinserted] = _faces.try_emplace( lids, &elt, j );
 
