@@ -2,99 +2,243 @@ name: Feelpp CI
 
 on:
   pull_request:
-    branches:
-      - '*'
+    branches: ['*']
   push:
-    branches:
-      - master
-      - develop
+    branches: [ master, develop ]
 
 jobs:
-  check_skip:
-    runs-on: self-docker
+
+  
+  plan_ci:
+    name: Plan CI matrix
+    runs-on: ubuntu-latest
     outputs:
-        check_skip_components: ${{ steps.check_skip_components.outputs.SKIP_COMPONENTS }}
-        check_skip_feelpp: ${{ steps.check_skip_components.outputs.SKIP_FEELPP }}
-        check_skip_tests: ${{ steps.check_skip_components.outputs.SKIP_TESTS }}
-        check_skip_toolboxes: ${{ steps.check_skip_components.outputs.SKIP_TOOLBOXES }}
-        check_skip_mor: ${{ steps.check_skip_components.outputs.SKIP_MOR }}
-        check_skip_python: ${{ steps.check_skip_components.outputs.SKIP_PYTHON }}
+      mode:          ${{ steps.plan.outputs.mode }}
+      only_jobs:     ${{ steps.plan.outputs.only_jobs }}
+      skip_jobs:     ${{ steps.plan.outputs.skip_jobs }}
+      targets_json:  ${{ steps.plan.outputs.targets_json }}
+      targets_list:  ${{ steps.plan.outputs.targets_list }}
+      enabled_jobs:  ${{ steps.plan.outputs.enabled_jobs }}
+      raw_message:   ${{ steps.plan.outputs.raw_message }}
+      raw_directives: ${{ steps.plan.outputs.raw_directives }}
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Check if skip components
-      id: check_skip_components
-      run: |
-        if [[ $(git show -s --format=%B) =~ "skip components" ]]; then
-          echo "SKIP_COMPONENTS=true" >> $GITHUB_OUTPUT
-        else
-          echo "SKIP_COMPONENTS=false" >> $GITHUB_OUTPUT
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip feelpp" ]]; then
-          echo "SKIP_FEELPP=true" >> $GITHUB_OUTPUT
-          echo "SKIP_FEELPP=true"
-        else
-          echo "SKIP_FEELPP=false" >> $GITHUB_OUTPUT
-          echo "SKIP_FEELPP=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip tests" ]]; then
-          echo "SKIP_TESTS=true" >> $GITHUB_OUTPUT
-          echo "SKIP_TESTS=true"
-        else
-          echo "SKIP_TESTS=false" >> $GITHUB_OUTPUT
-          echo "SKIP_TESTS=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip toolboxes" ]]; then
-          echo "SKIP_TOOLBOXES=true" >> $GITHUB_OUTPUT
-          echo "SKIP_TOOLBOXES=true"
-        else
-          echo "SKIP_TOOLBOXES=false" >> $GITHUB_OUTPUT
-          echo "SKIP_TOOLBOXES=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip mor" ]]; then
-          echo "SKIP_MOR=true" >> $GITHUB_OUTPUT
-          echo "SKIP_MOR=true"
-        else
-          echo "SKIP_MOR=false" >> $GITHUB_OUTPUT
-          echo "SKIP_MOR=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip python" ]]; then
-          echo "SKIP_PYTHON=true" >> $GITHUB_OUTPUT
-          echo "SKIP_PYTHON=true"
-        else
-          echo "SKIP_PYTHON=false" >> $GITHUB_OUTPUT
-          echo "SKIP_PYTHON=false"
-        fi
+      - uses: actions/checkout@v4
+      - name: Show PR head commit (API)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pr = context.payload.pull_request.number;
+            const commits = await github.rest.pulls.listCommits({
+              owner, repo, pull_number: pr, per_page: 250
+            });
+            if (!Array.isArray(commits.data) || commits.data.length === 0) {
+              core.info('No commits returned for this PR.');
+              return;
+            }
+            const head = commits.data[commits.data.length - 1];
+            core.info(`PR HEAD SHA: ${head.sha}`);
+            core.info('PR HEAD MESSAGE:');
+            core.info(head.commit?.message || '<empty>');
+      - uses: feelpp/ci-matrix-planner@v1.11
+        id: plan
+        with:
+          config-path: .github/plan-ci.json
+          # lets the action read PR head commit via API when needed
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+#          message-override: |
+#            targets=fedora:42,debian:13,ubuntu:24.04,ubuntu:22.04
+      - name: Debug planner sources
+        run: |
+          echo "SOURCE=${{ steps.plan.outputs.raw_message }}"
+          echo "RAW_MESSAGE=${{ steps.plan.outputs.raw_message }}"
+          echo "RAW_DIRECTIVES=${{ steps.plan.outputs.raw_directives }}"
+
+  diag:
+    name: Planner diagnostics
+    needs: [plan_ci]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo planner outputs
+        run: |
+          echo "MODE=${{ needs.plan_ci.outputs.mode }}"
+          echo "ENABLED_JOBS=${{ needs.plan_ci.outputs.enabled_jobs }}"
+          echo "ONLY_JOBS=${{ needs.plan_ci.outputs.only_jobs }}"
+          echo "SKIP_JOBS=${{ needs.plan_ci.outputs.skip_jobs }}"
+          echo "TARGETS_LIST=${{ needs.plan_ci.outputs.targets_list }}"
+          echo "TARGETS_JSON=${{ needs.plan_ci.outputs.targets_json }}"
+          echo "RAW:     ${{ needs.plan_ci.outputs.raw_message }}"
+          echo "DIRS:    ${{ needs.plan_ci.outputs.raw_directives }}"
 
   feelpp:
-    needs: [check_skip]
-    runs-on: self-pkg
+    name: Build Feelpp (library)
+    needs: [plan_ci]
+    runs-on: self-docker
+    if: |
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Echo plan
+        run: |
+          echo "Mode: '${{ needs.plan_ci.outputs.mode }}'"
+          echo "Targets: ${{ needs.plan_ci.outputs.targets_list }}"
+      - uses: actions/checkout@v4
         with:
-            submodules: recursive
-
-      - name: Configure Feelpp 
-        id: configure-feelpp
+          submodules: recursive
+      - name: Build and Test Feelpp
         run: |
-          source /data/cemosis/spack/share/spack/setup-env.sh
-          spack env activate feelpp-openmpi4
-          cmake --preset feelpp-spack
-      - name: Build Feelpp
-        run: |
-          source /data/cemosis/spack/share/spack/setup-env.sh
-          spack env activate feelpp-openmpi4
-          cmake --build --preset feelpp-spack -j40
-          cmake --build --preset feelpp-spack -t install/fast
-      - name: Test Feelpp
-        run: |
-          source /data/cemosis/spack/share/spack/setup-env.sh
-          spack env activate feelpp-openmpi4
-          ctest --preset feelpp-spack -j4 -R feelpp
+          echo "Building Feelpp for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
         env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
           FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}          
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
+          JOBS: 20
 
+  testsuite:
+    name: Run Testsuite
+    needs: [plan_ci, feelpp]
+    runs-on: self-docker
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'testsuite')
+    continue-on-error: true
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Run Feelpp Testsuite
+        run: |
+          echo "Building Feelpp/Tests for branch ${{ github.event.pull_request && github.head_ref || github.ref_name }}"
+          feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}          
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
+          JOBS: 20
+
+  toolboxes:
+    name: Build Toolboxes
+    needs: [plan_ci, feelpp]
+    runs-on: self-docker
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build Feelpp Toolboxes
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}          
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
+          JOBS: 20
+
+  mor:
+    name: Build MOR
+    needs: [plan_ci, toolboxes]
+    runs-on: self-docker
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'mor')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build Feelpp MOR
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh mor
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}          
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
+          JOBS: 20
+
+  python:
+    name: Build Python bindings
+    needs: [plan_ci, mor]
+    runs-on: self-docker
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'python')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build Feelpp Python
+        run: |
+          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
+          CR_PAT: ${{ secrets.CR_PAT }}
+          CR_LOGIN: ${{ secrets.CR_LOGIN }}
+          JOBS: 20

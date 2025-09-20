@@ -1,6 +1,6 @@
 include(FetchContent)
 set(FETCHCONTENT_SOURCE_DIR_HANA ${CMAKE_CURRENT_SOURCE_DIR}/hana)
-FetchContent_Declare(hana GIT_REPOSITORY https://github.com/feelpp/hana.git GIT_TAG 4e402573f45bd78c5645359e07ad539b3c2b07a1) # the HEAD of feelpp branch
+FetchContent_Declare(hana GIT_REPOSITORY https://github.com/feelpp/hana.git GIT_TAG 26c11a1285db1a96bdb5f89989e1566f69b9dadd) # the HEAD of feelpp branch
 FetchContent_MakeAvailable(hana)
 
 target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_BOOST_HANA )

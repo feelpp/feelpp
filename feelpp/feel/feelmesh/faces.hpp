@@ -775,7 +775,7 @@ public:
         M_worldComm = _worldComm;
     }
 
-    void updateOrderedFace()
+    void updateOrderedFaces()
         {
             if ( !M_needToOrderFaces )
                 return;

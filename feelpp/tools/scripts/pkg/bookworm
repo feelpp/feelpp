@@ -54,3 +54,4 @@ ruby-asciidoctor-pdf
 libglew-dev
 gnuplot
 libglfw3-dev
+rsync

@@ -125,7 +125,7 @@ void checkViewFactorEnclosure(std::string const& prefix)
     upvf.compute();
     BOOST_TEST_MESSAGE( fmt::format("Max dev reciprocity {}", upvf.maxDevReciprocity()));
     
-    BOOST_TEST_MESSAGE( fmt::format("{}", upvf.viewFactors() ) );
+    BOOST_TEST_MESSAGE( fmt::format("{}", fmt::streamed(upvf.viewFactors()) ) );
     auto row_sum_vf = upvf.viewFactors().rowwise().sum();
     auto exact_vf = eigen_vector_x_col_type<double>::Ones(upvf.viewFactors().rows()) ;
     auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();

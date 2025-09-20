@@ -69,15 +69,25 @@ RemoteData::Github::Github( std::string const& desc, WorldComm& worldComm )
     }
     if ( jsonObj.contains( "token" ) )
         M_token = jsonObj["token"].get<std::string>();
-    // If token is empty, try looking for it in environment variable FEELPP_GITHUB_TOKEN
+        // If token is empty, try looking for it in environment variable FEELPP_GITHUB_TOKEN
     if ( M_token.empty() )
     {
         char* env = std::getenv( "FEELPP_GITHUB_TOKEN" );
-        if ( env != NULL && env[0] != '\0' )
+        if ( env )
         {
             M_token = env;
+            std::cout << "Token loaded from environment variable" << std::endl;
+        }
+        else
+        {
+            std::cout << "No FEELPP_GITHUB_TOKEN environment variable found" << std::endl;
         }
     }
+    else
+    {
+        std::cout << "Token loaded from configuration" << std::endl;
+    }
+    std::cout << "Token status: " << (M_token.empty() ? "empty" : "set") << std::endl;
     if ( M_owner.empty() )
         M_owner = "feelpp";
     if ( M_repo.empty() )
@@ -104,20 +114,60 @@ RemoteData::Github::downloadImpl( std::string const& dir ) const
 {
     std::vector<std::string> downloadFileOrFolder;
 
+    // Determine progress level
+    RemoteDataProgress::Level progressLevel = RemoteDataProgress::Level::NORMAL;
+    if (Environment::vm().count("quiet")) {
+        progressLevel = RemoteDataProgress::Level::QUIET;
+    } else if (Environment::vm().count("debug")) {
+        progressLevel = RemoteDataProgress::Level::DEBUG;
+    } else if (Environment::vm().count("verbose") || Environment::vm().count("progress")) {
+        progressLevel = RemoteDataProgress::Level::VERBOSE;
+    }
+    
+    RemoteDataProgress progress(RemoteDataProgress::Operation::DOWNLOAD, progressLevel);
+
     std::string url = "https://api.github.com/repos/" + M_owner + "/" + M_repo + "/contents/" + M_path;
     if ( !M_branch.empty() )
         url += "?ref=" + M_branch;
     std::vector<std::string> headers;
     headers.push_back( "Accept: application/vnd.github.v3.json" );
     headers.push_back( "User-Agent: feelpp-agent" );
+    // Temporarily disable token authentication to test if API works without it
+    /*
     if ( !M_token.empty() )
-        headers.push_back( "Authorization: token " + M_token );
+    {
+        headers.push_back( "Authorization: Bearer " + M_token );
+        std::cout << "Using Bearer token for authentication" << std::endl;
+    }
+    else
+    {
+        std::cout << "No token available for authentication" << std::endl;
+    }
+    */
+    if (progress.isDebug()) {
+        progress.debug("Testing without authentication token");
+    }
+
+    // Progress and debug output
+    std::string repo_info = M_owner + "/" + M_repo + (M_path.empty() ? "" : "/" + M_path);
+    if (!M_branch.empty()) {
+        repo_info += " (branch: " + M_branch + ")";
+    }
+    progress.startOperation("GitHub", repo_info);
+    
+    if (progress.isDebug()) {
+        progress.debug("GitHub URL: " + url);
+        progress.debug("Owner: " + M_owner + ", Repo: " + M_repo + ", Path: " + M_path + ", Branch: " + M_branch);
+    }
 
     std::ostringstream omemfile;
     StatusRequestHTTP status = requestHTTPGET( url, headers, omemfile );
     if ( !status.success() )
     {
-        std::cout << "Github error in requestHTTPGET: " << status.msg() << "\n";
+        progress.error("GitHub error in requestHTTPGET: " + status.msg());
+        if (progress.isDebug()) {
+            progress.debug("HTTP Status Code: " + std::to_string(status.code()));
+        }
         return {};
     }
 
@@ -129,13 +179,13 @@ RemoteData::Github::downloadImpl( std::string const& dir ) const
     }
     catch ( nl::json::parse_error& e )
     {
-        std::cout << "Error parsing JSON response: " << e.what() << "\n";
+        progress.error("Error parsing JSON response: " + std::string(e.what()));
         return {};
     }
 
     if ( status.code() != 200 )
     {
-        std::cout << Github::errorMessage( jsonResponse, "Get metadata fails", status.code() ) << "\n";
+        progress.error(Github::errorMessage( jsonResponse, "Get metadata fails", status.code() ));
         return {};
     }
 
@@ -145,20 +195,34 @@ RemoteData::Github::downloadImpl( std::string const& dir ) const
         std::string filename = jsonResponse["name"].get<std::string>();
         headers[0] = "Accept: application/vnd.github.v3.raw";
         std::string filepath = ( fs::path( dir ) / filename ).string();
+        
+        if (progress.isVerbose() || progress.isDebug()) {
+            progress.startFile(filename, 0); // We don't know size from GitHub API without additional request
+        }
+        
         std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
         status = requestHTTPGET( url, headers, ofile );
         ofile.close();
         if ( !status.success() )
         {
-            std::cout << "Github error in requestHTTPGET: " << status.msg() << "\n";
+            progress.error("GitHub error in requestHTTPGET: " + status.msg());
             return {};
         }
         if ( status.code() != 200 )
         {
-            std::cout << Github::errorMessage( nl::json{}, "Download file fails", status.code() ) << "\n";
+            progress.error(Github::errorMessage( nl::json{}, "Download file fails", status.code() ));
             return {};
         }
 
+        if (progress.isNormal() || progress.isVerbose()) {
+            // Get actual file size after download
+            std::streamsize fileSize = 0;
+            if (fs::exists(filepath)) {
+                fileSize = fs::file_size(filepath);
+            }
+            progress.completeFile(filename, fileSize);
+        }
+        
         downloadFileOrFolder.push_back( filepath );
     }
     else
@@ -168,29 +232,41 @@ RemoteData::Github::downloadImpl( std::string const& dir ) const
         std::string newdir = ( fs::path( dir ) / subdir ).string();
         fs::create_directories( newdir );
 
-        auto resFolder = this->downloadFolderRecursively( jsonResponse, newdir );
+        if (progress.isVerbose() || progress.isDebug()) {
+            progress.debug("Downloading directory: " + subdir + " (" + std::to_string(jsonResponse.size()) + " items)");
+        }
+
+        auto resFolder = this->downloadFolderRecursively( jsonResponse, newdir, progress );
         if ( !std::get<0>( resFolder ) )
         {
-            std::cout << std::get<1>( resFolder ) << "\n";
+            progress.error(std::get<1>( resFolder ));
             return {};
         }
         downloadFileOrFolder.push_back( newdir );
+    }
+
+    if (progress.isNormal() || progress.isVerbose()) {
+        progress.completeOperation();
     }
 
     return downloadFileOrFolder;
 }
 
 std::tuple<bool, std::string>
-RemoteData::Github::downloadFolderRecursively( nl::json const& jsonResponse, std::string const& dir ) const
+RemoteData::Github::downloadFolderRecursively( nl::json const& jsonResponse, std::string const& dir, const RemoteDataProgress& progress ) const
 {
     std::vector<std::string> headers;
     headers.push_back( "Accept: application/vnd.github.v3.json" );
     headers.push_back( "User-Agent: feelpp-agent" );
     if ( !M_token.empty() )
-        headers.push_back( "Authorization: token " + M_token );
+        headers.push_back( "Authorization: Bearer " + M_token );
+
+    int itemCount = 0;
+    int totalItems = jsonResponse.size();
 
     for ( const auto& item : jsonResponse )
     {
+        itemCount++;
         std::string type = item["type"].get<std::string>();
         std::string name = item["name"].get<std::string>();
         std::string pathInUrl = item["path"].get<std::string>();
@@ -203,6 +279,11 @@ RemoteData::Github::downloadFolderRecursively( nl::json const& jsonResponse, std
             // Download file
             headers[0] = "Accept: application/vnd.github.v3.raw";
             std::string filepath = ( fs::path( dir ) / name ).string();
+            
+            if (progress.isVerbose() || progress.isDebug()) {
+                progress.startFile(name, 0, itemCount, totalItems); // We don't know size from GitHub API
+            }
+            
             std::ofstream ofile( filepath, std::ios::out | std::ios::binary );
             StatusRequestHTTP status = requestHTTPGET( url, headers, ofile );
             ofile.close();
@@ -210,6 +291,15 @@ RemoteData::Github::downloadFolderRecursively( nl::json const& jsonResponse, std
                 return std::make_tuple( false, "GitHub error in requestHTTPGET : " + status.msg() );
             if ( status.code() != 200 )
                 return std::make_tuple( false, Github::errorMessage( nl::json{}, "Download file fails", status.code() ) );
+                
+            if (progress.isNormal() || progress.isVerbose()) {
+                // Get actual file size after download
+                std::streamsize fileSize = 0;
+                if (fs::exists(filepath)) {
+                    fileSize = fs::file_size(filepath);
+                }
+                progress.completeFile(name, fileSize);
+            }
         }
         else if ( type == "dir" )
         {
@@ -225,8 +315,13 @@ RemoteData::Github::downloadFolderRecursively( nl::json const& jsonResponse, std
             // Create subdirectory
             std::string newdir = ( fs::path( dir ) / name ).string();
             fs::create_directories( newdir );
+            
+            if (progress.isVerbose() || progress.isDebug()) {
+                progress.debug("Processing directory: " + name + " (" + std::to_string(subdirJson.size()) + " items)");
+            }
+            
             // Recursive call
-            auto resRecur = this->downloadFolderRecursively( subdirJson, newdir );
+            auto resRecur = this->downloadFolderRecursively( subdirJson, newdir, progress );
             if ( !std::get<0>( resRecur ) )
                 return std::make_tuple( false, std::get<1>( resRecur ) );
         }

@@ -30,6 +30,10 @@
 #define FEELPP_MOR_CRBENUMS_HPP 1
 
 #include <fmt/core.h>
+<<<<<<< HEAD
+=======
+#include <fmt/ostream.h>
+>>>>>>> origin/develop
 
 namespace Feel {
 
@@ -59,7 +63,11 @@ inline std::string stageToString( stage s )
     case stage::online:
         return "online";
     }
+<<<<<<< HEAD
     LOG( ERROR ) << fmt::format( "unknown stage {} return offline", static_cast<int>(s) );
+=======
+    LOG( WARNING ) << fmt::format( "unknown stage {} return offline", static_cast<int>(s) );
+>>>>>>> origin/develop
     return "offline";
 }
 
