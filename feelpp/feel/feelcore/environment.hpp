@@ -773,11 +773,7 @@ public:
         auto opt = fmt::memory_buffer();
 
         if ( !prefix.empty() )
-<<<<<<< HEAD
-            fmt::format_to( std::back_inserter( opt ), "{}.",prefix);
-=======
             fmt::format_to( fmt::appender(opt), "{}.", prefix);
->>>>>>> origin/develop
         if ( !sub.empty() )
             fmt::format_to( fmt::appender(opt), "{}-", sub);
         fmt::format_to( fmt::appender(opt), "{}", name);
