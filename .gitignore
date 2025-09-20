@@ -194,3 +194,4 @@ conftest.o
 python/notebooks/feelpp-python/
 install/
 .venv*/
+**/.spack-env/
