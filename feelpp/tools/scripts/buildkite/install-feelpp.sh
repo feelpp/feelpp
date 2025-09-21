@@ -88,7 +88,6 @@ fi
 
 # Image selection
 image="feelpp-${component}"
-<<<<<<< HEAD
 if [ "${component}" = "feelpp" ] ; then
 #    tag=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
     image="feelpp"
@@ -100,28 +99,9 @@ if [ "${component}" = "feelpp-python" ] ; then
     image="feelpp-python"
 fi
 echo "--- Building ${image}:${tag}"
-=======
-case "${component}" in
-  feelpp)         image="feelpp" ;;
-  feelpp-python|python)
-                   image="feelpp-python" ;;
-esac
->>>>>>> origin/develop
 
 say "--- Building ${image}:${tag}"
 
-<<<<<<< HEAD
-if [ "${component}" = "feelpp" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp
-elif [ "${component}" = "feelpp-core" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp    
-elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
-elif [ "${component}" = "mor" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-toolboxes:${tag}" > docker/${image}/dockerfile.tmp
-elif [ "${component}" = "feelpp-python" -o "${component}" = "python" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "ghcr.io/feelpp/feelpp-mor:${tag}" > docker/${image}/dockerfile.tmp
-=======
 # ---- choose base image per component & generate dockerfile.tmp ---------------
 tmp_df="${script_dir}/docker/${image}/dockerfile.tmp"
 template="${script_dir}/docker/${image}/Dockerfile.template"
@@ -151,7 +131,6 @@ DESCRIPTION="$(description_for "${image}" "${TARGET}")"
 if [[ "${DRY_RUN:-0}" == "1" ]]; then
   echo "[DRY-RUN] Generate ${tmp_df} from ${template} (BASE ${base_from})"
   dockerfile_from "${template}" "${base_from}" "${DESCRIPTION}"
->>>>>>> origin/develop
 else
   mkdir -p "$(dirname "${tmp_df}")"
   dockerfile_from "${template}" "${base_from}" "${DESCRIPTION}" > "${tmp_df}"

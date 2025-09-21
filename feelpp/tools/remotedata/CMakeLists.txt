@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 message( STATUS "--------------------------------------------")
 message( STATUS "[tools/remotedata] Enable feelpp_remotedata")
-=======
->>>>>>> origin/develop
 feelpp_add_application( remotedata SRCS remotedata.cpp INSTALL MAN remotedata )
 
 # CLI Tests for feelpp_remotedata application

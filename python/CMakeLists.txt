@@ -79,11 +79,9 @@ message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
 message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")
 message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
 
-<<<<<<< HEAD
 if ( NOT TARGET pybind11::headers)
   find_package(pybind11 CONFIG REQUIRED)
 endif()
-=======
 
 # When building the Python component standalone against an existing Feel++
 # installation, FEELPP_PYTHON_MODULE_PATH may come pre-baked for a different
@@ -171,7 +169,6 @@ else()
 endif()
 
 
->>>>>>> origin/develop
 if ( FEELPP_HAS_PYTHON )
     message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
   find_package(MPI4PY REQUIRED)
