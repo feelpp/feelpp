@@ -195,3 +195,4 @@ python/notebooks/feelpp-python/
 install/
 .venv*/
 **/.spack-env/
+feelpp_qs_laplacian_3d_trace/
