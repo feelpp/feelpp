@@ -268,8 +268,8 @@ jobs:
       - name: Configure Feelpp
         id: configure-feelpp
         run: |
-          source /data/cemosis/spack/share/spack/setup-env.sh
-          spack env activate feelpp-openmpi4
+          source cod/share/spack/setup-env.sh
+          spack env activate .spack/openmpi4
           cmake --preset feelpp-spack
         env:
           TARGET: ${{ matrix.target }}
@@ -282,7 +282,7 @@ jobs:
       - name: Build Feelpp
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
-          spack env activate feelpp-openmpi4
+          spack env activate .spacK/openmpi4
           cmake --build --preset feelpp-spack -j40
           cmake --build --preset feelpp-spack -t install/fast
         env:
@@ -296,7 +296,7 @@ jobs:
       - name: Test Feelpp
         run: |
           source /data/cemosis/spack/share/spack/setup-env.sh
-          spack env activate feelpp-openmpi4
+          spack env activate .spack/openmpi4
           ctest --preset feelpp-spack -j4 -R feelpp
         env:
           TARGET: ${{ matrix.target }}
