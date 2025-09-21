@@ -268,7 +268,7 @@ jobs:
       - name: Configure Feelpp
         id: configure-feelpp
         run: |
-          source cod/share/spack/setup-env.sh
+          source /data/cemosis/spack/share/spack/setup-env.sh
           spack env activate .spack/openmpi4
           cmake --preset feelpp-spack
         env:
