@@ -79,7 +79,8 @@ jobs:
     runs-on: self-docker
     if: |
       needs.plan_ci.result == 'success' &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp')
+      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'feelpp')) &&
+      !contains(needs.plan_ci.outputs.skip_jobs, 'feelpp')
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -117,7 +118,8 @@ jobs:
       always() &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled') &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'testsuite')
+      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'testsuite')) &&
+      !contains(needs.plan_ci.outputs.skip_jobs, 'testsuite')
     continue-on-error: true
     timeout-minutes: 600
     strategy:
@@ -152,7 +154,8 @@ jobs:
       always() &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled') &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes')
+      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'toolboxes')) &&
+      !contains(needs.plan_ci.outputs.skip_jobs, 'toolboxes')
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -185,7 +188,8 @@ jobs:
       always() &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled') &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'mor')
+      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'mor')) &&
+      !contains(needs.plan_ci.outputs.skip_jobs, 'mor')
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -218,7 +222,8 @@ jobs:
       always() &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled') &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'python')
+      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'python')) &&
+      !contains(needs.plan_ci.outputs.skip_jobs, 'python')
     timeout-minutes: 600
     strategy:
       fail-fast: false
@@ -249,7 +254,8 @@ jobs:
     runs-on: self-docker
     if: |
       needs.plan_ci.result == 'success' &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'spack')
+      (needs.plan_ci.outputs.only_jobs == '' || contains(needs.plan_ci.outputs.only_jobs, 'spack')) &&
+      !contains(needs.plan_ci.outputs.skip_jobs, 'spack')
     timeout-minutes: 600
     strategy:
       fail-fast: false

@@ -7,6 +7,9 @@
     "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
     "targets": ["ubuntu:24.04"]
   },
+  "fullBuild": {
+    "job": "spack"
+  },
   "modes_config": {
     "components": {
       "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
