@@ -42,7 +42,7 @@ spack:
       require: ['openmpi@:4.1.6 fabrics=cma,ucx']
   definitions:
   - targets: [target=x86_64_v3]
-  - compilers: [gcc@11]
+  - compilers: [gcc@11:]
   - fppcompilers: ['llvm@20:']
   - mpis: [mpi]
   - petscs: [petsc +mumps+hwloc+ptscotch +suite-sparse+hdf5 +hypre]
@@ -59,7 +59,7 @@ spack:
     - [$%compilers]
     - [$targets]
   - matrix:
-    - [cmake, bison, flex, libzip@1.11, curl, 'llvm@18:', libunwind, cln, ninja, 'metis@5.3.1-rc.8: +shared', parmetis@4.0.4-rc.4 +shared, pugixml, glpk, gl2ps, ruby, gsl, libaec, sz, superlu, gflags, glog, fmt +shared cxxstd=17, eigen@master, eigenrand, cpr, fmi4cpp@master, nanoflann, simple-web-server@master, nlopt+cxx, ipopt, indicators, tabulate, napp, hwloc~gl, ginac, bvh, ut]
+    - [cmake, bison, flex, libzip@1.11, curl, 'llvm@18:18', libunwind, cln, ninja, 'metis@5.3.1-rc.8: +shared', parmetis@4.0.4-rc.4 +shared, pugixml, glpk, gl2ps, ruby, gsl, libaec, sz, superlu, gflags, glog, fmt +shared cxxstd=17, eigen@master, eigenrand, cpr, fmi4cpp@master, nanoflann, simple-web-server@master, nlopt+cxx, ipopt, indicators, tabulate, napp, hwloc~gl, ginac, bvh, ut]
     - [$%compilers]
     - [$targets]
 #  - matrix:
@@ -97,12 +97,12 @@ spack:
     targets:
       granularity: generic
       host_compatible: true
-    unify: true
+    unify: when_possible
   mirrors:
 #    spack-mirror: oci://ghcr.io/feelpp/spack
     numpex-buildcache: oci://ghcr.io/numpex/spack-buildcache
     feelpp-buildcache: oci://ghcr.io/feelpp/spack-buildcache
   repos:
-  - /nvme0/prudhomm/Devel/feelpp.spack/spack.numpex
-  - /workspaces/feelpp.spack/spack.numpex
-  - /nvme0/prudhomm/Devel/feelpp.quickfix/feelpp.spack/spack.numpex
+    # Modern URL-based repository configuration  
+    - https://github.com/numpex/spack.numpex/tree/main/spack_repo/numpex
+    - /nvme0/prudhomm/Devel/spack-packages

@@ -1,9 +1,20 @@
 {
-  "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
+  "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python", "spack"],
   "targets": ["ubuntu:24.04", "ubuntu:22.04", "debian:13", "debian:12", "fedora:42"],
+  "modes": ["components", "full"],
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
     "targets": ["ubuntu:24.04", "ubuntu:22.04"]
+  },
+  "modes_config": {
+    "components": {
+      "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
+      "targets": ["ubuntu:24.04", "ubuntu:22.04"]
+    },
+    "full": {
+      "jobs": ["spack"],
+      "targets": ["ubuntu:24.04"]
+    }
   }
 }

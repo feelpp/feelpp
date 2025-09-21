@@ -242,3 +242,61 @@ jobs:
           CR_PAT: ${{ secrets.CR_PAT }}
           CR_LOGIN: ${{ secrets.CR_LOGIN }}
           JOBS: 20
+
+  spack:
+    name: Build with Spack (full)
+    needs: [plan_ci]
+    runs-on: self-docker
+    if: |
+      needs.plan_ci.result == 'success' &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'spack')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure Feelpp
+        id: configure-feelpp
+        run: |
+          source /data/cemosis/spack/share/spack/setup-env.sh
+          spack env activate feelpp-openmpi4
+          cmake --preset feelpp-spack
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
+      - name: Build Feelpp
+        run: |
+          source /data/cemosis/spack/share/spack/setup-env.sh
+          spack env activate feelpp-openmpi4
+          cmake --build --preset feelpp-spack -j40
+          cmake --build --preset feelpp-spack -t install/fast
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
+      - name: Test Feelpp
+        run: |
+          source /data/cemosis/spack/share/spack/setup-env.sh
+          spack env activate feelpp-openmpi4
+          ctest --preset feelpp-spack -j4 -R feelpp
+        env:
+          TARGET: ${{ matrix.target }}
+          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
+          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+          FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+          FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+          FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
