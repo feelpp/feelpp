@@ -104,5 +104,6 @@ spack:
     feelpp-buildcache: oci://ghcr.io/feelpp/spack-buildcache
   repos:
     # Modern URL-based repository configuration  
-    - https://github.com/numpex/spack.numpex/tree/main/spack_repo/numpex
-    - /nvme0/prudhomm/Devel/spack-packages
+    - https://github.com/numpex/spack.numpex.git
+    - https://github.com/spack/spack-packages.git
+
