@@ -34,6 +34,12 @@ int main( int argc, char** argv )
         ( "download", po::value<std::string>(), "download desc" )
         ( "data", po::value<std::string>(), "specify the datas to upload or the download directory" )
         ( "contents", po::value<std::string>(), "contents desc" )
+        ( "list-organizations", po::value<std::string>(), "list organizations for CKAN instance" )
+        ( "verbose,v", "enable verbose progress output" )
+        ( "quiet,q", "suppress progress output" )
+        ( "progress", "show detailed progress information" )
+        ( "debug", "enable debug output with API details" )
+        ( "timeout", po::value<int>()->default_value(30000), "timeout in milliseconds for HTTP requests (default: 30000)" )
 		;
 
     fs::path initialCurrentPath = fs::current_path();
@@ -50,7 +56,19 @@ int main( int argc, char** argv )
         RemoteData rd( soption(_name="upload") );
         if ( !rd.canUpload() )
         {
-            Feel::cout << "invalid upload\n";
+            std::string uploadDesc = soption(_name="upload");
+            if ( uploadDesc.find("github:") != std::string::npos )
+            {
+                Feel::cout << "GitHub uploads are not supported. Use Girder or CKAN for upload operations.\n";
+            }
+            else if ( uploadDesc.find("url:") != std::string::npos || uploadDesc.substr(0, 4) == "http" )
+            {
+                Feel::cout << "URL/HTTP uploads are not supported. Use Girder or CKAN for upload operations.\n";
+            }
+            else
+            {
+                Feel::cout << "invalid upload - platform may not support uploads or configuration is incorrect\n";
+            }
             return 0;
         }
         if ( !Environment::vm().count("data") )
@@ -61,7 +79,17 @@ int main( int argc, char** argv )
         std::string data = soption(_name="data");
         if ( fs::path(data).is_relative() )
             data = (initialCurrentPath/fs::path(data)).string();
-        rd.upload( data );
+        
+        // Use timeout if specified
+        if ( Environment::vm().count("timeout") )
+        {
+            int timeout = Environment::vm()["timeout"].as<int>();
+            rd.upload( data, "", true, timeout );
+        }
+        else
+        {
+            rd.upload( data );
+        }
     }
     else if ( Environment::vm().count("download") )
     {
@@ -75,12 +103,34 @@ int main( int argc, char** argv )
         if ( Environment::vm().count("data") )
             dir = soption(_name="data");
         Feel::cout << "download data in : " << dir << "\n";
-        rd.download( dir );
+        
+        // Use timeout if specified
+        if ( Environment::vm().count("timeout") )
+        {
+            int timeout = Environment::vm()["timeout"].as<int>();
+            rd.download( dir, "", timeout );
+        }
+        else
+        {
+            rd.download( dir );
+        }
     }
     else if ( Environment::vm().count("contents") )
     {
         RemoteData rd( soption(_name="contents") );
-        auto res = rd.contents();
+        
+        // Create progress reporter based on debug settings
+        RemoteDataProgress::Level level = RemoteDataProgress::Level::NORMAL;
+        if ( Environment::vm().count("quiet") )
+            level = RemoteDataProgress::Level::QUIET;
+        else if ( Environment::vm().count("verbose") )
+            level = RemoteDataProgress::Level::VERBOSE;
+        else if ( Environment::vm().count("debug") )
+            level = RemoteDataProgress::Level::DEBUG;
+        
+        RemoteDataProgress progress( RemoteDataProgress::Operation::DOWNLOAD, level );
+        auto res = rd.contents( progress );
+        
         for ( auto const& folderInfo : std::get<0>( res ) )
             std::cout << "-------------------------------------------------------\n"
                       << folderInfo->print().str() << "\n";
@@ -90,6 +140,24 @@ int main( int argc, char** argv )
         for ( auto const& fileInfo : std::get<2>( res ) )
             std::cout << "-------------------------------------------------------\n"
                       << fileInfo->print().str() << "\n";
+    }
+    else if ( Environment::vm().count("list-organizations") )
+    {
+        RemoteData rd( soption(_name="list-organizations") );
+        auto organizations = rd.listOrganizations();
+        
+        if (organizations.empty())
+        {
+            Feel::cout << "No organizations found or access denied\n";
+        }
+        else
+        {
+            Feel::cout << "Available organizations:\n";
+            for (const auto& org : organizations)
+            {
+                Feel::cout << "  - " << org << "\n";
+            }
+        }
     }
     return 0;
 }

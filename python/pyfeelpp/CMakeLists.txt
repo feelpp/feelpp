@@ -32,6 +32,10 @@ if ( (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR) OR (FEELPP_COMPONENT S
     message(STATUS "[pyfeelpp] found Feel++")
   endif()
 
+  # Normalize python module path to current prefix if needed
+  include(FeelppPythonNormalize)
+  feelpp_python_normalize_module_path()
+
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "install prefix" FORCE)
     # SKIP RPATH if we set CMAKE_INSTALL_PREFIX
@@ -65,4 +69,3 @@ endif()
 
 add_subdirectory(feelpp)
 add_subdirectory(tests)
-

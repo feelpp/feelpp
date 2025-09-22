@@ -6,15 +6,15 @@ install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
 foreach( test  alg core discr exporter integrate measure mesh meshmover operators remesh remotedata timing )
 add_test (NAME feelpp_qs_python-${test}
   COMMAND ${CMAKE_COMMAND} -E env
-        LD_LIBRARY_PATH=:${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}
-        PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}:$ENV{PYTHONPATH} #${CMAKE_CURRENT_BINARY_DIR}/..:${CMAKE_CURRENT_SOURCE_DIR}/..
+        LD_LIBRARY_PATH=:${CMAKE_BINARY_DIR}/feelpp/feel:$ENV{LD_LIBRARY_PATH}
+        PYTHONPATH=${CMAKE_BINARY_DIR}/python/pyfeelpp:$ENV{PYTHONPATH}
         ${Python3_EXECUTABLE} -m pytest -k ${test} -s -vv ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_test (NAME feelpp_qs_python-mpi-${test}
   COMMAND ${CMAKE_COMMAND} -E env
-        LD_LIBRARY_PATH=:${CMAKE_INSTALL_PREFIX}/lib:$ENV{LD_LIBRARY_PATH}
-        PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}:$ENV{PYTHONPATH} #${CMAKE_CURRENT_BINARY_DIR}/..:${CMAKE_CURRENT_SOURCE_DIR}/..
+        LD_LIBRARY_PATH=:${CMAKE_BINARY_DIR}/feelpp/feel:$ENV{LD_LIBRARY_PATH}
+        PYTHONPATH=${CMAKE_BINARY_DIR}/python/pyfeelpp:$ENV{PYTHONPATH}
         mpirun -np 2 ${Python3_EXECUTABLE} -m pytest -k ${test} -s -vv ${CMAKE_CURRENT_SOURCE_DIR}
 )
 endforeach()

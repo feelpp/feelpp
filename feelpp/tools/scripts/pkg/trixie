@@ -17,8 +17,8 @@ petsc-dev
 slepc-dev
 python3-petsc4py-real
 python3-slepc4py-real
-python3-petsc4py-real3.20
-python3-slepc4py-real3.20
+python3-petsc4py-real3.22
+python3-slepc4py-real3.22
 libhdf5-openmpi-dev
 libnlopt-dev
 libgsl-dev
@@ -53,3 +53,4 @@ ruby-asciidoctor-pdf
 libglew-dev
 gnuplot
 libglfw3-dev
+rsync

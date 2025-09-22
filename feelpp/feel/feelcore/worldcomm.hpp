@@ -255,7 +255,7 @@ public:
      */
     rank_type masterRank() const
     {
-        return M_masterRank;
+        return this->computeMasterRank();
     }
 
     //! Returns \c true if process has master rank, \c false otherwise
@@ -341,8 +341,6 @@ public:
 
     void setIsActive( std::vector<int> const& _isActive ) const { M_isActive=_isActive; }
 
-    FEELPP_DEPRECATED void upMasterRank();
-
     void applyActivityOnlyOn(int _localColor) const;
 
     boost::tuple<bool,std::set<int> > hasMultiLocalActivity() const;
@@ -374,6 +372,11 @@ private :
 
     FEELPP_NO_EXPORT void initSubWorldCommSeq();
 
+    /**
+     * @brief Compute the master rank for the current world communicator.
+     * @returns the master rank in the current world communicator.
+     */
+    rank_type computeMasterRank() const;
 private :
 
     communicator_type M_localComm;
