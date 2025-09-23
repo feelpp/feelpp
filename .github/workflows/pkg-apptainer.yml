@@ -57,6 +57,16 @@ on:
           required: false
           default: ""
           type: string
+        enable-feelpp:
+          description: 'Enable feelpp image build'
+          required: false
+          default: true
+          type: boolean
+        enable-feelpp-dev:
+          description: 'Enable feelpp-dev image build'
+          required: false
+          default: true
+          type: boolean
     workflow_call:
         inputs:
             flavor:
@@ -103,6 +113,16 @@ on:
                 required: false
                 type: string
                 default: "false"
+            enable-feelpp:
+                description: 'Enable feelpp image build'
+                required: false
+                type: boolean
+                default: true
+            enable-feelpp-dev:
+                description: 'Enable feelpp-dev image build'
+                required: false
+                type: boolean
+                default: true
 
 jobs:
   version:
@@ -111,11 +131,11 @@ jobs:
         continue-on-error: "false"
     secrets: inherit
 
-  apptainer:
-    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false'}}
+  apptainer-feelpp:
+    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false' && inputs.enable-feelpp }}
     runs-on: self-apptainer
     needs: version
-    name: Build and Push apptainer image
+    name: Build and Push feelpp apptainer image
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     env:
         version: ${{ inputs.version || needs.version.outputs.version }}
@@ -129,17 +149,47 @@ jobs:
           ${{ env.apptainer }} remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
 
       -
-        name: Get docker image ${{ env.docker }}
+        name: Get feelpp docker image ${{ env.docker }}
         run: |
-          echo "Using docker image: ${{ env.docker }}"
+          echo "Using feelpp docker image: ${{ env.docker }}"
           ${{ env.apptainer }} pull -F feelpp.sif docker://${{ env.docker }}
           ${{ env.apptainer }} inspect feelpp.sif
           ls -lrt
       -
-        name: Push apptainer image ${{ env.sif }} to ghcr.io
+        name: Push feelpp apptainer image ${{ env.sif }} to ghcr.io
         run: |
-          echo "Using sif: ${{ env.sif }}"
+          echo "Using feelpp sif: ${{ env.sif }}"
           ${{ env.apptainer }} push feelpp.sif oras://${{ env.sif }}
+
+  apptainer-feelpp-dev:
+    if: ${{ !contains( inputs.skip, 'skip apptainer' ) && inputs.apptainer != 'false' && inputs.enable-feelpp-dev }}
+    runs-on: self-apptainer
+    needs: version
+    name: Build and Push feelpp-dev apptainer image
+    continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+    env:
+        version: ${{ inputs.version || needs.version.outputs.version }}
+        docker-dev: "${{ inputs.docker-dev }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}"
+        sif-dev: "${{ inputs.docker-dev }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}-sif"
+        apptainer: /opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer
+    steps:
+      -
+        name: Login to GitHub Container Registry
+        run: |
+          ${{ env.apptainer }} remote login  -u ${{ github.repository_owner }} -p ${{ secrets.CR_PAT }} oras://ghcr.io
+
+      -
+        name: Get feelpp-dev docker image ${{ env.docker-dev }}
+        run: |
+          echo "Using feelpp-dev docker image: ${{ env.docker-dev }}"
+          ${{ env.apptainer }} pull -F feelpp-dev.sif docker://${{ env.docker-dev }}
+          ${{ env.apptainer }} inspect feelpp-dev.sif
+          ls -lrt
+      -
+        name: Push feelpp-dev apptainer image ${{ env.sif-dev }} to ghcr.io
+        run: |
+          echo "Using feelpp-dev sif: ${{ env.sif-dev }}"
+          ${{ env.apptainer }} push feelpp-dev.sif oras://${{ env.sif-dev }}
 
 #      -
 #        name: Trigger feelpp:${{ needs.docker.outputs.tag }}
