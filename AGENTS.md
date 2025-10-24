@@ -1,79 +1,91 @@
-Purpose
-- Provide a concise, repo-specific playbook for human and ai agents: how to build, test, patch, and validate across C++ core and Python bindings, with specific guidance for RemoteData/Girder/GitHub/CKAN.
+# Feel++ Coding & Tooling Primer
 
-Repository Overview
-- C++ core: under `feelpp/feel/...` builds a shared lib `feelpp` and related components.
-- Python bindings: under `python/pyfeelpp/feelpp/*` producing `_core` and other py modules installed into `feelpp/core`.
-- Tests:
-  - Python tests: `python/pyfeelpp/tests/*.py` (includes RemoteData tests).
-  - C++ tests: under `testsuite/**`.
-  - Tools/CLI sources: `feelpp/tools/**` (includes RemoteData CLI).
+This primer keeps humans and LLMs aligned with the Feel++ coding rules. Follow it for any change unless a
+more specific directory guide overrides it.
 
-Build
-- Presets: defined in `CMakePresets.json`. Default build directory: `build/default`.
-- Configure (if not already configured):
-  - `cmake --preset default`
-- Build the core lib and Python modules:
-  - `cmake --build build/default -j`
-  - Python core target (when needed): `cmake --build build/default -j --target _core`
-- Environment hints:
-  - Some CI/local sandboxes do not resolve passwd entries for the UID; set `HOME` to a writable temp if needed: `export HOME=$(mktemp -d)`.
+## Build & Test
+- Configure with `cmake --preset default`; build via `cmake --build build/default -j`.
+- Export `CMAKE_EXPORT_COMPILE_COMMANDS=ON` in presets or `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` to enable clang-tidy.
+- Run focused tests first (`ctest -R <target>` or `pytest` in `python/pyfeelpp`). Avoid rebuilding everything unless needed.
 
-Python Tests
-- From `python/pyfeelpp`:
-  - `export PYTHONPATH=$(pwd)/../../build/default/python/pyfeelpp:$PYTHONPATH`
-  - `export LD_LIBRARY_PATH=$(pwd)/../../build/default/feelpp/feel:$LD_LIBRARY_PATH`
-  - Run all: `pytest -q -v -s`
-  - Focused examples:
-    - RemoteData Girder safe test: `pytest -q tests/test_remotedata.py -k girder_operations_safe -v -s`
-    - RemoteData comprehensive: `pytest -q tests/test_remotedata.py -v -s`
-- Diagnostics:
-  - Log gflags/glog to stderr: `env GLOG_logtostderr=1 <pytest cmd>`
-  - If `getpwuid()` errors: `export HOME=$(mktemp -d)` and rerun.
+## Formatting
+- Use `.clang-format` (Allman braces, 4-space indent, no hard column limit, pointers on the type).
+- Never reformat third_party/ or external/ trees.
+- Run `clang-format` only on modified files: `clang-format -i path/to/file.cpp`.
+- Namespaces stay flush-left and use the compact C++17 form: `namespace feelpp::mesh {`.
 
-CLI (Tools) – RemoteData
-- Sources under `feelpp/tools/remotedata/`.
-- Typical scenarios covered by Python tests have CLI analogs (download, contents, path lookup, uploads).
-- For CI safety, prefer unauthenticated operations by default; authenticated operations require env vars below.
+## Naming (clang-tidy enforced)
+- Namespaces: `lower_snake`
+- Classes/structs/enums/concepts: `PascalCase`
+- Functions/methods: `PascalCase`
+- Members (static or non-static): prefer `M_PascalCase`; legacy `PascalCase_` is also accepted.
+- Variables (locals, parameters): `lower_case`
+- Constants/macros: `UPPER_CASE`
 
-Environment & Secrets
-- RemoteData integrations (never log/print these):
-  - Girder: `FEELPP_GIRDER_API_KEY`, `FEELPP_GIRDER_TOKEN`
-  - CKAN: `FEELPP_CKAN_API_KEY`, `FEELPP_CKAN_URL`, `FEELPP_CKAN_ORGANIZATION`
-  - GitHub: `FEELPP_GITHUB_TOKEN`
-- Progress verbosity control (Python & CLI):
-  - Support QUIET/NORMAL/VERBOSE/DEBUG. Default to QUIET in automated testing to avoid token exposure.
+> Namespaces flush-left + compact, member `M_PascalCase` or `PascalCase_`, no mass reformat.
 
-Agent Operating Rules
-- Scope changes narrowly to the task; match existing style.
-- Fix root causes rather than masking failures.
-- Use `apply_patch` for edits; do not `git commit` unless requested.
-- Read files in ≤250 line chunks; prefer `rg` for code search.
-- Use `update_plan` for multi-step work; exactly one step in progress.
-- Send a short preamble before grouped tool calls.
+## C++20 Essentials
+- Prefer `constexpr`, `consteval`, `[[nodiscard]]`, `noexcept` when they express intent.
+- Use `std::span`/`std::string_view` instead of raw pointers where ownership stays external.
+- Concepts > SFINAE for new APIs; mark deleted/defaulted special members explicitly.
+- Use `std::filesystem` (not Boost) for paths.
+- Do **not** `using namespace std;`.
 
-Validation Philosophy
-- Rebuild only necessary targets (e.g., `feelpp`, `_core`).
-- Start with the most focused tests that exercise the changes, then broaden.
-- If network is restricted, limit to public/unauthed operations or skip and document.
+## Exceptions & RAII
+- Throw `std::runtime_error` or project-specific derived classes with clear messages.
+- Use RAII for resources (MPI communicators, Kokkos views, file handles). Avoid naked `new/delete`.
+- Prefer `std::unique_ptr`/`std::shared_ptr` when ownership is dynamic.
 
-Troubleshooting
-- Abort in RemoteData Girder parsing:
-  - Ensure regex parsing doesn’t abort on valid descriptors; prefer safe parsing and graceful errors.
-- Missing passwd/home:
-  - If you see `getpwuid(): uid not found`, set `HOME` to a writable path (e.g., `/tmp` via `mktemp -d`).
-- Token visibility in logs:
-  - Use QUIET or ensure debug printing is gated behind DEBUG level; never print full tokens.
+## Logging & Diagnostics
+- Use Feel++ logging helpers/macros; avoid raw `std::cout` in libraries.
+- Keep debug output behind verbosity guards. Never print secrets or tokens.
 
-Preferred Test Mix (Remotedata)
-- Python: keep a few high-signal tests that mirror CLI functionality:
-  - GitHub basic download/contents
-  - URL download + invalid URL
-  - Girder safe contents/path lookup
-  - Progress control and token suppression (QUIET/NORMAL/VERBOSE/DEBUG)
-- CLI: add 2–4 smoke tests executed in CI that do not require secrets (e.g., public GitHub/URL operations); keep authenticated CLI tests optional behind secrets.
+## HPC Performance Guardrails
+- No heap allocation, file I/O, or blocking synchronization inside hot kernels (`KOKKOS_LAMBDA`, OpenMP loops, MPI collectives).
+- Minimize MPI global barriers; state them explicitly if unavoidable.
+- Capture the smallest set of values in Kokkos lambdas.
+- Prefer `const`/`span` views to signal read-only data.
 
-Commit & Branch Policy
-- Do not create branches/commits unless explicitly requested by a maintainer.
-- Provide a brief change summary with file paths and next steps after significant edits.
+## Git Hygiene
+- Keep diffs focused; do not refactor unrelated files.
+- Run pre-commit (`pre-commit run --all-files`) before pushing.
+- Commit messages: `component: concise summary`.
+- PRs must pass clang-format, clang-tidy, codespell, and relevant tests.
+
+## Good / Bad Examples
+````cpp
+// ✅ Good
+namespace feelpp::mesh
+{
+class MeshRefiner
+{
+  public:
+    void Refine(Mesh const & mesh, int levels);
+
+  private:
+    double M_TargetRatio{0.25};
+};
+}
+
+// ❌ Bad
+using namespace std;
+namespace FeelPP {
+class mesh_refiner {
+  double _targetratio;
+  void refine(mesh const& mesh,int levels){ cout << "refine" << endl; }
+};
+}
+````
+````cpp
+// ✅ Kokkos
+Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
+    state(i) = alpha * input(i);
+});
+
+// ❌ Kokkos
+Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
+    std::ofstream file("out.txt");
+    file << input(i);
+});
+````
 

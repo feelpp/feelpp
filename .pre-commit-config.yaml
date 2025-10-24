@@ -1,0 +1,13 @@
+repos:
+- repo: https://github.com/pre-commit/mirrors-clang-format
+  rev: v17.0.6
+  hooks:
+  - id: clang-format
+    args: [--style=file]
+    types_or: [c++, c]
+    exclude: ^(third_party/|external/)
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.3.0
+  hooks:
+  - id: codespell
+    exclude: ^(third_party/|external/)

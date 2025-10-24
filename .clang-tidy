@@ -1,0 +1,24 @@
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  modernize-concat-nested-namespaces,
+  readability-identifier-naming
+
+WarningsAsErrors: 'bugprone-*,performance-*,modernize-*'
+
+CheckOptions:
+  # Baseline naming rules
+  - { key: readability-identifier-naming.ClassCase, value: CamelCase }
+  - { key: readability-identifier-naming.StructCase, value: CamelCase }
+  - { key: readability-identifier-naming.FunctionCase, value: CamelCase }
+  - { key: readability-identifier-naming.VariableCase, value: lower_case }
+
+  # Default member rule = M_ + CamelCase
+  - { key: readability-identifier-naming.MemberCase,   value: CamelCase }
+  - { key: readability-identifier-naming.MemberPrefix, value: 'M_' }
+
+  # Allow CamelCase_ suffix as a legacy alternative via an ignore whitelist
+  - { key: readability-identifier-naming.MemberIgnoredRegexp,
+      value: '^(?:M_[A-Z][A-Za-z0-9]*|[A-Z][A-Za-z0-9]*_)$' }

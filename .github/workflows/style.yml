@@ -1,0 +1,51 @@
+name: style
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install pre-commit
+        run: pip install pre-commit
+      - name: Run pre-commit on changed files
+        id: precommit
+        continue-on-error: true
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.sha }}
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## 🎯 Pre-commit Style Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.precommit.outcome }}" == "success" ]; then
+            echo "✅ **All pre-commit hooks passed!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Some pre-commit hooks failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **To fix locally:**" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Install pre-commit" >> $GITHUB_STEP_SUMMARY
+            echo "pip install pre-commit" >> $GITHUB_STEP_SUMMARY
+            echo "pre-commit install" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Run on all changed files" >> $GITHUB_STEP_SUMMARY
+            echo "pre-commit run --all-files" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Or run pre-commit automatically on every commit by installing the git hooks:" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "pre-commit install" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

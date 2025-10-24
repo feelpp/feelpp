@@ -1,30 +1,100 @@
-# Contributing
+# Contributing to Feel++
+
+Thank you for improving Feel++! This guide aligns with the refreshed coding rules, tooling, and automation so that
+all contributions remain consistent across C++20, Python, and HPC workloads.
 
 ## License Agreement
 
-By contributing changes to this repository, you agree to license your contributions under the LGPL or GPL license. This ensures that your contributions have the same license as the project and that the community is free to use your contributions. You also assert that you are the original author of the work you are contributing and that any changes to your work will be contributed back to the community.
+By contributing, you agree to license your work under the LGPL or GPL, matching the project license. Only submit
+content you are authorized to share.
 
-## Submitting an Issue
+## Code of Conduct
 
-We use the issue tracker on GitHub associated with this project to track bugs and features. Before submitting a bug report or feature request, please check if it has already been submitted. When submitting a bug report, please include a Gist that provides details to help reproduce the bug, including your C++ compiler and operating system.
+We follow the [Feel++ Code of Conduct](../CODE_OF_CONDUCT.md). Treat fellow contributors with respect and kindness.
 
-Most importantly, since Feel++ provides a Domain Specific Embedded Language (DSEL) based on the embedded Galerkin type language, please provide a concise test case to replicate the issue using Feel++ mathematical concepts. An ideal bug report would include a pull request with failing specifications.
+## Getting Started
 
-## Submitting a Pull Request
+1. Fork the repository and create a focused branch.
+2. Configure the project using the provided CMake preset:
+   ```bash
+   cmake --preset default -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+   ```
+3. Build only what you need:
+   ```bash
+   cmake --build build/default -j
+   ```
+4. Enable the Python bindings when relevant: `cmake --build build/default -j --target _core`.
+5. Run focused tests (`ctest -R <regex>` or `pytest` in `python/pyfeelpp`).
 
-1. Fork the repository.
-2. Implement your feature or bug fix.
-3. Run `ctest` to run the tests. If the tests fail, go back to step 2.
-4. Add documentation for your feature or bug fix. If your changes are not 100% documented, go back to step 3.
-5. Add, commit, and push your changes.
-6. Submit a pull request.
+## Formatting & Style
 
-For ideas on how to use pull requests, refer to the post [Useful GitHub Patterns](http://blog.quickpeople.co.uk/2013/07/10/useful-github-patterns).
+Feel++ enforces a single formatting profile stored in `.clang-format` (Allman braces, 4-space indentation,
+column limit 100, pointers aligned with the type). Before committing:
 
-## Background Knowledge
+```bash
+clang-format -i path/to/file.cpp
+```
 
-As Feel++ is built using C++, it requires some knowledge of C++ and the libraries and tools it uses, such as Boost, PETSc, or Gmsh. The following resources provide a good starting point for contributors who may not be completely comfortable with these tools:
+### Exclusions
 
-- [Feel++ document site](https://docs.feelpp.org): Provides a lot of information regarding Feel++.
-- [Gmsh website](http://gmsh.info): Provides extensive documentation, tutorials, and screencasts on how to use Gmsh, including its graphical user interface.
-- [PETSc website](https://www.mcs.anl.gov/petsc): Offers extensive documentation and tutorials on PETSc, which is the main library used by Feel++ for solving (non-)linear systems.
+Do **not** format or tidy the vendor trees: `third_party/` and `external/`. The pre-commit hooks and CI configuration
+already skip those paths. If you need to exclude additional generated code, add patterns to `.pre-commit-config.yaml`.
+
+## Static Analysis
+
+Clang-Tidy is configured via `.clang-tidy` to run targeted checks:
+- `bugprone-*`, `performance-*`, `modernize-*` (treated as errors)
+- `readability-identifier-naming` enforcing the Feel++ naming conventions
+
+Run clang-tidy before sending a PR:
+
+```bash
+cmake --build build/default -j            # ensure the project is up-to-date
+ninja -C build/default clang-tidy        # if a tidy target exists
+# or fallback
+run-clang-tidy -p build/default path/to/file.cpp
+```
+
+If your generator does not emit a tidy target, create one in your local `CMakeLists.txt` using `clang-tidy` tooling.
+
+## Pre-Commit Hooks
+
+Install and run the bundled hooks for consistent results:
+
+```bash
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+Hooks executed:
+- `clang-format` (skips `third_party/` and `external/`)
+- `codespell` for lightweight spelling checks
+
+Expect pre-commit to block commits when formatting or spelling issues are present. Fix the reported files and rerun.
+
+## Continuous Integration
+
+GitHub Actions validates formatting and static analysis on every PR:
+- **clang-format-check**: ensures no diff is introduced by clang-format.
+- **clang-tidy**: runs targeted diagnostics using `compile_commands.json`.
+
+Your PR must pass these jobs in addition to any existing build/test pipelines.
+
+## Commit & PR Etiquette
+
+- Use imperative commit subjects: `component: concise summary`.
+- Keep commits focused; avoid mixing tooling churn with feature changes.
+- Reference issues with `Fixes #123` or `Refs #123` in the PR description when applicable.
+- In the PR body, describe the testing performed and mention any skipped checks or TODOs.
+
+## Reporting Issues
+
+File issues on GitHub with clear reproduction steps, compiler/tool versions, and minimal Feel++ examples.
+Include build logs and relevant snippets; a failing test case earns priority.
+
+## Need Help?
+
+Reach out via GitHub Discussions or the Feel++ community channels. Provide context (OS, compiler, steps taken) so we can
+assist efficiently.
+

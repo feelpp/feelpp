@@ -1,0 +1,186 @@
+name: coding-standards
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  clang-format-check:
+    name: clang-format (diff only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-17
+      - name: Collect changed files
+        id: files
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          git fetch origin "$BASE" --depth=1 || true
+          FILES=$(git diff --diff-filter=AM --name-only "$BASE" HEAD -- '*.c' '*.cc' '*.cxx' '*.cpp' '*.h' '*.hh' '*.hpp')
+          FILTERED=""
+          for file in $FILES; do
+            if [[ "$file" =~ ^third_party/ ]] || [[ "$file" =~ ^external/ ]]; then
+              continue
+            fi
+            FILTERED+="$file\n"
+          done
+          if [ -z "$FILTERED" ]; then
+            echo "files=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo -e "$FILTERED" | sed '/^$/d' > changed-files.txt
+          cat changed-files.txt
+          printf 'files=%s\n' "$(paste -sd ' ' changed-files.txt)" >> "$GITHUB_OUTPUT"
+      - name: Run clang-format diff
+        if: steps.files.outputs.files != ''
+        run: |
+          echo "## 🎨 clang-format Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
+          TOTAL=0
+          while read -r file; do
+            ((TOTAL++))
+            if ! clang-format-17 --style=file "$file" | diff -u "$file" - > /tmp/format-diff-$TOTAL.txt 2>&1; then
+              ((FAILED++))
+              echo "❌ **$file** - formatting issues detected" >> $GITHUB_STEP_SUMMARY
+              echo '```diff' >> $GITHUB_STEP_SUMMARY
+              head -50 /tmp/format-diff-$TOTAL.txt >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✅ $file" >> $GITHUB_STEP_SUMMARY
+            fi
+          done < changed-files.txt
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Summary:** $FAILED/$TOTAL files need formatting" >> $GITHUB_STEP_SUMMARY
+          if [ $FAILED -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **To fix:** Run \`clang-format -i <file>\` on the files above" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: No C/C++ changes detected
+        if: steps.files.outputs.files == ''
+        run: |
+          echo "## 🎨 clang-format Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "ℹ️ No C/C++ files changed; skipping clang-format check." >> $GITHUB_STEP_SUMMARY
+
+  clang-tidy:
+    name: clang-tidy (diff only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy-17
+      - name: Collect changed files
+        id: files
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          git fetch origin "$BASE" --depth=1 || true
+          FILES=$(git diff --diff-filter=AM --name-only "$BASE" HEAD -- '*.c' '*.cc' '*.cxx' '*.cpp' '*.h' '*.hh' '*.hpp')
+          FILTERED=""
+          for file in $FILES; do
+            if [[ "$file" =~ ^third_party/ ]] || [[ "$file" =~ ^external/ ]]; then
+              continue
+            fi
+            FILTERED+="$file\n"
+          done
+          if [ -z "$FILTERED" ]; then
+            echo "files=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo -e "$FILTERED" | sed '/^$/d' > changed-files.txt
+          cat changed-files.txt
+          printf 'files=%s\n' "$(paste -sd ' ' changed-files.txt)" >> "$GITHUB_OUTPUT"
+      - name: Generate compile commands
+        if: steps.files.outputs.files != ''
+        shell: bash
+        run: |
+          mkdir -p build/clang-tidy
+          echo '[' > build/clang-tidy/compile_commands.json
+          first=1
+          while read -r file; do
+            if [ $first -eq 0 ]; then
+              echo ',' >> build/clang-tidy/compile_commands.json
+            fi
+            first=0
+            {
+              echo '  {'
+              echo "    \"directory\": \"${GITHUB_WORKSPACE}\","
+              echo "    \"command\": \"clang++ -std=c++20 -I${GITHUB_WORKSPACE} -I${GITHUB_WORKSPACE}/feelpp -I${GITHUB_WORKSPACE}/toolboxes -I${GITHUB_WORKSPACE}/testsuite -c ${file}\","
+              echo "    \"file\": \"${file}\""
+              echo '  }'
+            } >> build/clang-tidy/compile_commands.json
+          done < changed-files.txt
+          echo ']' >> build/clang-tidy/compile_commands.json
+          cat build/clang-tidy/compile_commands.json
+      - name: Run clang-tidy
+        if: steps.files.outputs.files != ''
+        run: |
+          echo "## 🔍 clang-tidy Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          FAILED=0
+          TOTAL=0
+          while read -r file; do
+            ((TOTAL++))
+            if ! clang-tidy-17 "$file" \
+              --config-file=.clang-tidy \
+              -p build/clang-tidy > /tmp/tidy-out-$TOTAL.txt 2>&1; then
+              ((FAILED++))
+              echo "❌ **$file** - issues detected" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              head -100 /tmp/tidy-out-$TOTAL.txt >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              # Check if there were warnings even if exit code is 0
+              if grep -q "warning:" /tmp/tidy-out-$TOTAL.txt; then
+                echo "⚠️ **$file** - warnings detected" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+                grep "warning:" /tmp/tidy-out-$TOTAL.txt | head -20 >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "✅ $file" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          done < changed-files.txt
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Summary:** $FAILED/$TOTAL files failed analysis" >> $GITHUB_STEP_SUMMARY
+          if [ $FAILED -gt 0 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 **Common fixes:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Naming: Members → \`M_PascalCase\`, Functions → \`PascalCase\`, Variables → \`lower_case\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Use \`constexpr\`, \`[[nodiscard]]\`, smart pointers where applicable" >> $GITHUB_STEP_SUMMARY
+            echo "- See \`.clang-tidy\` and \`AGENTS.md\` for full rules" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+      - name: No C/C++ changes detected
+        if: steps.files.outputs.files == ''
+        run: |
+          echo "## 🔍 clang-tidy Analysis Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "ℹ️ No C/C++ files changed; skipping clang-tidy." >> $GITHUB_STEP_SUMMARY
+

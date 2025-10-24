@@ -1,17 +1,30 @@
 BasedOnStyle: LLVM
 
+# Feel++ style: Allman braces, 4 spaces, no tabs
 BreakBeforeBraces: Allman
 AlignTrailingComments: true
 IndentWidth: 4
 UseTab: Never
+
+# Parentheses and brackets
 AlignAfterOpenBracket: true
-# Force pointers to the type for C++.
-DerivePointerAlignment: false
-PointerAlignment: Left
-AllowShortFunctionsOnASingleLine: Inline
-AllowShortIfStatementsOnASingleLine: true
-NamespaceIndentation: None
-ColumnLimit: 0
-ReflowComments: true
 SpacesInParentheses: true
 
+# Pointer alignment stays on the type without deriving heuristics
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Short statements remain compact as historically allowed
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: true
+
+# Namespaces stay flush-left and use the compact C++17 form
+NamespaceIndentation: None
+CompactNamespaces: true
+FixNamespaceComments: true
+
+# No hard column limit to avoid reflowing legacy code
+ColumnLimit: 0
+
+# Preserve comment/Doxygen wrapping
+ReflowComments: true
