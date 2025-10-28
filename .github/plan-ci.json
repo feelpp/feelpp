@@ -4,6 +4,6 @@
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
-    "targets": ["ubuntu:24.04", "ubuntu:22.04"]
+    "targets": ["ubuntu:24.04"]
   }
 }
