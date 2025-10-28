@@ -31,6 +31,8 @@
 
 #include <cstdlib>
 #include <memory>
+#include <tuple>
+#include <vector>
 
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -480,6 +482,13 @@ public:
         }
         return S_configFiles;
     }
+
+    /**
+     * @brief Set the Configuration from a list of files
+     *
+     * @param filenames list of config files
+     */
+    static void setConfigFiles( std::vector<std::string> const& filenames );
 
     /**
      * @brief Set the Configuration from a File

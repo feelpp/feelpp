@@ -24,6 +24,7 @@
 */
 #include <cstdlib>
 #include <pwd.h>
+#include <utility>
 #ifdef __cplusplus
 extern "C"
 {
@@ -1551,22 +1552,15 @@ Environment::doOptions( int argc, char** argv,
         for ( std::string const& cfgFile : configFiles )
             std::cout << cfgFile << "\n";
 #endif
-        // reverse order (priorty for the last)
-        std::reverse(configFiles.begin(),configFiles.end());
-        for ( std::string const& cfgfile : configFiles )
+        // Use setConfigFiles for consistent config file handling
+        if ( !configFiles.empty() )
         {
-            if ( !fs::exists( cfgfile ) ) continue;
-            fs::path cfgAbsolutePath = fs::absolute( cfgfile );
-            cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-            // LOG( INFO ) << "Reading " << cfgfile << "...";
-            S_cfgdir = cfgAbsolutePath.parent_path();
-            std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-            std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-            po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-            S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+            setConfigFiles( configFiles );
         }
-
-        po::notify( S_vm );
+        else
+        {
+            po::notify( S_vm );
+        }
 
 
 
@@ -1643,19 +1637,62 @@ Environment::doOptions( int argc, char** argv,
 }
 
 void
+Environment::setConfigFiles( std::vector<std::string> const& cfgfiles )
+{
+    std::vector<fs::path> cfgAbsolutePaths;
+    cfgAbsolutePaths.reserve( cfgfiles.size() );
+
+    for ( std::string const& cfgfile : cfgfiles )
+    {
+        if ( cfgfile.empty() )
+            continue;
+
+        // Check if file already exists (might be from doOptions with absolute path)
+        fs::path cfgPath( cfgfile );
+        if ( fs::exists( cfgPath ) )
+        {
+            cfgAbsolutePaths.push_back( fs::absolute( cfgPath ) );
+            continue;
+        }
+
+        // Try to locate the file using findFile
+        std::string locatedFile = findFile( cfgfile, {} );
+        if ( locatedFile.empty() )
+            continue;
+
+        fs::path cfgAbsolutePath = fs::absolute( locatedFile );
+        if ( !fs::exists( cfgAbsolutePath ) )
+            continue;
+
+        cfgAbsolutePaths.push_back( cfgAbsolutePath );
+    }
+
+    if ( cfgAbsolutePaths.empty() )
+        return;
+
+    // Clear config files list but not S_vm (it may have command-line options)
+    S_configFiles.clear();
+
+    // reverse order (priority for the last)
+    std::reverse( cfgAbsolutePaths.begin(), cfgAbsolutePaths.end() );
+
+    for ( fs::path const& cfgAbsolutePath : cfgAbsolutePaths )
+    {
+        cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
+        S_cfgdir = cfgAbsolutePath.parent_path();
+        std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+        std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+        po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+        S_configFiles.emplace_back( cfgAbsolutePath.string(), std::move( iss ) );
+    }
+
+    po::notify( S_vm );
+}
+
+void
 Environment::setConfigFile( std::string const& cfgfile )
 {
-    if ( !fs::exists( findFile( cfgfile, {} ) ) ) return;
-    S_vm.clear();
-    fs::path cfgAbsolutePath = fs::absolute( findFile( cfgfile ) );
-    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-    // LOG( INFO ) << "Reading " << cfgfile << "...";
-    S_cfgdir = cfgAbsolutePath.parent_path();
-    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-    po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
-    po::notify( S_vm );
+    setConfigFiles( std::vector<std::string>{ cfgfile } );
 }
 bool
 Environment::initialized()

@@ -44,7 +44,6 @@ def test_core(init_feelpp):
 
 def test_mpi_bcast(init_feelpp):
     fppc.Environment.changeRepository(directory="pyfeelpp-tests/core/test_core_bcast")
-    
     if fppc.Environment.isMasterRank():
         data={"key":"test"}
     else:
@@ -70,12 +69,25 @@ def test_worldcomm_split(init_feelpp):
         assert(wglob.localSize() == e.numberOfProcessors()/2)
         assert(w.localSize() == e.numberOfProcessors()/2)
         assert(w.globalSize() == e.numberOfProcessors()/2)
-          
-
 
 #def test_config_local(init_feelpp_config_local):
 #    fppc.Environment.changeRepository(
 #        directory="pyfeelpp-tests/core/test_config_local")
+
+
+def test_set_multiple_config_files(tmp_path, init_feelpp):
+    first_cfg = tmp_path / "first.cfg"
+    first_cfg.write_text(
+        "case=python-case\ncase.config-file=python-first.json\n",
+        encoding="utf-8",
+    )
+    second_cfg = tmp_path / "second.cfg"
+    second_cfg.write_text("case.config-file=python-second.json\n", encoding="utf-8")
+
+    fppc.Environment.setConfigFiles([str(first_cfg), str(second_cfg)])
+
+    assert fppc.soption("case") == "python-case"
+    assert fppc.soption("case.config-file") == "python-second.json"
 
 def test_config_parser(init_feelpp):
     e=init_feelpp
