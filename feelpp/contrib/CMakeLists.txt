@@ -418,6 +418,22 @@ option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
 
 if(FEELPP_USE_EXTERNAL_PYBIND11)
   find_package(pybind11 CONFIG REQUIRED)
+  # Some system pybind11 package versions/export names differ between
+  # distributions (pybind11::module, pybind11::pybind11, pybind11::headers).
+  # Ensure the historically-expected imported target `pybind11::headers`
+  # exists so downstream helper code (pybind11NewTools.cmake /
+  # pybind11_add_module) can link against it. Create a safe alias to
+  # an available target when necessary.
+  if(NOT TARGET pybind11::headers)
+    if(TARGET pybind11::module)
+      add_library(pybind11::headers ALIAS pybind11::module)
+    elseif(TARGET pybind11::pybind11)
+      add_library(pybind11::headers ALIAS pybind11::pybind11)
+    elseif(TARGET pybind11)
+      add_library(pybind11::headers ALIAS pybind11)
+    endif()
+  endif()
+
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
   target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
 else()
