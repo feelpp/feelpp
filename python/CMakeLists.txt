@@ -79,6 +79,21 @@ message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
 message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")
 message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
 
+# If the project is configured to use an external pybind11, make sure the
+# expected imported targets exist before any pybind11_add_module() calls.
+if(DEFINED FEELPP_USE_EXTERNAL_PYBIND11 AND FEELPP_USE_EXTERNAL_PYBIND11)
+  find_package(pybind11 CONFIG REQUIRED)
+  if(NOT TARGET pybind11::headers)
+    if(TARGET pybind11::module)
+      add_library(pybind11::headers ALIAS pybind11::module)
+    elseif(TARGET pybind11::pybind11)
+      add_library(pybind11::headers ALIAS pybind11::pybind11)
+    elseif(TARGET pybind11)
+      add_library(pybind11::headers ALIAS pybind11)
+    endif()
+  endif()
+endif()
+
 
 # When building the Python component standalone against an existing Feel++
 # installation, FEELPP_PYTHON_MODULE_PATH may come pre-baked for a different

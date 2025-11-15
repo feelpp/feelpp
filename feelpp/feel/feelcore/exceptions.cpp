@@ -38,14 +38,14 @@ printGitReport()
         {
             std::cerr << fmt::format( "WARN: there were uncommitted changes at build-time." ) << std::endl;
         }
-        constexpr auto str = R"({:*^30}
+        constexpr auto str = FMT_STRING(R"({:*^30}
  - commit {} (HEAD)
  - describe {}
  - Author: {} <{}>
  - Date: {}
  - Subject: {}
  - Body: {}
-{:*^30})";
+{:*^30})");
         std::cout << fmt::format( str, " Git Report ",
                                   GitMetadata::commitSHA1(),
                                   GitMetadata::describe(),
