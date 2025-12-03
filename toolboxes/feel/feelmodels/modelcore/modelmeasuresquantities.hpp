@@ -132,7 +132,7 @@ private :
 template<typename... ModelMeasuresQuantitiesType>
 struct ModelMeasuresQuantitiesTraits
 {
-    static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<ModelMeasuresQuantitiesFeelppTag,ModelMeasuresQuantityFeelppTag>::template apply( args... ); };
+    static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<ModelMeasuresQuantitiesFeelppTag,ModelMeasuresQuantityFeelppTag>::apply( args... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<ModelMeasuresQuantitiesType...>{},  callApply ) )>;
     using type = ModelMeasuresQuantities<tuple_type>;
 };
@@ -146,7 +146,7 @@ template<typename... ModelMeasuresQuantitiesType>
 model_measures_quantities_t<ModelMeasuresQuantitiesType...>
 modelMeasuresQuantities( const ModelMeasuresQuantitiesType&... smf )
 {
-    return model_measures_quantities_t<ModelMeasuresQuantitiesType...>( Feel::detail::AdvancedConcatOfTupleContainerType<ModelMeasuresQuantitiesFeelppTag,ModelMeasuresQuantityFeelppTag>::template apply( smf... ) );
+    return model_measures_quantities_t<ModelMeasuresQuantitiesType...>( Feel::detail::AdvancedConcatOfTupleContainerType<ModelMeasuresQuantitiesFeelppTag,ModelMeasuresQuantityFeelppTag>::apply( smf... ) );
 }
 
 

@@ -48,7 +48,7 @@ echo "--- Removing old Feel++ repository configurations"
 rm -f /etc/apt/sources.list.d/feelpp.list
 
 echo "--- Adding Feel++ repository"
-if [ "$DIST" = "jammy" -o "$DIST" = "focal" -o "$DIST" = "bookworm" ]; then
+if [ "$DIST" = "jammy" -o "$DIST" = "focal" -o "$DIST" = "bookworm" -o "$DIST" = "trixie"  ]; then
     wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
     echo 'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' > /etc/apt/sources.list.d/feelpp.list 
 else

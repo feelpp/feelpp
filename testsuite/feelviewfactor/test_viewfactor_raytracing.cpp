@@ -121,7 +121,7 @@ void checkViewFactorRaytracing(std::string const& prefix)
     rtvf.compute();
     BOOST_TEST_MESSAGE( fmt::format("Max dev reciprocity {}", rtvf.maxDevReciprocity()));
     
-    BOOST_TEST_MESSAGE( fmt::format("{}", rtvf.viewFactors() ) );
+    BOOST_TEST_MESSAGE( fmt::format("{}", fmt::streamed(rtvf.viewFactors()) ) );
     auto row_sum_vf = rtvf.viewFactors().rowwise().sum();
     auto exact_vf = eigen_vector_x_col_type<double>::Ones(rtvf.viewFactors().rows()) ;
     auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();
