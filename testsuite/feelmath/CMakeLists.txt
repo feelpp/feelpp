@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testmath )
+set_directory_properties(PROPERTIES LABELS "testsuite;testmath")
 
 foreach(TEST jacobiellipticfunctions)
 

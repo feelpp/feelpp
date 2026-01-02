@@ -30,8 +30,13 @@
 #define __PointSetInterpolation_H 1
 
 #include <feel/feelmesh/pointset.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace Feel
 {

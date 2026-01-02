@@ -30,7 +30,11 @@
 #include <iostream>
 #include <fstream>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 #include <boost/math/special_functions/round.hpp>
 #include <feel/feeldiscr/fftmultiscale.hpp>
 using namespace boost::numeric;

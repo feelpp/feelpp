@@ -274,7 +274,7 @@ class Det : public ExprDynamicBase
  * \brief det of the expression tensor
  */
 template <typename ExprT>
-inline Expr<Det<ExprT>>
+[[nodiscard]] inline Expr<Det<ExprT>>
 det( ExprT v )
 {
     typedef Det<ExprT> det_t;

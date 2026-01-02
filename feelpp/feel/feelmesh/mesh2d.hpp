@@ -34,7 +34,13 @@
 
 #include <boost/mpl/print.hpp>
 #include <boost/multi_array.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 #include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>

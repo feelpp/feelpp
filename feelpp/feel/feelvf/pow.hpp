@@ -344,7 +344,7 @@ protected:
    \endcode
  */
 template<typename ExprT1,  typename ExprT2>
-inline
+[[nodiscard]] inline
 auto
 pow( ExprT1 && __e1, ExprT2 && __e2 )
 {
@@ -367,12 +367,13 @@ pow( ExprT1 && __e1, ExprT2 && __e2 )
  * provide pow expression e1^e2
  * @ingroup DSEL-Variational-Formulation
  */
-template<typename ExprT1, typename ExprT2,typename = typename std::enable_if_t< is_vf_expr_v<ExprT1> || is_vf_expr_v<ExprT2> > >
+template<typename ExprT1, typename ExprT2>
+    requires VfExpr<ExprT1> || VfExpr<ExprT2>
 inline
 auto
 operator^( ExprT1 && __e1, ExprT2 && __e2 )
 {
-    return pow( std::forward<ExprT1>( __e1 ), std::forward<ExprT1>( __e2 ) );
+    return pow( std::forward<ExprT1>( __e1 ), std::forward<ExprT2>( __e2 ) );
 }
 } // vf
 } //Feel

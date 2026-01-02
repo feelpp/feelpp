@@ -284,7 +284,7 @@ PreconditionerAS<space_type,coef_space_type>::PreconditionerAS( std::string t,
 #endif
 
     this->setType ( t );
-    toc( "[PreconditionerAS] setup done ", FLAGS_v > 0 );
+    toc( "[PreconditionerAS] setup done ", Environment::logVerbosityLevel() > 0 );
 }
 
 template < typename space_type, typename coef_space_type >
@@ -334,7 +334,7 @@ PreconditionerAS<space_type,coef_space_type>::update( sparse_matrix_ptrtype Pm, 
                         _expr=inner(id(uu),idt(uu)));
         SimpleOp = op( f22.matrixPtr(),"blockms.11.1");
     }
-    toc( "PreconditionerAS::update", FLAGS_v > 0 );
+    toc( "PreconditionerAS::update", Environment::logVerbosityLevel() > 0 );
 }
 
 
@@ -469,7 +469,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
         B->close();
         A->close();
 
-        toc("assemble preconditioner AS",FLAGS_v>0);
+        toc("assemble preconditioner AS",Environment::logVerbosityLevel()>0);
         *M_uout = *A; // 15 : w = A + B + C
     }
     else if( this->type() == SIMPLE )
@@ -487,7 +487,7 @@ PreconditionerAS<space_type,coef_space_type>::applyInverse ( const vector_type& 
     tic();
     Y=*M_uout;
     Y.close();
-    toc("PreconditionerAS::applyInverse", FLAGS_v>0 );
+    toc("PreconditionerAS::applyInverse", Environment::logVerbosityLevel()>0 );
 
     return 0;
 }

@@ -43,10 +43,13 @@ void defSM(py::module &m)
 
     std::string pyclass_name = std::string("Elasticity_") + std::to_string(nDim) + std::string("DP") + std::to_string(Order);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init([](std::string const& prefix, bool buildmesh, py::object worldComm, std::string const& subprefix, ModelBaseRepository const& modelRep) {
+                 worldcomm_ptr_t wc = worldComm.is_none() ? Environment::worldCommPtr() : py::cast<worldcomm_ptr_t>(worldComm);
+                 return new toolbox_t(prefix, buildmesh, wc, subprefix, modelRep);
+             }),
              py::arg("prefix"),
              py::arg("buildmesh")=true,
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm")=py::none(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the elasticity mechanics toolbox"

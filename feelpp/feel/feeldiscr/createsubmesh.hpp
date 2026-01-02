@@ -298,7 +298,12 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
             {
                 auto const& oldElem = boost::unwrap_ref( *it );
     #if !defined(NDEBUG)
-                VLOG(2) << "create sub mesh element from "  << oldElem.id() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+                VLOG(2) << "create sub mesh element from "  << oldElem.id() << "\n";
+#if !defined(FEELPP_HAS_SPDLOG)
+                google::FlushLogFiles(google::GLOG_INFO);
+#else
+                Logger::flush();
+#endif
     #endif
 
                 // check elt to extract

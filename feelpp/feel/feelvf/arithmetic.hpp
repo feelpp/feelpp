@@ -25,34 +25,34 @@
 #define FEELPP_VF_ARITHMETIC_HPP 1
 
 #if defined( FEELPP_HAS_QD_H ) && defined( FEELPP_HAS_MPFR )
-#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                          \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value ||                 \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float>>::value ||  \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double>>::value || \
-                           ::boost::is_same<VALUE_TYPE, mp_type>::value ||              \
-                           ::boost::is_same<VALUE_TYPE, dd_real>::value ||              \
-                           ::boost::is_same<VALUE_TYPE, qd_real>::value ) );            \
+#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                  \
+    BOOST_STATIC_ASSERT( ( std::is_arithmetic_v<VALUE_TYPE> ||                 \
+                           std::is_same_v<VALUE_TYPE, std::complex<float>> ||  \
+                           std::is_same_v<VALUE_TYPE, std::complex<double>> || \
+                           std::is_same_v<VALUE_TYPE, mp_type> ||              \
+                           std::is_same_v<VALUE_TYPE, dd_real> ||              \
+                           std::is_same_v<VALUE_TYPE, qd_real> ) );            \
     /**/
 #elif defined( FEELPP_HAS_QD_H )
-#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                          \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value ||                 \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float>>::value ||  \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double>>::value || \
-                           ::boost::is_same<VALUE_TYPE, dd_real>::value ||              \
-                           ::boost::is_same<VALUE_TYPE, qd_real>::value ) );            \
+#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                  \
+    BOOST_STATIC_ASSERT( ( std::is_arithmetic_v<VALUE_TYPE> ||                 \
+                           std::is_same_v<VALUE_TYPE, std::complex<float>> ||  \
+                           std::is_same_v<VALUE_TYPE, std::complex<double>> || \
+                           std::is_same_v<VALUE_TYPE, dd_real> ||              \
+                           std::is_same_v<VALUE_TYPE, qd_real> ) );            \
     /**/
 #elif defined( FEELPP_HAS_MPFR )
-#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                          \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value ||                 \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float>>::value ||  \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double>>::value || \
-                           ::boost::is_same<VALUE_TYPE, mp_type>::value ) );            \
+#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                  \
+    BOOST_STATIC_ASSERT( ( std::is_arithmetic_v<VALUE_TYPE> ||                 \
+                           std::is_same_v<VALUE_TYPE, std::complex<float>> ||  \
+                           std::is_same_v<VALUE_TYPE, std::complex<double>> || \
+                           std::is_same_v<VALUE_TYPE, mp_type> ) );            \
     /**/
 #else
-#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                            \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value ||                   \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float>>::value ||    \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double>>::value ) ); \
+#define VF_CHECK_ARITHMETIC_TYPE( VALUE_TYPE )                                    \
+    BOOST_STATIC_ASSERT( ( std::is_arithmetic_v<VALUE_TYPE> ||                   \
+                           std::is_same_v<VALUE_TYPE, std::complex<float>> ||    \
+                           std::is_same_v<VALUE_TYPE, std::complex<double>> ) ); \
     /**/
 #endif
 

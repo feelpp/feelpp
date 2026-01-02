@@ -881,7 +881,11 @@ void WorldComm::print( std::string const& text, bool sync, bool print_to_cout, b
     std::string str = fmt::format( "[rank {}] {}",this->localRank(), text );
     LOG(INFO) << str; 
     if ( flush )
+#if defined(FEELPP_HAS_SPDLOG)
+        Logger::flushOn(0);
+#else
         google::FlushLogFiles(google::INFO);
+#endif
     if ( print_to_cout )
     {
         if ( sync )

@@ -29,6 +29,8 @@
 #ifndef FEELPP_FILTERS_GEO_H
 #define FEELPP_FILTERS_GEO_H
 
+#include <algorithm>
+#include <ranges>
 #include <feel/feelfilters/gmsh.hpp>
 
 namespace Feel {
@@ -57,7 +59,7 @@ gmsh_ptrtype geo( Ts && ... v )
     std::string const& depends = args.get_else_invocable(_depends, [&prefix,&vm](){ return soption(_prefix=prefix,_name="gmsh.depends",_vm=vm); } );
     worldcomm_ptr_t worldcomm = args.get_else(_worldcomm, Environment::worldCommPtr() );
 
-    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
+    auto gmsh_ptr = std::make_shared<Gmsh>( 3, 1, worldcomm );
 
     gmsh_ptr->setCharacteristicLength( h );
 
@@ -72,9 +74,9 @@ gmsh_ptrtype geo( Ts && ... v )
         std::string filename_with_path = Environment::findFile( filename );
         if ( filename_with_path.empty() )
         {
-            std::vector<std::string> plist = Environment::geoPathList();
+            auto const plist = Environment::geoPathList();
             std::ostringstream ostr;
-            std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
+            std::ranges::for_each( plist, [&ostr]( std::string const& s ) { ostr << " - " << s << "\n"; } );
             CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
         }
 
@@ -87,7 +89,7 @@ gmsh_ptrtype geo( Ts && ... v )
             if ( !depends.empty() )
                 algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
             // copy include/merged files needed by geometry file
-            boost::for_each( depends_on_files,
+            std::ranges::for_each( depends_on_files,
                              [&cp, &files_path]( std::string const& _filename )
                              {
                                  fs::path file_path( files_path );

@@ -1692,7 +1692,7 @@ VectorPetscMPI<T>::close()
     super::close();
 
     this->localize();
-    toc("VectorPetscMPI::close",FLAGS_v>0);
+    toc("VectorPetscMPI::close",Environment::logVerbosityLevel()>0);
 }
 
 //----------------------------------------------------------------------------------------------------//

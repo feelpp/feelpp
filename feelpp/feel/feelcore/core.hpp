@@ -24,6 +24,9 @@
 #ifndef FEELPP_CORE_HPP
 #define FEELPP_CORE_HPP 1
 
+// Include fmt formatters first to ensure they're available for logging
+#include <feel/feelcore/fmt.hpp>
+
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/feelcore/checker.hpp>

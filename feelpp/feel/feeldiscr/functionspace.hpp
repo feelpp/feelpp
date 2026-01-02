@@ -60,13 +60,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 // #include <boost/numeric/ublas/vector_serialize.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#pragma GCC diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
@@ -211,6 +212,23 @@ struct ID
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
+
+// Operator<< for ID - must be here for fmt two-phase lookup
+template<typename T,int M,int N>
+inline std::ostream&
+operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )
+{
+    const size_type* shape =  id.M_id.shape();
+
+    for ( size_type i = 0; i < shape[0]; ++i )
+    {
+        os << id[i] << std::endl;
+    }
+    os << std::endl;
+
+    return os;
+}
+
 template<typename T,int M,int N>
 struct DD
 {
@@ -1346,13 +1364,19 @@ struct createMeshSupport
     void init2( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
         {
             if constexpr ( _UseMeshesList )
+            {
                 CHECK( false ) << fmt::format( "MeshSupport not allowed in Mesh List" );
+            }
             else
             {
                 if ( std::forward<RangeType>( rangeMeshElt ).container() )
+                {
                     M_meshSupport0.reset( new mesh_support_type(mesh,std::forward<RangeType>(rangeMeshElt) ) );
+                }
                 else
+                {
                     M_meshSupport0.reset( new mesh_support_type(mesh) );
+                }
 
                 mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
                 boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
@@ -6224,24 +6248,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         tic();
         tic();
         M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-        toc("FunctionSpace dof-1", FLAGS_v>0);
+        toc("FunctionSpace dof-1", Environment::logVerbosityLevel()>0);
         tic();
         M_dof->setDofTableExtended( this->extendedDofTable() );
-        toc("FunctionSpace dof-2", FLAGS_v>0);
+        toc("FunctionSpace dof-2", Environment::logVerbosityLevel()>0);
         DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
         tic();
         CHECK( dofindices.empty() ) << "NOT GO HERE";
         //M_dof->setDofIndices( dofindices );
-        toc("FunctionSpace dof-3", FLAGS_v>0);
+        toc("FunctionSpace dof-3", Environment::logVerbosityLevel()>0);
         DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
         tic();
         if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
             M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
-        toc("FunctionSpace dof-4", FLAGS_v>0);
+        toc("FunctionSpace dof-4", Environment::logVerbosityLevel()>0);
         tic();
         M_dof->build( M_mesh );
-        toc("FunctionSpace dof-5", FLAGS_v>0);
-        toc("FunctionSpace dof table", FLAGS_v > 0 );
+        toc("FunctionSpace dof-5", Environment::logVerbosityLevel()>0);
+        toc("FunctionSpace dof table", Environment::logVerbosityLevel() > 0 );
         M_dofOnOff = M_dof;
 
         this->applyUpdateInformationObject();
@@ -6584,20 +6608,6 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
             p.emplace( "nDof", this->nDof() );
         p.emplace( "subfunctionspaces", subPt );
     }
-}
-template<typename T,int M,int N>
-std::ostream&
-operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )
-{
-    const size_type* shape =  id.M_id.shape();
-
-    for ( size_type i = 0; i < shape[0]; ++i )
-    {
-        os << id[i] << std::endl;
-    }
-    os << std::endl;
-
-    return os;
 }
 
 /**

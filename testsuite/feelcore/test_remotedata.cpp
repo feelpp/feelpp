@@ -1,6 +1,28 @@
+// Provide operator<< for std::map for Boost.Test printing
+// MUST be defined BEFORE BOOST_TEST_MODULE and all includes
+#include <map>
+#include <ostream>
+#include <string>
+
+namespace std {
+template<typename K, typename V>
+ostream& operator<<(ostream& os, const map<K, V>& m)
+{
+    os << "{";
+    bool first = true;
+    for (const auto& [k, v] : m)
+    {
+        if (!first) os << ", ";
+        os << k << ": " << v;
+        first = false;
+    }
+    os << "}";
+    return os;
+}
+}
+
 // Define the test module name
 #define BOOST_TEST_MODULE RemoteDataTest
-
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/remotedata.hpp>
@@ -14,10 +36,7 @@
 #include <cpr/cpr.h>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <zip.h>
-
-
 
 using namespace Feel;
 
@@ -267,7 +286,7 @@ BOOST_DATA_TEST_CASE(test_remotedata_girder_download_item_and_unzip, bdata::make
             // Perform the download - files should be automatically extracted
             auto data = rd.download(d);
             std::cout << "Downloaded data:";
-            std::cout << "data = " << data << std::endl;
+            std::cout << fmt::format("data = {}", data) << std::endl;
             
             // With automatic extraction, check that files exist in the download directory
             // and are not ZIP files

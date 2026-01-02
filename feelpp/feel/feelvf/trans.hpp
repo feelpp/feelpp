@@ -306,7 +306,7 @@ class Trans : public ExprDynamicBase
    \return the transposed expression
  */
 template <typename ExprT>
-inline Expr<Trans<ExprT>>
+[[nodiscard]] inline Expr<Trans<ExprT>>
 trans( ExprT v )
 {
     typedef Trans<ExprT> trans_t;

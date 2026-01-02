@@ -51,10 +51,13 @@ void defToolbox(py::module &m)
 
     std::string pyclass_name = std::string("MeshALE_") + std::to_string(convex_t::nDim) + std::string("DP") + std::to_string(convex_t::nOrder);
     py::class_<toolbox_t, std::shared_ptr<toolbox_t>, ModelBase>( m, pyclass_name.c_str() )
-        .def( py::init<mesh_ptr_t, std::string const&, worldcomm_ptr_t const&, ModelBaseRepository const&>(),
+        .def( py::init([](mesh_ptr_t mesh, std::string const& prefix, py::object worldComm, ModelBaseRepository const& modelRep) {
+                  worldcomm_ptr_t wc = worldComm.is_none() ? Environment::worldCommPtr() : py::cast<worldcomm_ptr_t>(worldComm);
+                  return new toolbox_t(mesh, prefix, wc, modelRep);
+              }),
               py::arg( "mesh" ),
               py::arg( "prefix" ) = "",
-              py::arg( "worldComm" ) = Environment::worldCommPtr(),
+              py::arg( "worldComm" ) = py::none(),
               py::arg( "modelRep" ) = ModelBaseRepository(),
               "Initialize the meshALE mechanics toolbox" )
         .def( "init", static_cast<void ( toolbox_t::* )()>( &toolbox_t::init ), "initialize the meshALE  toolbox" )

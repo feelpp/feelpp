@@ -27,6 +27,11 @@ INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 add_subdirectory(python)
 
+# Core examples (always available)
+if (NOT FEELPP_MINIMAL_CONFIGURATION)
+  add_subdirectory(examples)
+endif()
+
 if( FEELPP_HAS_GMSH )
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   foreach(DIR laplacian

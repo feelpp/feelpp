@@ -221,9 +221,9 @@ class Tresca
 /**
  * \brief compute the Tresca yield criterion
  */
-template <typename ExprT>
+template <VfExpr ExprT>
 inline Expr<Tresca<ExprT>>
-tresca( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+tresca( ExprT v )
 {
     typedef Tresca<ExprT> tresca_t;
     return Expr<tresca_t>( tresca_t( v ) );

@@ -9,8 +9,8 @@
     SPDX-License-Identifier: LGPL-2.1-or-later
 */
 #pragma once
-#include <petsc/petsc.h>
-#include <petsc/petscvec.h>
+#include <petsc.h>
+#include <petscvec.h>
 #include <stdexcept>
 
 namespace Feel

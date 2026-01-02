@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testalg )
+set_directory_properties(PROPERTIES LABELS "testsuite;testalg")
 foreach(TEST petsc umfpack ublas graph sub_matrix eigen3_tensor)
   feelpp_add_test( ${TEST}  NO_MPI_TEST )
 endforeach()

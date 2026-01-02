@@ -33,8 +33,12 @@
 
 #include <feel/feelalg/solverumfpack.hpp>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #if defined(FEELPP_HAS_UMFPACK)
 

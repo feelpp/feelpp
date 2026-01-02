@@ -245,7 +245,7 @@ public:
         LOG(INFO) << "OperatorMatrix: apply(X,Y)";
         tic();
         M_F->multVector( X, Y );
-        toc((boost::format("OperatorMatrix::apply %1%")%this->label()).str(),FLAGS_v>0);
+        toc((boost::format("OperatorMatrix::apply %1%")%this->label()).str(),Environment::logVerbosityLevel()>0);
         return !hasApply();
     }
     
@@ -267,7 +267,7 @@ public:
                                                                   _solution=Y,_prec=this->M_pc, _close=M_closeMatrixRhs );
         }
         bool cv = this->M_return.isConverged();
-        toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
+        toc((boost::format("OperatorMatrix::applyInverse %1%")%this->label()).str(),Environment::logVerbosityLevel()>0);
         return cv;
     }
     int applyInverse ( const vector_type& X, vector_type& Y ) const
@@ -479,7 +479,7 @@ public:
         LOG(INFO) << "  - apply operator " << M_F->label() << " ...\n";
         M_F->apply( *M_ZG,Y );
 
-        toc((boost::format("OperatorCompose::apply %1%")%this->label()).str(),FLAGS_v>0);
+        toc((boost::format("OperatorCompose::apply %1%")%this->label()).str(),Environment::logVerbosityLevel()>0);
         
         LOG(INFO) << "OperatorCompose apply operator " << this->label() << " done.\n";
 
@@ -497,7 +497,7 @@ public:
         M_F->applyInverse( X,*M_ZF );
         LOG(INFO) << "  - apply operator " << M_G->label() << " ...\n";
         M_G->applyInverse( *M_ZF,Y );
-        toc((boost::format("OperatorCompose::applyInverse %1%")%this->label()).str(),FLAGS_v>0);
+        toc((boost::format("OperatorCompose::applyInverse %1%")%this->label()).str(),Environment::logVerbosityLevel()>0);
         LOG(INFO) << "OperatorCompose applyInverse operator " << this->label() << " done.\n";
         return hasInverse();
     }

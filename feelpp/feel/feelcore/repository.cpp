@@ -30,6 +30,7 @@
 #include <cpr/cpr.h>
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feelcore/repository.hpp>
+#include <feel/feelcore/logger.hpp>
 #include <fmt/core.h>
 #include <pwd.h>
 
@@ -78,10 +79,10 @@ GithubUser::GithubUser()
 bool
 GithubUser::update()
 {
-    fmt::print("githubuser update\n");
+    VLOG(2) << "githubuser update";
     if (login && !login->empty())
     {
-        cpr::Response r = cpr::Get( cpr::Url{ fmt::format("https://api.github.com/users/",*login) } );
+        cpr::Response r = cpr::Get( cpr::Url{ fmt::format("https://api.github.com/users/{}", *login) } );
         if ( r.status_code == 200 )
         {
             nl::json j = nl::json::parse( r.text );
@@ -101,10 +102,10 @@ Repository::Config::Config()
     nl::json jc;
     to_json( jc, *this );
     auto home = findHome();
-    VLOG(2) << fmt::format( "home: {}\n", home.string() ) << std::endl;
+    // VLOG(2) << fmt::format( "home: {}\n", home.string() ) << std::endl;
     if ( fs::exists( home / ".feelppconfig" ) )
     {
-        VLOG(2) << fmt::format("loading {}\n", ( home / ".feelppconfig" ).string() );
+        // VLOG(2) << fmt::format("loading {}\n", ( home / ".feelppconfig" ).string() );
         std::ifstream i( ( home / ".feelppconfig" ).string() );
         nl::json j;
         i >> j;
@@ -120,7 +121,7 @@ Repository::Config::Config()
         owner.name = findUser();
         to_json( jc, *this );
     }
-    VLOG(2) << fmt::format( "config: {}", jc.dump(1) ) << std::endl;
+    // VLOG(2) << fmt::format( "config: {}", jc.dump(1) ) << std::endl;
 #if 0
     if ( owner.github )
     {
@@ -139,8 +140,20 @@ Repository::Config::Config( nl::json const& j ): Config()
 {
     nl::json jc;
     to_json( jc, *this );
-    jc.merge_patch( j );
-    to_json( jc, *this );
+    if ( j.is_null() )
+    {
+        // keep default
+    }
+    else if ( j.is_object() )
+    {
+        jc.merge_patch( j );
+    }
+    else
+    {
+        std::cerr << "Repository::Config: ignoring non-object JSON config\n";
+        throw std::invalid_argument( "Repository::Config::Config invalid json argument" );
+    }
+    from_json( jc, *this );
 }
 
 Repository::Config::Config( nl::json&& j )
@@ -148,8 +161,21 @@ Repository::Config::Config( nl::json&& j )
 {
     nl::json jc;
     to_json( jc, *this );
-    jc.merge_patch( std::move(j) );
-    to_json( jc, *this );
+    //jc.merge_patch( std::move(j) );
+    if ( j.is_null() )
+    {
+        // keep default
+    }
+    else if ( j.is_object() )
+    {
+        jc.merge_patch( j );
+    }
+    else
+    {
+        std::cerr << "Repository::Config: ignoring non-object JSON config\n";
+        throw std::invalid_argument( "Repository::Config::Config invalid json argument" );
+    }
+    from_json( jc, *this );
 }
 Repository::Config::Config( fs::path d, Location l ): Config()
 {
@@ -162,6 +188,16 @@ Repository::Config::Config( fs::path d, Location l, nl::json const& dat )
     directory = d;
     location = l;
 };
+
+Repository::Config::Config( fs::path d, std::function<fs::path()> callback )
+    : Config()
+{
+    // VLOG(3) << "Custom location callback constructor called\n" << std::endl;
+    directory = d;
+    location = Location::custom;
+    custom_location_callback = callback;
+    // VLOG(3) << "Custom location callback constructor called done\n" << std::endl;
+}
 
 Repository::Repository( Config c )
     :
@@ -191,11 +227,37 @@ Repository::configure()
         {
             root_ = config_.global_root;
         }
+        if ( config_.location == Location::custom )
+        {
+            if ( config_.custom_location_callback )
+            {
+                try
+                {
+                    std::cout << "Invoking custom location callback\n" << std::endl
+                              <<  config_.directory.string() << std::endl;
+                    root_ = config_.custom_location_callback();
+                    std::cerr << fmt::format("Custom location callback returned: {}\n", root_.string());
+                }
+                catch ( const std::exception& e )
+                {
+                    std::cerr << fmt::format("Custom location callback failed: {}. Falling back to directory.\n", e.what());
+                    root_ = fs::current_path() / config_.feelppdb / config_.directory;
+                }
+            }
+            else
+            {
+                throw std::logic_error("Custom location specified but no callback provided.");
+            }
+        }
     }
-    geo_ = root_ / config_.geos;
-    exprs_ = directoryWithoutAppenders() / config_.exprs;
-    logs_ = directory() / config_.logs;
-
+    configured_ = true;
+    // Only create directories if root is valid
+    if ( !root_.empty() )
+    {
+        geo_ = root_ / config_.geos;
+        exprs_ = directoryWithoutAppenders() / config_.exprs;
+        logs_ = directory() / config_.logs;
+    }
     if ( Environment::isMasterRank() )
     {
         auto create_dir = []( fs::path const& d, std::string const& str )
@@ -203,7 +265,9 @@ Repository::configure()
             try
             {
                 bool created = fs::create_directories( d );
-                Feel::cout << fmt::format("[feelpp] create Feel++ {}: {}\n", str, d.string()) << std::endl;
+                // Use Logger console logger for user-facing messages
+                Logger::console()->info("[feelpp] create Feel++ {}: {}", str, d.string());
+                Logger::console()->flush();
             }
             catch ( const fs::filesystem_error& e )
             {
@@ -240,6 +304,7 @@ Repository::configure()
         }
     }
     Environment::worldComm().barrier();
+    
     return *this;
 }
 
@@ -250,14 +315,48 @@ Repository::cd()
     return *this;
 }
 
+bool
+Repository::verifyDirectoriesExist(std::string const& caller_info) const
+{
+    if ( !configured_ )
+    {
+        std::cerr << fmt::format("[feelpp.repository] VERIFY CHECK from '{}': Repository not configured yet!\n", 
+                                 caller_info.empty() ? "unknown" : caller_info);
+        return false;
+    }
+
+    bool all_exist = true;
+    auto check_dir = [&](fs::path const& d, std::string const& name) {
+        bool exists = fs::exists(d);
+        std::string status = exists ? "OK" : "MISSING";
+        std::cerr << fmt::format("[feelpp.repository] VERIFY from '{}': {} {} -> {}\n",
+                                 caller_info.empty() ? "unknown" : caller_info,
+                                 name, d.string(), status);
+        if (!exists) all_exist = false;
+        return exists;
+    };
+
+    check_dir(root_, "root");
+    check_dir(geo_, "geo");
+    check_dir(directory(), "directory");
+    check_dir(exprs_, "exprs");
+    check_dir(logs_, "logs");
+
+    return all_exist;
+}
+
 fs::path
 Repository::directory() const
 {
+    if ( !configured_ )
+        throw std::logic_error("Repository::directory() called before configure()");
     return  root() / relativeDirectory();
 }
 fs::path
 Repository::directoryWithoutAppenders() const
 {
+    if ( !configured_ )
+        throw std::logic_error("Repository::directoryWithoutAppenders() called before configure()");
     if ( isAbsolute() )
         return config_.directory;
     return root() / config_.directory;
@@ -265,6 +364,8 @@ Repository::directoryWithoutAppenders() const
 fs::path
 Repository::relativeDirectory() const
 {
+    if ( !configured_ )
+        throw std::logic_error("Repository::relativeDirectory() called before configure()");
     fs::path p;
     if ( !isAbsolute() )
         p = config_.directory;

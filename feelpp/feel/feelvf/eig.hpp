@@ -268,9 +268,9 @@ class Eig : public ExprDynamicBase
 /**
  * \brief eig of the expression tensor (expression is supposed to be self adjoint)
  */
-template <typename ExprT>
-inline Expr<Eig<ExprT>>
-eig( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+template <VfExpr ExprT>
+[[nodiscard]] inline Expr<Eig<ExprT>>
+eig( ExprT v )
 {
     typedef Eig<ExprT> eig_t;
     return Expr<eig_t>( eig_t( v ) );

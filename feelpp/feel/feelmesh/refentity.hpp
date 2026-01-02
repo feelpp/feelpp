@@ -31,8 +31,13 @@
 #define __RefEntity_H 1
 
 #include <stdexcept>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/glas.hpp>

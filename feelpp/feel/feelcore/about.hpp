@@ -264,9 +264,9 @@ public:
      *
      */
     void addAuthor( std::string const & name,
-                    std::string const & task=0,
-                    std::string const & emailAddress=0,
-                    std::string const & webAddress=0 );
+                    std::string const & task="",
+                    std::string const & emailAddress="",
+                    std::string const & webAddress="" );
 
     /**
      * Defines a person that deserves credit. You can call this function
@@ -288,9 +288,9 @@ public:
      *
      */
     void addCredit( std::string const & name,
-                    std::string const & task=0,
-                    std::string const & emailAddress=0,
-                    std::string const & webAddress=0 );
+                    std::string const & task="",
+                    std::string const & emailAddress="",
+                    std::string const & webAddress="" );
 
     /**
      * Defines a license text.

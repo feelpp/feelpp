@@ -757,7 +757,7 @@ auto normLinf( Ts && ... v )
                 index2 = i;
             }
         }
-        LOG_ASSERT( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
+        CHECK( index2 == index ) << " index2 = " << index2 <<  " and index  = " << index << "\n";
     }
 
     LOG(INFO) << "evaluate expression done." << std::endl;

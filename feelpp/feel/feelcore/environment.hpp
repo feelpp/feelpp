@@ -467,6 +467,14 @@ public:
         return rank() == masterRank();
     }
 
+    static std::string logMpiMode()
+    {
+        return S_log_mpi_mode;
+    }
+
+    static bool shouldLog();
+
+
     static po::command_line_parser const& commandLineParser()
     {
         return *S_commandLineParser;
@@ -562,6 +570,16 @@ public:
      * @return Repository&
      */
     static Repository& repository() { return S_repository; }
+
+    /**
+     * @brief check if repository is configured
+     *
+     * @return true if repository is configured, false otherwise
+     */
+    static bool repositoryConfigured()
+    {
+        return S_repository.isConfigured();
+    }
 
     /**
      * set the static worldcomm
@@ -782,7 +800,7 @@ public:
     //static po::variables_map vm( po::options_description const& desc );
 
     //! get the log verbosity level
-    static int logVerbosityLevel() { return FLAGS_v; }
+    static int logVerbosityLevel() { return vm()["v"].as<int>(); }
 
     //! set the verbosity level of the VLOG macro
     static void setLogVerbosityLevel( int logVerbosity );
@@ -804,6 +822,11 @@ public:
 
     //!
     //! stop logging in Feel++.
+    //!
+    //! This function safely shuts down Google's logging system and optionally removes
+    //! log files. It is MPI-safe and can be called before MPI init, during MPI execution,
+    //! or after MPI finalization.
+    //!
     //! \param remove deletes the log directory and all its content
     //! \code
     //! Environment::startLogging();
@@ -816,6 +839,9 @@ public:
     //! LOG(INFO) << "Feel++ uses logging";
     //! Environment::stopLogging( true ); // delete the `logs` subdirectory of the current path
     //! \endcode
+    //!
+    //! \note When called after MPI finalization (e.g., after PetscFinalize/SlepcFinalize),
+    //!       log cleanup will happen on all ranks to avoid MPI-after-finalize errors.
     //!
     static void stopLogging( bool remove = false );
 
@@ -879,6 +905,9 @@ private:
 
     //! Private Methods
     //! @{
+
+    //! Helper to create bootstrap directory paths with MPI synchronization
+    static fs::path createBootstrapPath( fs::path const& subpath );
 
     //! change the directory where the results are stored
     static void changeRepositoryImpl( boost::format fmt, std::string const& logfile, Location location, bool add_subdir_np, WorldComm const& worldcomm, bool remove );
@@ -954,6 +983,7 @@ private:
 
     static boost::signals2::signal<void()> S_deleteObservers;
 
+    static std::string S_log_mpi_mode;
     static std::shared_ptr<WorldComm> S_worldcomm;
     static std::shared_ptr<WorldComm> S_worldcommSeq;
 

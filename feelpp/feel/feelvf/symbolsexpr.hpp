@@ -632,7 +632,8 @@ struct SymbolsExpr : public SymbolsExprBase
 
         TensorContext() = default;
 
-        template <typename TheMetType, std::enable_if_t<std::is_same_v<std::decay_t<TheMetType>, map_expr_tensor_type>,bool> = true >
+        template <typename TheMetType>
+            requires std::is_same_v<std::decay_t<TheMetType>, map_expr_tensor_type>
         TensorContext( std::shared_ptr<symbols_expr_type> const& se, TheMetType && met )
             :
             M_se( se ),
@@ -817,8 +818,9 @@ symbolsExpr( const ExprT&... exprs )
     return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::apply( exprs... ) );
 }
 template<typename T>
+    requires (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>)
 symbols_expression_t<T> const&
-symbolsExpr( T const& se, std::enable_if_t< (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>) >* = nullptr )
+symbolsExpr( T const& se )
 {
     return se;
 }

@@ -151,7 +151,7 @@ template<typename MeshType,typename TupleRange>
 Range<decay_type<MeshType>,MESH_ELEMENTS> makeResultRange( std::shared_ptr<MeshType> const& mesh, TupleRange && r )
 {
     auto&& meshRange = std::forward<TupleRange>(r);
-    wc( mesh )->print( fmt::format( "makeResultRange: mesh count={}", mesh.use_count() ), FLAGS_v > 0, FLAGS_v > 0, FLAGS_v > 0 );
+    wc( mesh )->print( fmt::format( "makeResultRange: mesh count={}", mesh.use_count() ), Environment::logVerbosityLevel() > 0, Environment::logVerbosityLevel() > 0, Environment::logVerbosityLevel() > 0 );
 
     //std::cout << fmt::format( "mesh: {} ptr:{}, count: {}\n", ( is_shared_ptr_v<decay_type<MeshType>>  ) ? "shared_ptr" : "ref_or_val", mesh, mesh.use_count()  ) << std::endl;
     Range<decay_type<MeshType>, MESH_ELEMENTS> res( mesh );

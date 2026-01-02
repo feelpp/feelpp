@@ -98,12 +98,12 @@ public :
             auto a1 = form2( _test=Xh, _trial=Xh );
             tic();
             a1 = integrate( _range=elements(mesh), _expr=trans(gradt(u)*idv(u))*id(u) );
-            toc("convection",FLAGS_v>0);
+            toc("convection",Environment::logVerbosityLevel()>0);
             //a1.matrixPtr()->printMatlab("A1.m");
             auto a2 = form2( _test=Xh, _trial=Xh );
             tic();
             a2 = integrate( _range=elements(mesh), _expr=inner( val(gradt(u)*idv(u)), id(u)) );
-            toc("convection optimized", FLAGS_v>0);
+            toc("convection optimized", Environment::logVerbosityLevel()>0);
             //a2.matrixPtr()->printMatlab("A2.m");
         }
 };

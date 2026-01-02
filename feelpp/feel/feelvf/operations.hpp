@@ -502,9 +502,9 @@
             static const int shape_op = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::op; \
                                                                         \
             struct is_zero {                                            \
-                static const bool value = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::value; \
-                static const bool update_and_eval_left = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_left; \
-                static const bool update_and_eval_right = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_right; \
+                static inline const bool value = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::value; \
+                static inline const bool update_and_eval_left = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_left; \
+                static inline const bool update_and_eval_right = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_right; \
             };                                                          \
                                                                         \
             template<typename ExprT>                                    \

@@ -29,7 +29,11 @@
 #ifndef __Fms_Point_H
 #define __Fms_Point_H 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/storage.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace Feel
 {

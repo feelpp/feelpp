@@ -501,7 +501,7 @@ public:
             std::string reprType = IsNodal? "nodal":"element";
             tic();
             auto scalarSpace = this->scalarFunctionSpace<IsNodal>( func );
-            toc( (boost::format("Timeset::add get scalar space %1%")%reprType).str(),FLAGS_v>0);
+            toc( (boost::format("Timeset::add get scalar space %1%")%reprType).str(),Environment::logVerbosityLevel()>0);
 
             tic();
             auto & fieldsMap = this->fields<IsNodal>();
@@ -683,7 +683,7 @@ public:
             M_state.clear( STEP_ON_DISK );
 
             showMe( "Step::add" );
-            toc((boost::format("Timeset::add functionspace element %1%")%__n).str(),FLAGS_v>0);
+            toc((boost::format("Timeset::add functionspace element %1%")%__n).str(),Environment::logVerbosityLevel()>0);
         }
 
 
@@ -790,7 +790,7 @@ public:
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
-                toc((boost::format("Timeset::add expression %1%")%__n).str(),FLAGS_v>0);
+                toc((boost::format("Timeset::add expression %1%")%__n).str(),Environment::logVerbosityLevel()>0);
             }
 
         //@}

@@ -308,7 +308,7 @@ private:
  * \brief symetric part of a matricial expression
  */
 template<typename ExprT>
-inline
+[[nodiscard]] inline
 Expr< Sym<ExprT,1> >
 sym( ExprT v )
 {
@@ -320,7 +320,7 @@ sym( ExprT v )
  * \brief symetric part of a matricial expression
  */
 template<typename ExprT>
-inline
+[[nodiscard]] inline
 Expr< Sym<ExprT,0> >
 antisym( ExprT v )
 {

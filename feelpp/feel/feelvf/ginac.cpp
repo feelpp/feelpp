@@ -193,8 +193,12 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     VLOG(1) <<"parse expression: " << strexpr;
     if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
     {
+#if 0        
         VLOG(1) <<"invalid code: " << table;
-        throw std::invalid_argument( fmt::format( "invalid code: {}", fmt::streamed(table) ) );
+        std::ostringstream oss;
+        oss << table;
+        throw std::invalid_argument( fmt::format( "invalid code: {}", oss.str() ) );
+#endif        
     }
     ex e; // = reader(str);
     try

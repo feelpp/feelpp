@@ -166,5 +166,12 @@ struct value_type_trait
 template <typename Type>
 using value_t = typename value_type_trait<Type>::type;
 
+//
+// C++20 Concepts
+//
+#include <feel/feelcore/concepts.hpp>
+
+// Note: The actual bridges are defined in concepts.hpp
+// This ensures old trait names (is_iterable_v<T>, etc.) work
 } // namespace Feel
 #endif

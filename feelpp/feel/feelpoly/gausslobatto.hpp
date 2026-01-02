@@ -35,10 +35,15 @@
 #include <feel/feelcore/visitor.hpp>
 
 #include <stdexcept>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 #include <feel/feelcore/traits.hpp>

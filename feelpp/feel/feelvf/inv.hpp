@@ -291,7 +291,7 @@ class Inv : public ExprDynamicBase
  * \brief inv of the expression tensor
  */
 template <typename ExprT>
-inline Expr<Inv<ExprT>>
+[[nodiscard]] inline Expr<Inv<ExprT>>
 inv( ExprT v )
 {
     typedef Inv<ExprT> inv_t;

@@ -154,6 +154,12 @@ add_definitions(-DLIBEXECDIR="${LIBEXECDIR}/")
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
+
+# Suppress warnings from GiNaC template instantiations
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(feelpp_ginac PRIVATE -Wno-undefined-var-template)
+endif()
+
 target_link_libraries(feelpp_ginac cln::cln ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_LIBRARIES})
 target_include_directories(feelpp_ginac
   PUBLIC

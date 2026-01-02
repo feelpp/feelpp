@@ -24,6 +24,9 @@
 #ifndef FEELPP_FEELALG_HPP
 #define FEELPP_FEELALG_HPP 1
 
+// Include fmt formatters for algebraic types (Eigen matrices, etc.)
+#include <feel/feelalg/fmt.hpp>
+
 #include <feel/feelalg/backend.hpp>
 
 #endif

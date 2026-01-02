@@ -61,7 +61,7 @@ OpusApp<ModelType,RM,Model>::run()
         M_ser->run();
     }
     this->loadDB();
-    toc("Offline", FLAGS_v>0);
+    toc("Offline", Environment::logVerbosityLevel()>0);
 
     int run_sampling_size = ioption(_name=_o( this->about().appName(),"run.sampling.size" ));
     SamplingMode run_sampling_type = ( SamplingMode )ioption(_name=_o( this->about().appName(),"run.sampling.mode" ));

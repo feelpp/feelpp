@@ -395,12 +395,12 @@ public:
                                   _pattern_block=pattern_block,
                                   _diag_is_nonzero=diag_is_nonzero,
                                   _collect_garbage=collect_garbage);
-                toc( "Backend::newMatrix:: build stencil", FLAGS_v > 0 );
+                toc( "Backend::newMatrix:: build stencil", Environment::logVerbosityLevel() > 0 );
                 tic();
                 mat->init( test->nDof(), trial->nDof(),
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
                            s->graph() );
-                toc( "Backend::newMatrix:: initialize matrix", FLAGS_v > 0 );
+                toc( "Backend::newMatrix:: initialize matrix", Environment::logVerbosityLevel() > 0 );
             }
             else
             {
@@ -429,7 +429,7 @@ public:
             tic();
             mat->zero();
             mat->setIndexSplit( trial->dofIndexSplit() );
-            toc("Backend::newMatrix:: zero out matrix + set split", FLAGS_v > 0 );
+            toc("Backend::newMatrix:: zero out matrix + set split", Environment::logVerbosityLevel() > 0 );
         }
 
         if ( verbose )

@@ -48,6 +48,9 @@ if ( NOT TARGET testsuite )
   add_custom_target( testsuite )
 endif()
 
+# Set testsuite label for all tests in this directory tree
+set_directory_properties(PROPERTIES LABELS "testsuite")
+
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)
 
 option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)

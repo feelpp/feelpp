@@ -101,7 +101,7 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                          _update=updateComponentsMesh );
     if ( Environment::isMasterRank() )
         std::cout << "loadMesh done" << std::endl;
-    toc("loadMesh",FLAGS_v>0);
+    toc("loadMesh",Environment::logVerbosityLevel()>0);
 
     BOOST_CHECK_NE( nelements(elements(mesh),true), 0 );
 }

@@ -252,7 +252,11 @@ PYBIND11_MODULE( _mor, m )
         .def_readwrite("plugin_libname", &CRBModelDB::MetaData::plugin_libname);
 
     py::class_<CRBModelDB>( m, "CRBModelDB" )
-        .def( py::init<std::string const&, std::string const&>(), py::arg( "name" ), py::arg( "root" ) = Environment::rootRepository(), "Construct a CRBModelDB" )
+        .def( py::init([](std::string const& name, std::string root) {
+                  if(root.empty()) root = Environment::rootRepository();
+                  return new CRBModelDB(name, root);
+              }),
+              py::arg( "name" ), py::arg( "root" ) = "", "Construct a CRBModelDB" )
         .def( "name", &CRBModelDB::name )
         .def( "rootRepository", &CRBModelDB::rootRepository )
         .def( "uuid", &CRBModelDB::uuid )
@@ -381,8 +385,10 @@ PYBIND11_MODULE( _mor, m )
         .def("name",&CRBPluginAPI::name,py::return_value_policy::reference)
         //.def("setName",pure_virtual(&CRBPluginAPI::setName))
         .def("loadDB",&CRBPluginAPI::loadDB,"load a database from filename",py::arg("filename"),py::arg("load")=crb::load::rb )
-        .def("loadDBFromId",&CRBPluginAPI::loadDBFromId, "load a database from its id", py::arg(
-                 "id"), py::arg("load")=crb::load::rb, py::arg("root")=Environment::rootRepository())
+        .def("loadDBFromId",[](CRBPluginAPI& api, std::string const& id, crb::load load, std::string root) {
+                 if(root.empty()) root = Environment::rootRepository();
+                 return api.loadDBFromId(id, load, root);
+             }, "load a database from its id", py::arg("id"), py::arg("load")=crb::load::rb, py::arg("root")="")
         .def("isReducedBasisModelDBLoaded",&CRBPluginAPI::isReducedBasisModelDBLoaded, "returns true if Reduced Basis Model DB is loaded, false otherwise")
         .def("isFiniteElementModelDBLoaded",&CRBPluginAPI::isFiniteElementModelDBLoaded, "returns true if Finite Element Model DB is loaded, false otherwise")
         .def("isAllLoaded",&CRBPluginAPI::isAllLoaded, "returns true if all DB is loaded, false otherwise")
