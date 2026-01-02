@@ -60,7 +60,7 @@ void PartitionerLinear<MeshType>::partitionImpl ( mesh_ptrtype& mesh,
       mesh->modify( it, []( element_type& e ){ e.setProcessId(pid); });
       e++;
   }
-  auto t = toc("linear partition",FLAGS_v > 0);
+  auto t = toc("linear partition",Environment::logVerbosityLevel() > 0);
   LOG(INFO) << "linear partition mesh done in " << t << "s";
 }
 

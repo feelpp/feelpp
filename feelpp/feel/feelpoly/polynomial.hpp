@@ -30,8 +30,12 @@
 #ifndef __Polynomial_H
 #define __Polynomial_H 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 #include <feel/feelcore/feel.hpp>

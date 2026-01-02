@@ -241,10 +241,8 @@ public:
         //super(v,index),
         M_destroy_vec_on_exit( false )
     {
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunsequenced"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 
@@ -269,9 +267,8 @@ public:
         this->close(); /* no // assembly required */
 #endif
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
     }
 
     /**

@@ -376,7 +376,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::initModel()
                       _sampling=Pset,
                       _name="eim_g" );
     this->addEim( eim_g );
-    toc("EIM",FLAGS_v>0);
+    toc("EIM",Environment::logVerbosityLevel()>0);
     /*
      * To evaluate the eim expansion
      */
@@ -423,7 +423,7 @@ BenchmarkGreplNonLinearParabolic<Order>::computeLinearDecompositionA()
     tic();
     this->M_linearAqm[0][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
     this->M_linearAqm[1][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
-    toc("CreateMatrices", FLAGS_v>0);
+    toc("CreateMatrices", Environment::logVerbosityLevel()>0);
     tic();
     // Evolution
     form2(_test=Xh, _trial=Xh, _matrix=this->M_linearAqm[0][0]) = 
@@ -435,13 +435,13 @@ BenchmarkGreplNonLinearParabolic<Order>::computeLinearDecompositionA()
                          -gradt( u )*vf::N()*id( u )           // comes from the integration
                          //-grad( u )*vf::N()*idt( u )           // add symmetrization
             );
-    toc("Evolution", FLAGS_v>0);
+    toc("Evolution", Environment::logVerbosityLevel()>0);
     tic(); 
     // Diffusion
     form2(_test=Xh, _trial=Xh, _matrix=this->M_linearAqm[1][0]) = 
       integrate(_range=elements(mesh), 
         _expr=inner(gradt(u), grad(u)));
-    toc("Diffusion", FLAGS_v>0);
+    toc("Diffusion", Environment::logVerbosityLevel()>0);
 
     return this->M_linearAqm;
 }
@@ -459,7 +459,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     this->M_Mqm[0][0] = backend()->newMatrix(_test=Xh, _trial=Xh);
     form2(_test=Xh, _trial=Xh, _matrix=this->M_Mqm[0][0])
       = integrate(_range=elements(mesh), _expr=inner(id(u),idt(u)));
-    toc("MassMatrix", FLAGS_v>0);
+    toc("MassMatrix", Environment::logVerbosityLevel()>0);
     
     tic();
     this->M_Aqm.resize( 2 );
@@ -467,7 +467,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
     this->M_Aqm[1].resize( 1 );
     this->M_Aqm[0][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
     this->M_Aqm[1][0] = backend()->newMatrix( _test=Xh, _trial=Xh );
-    toc("CreateMatrices", FLAGS_v>0);
+    toc("CreateMatrices", Environment::logVerbosityLevel()>0);
     tic();
 
     // Evolution
@@ -480,7 +480,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
                          -gradt( u )*vf::N()*id( u )           // comes from the integration
                          //-grad( u )*vf::N()*idt( u )           // add symmetrization
             );
-    toc("Evolution", FLAGS_v>0);
+    toc("Evolution", Environment::logVerbosityLevel()>0);
 
     tic();
     // Diffusion + bc
@@ -488,7 +488,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
       integrate(_range=elements(mesh), 
         _expr=inner(gradt(u), grad(u)))
       ;
-    toc("Diffusion", FLAGS_v>0);
+    toc("Diffusion", Environment::logVerbosityLevel()>0);
 
     // Rhs (eim)
     // g = sum_{i=1}^{mMax} w_m(mu) g(x)
@@ -506,7 +506,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
           integrate(_range=elements(mesh),
                     _expr=doption("control_input")*inner(idv(eim_g->q(i)),id(u))); //control_input = u
     }
-    toc("Rhs", FLAGS_v>0);
+    toc("Rhs", Environment::logVerbosityLevel()>0);
     tic();
     this->M_Fqm[0][0][M] = backend()->newVector( Xh );
     // This can be removed - I left it to let us impose non homogeneous boundary conditions.
@@ -514,7 +514,7 @@ void BenchmarkGreplNonLinearParabolic<Order>::assemble()
         integrate(_range=markedfaces(mesh,"Dirichlet"),
                   _expr=doption("gamma")*cst(0.)*id( u )/hFace() // Penalisation
         );
-    toc("Rhs(bc)", FLAGS_v>0);
+    toc("Rhs(bc)", Environment::logVerbosityLevel()>0);
 
 }
 

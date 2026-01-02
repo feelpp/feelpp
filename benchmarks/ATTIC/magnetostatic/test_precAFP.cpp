@@ -266,13 +266,13 @@ class TestPrecAFP : public Application
                       _solution=U,
                       _backend=backend(_name="ms"),
                       _prec=M_prec);
-            toc("Inverse",FLAGS_v>0);
+            toc("Inverse",Environment::logVerbosityLevel()>0);
         }else{
             tic();
             ret = f2.solveb(_rhs=f1,
                       _solution=U,
                       _backend=backend(_name="ms"));
-            toc("Inverse",FLAGS_v>0);
+            toc("Inverse",Environment::logVerbosityLevel()>0);
         }
 #if 1
         Environment::saveTimers(boption("saveTimers")); 

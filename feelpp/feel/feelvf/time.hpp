@@ -134,7 +134,7 @@ public:
         {
             tic();
             M_tensor_expr.update( geom, fev, feu );
-            toc(M_tag_updateij,FLAGS_v>0);
+            toc(M_tag_updateij,Environment::logVerbosityLevel()>0);
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
@@ -158,7 +158,7 @@ public:
         {
             tic();
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q );
-            toc(M_tag_evalijq,FLAGS_v>0);
+            toc(M_tag_evalijq,Environment::logVerbosityLevel()>0);
             return res;
         }
         template<int PatternContext>

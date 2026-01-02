@@ -371,9 +371,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
             template <typename TheFeType = fe_type>                     \
             evaluate_type evaluate(bool p,                              \
-                                   typename std::enable_if_t< isP0Continuous<TheFeType>::result && \
-                                   std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > && \
-                                   VF_OP_TYPE_IS_VALUE( T ) >* = nullptr ) const \
+                                   typename std::enable_if_t< isP0Continuous<TheFeType>::result &&   \
+                                                                std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > && \
+                                                                VF_OP_TYPE_IS_VALUE( T ) >* = nullptr ) const \
             {                                                           \
                 evaluate_type res = evaluate_type::Constant( 0. );      \
                 if ( this->e().functionSpace()->nLocalDofWithGhost() ) \
@@ -799,9 +799,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
         };                                                              \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
-        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
+        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )(),  \
+              std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(expr,useInterpWithConfLoc) ); \
@@ -809,9 +810,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
-        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
+        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )(),  \
+              std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(*expr,useInterpWithConfLoc) ); \

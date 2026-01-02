@@ -129,7 +129,7 @@ public:
                 M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
             else
                 super::addMatrix( rows, nrows, cols, ncols, data );
-            toc("addMatrix",FLAGS_v>2);
+            toc("addMatrix",Environment::logVerbosityLevel()>2);
         }
     void addMatrix( const value_type a, MatrixSparse<value_type> const& M, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override
         {

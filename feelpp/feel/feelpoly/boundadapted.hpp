@@ -31,7 +31,13 @@
 
 
 #include <boost/lambda/if.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelalg/glas.hpp>
 

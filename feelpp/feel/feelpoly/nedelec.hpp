@@ -31,11 +31,16 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/lu.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -164,10 +169,10 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nComponents = super::nComponents;
-    static const bool is_product = false;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder = super::nOrder;
+    static inline const uint16_type nComponents = super::nComponents;
+    static inline const bool is_product = false;
     NedelecPolynomialSet()
         :
         super()
@@ -258,10 +263,10 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nComponents = super::nComponents;
-    static const bool is_product = false;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder = super::nOrder;
+    static inline const uint16_type nComponents = super::nComponents;
+    static inline const bool is_product = false;
     NedelecPolynomialSet()
         :
         super()
@@ -375,10 +380,10 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder = super::nOrder;
-    static const uint16_type nComponents = super::nComponents;
-    static const bool is_product = false;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder = super::nOrder;
+    static inline const uint16_type nComponents = super::nComponents;
+    static inline const bool is_product = false;
     NedelecPolynomialSet()
         :
         super()
@@ -419,9 +424,9 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
-    static const NedelecKind kind = NedelecKind::NED1;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder= super::nOrder;
+    static inline const NedelecKind kind = NedelecKind::NED1;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -438,28 +443,28 @@ public:
     // point set type associated with the functionals
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
-    static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerVertex = 0;
+    static inline const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace2D = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerFace3D = 0;
-    static const uint16_type nbPtsPerFace = ((nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D)*nDim;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+    static inline const uint16_type nbPtsPerFace = ((nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D)*nDim;
+    static inline const uint16_type nbPtsPerVolume = 0;
+    static inline const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = 0;
+    static inline const uint16_type nDofPerVertex = 0;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static inline const uint16_type nDofPerEdge = nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace = nbPtsPerFace;
+    static inline const uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = nbPtsPerVolume;
+    static inline const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    static inline const uint16_type nLocalDof = numPoints;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                                                         mpl::int_<reference_convex_type::numVertices>,
@@ -670,9 +675,9 @@ public DualBasis<Basis>
     typedef DualBasis<Basis> super;
 public:
 
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
-    static const NedelecKind kind = NedelecKind::NED2;
+    static inline const uint16_type nDim = super::nDim;
+    static inline const uint16_type nOrder= super::nOrder;
+    static inline const NedelecKind kind = NedelecKind::NED2;
 
     typedef typename super::primal_space_type primal_space_type;
     //typedef typename super::primal_space_type::template ChangeOrder<nOrder+1>::type primal_space_type;
@@ -701,29 +706,29 @@ public:
     // point set type associated with the functionals
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
-    static const uint16_type nbPtsPerVertex = 0;
-    static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerVertex = 0;
+    static inline const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
     static const uint16_type nbPtsPerFace2D = 0;
     static const uint16_type nbPtsPerFace3D = 0;
-    static const uint16_type nbPtsPerFace = (nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D;
-    static const uint16_type nbPtsPerVolume = 0;
-    static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
+    static inline const uint16_type nbPtsPerFace = (nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D;
+    static inline const uint16_type nbPtsPerVolume = 0;
+    static inline const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
 
     /** Number of degrees of freedom per vertex */
-    static const uint16_type nDofPerVertex = 0;
+    static inline const uint16_type nDofPerVertex = 0;
 
     /** Number of degrees of freedom per edge */
-    static const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static inline const uint16_type nDofPerEdge = nbPtsPerEdge;
 
     /** Number of degrees of freedom per face */
-    static const uint16_type nDofPerFace = nbPtsPerFace;
+    static inline const uint16_type nDofPerFace = nbPtsPerFace;
 
     /** Number of degrees  of freedom per volume */
-    static const uint16_type nDofPerVolume = 0;
+    static inline const uint16_type nDofPerVolume = 0;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    //static const uint16_type nLocalDof = numPoints;
-    static const uint16_type nLocalDof = reference_convex_type::numEdges*nDofPerEdge;
+    //static inline const uint16_type nLocalDof = numPoints;
+    static inline const uint16_type nLocalDof = reference_convex_type::numEdges*nDofPerEdge;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                                                         mpl::int_<reference_convex_type::numVertices>,
@@ -1039,11 +1044,11 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = N;
-    //static const bool isTransformationEquivalent = false;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = true;
-    static const NedelecKind kind = Kind;
+    static inline const uint16_type nDim = N;
+    //static inline const bool isTransformationEquivalent = false;
+    static inline const bool isTransformationEquivalent = true;
+    static inline const bool isContinuous = true;
+    static inline const NedelecKind kind = Kind;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
@@ -1057,9 +1062,9 @@ public:
      */
     typedef typename super::polyset_type polyset_type;
     static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const uint16_type nComponents = polyset_type::nComponents;
-    static const bool is_product = false;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const uint16_type nComponents = polyset_type::nComponents;
+    static inline const bool is_product = false;
 
 
     typedef typename dual_space_type::convex_type convex_type;
@@ -1069,19 +1074,19 @@ public:
     typedef typename reference_convex_type::points_type points_type;
     typedef typename convex_type::topological_face_type face_type;
 
-    static const uint16_type nOrder =  dual_space_type::nOrder;
-    static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
-    static const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
-    static const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
-    static const uint16_type numPoints = dual_space_type::numPoints;
+    static inline const uint16_type nOrder =  dual_space_type::nOrder;
+    static inline const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    static inline const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    static inline const uint16_type numPoints = dual_space_type::numPoints;
 
-    static const uint16_type nLocalDof = dual_space_type::nLocalDof;
-    static const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
-    static const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
-    static const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
-    static const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
-    static const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+    static inline const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static inline const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static inline const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static inline const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static inline const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static inline const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
                                                face_type::numEdges * nDofPerEdge +
                                                face_type::numFaces * nDofPerFace );
 
@@ -1399,24 +1404,6 @@ protected:
 private:
 
 };
-template<uint16_type N,
-         uint16_type O,
-         NedelecKind Kind,
-         typename T,
-         uint16_type TheTAG >
-const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nDim;
-template<uint16_type N,
-         uint16_type O,
-         NedelecKind Kind,
-         typename T,
-         uint16_type TheTAG >
-const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nOrder;
-template<uint16_type N,
-         uint16_type O,
-         NedelecKind Kind,
-         typename T,
-         uint16_type TheTAG >
-const uint16_type Nedelec<N,O,Kind,T,TheTAG>::nLocalDof;
 
 } // fem
 template<uint16_type Order,
@@ -1444,14 +1431,10 @@ public:
     //typedef Lagrange<Order,Scalar> component_basis_type;
     typedef Lagrange<Order+1,Scalar> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
-    static const NedelecKind kind =  Kind;
+    static inline const uint16_type nOrder =  Order;
+    static inline const NedelecKind kind =  Kind;
     static const uint16_type TAG = TheTAG;
 };
-template<uint16_type Order,
-         NedelecKind Kind,
-         uint16_type TheTAG>
-    const uint16_type Nedelec<Order,Kind,TheTAG>::nOrder;
 
 } // Feel
 #endif /* FEELPP_NEDELEC_HPP */

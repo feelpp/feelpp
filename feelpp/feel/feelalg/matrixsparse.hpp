@@ -54,7 +54,11 @@
 #include <iomanip>
 #include <vector>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 #include <boost/fusion/include/fold.hpp>
 #include <feel/feelcore/disablewarnings.hpp>
 #include <boost/archive/text_oarchive.hpp>

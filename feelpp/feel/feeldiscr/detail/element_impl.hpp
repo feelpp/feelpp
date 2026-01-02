@@ -2841,10 +2841,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                                             bool verbose,
                                                             mpl::int_<MESH_POINTS> )
 {
-    LOG(INFO) << "onImpl on Mesh Points";google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "onImpl on Mesh Points";
+    Logger::flush();
     // TODO : check that we do not use hdiv hcurl or other type of elements
     const size_type context = ExprType::context|vm::POINT;
-    DVLOG(3)  << "assembling Dirichlet conditions\n";google::FlushLogFiles(google::GLOG_INFO);
+    DVLOG(3)  << "assembling Dirichlet conditions\n";
+    Logger::flush();
+
     auto mesh = this->functionSpace()->mesh().get();
     auto const* __dof = this->functionSpace()->dof().get();
     auto const* __fe = this->functionSpace()->fe().get();
@@ -2858,7 +2861,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto gm = mesh->gm();
     auto const& firstPt = boost::unwrap_ref( *pt_it );
     DVLOG(3) << "point " << firstPt.id() << " with hasMarker " << firstPt.hasMarker() << " nb: " << std::distance(pt_it,pt_en);
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::GLOG_INFO);
+
+    #else
+
+    Logger::flush();
+
+    #endif
 
     index_type eid = firstPt.elements().begin()->first;
     uint16_type ptid_in_element = firstPt.elements().begin()->second;

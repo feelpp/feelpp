@@ -203,7 +203,7 @@ protected:
 };
 
 template<typename ExprT1, typename ExprT2>
-inline
+[[nodiscard]] inline
 Expr< OpMax<typename mpl::if_<boost::is_arithmetic<ExprT1>,
       mpl::identity<Cst<ExprT1> >,
       mpl::identity<ExprT1> >::type::type,
@@ -392,7 +392,7 @@ protected:
 };
 
 template<typename ExprT1, typename ExprT2>
-inline
+[[nodiscard]] inline
 Expr< OpMin<typename mpl::if_<boost::is_arithmetic<ExprT1>,
       mpl::identity<Cst<ExprT1> >,
       mpl::identity<ExprT1> >::type::type,

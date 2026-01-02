@@ -94,15 +94,11 @@
 
 #include <boost/math/constants/constants.hpp>
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdivision-by-zero"
-#pragma clang diagnostic ignored "-Wexpansion-to-defined"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/mpi.hpp>
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/program_options.hpp>
 
@@ -136,8 +132,12 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcpp"
 #endif
+#if defined(FEELPP_HAS_SPDLOG)
+#include <feel/feelcore/logger.hpp>
+#else
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
+#endif
 #if defined(__GNUC__) && !(defined(__clang__))
 #pragma GCC diagnostic pop
 #endif
@@ -192,10 +192,15 @@ inline const double pi = constants::pi<double>();
 inline const double two_pi = constants::two_pi<double>();
 
 namespace algorithm=boost::algorithm;
+#if defined(FEELPP_HAS_SPDLOG)
+// spdlog doesn't have these constants, use the enum values directly if needed
+// For compatibility, you can define them in your code or use spdlog::level directly
+#else
 using google::WARNING;
 using google::ERROR;
 using google::INFO;
 using google::FATAL;
+#endif
 using boost::format;
 
 using boost::unwrap_ref;
@@ -463,14 +468,7 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 
 #if !defined( DVLOG_IF )
 
-#ifndef NDEBUG
-#define DVLOG_IF(verboselevel, condition) VLOG(verboselevel)
-#else
-#define DVLOG_IF(verboselevel,condition)                                \
-    (true || ( !VLOG_IS_ON(verboselevel) && !(condition))) ?            \
-    (void) 0 : google::LogMessageVoidify() & LOG(INFO)
-#endif // NDEBUG
-
+// DVLOG_IF is now defined in logger.hpp
 #endif // DVLOG_IF
 
 # endif // FEELPP_DOXYGEN_INVOKED

@@ -850,11 +850,14 @@ private:
     template<typename P0hType>
     typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
 
-    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> = true>
+    template <int iDimDummy=iDim>
+        requires (iDimDummy == MESH_ELEMENTS)
     typename eval::matrix_type evaluateImpl() const;
-    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && eval::gm_type::nDim == 2)*/ , bool> = true>
+    template <int iDimDummy=iDim>
+        requires (iDimDummy == MESH_FACES) /*|| ( iDimDummy == MESH_EDGES && eval::gm_type::nDim == 2)*/
     typename eval::matrix_type evaluateImpl() const;
-    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_POINTS , bool> = true>
+    template <int iDimDummy=iDim>
+        requires (iDimDummy == MESH_POINTS)
     typename eval::matrix_type evaluateImpl() const;
 
 private:
@@ -1210,7 +1213,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 } // end loop on elements
             } // end loop on list of elements
 
-            toc("Integrator::assemble form MESH_ELEMENTS", FLAGS_v>1);
+            toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
         }
 
 #if defined( FEELPP_HAS_TBB )
@@ -3446,7 +3449,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     DLOG(INFO) << "[faces] Overall local assembly time : " << t2 << "\n";
     DLOG(INFO) << "[faces] Overall global assembly time : " << t3 << "\n";
 #endif
-    toc("integrating over faces", FLAGS_v>1);
+    toc("integrating over faces", Environment::logVerbosityLevel()>1);
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -4811,7 +4814,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
-template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> >
+template <int iDimDummy>
+    requires (iDimDummy == MESH_ELEMENTS)
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
@@ -5106,7 +5110,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                       << perf_mng.getValueInSeconds("init2.2.2") << " "
                       << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
-            toc("integrating over elements", FLAGS_v>1);
+            toc("integrating over elements", Environment::logVerbosityLevel()>1);
             return res;
         }
         else
@@ -5303,7 +5307,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                           << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 #endif
 
-                toc("integrating over elements", FLAGS_v>1);
+                toc("integrating over elements", Environment::logVerbosityLevel()>1);
                 return res;
             }
             else
@@ -5462,12 +5466,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                     std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
-                    toc("integrating over elements", FLAGS_v>1);
+                    toc("integrating over elements", Environment::logVerbosityLevel()>1);
                     return res;
                 }
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
-template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/ , bool> >
+template <int iDimDummy>
+    requires (iDimDummy == MESH_FACES) /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
@@ -5662,12 +5667,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    toc("integrating over faces", FLAGS_v>1);
+    toc("integrating over faces", Environment::logVerbosityLevel()>1);
     return res;
 }
 
  template<typename Elements, typename Im, typename Expr, typename Im2>
- template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_POINTS , bool> >
+ template <int iDimDummy>
+     requires (iDimDummy == MESH_POINTS)
  typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
  Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  {
@@ -5757,7 +5763,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              }
          }
      }
-     toc("integrating [broken] over elements", FLAGS_v>1);
+     toc("integrating [broken] over elements", Environment::logVerbosityLevel()>1);
 
      return p0;
  }
@@ -5962,7 +5968,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      }
      //std::cout << "res=" << res << "\n";
      //std::cout << "res1=" << res1 << "\n";
-     toc("integrating [broken] over faces", FLAGS_v>1);
+     toc("integrating [broken] over faces", Environment::logVerbosityLevel()>1);
      return p0;
  }
  /// \endcond
@@ -6014,9 +6020,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                                            mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad1_type>> >::type::type;
 
      template <typename QuadType,typename Quad1Type>
+         requires std::is_integral_v<QuadType> && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              quad_order_type exprOrder = expr_order_t::value( expr );
              quad_order_type exprOrder_1 = expr_order_t::value_1( expr );
@@ -6030,9 +6037,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
      template <typename QuadType,typename Quad1Type>
+         requires std::is_integral_v<QuadType> && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              quad_order_type exprOrder = expr_order_t::value( expr );
              if ( thequad == quad_order_from_expression )
@@ -6041,9 +6049,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
      template <typename QuadType,typename Quad1Type>
+         requires (!std::is_integral_v<QuadType>) && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              if ( thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
@@ -6052,9 +6061,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          }
 
      template <typename QuadType,typename Quad1Type>
+         requires (!std::is_integral_v<QuadType>) && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }

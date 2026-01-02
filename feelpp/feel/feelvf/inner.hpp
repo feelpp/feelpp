@@ -752,7 +752,7 @@ class Product : public ExprDynamicBase
  * \brief symetric part of a matricial expression
  */
 template <typename ExprL, typename ExprR>
-inline Expr<Product<ExprL, ExprR, 1, NONE>>
+[[nodiscard]] inline Expr<Product<ExprL, ExprR, 1, NONE>>
 inner( ExprL l, ExprR r )
 {
     typedef Product<ExprL, ExprR, 1, NONE> product_t;
@@ -760,7 +760,7 @@ inner( ExprL l, ExprR r )
 }
 
 template <typename ExprL, typename ExprR, int Props>
-inline Expr<Product<ExprL, ExprR, 1, Props>>
+[[nodiscard]] inline Expr<Product<ExprL, ExprR, 1, Props>>
 inner( ExprL l, ExprR r, mpl::int_<Props> )
 {
     typedef Product<ExprL, ExprR, 1, Props> product_t;
@@ -771,7 +771,7 @@ inner( ExprL l, ExprR r, mpl::int_<Props> )
  * \brief symetric part of a matricial expression
  */
 template <typename ExprL>
-inline Expr<Product<ExprL, ExprL, 1, InnerProperties::IS_SAME>>
+[[nodiscard]] inline Expr<Product<ExprL, ExprL, 1, InnerProperties::IS_SAME>>
 inner( ExprL l )
 {
     typedef Product<ExprL, ExprL, 1, InnerProperties::IS_SAME> product_t;
@@ -779,7 +779,7 @@ inner( ExprL l )
 }
 
 template <typename ExprL, int Props>
-inline Expr<Product<ExprL, ExprL, 1, InnerProperties::IS_SAME | Props>>
+[[nodiscard]] inline Expr<Product<ExprL, ExprL, 1, InnerProperties::IS_SAME | Props>>
 inner( ExprL l, mpl::int_<Props> )
 {
     typedef Product<ExprL, ExprL, 1, InnerProperties::IS_SAME | Props> product_t;

@@ -751,7 +751,7 @@ void MatrixPetsc<T>::close ()  const
         CHKERRABORT( this->comm(),ierr );
         ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
         CHKERRABORT( this->comm(),ierr );
-        toc("MatrixPETSc::close",FLAGS_v>0);
+        toc("MatrixPETSc::close",Environment::logVerbosityLevel()>0);
     }
     this->setIsClosed( true );
     //const_cast<MatrixPetsc<T>*>( this )->setIsClosed( true );
@@ -1914,7 +1914,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
         this->close();
     if ( !Mt.closed() )
         Mt.close();
-    toc("transpose: close()", FLAGS_v > 0);
+    toc("transpose: close()", Environment::logVerbosityLevel() > 0);
     tic();
     MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
     CHECK( Atrans ) << "support only petsc matrix";
@@ -1952,7 +1952,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
         CHKERRABORT( this->comm(),ierr );
     }
 
-    toc("transpose: create mat transpose", FLAGS_v > 0);
+    toc("transpose: create mat transpose", Environment::logVerbosityLevel() > 0);
 
     if ( ctx.test( MATRIX_TRANSPOSE_CHECK ) )
     {
@@ -1976,7 +1976,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
                 DVLOG(2) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
             }
         }
-        toc("transpose: init done", FLAGS_v > 0);
+        toc("transpose: init done", Environment::logVerbosityLevel() > 0);
     }
 
 }

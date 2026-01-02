@@ -227,9 +227,9 @@ class VonMises : public ExprDynamicBase
 /**
  * \brief compute the VonMises yield criterion
  */
-template <typename ExprT>
+template <VfExpr ExprT>
 inline Expr<VonMises<ExprT>>
-vonmises( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+vonmises( ExprT v )
 {
     typedef VonMises<ExprT> vonmises_t;
     return Expr<vonmises_t>( vonmises_t( v ) );

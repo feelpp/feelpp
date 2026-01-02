@@ -2000,7 +2000,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             {
                 VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
                         << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+                #if !defined(FEELPP_HAS_SPDLOG)
+
                 google::FlushLogFiles(google::INFO);
+
+                #else
+
+                Logger::flush();
+
+                #endif
                 CHECK( !needToCopyMatrix ) << "TODO : copy matrix from setup";
                 M_matrixSetup.setMatrix( this->backend()->newMatrix( sparsity_graph->mapColPtr(), sparsity_graph->mapRowPtr(),
                                                                      sparsity_graph ) );

@@ -93,7 +93,7 @@ public:
     BilinearFormBase( BilinearFormBase && __vf ) = default;
     ~BilinearFormBase() override
         {
-            //toc(M_name, FLAGS_v > 0 );
+            //toc(M_name, Environment::logVerbosityLevel() > 0 );
         }
 
     /**

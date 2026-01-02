@@ -9,8 +9,8 @@
         {
             "name": "default",
             "displayName": "Default Config",
-            "description": "Default build using Makefile generator",
-            "generator": "Unix Makefiles",
+            "description": "Default build using Ninja generator",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}$env{DISTRIBUTION}$env{ARCH}",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
@@ -28,7 +28,7 @@
             },
             "environment": {
                 "LDFLAGS": "-Wl,--copy-dt-needed-entries",
-                "NINJA_STATUS": "[run %r|beg %s|fin %f|tot %t|rate %o|time %e]:"
+                "NINJA_STATUS": "[%f/%t %p%%] %r⚙ %o/s %es | "
             },
             "vendor": {
                 "example.com/ExampleIDE/1.0": {
@@ -137,6 +137,20 @@
             },
             "environment": {
                 "VERBOSE": "1"
+            }
+        },
+        {
+            "name": "default-cpp23",
+            "hidden": false,
+            "displayName": "C++23|no package manager",
+            "description": "Default build with C++23 enabled",
+            "inherits": [
+                "cpp23",
+                "default"
+                
+            ],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
             }
         },
         {
@@ -311,8 +325,8 @@
         {
             "name": "dbg",
             "displayName": "Debug Config",
-            "description": "Debug build using Makefile generator",
-            "generator": "Unix Makefiles",
+            "description": "Debug build using Ninja generator",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/dbg",
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "clang++",
@@ -387,7 +401,7 @@
             "inherits": "default",
             "displayName": "feelpp+specx",
             "description": "Build only the Feel++ library Component with specx runtime",
-            "generator": "Unix Makefiles",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/feelpp+specx",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
@@ -623,6 +637,11 @@
             "inherits": "release"
         },
         {
+            "name": "default-cpp23",
+            "configurePreset": "default-cpp23",
+            "inherits": "default"
+        },
+        {
             "name": "debug",
             "configurePreset": "debug",
             "inherits": "default"
@@ -796,6 +815,12 @@
         {
             "name": "release-gcc-cpp20-cmake",
             "configurePreset": "release-gcc-cpp20-cmake",
+            "configuration": "Release",
+            "inherits": ["default"]
+        },
+        {
+            "name": "default-cpp23",
+            "configurePreset": "default-cpp23",
             "configuration": "Release",
             "inherits": ["default"]
         },

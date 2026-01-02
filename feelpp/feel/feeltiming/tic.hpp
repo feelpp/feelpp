@@ -53,7 +53,7 @@ struct FEELPP_NO_EXPORT SecondBasedTimer
             if ( !msg.empty() )
                 std::cout << std::setw(1+cols) << "[" << msg << "] Time : " << val.first << "s\n";
             else
-                std::cout << std::setw(7+cols) << "Time : " << val << "s\n";
+                std::cout << std::setw(7+cols) << "Time : " << val.first << "s\n";
         }
     }
     static inline time_point  time()

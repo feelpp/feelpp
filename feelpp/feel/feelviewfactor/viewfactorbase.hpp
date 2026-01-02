@@ -11,8 +11,14 @@
  */
 #pragma once
 
+#include <algorithm>
+#include <numbers>
+#include <span>
+
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelcore/json.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelviewfactor/concepts.hpp>
 
 namespace Feel
 {
@@ -21,7 +27,7 @@ namespace Feel
  * 
  * 
  */
-template <typename MeshType>
+template <ViewFactorMesh MeshType>
 class ViewFactorBase
 {
 public:
@@ -44,13 +50,21 @@ public:
     ViewFactorBase& operator=( const ViewFactorBase& ) = default;
     ViewFactorBase& operator=( ViewFactorBase&& ) = default;
     virtual ~ViewFactorBase() = default;
-    virtual void init( std::vector<std::string> const& list_of_bdys ) { list_of_bdys_ = list_of_bdys; vf_( list_of_bdys_.size(), list_of_bdys_.size() ); }
+    virtual void init( std::span<const std::string> list_of_bdys )
+    {
+        list_of_bdys_.assign( list_of_bdys.begin(), list_of_bdys.end() );
+        vf_.resize( list_of_bdys_.size(), list_of_bdys_.size() );
+    }
+    virtual void init( std::vector<std::string> const& list_of_bdys )
+    {
+        init( std::span<const std::string>( list_of_bdys ) );
+    }
 
     /// this function computes the deviation from reciprocity defined as Fij - Aj/Ai * Fji
-    value_type devReciprocity( unsigned int i, unsigned int j ) const;
+    [[nodiscard]] value_type devReciprocity( unsigned int i, unsigned int j ) const;
 
     /// this function computes the maximum absolute value of the deviation from reciprocity
-    Real maxDevReciprocity() const;
+    [[nodiscard]] Real maxDevReciprocity() const;
 
     /**
      * @brief compute the view factor matrix
@@ -62,13 +76,15 @@ public:
      * @brief get the view factor matrix
      * 
      */
-    eigen_matrix_xx_type<value_type> const& viewFactors() const { return vf_; }
+    [[nodiscard]] eigen_matrix_xx_type<value_type> const& viewFactors() const { return vf_; }
 
     /**
      * @brief get the area matrix
      * 
      */
-    eigen_vector_x_col_type<value_type> const& areas() const { return areas_; }
+    [[nodiscard]] eigen_vector_x_col_type<value_type> const& areas() const { return areas_; }
+
+    [[nodiscard]] std::vector<std::string> const& boundaryMarkers() const { return list_of_bdys_; }
     
   protected:
 
@@ -94,16 +110,21 @@ public:
     bool vf_normalize_ = true;
 
     inline static constexpr value_type exponent_ = (mesh_t::nDim==2)?1:2;
-    inline static constexpr value_type divisor_ = (mesh_t::nDim==2)?2:M_PI;
+    inline static constexpr value_type divisor_ = (mesh_t::nDim==2)?2.0:std::numbers::pi;
 };
 
-template <typename MeshType>
+static_assert(ViewFactorMesh<Mesh<Simplex<2>>>,
+              "2D simplex mesh must satisfy ViewFactorMesh");
+static_assert(ViewFactorMesh<Mesh<Simplex<3>>>,
+              "3D simplex mesh must satisfy ViewFactorMesh");
+
+template <ViewFactorMesh MeshType>
 typename ViewFactorBase<MeshType>::value_type
 ViewFactorBase<MeshType>::devReciprocity( unsigned int i, unsigned int j ) const
 {
     return vf_( i, j ) - areas_( j ) / areas_( i ) * vf_( j, i );
 }
-template <typename MeshType>
+template <ViewFactorMesh MeshType>
 typename ViewFactorBase<MeshType>::value_type
 ViewFactorBase<MeshType>::maxDevReciprocity() const
 {
@@ -112,8 +133,7 @@ ViewFactorBase<MeshType>::maxDevReciprocity() const
     {
         for (int j=0; j<i;j++)
         {
-            auto r = std::abs(this->devReciprocity(i,j));
-            max_dev  = (max_dev< r) ?r:max_dev;
+            max_dev = std::max(max_dev, std::abs(this->devReciprocity(i, j)));
         }
     }
     return max_dev;//vf_.array().rowwise()

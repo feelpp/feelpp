@@ -610,7 +610,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
             index_criterion++;
         index++;
     }
-    toc("ComputeBestFit Greedy Algorithm - "+ M_model->name(), FLAGS_v>0);
+    toc("ComputeBestFit Greedy Algorithm - "+ M_model->name(), ioption(_name="v")>0);
 
     if( doption(_prefix=this->M_prefixModel,_name="ser.eim-greedy-rtol")!=0 )
     {
@@ -630,8 +630,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M)
         }
     }
 
-    //LOG_ASSERT( index == subtrainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << subtrainset->size() << "\n";
-    LOG_ASSERT( index <= subtrainset->size() ) << "Invalid index " << index << " should be inferior to trainset size = " << subtrainset->size() << "\n";
+    CHECK( index <= subtrainset->size() ) << "Invalid index " << index << " should be inferior to trainset size = " << subtrainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
 
     if( this->worldComm().isMasterRank() )
@@ -787,7 +786,7 @@ EIM<ModelType>::offline()
         }
 
         M_greedy_rbmaxerr = 0;
-        toc("EIM offline initialization (M=1) - " + M_model->name(), FLAGS_v>0);
+        toc("EIM offline initialization (M=1) - " + M_model->name(), ioption(_name="v")>0);
     }//if M_restart
     else
     {
@@ -882,7 +881,7 @@ EIM<ModelType>::offline()
         // compute mu = arg max inf ||G(.;mu)-z||_infty
         tic();
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
-        toc("ComputeBestFit - M_M= " + std::to_string(M_M) + " - " + M_model->name(), FLAGS_v>0);
+        toc("ComputeBestFit - M_M= " + std::to_string(M_M) + " - " + M_model->name(), ioption(_name="v")>0);
 
         // Print summary of EIM iterations
         if( boption(_prefix=this->M_prefixModel,_name="ser.use-rb-in-eim-mu-selection") && boption(_prefix=this->M_prefixModel,_name="ser.print-rb-iterations_info") )
@@ -908,7 +907,7 @@ EIM<ModelType>::offline()
                 solution = M_model->computeRbExpansion( mu ); // Use current RB approx
             else
                 solution = M_model->computePfem( mu ); // Use parametric FE with current affine decomposition
-            toc("Compute solution (SER) - "+ M_model->name(), FLAGS_v>0);
+            toc("Compute solution (SER) - "+ M_model->name(), ioption(_name="v")>0);
 
             if( M_M > 2 ) // Ensure M_greedy_maxerr (error for previous EIM approx.) is initialized
             {
@@ -945,7 +944,7 @@ EIM<ModelType>::offline()
         {
             tic();
             solution = M_model->solve( mu ); //No use of SER : use FE model since we don't have affine decomposition yet
-            toc("Compute solution (No SER) - "+ M_model->name(), FLAGS_v>0);
+            toc("Compute solution (No SER) - "+ M_model->name(), ioption(_name="v")>0);
         }
 
         time=timer2.elapsed();
@@ -1013,7 +1012,7 @@ EIM<ModelType>::offline()
         timer2.restart();
         tic();
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
-        toc("computeMaximumOfResidual - "+ M_model->name(), FLAGS_v>0);
+        toc("computeMaximumOfResidual - "+ M_model->name(), ioption(_name="v")>0);
         time=timer2.elapsed();
         if( this->worldComm().isMasterRank() )
         {
@@ -1060,7 +1059,7 @@ EIM<ModelType>::offline()
         VLOG(2) << "================================================================================\n";
 
     }
-    toc("EIM offline (M > 2) - " + M_model->name(), FLAGS_v>0);
+    toc("EIM offline (M > 2) - " + M_model->name(), ioption(_name="v")>0);
 
     if( this->worldComm().isMasterRank() )
     {

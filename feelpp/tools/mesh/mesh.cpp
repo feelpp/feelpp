@@ -45,7 +45,7 @@ int main( int argc, char** argv )
     Feel::cout << "mesh.save.enable=" << boption("mesh.save.enable") << std::endl << std::flush;
     auto mesh = loadMesh(_mesh=new  Mesh<CONVEX<FEELPP_DIM>>,_savehdf5=boption("mesh.save.enable"), _filename=soption("mesh.filename"),
                          _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
-    toc("loading mesh done",FLAGS_v>0);
+    toc("loading mesh done",Environment::logVerbosityLevel()>0);
 
     if ( boption("mesh.partition.enable") && Environment::numberOfProcessors() == 1 )
     {

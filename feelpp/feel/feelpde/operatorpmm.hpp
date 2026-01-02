@@ -150,7 +150,7 @@ void OperatorPMM<space_type>::update( ExprMu const& expr_mu )
         LOG( INFO ) << "[OperatorPMM] setting pmm operator done.\n";
         // init_G = true;
     }
-    toc( "Operator::PMM update", FLAGS_v > 0 );
+    toc( "Operator::PMM update", Environment::logVerbosityLevel() > 0 );
 }
 
 template <typename space_type>
@@ -162,7 +162,7 @@ void OperatorPMM<space_type>::assembleMass()
     M_mass->close();
     if ( !M_applyInPETSc )
         massOp = op( M_mass, "Mp" );
-    toc( "OperatorPMM::mass assembly", FLAGS_v > 0 );
+    toc( "OperatorPMM::mass assembly", Environment::logVerbosityLevel() > 0 );
 }
 
 
@@ -302,7 +302,7 @@ void OperatorPMM<SpacePressureType>::updateFinish()
         precOp = massOp;
         LOG( INFO ) << "[OperatorPMM] setting pmm operator done.\n";
     }
-    toc("Operator::PMM updateFinish", FLAGS_v > 0);
+    toc("Operator::PMM updateFinish", Environment::logVerbosityLevel() > 0);
 }
 
 template <typename SpacePressureType>
@@ -315,7 +315,7 @@ void OperatorPMM<SpacePressureType>::assembleMass()
     M_mass->close();
     if ( !M_applyInPETSc )
         massOp = op( M_mass, "Mp" );
-    toc( "OperatorPMM::mass assembly", FLAGS_v > 0 );
+    toc( "OperatorPMM::mass assembly", Environment::logVerbosityLevel() > 0 );
 }
 
 template <typename SpacePressureType>

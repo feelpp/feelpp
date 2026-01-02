@@ -624,7 +624,15 @@ private:
             {
                 CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh cannot be the same here\n";
             }
-            google::FlushLogFiles( google::GLOG_INFO );
+            #if !defined(FEELPP_HAS_SPDLOG)
+
+            google::FlushLogFiles(google::GLOG_INFO);
+
+            #else
+
+            Logger::flush();
+
+            #endif
             return idsFind;
         }
     std::set<index_type> trialElementId( index_type test_eid, mpl::int_<2> /**/ )
@@ -1153,7 +1161,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     //graph->close();
 
 #if !defined( NDEBUG )
-    toc("closing graph for composite bilinear form with interpolation", FLAGS_v>1);
+    toc("closing graph for composite bilinear form with interpolation", Environment::logVerbosityLevel()>1);
 #endif
     return graph;
 }
@@ -1198,7 +1206,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                                                   type_space_t( _M_X2 ));
 
 #if !defined( NDEBUG )
-    toc("closing graph for composite bilinear form with interpolation", FLAGS_v>1);
+    toc("closing graph for composite bilinear form with interpolation", Environment::logVerbosityLevel()>1);
 #endif
 
     return graph;
@@ -1795,7 +1803,7 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
     }         // if ( graph.test( Pattern::EXTENDED ) && !hasNotFindRangeExtended )
 
 #if !defined( NDEBUG )
-    toc( "[computeGraph<true>]", FLAGS_v > 1 );
+    toc( "[computeGraph<true>]", Environment::logVerbosityLevel() > 1 );
 #endif
     return sparsity_graph;
 }
@@ -1880,15 +1888,23 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
         auto const& F = m->face(elem.id());
         DVLOG(2) << "[Stencil::computeGraphHDG] F.isGhostCell:" << F.isGhostCell() << " isInterProcess: " << F.isInterProcessDomain() << std::endl;
         if ( F.isConnectedTo1() )
+        {
             DVLOG(2) << "[Stencil::computeGraphHDG] F.id=" << F.id() << " element0().id: " << F.idElement0() << " element1().id:" << F.idElement1();
+        }
         else
+        {
             DVLOG(2) << "[Stencil::computeGraphHDG] F.id=" << F.id() << " element0().id: " << F.idElement0();
+        }
         std::vector<index_type> list_of_connected_faces;
         std::vector<index_type> dK, dK1;
         if ( F.isConnectedTo0() /*&& !F.element0().isGhostCell()*/ )
+        {
             dK =  _M_X2->mesh()->meshToSubMesh( F.element0().facesId()).first;
+        }
         if ( F.isConnectedTo1() /*&& !F.element1().isGhostCell()*/ )
+        {
             dK1 =  _M_X2->mesh()->meshToSubMesh( F.element1().facesId()).first;
+        }
 
         DVLOG(2) << "dK=" << dK;
         DVLOG(2) << "dK1=" << dK1;
@@ -1943,7 +1959,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
             DVLOG(2) << "[Stencil::computeGraphHDG] work with row " << ig1 << " " << row << std::endl;
         } // test dof loop
     } // element iterator loop
-    toc("sc.condense.graph",FLAGS_v>0);
+    toc("sc.condense.graph",Environment::logVerbosityLevel()>0);
     return sparsity_graph;
 }
 

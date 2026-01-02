@@ -47,7 +47,8 @@ BOOST_AUTO_TEST_CASE( test_heat_ensemble )
         fs::path ensembleRepo = fmt::format( "{}/ensemble/{}_{}/{}/", Environment::appRepository(), Environment::numberOfProcessors(), nsplit, color );
         fs::path ensembleRepoExpr = fmt::format( "{}/ensemble/{}_{}/{}/exprs/", Environment::appRepository(), Environment::numberOfProcessors(), nsplit, color );
         LOG(INFO) << "ensembleRepo = " << ensembleRepo.string();
-        w->print( fmt::format( "[rank {}] ensemble repo : {}\n", w->rank(), fmt::streamed(ensembleRepo) ), FLAGS_v > 0, FLAGS_v > 0, FLAGS_v > 0 );
+        bool verbose = Environment::logVerbosityLevel() > 0;
+        w->print( fmt::format( "[rank {}] ensemble repo : {}\n", w->rank(), fmt::streamed(ensembleRepo) ), verbose, verbose, verbose );
         auto toolbox = toolbox_t::New( _prefix = "heat", _worldcomm = w,
                                        _repository = Feel::FeelModels::ModelBaseRepository( ensembleRepo.string(),false, ensembleRepoExpr ) );
         if ( toolbox->isStationary() )

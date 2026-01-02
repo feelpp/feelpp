@@ -26,7 +26,11 @@
 #ifndef _GEOND_HH_
 #define _GEOND_HH_
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/storage.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelmesh/geo0d.hpp>
 #include <feel/feelmesh/geoentity.hpp>

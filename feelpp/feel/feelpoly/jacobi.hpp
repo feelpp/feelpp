@@ -34,13 +34,14 @@
 
 #include <boost/function.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#pragma GCC diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #if 0
 #include <Eigen/Core>

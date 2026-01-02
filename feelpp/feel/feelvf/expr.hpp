@@ -47,6 +47,7 @@
 //#include <feel/feelpoly/context.hpp>
 
 #include <feel/feelvf/exprbase.hpp>
+#include <feel/feelvf/concepts.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 #include <feel/feelvf/lambda.hpp>
@@ -205,7 +206,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -373,13 +374,13 @@ constexpr bool has_symbolic_diff_v = has_symbolic_diff_type<T,diffOrder,TheSymbo
 template<typename ExprT>
 class Expr;
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT const& exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* = nullptr );
+expr( ExprT const& exprt );
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT && exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* = nullptr );
+expr( ExprT && exprt );
 
 /*!
   \class Expr
@@ -664,7 +665,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -987,16 +988,16 @@ private:
 };
 
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT const& exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* /*= nullptr*/ )
+expr( ExprT const& exprt )
 {
     return Expr<ExprT>( exprt );
 }
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT && exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* /*= nullptr*/ )
+expr( ExprT && exprt )
 {
     return Expr<ExprT>( std::forward<ExprT>( exprt ) );
 }
@@ -1173,7 +1174,7 @@ using key_type = key_t<Geo_t>;
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( expression_type const& expr,

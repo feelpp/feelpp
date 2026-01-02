@@ -105,27 +105,27 @@ public :
                                { 
                                    BOOST_CHECK_SMALL( (n-nn).norm(), 1e-11); 
                                });
-            toc("lambda integral _e1=vec(x,y,z)",FLAGS_v>0);
+            toc("lambda integral _e1=vec(x,y,z)",Environment::logVerbosityLevel()>0);
             
             int i=0;
             for( auto e : x )
             {
                 tic();
                 auto vv = integrate(_range=elements(mesh),_expr=vec(cst(e(0)),cst(e(1)),cst(e(2))),_quad=_Q<1>()).evaluate();
-                toc("integral vec(x,y,z)",FLAGS_v>0);
+                toc("integral vec(x,y,z)",Environment::logVerbosityLevel()>0);
                 BOOST_CHECK_SMALL( (vv-v[i]).norm(), 1e-11);
                 ++i;
             }
 
             tic();
             v = integrate(_range=elements(mesh),_expr=cross(idv(u),_e1v-P()),_quad=_Q<3>()).evaluate( x );
-            toc("lambda integral u x (_1-X)", FLAGS_v>0);
+            toc("lambda integral u x (_1-X)", Environment::logVerbosityLevel()>0);
             i = 0;
             for( auto e : x )
             {
                 tic();
                 auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate();
-                toc("integral u x ((x,y,z)-X) ",FLAGS_v>0);
+                toc("integral u x ((x,y,z)-X) ",Environment::logVerbosityLevel()>0);
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;
             }
@@ -134,13 +134,13 @@ public :
                                  cst(0.), cst(1.), cst(0.),
                                  cst(0.), cst(0.), cst(1.) );
             v = integrate(_range=elements(mesh),_expr=cross(trans(trans(idv(u))*mid),_e1v-P()),_quad=_Q<3>()).evaluate( x );
-            toc("lambda integral u x (_1-X)", FLAGS_v>0);
+            toc("lambda integral u x (_1-X)", Environment::logVerbosityLevel()>0);
             i = 0;
             for( auto e : x )
             {
                 tic();
                 auto vv = integrate(_range=elements(mesh),_expr=cross(idv(u),vec(cst(e(0)),cst(e(1)),cst(e(2)))-P()),_quad=_Q<3>()).evaluate();
-                toc("integral u x ((x,y,z)-X) ",FLAGS_v>0);
+                toc("integral u x ((x,y,z)-X) ",Environment::logVerbosityLevel()>0);
                 BOOST_CHECK_SMALL( (v[i]-vv).norm(), 1e-10 );
                 ++i;
             }

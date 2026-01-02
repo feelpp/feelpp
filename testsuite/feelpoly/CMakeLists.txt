@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testpoly )
+set_directory_properties(PROPERTIES LABELS "testsuite;testpoly")
 
 
 foreach(TEST context_poly imsimplex im poly jacobi quad_order lag moment )# hermite ) #  raviartthomas )

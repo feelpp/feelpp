@@ -116,7 +116,19 @@ std::vector<MeshMarkerName> markerMap( int Dim )
     {
         LOG(INFO) << "id {" << emp[i].ids[0] << "," <<  emp[i].ids[1] << "} marker: "<< emp[i].name << "\n";
     }
+#if !defined(FEELPP_HAS_SPDLOG)
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::GLOG_INFO);
+
+    #else
+
+    Logger::flush();
+
+    #endif
+#else
+    Logger::flush();
+#endif
     return emp;
 }
 

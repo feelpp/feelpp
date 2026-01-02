@@ -1,8 +1,8 @@
-set_directory_properties(PROPERTIES LABEL testcore )
+set_directory_properties(PROPERTIES LABELS "testsuite;testcore")
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()
-foreach(TEST json git traits singleton enumerate factory debug context simget ${OTESTS} env env_configfiles removecomments feelio boostmpi enums mongo hana remotedata)
+foreach(TEST json git traits singleton enumerate factory debug context simget ${OTESTS} env env_configfiles removecomments feelio boostmpi enums mongo hana remotedata repository)
 
   feelpp_add_test( ${TEST} )
 

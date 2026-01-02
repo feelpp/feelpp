@@ -277,10 +277,15 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     case KSP_CONVERGED_RTOL            : return "CONVERGED_RTOL";
     case KSP_CONVERGED_ATOL            : return "CONVERGED_ATOL";
     case KSP_CONVERGED_ITS             : return "CONVERGED_ITS";
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 19, 0 )    
+    case KSP_CONVERGED_NEG_CURVE       : return "CONVERGED_NEG_CURVE";
+#else
     case KSP_CONVERGED_CG_NEG_CURVE    : return "CONVERGED_CG_NEG_CURVE";
-    case KSP_CONVERGED_CG_CONSTRAINED  : return "CONVERGED_CG_CONSTRAINED";
-#if PETSC_VERSION_LESS_THAN( 3, 19, 0 )
+#endif    
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 19, 0 ) 
     case KSP_CONVERGED_STEP_LENGTH     : return "CONVERGED_STEP_LENGTH";
+#else    
+    case KSP_CONVERGED_CG_CONSTRAINED  : return "CONVERGED_CG_CONSTRAINED";
 #endif    
     case KSP_CONVERGED_HAPPY_BREAKDOWN : return "CONVERGED_HAPPY_BREAKDOWN";
 

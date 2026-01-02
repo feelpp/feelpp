@@ -114,6 +114,7 @@ PYBIND11_MODULE(_core, m )
         .value("relative", Location::relative )
         .value("git", Location::git )
         .value("absolute", Location::absolute )
+        .value("custom", Location::custom )
         .export_values();
     py::class_<Repository::Config>( m, "Config" )
         .def( py::init<nl::json>(), "Construct a Config", py::arg( "json" ) )
@@ -127,6 +128,16 @@ PYBIND11_MODULE(_core, m )
     m.def( "globalRepository", &Feel::globalRepository,  "create a Global Repository Config", py::arg("directory"), py::arg("data")=nl::json{} );
     m.def( "localRepository", &Feel::localRepository,  "create a Local Repository Config", py::arg("directory"), py::arg("data")=nl::json{} );
     m.def( "unknownRepository", &Feel::unknownRepository,  "create an Unknown Repository Config" );
+    m.def( "customRepository", 
+           [](std::string reldir, py::function callback) -> Repository::Config {
+               return Feel::customRepository(reldir, [callback]() -> fs::path {
+                   py::object result = callback();
+                   return py::cast<fs::path>(result);
+               });
+           },
+           "create a Custom Repository Config with a Python callback",
+           py::arg("directory"), 
+           py::arg("callback") );
     py::class_<Repository>( m, "Repository" )
         .def( py::init<>() )
         .def( py::init<Repository::Config>(), "Construct a repository from a path and location type", py::arg( "config" ) )
@@ -141,6 +152,7 @@ PYBIND11_MODULE(_core, m )
         .def( "isGlobal", &Feel::Repository::isGlobal, "return true if the repository is global" )
         .def( "isGit", &Feel::Repository::isGit, "return true if the repository is git" )
         .def( "isAbsolute", &Feel::Repository::isAbsolute, "return true if the repository is given" )
+        .def( "isCustom", &Feel::Repository::isCustom, "return true if the repository uses a custom location callback" )
         .def( "userName", &Feel::Repository::userName, "return the user name" )
         .def( "userEmail", &Feel::Repository::userEmail, "return the user email" );
 

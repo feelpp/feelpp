@@ -341,7 +341,7 @@ class CrossProduct : public ExprDynamicBase
 //! @return an expression which is the cross product of two expressions \p l and \p r`
 //!
 template <typename ExprL, typename ExprR>
-inline Expr<CrossProduct<ExprL, ExprR>>
+[[nodiscard]] inline Expr<CrossProduct<ExprL, ExprR>>
 cross( ExprL l, ExprR r )
 {
     typedef CrossProduct<ExprL, ExprR> product_t;

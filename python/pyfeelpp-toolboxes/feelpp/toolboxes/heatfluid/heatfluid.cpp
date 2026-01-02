@@ -52,10 +52,13 @@ void defToolbox(py::module &m)
     std::string pyclass_name = fmt::format("HeatFluid_{}D_P{}_P{}P{}",nDim,OrderT,OrderV,OrderP);
 
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init([](std::string const& prefix, std::string const& keyword, py::object worldComm, std::string const& subprefix, ModelBaseRepository const& modelRep) {
+                 worldcomm_ptr_t wc = worldComm.is_none() ? Environment::worldCommPtr() : py::cast<worldcomm_ptr_t>(worldComm);
+                 return new toolbox_t(prefix, keyword, wc, subprefix, modelRep);
+             }),
              py::arg("prefix"),
              py::arg("keyword")=std::string("heat-fluid"),
-             py::arg("worldComm")=Environment::worldCommPtr(),
+             py::arg("worldComm")=py::none(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
              "Initialize the heatfluid mechanics toolbox"

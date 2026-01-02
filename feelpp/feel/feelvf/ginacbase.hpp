@@ -31,7 +31,13 @@
 
 #include <Eigen/Core>
 #include <feel/feelvf/exprbase.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <ginac/ginac.h>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 namespace Feel::vf
 {
 

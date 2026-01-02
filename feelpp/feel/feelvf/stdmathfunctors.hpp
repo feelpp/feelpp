@@ -44,8 +44,6 @@
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
 
-#include <boost/utility/enable_if.hpp>
-
 /// \cond detail
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/unaryfunctor.hpp>
@@ -73,7 +71,10 @@ sign( T const& x )
 
 }
 }
-
+namespace Feel
+{
+namespace vf
+{
 # /* Information about functions  */
 #
 # /* Accessors for the operator datatype. */
@@ -102,7 +103,7 @@ sign( T const& x )
          ( sinh , __Sinh__, Feel::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( tanh , __Tanh__, Feel::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0, 2), \
          ( exp  , __Exp__ , Feel::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( log  , __Log__ , Feel::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
+         ( loge  , __Log__ , Feel::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
          ( sqrt , __Sqrt__, Feel::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2), \
          ( floor, __Floor__, std::floor         ,"floor"               , UnboundedDomain<value_type>()      , 1, 0, 1), \
          ( ceil , __Ceil__, std::ceil           ,"ceil"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
@@ -370,9 +371,10 @@ sign( T const& x )
         return Expr< expr_t >(  expr_t( t1( __e1 ) ) );                 \
     }                                                                   \
     template<typename ExprT1>                                           \
+        requires std::is_arithmetic_v<ExprT1>                           \
     inline                                                              \
     Expr< VF_FUNC_NAME( O )<Cst<ExprT1> > >                             \
-    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1, typename boost::enable_if<boost::is_arithmetic<ExprT1> >::type* dummy = 0 ) \
+    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1 ) \
     {                                                                   \
         typedef Cst<ExprT1> t1;                                         \
         typedef VF_FUNC_NAME(O)<t1> expr_t;                             \
@@ -641,9 +643,10 @@ sign( T const& x )
         return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );     \
     }                                                                   \
     template<typename ExprT1,typename ExprT2>                           \
+        requires std::is_arithmetic_v<ExprT1>                           \
     inline                                                              \
     Expr< VF_FUNC_NAME( O )<Cst<ExprT1>,Cst<ExprT2> > >                            \
-    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1, ExprT2 const& __e2, typename boost::enable_if<boost::is_arithmetic<ExprT1> >::type* dummy = 0 ) \
+    VF_FUNC_SYMBOL( O )( ExprT1 const& __e1, ExprT2 const& __e2 ) \
     {                                                                   \
         typedef Cst<ExprT1> t1;                                         \
         typedef Cst<ExprT2> t2;                                         \
@@ -653,10 +656,7 @@ sign( T const& x )
     /**/
 #
 
-namespace Feel
-{
-namespace vf
-{
+
 
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_UNARY_FUNCTIONS, 1, ( VF_APPLICATIVE_UNARY_FUNCS ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_FUNCTIONS, 1, ( VF_APPLICATIVE_BINARY_FUNCS ) )

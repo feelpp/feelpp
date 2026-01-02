@@ -19,13 +19,16 @@
 #include <cmath>
 
 #include <boost/multi_array.hpp>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/bindings/lapack/gesv.hpp>
-
 #include <boost/numeric/bindings/traits/traits.hpp>
 #include <boost/numeric/bindings/traits/ublas_vector.hpp>
 #include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 #include <boost/numeric/bindings/blas/blas.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelmesh/geoentity.hpp>

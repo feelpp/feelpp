@@ -262,9 +262,9 @@ class Trace : public ExprDynamicBase
 /**
  * \brief trace of the expression tensor
  */
-template <typename ExprT>
-inline Expr<Trace<ExprT>>
-trace( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+template <VfExpr ExprT>
+[[nodiscard]] inline Expr<Trace<ExprT>>
+trace( ExprT v )
 {
     typedef Trace<ExprT> trace_t;
     return Expr<trace_t>( trace_t( v ) );

@@ -221,7 +221,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
                                _verbose=verbose
                                );
 
-        toc("loadMesh.loadGMSHMesh", FLAGS_v>0);
+        toc("loadMesh.loadGMSHMesh", Environment::logVerbosityLevel()>0);
         if ( verbose && worldcomm->isMasterRank() )
             std::cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::absolute(mesh_name) << " done" << std::endl;
 
@@ -230,7 +230,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
         {
             tic();
             m->saveHDF5( mesh_name.stem().string()+".json", 1./scale );
-            toc("loadMesh.saveHDF5", FLAGS_v>0);
+            toc("loadMesh.saveHDF5", Environment::logVerbosityLevel()>0);
             if ( verbose && worldcomm->isMasterRank() )
                 std::cout << "[loadMesh] Saving HDF5 mesh: " << fs::absolute(mesh_name.stem().string()+".json") << std::endl;
         }

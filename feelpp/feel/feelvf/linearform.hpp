@@ -565,7 +565,7 @@ public:
                 value_type threshold = type_traits<value_type>::epsilon()  );
 
     ~LinearForm()
-        { /*toc( M_name, FLAGS_v > 0  );*/ }
+        { /*toc( M_name, Environment::logVerbosityLevel() > 0  );*/ }
 
 
 

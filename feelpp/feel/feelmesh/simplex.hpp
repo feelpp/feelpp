@@ -178,7 +178,7 @@ public:
             else if constexpr ( nDim == 1 ) return 2;
             else return 0;
         }
-    static const int numTopologicalFaces = numberOfTopologicalFaces();
+    static inline const int numTopologicalFaces = numberOfTopologicalFaces();
 
     static constexpr int numberOfEdges()
         {

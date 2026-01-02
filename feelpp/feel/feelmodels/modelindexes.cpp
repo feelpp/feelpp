@@ -97,9 +97,13 @@ ModelIndexes::generateAllCases( nl::json const& jarg, int startIndex )
                 {
                     int nItem = std::distance(el_val.items().begin(),el_val.items().end());
                     if ( nSubKey > 0 )
+                    {
                         CHECK( nSubKey == nItem ) << "number of subkey is different (probably a subarray has not the good size)";
+                    }
                     else
+                    {
                         nSubKey = nItem;
+                    }
                     std::vector<std::string> currentIndexValues;
                     currentIndexValues.reserve( nItem );
                     for ( auto const& el2 : el_val.items() )
@@ -114,9 +118,13 @@ ModelIndexes::generateAllCases( nl::json const& jarg, int startIndex )
                 else
                 {
                     if ( nSubKey > 0 )
+                    {
                         CHECK( nSubKey == 1 ) << "number of subkey is different (probably a subarray has not the good size)";
+                    }
                     else
+                    {
                         nSubKey = 1;
+                    }
                     std::vector<std::string> indexReaded = generateIndex( el_val );
                     for ( std::string const& s : indexReaded )
                         M_indexes[currentIndex].push_back( { s } );

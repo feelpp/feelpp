@@ -78,7 +78,7 @@ public :
             u.on(_range=elements(mesh),_expr=f);
             tic();
             auto v = convolve(_range=elements(mesh), _expr=idv(u)*inner(_e1v-P()),_space=Xh);
-            toc("convolve", FLAGS_v>0);
+            toc("convolve", Environment::logVerbosityLevel()>0);
             auto e = exporter( _mesh=mesh );
             e->add("v",v);
             e->save();
