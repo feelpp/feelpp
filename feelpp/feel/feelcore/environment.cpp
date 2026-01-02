@@ -1794,6 +1794,34 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
          fs::path( filename ).extension() == ".mesh" ||
          fs::path( filename ).extension() == ".med" )
     {
+        auto filename_only = fs::path( filename ).filename();
+        
+        // Helper lambda to recursively search for a file in a directory
+        auto search_recursive = []( fs::path const& root, fs::path const& target_filename ) -> std::string
+        {
+            if ( !fs::exists( root ) || !fs::is_directory( root ) )
+                return std::string();
+            
+            try
+            {
+                for ( auto const& entry : fs::recursive_directory_iterator( root, fs::directory_options::follow_directory_symlink ) )
+                {
+                    if ( fs::is_regular_file( entry ) && entry.path().filename() == target_filename )
+                    {
+                        LOG( INFO ) << "File " << entry.path() << " found recursively";
+                        return entry.path().string();
+                    }
+                }
+            }
+            catch ( fs::filesystem_error const& e )
+            {
+                LOG( WARNING ) << "Error during recursive search in " << root << ": " << e.what();
+            }
+            
+            return std::string();
+        };
+        
+        // First try exact path
         if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
         {
             LOG( INFO ) << "File " << ( fs::path( Environment::localGeoRepository() ) / filename ) << " found";
@@ -1803,8 +1831,27 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
         if ( Environment::systemGeoRepository().get<1>()  &&
                 fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
         {
-            LOG( INFO ) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
+            LOG( INFO ) << "File " << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
             return ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string();
+        }
+        
+        // If not found, try recursive search with just the filename
+        if ( filename != filename_only.string() )
+        {
+            // Already tried with a relative path, skip recursive search
+        }
+        else
+        {
+            // Search recursively in localGeoRepository
+            if ( auto found = search_recursive( fs::path( Environment::localGeoRepository() ), filename_only ); !found.empty() )
+                return found;
+            
+            // Search recursively in systemGeoRepository
+            if ( Environment::systemGeoRepository().get<1>() )
+            {
+                if ( auto found = search_recursive( fs::path( Environment::systemGeoRepository().get<0>() ), filename_only ); !found.empty() )
+                    return found;
+            }
         }
     }
 
