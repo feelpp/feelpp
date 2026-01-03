@@ -1,19 +1,13 @@
 {
-  "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python", "feelpp-full"],
+  "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
   "targets": ["ubuntu:24.04", "debian:13", "fedora:42"],
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
     "targets": ["ubuntu:24.04"]
   },
-  "modes": {
-    "components": {
-      "description": "Build Feel++ as separate components (feelpp -> toolboxes -> mor -> python)",
-      "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"]
-    },
-    "full": {
-      "description": "Build entire Feel++ stack in a single image using preset 'default'",
-      "jobs": ["feelpp-full"]
-    }
+  "fullBuild": {
+    "job": "feelpp-full",
+    "targets": ["ubuntu:24.04"]
   }
 }
