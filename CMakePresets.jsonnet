@@ -562,7 +562,7 @@ local testPreset(configName, extraConfig={}) = {
 } + extraConfig;
 
 local testPresets = [
-  testPreset('default', { execution: { jobs: 25 } }),
+  testPreset('default', { execution: { jobs: 4 } }),
   testPreset('release', { inherits: 'default' }),
   testPreset('release-cmake', { inherits: 'default' }),
   testPreset('debug', { inherits: 'default' }),
@@ -583,8 +583,8 @@ std.flattenArrays([
 // Spack presets
 [testPreset('release-clang-spack', { inherits: 'default' })] +
 [testPreset('release-clang-cpp20-spack', { inherits: 'default' })] +
-// Component presets
-[testPreset(comp, {}) for comp in components] +
+// Component presets (inherit from default and use 4 jobs)
+[testPreset(comp, { inherits: 'default', execution: { jobs: 4 } }) for comp in components] +
 // Special presets
 [
   testPreset('feelpp-usrlocal', { inherits: 'feelpp' }),
