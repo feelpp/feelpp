@@ -61,15 +61,7 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build Feel++ (dev)
-        working-directory: docker
-        run: docker buildx bake feelpp
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Push dev image (for downstream builds)
-        if: github.event_name == 'push'
+      - name: Build and push Feel++ (dev)
         working-directory: docker
         run: docker buildx bake feelpp --push
         env:
@@ -90,7 +82,7 @@ jobs:
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
+      (needs.feelpp.result == 'success' || needs.feelpp.result == 'skipped') &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes')
     timeout-minutes: 600
     strategy:
@@ -114,15 +106,7 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build Toolboxes (dev)
-        working-directory: docker
-        run: docker buildx bake toolboxes
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Push dev image
-        if: github.event_name == 'push'
+      - name: Build and push Toolboxes (dev)
         working-directory: docker
         run: docker buildx bake toolboxes --push
         env:
@@ -143,7 +127,7 @@ jobs:
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
+      (needs.toolboxes.result == 'success' || needs.toolboxes.result == 'skipped') &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'mor')
     timeout-minutes: 600
     strategy:
@@ -167,15 +151,7 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build MOR (dev)
-        working-directory: docker
-        run: docker buildx bake mor
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Push dev image
-        if: github.event_name == 'push'
+      - name: Build and push MOR (dev)
         working-directory: docker
         run: docker buildx bake mor --push
         env:
@@ -196,7 +172,7 @@ jobs:
     runs-on: self-docker
     if: |
       always() &&
-      !contains(needs.*.result, 'failure') &&
+      (needs.mor.result == 'success' || needs.mor.result == 'skipped') &&
       contains(needs.plan_ci.outputs.enabled_jobs, 'python')
     timeout-minutes: 600
     strategy:
@@ -220,15 +196,7 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build Python (dev)
-        working-directory: docker
-        run: docker buildx bake python
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Push dev image
-        if: github.event_name == 'push'
+      - name: Build and push Python (dev)
         working-directory: docker
         run: docker buildx bake python --push
         env:
