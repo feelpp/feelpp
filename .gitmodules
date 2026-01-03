@@ -1,94 +1,94 @@
 [submodule "contrib/nlopt"]
 	path = feelpp/contrib/nlopt
-	url = git@github.com:feelpp/nlopt.git
+	url = https://github.com/feelpp/nlopt.git
 [submodule "contrib/hpddm"]
 	path = feelpp/contrib/hpddm
-	url = git@github.com:feelpp/hpddm.git
+	url = https://github.com/feelpp/hpddm.git
 [submodule "contrib/jsonlab"]
 	path = feelpp/contrib/jsonlab
-	url = git@github.com:fangq/jsonlab.git
+	url = https://github.com/fangq/jsonlab.git
 [submodule "contrib/ipopt"]
 	path = feelpp/contrib/ipopt
-	url = git@github.com:feelpp/ipopt.git
+	url = https://github.com/feelpp/ipopt.git
 [submodule "contrib/pybind11"]
 	path = feelpp/contrib/pybind11
-	url = git@github.com:feelpp/pybind11.git
+	url = https://github.com/feelpp/pybind11.git
 [submodule "contrib/mongodb"]
 	path = feelpp/contrib/mongocxx
-	url = git@github.com:feelpp/mongo-cxx-driver.git
+	url = https://github.com/feelpp/mongo-cxx-driver.git
 [submodule "contrib/kwsys"]
 	path = feelpp/contrib/kwsys
-	url = git@github.com:feelpp/kwsys.git
+	url = https://github.com/feelpp/kwsys.git
 [submodule "contrib/viewer"]
 	path = contrib/viewer
-	url = git@github.com:feelpp/viewer.git
+	url = https://github.com/feelpp/viewer.git
 [submodule "benchmarks/benchmark"]
 	path = benchmarks/benchmark
-	url = git@github.com:feelpp/benchmark
+	url = https://github.com/feelpp/benchmark
 [submodule "feelpp/contrib/fmilib"]
 	path = feelpp/contrib/fmilib
-	url = git@github.com:feelpp/fmi-library.git
+	url = https://github.com/feelpp/fmi-library.git
 [submodule "feelpp/contrib/tabulate"]
 	path = feelpp/contrib/tabulate
-	url = git@github.com:feelpp/tabulate.git
+	url = https://github.com/feelpp/tabulate.git
 [submodule "feelpp/contrib/parmmg"]
 	path = feelpp/contrib/parmmg
-	url = git@github.com:feelpp/ParMmg
+	url = https://github.com/feelpp/ParMmg
 [submodule "feelpp/contrib/mmg"]
 	path = feelpp/contrib/mmg
-	url = git@github.com:feelpp/mmg
+	url = https://github.com/feelpp/mmg
 [submodule "feelpp/contrib/indicators"]
 	path = feelpp/contrib/indicators
-	url = git@github.com:feelpp/indicators.git
+	url = https://github.com/feelpp/indicators.git
 [submodule "feelpp/contrib/simple-web-server"]
 	path = feelpp/contrib/simple-web-server
 	url = git@gitlab.com:feelpp/Simple-Web-Server.git
 [submodule "feelpp/contrib/range-v3"]
 	path = feelpp/contrib/range-v3
-	url = git@github.com:feelpp/range-v3.git
+	url = https://github.com/feelpp/range-v3.git
 [submodule "feelpp/contrib/matplot"]
 	path = feelpp/contrib/matplot
-	url = git@github.com:feelpp/matplotplusplus.git
+	url = https://github.com/feelpp/matplotplusplus.git
 [submodule "feelpp/contrib/cpr"]
 	path = feelpp/contrib/cpr
-	url = git@github.com:feelpp/cpr.git
+	url = https://github.com/feelpp/cpr.git
 [submodule "feelpp/contrib/boost/hana"]
 	path = feelpp/contrib/boost/hana
-	url = git@github.com:feelpp/hana.git
+	url = https://github.com/feelpp/hana.git
 [submodule "feelpp/contrib/eigen"]
 	path = feelpp/contrib/eigen
 	url = git@gitlab.com:feelpp/eigen.git
 [submodule "feelpp/contrib/fmt"]
 	path = feelpp/contrib/fmt
-	url = git@github.com:feelpp/fmt.git
+	url = https://github.com/feelpp/fmt.git
 [submodule "feelpp/contrib/napp"]
 	path = feelpp/contrib/napp
-	url = git@github.com:vincentchabannes/napp.git
+	url = https://github.com/vincentchabannes/napp.git
 [submodule "fmi4cpp"]
 	path = feelpp/contrib/fmi4cpp
-	url = git@github.com:feelpp/FMI4cpp.git
+	url = https://github.com/feelpp/FMI4cpp.git
 [submodule "pythonfmu"]
 	path = feelpp/contrib/pythonfmu
-	url = git@github.com:feelpp/PythonFMU.git
+	url = https://github.com/feelpp/PythonFMU.git
 [submodule "feelpp/contrib/spdlog"]
 	path = feelpp/contrib/spdlog
-	url = git@github.com:feelpp/spdlog.git
+	url = https://github.com/feelpp/spdlog.git
 [submodule "feelpp/contrib/cln"]
 	path = feelpp/contrib/cln
-	url = git@github.com:feelpp/cln.git
+	url = https://github.com/feelpp/cln.git
 [submodule "feelpp/contrib/nanoflann"]
 	path = feelpp/contrib/nanoflann
-	url = git@github.com:feelpp/nanoflann.git
+	url = https://github.com/feelpp/nanoflann.git
 [submodule "mor/contrib/openturns"]
 	path = mor/contrib/openturns
-	url = git@github.com:feelpp/openturns.git
+	url = https://github.com/feelpp/openturns.git
 [submodule "feelpp/contrib/specx"]
 	path = feelpp/contrib/specx
-	url = git@github.com:feelpp/specx.git
+	url = https://github.com/feelpp/specx.git
   
 [submodule "feelpp/contrib/eigenrand"]
 	path = feelpp/contrib/eigenrand
-	url = git@github.com:feelpp/EigenRand.git
+	url = https://github.com/feelpp/EigenRand.git
 [submodule "feelpp/contrib/bvh"]
 	path = feelpp/contrib/bvh
-	url = git@github.com:feelpp/bvh.git
+	url = https://github.com/feelpp/bvh.git
