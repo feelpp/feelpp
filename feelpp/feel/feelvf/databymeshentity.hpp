@@ -39,15 +39,15 @@ class EvaluateDataByMeshEntity
 {
 public :
     static const size_type context = 0;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
     template <typename Func>
-    struct HasTestFunction { static const bool result = false; };
+    struct HasTestFunction { static inline const bool result = false; };
     template <typename Func>
-    struct HasTrialFunction { static const bool result = false; };
+    struct HasTrialFunction { static inline const bool result = false; };
     template <typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template <typename Func>
-    static const bool has_trial_basis = false;
+    static inline const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 

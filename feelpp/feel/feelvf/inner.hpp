@@ -52,16 +52,16 @@ class Product : public ExprDynamicBase
   public:
     using super = ExprDynamicBase;
     static const size_type context = ExprL::context | ExprR::context;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
     static const int product_type = Type;
 
-    static const bool IsSame = has_value_v<Props,InnerProperties::IS_SAME>;//  Props & InnerProperties::IS_SAME;
-    static const bool ApplySqrt =  has_value_v<Props,InnerProperties::SQRT>; //Props & InnerProperties::SQRT;
+    static inline const bool IsSame = has_value_v<Props,InnerProperties::IS_SAME>;//  Props & InnerProperties::IS_SAME;
+    static inline const bool ApplySqrt =  has_value_v<Props,InnerProperties::SQRT>; //Props & InnerProperties::SQRT;
 
     template <typename Func>
     struct HasTestFunction
     {
-        static const bool result =
+        static inline const bool result =
             ExprL::template HasTestFunction<Func>::result ||
             ExprR::template HasTestFunction<Func>::result;
     };
@@ -69,16 +69,16 @@ class Product : public ExprDynamicBase
     template <typename Func>
     struct HasTrialFunction
     {
-        static const bool result =
+        static inline const bool result =
             ExprL::template HasTrialFunction<Func>::result ||
             ExprR::template HasTrialFunction<Func>::result;
     };
 
     template <typename Func>
-    static const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
+    static inline const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
                                        ExprR::template HasTestFunction<Func>::result;
     template <typename Func>
-    static const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result ||
+    static inline const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result ||
                                         ExprR::template HasTrialFunction<Func>::result;
     using test_basis = typename ExprL::test_basis;
     using trial_basis = typename ExprL::trial_basis;
@@ -292,8 +292,8 @@ class Product : public ExprDynamicBase
         typedef typename l_tensor_expr_type::shape left_shape;
         typedef typename r_tensor_expr_type::shape right_shape;
         typedef Shape<left_shape::nDim, Scalar, false, false> shape;
-        static const bool l_is_terminal = left_expression_type::is_terminal;
-        static const bool r_is_terminal = right_expression_type::is_terminal;
+        static inline const bool l_is_terminal = left_expression_type::is_terminal;
+        static inline const bool r_is_terminal = right_expression_type::is_terminal;
         template <class Args>
         struct sig
         {
@@ -307,7 +307,7 @@ class Product : public ExprDynamicBase
 
         struct is_zero
         {
-            static const bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value;
+            static inline const bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,

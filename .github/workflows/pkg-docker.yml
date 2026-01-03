@@ -16,12 +16,10 @@ on:
         dist:
           description: 'Distribution to build'
           required: true
-          default: 'jammy'
+          default: 'noble'
           type: choice
           options:
           - 'trixie'
-          - 'jammy'
-          - 'focal'
           - 'noble'
           - 'bullseye'
           - 'bookworm'
@@ -56,7 +54,7 @@ on:
                 description: 'Name of the distribution'
                 required: true
                 type: string
-                default: "jammy"
+                default: "noble"
             version:
                 description: 'Version of Feel++ packages'
                 required: true

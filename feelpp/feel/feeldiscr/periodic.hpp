@@ -98,7 +98,7 @@ public:
      */
     //@{
 
-    static const bool is_periodic = true;
+    static inline const bool is_periodic = true;
 
     //@}
 
@@ -182,7 +182,7 @@ public:
      */
     //@{
 
-    static const bool is_periodic = false;
+    static inline const bool is_periodic = false;
     //static inline const uint16_type tag1 = invalid_uint16_type_value;
     //static inline const uint16_type tag2 = invalid_uint16_type_value;
 

@@ -91,7 +91,7 @@ public:
      */
 
     //@{
-    static const bool is_row_major = true;
+    static inline const bool is_row_major = true;
     typedef super::value_type value_type;
     typedef super::real_type real_type;
     typedef std::vector<std::set<size_type> > pattern_type;

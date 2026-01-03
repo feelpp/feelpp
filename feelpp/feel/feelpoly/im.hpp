@@ -92,7 +92,7 @@ class IMGeneral
     using super = PointSetQuadrature<Entity<Dim,1,Dim> , T, index_type>;
     
 public:
-    static const bool is_exact = false;
+    static inline const bool is_exact = false;
     static const uint16_type nDim = Dim;
     static const uint16_type nRealDim = Dim;
 

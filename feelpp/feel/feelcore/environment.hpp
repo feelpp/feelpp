@@ -38,7 +38,11 @@
 #include <fmt/format.h>
 
 #include <boost/noncopyable.hpp>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/signals2/signal.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/stacktrace.hpp>
 #include <boost/exception/all.hpp>

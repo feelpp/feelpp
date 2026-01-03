@@ -656,18 +656,24 @@ class FEELPP_EXPORT VectorUblasBase: public Vector<T>
 template< template < typename > class V, typename T >
 class SettableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         void applySetVector( VectorUblasBase<T> & b ) const override { return b.setVector( static_cast< const V<T>& >( *this ) ); }
 };
 template< template < typename > class V, typename T >
 class AddableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         void applyAddVector( VectorUblasBase<T> & b ) const override { return b.addVector( static_cast< const V<T>& >( *this ) ); }
 };
 template< template < typename > class V, typename T >
 class MaddableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         using typename VectorUblasBase<T>::value_type;
         void applyMaddVector( const value_type & a, VectorUblasBase<T> & b ) const override { return b.maddVector( a, static_cast< const V<T>& >( *this ) ); }
@@ -675,12 +681,16 @@ class MaddableVectorUblas: public virtual VectorUblasBase<T>
 template< template < typename > class V, typename T >
 class SubtractableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         void applySubVector( VectorUblasBase<T> & b ) const override { return b.subVector( static_cast< const V<T>& >( *this ) ); }
 };
 template< template < typename > class V, typename T >
 class MsubtractableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         using typename VectorUblasBase<T>::value_type;
         void applyMsubVector( const value_type & a, VectorUblasBase<T> & b ) const override { return b.msubVector( a, static_cast< const V<T>& >( *this ) ); }
@@ -688,12 +698,16 @@ class MsubtractableVectorUblas: public virtual VectorUblasBase<T>
 template< template < typename > class V, typename T >
 class MultipliableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         void applyMulVector( VectorUblasBase<T> & b ) const override { return b.mulVector( static_cast< const V<T>& >( *this ) ); }
 };
 template< template < typename > class V, typename T >
 class DottableVectorUblas: public virtual VectorUblasBase<T>
 {
+    public:
+        using VectorUblasBase<T>::operator=;
     protected:
         typename VectorUblasBase<T>::value_type applyDotVector( const VectorUblasBase<T> & b ) const override { return b.dotVector( static_cast< const V<T>& >( *this ) ); }
 };
@@ -1241,6 +1255,7 @@ template< typename T, typename Storage >
 class VectorUblasRange: public VectorUblasNonContiguousGhosts<T, ublas::vector_range<Storage> >
 {
     public:
+        using VectorUblasBase<T>::operator=;
         typedef VectorUblasNonContiguousGhosts<T, ublas::vector_range<Storage>> super_type;
 
         typedef T value_type;
@@ -1277,6 +1292,7 @@ template< typename T, typename Storage >
 class VectorUblasSlice: public VectorUblasNonContiguousGhosts<T, ublas::vector_slice<Storage> >
 {
     public:
+        using VectorUblasBase<T>::operator=;
         typedef VectorUblasNonContiguousGhosts<T, ublas::vector_slice<Storage>> super_type;
 
         typedef T value_type;

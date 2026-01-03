@@ -102,10 +102,12 @@ DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& 
         sum += M_n_localWithoutGhost_df[p];
 
     if ( n != invalid_v<size_type> )
+    {
         FEELPP_ASSERT ( sum == static_cast<int>( n ) )
         ( sum )( n )
         ( this->worldComm().rank() )
         ( this->worldComm().size() ).warn( "invalid distributed vector construction" );
+    }
 
 #endif
 

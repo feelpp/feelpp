@@ -53,25 +53,25 @@ public:
     typedef Feel::vf::GiNaCBase super;
 
     static const size_type context = vm::DYNAMIC;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
     static inline const uint16_type imorder = Order;
-    static const bool imIsPoly = false;
+    static inline const bool imIsPoly = false;
 
     template<typename Funct>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     template<typename Funct>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template<typename Func>
-    static const bool has_trial_basis = false;
+    static inline const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -193,7 +193,7 @@ public:
 
     struct is_zero
     {
-        static const bool value = false;
+        static inline const bool value = false;
     };
 
     tensor( this_type const& expr,

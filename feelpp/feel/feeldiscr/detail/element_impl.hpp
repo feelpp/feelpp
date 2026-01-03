@@ -2249,8 +2249,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     gm1_context_ptrtype __c1 = this->mesh()->gm1()->template context<context>( initElt,__geopc1, ex.dynamicContext() );
 
     typedef typename t_expr_type::shape shape;
-    static const bool is_rank_ok = ( shape::M == nComponents1 &&
-                                     shape::N == nComponents2 );
+    constexpr bool is_rank_ok = ( shape::M == nComponents1 &&
+                                  shape::N == nComponents2 );
 
     BOOST_MPL_ASSERT_MSG( is_rank_ok,//mpl::bool_<is_rank_ok>::value,
                           INVALID_TENSOR_RANK,

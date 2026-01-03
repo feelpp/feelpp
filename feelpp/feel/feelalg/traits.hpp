@@ -115,8 +115,8 @@ struct traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >    
     typedef self_type::FEELPP_GLAS_TRAITS_VECTOR_ITERATOR( V ) iterator;                         \
     typedef  self_type::FEELPP_GLAS_TRAITS_VECTOR_CONST_ITERATOR( V ) const_iterator;            \
     typedef vector_tag type_tag;                                                                \
-    static const bool is_vector = true;                                                         \
-    static const bool is_matrix = false;                                                        \
+    static inline const bool is_vector = true;                                                         \
+    static inline const bool is_matrix = false;                                                        \
                                                                                                 \
 };                                                                                              \
 traits<FEELPP_GLAS_TRAITS_VECTOR_TYPE( V )<FEELPP_TRAITS_TYPE( T )> >::const_iterator             \
@@ -196,8 +196,8 @@ struct traits<FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) ) >  
     typedef FEELPP_TRAITS_TYPE( T ) value_type;                                                                          \
     typedef FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) ) self_type;                                     \
     typedef matrix_tag type_tag;                                                                                        \
-    static const bool is_vector = false;                                                                                \
-    static const bool is_matrix = true;                                                                                 \
+    static inline const bool is_vector = false;                                                                                \
+    static inline const bool is_matrix = true;                                                                                 \
 };                                                                                                                      \
 inline                                                                                                                  \
 size_type nrows( FEELPP_GLAS_TRAITS_MATRIX_TYPE( V )( FEELPP_TRAITS_TYPE( T ) )  const& t )                               \

@@ -5,7 +5,7 @@ on:
             dist: 
                 required: true
                 type: string
-                default: "jammy"
+                default: "noble"
             flavor: 
                 required: true
                 type: string 

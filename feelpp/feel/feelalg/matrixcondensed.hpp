@@ -89,6 +89,7 @@ public:
          M_strategy( solve::strategy::static_condensation )
         {}
 #endif
+    using super::operator=;
     MatrixCondensed( MatrixCondensed const& ) = default;
     MatrixCondensed& operator=( MatrixCondensed const& ) = default;
     ~MatrixCondensed() override = default;

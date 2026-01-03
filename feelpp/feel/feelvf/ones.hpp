@@ -64,24 +64,24 @@ public:
     //@{
     static const size_type context = 0;
 
-    static const bool is_terminal = true;
+    static inline const bool is_terminal = true;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template<typename Func>
-    static const bool has_trial_basis = false;
+    static inline const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -179,10 +179,10 @@ public:
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         struct INVALID_SHAPE {};
-        static const bool eq11 = ( M==1 )&&( N==1 );
-        static const bool eqD1 = ( M==gmc_type::nDim )&&( N==1 );
-        static const bool eq1D = ( M==1 )&&( N==gmc_type::nDim );
-        static const bool eqDD = ( M==gmc_type::nDim )&&( N==gmc_type::nDim );
+        static inline const bool eq11 = ( M==1 )&&( N==1 );
+        static inline const bool eqD1 = ( M==gmc_type::nDim )&&( N==1 );
+        static inline const bool eq1D = ( M==1 )&&( N==gmc_type::nDim );
+        static inline const bool eqDD = ( M==gmc_type::nDim )&&( N==gmc_type::nDim );
         typedef typename mpl::if_< mpl::bool_<eq11>,
                 mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
                 typename mpl::if_< mpl::bool_<eqD1>,
@@ -201,7 +201,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )

@@ -1208,7 +1208,7 @@ struct createWorldsComm
 
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
+    static inline const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct UpdateWorldsComm
     {
@@ -1269,7 +1269,7 @@ struct createMeshSupport
     typedef typename mesh_support_type::range_elements_type range_elements_type;
 
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
+    static inline const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct HasAllMeshSupportDefined
     {
@@ -1458,9 +1458,9 @@ struct Order
     static inline const uint16_type PolynomialOrder = PN;
     static inline const uint16_type GeometricOrder = GN;
 
-    static const bool is_isoparametric = ( PN == GN );
-    static const bool is_subparametric = ( PN > GN );
-    static const bool is_surparametric = ( PN < GN );
+    static inline const bool is_isoparametric = ( PN == GN );
+    static inline const bool is_subparametric = ( PN > GN );
+    static inline const bool is_surparametric = ( PN < GN );
 };
 
 typedef parameter::parameters<
@@ -1613,7 +1613,7 @@ public:
     /** @name Constants
      */
     //@{
-    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    static inline const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
 
     template<typename MeshListType,int N>
     struct GetMesh
@@ -1718,9 +1718,9 @@ public:
     static constexpr bool is_periodic = periodicity_0_type::is_periodic;
 
     typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
-    static const bool is_mortar = mortar_0_type::is_mortar;
-    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
-    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
+    static inline const bool is_mortar = mortar_0_type::is_mortar;
+    static inline const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
+    static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
 
     //@}
 
@@ -1893,7 +1893,7 @@ public:
         public std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>
     {
     public:
-        static const bool is_rb_context = false;
+        static inline const bool is_rb_context = false;
         //typedef std::map<int,basis_context_ptrtype> super;
         using super = std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>;
         typedef typename super::value_type bc_type;
@@ -2184,6 +2184,9 @@ public:
         typedef Cont container_type;
         typedef container_type vector_temporary_type;
 
+        // Bring base class operator() into scope to prevent hiding
+        using super::operator();
+
         using polyset_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::polyset_type>;
 
         using pc_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::PreCompute>;
@@ -2298,6 +2301,13 @@ public:
         /** @name Operator overloads
          */
         //@{
+        // Bring base class virtual operators into scope to prevent hiding
+        using Cont::operator=;
+        using Cont::operator+=;
+        using Cont::operator-=;
+        using Cont::load;
+        using Cont::save;
+
         Element& operator=( Element && __e );
         Element& operator=( Element const& __e );
 #if 0
@@ -2495,14 +2505,6 @@ public:
             return super::operator()( index );
         }
 #endif
-        value_type  operator()( size_t i ) const
-        {
-            return super::operator()( i );
-        }
-        value_type& operator()( size_t i )
-        {
-            return super::operator()( i );
-        }
         Element& operator+=( Element const& _e )
         {
             for ( int i=0; i < _e.nLocalDof(); ++i )
@@ -4379,7 +4381,6 @@ public:
 
 
     }; // Element
-
     //@}
     /** @name Typedefs
      */

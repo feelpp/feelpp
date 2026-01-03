@@ -1509,8 +1509,8 @@ template <typename X1, typename X2, typename RangeItTestType, typename RangeExte
 typename Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::graph_ptrtype
 Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph( size_type hints, single_spaces_t )
 {
-    static const bool hasNotFindRangeStandard = rangeiteratorType<0, 0>::hasnotfindrange_type::value;
-    static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0, 0>::hasnotfindrange_type::value;
+    constexpr bool hasNotFindRangeStandard = rangeiteratorType<0, 0>::hasnotfindrange_type::value;
+    constexpr bool hasNotFindRangeExtended = rangeExtendedIteratorType<0, 0>::hasnotfindrange_type::value;
 
 #if !defined( NDEBUG )
     tic();
@@ -1829,8 +1829,8 @@ typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_p
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints, single_spaces_t )
 {
 
-    static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
-    static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
+    constexpr bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
+    constexpr bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
 
     // Compute the sparsity structure of the global matrix.  This can be
     // fed into a PetscMatrix to allocate exactly the number of nonzeros
@@ -2136,7 +2136,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
     theim_type im( order_used_type::value );
     //-----------------------------------------------------------------------//
 
-    static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
+    constexpr bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
     auto rangeListTest = this->rangeiterator<0,0>( mpl::bool_<hasNotFindRangeStandard>() );
     for ( auto const& rangeTest : rangeListTest )
     {

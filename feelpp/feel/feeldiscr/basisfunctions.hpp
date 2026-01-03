@@ -48,8 +48,8 @@ public:
      */
     //@{
 
-    static const bool is_test = IsTest;
-    static const bool is_trial = !IsTest;
+    static inline const bool is_test = IsTest;
+    static inline const bool is_trial = !IsTest;
 
     //@}
 

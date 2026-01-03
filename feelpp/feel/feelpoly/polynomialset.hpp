@@ -104,14 +104,14 @@ public:
     typedef std::shared_ptr<self_type> self_ptrtype;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
-    static const bool is_product = Poly::is_product;
+    static inline const bool is_product = Poly::is_product;
 
 
     typedef PolySetType<nRealDim> polyset_type;
-    static const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
+    static constexpr bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
+    static constexpr bool is_tensor2 = polyset_type::is_tensor2;
+    static constexpr bool is_vectorial = polyset_type::is_vectorial;
+    static constexpr bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
@@ -1420,17 +1420,17 @@ public:
         // real space dimension
         static const uint16_type NDim = ElementType::nRealDim;
         static const uint16_type nDof = Basis_t::nLocalDof;
-        static const bool is_product = Basis_t::is_product;
-        static const bool is_scalar = Basis_t::is_scalar;
-        static const bool is_vectorial = Basis_t::is_vectorial;
-        static const bool is_tensor2 = Basis_t::is_tensor2;
-        static const bool is_tensor2symm = Basis_t::is_tensor2symm;
+        static constexpr bool is_product = Basis_t::is_product;
+        static constexpr bool is_scalar = Basis_t::is_scalar;
+        static constexpr bool is_vectorial = Basis_t::is_vectorial;
+        static constexpr bool is_tensor2 = Basis_t::is_tensor2;
+        static constexpr bool is_tensor2symm = Basis_t::is_tensor2symm;
         static const uint16_type nComponents = Basis_t::nComponents;
         static const uint16_type nComponents1 = Basis_t::nComponents1;
         static const uint16_type nComponents2 = Basis_t::nComponents2;
 
-        static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
-        static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
+        static inline const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
+        static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
 
         static const bool do_optimization_p1= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
         using do_optimization_p1_t = mpl::bool_<do_optimization_p1>;
@@ -1459,7 +1459,7 @@ public:
         typedef typename Geo_t::template Context<ElementType,SubEntityCoDim> geometric_mapping_context_type;
         typedef std::shared_ptr<geometric_mapping_context_type> geometric_mapping_context_ptrtype;
 
-        static const bool second_derivative_require_grad = !geometric_mapping_context_type::is_linear;//  Geo_t::nOrder > 1 || !convex_type::is_simplex;
+        static inline const bool second_derivative_require_grad = !geometric_mapping_context_type::is_linear;//  Geo_t::nOrder > 1 || !convex_type::is_simplex;
 
         typedef typename node<value_type>::type node_type;
 
@@ -2294,10 +2294,6 @@ private:
     std::string M_fname;
 };
 
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_scalar;
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_vectorial;
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_tensor2;
-template<typename Poly,template<uint16_type> class PolySetType> const bool PolynomialSet<Poly,PolySetType>::is_tensor2symm;
 template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents;
 template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents1;
 template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents2;

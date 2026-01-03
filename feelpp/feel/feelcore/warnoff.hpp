@@ -86,7 +86,9 @@
     #pragma GCC diagnostic ignored "-Wswitch-default"
     #pragma GCC diagnostic ignored "-Wundef"
     #pragma GCC diagnostic ignored "-Wuninitialized"
+#if defined(__clang__)
     #pragma GCC diagnostic ignored "-Wundefined-var-template"
+#endif
     #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
     #pragma GCC diagnostic ignored "-Wunused-function"
     #pragma GCC diagnostic ignored "-Wunused-local-typedefs"

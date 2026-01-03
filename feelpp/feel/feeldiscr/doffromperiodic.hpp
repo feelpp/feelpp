@@ -73,17 +73,17 @@ public:
     static inline const uint16_type nComponents2 = fe_type::nComponents2;
 
 
-    static const bool is_continuous = fe_type::isContinuous;
-    static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
-    static const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
+    static inline const bool is_continuous = fe_type::isContinuous;
+    static inline const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
+    static inline const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
 
-    static const bool is_scalar = fe_type::is_scalar;
-    static const bool is_vectorial = fe_type::is_vectorial;
-    static const bool is_tensor2 = fe_type::is_tensor2;
-    static const bool is_modal = fe_type::is_modal;
-    static const bool is_product = fe_type::is_product;
+    static inline const bool is_scalar = fe_type::is_scalar;
+    static inline const bool is_vectorial = fe_type::is_vectorial;
+    static inline const bool is_tensor2 = fe_type::is_tensor2;
+    static inline const bool is_modal = fe_type::is_modal;
+    static inline const bool is_product = fe_type::is_product;
 
-    static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+    static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
 
@@ -197,7 +197,7 @@ private:
                              std::map<size_type,periodic_dof_map_type>& periodic_dof,
                              size_type tag )
     {
-        static const bool cond = fe_type::nDofPerEdge > 0;
+        constexpr bool cond = fe_type::nDofPerEdge > 0;
         addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag , mpl::bool_<cond>(), mpl::int_<nDim>() );
     }
     void addEdgePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof, size_type tag, mpl::bool_<false>, mpl::int_<1> ) {}
@@ -210,7 +210,7 @@ private:
 
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag )
     {
-        static const bool cond = fe_type::nDofPerFace > 0;
+        constexpr bool cond = fe_type::nDofPerFace > 0;
         addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<cond>() );
     }
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<false> ) {}
