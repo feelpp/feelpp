@@ -28,11 +28,15 @@ jobs:
       enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}
     steps:
       - uses: actions/checkout@v4
-      - uses: feelpp/ci-matrix-planner@v1.11
+      - uses: feelpp/ci-matrix-planner@v1.12
         id: plan
         with:
           config-path: .github/plan-ci.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Debug planner output
+        run: |
+          echo "targets_json: ${{ steps.plan.outputs.targets_json }}"
+          echo "enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}"
 
   feelpp:
     name: Build Feel++ (${{ matrix.target }})
@@ -237,6 +241,9 @@ jobs:
   # =============================================================================
   # Alternative to component builds - uses preset 'default' to build everything
   # Image naming: ghcr.io/feelpp/feelpp:ubuntu-24.04-full-dev
+  #
+  # Trigger: Use "mode=full" in commit message or PR description
+  # Example: git commit -m "Build full stack mode=full"
   # =============================================================================
 
   feelpp-full:
