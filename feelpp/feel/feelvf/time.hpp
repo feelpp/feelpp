@@ -39,26 +39,26 @@ class TimeExpr
 public:
 
     static const size_type context = TimeExprT::context;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     static inline const uint16_type imorder = TimeExprT::imorder;
-    static const bool imIsPoly = TimeExprT::imIsPoly;
+    static inline const bool imIsPoly = TimeExprT::imIsPoly;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = TimeExprT::template HasTestFunction<Func>::result;
+        static inline const bool result = TimeExprT::template HasTestFunction<Func>::result;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = TimeExprT::template HasTrialFunction<Func>::result;
+        static inline const bool result = TimeExprT::template HasTrialFunction<Func>::result;
     };
 
     template<typename Func>
-    static const bool has_test_basis = TimeExprT::template has_test_basis<Func>;
+    static inline const bool has_test_basis = TimeExprT::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = TimeExprT::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = TimeExprT::template has_trial_basis<Func>;
     using test_basis = typename TimeExprT::test_basis;
     using trial_basis = typename TimeExprT::trial_basis;
 
@@ -105,7 +105,7 @@ public:
         };
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,

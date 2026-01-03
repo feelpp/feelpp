@@ -70,8 +70,8 @@ public:
     typedef typename super::real_type real_type;
     using size_type = typename super::size_type;
 
-    static const bool IsDense = (_Options == 1);
-    static const bool IsSparse = (_Options == 0);
+    static inline const bool IsDense = (_Options == 1);
+    static inline const bool IsSparse = (_Options == 0);
 
     /* matrix */
     typedef typename super::sparse_matrix_type sparse_matrix_type;

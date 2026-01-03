@@ -159,7 +159,7 @@ public:
     using size_type = typename mesh_type::size_type;
     typedef std::shared_ptr<FEType> fe_ptrtype;
     typedef MortarType mortar_type;
-    static const bool is_mortar = mortar_type::is_mortar;
+    static inline const bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
 
     typedef MeshSupport<mesh_type> mesh_support_type;
@@ -199,19 +199,19 @@ public:
     static inline const uint16_type nComponents2 = fe_type::nComponents2;
 
 
-    static const bool is_continuous = fe_type::isContinuous;
-    static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
-    static const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
+    static inline const bool is_continuous = fe_type::isContinuous;
+    static inline const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
+    static inline const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
 
-    static const bool is_scalar = FEType::is_scalar;
-    static const bool is_vectorial = FEType::is_vectorial;
-    static const bool is_tensor2 = FEType::is_tensor2;
-    static const bool is_tensor2symm = FEType::is_tensor2 && is_symm_v<FEType>;
-    static const bool is_modal = FEType::is_modal;
-    static const bool is_product = FEType::is_product;
+    static inline const bool is_scalar = FEType::is_scalar;
+    static inline const bool is_vectorial = FEType::is_vectorial;
+    static inline const bool is_tensor2 = FEType::is_tensor2;
+    static inline const bool is_tensor2symm = FEType::is_tensor2 && is_symm_v<FEType>;
+    static inline const bool is_modal = FEType::is_modal;
+    static inline const bool is_product = FEType::is_product;
     static inline const uint16_type nRealComponents = is_tensor2symm?(fe_type::nComponents1*(fe_type::nComponents1+1)/2):fe_type::nComponents;
 
-    static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+    static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static inline const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value;
     static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value;
@@ -220,7 +220,7 @@ public:
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents>, mpl::int_<FEType::nLocalDof> >::type::value;
 
     typedef PeriodicityType periodicity_type;
-    static const bool is_periodic = periodicity_type::is_periodic;
+    static inline const bool is_periodic = periodicity_type::is_periodic;
 
     static constexpr uint16_type nDofComponents() { return is_product?nComponents:1; }
 

@@ -342,10 +342,10 @@ EvaluatorContext<CTX, ExprT, CTX2>::evaluateProjection(  ) const
     typedef typename iso_expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::value_type value_type;
     typedef typename t_expr_type::shape shape;
-    static const bool shapeN = (shape::N==1);
+    constexpr bool shapeN = (shape::N==1);
 
     typedef typename boost::remove_reference<typename boost::remove_const< decltype(*M_ctx.ptrFunctionSpace()) >::type >::type ctxspace_type;
-    static const bool ctxspace_is_geometricspace = boost::is_base_of<GeometricSpaceBase,ctxspace_type>::type::value;
+    constexpr bool ctxspace_is_geometricspace = boost::is_base_of<GeometricSpaceBase,ctxspace_type>::type::value;
     return evaluateProjection( mpl::bool_<shapeN && !ctxspace_is_geometricspace>() );
 }
 template<typename CTX, typename ExprT, typename CTX2>

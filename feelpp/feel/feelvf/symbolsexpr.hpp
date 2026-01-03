@@ -198,7 +198,7 @@ public :
                     using the_expr_expand_type = std::decay_t<decltype(evec.front().expr().applySymbolsExpr( M_se ))>;
                     //using tensor_from_expr_type = tensorFromExpr<Geo_t,Basis_i_t,Basis_j_t,the_expr_type,the_expr_expand_type>;
 
-                    static const bool is_same_expr = std::is_same_v<the_expr_type,the_expr_expand_type>;
+                    constexpr bool is_same_expr = std::is_same_v<the_expr_type,the_expr_expand_type>;
                     using choice = typename std::conditional< is_same_expr, DeferToExpandIsSameType<tensorFromExprClassic>, DeferToExpandIsNotSameType<tensorFromExpr>  >::type;
                     using tensor_from_expr_type = runRRR< choice, Geo_t/*,Basis_i_t,Basis_j_t*/,the_expr_type,the_expr_expand_type >;
 

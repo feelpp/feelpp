@@ -31,5 +31,4 @@
 
 namespace Feel
 {
-const bool Discontinuous::is_continuous;
 }

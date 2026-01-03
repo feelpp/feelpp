@@ -110,7 +110,7 @@ public:
     //@{
 
     static const Feel::size_type context = Expr::context|vm::JACOBIAN;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     //static const uint16_type imorder = 0;
     //static const bool imIsPoly = true;
@@ -118,18 +118,18 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = Expr::template HasTestFunction<Func>::result;
+        static inline const bool result = Expr::template HasTestFunction<Func>::result;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = Expr::template HasTrialFunction<Func>::result;
+        static inline const bool result = Expr::template HasTrialFunction<Func>::result;
     };
     template<typename Func>
-    static const bool has_test_basis = Expr::template has_test_basis<Func>;
+    static inline const bool has_test_basis = Expr::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = Expr::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = Expr::template has_trial_basis<Func>;
     using test_basis = typename Expr::test_basis;
     using trial_basis = typename Expr::trial_basis;
 
@@ -164,7 +164,7 @@ public:
         typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename the_element_type::gm1_type gm1_type;
         typedef std::shared_ptr<gm1_type> gm1_ptrtype;
-        static const size_type gmc_context_v = expression_type::context|vm::JACOBIAN;
+        static const Feel::size_type gmc_context_v = expression_type::context|vm::JACOBIAN;
         typedef typename gm_type::template Context< the_element_type> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm1_type::template Context<the_element_type> gmc1_type;
@@ -1014,8 +1014,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             using focb1_ptrtype = std::shared_ptr<fcb1_type>;
 
             // mortar context
-            static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-            static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+            constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+            constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
             static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
 
             typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
@@ -2326,8 +2326,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
 
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
@@ -2723,8 +2723,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
@@ -3559,8 +3559,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     //-----------------------------------------------------//
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
@@ -3776,7 +3776,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     //-----------------------------------------------------//
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test)? 1 : 0;
 
     // typedef on formcontext
@@ -4176,8 +4176,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE_TEST_TRIAL_MORTAR, (mpl::int_<mortarTag>) );
 
@@ -4439,7 +4439,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     // typedef on formcontext
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test)? 1 : 0;
 
     typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type> form_context_type;

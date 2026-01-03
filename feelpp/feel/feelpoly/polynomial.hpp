@@ -93,9 +93,9 @@ public:
 
 
     typedef PolySetType<nDim> polyset_type;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
+    static constexpr bool is_tensor2 = polyset_type::is_tensor2;
+    static constexpr bool is_vectorial = polyset_type::is_vectorial;
+    static constexpr bool is_scalar = polyset_type::is_scalar;
     static const uint16_type nComponents = polyset_type::nComponents;
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
@@ -435,10 +435,6 @@ Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1
     //std::cout << "operator- c=" << c << "\n";
     return Polynomial<Poly, PolySetType>( Poly(), c );
 }
-
-template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType,Container>::is_scalar;
-template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType, Container>::is_vectorial;
-template<typename Poly,template<uint16_type> class PolySetType, typename Container> const bool Polynomial<Poly,PolySetType, Container>::is_tensor2;
 
 }
 #endif /* __Polynomial_H */

@@ -50,7 +50,7 @@ jobs:
           # lets the action read PR head commit via API when needed
           github-token: ${{ secrets.GITHUB_TOKEN }}
 #          message-override: |
-#            targets=fedora:42,debian:13,ubuntu:24.04,ubuntu:22.04
+#            targets=fedora:42,debian:13,ubuntu:24.04
       - name: Debug planner sources
         run: |
           echo "SOURCE=${{ steps.plan.outputs.raw_message }}"

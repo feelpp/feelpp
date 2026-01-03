@@ -68,7 +68,7 @@ public:
     typedef typename boost::numeric::bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type ordering_type;
     typedef typename boost::numeric::bindings::traits::sparse_matrix_traits<matrix_type>::layout_type layout_type;
 
-    static const bool is_row_major = boost::is_same<ordering_type,
+    static inline const bool is_row_major = boost::is_same<ordering_type,
                       boost::numeric::bindings::traits::row_major_t>::value;
 
 

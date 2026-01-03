@@ -163,19 +163,19 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = true;
+        static inline const bool result = true;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
+        static inline const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
     };
 
     template<typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template<typename Func>
-    static const bool has_trial_basis = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
+    static inline const bool has_trial_basis = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
     using test_basis = std::nullptr_t;
     using trial_basis = typename element_type::functionspace_type::basis_type;
 

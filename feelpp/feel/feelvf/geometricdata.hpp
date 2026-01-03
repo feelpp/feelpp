@@ -181,23 +181,23 @@ const size_type mctx = vm::MEASURE;
     public:                                                             \
                                                                         \
         static const size_type context = VF_GD_CONTEXT( O );            \
-        static const bool is_terminal = false;                          \
+        static inline const bool is_terminal = false;                          \
                                                                         \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \
-            static const bool result = false;                           \
+            static inline const bool result = false;                           \
         };                                                              \
                                                                         \
         template<typename Func>                                         \
             struct HasTrialFunction                                     \
         {                                                               \
-            static const bool result = false;                           \
+            static inline const bool result = false;                           \
         };                                                              \
         template<typename Func>                                         \
-            static const bool has_test_basis = false;                   \
+            static inline const bool has_test_basis = false;                   \
         template<typename Func>                                         \
-            static const bool has_trial_basis = false;                  \
+            static inline const bool has_trial_basis = false;                  \
         using test_basis = std::nullptr_t;                              \
         using trial_basis = std::nullptr_t;                             \
                                                                         \
@@ -289,7 +289,7 @@ const size_type mctx = vm::MEASURE;
             typedef VF_GD_RETURN(O)<gmc_type::NDim> return_value_type;  \
             typedef Shape<gmc_type::NDim, VF_GD_RETURN(O), false> shape; \
                                                                         \
-            struct is_zero { static const bool value = false; };        \
+            struct is_zero { static inline const bool value = false; };        \
                                                                         \
             tensor( this_type const& /*expr*/,                          \
                     Geo_t const& geom,                                  \

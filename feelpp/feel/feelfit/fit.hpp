@@ -43,22 +43,22 @@ public:
     // idv(T)+idv(T) is not
     // That is for optimisation
     // if not know: false
-    static const bool is_terminal = false;//expression_type::is_terminal;
+    static inline const bool is_terminal = false;//expression_type::is_terminal;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = expression_type::template HasTestFunction<Func>::result;
+        static inline const bool result = expression_type::template HasTestFunction<Func>::result;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = expression_type::template HasTrialFunction<Func>::result;
+        static inline const bool result = expression_type::template HasTrialFunction<Func>::result;
     };
     template<typename Func>
-    static const bool has_test_basis = expression_type::template has_test_basis<Func>;
+    static inline const bool has_test_basis = expression_type::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = expression_type::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = expression_type::template has_trial_basis<Func>;
     using test_basis = typename expression_type::test_basis;
     using trial_basis = typename expression_type::trial_basis;
 
@@ -162,7 +162,7 @@ public:
         // is the expression null ?
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         // u = TRIAL

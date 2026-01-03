@@ -577,7 +577,6 @@ JacobiBatchDerivation( int  N, T a, T b, ublas::vector<T> const& __pts )
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
-    static const bool cond = N>0;
     if ( N > 0 )
     {
         typedef T value_type;

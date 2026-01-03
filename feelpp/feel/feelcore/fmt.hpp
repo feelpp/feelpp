@@ -25,11 +25,10 @@
 
 #include <fmt/core.h>
 #include <fmt/std.h>     // For std::filesystem::path, std::optional, etc.
-#include <fmt/ranges.h>  // For STL containers (vector, map, set, etc.) - MUST come AFTER is_range specializations
+#include <fmt/ranges.h>  // For STL containers (vector, map, set, etc.)
 #include <fmt/ostream.h> // For types with ostream operators (fallback)
 
-// Forward declare boost::ublas and GiNaC types and mark them as NOT ranges
-// This MUST happen BEFORE including fmt/ranges.h
+// Forward declare boost::ublas and GiNaC types
 #if __has_include(<boost/numeric/ublas/vector.hpp>)
 namespace boost { namespace numeric { namespace ublas {
     // Forward declarations matching actual ublas declarations
@@ -49,9 +48,18 @@ namespace fmt {
 template <typename T, typename A>
 struct is_range<boost::numeric::ublas::vector<T, A>, char> : std::false_type {};
 
-// Exclude all boost::ublas matrix types from range detection
+// Exclude all boost::ublas matrix types from range detection  
 template <typename T, typename L, typename A>
 struct is_range<boost::numeric::ublas::matrix<T, L, A>, char> : std::false_type {};
+
+// Prevent fmt/ranges.h from treating ublas types as container adaptors
+namespace detail {
+template <typename T, typename A>
+struct is_container_adaptor_like<boost::numeric::ublas::vector<T, A>> : std::false_type {};
+
+template <typename T, typename L, typename A>
+struct is_container_adaptor_like<boost::numeric::ublas::matrix<T, L, A>> : std::false_type {};
+}
 }
 #endif
 
@@ -100,10 +108,10 @@ struct formatter<google::Counter_t> : ostream_formatter {};
 // Provide ostream formatters for boost::ublas types (since we marked them as NOT ranges above)
 #if __has_include(<boost/numeric/ublas/vector.hpp>)
 template <typename T, typename A>
-struct formatter<boost::numeric::ublas::vector<T, A>> : ostream_formatter {};
+struct formatter<boost::numeric::ublas::vector<T, A>, char, void> : ostream_formatter {};
 
 template <typename T, typename L, typename A>
-struct formatter<boost::numeric::ublas::matrix<T, L, A>> : ostream_formatter {};
+struct formatter<boost::numeric::ublas::matrix<T, L, A>, char, void> : ostream_formatter {};
 #endif
 
 // Provide ostream formatters for GiNaC types (since we marked them as NOT ranges above)

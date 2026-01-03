@@ -24,6 +24,8 @@
 
 #include <feel/feelmodels/modelmodels.hpp>
 
+using namespace std::string_literals;
+
 namespace Feel {
 
 ModelModel::ModelModel( std::string const& type, std::string const& name, nl::json const& jarg )
@@ -38,7 +40,7 @@ ModelModel::ModelModel( std::string const& type, std::string const& name, nl::js
             M_name = j_name.get<std::string>();
     }
 
-    for ( std::string const& submodelName : { "submodels", "subphysics" } )
+    for ( const std::string& submodelName : { "submodels"s, "subphysics"s } )
         if ( jarg.contains( submodelName ) )
         {
             auto const& j_submodels = jarg.at( submodelName );
@@ -59,7 +61,7 @@ ModelModel::ModelModel( std::string const& type, std::string const& name, nl::js
             }
     }
 
-    for ( std::string const& setupName : { "equations", "equation", "setup" } )
+    for ( const std::string& setupName : { "equations"s, "equation"s, "setup"s } )
         if ( jarg.contains( setupName ) )
             M_setup = jarg.at( setupName );
 

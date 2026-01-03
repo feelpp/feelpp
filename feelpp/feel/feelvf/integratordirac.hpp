@@ -61,13 +61,13 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = DiracExpr::template HasTestFunction<Func>::result;
+        static inline const bool result = DiracExpr::template HasTestFunction<Func>::result;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = DiracExpr::template HasTrialFunction<Func>::result;
+        static inline const bool result = DiracExpr::template HasTrialFunction<Func>::result;
     };
 
     static const size_type iDim = boost::tuples::template element<0, ElementRange>::type::value;

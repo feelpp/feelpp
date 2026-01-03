@@ -84,6 +84,7 @@ public:
          M_strategy( solve::strategy::static_condensation )
         {}
 #endif
+    using super::operator=;
     VectorCondensed( VectorCondensed const& ) = default;
     VectorCondensed& operator=( VectorCondensed const& ) = default;
     ~VectorCondensed() override = default;

@@ -460,7 +460,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     typedef test_geometric_mapping_context_type gmc_type;
     typedef typename eval00_expr_type::shape shape;
-    static const bool cond = ( shape::M == 1 && shape::N == 1 );
+    constexpr bool cond = ( shape::M == 1 && shape::N == 1 );
     BOOST_MPL_ASSERT_MSG( cond,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
@@ -694,7 +694,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     typedef test_geometric_mapping_context_type gmc_type;
     typedef typename eval00_expr_type::shape shape;
-    static const bool cond = ( shape::M == 1 && shape::N == 1 );
+    constexpr bool cond = ( shape::M == 1 && shape::N == 1 );
     BOOST_MPL_ASSERT_MSG( cond,
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );

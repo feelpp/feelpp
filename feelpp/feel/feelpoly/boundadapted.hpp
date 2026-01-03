@@ -65,7 +65,7 @@ struct BoundaryAdaptedTraits
     static inline const uint16_type nDim = Dim;
     static inline const uint16_type nOrder = Degree;
     static inline const uint16_type nConvexOrderDiff = nDim+nOrder+1;
-    static const bool is_normalized = false;
+    static inline const bool is_normalized = false;
 
 
     typedef T value_type;
@@ -160,7 +160,7 @@ public:
     static inline const uint16_type nDim = traits_type::nDim;
     static inline const uint16_type nOrder = traits_type::nOrder;
     static inline const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
-    static const bool is_normalized = traits_type::is_normalized;
+    static inline const bool is_normalized = traits_type::is_normalized;
     static inline const uint16_type numVertices = traits_type::numVertices;
     static inline const uint16_type numFaces = traits_type::numFaces;
 

@@ -65,7 +65,7 @@ public :
     static const uint32_type Dim = convex_type::nDim;
     static const uint32_type convexOrder = convex_type::nOrder;
 
-    static const bool is_simplex = convex_type::is_simplex;
+    static inline const bool is_simplex = convex_type::is_simplex;
 
     typedef typename pointset_type::nodes_type nodes_type;
     typedef typename matrix_node<value_type>::type points_type;

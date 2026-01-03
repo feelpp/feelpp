@@ -59,13 +59,13 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     typedef Eye<M,N> this_type;
@@ -143,10 +143,10 @@ public:
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         struct INVALID_SHAPE {};
-        static const bool eq11 = M==1&&N==1;
-        static const bool eqD1 = M==gmc_type::nDim&&N==1;
-        static const bool eq1D = M==1&&N==gmc_type::nDim;
-        static const bool eqDD = M==gmc_type::nDim&&N==gmc_type::nDim;
+        static inline const bool eq11 = M==1&&N==1;
+        static inline const bool eqD1 = M==gmc_type::nDim&&N==1;
+        static inline const bool eq1D = M==1&&N==gmc_type::nDim;
+        static inline const bool eqDD = M==gmc_type::nDim&&N==gmc_type::nDim;
         typedef typename mpl::if_< mpl::bool_<eq11>,
                 mpl::identity<Shape<gmc_type::nDim, Scalar, false, false> >,
                 typename mpl::if_< mpl::bool_<eqD1>,

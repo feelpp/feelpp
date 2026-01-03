@@ -44,12 +44,12 @@ class CrossProduct : public ExprDynamicBase
   public:
     using super = ExprDynamicBase;
     static const size_type context = ExprL::context | ExprR::context;
-    static const bool is_terminal = false;
+    static constexpr bool is_terminal = false;
 
     template <typename Func>
     struct HasTestFunction
     {
-        static const bool result =
+        static constexpr bool result =
             ExprL::template HasTestFunction<Func>::result ||
             ExprR::template HasTestFunction<Func>::result;
     };
@@ -57,17 +57,17 @@ class CrossProduct : public ExprDynamicBase
     template <typename Func>
     struct HasTrialFunction
     {
-        static const bool result =
+        static constexpr bool result =
             ExprL::template HasTrialFunction<Func>::result ||
             ExprR::template HasTrialFunction<Func>::result;
     };
 
     template <typename Func>
-    static const bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
-                                       ExprR::template HasTestFunction<Func>::result;
+    static constexpr bool has_test_basis = ExprL::template HasTestFunction<Func>::result ||
+                                           ExprR::template HasTestFunction<Func>::result;
     template <typename Func>
-    static const bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result ||
-                                        ExprR::template HasTrialFunction<Func>::result;
+    static constexpr bool has_trial_basis = ExprL::template HasTrialFunction<Func>::result ||
+                                            ExprR::template HasTrialFunction<Func>::result;
     using test_basis = typename ExprL::test_basis;
     using trial_basis = typename ExprL::trial_basis;
 
@@ -192,8 +192,8 @@ class CrossProduct : public ExprDynamicBase
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<left_shape::nDim>, mpl::int_<2>>,
                                   mpl::identity<Shape<2, Scalar, false, false>>,
                                   mpl::identity<Shape<3, Vectorial, false, false>>>::type::type shape;
-        static const bool l_is_terminal = left_expression_type::is_terminal;
-        static const bool r_is_terminal = right_expression_type::is_terminal;
+        static constexpr bool l_is_terminal = left_expression_type::is_terminal;
+        static constexpr bool r_is_terminal = right_expression_type::is_terminal;
 
         BOOST_MPL_ASSERT_MSG( ( left_shape::nDim > 1 ),
                               CROSS_INVALID_DIMENSION,
@@ -214,7 +214,7 @@ class CrossProduct : public ExprDynamicBase
 
         struct is_zero
         {
-            static const bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value;
+            static constexpr bool value = l_tensor_expr_type::is_zero::value || r_tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,

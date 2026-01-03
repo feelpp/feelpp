@@ -48,8 +48,8 @@ public:
      */
     //@{
 
-    static const bool is_exact = true;
-    static const bool is_face_im = false;
+    static inline const bool is_exact = true;
+    static inline const bool is_face_im = false;
 
     typedef T value_type;
     typedef ublas::matrix<value_type,ublas::column_major> points_type;

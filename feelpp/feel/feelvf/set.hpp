@@ -69,13 +69,13 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = true;
+        static inline const bool result = true;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
+        static inline const bool result = boost::is_same<Func,typename element_type::functionspace_type::basis_type>::value;
     };
 
     static inline const uint16_type nComponents = element_type::nComponents;

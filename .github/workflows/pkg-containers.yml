@@ -15,11 +15,10 @@ on:
       dist:
         description: 'Distribution to build'
         required: true
-        default: 'jammy'
+        default: 'noble'
         type: choice
         options:
-        - 'jammy'
-        - 'focal'
+        - 'noble'
         - 'noble'
         - 'bullseye'
         - 'bookworm'

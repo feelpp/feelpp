@@ -167,7 +167,7 @@ public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         typedef Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType> form_context_type;
-        static const bool UseMortar = UseMortarType > 0;
+        static inline const bool UseMortar = UseMortarType > 0;
         typedef LinearForm<SpaceType,VectorType, ElemContType> form_type;
         typedef typename space_type::dof_type dof_type;
         typedef typename form_type::value_type value_type;

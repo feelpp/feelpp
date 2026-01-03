@@ -66,7 +66,7 @@ public:
     typedef value_type matrix_type;
     typedef std::vector<std::set<size_type> > pattern_type;
 
-    static const bool is_row_major = true;
+    static inline const bool is_row_major = true;
 
 
     //@}

@@ -326,13 +326,13 @@ namespace std
 template<>
 struct numeric_limits<dd_real>
 {
-    static const bool is_specialized = true;
+    static inline const bool is_specialized = true;
 
     static const int digits = 32;
     static const int digits10 = 32;
-    static const bool is_signed = true;
-    static const bool is_integer = false;
-    static const bool is_exact = false;
+    static inline const bool is_signed = true;
+    static inline const bool is_integer = false;
+    static inline const bool is_exact = false;
     static const int radix = __FLT_RADIX__;
     static dd_real epsilon() throw()
     {
@@ -352,13 +352,13 @@ struct numeric_limits<dd_real>
 template<>
 struct numeric_limits<qd_real>
 {
-    static const bool is_specialized = true;
+    static inline const bool is_specialized = true;
 
     static const int digits = 64;
     static const int digits10 = 64;
-    static const bool is_signed = true;
-    static const bool is_integer = false;
-    static const bool is_exact = false;
+    static inline const bool is_signed = true;
+    static inline const bool is_integer = false;
+    static inline const bool is_exact = false;
     static const int radix = __FLT_RADIX__;
     static qd_real epsilon() throw()
     {
