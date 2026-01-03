@@ -42,7 +42,7 @@
 	url = https://github.com/feelpp/indicators.git
 [submodule "feelpp/contrib/simple-web-server"]
 	path = feelpp/contrib/simple-web-server
-	url = git@gitlab.com:feelpp/Simple-Web-Server.git
+	url = https://gitlab.com/feelpp/Simple-Web-Server.git
 [submodule "feelpp/contrib/range-v3"]
 	path = feelpp/contrib/range-v3
 	url = https://github.com/feelpp/range-v3.git
@@ -57,7 +57,7 @@
 	url = https://github.com/feelpp/hana.git
 [submodule "feelpp/contrib/eigen"]
 	path = feelpp/contrib/eigen
-	url = git@gitlab.com:feelpp/eigen.git
+	url = https://gitlab.com/feelpp/eigen.git
 [submodule "feelpp/contrib/fmt"]
 	path = feelpp/contrib/fmt
 	url = https://github.com/feelpp/fmt.git
