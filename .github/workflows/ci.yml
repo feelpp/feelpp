@@ -231,3 +231,57 @@ jobs:
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
+
+  # =============================================================================
+  # Full Build Mode - Build entire Feel++ stack in a single image
+  # =============================================================================
+  # Alternative to component builds - uses preset 'default' to build everything
+  # Image naming: ghcr.io/feelpp/feelpp:ubuntu-24.04-full-dev
+  # =============================================================================
+
+  feelpp-full:
+    name: Build Feel++ Full (${{ matrix.target }})
+    needs: [plan_ci]
+    runs-on: self-docker
+    if: contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp-full')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Clone or update docker repo
+        run: |
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
+
+      - name: Set DIST from TARGET
+        id: dist
+        run: |
+          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Feel++ Full (dev)
+        working-directory: docker
+        run: docker buildx bake feelpp-full --push
+        env:
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+
+      - name: Build and push runtime image
+        if: github.event_name == 'push'
+        working-directory: docker
+        run: docker buildx bake feelpp-full-runtime --push
+        env:
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
