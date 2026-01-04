@@ -143,8 +143,9 @@ if(FEELPP_ENABLE_SPDLOG)
   target_link_libraries(feelpp_spdlog INTERFACE fmt)
   
   # Install spdlog headers manually
+  # CMAKE_INSTALL_INCLUDEDIR is already set to include/feelpp, so install directly there
   install(DIRECTORY ${spdlog_SOURCE_DIR}/include/spdlog
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/feelpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h")
   
   target_link_libraries(feelpp_contrib INTERFACE feelpp_spdlog)
