@@ -63,7 +63,8 @@ constexpr bool is_mesh_v = is_mesh<MeshType>::value;
 //!
 //! @return the topogical dimension of the mesh \p m
 //!
-template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+template <typename MeshType>
+    requires is_mesh_v<MeshType>
 inline constexpr int topodim( std::shared_ptr<MeshType> const& m )
 {
     return MeshType::nDim;
@@ -71,7 +72,8 @@ inline constexpr int topodim( std::shared_ptr<MeshType> const& m )
 //!
 //! @return the real dimension in which the mesh is defined
 //!
-template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+template <typename MeshType>
+    requires is_mesh_v<MeshType>
 inline constexpr int realdim( std::shared_ptr<MeshType> const& m )
 {
     return MeshType::nRealDim;

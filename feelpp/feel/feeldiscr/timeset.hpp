@@ -689,20 +689,20 @@ public:
 
 
         template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, ExprT const& expr, variant_representation_arg_type const& rep = "" )
             {
                 this->add( __n, __n, expr, rep );
             }
         template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
-        void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "" )
             {
                 this->add( __n, __n, expr, rangElt, rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "" )
             {
                 if ( this->isIgnored() )
                     return;
@@ -712,8 +712,8 @@ public:
             }
 
         template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "" )
             {
                 if ( this->isIgnored() )
                     return;

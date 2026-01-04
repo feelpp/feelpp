@@ -853,12 +853,15 @@ public:
             return M_dfe( elid, edge_id );
         }
 
-    template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename mesh_type::element_type>, bool> = true >
+    template <typename MeshEntityType>
+        requires std::is_same_v<MeshEntityType,typename mesh_type::element_type>
     auto localDof( MeshEntityType const& elt ) const { return this->localDof( elt.id() ); }
-    template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename mesh_type::face_type> && (mesh_type::nDim > 0), bool> = true >
+    template <typename MeshEntityType>
+        requires std::is_same_v<MeshEntityType,typename mesh_type::face_type> && (mesh_type::nDim > 0)
     auto localDof( MeshEntityType const& face ) const { return this->faceLocalDof( face.id() ); }
 #if 0
-    template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename mesh_type::edge_type> && (mesh_type::nDim == 3), bool> = true >
+    template <typename MeshEntityType>
+        requires std::is_same_v<MeshEntityType,typename mesh_type::edge_type> && (mesh_type::nDim == 3)
     auto localDof( MeshEntityType const& edge ) const { this->edgeLocalDof( edge.id() ); }
 #endif
 

@@ -1296,7 +1296,8 @@ struct createMeshSupport
                 this->updateImpl<T,useMeshesList>( t );
             }
         template<typename T,bool _UseMeshesList >
-        void updateImpl( T const& t, std::enable_if_t< !_UseMeshesList >* = nullptr ) const
+            requires (!_UseMeshesList)
+        void updateImpl( T const& t ) const
             {
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
@@ -1305,7 +1306,8 @@ struct createMeshSupport
                 meshSupport = M_cms.M_meshSupport0;
             }
         template<typename T,bool _UseMeshesList >
-        void updateImpl( T const& t, std::enable_if_t< _UseMeshesList >* = nullptr ) const
+            requires _UseMeshesList
+        void updateImpl( T const& t ) const
             {
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
@@ -1327,7 +1329,8 @@ struct createMeshSupport
         {
             this->init<useMeshesList>(mesh);
         }
-    template<typename RangeType, typename std::enable_if_t<is_range_v<RangeType>,int> = 0 >
+    template<typename RangeType>
+        requires is_range_v<RangeType>
     createMeshSupport( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
         :
         M_mesh( mesh )
@@ -2516,7 +2519,8 @@ public:
         using p0dh_t =  FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>;
         using p0dh_element_t =  typename FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>::template Element<value_type>;
 
-        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        template<typename elt_t = p0dh_element_t>
+            requires (!std::is_same_v<elt_t, this_type>)
         Element& plusAssign( elt_t const& _e, const value_type sign = 1. )
             {
                 if ( this->mesh()  != _e.mesh() )
@@ -2535,12 +2539,14 @@ public:
                 }
                 return *this;
             }
-        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        template<typename elt_t = p0dh_element_t>
+            requires (!std::is_same_v<elt_t, this_type>)
         Element& operator+=( elt_t const& _e )
             {
                 return plusAssign( _e );
             }
-        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        template<typename elt_t = p0dh_element_t>
+            requires (!std::is_same_v<elt_t, this_type>)
         Element& operator-=( elt_t const& _e )
             {
                 return plusAssign( _e, -1. );
@@ -2605,7 +2611,8 @@ public:
         //! @endcode
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<index_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+            requires (!B::is_modal)
+        void element( std::vector<index_type> const& e, Eigen::Ref<local_interpolant_t<B>> l ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2624,7 +2631,8 @@ public:
         //! @note the vector of components is already allocated
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<index_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+            requires (!B::is_modal)
+        void element( std::vector<index_type> const& e, local_interpolant_type& l ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -3298,7 +3306,8 @@ public:
         //! compute Symmetric Gradient only in the vectorial case
         //!
         template<typename ContextType,typename EType = this_type>
-        void symmetricGradient( ContextType const & context, grad_array_type& v, std::enable_if_t<EType::is_vectorial>* = nullptr ) const;
+            requires EType::is_vectorial
+        void symmetricGradient( ContextType const & context, grad_array_type& v ) const;
 
         void
         gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
@@ -4445,7 +4454,8 @@ public:
      * helper static function to create a std::shared_ptr<> out of
      * the \c FunctionSpace
      */
-    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    template <typename ... Ts>
+        requires (sizeof...(Ts) != 0) && (NA::is_named_argument_v<Ts> && ...)
     static pointer_type New( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -5697,7 +5707,8 @@ public:
      *
      * @param filepath path of the json files generated (extension can be automatically added if not given)
      */
-    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    template <typename TT=functionspace_type>
+        requires (!TT::is_composite)
     void save( std::string const& filepathstr ) const
         {
             fs::path argfilepath = filepathstr;
@@ -5789,7 +5800,8 @@ public:
      *
      * @param filepath path of the json files on the disk
      */
-    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    template <typename TT=functionspace_type>
+        requires (!TT::is_composite)
     std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
         {
             fs::path argfilepath = filepathstr;
@@ -5861,7 +5873,8 @@ public:
             return mappingWithFile;
         }
 
-    template <typename TT=functionspace_type,std::enable_if_t< TT::is_composite, bool> = true >
+    template <typename TT=functionspace_type>
+        requires TT::is_composite
     std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
         {
             CHECK( false ) << "composite case not implemented";
@@ -5899,8 +5912,8 @@ private:
     FEELPP_NO_EXPORT void initHead( FSpaceHead& fspacehead );
 
     template <typename RangeType>
-    void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnElements() >* = nullptr ) const
+        requires (RangeType::isOnElements())
+    void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5937,8 +5950,8 @@ private:
             }
         }
     template <typename RangeType>
-    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnFaces() >* = nullptr ) const
+        requires (RangeType::isOnFaces())
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5978,16 +5991,16 @@ private:
             }
         }
     template <typename RangeType>
-    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES &&
-                                !std::is_same<typename RangeType::super,faces_reference_wrapper_t<mesh_type> >::value >* = nullptr ) const
+        requires (boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES &&
+                  !std::is_same_v<typename RangeType::super,faces_reference_wrapper_t<mesh_type>>)
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             CHECK(false) << "TODO";
         }
 
     template <typename RangeType>
-    void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnEdges() >* = nullptr ) const
+        requires (RangeType::isOnEdges())
+    void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             size_type eid = invalid_v<size_type>;
             uint16_type edgeid_in_element;
@@ -6060,8 +6073,8 @@ private:
             }
         }
     template <typename RangeType>
-    void dofs( RangeType const& rangePoint, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnPoints()>* = nullptr ) const
+        requires (RangeType::isOnPoints())
+    void dofs( RangeType const& rangePoint, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             std::vector<uint16_type> compUsed;
             static const uint16_type nDofComponents = this->dof()->nDofComponents();
@@ -6635,7 +6648,8 @@ namespace Feel {
 //!
 //! @return the support of a function space
 //!
-template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
+template<typename SpaceT>
+    requires is_functionspace_v<SpaceT>
 constexpr typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
 support( std::shared_ptr<SpaceT> const& X )
 {

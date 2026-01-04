@@ -673,16 +673,18 @@ void
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 0)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 0>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 1)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
@@ -694,8 +696,9 @@ void
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 2)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
@@ -708,8 +711,9 @@ void
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 3)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
@@ -1809,7 +1813,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::fixPointDuplicationInHO
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& face, std::enable_if_t<TheShape::nDim == 3>* )
+    requires (TheShape::nDim == 3)
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& face )
 {
     // loop over face edges
     for ( int f = 0; f < face_type::numEdges; ++f )
@@ -1824,19 +1829,22 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( 
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& f, std::enable_if_t<TheShape::nDim != 3>* )
+    requires (TheShape::nDim != 3)
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& f )
 {
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim != 3>* )
+    requires (TheShape::nDim != 3)
+bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt )
 {
     return false;
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim == 3>* )
+    requires (TheShape::nDim == 3)
+bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt )
 {
     // in 3D check if the edges of the element touch the boundary
     bool isOnBoundary = false;
