@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABELS "testsuite;testcore")
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testcore")
 IF ( TBB_FOUND )
   SET( OTESTS tbb )
 ENDIF()

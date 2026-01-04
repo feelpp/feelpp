@@ -247,12 +247,15 @@ if ( FEELPP_ENABLE_FEELPP_PYTHON )
   add_subdirectory(python)
 endif()
 
+if ( FEELPP_ENABLE_TESTS )
+  add_custom_target(testsuite)
+endif()
+
 #
 # Enable testing
 #
 IF(FEELPP_ENABLE_TESTS AND EXISTS  ${CMAKE_CURRENT_SOURCE_DIR}/testsuite)
   add_subdirectory( testsuite )
-  add_dependencies(check-full testsuite)
 endif()
 
 
@@ -261,6 +264,18 @@ if ( FEELPP_ENABLE_DOCUMENTATION OR FEELPP_ENABLE_DOXYGEN )
   add_dependencies(check-full doc)
   set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
   ADD_SUBDIRECTORY ( doc )
+endif()
+
+if ( FEELPP_ENABLE_TESTS )
+  if (TARGET testsuite-feelpp)
+    add_dependencies(testsuite testsuite-feelpp)
+  endif()
+  if (TARGET testsuite-toolboxes)
+    add_dependencies(testsuite testsuite-toolboxes)
+  endif()
+  if (TARGET testsuite-mor)
+    add_dependencies(testsuite testsuite-mor)
+  endif()
 endif()
 
 if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )

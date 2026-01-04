@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABELS "testsuite;testmesh")
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmesh")
 foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker partitioner_metis elementswithmarkedfaces meshmover convex meshfilters ranges )
 
   if(THETEST MATCHES partitioner_metis)
