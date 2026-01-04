@@ -303,6 +303,7 @@ local componentCacheVars = {
     FEELPP_ENABLE_TESTS: 'OFF',
     FEELPP_ENABLE_FMILIB: 'OFF',
     FEELPP_ENABLE_BENCHMARKS: 'OFF',
+    FEELPP_ENABLE_QUICKSTART: 'OFF',
     FEELPP_USE_EXTERNAL_CLN: 'ON',
   },
   toolboxes: {
@@ -561,6 +562,53 @@ local testPreset(configName, extraConfig={}) = {
   output: { outputOnFailure: true },
 } + extraConfig;
 
+// ============================================================================
+// Workflow Presets (CMake 3.25+)
+// ============================================================================
+// Workflow presets define a sequence of steps (configure, build, test)
+// that can be run with: cmake --workflow --preset <name>
+
+local workflowPreset(name, configPreset, buildPreset, testPreset) = {
+  name: name,
+  displayName: 'Workflow: ' + name,
+  description: 'Configure, build, and test ' + name,
+  steps: [
+    { type: 'configure', name: configPreset },
+    { type: 'build', name: buildPreset },
+    { type: 'test', name: testPreset },
+  ],
+};
+
+// Simple workflow for presets where all names match
+local simpleWorkflow(name) = workflowPreset(name, name, name, name);
+
+// Docker workflow - used by Dockerfiles for build/test cycle
+local dockerWorkflow(name) = {
+  name: name + '-docker',
+  displayName: 'Docker: ' + name,
+  description: 'Configure, build, and test ' + name + ' (for Docker builds)',
+  steps: [
+    { type: 'configure', name: name },
+    { type: 'build', name: name },
+    { type: 'test', name: name },
+  ],
+};
+
+local workflowPresets =
+  // Component workflows (feelpp, toolboxes, mor, python, testsuite)
+  [simpleWorkflow(comp) for comp in components] +
+  // Docker workflows for CI
+  [dockerWorkflow(comp) for comp in components] +
+  // Default/full build workflow
+  [simpleWorkflow('default')] +
+  [dockerWorkflow('default')] +
+  // Release workflows
+  [simpleWorkflow('release')] +
+  [simpleWorkflow('release-cmake')] +
+  // Debug workflows
+  [simpleWorkflow('debug')] +
+  [simpleWorkflow('debug-cmake')];
+
 local testPresets = [
   testPreset('default', { execution: { jobs: 4 } }),
   testPreset('release', { inherits: 'default' }),
@@ -602,15 +650,16 @@ std.flattenArrays([
 // ============================================================================
 
 {
-  version: 3,
+  version: 6,
   cmakeMinimumRequired: {
     major: 3,
-    minor: 21,
+    minor: 25,
     patch: 0,
   },
   configurePresets: configurePresets,
   buildPresets: buildPresets,
   testPresets: testPresets,
+  workflowPresets: workflowPresets,
   vendor: {
     'example.com/ExampleIDE/1.0': {
       autoFormat: false,
