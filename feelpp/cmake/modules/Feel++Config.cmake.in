@@ -235,7 +235,9 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   find_dependency(FeelppContrib)
   feelpp_get_compile_definition(Feelpp::feelpp_contrib FEELPP_HAS_PYBIND11)
   if ( FEELPP_HAS_PYBIND11 )
-    include(pybind11Tools)
+    # Use find_package per pybind11 documentation (not direct include of pybind11Tools)
+    # See: https://pybind11.readthedocs.io/en/stable/compiling.html#building-with-cmake
+    find_package(pybind11 CONFIG QUIET)
   endif()
 
   if ( FEELPP_HAS_PARAVIEW )
