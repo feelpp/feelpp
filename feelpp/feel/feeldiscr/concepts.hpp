@@ -26,6 +26,19 @@
  * @brief C++20 concepts for Feel++ discretization (function spaces, elements, DOFs)
  * @author Christophe Prud'homme
  * @date 2026-01-02
+ *
+ * This header provides C++20 concepts specific to discretization, replacing
+ * SFINAE patterns in feeldiscr/*.hpp files.
+ *
+ * Related concept files:
+ * - feelcore/concepts.hpp: Base concepts (Iterable, SharedPtr, ScalarConcept, etc.)
+ * - feelmesh/concepts.hpp: Mesh concepts (MeshElement, MeshFace, Simplex, etc.)
+ * - feelpoly/concepts.hpp: Polynomial/basis concepts (Basis, NodalBasis, ModalBasis, etc.)
+ * - feelvf/concepts.hpp: Variational formulation concepts (VfExpr, ScalarExpr, etc.)
+ *
+ * @note Some concepts here have richer versions in other modules. For example:
+ * - VfExpr here is simplified; feelvf/concepts.hpp has a more complete version
+ * - Mesh here is minimal; feelmesh/concepts.hpp has a more complete version
  */
 #ifndef FEELPP_FEELDISCR_CONCEPTS_HPP
 #define FEELPP_FEELDISCR_CONCEPTS_HPP 1
@@ -247,6 +260,397 @@ concept Preconditioner = requires(T t) {
 };
 
 //
+// Mesh Entity Type Concepts
+//
+
+/**
+ * @brief Check if T is a mesh element type for mesh M
+ *
+ * @details Used to dispatch operations based on mesh entity type.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<std::is_same_v<T, typename M::element_type>>
+ *
+ * @example
+ * @code
+ * template <MeshEntityElement<mesh_type> EntityT>
+ * auto localDof(EntityT const& elt) const { return this->localDof(elt.id()); }
+ * @endcode
+ */
+template <typename T, typename M>
+concept MeshEntityElement = requires {
+    typename std::decay_t<M>::element_type;
+    requires std::is_same_v<std::decay_t<T>, typename std::decay_t<M>::element_type>;
+};
+
+/**
+ * @brief Check if T is a mesh face type for mesh M
+ */
+template <typename T, typename M>
+concept MeshEntityFace = requires {
+    typename std::decay_t<M>::face_type;
+    requires std::is_same_v<std::decay_t<T>, typename std::decay_t<M>::face_type>;
+};
+
+/**
+ * @brief Check if T is a mesh edge type for mesh M
+ */
+template <typename T, typename M>
+concept MeshEntityEdge = requires {
+    typename std::decay_t<M>::edge_type;
+    requires std::is_same_v<std::decay_t<T>, typename std::decay_t<M>::edge_type>;
+};
+
+/**
+ * @brief Check if T is a mesh point type for mesh M
+ */
+template <typename T, typename M>
+concept MeshEntityPoint = requires {
+    typename std::decay_t<M>::point_type;
+    requires std::is_same_v<std::decay_t<T>, typename std::decay_t<M>::point_type>;
+};
+
+//
+// Dimension Concepts
+//
+
+/**
+ * @brief Shape has specific topological dimension D
+ *
+ * @details Used for dimension-based dispatch in mesh operations.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<TheShape::nDim == D>
+ *
+ * @example
+ * @code
+ * template <typename TheShape = GeoShape>
+ *     requires Shape2D<TheShape>
+ * void updateCommonDataInEntities();
+ * @endcode
+ */
+template <typename T, int D>
+concept ShapeWithDim = requires {
+    { T::nDim } -> std::convertible_to<int>;
+    requires (T::nDim == D);
+};
+
+/**
+ * @brief A 0-dimensional shape (point)
+ */
+template <typename T>
+concept Shape0D = ShapeWithDim<T, 0>;
+
+/**
+ * @brief A 1-dimensional shape (edge/segment)
+ */
+template <typename T>
+concept Shape1D = ShapeWithDim<T, 1>;
+
+/**
+ * @brief A 2-dimensional shape (triangle, quadrilateral)
+ */
+template <typename T>
+concept Shape2D = ShapeWithDim<T, 2>;
+
+/**
+ * @brief A 3-dimensional shape (tetrahedron, hexahedron)
+ */
+template <typename T>
+concept Shape3D = ShapeWithDim<T, 3>;
+
+//
+// Function Space Property Concepts
+//
+
+/**
+ * @brief A composite function space (product of spaces)
+ *
+ * @details Composite spaces combine multiple function spaces.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<TT::is_composite>
+ */
+template <typename T>
+concept CompositeSpace = FunctionSpace<T> && requires {
+    { T::is_composite } -> std::convertible_to<bool>;
+    requires (T::is_composite == true);
+};
+
+/**
+ * @brief A non-composite (simple) function space
+ *
+ * @details Simple function spaces represent a single approximation space.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<!TT::is_composite>
+ */
+template <typename T>
+concept NonCompositeSpace = FunctionSpace<T> && requires {
+    { T::is_composite } -> std::convertible_to<bool>;
+    requires (T::is_composite == false);
+};
+
+/**
+ * @brief A function space with modal basis
+ *
+ * @details Modal bases use orthogonal polynomial bases (Legendre, etc.)
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<B::is_modal>
+ */
+template <typename T>
+concept ModalBasisSpace = requires {
+    { T::is_modal } -> std::convertible_to<bool>;
+    requires (T::is_modal == true);
+};
+
+/**
+ * @brief A function space with nodal basis
+ *
+ * @details Nodal bases use Lagrange-type bases with DOFs at nodes.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<!B::is_modal>
+ */
+template <typename T>
+concept NodalBasisSpace = requires {
+    { T::is_modal } -> std::convertible_to<bool>;
+    requires (T::is_modal == false);
+};
+
+//
+// Field Type Concepts
+//
+
+// Forward declarations for base types (defined in feelpoly/traits.hpp)
+struct ScalarBase;
+struct VectorialBase;
+struct Tensor2Base;
+struct Tensor2SymmBase;
+
+/**
+ * @brief A scalar field element
+ *
+ * @details Scalar fields have a single component at each point.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<is_scalar_field_v<T>>
+ *
+ * @example
+ * @code
+ * template <typename T>
+ *     requires ScalarField<T>
+ * void processScalarField(T const& field);
+ * @endcode
+ */
+template <typename T>
+concept ScalarField = std::is_base_of_v<ScalarBase, std::decay_t<T>>;
+
+/**
+ * @brief A vectorial field element
+ *
+ * @details Vectorial fields have multiple components (e.g., velocity).
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<is_vector_field_v<T>>
+ */
+template <typename T>
+concept VectorialField = std::is_base_of_v<VectorialBase, std::decay_t<T>>;
+
+/**
+ * @brief A tensor2 (matrix) field element
+ *
+ * @details Tensor2 fields represent rank-2 tensors (e.g., stress tensor).
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<is_tensor2_field_v<T>>
+ */
+template <typename T>
+concept Tensor2Field = std::is_base_of_v<Tensor2Base, std::decay_t<T>>;
+
+/**
+ * @brief A symmetric tensor2 field element
+ *
+ * @details Symmetric tensor fields exploit symmetry for storage/computation.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<is_tensor2symm_field_v<T>>
+ */
+template <typename T>
+concept Tensor2SymmField = std::is_base_of_v<Tensor2SymmBase, std::decay_t<T>>;
+
+/**
+ * @brief Any matrix-type field (tensor2 or symmetric tensor2)
+ *
+ * @details Combines tensor2 and symmetric tensor2 fields.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<is_tensor2_field_v<T> || is_tensor2symm_field_v<T>>
+ */
+template <typename T>
+concept MatrixField = Tensor2Field<T> || Tensor2SymmField<T>;
+
+//
+// Range Entity Concepts
+//
+
+/**
+ * @brief A range over mesh elements
+ *
+ * @details Ranges that iterate over volumetric mesh elements.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<RangeType::isOnElements()>
+ *
+ * @example
+ * @code
+ * template <RangeOnElements RangeType>
+ * void dofs(RangeType const& rangeElt, std::vector<size_type>& dofIds) const;
+ * @endcode
+ */
+template <typename T>
+concept RangeOnElements = requires {
+    { T::isOnElements() } -> std::convertible_to<bool>;
+    requires T::isOnElements();
+};
+
+/**
+ * @brief A range over mesh faces
+ *
+ * @details Ranges that iterate over mesh faces (boundary or internal).
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<RangeType::isOnFaces()>
+ */
+template <typename T>
+concept RangeOnFaces = requires {
+    { T::isOnFaces() } -> std::convertible_to<bool>;
+    requires T::isOnFaces();
+};
+
+/**
+ * @brief A range over mesh edges
+ *
+ * @details Ranges that iterate over mesh edges (1D entities).
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<RangeType::isOnEdges()>
+ */
+template <typename T>
+concept RangeOnEdges = requires {
+    { T::isOnEdges() } -> std::convertible_to<bool>;
+    requires T::isOnEdges();
+};
+
+/**
+ * @brief A range over mesh points
+ *
+ * @details Ranges that iterate over mesh vertices/nodes.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<RangeType::isOnPoints()>
+ */
+template <typename T>
+concept RangeOnPoints = requires {
+    { T::isOnPoints() } -> std::convertible_to<bool>;
+    requires T::isOnPoints();
+};
+
+//
+// Interpolation Entity Concepts
+//
+
+// Forward declaration for ElementsType enum
+enum class ElementsType;
+
+/**
+ * @brief Interpolation type that operates on mesh elements
+ *
+ * @details Used in operatorinterpolation.hpp for entity-based dispatch.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS>
+ */
+template <typename T>
+concept InterpolationOnElements = requires {
+    { T::onEntity() };
+    // Note: Compile-time check depends on ElementsType enum definition
+};
+
+/**
+ * @brief Interpolation type that operates on mesh faces
+ *
+ * @details Used in operatorinterpolation.hpp for face-based interpolation.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_FACES>
+ */
+template <typename T>
+concept InterpolationOnFaces = requires {
+    { T::onEntity() };
+};
+
+/**
+ * @brief Interpolation type that operates on mesh edges
+ */
+template <typename T>
+concept InterpolationOnEdges = requires {
+    { T::onEntity() };
+};
+
+//
+// Conformity Concepts
+//
+
+/**
+ * @brief H(div) conforming basis (e.g., Raviart-Thomas)
+ *
+ * @details H(div) conforming spaces ensure normal continuity across faces.
+ * Replaces SFINAE patterns checking is_hdiv_conforming.
+ *
+ * @example
+ * @code
+ * template <HdivConforming FEType>
+ * void computeDivergence(FEType const& fe);
+ * @endcode
+ */
+template <typename T>
+concept HdivConforming = requires {
+    { T::is_hdiv_conforming } -> std::convertible_to<bool>;
+    requires (T::is_hdiv_conforming == true);
+};
+
+/**
+ * @brief H(curl) conforming basis (e.g., Nedelec)
+ *
+ * @details H(curl) conforming spaces ensure tangential continuity across edges.
+ * Replaces SFINAE patterns checking is_hcurl_conforming.
+ */
+template <typename T>
+concept HcurlConforming = requires {
+    { T::is_hcurl_conforming } -> std::convertible_to<bool>;
+    requires (T::is_hcurl_conforming == true);
+};
+
+/**
+ * @brief H1 conforming (continuous) basis
+ *
+ * @details H1 conforming spaces ensure full continuity across element boundaries.
+ */
+template <typename T>
+concept H1Conforming = requires {
+    { T::is_continuous } -> std::convertible_to<bool>;
+    requires (T::is_continuous == true);
+};
+
+//
+// Expression Concepts
+//
+
+// Forward declaration for ExprBase (defined in feelvf)
+struct ExprBase;
+
+/**
+ * @brief A variational formulation expression
+ *
+ * @details VF expressions are used in bilinear/linear forms.
+ * Replaces SFINAE patterns like:
+ * std::enable_if_t<std::is_base_of_v<ExprBase, T>>
+ *
+ * @example
+ * @code
+ * template <VfExpr ExprT>
+ * void addExpression(ExprT&& expr);
+ * @endcode
+ */
+template <typename T>
+concept VfExpr = std::is_base_of_v<ExprBase, std::decay_t<T>>;
+
+//
 // Backward Compatibility Bridges
 //
 
@@ -261,6 +665,66 @@ constexpr bool is_functionspace_element_v = FunctionSpaceElement<T>;
 
 template <typename T>
 constexpr bool is_product_space_v = ProductSpace<T>;
+
+// Field type concept bridges
+template <typename T>
+constexpr bool is_scalar_field_concept_v = ScalarField<T>;
+
+template <typename T>
+constexpr bool is_vector_field_concept_v = VectorialField<T>;
+
+template <typename T>
+constexpr bool is_tensor2_field_concept_v = Tensor2Field<T>;
+
+template <typename T>
+constexpr bool is_matrix_field_concept_v = MatrixField<T>;
+
+// Mesh entity concept bridges
+template <typename T, typename M>
+constexpr bool is_mesh_element_type_v = MeshEntityElement<T, M>;
+
+template <typename T, typename M>
+constexpr bool is_mesh_face_type_v = MeshEntityFace<T, M>;
+
+template <typename T, typename M>
+constexpr bool is_mesh_edge_type_v = MeshEntityEdge<T, M>;
+
+// Dimension concept bridges
+template <typename T>
+constexpr bool is_shape_0d_v = Shape0D<T>;
+
+template <typename T>
+constexpr bool is_shape_1d_v = Shape1D<T>;
+
+template <typename T>
+constexpr bool is_shape_2d_v = Shape2D<T>;
+
+template <typename T>
+constexpr bool is_shape_3d_v = Shape3D<T>;
+
+// Function space property bridges
+template <typename T>
+constexpr bool is_composite_space_v = CompositeSpace<T>;
+
+template <typename T>
+constexpr bool is_modal_basis_v = ModalBasisSpace<T>;
+
+template <typename T>
+constexpr bool is_nodal_basis_v = NodalBasisSpace<T>;
+
+// Conformity concept bridges
+template <typename T>
+constexpr bool is_hdiv_conforming_concept_v = HdivConforming<T>;
+
+template <typename T>
+constexpr bool is_hcurl_conforming_concept_v = HcurlConforming<T>;
+
+template <typename T>
+constexpr bool is_h1_conforming_concept_v = H1Conforming<T>;
+
+// VfExpr concept bridge
+template <typename T>
+constexpr bool is_vf_expr_concept_v = VfExpr<T>;
 
 #endif // FEELPP_ENABLE_CONCEPT_COMPATIBILITY
 

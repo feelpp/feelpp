@@ -868,10 +868,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType,typename EType>
+    requires EType::is_vectorial
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
-                                                                       grad_array_type& v,
-                                                                       std::enable_if_t<EType::is_vectorial>* ) const
+                                                                       grad_array_type& v ) const
 {
     index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
