@@ -9,7 +9,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABELS "testsuite;testinterpolation")
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testinterpolation")
 
 feelpp_add_test( interpolation_type )
 feelpp_add_test( form_interpolation NO_MPI_TEST )

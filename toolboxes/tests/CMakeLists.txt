@@ -26,9 +26,21 @@ project(testsuite-toolboxes)
 set(PROJECT_SHORTNAME "test")
 message(STATUS "[feelpp-toolboxes::tests] mpiexec: ${MPIEXEC}")
 enable_testing()
+include(CTest)
+
+# Label toolboxes tests to allow targeted ctest runs
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-toolboxes")
+
+if ( NOT TARGET testsuite-toolboxes )
+  add_custom_target(testsuite-toolboxes
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-toolboxes --test-dir ${CMAKE_BINARY_DIR}
+    USES_TERMINAL
+  )
+endif()
 
 if ( NOT TARGET testsuite )
-    add_custom_target( testsuite )
+  add_custom_target(testsuite)
+  add_dependencies(testsuite testsuite-toolboxes)
 endif()
 
 option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)

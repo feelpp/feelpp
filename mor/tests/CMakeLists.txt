@@ -26,9 +26,21 @@ project(testsuite-mor)
 set(PROJECT_SHORTNAME "test")
 message(STATUS "[feelpp-mor::tests] mpiexec: ${MPIEXEC}")
 enable_testing()
+include(CTest)
+
+# Label MOR tests to allow targeted ctest runs
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-mor")
+
+if ( NOT TARGET testsuite-mor )
+  add_custom_target(testsuite-mor
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-mor --test-dir ${CMAKE_BINARY_DIR}
+    USES_TERMINAL
+  )
+endif()
 
 if ( NOT TARGET testsuite )
-    add_custom_target( testsuite )
+  add_custom_target(testsuite)
+  add_dependencies(testsuite testsuite-mor)
 endif()
 
 option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)
