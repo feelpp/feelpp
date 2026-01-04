@@ -308,11 +308,13 @@ local componentCacheVars = {
   },
   toolboxes: {
     FEELPP_COMPONENT: 'toolboxes',
+    FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
   },
   mor: {
     FEELPP_COMPONENT: 'mor',
     FEELPP_ENABLE_RESEARCH: 'OFF',
     FEELPP_ENABLE_OPENTURNS: 'ON',
+    FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
   },
   python: {
     FEELPP_COMPONENT: 'python',
