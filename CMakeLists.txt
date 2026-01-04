@@ -210,6 +210,9 @@ add_custom_target(install-testcase
   )
 
 add_custom_target(check-full COMMAND "ctest")
+if(FEELPP_ENABLE_TESTS AND NOT TARGET testsuite)
+  add_custom_target(testsuite)
+endif()
 
 include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
 
@@ -245,10 +248,6 @@ endif()
 #include(feelpp.module.pyfeelpp)
 if ( FEELPP_ENABLE_FEELPP_PYTHON )
   add_subdirectory(python)
-endif()
-
-if ( FEELPP_ENABLE_TESTS )
-  add_custom_target(testsuite)
 endif()
 
 #
