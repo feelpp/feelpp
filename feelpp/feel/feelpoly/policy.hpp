@@ -31,7 +31,7 @@
 #define FEELPP_FEELPOLY_POLICY_HPP 1
 
 
-#include <boost/mpl/vector.hpp>
+#include <Eigen/Core>
 
 // clang-format off
 #include <feel/feelcore/warnoff.hpp>
@@ -41,12 +41,11 @@
 #include <feel/feelcore/warnon.hpp>
 // clang-format on
 
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/find.hpp>
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/traits.hpp>
+#include <feel/feelpoly/meta.hpp>
+#include <feel/feelpoly/concepts.hpp>
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
@@ -65,19 +64,19 @@ enum transformation_type { LINEAR, BILINEAR,  NONLINEAR };
 template<uint16_type Dim>
 struct Scalar : public ScalarBase
 {
-    static const uint16_type rank = 0;
-    static const uint16_type nDim = Dim;
+    static constexpr uint16_type rank = 0;
+    static constexpr uint16_type nDim = Dim;
 
-    static inline const bool is_scalar = true;
-    static inline const bool is_vectorial = false;
-    static inline const bool is_tensor2 = false;
-    static inline const bool is_tensor3 = false;
+    static constexpr bool is_scalar = true;
+    static constexpr bool is_vectorial = false;
+    static constexpr bool is_tensor2 = false;
+    static constexpr bool is_tensor3 = false;
 
-    static const uint16_type nComponents = 1;
-    static const uint16_type nComponents1 = 1;
-    static const uint16_type nComponents2 = 1;
-    static const uint16_type nComponents3 = 1;
-    static const uint16_type nComponentsLast = 1;
+    static constexpr uint16_type nComponents = 1;
+    static constexpr uint16_type nComponents1 = 1;
+    static constexpr uint16_type nComponents2 = 1;
+    static constexpr uint16_type nComponents3 = 1;
+    static constexpr uint16_type nComponentsLast = 1;
 
     template<typename T>
     static
@@ -93,6 +92,22 @@ struct Scalar : public ScalarBase
     {
         return __c;
     }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toMatrix( Eigen::MatrixBase<Derived> const& __c )
+    {
+        return __c.eval();
+    }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toType( Eigen::MatrixBase<Derived> const& __c )
+    {
+        return __c.eval();
+    }
 };
 
 
@@ -104,19 +119,19 @@ struct Scalar : public ScalarBase
 template<uint16_type Dim>
 struct Vectorial : public VectorialBase
 {
-    static const uint16_type rank = 1;
-    static const uint16_type nDim = Dim;
+    static constexpr uint16_type rank = 1;
+    static constexpr uint16_type nDim = Dim;
 
-    static inline const bool is_scalar = false;
-    static inline const bool is_vectorial = true;
-    static inline const bool is_tensor2 = false;
-    static inline const bool is_tensor3 = false;
+    static constexpr bool is_scalar = false;
+    static constexpr bool is_vectorial = true;
+    static constexpr bool is_tensor2 = false;
+    static constexpr bool is_tensor3 = false;
 
-    static const uint16_type nComponents = nDim;
-    static const uint16_type nComponents1 = nDim;
-    static const uint16_type nComponents2 = 1;
-    static const uint16_type nComponents3 = 1;
-    static const uint16_type nComponentsLast = nComponents1;
+    static constexpr uint16_type nComponents = nDim;
+    static constexpr uint16_type nComponents1 = nDim;
+    static constexpr uint16_type nComponents2 = 1;
+    static constexpr uint16_type nComponents3 = 1;
+    static constexpr uint16_type nComponentsLast = nComponents1;
     template<typename T>
     static
     ublas::matrix<T>
@@ -187,6 +202,57 @@ struct Vectorial : public VectorialBase
 
         return __c_reshaped;
     }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toMatrix( Eigen::MatrixBase<Derived> const& __c )
+    {
+        using value_type = typename Derived::Scalar;
+        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
+        const Eigen::Index nRows = __c.rows() / comp;
+        const Eigen::Index nCols = __c.cols();
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
+            nRows, comp * nCols );
+
+        for ( Eigen::Index c = 0; c < comp; ++c )
+        {
+            for ( Eigen::Index r = 0; r < nRows; ++r )
+            {
+                __c_reshaped.block( r, c * nCols, 1, nCols ) =
+                    __c.row( r * comp + c );
+            }
+        }
+
+        return __c_reshaped;
+    }
+
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toType( Eigen::MatrixBase<Derived> const& __c )
+    {
+        using value_type = typename Derived::Scalar;
+        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
+        const Eigen::Index inRows = __c.rows();
+        const Eigen::Index inCols = __c.cols();
+        const Eigen::Index outRows = inRows * comp;
+        const Eigen::Index outCols = inCols / comp;
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
+            outRows, outCols );
+
+        for ( Eigen::Index c = 0; c < comp; ++c )
+        {
+            for ( Eigen::Index r = 0; r < inRows; ++r )
+            {
+                __c_reshaped.block( r * comp + c, 0, 1, outCols ) =
+                    __c.block( r, c * outCols, 1, outCols );
+            }
+        }
+
+        return __c_reshaped;
+    }
 };
 
 /**
@@ -198,20 +264,20 @@ namespace detail
 template<uint16_type N, uint16_type M>
 struct Field
 {
-    static const uint16_type rank = ( M > 1 );
-    static const uint16_type nDim = N;
-    static const uint16_type nVariables = N;
+    static constexpr uint16_type rank = ( M > 1 );
+    static constexpr uint16_type nDim = N;
+    static constexpr uint16_type nVariables = N;
 
-    static inline const bool is_scalar = ( M==1 );
-    static inline const bool is_vectorial = ( N==M );
-    static inline const bool is_tensor2 = false;
-    static inline const bool is_tensor3 = false;
+    static constexpr bool is_scalar = ( M==1 );
+    static constexpr bool is_vectorial = ( N==M );
+    static constexpr bool is_tensor2 = false;
+    static constexpr bool is_tensor3 = false;
 
-    static const uint16_type nComponents = M;
-    static const uint16_type nComponents1 = M;
-    static const uint16_type nComponents2 = 1;
-    static const uint16_type nComponents3 = 1;
-    static const uint16_type nComponentsLast = 1;
+    static constexpr uint16_type nComponents = M;
+    static constexpr uint16_type nComponents1 = M;
+    static constexpr uint16_type nComponents2 = 1;
+    static constexpr uint16_type nComponents3 = 1;
+    static constexpr uint16_type nComponentsLast = 1;
 
     template<typename T>
     static
@@ -226,6 +292,22 @@ struct Field
     toType( ublas::matrix<T> const&  __c )
     {
         return __c;
+    }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toMatrix( Eigen::MatrixBase<Derived> const& __c )
+    {
+        return __c.eval();
+    }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toType( Eigen::MatrixBase<Derived> const& __c )
+    {
+        return __c.eval();
     }
 };
 }
@@ -248,19 +330,19 @@ struct Field
 template<uint16_type Dim>
 struct Tensor2 : public Tensor2Base
 {
-    static const uint16_type rank = 2;
-    static const uint16_type nDim = Dim;
+    static constexpr uint16_type rank = 2;
+    static constexpr uint16_type nDim = Dim;
 
-    static inline const bool is_scalar = false;
-    static inline const bool is_vectorial = false;
-    static inline const bool is_tensor2 = true;
-    static inline const bool is_tensor3 = false;
+    static constexpr bool is_scalar = false;
+    static constexpr bool is_vectorial = false;
+    static constexpr bool is_tensor2 = true;
+    static constexpr bool is_tensor3 = false;
 
-    static const uint16_type nComponents = nDim*nDim;
-    static const uint16_type nComponents1 = nDim;
-    static const uint16_type nComponents2 = nDim;
-    static const uint16_type nComponents3 = 1;
-    static const uint16_type nComponentsLast = nComponents2;
+    static constexpr uint16_type nComponents = nDim*nDim;
+    static constexpr uint16_type nComponents1 = nDim;
+    static constexpr uint16_type nComponents2 = nDim;
+    static constexpr uint16_type nComponents3 = 1;
+    static constexpr uint16_type nComponentsLast = nComponents2;
 
     template<typename T>
     static
@@ -325,6 +407,71 @@ struct Tensor2 : public Tensor2Base
                                 ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
                                         ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
                                         ublas::range( c2*nCols, ( c2+1 )*nCols ) );
+            }
+        }
+
+        return __c_reshaped;
+    }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toMatrix( Eigen::MatrixBase<Derived> const& __c )
+    {
+        using value_type = typename Derived::Scalar;
+        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
+        const Eigen::Index nRows = __c.rows();
+        const Eigen::Index nCols = __c.cols();
+        const Eigen::Index nRows1 = nCols * comp;
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
+            nRows / comp, nCols * comp );
+
+        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
+        {
+            const Eigen::Index i1 = nRows1 * c1;
+            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
+            {
+                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
+                {
+                    const Eigen::Index srcRow = i1 + c2 + r * comp;
+                    const Eigen::Index dstRow = i1 / comp + r;
+                    __c_reshaped.block( dstRow, c2 * nCols, 1, nCols ) =
+                        __c.row( srcRow );
+                }
+            }
+        }
+
+        return __c_reshaped;
+    }
+
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toType( Eigen::MatrixBase<Derived> const& __c )
+    {
+        using value_type = typename Derived::Scalar;
+        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
+        const Eigen::Index inRows = __c.rows();
+        const Eigen::Index inCols = __c.cols();
+        const Eigen::Index outRows = inRows * comp;
+        const Eigen::Index nRows1 = inCols;
+        const Eigen::Index outCols = inCols / comp;
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
+            outRows, outCols );
+
+        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
+        {
+            const Eigen::Index i1 = nRows1 * c1;
+            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
+            {
+                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
+                {
+                    const Eigen::Index srcRow = i1 / comp + r;
+                    const Eigen::Index dstRow = i1 + c2 + r * comp;
+                    __c_reshaped.block( dstRow, 0, 1, outCols ) =
+                        __c.block( srcRow, c2 * outCols, 1, outCols );
+                }
             }
         }
 
@@ -342,19 +489,19 @@ struct Tensor2SymmBase : Tensor2Base {};
 template<uint16_type Dim>
 struct Tensor2Symm : public Tensor2SymmBase
 {
-    static const uint16_type rank = 2;
-    static const uint16_type nDim = Dim;
+    static constexpr uint16_type rank = 2;
+    static constexpr uint16_type nDim = Dim;
 
-    static inline const bool is_scalar = false;
-    static inline const bool is_vectorial = false;
-    static inline const bool is_tensor2 = true;
-    static inline const bool is_tensor3 = false;
+    static constexpr bool is_scalar = false;
+    static constexpr bool is_vectorial = false;
+    static constexpr bool is_tensor2 = true;
+    static constexpr bool is_tensor3 = false;
 
-    static const uint16_type nComponents = nDim*nDim;
-    static const uint16_type nComponents1 = nDim;
-    static const uint16_type nComponents2 = nDim;
-    static const uint16_type nComponents3 = 1;
-    static const uint16_type nComponentsLast = nComponents2;
+    static constexpr uint16_type nComponents = nDim*nDim;
+    static constexpr uint16_type nComponents1 = nDim;
+    static constexpr uint16_type nComponents2 = nDim;
+    static constexpr uint16_type nComponents3 = 1;
+    static constexpr uint16_type nComponentsLast = nComponents2;
 
     template<typename T>
     static
@@ -424,6 +571,71 @@ struct Tensor2Symm : public Tensor2SymmBase
 
         return __c_reshaped;
     }
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toMatrix( Eigen::MatrixBase<Derived> const& __c )
+    {
+        using value_type = typename Derived::Scalar;
+        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
+        const Eigen::Index nRows = __c.rows();
+        const Eigen::Index nCols = __c.cols();
+        const Eigen::Index nRows1 = nCols * comp;
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
+            nRows / comp, nCols * comp );
+
+        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
+        {
+            const Eigen::Index i1 = nRows1 * c1;
+            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
+            {
+                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
+                {
+                    const Eigen::Index srcRow = i1 + c2 + r * comp;
+                    const Eigen::Index dstRow = i1 / comp + r;
+                    __c_reshaped.block( dstRow, c2 * nCols, 1, nCols ) =
+                        __c.row( srcRow );
+                }
+            }
+        }
+
+        return __c_reshaped;
+    }
+
+    template<typename Derived>
+    requires EigenMatrix<Derived>
+    static
+    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+    toType( Eigen::MatrixBase<Derived> const& __c )
+    {
+        using value_type = typename Derived::Scalar;
+        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
+        const Eigen::Index inRows = __c.rows();
+        const Eigen::Index inCols = __c.cols();
+        const Eigen::Index outRows = inRows * comp;
+        const Eigen::Index nRows1 = inCols;
+        const Eigen::Index outCols = inCols / comp;
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
+            outRows, outCols );
+
+        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
+        {
+            const Eigen::Index i1 = nRows1 * c1;
+            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
+            {
+                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
+                {
+                    const Eigen::Index srcRow = i1 / comp + r;
+                    const Eigen::Index dstRow = i1 + c2 + r * comp;
+                    __c_reshaped.block( dstRow, 0, 1, outCols ) =
+                        __c.block( srcRow, c2 * outCols, 1, outCols );
+                }
+            }
+        }
+
+        return __c_reshaped;
+    }
 };
 
 /**
@@ -432,7 +644,7 @@ struct Tensor2Symm : public Tensor2SymmBase
  */
 template<typename T>
 struct is_symm
-    : mpl::bool_<std::is_base_of_v<Tensor2SymmBase,T>>
+    : bool_c<std::is_base_of_v<Tensor2SymmBase,T>>
 {
 };
 
@@ -444,15 +656,15 @@ template<typename T>
 constexpr bool is_symm_v = std::is_base_of_v<Tensor2SymmBase,T>;
 
 template<typename T>
-using is_scalar_t = mpl::bool_<std::is_base_of_v<ScalarBase,T>>;
+using is_scalar_t = bool_c<std::is_base_of_v<ScalarBase,T>>;
 template<typename T>
 constexpr bool is_scalar_v = std::is_base_of_v<ScalarBase,T>;
 template<typename T>
-using is_vectorial_t = mpl::bool_<std::is_base_of_v<VectorialBase,T>>;
+using is_vectorial_t = bool_c<std::is_base_of_v<VectorialBase,T>>;
 template<typename T>
 constexpr bool is_vectorial_v = std::is_base_of_v<VectorialBase,T>;
 template<typename T>
-using is_tensor2_t = mpl::bool_<std::is_base_of_v<Tensor2Base,T>>;
+using is_tensor2_t = bool_c<std::is_base_of_v<Tensor2Base,T>>;
 template<typename T>
 constexpr bool is_tensor2_v = std::is_base_of_v<Tensor2Base,T>;
 
@@ -464,34 +676,32 @@ constexpr bool is_tensor2_v = std::is_base_of_v<Tensor2Base,T>;
 template<uint16_type Dim>
 struct Tensor3
 {
-    static const uint16_type rank = 3;
-    static const uint16_type nDim = Dim;
+    static constexpr uint16_type rank = 3;
+    static constexpr uint16_type nDim = Dim;
 
-    static inline const bool is_scalar = false;
-    static inline const bool is_vectorial = false;
-    static inline const bool is_tensor2 = false;
-    static inline const bool is_tensor3 = true;
+    static constexpr bool is_scalar = false;
+    static constexpr bool is_vectorial = false;
+    static constexpr bool is_tensor2 = false;
+    static constexpr bool is_tensor3 = true;
 
-    static const uint16_type nComponents = nDim*nDim*nDim;
-    static const uint16_type nComponents1 = nDim;
-    static const uint16_type nComponents2 = nDim;
-    static const uint16_type nComponents3 = nDim;
-    static const uint16_type nComponentsLast = nComponents3;
+    static constexpr uint16_type nComponents = nDim*nDim*nDim;
+    static constexpr uint16_type nComponents1 = nDim;
+    static constexpr uint16_type nComponents2 = nDim;
+    static constexpr uint16_type nComponents3 = nDim;
+    static constexpr uint16_type nComponentsLast = nComponents3;
 };
 
 template<int Dim>
 struct ListReturnTypes
 {
-    typedef mpl::vector<Scalar<Dim>, Vectorial<Dim>, Tensor2<Dim>, Tensor3<Dim> > return_types;
+    using return_types = type_list<Scalar<Dim>, Vectorial<Dim>, Tensor2<Dim>, Tensor3<Dim> >;
 };
 template<typename T1, typename T2>
 struct ReturnSelect
 {
-    typedef typename mpl::if_<boost::is_same<T1, T2>,
-            mpl::identity<T1>,
-            typename mpl::if_<mpl::greater<mpl::int_<T1::rank>, mpl::int_<T2::rank> >,
-            mpl::identity<T1>,
-            mpl::identity<T2> >::type>::type::type type;
+    using type = if_t<std::is_same_v<T1, T2>,
+                      T1,
+                      if_t<(T1::rank > T2::rank), T1, T2>>;
 };
 
 enum EnumIndex
@@ -504,12 +714,12 @@ enum EnumIndex
     FUNCTION_INDEX
 };
 
-const mpl::int_<GLOBAL_COMPONENT> INDEX_GLOBAL_COMPONENT = mpl::int_<GLOBAL_COMPONENT>();
-const mpl::int_<COMPONENT_IN_COMPONENT> INDEX_COMPONENT_IN_COMPONENT = mpl::int_<COMPONENT_IN_COMPONENT>() ;
-const mpl::int_<GLOBAL_FUNCTION_INDEX> INDEX_GLOBAL_FUNCTION_INDEX = mpl::int_<GLOBAL_FUNCTION_INDEX>();
-const mpl::int_<PER_COMPONENT_FUNCTION_INDEX> INDEX_PER_COMPONENT_FUNCTION_INDEX = mpl::int_<PER_COMPONENT_FUNCTION_INDEX>();
-const mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX> INDEX_COMPONENT_IN_COMPONENT_FUNCTION_INDEX = mpl::int_<COMPONENT_IN_COMPONENT_FUNCTION_INDEX>();
-const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>();
+inline constexpr int_c<GLOBAL_COMPONENT> INDEX_GLOBAL_COMPONENT{};
+inline constexpr int_c<COMPONENT_IN_COMPONENT> INDEX_COMPONENT_IN_COMPONENT{};
+inline constexpr int_c<GLOBAL_FUNCTION_INDEX> INDEX_GLOBAL_FUNCTION_INDEX{};
+inline constexpr int_c<PER_COMPONENT_FUNCTION_INDEX> INDEX_PER_COMPONENT_FUNCTION_INDEX{};
+inline constexpr int_c<COMPONENT_IN_COMPONENT_FUNCTION_INDEX> INDEX_COMPONENT_IN_COMPONENT_FUNCTION_INDEX{};
+inline constexpr int_c<FUNCTION_INDEX> INDEX_FUNCTION_INDEX{};
 
 
 /**
@@ -522,27 +732,16 @@ const mpl::int_<FUNCTION_INDEX> INDEX_FUNCTION_INDEX = mpl::int_<FUNCTION_INDEX>
 template<typename T>
 struct GetComponent
 {
-    static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim> > types;
-#if 0
-    typedef typename mpl::find<types, T>::type iter;
-    typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-            mpl::identity<Scalar<nDim> >,
-            mpl::identity<typename mpl::deref<typename mpl::prior<iter>::type>::type> >::type::type type;
-#else
-    typedef typename mpl::if_<boost::is_same<T, Scalar<nDim> >,
-                              mpl::identity<Scalar<nDim> >,
-                              typename mpl::if_<boost::is_same<T, Vectorial<nDim> >,
-                                                mpl::identity<Vectorial<nDim> >,
-                                                typename mpl::if_<boost::is_same<T, Tensor2<nDim> >,
-                                                                  mpl::identity<Tensor2<nDim> >,
-                                                                  typename mpl::if_<boost::is_same<T, Tensor2Symm<nDim> >,
-                                                                                    mpl::identity<Tensor2Symm<nDim> >
-                                                                                    >::type
-                                                                  >::type
-                                                >::type
-                              >::type::type type;
-#endif
+    static constexpr uint16_type nDim = T::nDim;
+    using type = if_t<std::is_same_v<T, Scalar<nDim> >,
+                      Scalar<nDim>,
+                      if_t<std::is_same_v<T, Vectorial<nDim> >,
+                           Vectorial<nDim>,
+                           if_t<std::is_same_v<T, Tensor2<nDim> >,
+                                Tensor2<nDim>,
+                                if_t<std::is_same_v<T, Tensor2Symm<nDim> >,
+                                     Tensor2Symm<nDim>,
+                                     mp::mp_void<>>>>>;
 };
 
 /**
@@ -555,64 +754,61 @@ struct GetComponent
 template<typename T>
 struct RankUp
 {
-    static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
-    typedef typename mpl::find<types, T>::type iter;
-    typedef typename mpl::deref<typename mpl::next<iter>::type>::type type;
+    static constexpr uint16_type nDim = T::nDim;
+    using types = type_list<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> >;
+    static constexpr std::size_t index = mp::mp_find<types, T>::value;
+    using type = mp::mp_at_c<types, index + 1>;
 };
 
 template<typename T>
 struct RankUp2
 {
-    static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
-
-    typedef typename mpl::find<types, T>::type iter;
-    typedef typename mpl::deref<typename mpl::next<typename mpl::next<iter>::type>::type>::type type;
+    static constexpr uint16_type nDim = T::nDim;
+    using types = type_list<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> >;
+    static constexpr std::size_t index = mp::mp_find<types, T>::value;
+    using type = mp::mp_at_c<types, index + 2>;
 };
 
 template<typename T>
 struct RankDown2
 {
-    static const uint16_type nDim = T::nDim;
-    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
-
-    typedef typename mpl::find<types, T>::type iter;
-    typedef typename mpl::deref<typename mpl::prior<typename mpl::prior<iter>::type>::type>::type type;
+    static constexpr uint16_type nDim = T::nDim;
+    using types = type_list<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> >;
+    static constexpr std::size_t index = mp::mp_find<types, T>::value;
+    using type = mp::mp_at_c<types, index - 2>;
 };
 
 template<typename T>
 struct RankSame
 {
-    static const uint16_type nDim = T::nDim;
+    static constexpr uint16_type nDim = T::nDim;
     typedef T type;
 };
 template<typename T>
 struct Rank0
 {
-    static const uint16_type nDim = T::nDim;
+    static constexpr uint16_type nDim = T::nDim;
     typedef Scalar<nDim> type;
 };
 template<typename T>
 struct Rank1
 {
-    static const uint16_type nDim = T::nDim;
+    static constexpr uint16_type nDim = T::nDim;
     typedef Vectorial<nDim> type;
 };
 
 template<typename T>
 struct RankDown
 {
-    static const uint16_type nDim = T::nDim;
-    typedef typename mpl::if_<boost::is_base_of<Tensor2SymmBase,T>,
-                              mpl::identity<mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2Symm<nDim>, Tensor3<nDim>>>,
-                              mpl::identity<mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>>>
-                              >::type::type types;
-    typedef typename mpl::find<types, T>::type iter;
-    typedef typename mpl::deref<typename mpl::prior<iter>::type>::type _type;
-    typedef typename mpl::if_<boost::is_same<_type,mpl::void_>,
-            mpl::identity<Scalar<nDim> >,
-            mpl::identity<_type> >::type::type type;
+    static constexpr uint16_type nDim = T::nDim;
+    using types = if_t<std::is_base_of_v<Tensor2SymmBase,T>,
+                       type_list<Scalar<nDim>, Vectorial<nDim>, Tensor2Symm<nDim>, Tensor3<nDim>>,
+                       type_list<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim>>>;
+    static constexpr std::size_t index = mp::mp_find<types, T>::value;
+    using type = mp::mp_eval_if_c<(index == 0),
+                                  Scalar<nDim>,
+                                  mp::mp_at,
+                                  types, mp::mp_size_t<index - 1>>;
 };
 template<typename T>
 using rankdown_t = typename RankDown<T>::type;
@@ -620,10 +816,9 @@ using rankdown_t = typename RankDown<T>::type;
 template<typename T>
 struct RankCurl
 {
-    static const uint16_type nDim = T::nDim;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
-                              RankSame<T>,RankDown<T> >::type::type type;
-    static const uint16_type value = (nDim==3)?3:1;
+    static constexpr uint16_type nDim = T::nDim;
+    typedef typename if_t<( nDim == 3 ), RankSame<T>, RankDown<T> >::type type;
+    static constexpr uint16_type value = ( nDim == 3 ) ? 3 : 1;
 };
 
 /**
@@ -634,7 +829,7 @@ struct RankCurl
 template<bool normalized>
 struct Normalized
 {
-    static inline const bool is_normalized = normalized;
+    static constexpr bool is_normalized = normalized;
 };
 
 /**
@@ -654,6 +849,22 @@ struct StorageUBlas
     typedef typename matrix_node<value_type>::type points_type;
     typedef typename node<value_type>::type node_type;
 
+};
+
+/**
+ * Storage Policy using Eigen for numerical type \p T
+ */
+template<typename T>
+struct StorageEigen
+{
+    using value_type = T;
+    using vector_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
+    using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+    using vector_matrix_type = ublas::vector<matrix_type>;
+    using vector_vector_matrix_type = ublas::vector<vector_matrix_type>;
+    using matrix_node_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+    using points_type = matrix_node_type;
+    using node_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
 };
 
 } // Feel

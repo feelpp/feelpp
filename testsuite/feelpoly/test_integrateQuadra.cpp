@@ -20,13 +20,12 @@
 */
 /// [all]
 
-#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_integrateQuadra
+#include <boost/test/data/test_case.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/testsuite.hpp>
-#endif
-
-
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/integrate.hpp>
@@ -50,222 +49,106 @@ makeAbout()
                      "0.2",
                      "test integrate Quadra",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
+                     "Copyright (c) 2015-2026 Feel++ Consortium" );
 
-    about.addAuthor( "Thomas Lantz", "student", "", "" );
+    about.addAuthor( "Christophe Prud'homme", "christophe.prudhomme@feelpp.org", "", "" );
     return about;
 }
 
-class Test
+namespace bdata = boost::unit_test::data;
+
+class IntegrateQuadraFixture
 {
- public :
-       
-    void run(std::string s)
+public:
+    using mesh_type = Mesh<Hypercube<2>>;
+    using mesh_ptrtype = typename mesh_type::mesh_ptrtype;
 
-        {
-            /// [mesh] 
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                        _desc=domain(_name="polymere",
-                                                     _xmax=1,
-                                                     _ymax=1));
+    IntegrateQuadraFixture()
+        : mesh( createGMSHMesh( _mesh=new mesh_type,
+                                 _desc=domain( _name="polymere", _xmax=1, _ymax=1 ) ) )
+    {
+        // Ensure repository exists for GiNaC-generated sources
+        Feel::Environment::changeRepository( _directory=boost::format( "test_integrateQuadra" ), _subdir=false );
+        const auto repoDir = Feel::Environment::repository().directory();
+        fs::create_directories( repoDir / "exprs" );
+        fs::create_directories( fs::path( Feel::Environment::exprRepository() ) );
+    }
 
-  
-            /// [expression]
-            // our function to integrate
-            auto g = expr( s  );
-
-            /// [integrals]
-            // compute on \Omega
-            auto intf_1 = integrate( _range = elements( mesh ),
-                                     _expr = g,
-                                     _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
-            auto intf_12 = integrate( _range = elements( mesh ),
-                                      _expr = g).evaluate();
-            // compute on boundary
-            auto intf_2 = integrate( _range = boundaryfaces( mesh ),
-                                     _expr = g,
-                                     _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
-            auto intf_22 = integrate( _range = boundaryfaces( mesh ),
-                                      _expr = g).evaluate();
-    
-            // compute integral of grad f
-            auto grad_g = grad<2>(g);
-            auto intgrad_f = integrate( _range = elements( mesh ),
-                                        _expr = grad_g,
-                                        _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
-            auto intgrad_f2 = integrate( _range = elements( mesh ),
-                                         _expr = grad_g).evaluate();
-
-            // values view    
-            std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
-                      << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
-                      << "int_Omega grad " << g << " = "
-                      << "int_Omega  " << grad_g << " = "
-                      << intgrad_f  << std::endl;
-
-            BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 5 );
-            BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 5 );
-
-            std::cout <<"" << std::endl;
-
-        }
-    
-    void resol(std::string s)
-
-        {
-            /// [mesh] 
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                        _desc=domain(_name="polymere",
-                                                     _xmax=1,
-                                                     _ymax=1));
-
-            auto Vh = Pch<1>( mesh );
-            auto u=Vh->element();
-            auto v=Vh->element();
-         
-            /// [expression]
-            // our function to integrate
-            auto g = expr( s );
-            auto gProj = vf::project( _space=Vh, _range=elements( mesh ), _expr=g);
-
-            auto a = form2( _trial=Vh, _test=Vh );
-            a=integrate( _range=elements( mesh ),
-                         _expr=idt(u)*id(v),
-                         _quad=_Q<1,MultiScaleQuadrature>() );
-
-            auto l = form1( _test=Vh );
-            l= integrate( _range=elements( mesh ),
-                          _expr=g*id(v),
-                          _quad=_Q<1,MultiScaleQuadrature>() ); 
-       
-            a.solve( _rhs=l, _solution=u );
-
-            std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(gProj)) << std::endl;
-
-            std::cout <<"" << std::endl;
-
-
-            //        BOOST_CHECK_CLOSE( idv(u), idv(gProj), 1e-2 );
-        }
-
-
+    mesh_ptrtype mesh;
 };
 
-#if defined(USE_BOOST_TEST)
+namespace
+{
+constexpr double kTolerancePct = 5.0;
+
+const std::vector<std::string> kRunExprs = {
+    "x:x:y",
+    "x+y:x:y",
+    "cos(x)*sin(y):x:y",
+    "y*exp(x):x:y"};
+
+const std::vector<std::string> kResolExprs = {
+    "sin(x):x:y",
+    "x+y:x:y",
+    "x*y:x:y",
+    "cos(x*y):x:y"};
+} // namespace
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
 BOOST_AUTO_TEST_SUITE( integrQuadra_suite )
 
-BOOST_AUTO_TEST_CASE( test_run0 )
+BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, integrals_match_default_and_multiscale,
+                        bdata::make( kRunExprs ), exprString )
 {
-    Test t0 ;
-    t0.run("x:x:y");
+    auto g = expr( exprString );
+
+    auto int_volume_msq = integrate( _range=elements( mesh ),
+                                     _expr=g,
+                                     _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
+    auto int_volume_std = integrate( _range=elements( mesh ),
+                                     _expr=g ).evaluate();
+
+    auto int_boundary_msq = integrate( _range=boundaryfaces( mesh ),
+                                       _expr=g,
+                                       _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
+    auto int_boundary_std = integrate( _range=boundaryfaces( mesh ),
+                                       _expr=g ).evaluate();
+
+    BOOST_TEST_CONTEXT( "expr=" << exprString )
+    {
+        BOOST_CHECK_CLOSE( int_volume_msq( 0, 0 ), int_volume_std( 0, 0 ), kTolerancePct );
+        BOOST_CHECK_CLOSE( int_boundary_msq( 0, 0 ), int_boundary_std( 0, 0 ), kTolerancePct );
+    }
 }
 
-
-BOOST_AUTO_TEST_CASE( test_run1 ) 
+BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, projection_matches_quadrature,
+                        bdata::make( kResolExprs ), exprString )
 {
-    Test t1 ;
-    t1.run("x*x:x:y");
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    auto g = expr( exprString );
+    auto gProj = vf::project( _space=Vh, _range=elements( mesh ), _expr=g );
+
+    auto a = form2( _trial=Vh, _test=Vh );
+    // Use a higher-order multi-scale quadrature to reduce projection error
+    a = integrate( _range=elements( mesh ),
+                   _expr=idt( u )*id( v ),
+                   _quad=_Q<3,MultiScaleQuadrature>() );
+
+    auto l = form1( _test=Vh );
+    l = integrate( _range=elements( mesh ),
+                   _expr=g*id( v ),
+                   _quad=_Q<3,MultiScaleQuadrature>() );
+
+    a.solve( _rhs=l, _solution=u );
+
+    const auto diff = normL2( _range=elements( mesh ), _expr=idv( u )-idv( gProj ) );
+    BOOST_TEST_CONTEXT( "expr=" << exprString )
+    {
+        BOOST_CHECK_SMALL( diff, 1e-3 );
+    }
 }
-
-
-BOOST_AUTO_TEST_CASE( test_run2 )
-{
-    Test t2 ;
-    t2.run("x*x*x*x*x:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run3 )
-{
-    Test t3 ;
-    t3.run("x+y:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run4 )
-{
-    Test t4 ;
-    t4.run("cos(x)*sin(y):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run5 )
-{
-    Test t5 ;
-    t5.run("cos(x*y):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run6 )
-{
-    Test t6 ;
-    t6.run("tan(x*x*x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run7 )
-{
-    Test t7 ;
-    t7.run("y*exp(x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol0 )
-{
-    Test t0 ;
-    t0.resol("sin(x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol1 )
-{
-    Test t1 ;
-    t1.resol("x*x*x*x:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol2 )
-{
-    Test t2 ;
-    t2.resol("x+y:x:y");
-}
-
-BOOST_AUTO_TEST_CASE( test_resol3 )
-{
-    Test t3 ;
-    t3.resol("x*y:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol4 )
-{
-    Test t4 ;
-    t4.resol("cos(x)*sin(y):x:y");
-}
-
-BOOST_AUTO_TEST_CASE( test_resol5 )
-{
-    Test t5 ;
-    t5.resol("cos(x*y):x:y");
-}
-
-BOOST_AUTO_TEST_CASE( test_resol6 )
-{
-    Test t6 ;
-    t6.resol("tan(x*x*x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol7 )
-{
-    Test t7 ;
-    t7.resol("y*exp(x):x:y");
-}
-
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-std::cout << "USE_BOOST_TEST non define" << std::endl;
-#endif
-

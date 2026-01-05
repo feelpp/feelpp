@@ -368,7 +368,7 @@ pow( ExprT1 && __e1, ExprT2 && __e2 )
  * @ingroup DSEL-Variational-Formulation
  */
 template<typename ExprT1, typename ExprT2>
-    requires VfExpr<ExprT1> || VfExpr<ExprT2>
+    requires VfExprConcept<ExprT1> || VfExprConcept<ExprT2>
 inline
 auto
 operator^( ExprT1 && __e1, ExprT2 && __e2 )

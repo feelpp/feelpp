@@ -24,6 +24,8 @@
 #ifndef __FEELPP_POLY_TRAITS_HPP
 #define __FEELPP_POLY_TRAITS_HPP 1
 
+#include <concepts>
+
 #include <feel/feelmesh/traits.hpp>
 
 namespace Feel
@@ -66,6 +68,23 @@ struct is_tensor2_polynomial : std::is_base_of<Tensor2Base, T>::type {};
 
 template<typename T>
 using is_matrix_polynomial = is_tensor2_polynomial<T>;
+
+template<typename T>
+concept ScalarPolynomialType = is_scalar_polynomial<T>::value;
+
+template<typename T>
+concept VectorPolynomialType = is_vector_polynomial<T>::value;
+
+template<typename T>
+concept Tensor2PolynomialType = is_tensor2_polynomial<T>::value;
+
+template<typename T>
+concept LinearPolynomialType = is_linear_polynomial_v<T>;
+
+template<typename T>
+concept PolynomialOrderable = requires {
+    { T::order() } -> std::convertible_to<int>;
+};
 
 template<typename T>
 using local_interpolant_t = typename decay_type<T>::local_interpolant_type;

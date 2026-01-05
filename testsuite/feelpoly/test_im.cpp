@@ -30,6 +30,8 @@
 #define BOOST_TEST_MODULE integration methods test
 // Boost.Test
 #include <boost/test/unit_test.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/mpl/list.hpp>
 using boost::unit_test::test_suite;
 #include <feel/feelcore/testsuite.hpp>
 
@@ -388,6 +390,8 @@ public:
 #if 1
 //FEELPP_ENVIRONMENT_NO_OPTIONS
 // automatically registered test cases could be organized in test suites
+namespace bdata = boost::unit_test::data;
+
 BOOST_FIXTURE_TEST_SUITE( im1d_double_suite, F )
 BOOST_AUTO_TEST_CASE( im1d_test1 )
 {
@@ -521,328 +525,85 @@ BOOST_AUTO_TEST_CASE( im2d_test6 )
 
 
 }
-BOOST_AUTO_TEST_CASE( im2d_face_test1 )
+template<int Order>
+void run_im2d_face_suite()
 {
-    TestImPK<2,1, double> t0( Feel::FACE_1, 2.0 , one<double> );
+    TestImPK<2,Order, double> t1( Feel::FACE_1, 2.0 , one<double> );
+    t1();
+    TestImPK<2,Order, double> t0( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
     t0();
-    TestImPK<2,1, double> t1( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
-    t1();
-    TestImPK<2,1, double> t2( Feel::FACE_2, 2.0 , one<double> );
-    t2();
-}
-BOOST_AUTO_TEST_CASE( im2d_face_test2 )
-{
-    TestImPK<2,2, double> t0( Feel::FACE_1, 2.0 , one<double> );
-    t0();
-    TestImPK<2,2, double> t1( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
-    t1();
-    TestImPK<2,2, double> t2( Feel::FACE_2, 2.0 , one<double> );
-    t2();
-}
-BOOST_AUTO_TEST_CASE( im2d_face_test3 )
-{
-    TestImPK<2,3, double> t0( Feel::FACE_1, 2.0 , one<double> );
-    t0();
-    TestImPK<2,3, double> t1( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
-    t1();
-    TestImPK<2,3, double> t2( Feel::FACE_2, 2.0 , one<double> );
-    t2();
-}
-BOOST_AUTO_TEST_CASE( im2d_face_test4 )
-{
-    TestImPK<2,4, double> t0( Feel::FACE_1, 2.0 , one<double> );
-    t0();
-    TestImPK<2,4, double> t1( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
-    t1();
-    TestImPK<2,4, double> t2( Feel::FACE_2, 2.0 , one<double> );
-    t2();
-}
-BOOST_AUTO_TEST_CASE( im2d_face_test5 )
-{
-    TestImPK<2,5, double> t0( Feel::FACE_1, 2.0 , one<double> );
-    t0();
-    TestImPK<2,5, double> t1( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
-    t1();
-    TestImPK<2,5, double> t2( Feel::FACE_2, 2.0 , one<double> );
-    t2();
-}
-BOOST_AUTO_TEST_CASE( im2d_face_test6 )
-{
-    TestImPK<2,6, double> t0( Feel::FACE_1, 2.0 , one<double> );
-    t0();
-    TestImPK<2,6, double> t1( Feel::FACE_0, Feel::math::sqrt( double( 8.0 ) ) , one<double> );
-    t1();
-    TestImPK<2,6, double> t2( Feel::FACE_2, 2.0 , one<double> );
+    TestImPK<2,Order, double> t2( Feel::FACE_2, 2.0 , one<double> );
     t2();
 }
 
-BOOST_AUTO_TEST_CASE( im3d_test1 )
-{
-    const int N = 2;
+typedef boost::mpl::list<
+    boost::mpl::int_<1>,
+    boost::mpl::int_<2>,
+    boost::mpl::int_<3>,
+    boost::mpl::int_<4>,
+    boost::mpl::int_<5>,
+    boost::mpl::int_<6>> im2d_face_orders;
 
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
+BOOST_AUTO_TEST_CASE_TEMPLATE( im2d_face_tests, T, im2d_face_orders )
+{
+    run_im2d_face_suite<T::value>();
+}
+
+template<int Order>
+void run_im3d_volume_suite()
+{
+    for ( int alpha1 = 0; alpha1 <= Order-2; ++alpha1 )
     {
         int alpha2 = 1;
         int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test2 )
-{
-    const int N = 3;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test3 )
-{
-    const int N = 4;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test5 )
-{
-    const int N = 5;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test6 )
-{
-    const int N = 6;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test7 )
-{
-    const int N = 7;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test11 )
-{
-    const int N = 11;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test13 )
-{
-    const int N = 13;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test15 )
-{
-    const int N = 15;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test17 )
-{
-    const int N = 17;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test19 )
-{
-    const int N = 19;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_test20 )
-{
-    const int N = 20;
-
-    for ( int alpha1 = 0; alpha1 <= N-2; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = 1;
-        TestImPK<3,N, double> t10( P3N<double>( alpha1, alpha2, alpha3 ).integral(), P3N<double>( alpha1, alpha2, alpha3 ), 5e-13 );
-        t10();
+        TestImPK<3,Order, double> t( P3N<double>( alpha1, alpha2, alpha3 ).integral(),
+                                     P3N<double>( alpha1, alpha2, alpha3 ),
+                                     5e-13 );
+        t();
     }
 }
 
-BOOST_AUTO_TEST_CASE( im3d_face_test1 )
+typedef boost::mpl::list<
+    boost::mpl::int_<2>, boost::mpl::int_<3>, boost::mpl::int_<4>,
+    boost::mpl::int_<5>, boost::mpl::int_<6>, boost::mpl::int_<7>,
+    boost::mpl::int_<11>, boost::mpl::int_<13>, boost::mpl::int_<15>,
+    boost::mpl::int_<17>, boost::mpl::int_<19>, boost::mpl::int_<20>> im3d_orders;
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( im3d_volume_tests, T, im3d_orders )
 {
-    TestImPK<3,1, double> t1( Feel::FACE_2, 2.0 , one<double> );
+    run_im3d_volume_suite<T::value>();
+}
+
+template<int Order>
+void run_im3d_face_suite()
+{
+    TestImPK<3,Order, double> t1( Feel::FACE_2, 2.0 , one<double> );
     t1();
-    TestImPK<3,1, double> t2( Feel::FACE_1, 2.0 , one<double> );
+    TestImPK<3,Order, double> t2( Feel::FACE_1, 2.0 , one<double> );
     t2();
-    TestImPK<3,1, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
+    TestImPK<3,Order, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
     t3();
-    TestImPK<3,1, double> t4( Feel::FACE_3, 2.0 , one<double> );
+    TestImPK<3,Order, double> t4( Feel::FACE_3, 2.0 , one<double> );
     t4();
 
-    const int N = 1;
-
-    for ( int alpha1 = 0; alpha1 < N-1; ++ alpha1 )
+    for ( int alpha1 = 0; alpha1 < Order-1; ++alpha1 )
     {
         int alpha2 = 1;
-        int alpha3 = N-1-alpha1;
-        TestImPK<3,N, double> t10( Feel::FACE_3, P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ), P3N<double>( alpha1, alpha2, alpha3 ) );
-        t10();
-    }
-
-}
-
-BOOST_AUTO_TEST_CASE( im3d_face_test2 )
-{
-    const int N = 2;
-    TestImPK<3,N, double> t1( Feel::FACE_2, 2.0 , one<double> );
-    t1();
-    TestImPK<3,N, double> t2( Feel::FACE_1, 2.0 , one<double> );
-    t2();
-    TestImPK<3,N, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
-    t3();
-    TestImPK<3,N, double> t4( Feel::FACE_3, 2.0 , one<double> );
-    t4();
-
-    for ( int alpha1 = 0; alpha1 < N-1; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = N-1-alpha1;
-        TestImPK<3,N, double> t10( Feel::FACE_3, P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ), P3N<double>( alpha1, alpha2, alpha3 ) );
+        int alpha3 = Order-1-alpha1;
+        TestImPK<3,Order, double> t10( Feel::FACE_3,
+                                       P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ),
+                                       P3N<double>( alpha1, alpha2, alpha3 ) );
         t10();
     }
 }
-BOOST_AUTO_TEST_CASE( im3d_face_test3 )
-{
-    const int N = 3;
-    TestImPK<3,N, double> t1( Feel::FACE_2, 2.0 , one<double> );
-    t1();
-    TestImPK<3,N, double> t2( Feel::FACE_1, 2.0 , one<double> );
-    t2();
-    TestImPK<3,N, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
-    t3();
-    TestImPK<3,N, double> t4( Feel::FACE_3, 2.0 , one<double> );
-    t4();
 
-    for ( int alpha1 = 0; alpha1 < N-1; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = N-1-alpha1;
-        TestImPK<3,N, double> t10( Feel::FACE_3, P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ), P3N<double>( alpha1, alpha2, alpha3 ) );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_face_test4 )
-{
-    const int N = 4;
-    TestImPK<3,N, double> t1( Feel::FACE_2, 2.0 , one<double> );
-    t1();
-    TestImPK<3,N, double> t2( Feel::FACE_1, 2.0 , one<double> );
-    t2();
-    TestImPK<3,N, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
-    t3();
-    TestImPK<3,N, double> t4( Feel::FACE_3, 2.0 , one<double> );
-    t4();
+typedef boost::mpl::list<
+    boost::mpl::int_<1>, boost::mpl::int_<2>, boost::mpl::int_<3>,
+    boost::mpl::int_<4>, boost::mpl::int_<5>, boost::mpl::int_<6>> im3d_face_orders;
 
-    for ( int alpha1 = 0; alpha1 < N-1; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = N-1-alpha1;
-        TestImPK<3,N, double> t10( Feel::FACE_3, P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ), P3N<double>( alpha1, alpha2, alpha3 ) );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_face_test5 )
+BOOST_AUTO_TEST_CASE_TEMPLATE( im3d_face_tests, T, im3d_face_orders )
 {
-    const int N = 5;
-    TestImPK<3,N, double> t1( Feel::FACE_2, 2.0 , one<double> );
-    t1();
-    TestImPK<3,N, double> t2( Feel::FACE_1, 2.0 , one<double> );
-    t2();
-    TestImPK<3,N, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
-    t3();
-    TestImPK<3,N, double> t4( Feel::FACE_3, 2.0 , one<double> );
-    t4();
-
-    for ( int alpha1 = 0; alpha1 < N-1; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = N-1-alpha1;
-        TestImPK<3,N, double> t10( Feel::FACE_3, P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ), P3N<double>( alpha1, alpha2, alpha3 ) );
-        t10();
-    }
-}
-BOOST_AUTO_TEST_CASE( im3d_face_test6 )
-{
-    const int N = 6;
-    TestImPK<3,N, double> t1( Feel::FACE_2, 2.0 , one<double> );
-    t1();
-    TestImPK<3,N, double> t2( Feel::FACE_1, 2.0 , one<double> );
-    t2();
-    TestImPK<3,N, double> t3( Feel::FACE_0, 2.0*Feel::math::sqrt( double( 3.0 ) ), one<double> );
-    t3();
-    TestImPK<3,N, double> t4( Feel::FACE_3, 2.0 , one<double> );
-    t4();
-
-    for ( int alpha1 = 0; alpha1 < N-1; ++ alpha1 )
-    {
-        int alpha2 = 1;
-        int alpha3 = N-1-alpha1;
-        TestImPK<3,N, double> t10( Feel::FACE_3, P3N<double>( alpha1, alpha2, alpha3 ).integral( FACE_3 ), P3N<double>( alpha1, alpha2, alpha3 ) );
-        t10();
-    }
+    run_im3d_face_suite<T::value>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

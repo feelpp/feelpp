@@ -221,7 +221,7 @@ class Tresca
 /**
  * \brief compute the Tresca yield criterion
  */
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 inline Expr<Tresca<ExprT>>
 tresca( ExprT v )
 {

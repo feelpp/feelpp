@@ -20,26 +20,57 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ */
 /**
    \file test_imsimplex.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-06-19
  */
+
+#define BOOST_TEST_MODULE test_imsimplex
+#include <boost/test/data/test_case.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelpoly/im.hpp>
 
+namespace bdata = boost::unit_test::data;
+using namespace Feel;
 
-int main( int argc, char** argv )
+static const std::vector<uint16_type> kOrders = {0, 1, 2, 3, 5, 10};
+
+template<int Dim>
+void check_imsimplex_order( uint16_type order )
 {
-    
-    using namespace Feel;
-    Environment env( argc, argv );
+  IMSimplex<Dim,double> im;
+  im.create( order );
 
-    IMSimplex<2,double> im2;
-    for( int q = 0; q < 20; q++ )
-        im2.create(q);
+  BOOST_TEST_CONTEXT( "dim=" << Dim << " order=" << order )
+  {
+    BOOST_CHECK( im.nPoints() > 0 );
+    BOOST_CHECK_EQUAL( im.weights().size(), im.nPoints() );
 
-    IMSimplex<3,double> im3;
-    for( int q = 0; q < 20; q++ )
-        im3.create(q);
+    if ( im.weights().size() > 0 )
+      BOOST_CHECK_GT( im.weightsSum(), 0.0 );
+
+    if constexpr ( Dim > 1 )
+    {
+      BOOST_CHECK( im.nFaces() > 0 );
+      BOOST_CHECK( im.nPointsOnFace( 0 ) > 0 );
+    }
+  }
 }
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( imsimplex_suite )
+
+BOOST_DATA_TEST_CASE( imsimplex_2d_orders, bdata::make( kOrders ), order )
+{
+  check_imsimplex_order<2>( order );
+}
+
+BOOST_DATA_TEST_CASE( imsimplex_3d_orders, bdata::make( kOrders ), order )
+{
+  check_imsimplex_order<3>( order );
+}
+
+BOOST_AUTO_TEST_SUITE_END()

@@ -374,11 +374,11 @@ constexpr bool has_symbolic_diff_v = has_symbolic_diff_type<T,diffOrder,TheSymbo
 template<typename ExprT>
 class Expr;
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT const& exprt );
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT && exprt );
 
@@ -988,14 +988,14 @@ private:
 };
 
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT const& exprt )
 {
     return Expr<ExprT>( exprt );
 }
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT && exprt )
 {

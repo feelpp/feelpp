@@ -64,19 +64,19 @@ namespace Feel
  * @example
  * @code
  * // Functions accepting any vf expression
- * template <VfExpr E>
+ * template <VfExprConcept E>
  * auto integrate(E&& expr, Range const& range);
- * 
- * template <VfExpr E>
+ *
+ * template <VfExprConcept E>
  * auto project(E&& expr, FunctionSpace const& space);
- * 
+ *
  * // Concept-constrained operator overloads
- * template <VfExpr E1, VfExpr E2>
+ * template <VfExprConcept E1, VfExprConcept E2>
  * auto operator+(E1&& e1, E2&& e2);
  * @endcode
  */
 template <typename T>
-concept VfExpr = requires(T t) {
+concept VfExprConcept = requires(T t) {
     typename T::value_type;
     { t.context };
     { t.is_terminal };
@@ -91,14 +91,14 @@ concept VfExpr = requires(T t) {
  * 
  * @example
  * @code
- * template <EvaluableExpr E>
+ * template <EvaluableExprConcept E>
  * auto precompute(E&& expr) {
  *     return expr.evaluate(true);
  * }
  * @endcode
  */
 template <typename T>
-concept EvaluableExpr = VfExpr<T> && requires(T t) {
+concept EvaluableExprConcept = VfExprConcept<T> && requires(T t) {
     { t.evaluate(true) };
 };
 
@@ -109,7 +109,7 @@ concept EvaluableExpr = VfExpr<T> && requires(T t) {
  * values set dynamically. This is used for parametric studies and optimization.
  */
 template <typename T>
-concept ParametricExpr = VfExpr<T> && requires(T t, std::map<std::string, double> params) {
+concept ParametricExprConcept = VfExprConcept<T> && requires(T t, std::map<std::string, double> params) {
     { t.setParameterValues(params) };
 };
 
@@ -121,7 +121,7 @@ concept ParametricExpr = VfExpr<T> && requires(T t, std::map<std::string, double
  * Newton methods.
  */
 template <typename T, typename SymbolExprType = T>
-concept DifferentiableExpr = VfExpr<T> && requires(T t, std::string varname, SymbolExprType se) {
+concept DifferentiableExprConcept = VfExprConcept<T> && requires(T t, std::string varname, SymbolExprType se) {
     { t.hasSymbolDependency(varname, se) } -> std::convertible_to<bool>;
 };
 
@@ -136,7 +136,7 @@ concept DifferentiableExpr = VfExpr<T> && requires(T t, std::string varname, Sym
  * Examples: constants, temperature fields, pressure
  */
 template <typename T>
-concept ScalarExpr = VfExpr<T> && requires {
+concept ScalarExprConcept = VfExprConcept<T> && requires {
     requires T::rank == 0;
     requires T::nComponents == 1;
 };
@@ -148,7 +148,7 @@ concept ScalarExpr = VfExpr<T> && requires {
  * the spatial dimension. Examples: velocity fields, displacement fields
  */
 template <typename T>
-concept VectorExpr = VfExpr<T> && requires {
+concept VectorExprConcept = VfExprConcept<T> && requires {
     requires T::rank == 1;
     requires T::nComponents > 1;
 };
@@ -160,7 +160,7 @@ concept VectorExpr = VfExpr<T> && requires {
  * deformation gradients, stiffness matrices
  */
 template <typename T>
-concept MatrixExpr = VfExpr<T> && requires {
+concept MatrixExprConcept = VfExprConcept<T> && requires {
     requires T::rank == 2;
 };
 
@@ -168,7 +168,7 @@ concept MatrixExpr = VfExpr<T> && requires {
  * @brief A tensor-valued expression of any rank
  */
 template <typename T>
-concept TensorExpr = VfExpr<T> && requires {
+concept TensorExprConcept = VfExprConcept<T> && requires {
     { T::rank } -> std::convertible_to<int>;
 };
 
@@ -189,13 +189,14 @@ concept RangeConcept = requires(T t) {
 };
 
 /**
- * @brief A quadrature formula
- * 
+ * @brief A quadrature formula for VF expressions
+ *
  * @details Quadrature types define integration rules (Gauss, Lobatto, etc.)
- * and their order.
+ * and their order. This is a simplified version; see feelpoly/concepts.hpp
+ * for the full QuadratureConcept.
  */
 template <typename T>
-concept Quadrature = requires {
+concept VfQuadratureConcept = requires {
     typename T::return_type;
     { T::Degree } -> std::convertible_to<int>;
 } || std::integral<T>; // Allow integer order specifications
@@ -227,7 +228,7 @@ concept LinearFormConcept = requires(T t) {
  * @brief A mesh element iterator or range
  */
 template <typename T>
-concept ElementRange = RangeConcept<T> && requires(T t) {
+concept ElementRangeConcept = RangeConcept<T> && requires(T t) {
     typename std::decay_t<decltype(*t.begin())>::mesh_type;
 };
 
@@ -235,7 +236,7 @@ concept ElementRange = RangeConcept<T> && requires(T t) {
  * @brief A face iterator or range
  */
 template <typename T>
-concept FaceRange = RangeConcept<T> && requires {
+concept FaceRangeConcept = RangeConcept<T> && requires {
     // Faces have mesh_type through their iterator
     requires requires(T t) { typename std::decay_t<decltype(*t.begin())>::mesh_type; };
 };
@@ -271,22 +272,22 @@ concept PreconditionerConcept = requires(T t) {
 
 /**
  * @brief An operator that can be applied to expressions
- * 
+ *
  * @details Examples: grad(), div(), curl(), trace()
  */
 template <typename Op, typename Expr>
-concept UnaryOperator = VfExpr<Expr> && requires(Op op, Expr e) {
-    { op(e) } -> VfExpr;
+concept UnaryOperatorConcept = VfExprConcept<Expr> && requires(Op op, Expr e) {
+    { op(e) } -> VfExprConcept;
 };
 
 /**
  * @brief A binary operator combining two expressions
- * 
+ *
  * @details Examples: +, -, *, inner product, outer product
  */
 template <typename Op, typename E1, typename E2>
-concept BinaryOperator = VfExpr<E1> && VfExpr<E2> && requires(Op op, E1 e1, E2 e2) {
-    { op(e1, e2) } -> VfExpr;
+concept BinaryOperatorConcept = VfExprConcept<E1> && VfExprConcept<E2> && requires(Op op, E1 e1, E2 e2) {
+    { op(e1, e2) } -> VfExprConcept;
 };
 
 //
@@ -295,19 +296,19 @@ concept BinaryOperator = VfExpr<E1> && VfExpr<E2> && requires(Op op, E1 e1, E2 e
 
 #ifdef FEELPP_ENABLE_CONCEPT_COMPATIBILITY
 /**
- * @brief Bridge from old is_vf_expr trait to new VfExpr concept
- * 
+ * @brief Bridge from old is_vf_expr trait to new VfExprConcept concept
+ *
  * @details When legacy code uses is_vf_expr_v<T>, this ensures it works
  * with the new concept-based code.
  */
 template <typename T>
-constexpr bool is_vf_expr_v = VfExpr<T>;
+constexpr bool is_vf_expr_v = VfExprConcept<T>;
 
 template <typename T>
-constexpr bool has_evaluate_without_context_v = EvaluableExpr<T>;
+constexpr bool has_evaluate_without_context_v = EvaluableExprConcept<T>;
 
 template <typename T>
-constexpr bool has_symbolic_parameter_values_v = ParametricExpr<T>;
+constexpr bool has_symbolic_parameter_values_v = ParametricExprConcept<T>;
 #endif
 
 } // namespace Feel

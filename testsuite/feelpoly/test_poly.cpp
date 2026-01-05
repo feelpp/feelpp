@@ -20,26 +20,23 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file test_poly.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-08-17
  */
-#define USE_TEST
-// Boost.Test
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
+/**
+     \file test_poly.cpp
+     \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+     \date 2005-08-17
+ */
 
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
+#define BOOST_TEST_MODULE test_poly
+#include <boost/test/data/test_case.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelpoly/polynomial.hpp>
 #include <feel/feelpoly/operations.hpp>
+#include <cmath>
+#include <vector>
 
+namespace bdata = boost::unit_test::data;
+namespace ublas = boost::numeric::ublas;
 using namespace Feel;
 struct x2
 {
@@ -64,136 +61,81 @@ struct x2
         return v;
     }
 };
-BOOST_AUTO_TEST_CASE( test_polynomial1D )
+
+template<int Dim>
+ublas::matrix<double,ublas::column_major> make_points();
+
+template<>
+ublas::matrix<double,ublas::column_major> make_points<1>()
 {
-
-
     ublas::matrix<double,ublas::column_major> pts( 1, 3 );
     pts( 0,0 ) = 0;
-    //pts(1,0 ) = 0;
     pts( 0,1 ) = -1;
     pts( 0,2 ) = 1;
-    Feel::detail::OrthonormalPolynomialSet<1,1,2,Scalar> ps;
-    Polynomial<Feel::detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<1,3>() );
-    PolynomialSet<Feel::detail::OrthonormalPolynomialSet<1,1,2,Scalar>, Scalar> p( ps );
-    p.insert( p1.toSet( true ) );
-    p.insert( p1.toSet( true ) );
-    std::cout << "p=" << p.coeff() << "\n"
-              << "grad(p)(0)=" << p.gradient().evaluate( pts ) << "\n";
-    std::cout << "hess(p)=" << p.gradient().gradient().coeff() << "\n"
-              << "hess(p)(0)=" << p.gradient().gradient().evaluate( pts ) << "\n";
-
-    std::cout << "hess(p1) = " << p1.toSet( true ).gradient().gradient().evaluate( pts ) << "\n";
+    return pts;
 }
 
-BOOST_AUTO_TEST_CASE( test_polynomial2D )
+template<>
+ublas::matrix<double,ublas::column_major> make_points<2>()
 {
-
-
     ublas::matrix<double,ublas::column_major> pts( 2, 4 );
-    pts( 0,0 ) = -1;
-    pts( 1,0 ) = -1;
-    pts( 0,1 ) =  1;
-    pts( 1,1 ) = -1;
-    pts( 0,2 ) = -1;
-    pts( 1,2 ) =  1;
-    pts( 0,3 ) =  0;
-    pts( 1,3 ) =  0;
-    Feel::detail::OrthonormalPolynomialSet<2,2,2,Scalar> ps;
-    Polynomial<Feel::detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p1 = project( ps, x2(), IM<2,3>() );
-    PolynomialSet<Feel::detail::OrthonormalPolynomialSet<2,2,2,Scalar>, Scalar> p( ps );
-    p.insert( p1.toSet( true ) );
-    p.insert( p1.toSet( true ) );
-    std::cout << "p=" << p.coeff() << "\n"
-              << "grad(p)(0)=" << p.gradient().evaluate( pts ) << "\n";
-    std::cout << "hess(p)=" << p.gradient().gradient().coeff() << "\n"
-              << "hess(p)(0)=" << p.gradient().gradient().evaluate( pts ) << "\n"
-              << "hess(p1) = " << p1.toSet( true ).gradient().gradient().evaluate( pts ) << "\n";
-
-    ublas::matrix<double,ublas::row_major> m = p.gradient().gradient().evaluate( pts );
-    std::cout << "m=" << m << "\n";
-    const int I = p.coeff().size1();
-    const int nDim = 2;
-    const int Q = m.size2();
-    boost::multi_array<double,4> hessian( boost::extents[I][nDim][nDim][Q] );
-    typedef boost::multi_array<double,4>::index index;
-
-    for ( index i = 0; i < I; ++i )
-        for ( index j = 0; j < nDim; ++j )
-            for ( index k = 0; k < nDim; ++k )
-                for ( index q = 0; q < Q; ++q )
-                {
-#if 1
-                    std::cout << "[precompute] hessian["
-                              << i << "]["
-                              << j << "]["
-                              << k << "]["
-                              << q << "]["
-                              << nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k << "]="
-                              << "\n";
-#endif // 0
-
-                    hessian[i][j][k][q] = m( nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k, q );
-
-                    std::cout << hessian[i][j][k][q] << "\n";
-                }
-
-
+    pts( 0,0 ) = -1; pts( 1,0 ) = -1;
+    pts( 0,1 ) =  1; pts( 1,1 ) = -1;
+    pts( 0,2 ) = -1; pts( 1,2 ) =  1;
+    pts( 0,3 ) =  0; pts( 1,3 ) =  0;
+    return pts;
 }
 
-BOOST_AUTO_TEST_CASE( test_polynomial3D )
+template<>
+ublas::matrix<double,ublas::column_major> make_points<3>()
 {
-
-
     ublas::matrix<double,ublas::column_major> pts( 3, 4 );
-
-    //1
-    pts( 0,0 ) = -1;
-    pts( 1,0 ) = -1;
-    pts( 2,0 ) = -1;
-    //2
-    pts( 0,1 ) =  1;
-    pts( 1,1 ) = -1;
-    pts( 2,1 ) = -1;
-    //3
-    pts( 0,2 ) = -1;
-    pts( 1,2 ) =  1;
-    pts( 2,2 ) = -1;
-    // 4
-    pts( 0,3 ) =  0;
-    pts( 1,3 ) =  0;
-    pts( 2,3 ) =  0;
-    Feel::detail::OrthonormalPolynomialSet<3,3,3,Scalar> ps;
-    Polynomial<Feel::detail::OrthonormalPolynomialSet<3,3,3,Scalar>, Scalar> p = project( ps, x2(), IM<3,5>() );
-    std::cout << "p=" << p.toSet().coeff() << "\n"
-              << "grad(p)(0)=" << p.toSet().gradient().evaluate( pts ) << "\n";
-    std::cout << "hess(p)=" << p.toSet().gradient().gradient().coeff() << "\n"
-              << "hess(p)(0)=" << p.toSet().gradient().gradient().evaluate( pts ) << "\n";
-
-
+    pts( 0,0 ) = -1; pts( 1,0 ) = -1; pts( 2,0 ) = -1;
+    pts( 0,1 ) =  1; pts( 1,1 ) = -1; pts( 2,1 ) = -1;
+    pts( 0,2 ) = -1; pts( 1,2 ) =  1; pts( 2,2 ) = -1;
+    pts( 0,3 ) =  0; pts( 1,3 ) =  0; pts( 2,3 ) =  0;
+    return pts;
 }
 
-#if 0
-#if defined(USE_TEST)
-test_suite*
-init_unit_test_suite( int /*argc*/, char** /*argv*/ )
+template<int Dim, int QuadOrder, int PolyOrder>
+void run_polynomial_case()
 {
+    using polyset_type = Feel::detail::OrthonormalPolynomialSet<Dim,Dim,PolyOrder,Scalar>;
 
-    test_suite* test = BOOST_TEST_SUITE( "Polynomial test suite" );
+    auto pts = make_points<Dim>();
+    polyset_type ps;
+    Polynomial<polyset_type, Scalar> p1 = project( ps, x2(), IM<Dim,QuadOrder>() );
+    PolynomialSet<polyset_type, Scalar> p( ps );
+    p.insert( p1.toSet( true ) );
+    p.insert( p1.toSet( true ) );
 
+    const auto grad_vals = p.gradient().evaluate( pts );
+    const auto hess_vals = p.gradient().gradient().evaluate( pts );
 
-    test->add( BOOST_TEST_CASE( test_polynomial1D ) );
-    test->add( BOOST_TEST_CASE( test_polynomial2D ) );
-    //test->add( BOOST_TEST_CASE( test_polynomial3D ) );
-
-    return test;
+    BOOST_TEST_CONTEXT( "dim=" << Dim << " quad=" << QuadOrder )
+    {
+        BOOST_CHECK_GT( p.coeff().size1(), 0 );
+        BOOST_CHECK_EQUAL( grad_vals.size2(), pts.size2() );
+        BOOST_CHECK_EQUAL( hess_vals.size2(), pts.size2() );
+        BOOST_CHECK( std::isfinite( grad_vals( 0, 0 ) ) );
+        BOOST_CHECK( std::isfinite( hess_vals( 0, 0 ) ) );
+    }
 }
-#else
-int main( int argc, char** argv )
+
+using Runner = void(*)();
+static const std::vector<Runner> kPolyRunners = {
+    &run_polynomial_case<1,3,2>,
+    &run_polynomial_case<2,3,2>,
+    &run_polynomial_case<3,5,3>
+};
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( polynomial_suite )
+
+BOOST_DATA_TEST_CASE( polynomial_variants, bdata::make( kPolyRunners ), run_case )
 {
-    test_polynomial1D();
-    //    test_polynomial2D();
-    //test_polynomial3D();
+    run_case();
 }
-#endif
-#endif
+
+BOOST_AUTO_TEST_SUITE_END()

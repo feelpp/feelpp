@@ -262,7 +262,7 @@ class Trace : public ExprDynamicBase
 /**
  * \brief trace of the expression tensor
  */
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 [[nodiscard]] inline Expr<Trace<ExprT>>
 trace( ExprT v )
 {
