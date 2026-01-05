@@ -545,7 +545,19 @@
         {
             "cacheVariables": {
                 "FEELPP_COMPONENT": "toolboxes",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF"
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_CFPDE": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "OFF"
             },
             "description": "Build only the Toolboxes component",
             "displayName": "toolboxes | clang | release | cmake package manager",
