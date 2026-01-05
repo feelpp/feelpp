@@ -1,0 +1,80 @@
+{
+  "@context": [
+    "https://w3id.org/codemeta/3.1",
+    "https://numpex.github.io/sw-catalog/terms-1.0/index.jsonld"
+  ],
+  "type": "SoftwareSourceCode",
+  "name": "Feel++",
+  "description": "Feel++ is an open-source C++ framework for continuous and discontinuous Galerkin methods (FEM/SEM/DG/HDG) and reduced basis methods for parallel PDE simulation in 1D-3D. It includes toolboxes for multiphysics applications (CFD, CSM, heat transfer, FSI, thermo-electric, Maxwell) and model order reduction components.",
+  "url": "https://docs.feelpp.org",
+  "identifier": "https://doi.org/10.5281/zenodo.591797",
+  "keywords": [
+    "finite element",
+    "spectral element",
+    "domain decomposition",
+    "solvers",
+    "DSEL",
+    "mono and multiphysics toolboxes",
+    "model order reduction",
+    "python bindings",
+    "HPC",
+    "HPDA",
+    "MPI",
+    "MT"
+  ],
+  "codeRepository": "https://github.com/feelpp/feelpp",
+  "issueTracker": "https://github.com/feelpp/feelpp/issues",
+  "downloadUrl": "https://github.com/feelpp/feelpp/releases",
+  "documentation": "https://docs.feelpp.org",
+  "discussion": "https://github.com/feelpp/discussions",
+  "license": [
+    "https://spdx.org/licenses/LGPL-3.0-only.html",
+    "https://spdx.org/licenses/GPL-3.0-only.html"
+  ],
+  "version": "v0.111.0-preview.11",
+  "programmingLanguage": [
+    {
+      "type": "ComputerLanguage",
+      "name": "C++"
+    },
+    {
+      "type": "ComputerLanguage",
+      "name": "Python"
+    }
+  ],
+  "author": [
+    {
+      "type": "Person",
+      "givenName": "Christophe",
+      "familyName": "Prud'homme"
+    },
+    {
+      "type": "Person",
+      "givenName": "Vincent",
+      "familyName": "Chabannes"
+    }
+  ],
+  "contributor": [
+    {
+      "type": "Person",
+      "givenName": "Thomas",
+      "familyName": "Saigre"
+    }
+  ],
+  "copyrightHolder": [
+    {
+      "type": "Organization",
+      "name": "UNISTRA"
+    },
+    {
+      "type": "Organization",
+      "name": "CNRS"
+    },
+    {
+      "type": "Organization",
+      "name": "INRIA"
+    }
+  ],
+  "spack_package": "https://github.com/numpex/spack.numpex/blob/main/packages/feelpp/package.py",
+  "guix_package": "https://gitlab.inria.fr/numpex-pc5/wp3/guix-hpc/-/blob/feelpp/guix-hpc/packages/math.scm?ref_type=heads"
+}
