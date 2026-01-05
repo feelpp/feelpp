@@ -22,7 +22,7 @@
 #
 #
 
-set_directory_properties(PROPERTIES LABELS "testsuite;testopt")
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testopt")
 
 # for applications using NLOpt
 if ( FEELPP_HAS_NLOPT )

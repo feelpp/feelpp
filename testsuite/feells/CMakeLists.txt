@@ -22,7 +22,7 @@
 #
 #
 
-set_directory_properties(PROPERTIES LABELS "testsuite;testls")
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testls")
 # foreach(TEST levelset )
 #     feelpp_add_test( ${TEST} )
 # endforeach()
