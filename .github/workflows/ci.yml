@@ -71,17 +71,9 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build and push Feel++ (dev)
+      - name: Build and push Feel++ (dev + runtime)
         working-directory: docker
-        run: docker buildx bake feelpp --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Build and push runtime image
-        if: github.event_name == 'push'
-        working-directory: docker
-        run: docker buildx bake feelpp-runtime --push
+        run: docker buildx bake feelpp feelpp-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -121,17 +113,9 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build and push Toolboxes (dev)
+      - name: Build and push Toolboxes (dev + runtime)
         working-directory: docker
-        run: docker buildx bake toolboxes --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Build and push runtime image
-        if: github.event_name == 'push'
-        working-directory: docker
-        run: docker buildx bake toolboxes-runtime --push
+        run: docker buildx bake toolboxes toolboxes-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -171,17 +155,9 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build and push MOR (dev)
+      - name: Build and push MOR (dev + runtime)
         working-directory: docker
-        run: docker buildx bake mor --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Build and push runtime image
-        if: github.event_name == 'push'
-        working-directory: docker
-        run: docker buildx bake mor-runtime --push
+        run: docker buildx bake mor mor-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -221,17 +197,9 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build and push Python (dev)
+      - name: Build and push Python (dev + runtime)
         working-directory: docker
-        run: docker buildx bake python --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Build and push runtime image
-        if: github.event_name == 'push'
-        working-directory: docker
-        run: docker buildx bake python-runtime --push
+        run: docker buildx bake python python-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
@@ -278,17 +246,9 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
-      - name: Build and push Feel++ Full (dev)
+      - name: Build and push Feel++ Full (dev + runtime)
         working-directory: docker
-        run: docker buildx bake feelpp-full --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Build and push runtime image
-        if: github.event_name == 'push'
-        working-directory: docker
-        run: docker buildx bake feelpp-full-runtime --push
+        run: docker buildx bake feelpp-full feelpp-full-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}

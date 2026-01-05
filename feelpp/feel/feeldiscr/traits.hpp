@@ -50,7 +50,8 @@ using is_mesh = typename std::is_base_of<MeshBase<>,decay_type<MeshType>>::type;
  * if \p MeshType is a shared_ptr of a Mesh then provides the mesh type
  * \note it checks that the \p Mesh is indeed a mesh type and return void if it is not the case.
  */
-template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
+template<typename MeshType>
+    requires std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>
 using mesh_t = decay_type<MeshType>;
 
 

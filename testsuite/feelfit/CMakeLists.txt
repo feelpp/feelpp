@@ -22,7 +22,7 @@
 #
 #
 
-set_directory_properties(PROPERTIES LABELS "testsuite;testfit")
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testfit")
 
 feelpp_add_test( fit_interpolator )
 feelpp_add_test( fit CFG test_fit.cfg )
