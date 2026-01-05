@@ -397,6 +397,9 @@ macro(feelpp_add_test)
           add_test(NAME ${FEELPP_TEST_EXEC}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=all ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
         endif()
         set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
+        # Set PROCESSORS property so ctest knows this test uses NProcs2 slots
+        # This prevents resource contention when running tests in parallel with ctest -j
+        set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY PROCESSORS ${NProcs2})
         if(CMAKE_BUILD_TYPE MATCHES Debug)
           set_tests_properties(${FEELPP_TEST_EXEC}-np-${NProcs2} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
         endif()
