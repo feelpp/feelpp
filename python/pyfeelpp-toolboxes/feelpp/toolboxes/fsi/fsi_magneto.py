@@ -12,7 +12,7 @@ import mpi4py
 mpi4py.rc.thread_level="single"
 import pandas as pd
 import json
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import numpy as np
 
 sys.argv = ['magneto']
