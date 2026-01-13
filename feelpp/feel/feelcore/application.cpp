@@ -72,6 +72,7 @@
 
 #include <feel/feelcore/mpicompat.hpp>
 
+#if !defined(FEELPP_HAS_SPDLOG)
 namespace google
 {
 namespace glog_internal_namespace_
@@ -79,6 +80,7 @@ namespace glog_internal_namespace_
 bool IsGoogleLoggingInitialized();
 }
 }
+#endif
 
 namespace Feel
 {
@@ -217,11 +219,15 @@ Application::Application( int argc,
 #endif
 {
     //M_desc.add( Feel::feel_options() );
+#if !defined(FEELPP_HAS_SPDLOG)
+#if !defined(FEELPP_HAS_SPDLOG)
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
     }
+#endif
+#endif
 
     initMPI( argc, argv, comm );
 
@@ -278,11 +284,13 @@ Application::Application( int argc,
 #endif
 
 {
+#if !defined(FEELPP_HAS_SPDLOG)
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
     }
+#endif
 
     //M_desc.add( Feel::feel_options() ).add( od );
     M_desc.add( od );
@@ -343,11 +351,13 @@ Application::Application( AboutData const& ad,
 #endif
 
 {
+#if !defined(FEELPP_HAS_SPDLOG)
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
     }
+#endif
 
     //M_desc.add( Feel::feel_options() ).add( od );
     M_desc.add( od );
@@ -421,11 +431,13 @@ Application::Application( AboutData const& ad )
 #endif
 
 {
+#if !defined(FEELPP_HAS_SPDLOG)
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         // Initialize Google's logging library.
         google::InitGoogleLogging(M_about.appName().c_str());
     }
+#endif
 #if 1
 
     //

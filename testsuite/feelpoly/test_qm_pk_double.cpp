@@ -36,8 +36,12 @@
 #include <boost/test/unit_test.hpp>
 using boost::unit_test::test_suite;
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <fstream>
 #include <feel/feelpoly/im.hpp>

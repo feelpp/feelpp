@@ -28,10 +28,14 @@
  */
 
 #include <boost/config/warning_disable.hpp>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/phoenix/core.hpp>
+#include <boost/phoenix/operator.hpp>
+#include <boost/phoenix/object.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 #include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/qi_symbols.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
@@ -116,7 +120,19 @@ std::vector<MeshMarkerName> markerMap( int Dim )
     {
         LOG(INFO) << "id {" << emp[i].ids[0] << "," <<  emp[i].ids[1] << "} marker: "<< emp[i].name << "\n";
     }
+#if !defined(FEELPP_HAS_SPDLOG)
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::GLOG_INFO);
+
+    #else
+
+    Logger::flush();
+
+    #endif
+#else
+    Logger::flush();
+#endif
     return emp;
 }
 

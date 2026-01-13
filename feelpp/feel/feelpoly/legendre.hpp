@@ -71,7 +71,7 @@ struct LegendreTraits
     static const uint16_type nRealDim = RealDim;
     static const uint16_type nOrder = Degree;
     static const uint16_type nConvexOrderDiff = nOrder+2;
-    static const bool is_normalized = NormalizationPolicy::is_normalized;
+    static inline const bool is_normalized = NormalizationPolicy::is_normalized;
 
     /** @name Typedefs
      */
@@ -167,10 +167,10 @@ public:
     static const uint16_type nRealDim = RealDim;
     static const uint16_type nOrder = Degree;
     static const uint16_type nConvexOrder = nOrder+2;
-    static const bool is_normalized = NormalizationPolicy::is_normalized;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = false;
-    static const bool is_product = true;
+    static inline const bool is_normalized = NormalizationPolicy::is_normalized;
+    static inline const bool isTransformationEquivalent = true;
+    static inline const bool isContinuous = false;
+    static inline const bool is_product = true;
     typedef Discontinuous continuity_type;
 
     /** @name Typedefs

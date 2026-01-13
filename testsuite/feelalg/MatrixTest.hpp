@@ -29,8 +29,12 @@
 #ifndef __MatrixTest_H
 #define __MatrixTest_H 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelalg/glas.hpp>
 

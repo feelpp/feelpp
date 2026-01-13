@@ -196,12 +196,12 @@ void ExporterXDMF<MeshType, N>::writeHDF5( steps_write_on_disk_type const& steps
                 tic();
                 std::string geofilename = (boost::format("%1%-%2%.geo.h5")% __ts->name() %stepIndex).str();
                 saveMesh(__step->mesh(), geofilename );
-                toc("ExporterXDMF::saveMesh" ,FLAGS_v>1);
+                toc("ExporterXDMF::saveMesh" ,Environment::logVerbosityLevel()>1);
             }
             tic();
             std::string fieldsfilename = (boost::format("%1%-%2%.fields.h5")% __ts->name() %stepIndex).str();
             saveFields(__step, fieldsfilename );
-            toc("ExporterXDMF::saveFields" ,FLAGS_v>1);
+            toc("ExporterXDMF::saveFields" ,Environment::logVerbosityLevel()>1);
         }
     }
 }

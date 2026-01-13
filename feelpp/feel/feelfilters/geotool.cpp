@@ -97,7 +97,11 @@ GeoToolEntitiesStorage::hasSameOrientation( detail::GeoToolLine const& l1, detai
         else
             return false;
     }
-    else CHECK( false ) << "TODO";
+    else
+    {
+        CHECK( false ) << "TODO";
+        return false; // This line should never be reached, but silences the warning
+    }
 }
 
 

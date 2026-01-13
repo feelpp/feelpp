@@ -155,9 +155,10 @@ bindRemoteData( py::module & m )
         .def("worldComm", &RemoteData::worldComm, "get the worldComm" )
         .def("canDownload", &RemoteData::canDownload, "returns true if data/ressource can be downloaded, false otherwise" )
         .def("canUpload", &RemoteData::canUpload, "returns true if data/ressource can be uploaded, false otherwise" )
-        .def("download", static_cast<std::vector<std::string> (RemoteData::*)( std::string const&, std::string const&) const>(&RemoteData::download),
-             py::arg("dir")=Environment::downloadsRepository(),
-             py::arg("filename")=std::string(""),
+        .def("download", [](RemoteData const& self, std::string dir, std::string filename) {
+                 if (dir.empty()) dir = Environment::downloadsRepository();
+                 return self.download(dir, filename);
+             }, py::arg("dir")="", py::arg("filename")="",
              "download the requested data/ressource" )
         .def("download", static_cast<std::vector<std::string> (RemoteData::*)( std::string const&, std::string const&, int) const>(&RemoteData::download),
              py::arg("dir"), py::arg("filename"), py::arg("timeout"),
@@ -207,39 +208,54 @@ bindRemoteData( py::module & m )
     
     // Bind RemoteData::URL class
     py::class_<RemoteData::URL>(m, "RemoteDataURL")
-        .def(py::init<std::string const&, WorldComm&>(),
-             py::arg("url"), py::arg("worldComm")=py::cast(Environment::worldComm(), py::return_value_policy::reference),
+        .def(py::init([](std::string const& url, py::object worldComm) {
+                 if (worldComm.is_none())
+                     return new RemoteData::URL(url, Environment::worldComm());
+                 return new RemoteData::URL(url, worldComm.cast<WorldComm&>());
+             }), py::arg("url"), py::arg("worldComm")=py::none(),
              "Initialize URL handler")
         .def("isValid", &RemoteData::URL::isValid, "return true if the URL is valid")
-        .def("download", &RemoteData::URL::download,
-             py::arg("dir")=Environment::downloadsRepository(), py::arg("filename")=std::string(""),
+        .def("download", [](RemoteData::URL const& self, std::string dir, std::string filename) {
+                 if (dir.empty()) dir = Environment::downloadsRepository();
+                 return self.download(dir, filename);
+             }, py::arg("dir")="", py::arg("filename")="",
              "download a file from the URL")
         ;
     
     // Bind RemoteData::Github class
     py::class_<RemoteData::Github>(m, "RemoteDataGithub")
-        .def(py::init<std::string const&, WorldComm&>(),
-             py::arg("desc"), py::arg("worldComm")=py::cast(Environment::worldComm(), py::return_value_policy::reference),
+        .def(py::init([](std::string const& desc, py::object worldComm) {
+                 if (worldComm.is_none())
+                     return new RemoteData::Github(desc, Environment::worldComm());
+                 return new RemoteData::Github(desc, worldComm.cast<WorldComm&>());
+             }), py::arg("desc"), py::arg("worldComm")=py::none(),
              "Initialize Github handler")
         .def("isInit", &RemoteData::Github::isInit, "return true if Github is initialized")
         .def("canDownload", &RemoteData::Github::canDownload, "return true if can download")
         .def("canUpload", &RemoteData::Github::canUpload, "return true if can upload")
-        .def("download", &RemoteData::Github::download,
-             py::arg("dir")=Environment::downloadsRepository(),
+        .def("download", [](RemoteData::Github const& self, std::string dir) {
+                 if (dir.empty()) dir = Environment::downloadsRepository();
+                 return self.download(dir);
+             }, py::arg("dir")="",
              "download file/folder from Github")
         ;
     
     // Bind RemoteData::Girder class
     py::class_<RemoteData::Girder>(m, "RemoteDataGirder")
-        .def(py::init<std::string const&, WorldComm&>(),
-             py::arg("desc"), py::arg("worldComm")=py::cast(Environment::worldComm(), py::return_value_policy::reference),
+        .def(py::init([](std::string const& desc, py::object worldComm) {
+                 if (worldComm.is_none())
+                     return new RemoteData::Girder(desc, Environment::worldComm());
+                 return new RemoteData::Girder(desc, worldComm.cast<WorldComm&>());
+             }), py::arg("desc"), py::arg("worldComm")=py::none(),
              "Initialize Girder handler")
         .def("setFolderIds", &RemoteData::Girder::setFolderIds, "set folder ids to only one folder id")
         .def("isInit", &RemoteData::Girder::isInit, "return true if Girder is initialized")
         .def("canDownload", &RemoteData::Girder::canDownload, "return true if can download")
         .def("canUpload", &RemoteData::Girder::canUpload, "return true if can upload")
-        .def("download", static_cast<std::vector<std::string> (RemoteData::Girder::*)( std::string const&) const>(&RemoteData::Girder::download),
-             py::arg("dir")=Environment::downloadsRepository(),
+        .def("download", [](RemoteData::Girder const& self, std::string dir) {
+                 if (dir.empty()) dir = Environment::downloadsRepository();
+                 return self.download(dir);
+             }, py::arg("dir")="",
              "download file/folder from Girder")
         .def("download", static_cast<std::vector<std::string> (RemoteData::Girder::*)( std::string const&, int) const>(&RemoteData::Girder::download),
              py::arg("dir"), py::arg("timeout"),
@@ -292,8 +308,10 @@ bindRemoteData( py::module & m )
         .def("isInit", &RemoteData::CKAN::isInit, "return true if CKAN is initialized")
         .def("canDownload", &RemoteData::CKAN::canDownload, "return true if can download")
         .def("canUpload", &RemoteData::CKAN::canUpload, "return true if can upload")
-        .def("download", static_cast<std::vector<std::string> (RemoteData::CKAN::*)( std::string const&) const>(&RemoteData::CKAN::download),
-             py::arg("dir")=Environment::downloadsRepository(),
+        .def("download", [](RemoteData::CKAN const& self, std::string dir) {
+                 if (dir.empty()) dir = Environment::downloadsRepository();
+                 return self.download(dir);
+             }, py::arg("dir")="",
              "download from CKAN")
         .def("download", static_cast<std::vector<std::string> (RemoteData::CKAN::*)( std::string const&, int) const>(&RemoteData::CKAN::download),
              py::arg("dir"), py::arg("timeout"),

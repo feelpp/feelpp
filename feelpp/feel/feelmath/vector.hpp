@@ -27,7 +27,7 @@
 
 
 
-namespace Feel {
+namespace Feel::math {
 
 //!
 //! compute the exp  component wise of the vector \p v 

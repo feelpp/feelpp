@@ -35,7 +35,8 @@ namespace Feel
  * @tparam Dmin minimal geometric dimension
  * @tparam Dmax maximal geometric dimension
  */
-template <int Dmin = 2, int Dmax = 3, typename = std::enable_if_t<Dmin >= 1 && Dmax <= 3 && Dmin <= Dmax>>
+template <int Dmin = 2, int Dmax = 3>
+    requires (Dmin >= 1 && Dmax <= 3 && Dmin <= Dmax)
 auto dim_t = hana::unpack( hana::make_range( hana::int_c<Dmin>, hana::int_c<Dmax + 1> ), hana::make_tuple );
 
 /**
@@ -44,7 +45,8 @@ auto dim_t = hana::unpack( hana::make_range( hana::int_c<Dmin>, hana::int_c<Dmax
  * @tparam Omin minimal polynomial order
  * @tparam Omax maximal polynomial order
  */
-template <int Omin = 0, int Omax = FEELPP_INSTANTIATION_ORDER_MAX, typename T = std::enable_if_t<Omin >= 0 && Omax <= 3 && Omin <= Omax>>
+template <int Omin = 0, int Omax = FEELPP_INSTANTIATION_ORDER_MAX>
+    requires (Omin >= 0 && Omax <= 3 && Omin <= Omax)
 auto order_t = hana::unpack( hana::make_range( hana::int_c<Omin>, hana::int_c<Omax + 1> ), hana::make_tuple );
 
 /**

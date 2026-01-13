@@ -30,7 +30,11 @@
 #ifndef __Shape_H
 #define __Shape_H 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/storage.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace Feel
 {
@@ -69,14 +73,14 @@ public:
     static inline const uint16_type M = 1;
     static inline const uint16_type N = 1;
     static inline const uint16_type O = 1;
-    static const bool is_transposed = transpose;
-    static const bool is_diagonalized = diag;
+    static inline const bool is_transposed = transpose;
+    static inline const bool is_diagonalized = diag;
     static inline const uint16_type rank = Scalar<nDim>::rank;
 
-    static const bool is_scalar = Scalar<nDim>::is_scalar;
-    static const bool is_vectorial = Scalar<nDim>::is_vectorial;
-    static const bool is_tensor2 = Scalar<nDim>::is_tensor2;
-    static const bool is_tensor3 = Scalar<nDim>::is_tensor3;
+    static inline const bool is_scalar = Scalar<nDim>::is_scalar;
+    static inline const bool is_vectorial = Scalar<nDim>::is_vectorial;
+    static inline const bool is_tensor2 = Scalar<nDim>::is_tensor2;
+    static inline const bool is_tensor3 = Scalar<nDim>::is_tensor3;
     //@}
 
     /** @name Typedefs
@@ -109,14 +113,14 @@ public:
                              mpl::int_<1>, mpl::int_<nDim> >::type::value;
     static inline const uint16_type N = mpl::if_<mpl::equal_to<mpl::bool_<transpose>, mpl::bool_<true> >, mpl::int_<nDim>, mpl::int_<1> >::type::value;
     static inline const uint16_type O = 1;
-    static const bool is_transposed = transpose;
-    static const bool is_diagonalized = diag;
+    static inline const bool is_transposed = transpose;
+    static inline const bool is_diagonalized = diag;
     static inline const uint16_type rank = Vectorial<nDim>::rank;
 
-    static const bool is_scalar = Vectorial<nDim>::is_scalar;
-    static const bool is_vectorial = Vectorial<nDim>::is_vectorial;
-    static const bool is_tensor2 = Vectorial<nDim>::is_tensor2;
-    static const bool is_tensor3 = Vectorial<nDim>::is_tensor3;
+    static inline const bool is_scalar = Vectorial<nDim>::is_scalar;
+    static inline const bool is_vectorial = Vectorial<nDim>::is_vectorial;
+    static inline const bool is_tensor2 = Vectorial<nDim>::is_tensor2;
+    static inline const bool is_tensor3 = Vectorial<nDim>::is_tensor3;
     //@}
 
     /** @name Typedefs
@@ -147,14 +151,14 @@ public:
     static inline const uint16_type M = nDim;
     static inline const uint16_type N = nDim;
     static inline const uint16_type O = 1;
-    static const bool is_transposed = transpose;
-    static const bool is_diagonalized = diag;
+    static inline const bool is_transposed = transpose;
+    static inline const bool is_diagonalized = diag;
     static inline const uint16_type rank = Tensor2<nDim>::rank;
 
-    static const bool is_scalar = Tensor2<nDim>::is_scalar;
-    static const bool is_vectorial = Tensor2<nDim>::is_vectorial;
-    static const bool is_tensor2 = Tensor2<nDim>::is_tensor2;
-    static const bool is_tensor3 = Tensor2<nDim>::is_tensor3;
+    static inline const bool is_scalar = Tensor2<nDim>::is_scalar;
+    static inline const bool is_vectorial = Tensor2<nDim>::is_vectorial;
+    static inline const bool is_tensor2 = Tensor2<nDim>::is_tensor2;
+    static inline const bool is_tensor3 = Tensor2<nDim>::is_tensor3;
     //@}
 
     /** @name Typedefs
@@ -185,14 +189,14 @@ public:
     static inline const uint16_type M = nDim;
     static inline const uint16_type N = nDim;
     static inline const uint16_type O = nDim;
-    static const bool is_transposed = transpose;
-    static const bool is_diagonalized = diag;
+    static inline const bool is_transposed = transpose;
+    static inline const bool is_diagonalized = diag;
     static inline const uint16_type rank = Tensor3<nDim>::rank;
 
-    static const bool is_scalar = Tensor3<nDim>::is_scalar;
-    static const bool is_vectorial = Tensor3<nDim>::is_vectorial;
-    static const bool is_tensor2 = Tensor3<nDim>::is_tensor2;
-    static const bool is_tensor3 = Tensor3<nDim>::is_tensor3;
+    static inline const bool is_scalar = Tensor3<nDim>::is_scalar;
+    static inline const bool is_vectorial = Tensor3<nDim>::is_vectorial;
+    static inline const bool is_tensor2 = Tensor3<nDim>::is_tensor2;
+    static inline const bool is_tensor3 = Tensor3<nDim>::is_tensor3;
     //@}
 
     /** @name Typedefs
@@ -224,13 +228,13 @@ public:
     static inline const uint16_type N = _N;
     static inline const uint16_type O = _O;
 
-    static const bool is_scalar = M==1 && N==1 && O==1;
-    static const bool is_vectorial = ((M>1 && N==1) || (M==1 && N>1)) && O == 1;
-    static const bool is_tensor2 = M>1 && N>1;
-    static const bool is_tensor3 = O > 1;
+    static inline const bool is_scalar = M==1 && N==1 && O==1;
+    static inline const bool is_vectorial = ((M>1 && N==1) || (M==1 && N>1)) && O == 1;
+    static inline const bool is_tensor2 = M>1 && N>1;
+    static inline const bool is_tensor3 = O > 1;
 
-    static const bool is_transposed = is_vectorial && N>1;
-    static const bool is_diagonalized = false;
+    static inline const bool is_transposed = is_vectorial && N>1;
+    static inline const bool is_diagonalized = false;
     static inline const uint16_type rank = is_scalar? 0 : is_vectorial? 1 : is_tensor2? 2 : 3;
     //@}
 
@@ -300,7 +304,7 @@ public:
 template<typename Left, typename Right>
 struct shape_op_samerank
 {
-    static const bool is_rank_ok = ( ( Left::M == Right::M ) && ( Left::N == Right::N ) );
+    static inline const bool is_rank_ok = ( ( Left::M == Right::M ) && ( Left::N == Right::N ) );
     BOOST_MPL_ASSERT_MSG( mpl::bool_<is_rank_ok>::value,
                           INVALID_TENSOR_OPERATION_SHOULD_BE_OF_SAME_RANK,
                           ( mpl::int_<Left::M>, mpl::int_<Left::N>,
@@ -309,8 +313,8 @@ struct shape_op_samerank
 
 
     static inline const uint16_type nDim = Left::nDim;
-    static const bool is_diagonalized = Left::is_diagonalized && Right::is_diagonalized;
-    static const bool is_transposed = Left::is_transposed && Right::is_transposed;
+    static inline const bool is_diagonalized = Left::is_diagonalized && Right::is_diagonalized;
+    static inline const bool is_transposed = Left::is_transposed && Right::is_transposed;
 
     typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
             mpl::identity<Shape<nDim,Scalar,is_transposed,is_diagonalized> >,
@@ -326,9 +330,9 @@ struct shape_op_samerank
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {
-        static const bool value = ( left_is_zero && right_is_zero );
-        static const bool update_and_eval_left = !left_is_zero;
-        static const bool update_and_eval_right = !right_is_zero;
+        static inline const bool value = ( left_is_zero && right_is_zero );
+        static inline const bool update_and_eval_left = !left_is_zero;
+        static inline const bool update_and_eval_right = !right_is_zero;
     };
 };
 
@@ -336,8 +340,8 @@ template<typename Left, typename Right>
 struct shape_op_id
 {
     static inline const uint16_type nDim = Left::nDim;
-    static const bool is_diagonalized = Left::is_diagonalized && Right::is_diagonalized;
-    static const bool is_transposed = Left::is_transposed && Right::is_transposed;
+    static inline const bool is_diagonalized = Left::is_diagonalized && Right::is_diagonalized;
+    static inline const bool is_transposed = Left::is_transposed && Right::is_transposed;
 
     typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
             mpl::identity<Shape<nDim,Scalar,is_transposed,is_diagonalized> >,
@@ -353,9 +357,9 @@ struct shape_op_id
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {
-        static const bool value = ( left_is_zero||right_is_zero );
-        static const bool update_and_eval_left = !value;
-        static const bool update_and_eval_right = !value;
+        static inline const bool value = ( left_is_zero||right_is_zero );
+        static inline const bool update_and_eval_left = !value;
+        static inline const bool update_and_eval_right = !value;
     };
 };
 
@@ -399,9 +403,9 @@ struct shape_op_mul
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {
-        static const bool value = ( left_is_zero||right_is_zero );
-        static const bool update_and_eval_left = !value;
-        static const bool update_and_eval_right = !value;
+        static inline const bool value = ( left_is_zero||right_is_zero );
+        static inline const bool update_and_eval_left = !value;
+        static inline const bool update_and_eval_right = !value;
     };
 };
 
@@ -424,9 +428,9 @@ struct shape_op_div
     struct is_zero
     {
         //BOOST_MPL_ASSERT_MSG( (!right_is_zero), (INVALID_OPERATION_DIV_BY_ZERO), (left_is_zero,right_is_zero));
-        static const bool value = left_is_zero;
-        static const bool update_and_eval_left = !value;
-        static const bool update_and_eval_right = !value;
+        static inline const bool value = left_is_zero;
+        static inline const bool update_and_eval_left = !value;
+        static inline const bool update_and_eval_right = !value;
     };
 };
 

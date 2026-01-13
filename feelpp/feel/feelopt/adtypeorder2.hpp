@@ -29,10 +29,13 @@
 #ifndef __ADTypeOrder2_H
 #define __ADTypeOrder2_H 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 namespace Feel

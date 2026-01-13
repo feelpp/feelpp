@@ -62,23 +62,23 @@ class Val
   public:
     using super2 = ExprDynamicBase;
     static const size_type context = ExprT1::context;
-    static const bool is_terminal = ExprT1::is_terminal;
+    static inline const bool is_terminal = ExprT1::is_terminal;
 
     template <typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template <typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     template <typename Func>
-    static const bool has_test_basis = ExprT1::template has_test_basis<Func>;
+    static inline const bool has_test_basis = ExprT1::template has_test_basis<Func>;
     template <typename Func>
-    static const bool has_trial_basis = ExprT1::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = ExprT1::template has_trial_basis<Func>;
     using test_basis = typename ExprT1::test_basis;
     using trial_basis = typename ExprT1::trial_basis;
 
@@ -152,7 +152,7 @@ class Val
 
         struct is_zero
         {
-            static const bool value = tensor2_expr_type::is_zero::value;
+            static inline const bool value = tensor2_expr_type::is_zero::value;
         };
 
         template <typename ExprT>

@@ -465,8 +465,8 @@ struct PrecomputeDomainBasisFunction
 
     domain_gmc_ptrtype & gmc() { return M_gmc; }
 
-    template <typename InterpOnType,
-              std::enable_if_t<(InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS),bool> = true >
+    template <typename InterpOnType>
+        requires (InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS)
     void update( InterpOnType const& interpOnElts )
         {
             auto const& interpOnElt = interpOnElts.elements().front();
@@ -497,8 +497,8 @@ struct PrecomputeDomainBasisFunction
         }
 
 
-    template <typename InterpOnType,
-              std::enable_if_t<(InterpOnType::onEntity() == ElementsType::MESH_FACES) && (DomainSpaceType::nDim == ImageSpaceType::nDim) ,bool> = true >
+    template <typename InterpOnType>
+        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES) && (DomainSpaceType::nDim == ImageSpaceType::nDim)
     void update( InterpOnType const& interpOnFaceFull )
         {
             auto const& interpOnFace = interpOnFaceFull.elements().front();
@@ -573,8 +573,8 @@ struct PrecomputeDomainBasisFunction
             }
         }
 
-    template <typename InterpOnType,//typename ImageEltType,
-              std::enable_if_t<(InterpOnType::onEntity() == ElementsType::MESH_FACES) && (DomainSpaceType::nDim == (ImageSpaceType::nDim+1)) ,bool> = true >
+    template <typename InterpOnType>//typename ImageEltType,
+        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES) && (DomainSpaceType::nDim == (ImageSpaceType::nDim+1))
     void update( InterpOnType const& interpOnFaceFull )//, ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp )
         {
             auto const& interpOnFace = interpOnFaceFull.elements().front();
@@ -620,8 +620,8 @@ struct PrecomputeDomainBasisFunction
 
 private :
     //template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename domain_mesh_type::element_type>, bool> = true >
-    template <typename InterpOnType,
-              std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS,bool> = true >
+    template <typename InterpOnType>
+        requires (InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS)
     void init( InterpOnType const& interpFromElt )//MeshEntityType const& elt )
         {
             if ( M_tensorExpr )
@@ -646,8 +646,8 @@ private :
                 this->initCommon( interpFromElt, M_XhImage->fe() );
             }
         }
-    template <typename InterpOnType,typename TheImageFeType,
-              std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS,bool> = true >
+    template <typename InterpOnType,typename TheImageFeType>
+        requires (InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS)
     void initCommon( InterpOnType const& interpFromElt, std::shared_ptr<TheImageFeType> image_fe )
         {
             auto const& elt = interpFromElt.element();
@@ -675,8 +675,8 @@ private :
 #endif
         }
 
-    template <typename InterpOnType,
-              std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_FACES,bool> = true >
+    template <typename InterpOnType>
+        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES)
     void init( InterpOnType const& interpOnFace )
         {
             auto image_fe = M_XhImage->fe();
@@ -700,8 +700,8 @@ private :
             }
         }
 
-    template <typename InterpOnType,typename TheImageFeType,
-              std::enable_if_t<InterpOnType::onEntity() == ElementsType::MESH_FACES,bool> = true >
+    template <typename InterpOnType,typename TheImageFeType>
+        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES)
     void initCommon( InterpOnType const& interpOnFace, std::shared_ptr<TheImageFeType> image_fe )
         {
             domain_gm_ptrtype domain_gm = M_XhDomain->gm();
@@ -973,8 +973,8 @@ private :
      * - domain and image meshes haves same dimension
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType,
-              std::enable_if_t< ApplyType == 0 && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>, bool> = true >
+    template <int ApplyType, typename MeshEntityType>
+        requires (ApplyType == 0) && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1035,8 +1035,8 @@ private :
      * - domain and image meshes haves same dimension
      * - interpolation on mesh face (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType,
-              std::enable_if_t< ApplyType == 0 && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>, bool> = true >
+    template <int ApplyType, typename MeshEntityType>
+        requires (ApplyType == 0) && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromFaces> res;
@@ -1141,8 +1141,8 @@ private :
      * - domain dim = image dim + 1
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType,
-              std::enable_if_t< ApplyType == 1 && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>, bool> = true >
+    template <int ApplyType, typename MeshEntityType>
+        requires (ApplyType == 1) && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromFaces> res;
@@ -1193,8 +1193,8 @@ private :
      * - domain dim = image dim - 1
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType,
-              std::enable_if_t< ApplyType == -1 && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>, bool> = true >
+    template <int ApplyType, typename MeshEntityType>
+        requires (ApplyType == -1) && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1231,8 +1231,8 @@ private :
      * - domain dim = image dim - 1
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType,
-              std::enable_if_t< ApplyType == -1 && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>, bool> = true >
+    template <int ApplyType, typename MeshEntityType>
+        requires (ApplyType == -1) && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1245,8 +1245,8 @@ private :
      * - domain dim = image dim - 2
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType,
-              std::enable_if_t< ApplyType == -2 /*&& std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>*/, bool> = true >
+    template <int ApplyType, typename MeshEntityType>
+        requires (ApplyType == -2) /*&& std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>*/
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1255,9 +1255,9 @@ private :
         }
 #if 0
        template <int ApplyType, typename EntityType>
+           requires (ApplyType == 1)
     std::set<size_type> //domain_vector_mesh_element_type
-       apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts,
-           typename std::enable_if_t< ApplyType == 1 >* = nullptr ) const
+       apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts ) const
         {
             std::set<size_type> idsFind;
 
@@ -1352,9 +1352,9 @@ private :
         }
 
        template <int ApplyType, typename EntityType>
+           requires (ApplyType == 2 || ApplyType == -2)
     std::set<size_type> //domain_vector_mesh_element_type
-    apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts,
-           typename std::enable_if_t< ApplyType == 2 || ApplyType == -2 >* = nullptr ) const
+    apply( EntityType const& imageEntity, image_vector_mesh_element_type const& imageElts ) const
         {
             std::set<size_type> idsFind;
             CHECK(false) << "not implemented\n";
@@ -2000,7 +2000,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             {
                 VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
                         << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+                #if !defined(FEELPP_HAS_SPDLOG)
+
                 google::FlushLogFiles(google::INFO);
+
+                #else
+
+                Logger::flush();
+
+                #endif
                 CHECK( !needToCopyMatrix ) << "TODO : copy matrix from setup";
                 M_matrixSetup.setMatrix( this->backend()->newMatrix( sparsity_graph->mapColPtr(), sparsity_graph->mapRowPtr(),
                                                                      sparsity_graph ) );

@@ -92,7 +92,7 @@ public:
      */
     //@{
 
-    static const bool is_row_major = true;
+    static inline const bool is_row_major = true;
 
     //@{
 
@@ -643,6 +643,9 @@ public :
 
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
+
+    // Bring base class operator= into scope to prevent hiding
+    using super::operator=;
 
     explicit MatrixPetscMPI( worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
     MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );

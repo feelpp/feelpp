@@ -34,14 +34,12 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/signals2/signal.hpp>
 
-#if defined( __clang__ )
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdivision-by-zero"
-#endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/archive/text_oarchive.hpp>
-#if defined( __clang__ )
-#pragma clang diagnostic pop
-#endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -1572,13 +1570,17 @@ public:
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
 
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 0>* = nullptr );
+        requires (TheShape::nDim == 0)
+    FEELPP_NO_EXPORT void updateCommonDataInEntities();
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* = nullptr );
+        requires (TheShape::nDim == 1)
+    FEELPP_NO_EXPORT void updateCommonDataInEntities();
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* = nullptr );
+        requires (TheShape::nDim == 2)
+    FEELPP_NO_EXPORT void updateCommonDataInEntities();
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* = nullptr );
+        requires (TheShape::nDim == 3)
+    FEELPP_NO_EXPORT void updateCommonDataInEntities();
 
     friend class boost::serialization::access;
     template <class Archive>
@@ -1681,25 +1683,29 @@ public:
      * modify edges on boundary in 3D
      */
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type& face, std::enable_if_t<TheShape::nDim == 3>* = nullptr );
+        requires (TheShape::nDim == 3)
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type& face );
 
     /**
      * modify edges on boundary in 2D or 1D
      */
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type& face, std::enable_if_t<TheShape::nDim != 3>* = nullptr );
+        requires (TheShape::nDim != 3)
+    FEELPP_NO_EXPORT void modifyEdgesOnBoundary( face_type& face );
 
     /**
      * modify element that may touch the boundary through one of its edge in 1D or 2D
      */
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim != 3>* = nullptr );
+        requires (TheShape::nDim != 3)
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt );
 
     /**
      * modify element that may touch the boundary through one of its edge in 3D
      */
     template <typename TheShape = GeoShape>
-    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim == 3>* = nullptr );
+        requires (TheShape::nDim == 3)
+    FEELPP_NO_EXPORT bool modifyElementOnBoundaryFromEdge( element_type& elt );
 
     //!
     //!  update entities on boundary (point, edge, face and element)

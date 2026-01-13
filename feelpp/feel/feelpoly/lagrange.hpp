@@ -84,7 +84,7 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     template< template<class, uint16_type, class> class TestPointSetType >
-    inline static const bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
+    static constexpr bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
     inline static const uint16_type numPoints = reference_convex_type::numPoints;
     inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
     inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
@@ -343,8 +343,8 @@ public:
     inline static const uint16_type nDim = N;
     inline static const uint16_type nRealDim = RealDim;
     inline static const uint16_type nOrder =  O;
-    inline static const bool isTransformationEquivalent = true;
-    inline static const bool isContinuous = ContinuityType::is_continuous;
+    static constexpr bool isTransformationEquivalent = true;
+    static constexpr bool isContinuous = ContinuityType::is_continuous;
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
@@ -357,15 +357,15 @@ public:
     typedef typename super::polyset_type polyset_type;
     inline static constexpr bool is_symm_v  = Feel::is_symm_v<polyset_type>;
     using is_symm  = Feel::is_symm<polyset_type>;
-    inline static const bool is_tensor2 = polyset_type::is_tensor2;
-    inline static const bool is_tensor2symm = is_tensor2 && is_symm_v;
-    inline static const bool is_vectorial = polyset_type::is_vectorial;
-    inline static const bool is_scalar = polyset_type::is_scalar;
+    static constexpr bool is_tensor2 = polyset_type::is_tensor2;
+    static constexpr bool is_tensor2symm = is_tensor2 && is_symm_v;
+    static constexpr bool is_vectorial = polyset_type::is_vectorial;
+    static constexpr bool is_scalar = polyset_type::is_scalar;
     inline static const uint16_type nComponents = polyset_type::nComponents;
     inline static const uint16_type nComponents1 = polyset_type::nComponents1;
     inline static const uint16_type nComponents2 = polyset_type::nComponents2;
 
-    static const bool is_product = true;
+    static inline const bool is_product = true;
     static constexpr int Nm2 = (N>2)?N-2:0;
     static constexpr int Nm1 = (N>0)?N-1:0;
 
@@ -429,7 +429,7 @@ public:
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
-    inline static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
+    static constexpr bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
 
     //@}
 

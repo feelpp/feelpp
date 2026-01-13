@@ -117,12 +117,12 @@ public:
                                                                         hana::integral_constant<size_type, 0>{},
                                                                         typename FunctorsVariadicExpr::GetContextExpr{}
                                                                         ) )>::value;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+        static inline const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                       hana::integral_constant<bool,false>{},
                                                                       typename FunctorsVariadicExpr::template HasTestFunction<Func>{}
                                                                       ) )>::value;
@@ -130,18 +130,18 @@ public:
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+        static inline const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                       hana::integral_constant<bool,false>{},
                                                                       typename FunctorsVariadicExpr::template HasTrialFunction<Func>{}
                                                                       ) )>::value;
     };
     template<typename Func>
-    static const bool has_test_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+    static inline const bool has_test_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                           hana::integral_constant<bool,false>{},
                                                                           typename FunctorsVariadicExpr::template HasTestBasis<Func>{}
                                                                           ) )>::value;
     template<typename Func>
-    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
+    static inline const bool has_trial_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                            hana::integral_constant<bool,false>{},
                                                                            typename FunctorsVariadicExpr::template HasTrialBasis<Func>{}
                                                                            ) )>::value;
@@ -395,7 +395,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( expression_type const& expr,

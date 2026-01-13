@@ -7,96 +7,44 @@ namespace Feel
 {
     // Save and store view factor matrix
     template<int Dim, int Order>
-    void RHT<Dim,Order>::saveVF(std::string cavity_name,const Eigen::Ref<const Eigen::MatrixXd>& M)
+    void RHT<Dim,Order>::saveVF(const std::string& cavity_name, const Eigen::Ref<const Eigen::MatrixXd>& M)
     {
         //Store VF matrix in M_matrix_vf_map
-        int i_mark=0;
-        int j_mark=0;
-        auto markers_list_vf=M_markers_map[cavity_name];
-        auto n_markers=markers_list_vf.size();
-        Eigen::MatrixXd matrix_vf(n_markers,n_markers);
-        for(auto & marker1 : markers_list_vf)
-        {
-            // Compute the first index to place view factors in the vf matrix
-            int index1;
-            auto it = std::find(markers_list_vf.begin(),markers_list_vf.end(),marker1);
-            if( it != markers_list_vf.end())
-            {
-                index1= it -  markers_list_vf.begin();
-            }
-            else
-            {
-                std::cout << fmt::format("Marker {} not in the list",marker1)<<std::endl;
-                break;
-            }
-
-            for(auto & marker2 :  markers_list_vf)
-            {
-                // Compute the second index to place view factors in the vf matrix
-                int index2;
-                auto it = std::find(markers_list_vf.begin(),markers_list_vf.end(),marker2);
-                if( it != markers_list_vf.end())
-                {
-                    index2= it -  markers_list_vf.begin();
-                }
-                else
-                {
-                    std::cout << fmt::format("Marker {} not in the list",marker1)<<std::endl;
-                    break;
-                }                   
-                // Dispatch the newly computed view factors to the matrix from before and save this matrix
-                matrix_vf(index1,index2)=M(i_mark,j_mark);
-
-                j_mark+=1;
-            }
-            j_mark=0;
-            i_mark+=1;
-        }
-        M_matrix_vf_map.insert(std::make_pair(cavity_name,matrix_vf));
+        auto markers_list_vf = M_markers_map[cavity_name];
+        auto n_markers = markers_list_vf.size();
+        
+        // Direct copy: input matrix M already has correct dimensions and ordering
+        Eigen::MatrixXd matrix_vf = M;
+        M_matrix_vf_map.insert(std::make_pair(cavity_name, matrix_vf));
 
         // Save the matrix into a CSV file
         std::ofstream matrix_file;
-        std::string matrix_filename="VF_Matrix_"+cavity_name+".csv";
-        matrix_file.open(matrix_filename,std::ios_base::out);
-        for(int i=0; i<markers_list_vf.size(); i++)
-        {
-            if(i==0)
-            {
-                matrix_file << " X,";
-                for(int j=0; j<markers_list_vf.size()-1; j++)
-                {
-                    matrix_file << markers_list_vf[j] << ",";
-                }
-                matrix_file << markers_list_vf[markers_list_vf.size()-1] << "\n";
-            }
-            if(markers_list_vf.size()==1)
-                matrix_file << markers_list_vf[i] << ",";
-            else
-            {
-                for(int j=0; j<markers_list_vf.size()-1; j++)
-                {
-                    if(j==0)
-                    {                    
-                        matrix_file << markers_list_vf[i] << ",";                                 
-                    }
-                    matrix_file << matrix_vf(i,j) << ",";
-                }        
-            }
-            matrix_file << matrix_vf(i,markers_list_vf.size()-1) << "\n";
+        std::string matrix_filename = fmt::format("VF_Matrix_{}.csv", cavity_name);
+        matrix_file.open(matrix_filename, std::ios_base::out);
+        
+        // Header row
+        matrix_file << fmt::format("X,{}\n", fmt::join(markers_list_vf, ","));
+        
+        // Data rows
+        for(size_t i = 0; i < n_markers; ++i) {
+            std::vector<double> row_data(matrix_vf.row(i).data(), 
+                                          matrix_vf.row(i).data() + n_markers);
+            matrix_file << fmt::format("{},{}\n", markers_list_vf[i], fmt::join(row_data, ","));
         }
         matrix_file.close();
-        LOG(INFO) << fmt::format("View factor matrix has been saved and stored") << std::endl;
+        LOG(INFO) << fmt::format("View factor matrix saved to: {}", matrix_filename);
     }
 
     // Load view factor matrix
     template<int Dim, int Order>
-    void RHT<Dim,Order>::loadVF(std::string cavity_name, std::string filename)
+    void RHT<Dim,Order>::loadVF(const std::string& cavity_name, const std::string& filename)
     {
         std::fstream f;
         f.open(Environment::expand( filename));
         if(!f.is_open())
         {
-            std::cout << "file not opened" << std::endl;
+            LOG(ERROR) << fmt::format("Failed to open file: {}", filename);
+            throw std::runtime_error(fmt::format("Cannot open file: {}", filename));
         }
         std::vector<std::string> markers;
         std::string line, entry, temp;
@@ -142,7 +90,7 @@ namespace Feel
         M_matrix_vf_map.insert(std::make_pair(cavity_name,matrix_vf));
     }
     template<int Dim, int Order>
-    void RHT<Dim,Order>::computeVF(std::string cavity_name,std::string filename)
+    void RHT<Dim,Order>::computeVF(const std::string& cavity_name, const std::string& filename)
     {
         auto jsonfile = removeComments( readFromFile( Environment::expand( filename ) ) );
         std::istringstream astr( jsonfile );
@@ -155,12 +103,12 @@ namespace Feel
         {
             UnobstructedPlanarViewFactor<mesh_t> upvf( M_mesh, json_vf );                
             upvf.compute();
-            std::cout << upvf.viewFactors() << std::endl;
+            LOG(DEBUG) << fmt::format("View factors:\n{}", upvf.viewFactors());
             saveVF(cavity_name,upvf.viewFactors());
         }
         else if(json_vf["viewfactor"]["type"]=="Raytracing")
         {
-            std::cout << "Raytracing not implemented at the moment" <<std::endl;
+            LOG(WARNING) << "Raytracing not implemented yet";
         }
     }
     // Compute the view factor matrix; for the moment, only unobstructed view factor computation
@@ -177,18 +125,18 @@ namespace Feel
                     if(vf_status=="load")
                     {
                         auto vf_filename = value["viewfactors"]["filename"];
-                        fmt::format("Loading view factors for {} from {}",bc,vf_filename.dump());
+                        LOG(INFO) << fmt::format("Loading view factors for '{}' from {}", bc, vf_filename.dump());
                         loadVF(bc,vf_filename);
                     }
                     else if(vf_status=="compute")
                     {
                         auto vf_filename = value["viewfactors"]["filename"];
-                        fmt::format( "Computing view factors for {} from {}", bc, vf_filename.dump() );
+                        LOG(INFO) << fmt::format("Computing view factors for '{}' from {}", bc, vf_filename.dump());
                         computeVF(bc,vf_filename);
                     }
                     else
                     {
-                        std::cout << "View factor status not correct" << std::endl;
+                        LOG(ERROR) << fmt::format("Invalid view factor status: {}", vf_status.dump());
                     }
                 }
             }        

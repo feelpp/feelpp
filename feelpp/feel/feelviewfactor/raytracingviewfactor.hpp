@@ -13,8 +13,10 @@
 
 #include <random>
 #include <cmath>
+#include <format>
 #include <iostream>
 #include <future>
+#include <span>
 
 #include <feel/feelviewfactor/viewfactorbase.hpp>
 #include <feel/feelmesh/bvh.hpp>
@@ -22,23 +24,21 @@
 #include <nanoflann.hpp>
 #include <feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp>
 
-using namespace nanoflann;
-
-
 namespace Feel {
+namespace viewfactor::detail {
 
 // Compute random direction, uniformly distributed on the sphere or on a circle
-void getRandomDirection(std::vector<double> &random_direction, std::mt19937 & M_gen, std::mt19937 & M_gen2,Eigen::VectorXd normal)
+void getRandomDirection(std::span<double> random_direction, std::mt19937 & M_gen, std::mt19937 & M_gen2, Eigen::VectorXd const& normal)
 {
     std::uniform_real_distribution<double> xi2(0,1);
     std::uniform_real_distribution<double> xi1(0,1);
 
-    int size = random_direction.size();
+    auto const size = static_cast<int>(random_direction.size());
     Eigen::VectorXd z_axis(size), crossProd1(size), crossProd2(size),crossProd3(size), direction(size);
     Eigen::MatrixXd matrix1(size,size), matrix2(size,size);
     
 
-    if(random_direction.size()==3)
+    if(size==3)
     {
         z_axis << 0, 0, 1;
         double phi = 2.*M_PI*xi1(M_gen);
@@ -66,11 +66,13 @@ void getRandomDirection(std::vector<double> &random_direction, std::mt19937 & M_
 
             direction = matrix1 * (matrix2 * direction);
 
-            random_direction.resize(direction.size());
-            Eigen::VectorXd::Map(&random_direction[0], direction.size()) = direction;
+            for(int i = 0; i < size; ++i)
+            {
+                random_direction[i] = direction[i];
+            }
         }
     }
-    else if (random_direction.size()==2)
+    else if (size==2)
     {
         double phi = M_PI*xi1(M_gen);
         random_direction[0]=math::cos(phi);
@@ -78,7 +80,8 @@ void getRandomDirection(std::vector<double> &random_direction, std::mt19937 & M_
     }
     else
     {
-        throw std::logic_error( "Wrong dimension " + std::to_string(random_direction.size()) + " for the random direction" );
+        throw std::logic_error(std::format("Wrong dimension {} for the random direction",
+                                           size));
     }
 
     //return random_direction;
@@ -159,7 +162,9 @@ bool isOnSurface(Eigen::VectorXd const &point,Eigen::VectorXd const &el_p1,Eigen
         }
     }
 }
-template <typename MeshType>
+} // namespace viewfactor::detail
+
+template <ViewFactorMesh MeshType>
 class RayTracingViewFactor : public ViewFactorBase<MeshType>
 {
     using super = ViewFactorBase<MeshType>;
@@ -230,21 +235,11 @@ public:
     RayTracingViewFactor& operator=( const RayTracingViewFactor& ) = default;
     RayTracingViewFactor& operator=( RayTracingViewFactor&& ) = default;
     ~RayTracingViewFactor() = default;
+    using ViewFactorBase<MeshType>::init;
     void init( std::vector<std::string> const& list_of_bdys ) { ViewFactorBase<MeshType>::init( list_of_bdys ); }
-    tr_mesh_ptrtype M_submesh;
-    mesh_ptrtype M_mesh;
-    Eigen::MatrixXd M_view_factors_matrix;
-    std::vector<std::string> M_markers_string,list_of_bdys;
-    std::vector<int> M_markers_int;
-    int M_Nrays;
-    int M_Nthreads;
-    std::vector<int> M_point_indices;
-    Eigen::VectorXd M_view_factor_row;
-    std::shared_ptr<bvh_type> M_bvh_tree;
-    std::random_device M_rd;  // Will be used to obtain a seed for the random number engine
-    std::random_device M_rd2;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 M_gen; // Standard mersenne_twister_engine seeded with rd()
-    std::mt19937 M_gen2; // Standard mersenne_twister_engine seeded with rd2()
+    [[nodiscard]] tr_mesh_ptrtype const& submesh() const { return M_submesh; }
+    [[nodiscard]] int numRays() const noexcept { return M_Nrays; }
+    [[nodiscard]] int numThreads() const noexcept { return M_Nthreads; }
 
     Eigen::VectorXd get_random_point(matrix_node_type const& element_points)
     {
@@ -279,7 +274,7 @@ public:
                 else
                     p= p1 + (1 - s) * u + (1 - t) * v;
 
-                if (isOnSurface(p,p1,p2,p3))
+                if (viewfactor::detail::isOnSurface(p,p1,p2,p3))
                     return p;
                 else
                 {
@@ -302,7 +297,7 @@ public:
             std::uniform_real_distribution<double> xi1(0,1);
             double s = xi1(generator3);
             p = p1 + s * v;
-            if (isOnSurface(p,p1,p2))
+            if (viewfactor::detail::isOnSurface(p,p1,p2))
                 return p;
             else
             {
@@ -317,14 +312,14 @@ public:
             {
                 p1(i)=column(element_points, 0)[i];
             }
-            throw std::logic_error( "Problem for the computation of the random point" );
+            throw std::logic_error(std::format("Cannot compute random point for dimension {}", dimension));
             return p1;
         }
 
     }
 
-    mesh_ptrtype mesh() {return M_mesh;}
-    std::vector<std::string> markerNames(){return M_markers_string;}
+    [[nodiscard]] mesh_ptrtype mesh() const { return M_mesh; }
+    [[nodiscard]] std::vector<std::string> const& markerNames() const { return M_markers_string; }
     void compute(bool elementwise=false)
     {
         if(this->j_["viewfactor"]["type"]=="Raytracing")
@@ -378,7 +373,7 @@ public:
                         }
                         auto element_normal = ((p3-p1).head<3>()).cross((p2-p1).head<3>());
                         element_normal.normalize();
-                        getRandomDirection(random_direction,M_gen,M_gen2,element_normal);
+                        viewfactor::detail::getRandomDirection(std::span<double>(random_direction),M_gen,M_gen2,element_normal);
                         for(int i=0;i<dim;i++)
                         {
                             rand_dir(i) = random_direction[i];
@@ -444,5 +439,21 @@ public:
         return M_view_factor_row;
     }
 
+private:
+    tr_mesh_ptrtype M_submesh;
+    mesh_ptrtype M_mesh;
+    Eigen::MatrixXd M_view_factors_matrix;
+    std::vector<std::string> M_markers_string;
+    std::vector<std::string> list_of_bdys;
+    std::vector<int> M_markers_int;
+    int M_Nrays;
+    int M_Nthreads;
+    std::vector<int> M_point_indices;
+    Eigen::VectorXd M_view_factor_row;
+    std::shared_ptr<bvh_type> M_bvh_tree;
+    std::random_device M_rd;  // Will be used to obtain a seed for the random number engine
+    std::random_device M_rd2;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 M_gen; // Standard mersenne_twister_engine seeded with rd()
+    std::mt19937 M_gen2; // Standard mersenne_twister_engine seeded with rd2()
 };
 }

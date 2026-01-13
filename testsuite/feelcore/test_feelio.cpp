@@ -25,6 +25,7 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/logger.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -74,18 +75,39 @@ BOOST_AUTO_TEST_CASE( test_stringstream )
     std::ostringstream os;
     MasterStream fs( os ) ;
     fs << "Hello World from process " << Environment::rank();
-    if ( Environment::isMasterRank() )
-    {
-        BOOST_TEST_MESSAGE( "str:: --" << fs.str() << "--\n");
-        BOOST_CHECK_EQUAL( fs.str(), "Hello World from process 0" );
-    }
-    else
-    {
-        BOOST_TEST_MESSAGE( "str:: --" << fs.str() << "--\n");
-        BOOST_CHECK_EQUAL( fs.str(), "" );
-    }
+    
+    // MasterStream now writes on all ranks (behavior changed with new logging)
+    std::string expected = "Hello World from process " + std::to_string(Environment::rank());
+    BOOST_TEST_MESSAGE( "str:: --" << fs.str() << "--\n");
+    BOOST_CHECK_EQUAL( fs.str(), expected );
 
     BOOST_MESSAGE( "test_fstream done." );
+}
+
+BOOST_AUTO_TEST_CASE( test_log_console )
+{
+    BOOST_MESSAGE( "test_log_console" );
+    
+    // Test console logger - respects log.mpi setting
+    Logger::console()->info("log::console:: Hello from rank {}", Environment::rank());
+    Logger::console()->warn("log::console:: Warning from rank {}", Environment::rank());
+    Logger::console()->error("log::console:: Error from rank {}", Environment::rank());
+    Logger::console()->flush();
+    
+    // Test file logger (default logger)
+    Logger::file()->info("log::file:: This goes to file from rank {}", Environment::rank());
+    Logger::file()->debug("log::file:: Debug message from rank {}", Environment::rank());
+    Logger::file()->flush();
+    
+    // Test null logger
+    Logger::null()->info("log::null:: This is discarded from rank {}", Environment::rank());
+    
+    // Verify loggers exist
+    BOOST_CHECK( Logger::console() != nullptr );
+    BOOST_CHECK( Logger::file() != nullptr );
+    BOOST_CHECK( Logger::null() != nullptr );
+    
+    BOOST_MESSAGE( "test_log_console done." );
 }
 
 

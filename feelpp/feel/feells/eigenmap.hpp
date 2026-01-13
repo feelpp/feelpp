@@ -31,8 +31,12 @@
 
 #include <Eigen/Core>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace ublas = boost::numeric::ublas;
 

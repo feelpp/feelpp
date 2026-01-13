@@ -320,12 +320,13 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 
     for(auto const & it : m_dirichlet_p)
     {
-        LOG(INFO) << "Applying (on)" << it.second << " on " << it.first << " for "<<M_prefix_22<<"\n";
+        LOG(INFO) << fmt::format("Applying (on) {} for {}: markers = [{}]",
+                                 it.first, M_prefix_22, fmt::join(it.second.second, ", "));
         f2L += on(_range=markedfaces(M_Qh->mesh(),it.second.second),_element=phi, _expr=it.second.first, _rhs=f1LQ, _type="elimination_symmetric");
     }
 
     init();
-    toc( "[PreconditionerBlockMS] setup done ", FLAGS_v > 0 );
+    toc( "[PreconditionerBlockMS] setup done ", Environment::logVerbosityLevel() > 0 );
 }
 
 template < typename space_type >
@@ -394,7 +395,7 @@ PreconditionerBlockMS<space_type>::init( void )
     std::cerr << "ams preconditioner is not interfaced in two dimensions\n";
 #endif
     }
-    toc("[PreconditionerBlockMS] Init",FLAGS_v>0);
+    toc("[PreconditionerBlockMS] Init",Environment::logVerbosityLevel()>0);
     LOG(INFO) << "Init done\n";
 }
 
@@ -476,7 +477,7 @@ PreconditionerBlockMS<space_type>::applyInverse ( const vector_type& X, vector_t
     U.close();
     Y=U;
     Y.close();
-    toc("[PreconditionerBlockMS] applyInverse update solution",FLAGS_v>0);
+    toc("[PreconditionerBlockMS] applyInverse update solution",Environment::logVerbosityLevel()>0);
     return 0;
 }
 

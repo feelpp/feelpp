@@ -378,31 +378,31 @@
         using value_left_type = typename L_type::value_type;            \
         using value_right_type = typename R_type::value_type;           \
                                                                         \
-        static const bool is_op_mul = std::is_same_v< expression_type, vf_mul<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
-        static const bool is_op_div = std::is_same_v< expression_type, vf_div<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
-        static const bool is_op_add = std::is_same_v< expression_type, vf_add<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
-        static const bool is_op_sub = std::is_same_v< expression_type, vf_sub<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static inline const bool is_op_mul = std::is_same_v< expression_type, vf_mul<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static inline const bool is_op_div = std::is_same_v< expression_type, vf_div<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static inline const bool is_op_add = std::is_same_v< expression_type, vf_add<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static inline const bool is_op_sub = std::is_same_v< expression_type, vf_sub<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
         size_type dynamicContext() const { return vf::dynamicContext( M_left ) | vf::dynamicContext( M_right ); } \
                                                                         \
-        static const bool is_terminal = false;                           \
+        static inline const bool is_terminal = false;                           \
                                                                         \
         template<typename Func>                                         \
             struct HasTestFunction                                      \
         {                                                               \
-            static const bool result = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
+            static inline const bool result = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
         };                                                              \
                                                                         \
         template<typename Func>                                         \
             struct HasTrialFunction                                     \
         {                                                               \
-            static const bool result = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
+            static inline const bool result = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
         };                                                              \
         template<typename Func>                                         \
-            static const bool has_test_basis = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
+            static inline const bool has_test_basis = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
         template<typename Func>                                         \
-            static const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
+            static inline const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
         using test_basis =  typename mpl::if_< std::is_null_pointer<typename L_type::test_basis >, typename R_type::test_basis , typename L_type::test_basis >::type; \
         using trial_basis = std::nullptr_t;                             \
                                                                         \
@@ -502,9 +502,9 @@
             static const int shape_op = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::op; \
                                                                         \
             struct is_zero {                                            \
-                static const bool value = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::value; \
-                static const bool update_and_eval_left = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_left; \
-                static const bool update_and_eval_right = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_right; \
+                static inline const bool value = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::value; \
+                static inline const bool update_and_eval_left = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_left; \
+                static inline const bool update_and_eval_right = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_right; \
             };                                                          \
                                                                         \
             template<typename ExprT>                                    \

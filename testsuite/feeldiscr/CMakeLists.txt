@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testdiscr )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testdiscr")
 
 feelpp_add_test( aitken NO_MPI_TEST )
 

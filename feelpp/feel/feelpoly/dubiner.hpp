@@ -68,7 +68,7 @@ struct DubinerTraits
     static inline const uint16_type nRealDim = RealDim;
     static inline const uint16_type nOrder = Degree;
     static inline const uint16_type nConvexOrderDiff = nDim+nOrder+1;
-    static const bool is_normalized = NormalizationPolicy::is_normalized;
+    static inline const bool is_normalized = NormalizationPolicy::is_normalized;
 
     /** @name Typedefs
      */
@@ -175,10 +175,10 @@ public:
     static inline const uint16_type nRealDim = traits_type::nRealDim;
     static inline const uint16_type nOrder = traits_type::nOrder;
     static inline const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
-    static const bool is_normalized = traits_type::is_normalized;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = false;
-    static const bool is_product = true;
+    static inline const bool is_normalized = traits_type::is_normalized;
+    static inline const bool isTransformationEquivalent = true;
+    static inline const bool isContinuous = false;
+    static inline const bool is_product = true;
     typedef Discontinuous continuity_type;
 
     /** @name Typedefs

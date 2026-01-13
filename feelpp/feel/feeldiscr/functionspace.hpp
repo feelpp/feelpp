@@ -60,13 +60,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 // #include <boost/numeric/ublas/vector_serialize.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#pragma GCC diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/optional.hpp>
 #include <boost/preprocessor/control/if.hpp>
@@ -211,6 +212,23 @@ struct ID
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
+
+// Operator<< for ID - must be here for fmt two-phase lookup
+template<typename T,int M,int N>
+inline std::ostream&
+operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )
+{
+    const size_type* shape =  id.M_id.shape();
+
+    for ( size_type i = 0; i < shape[0]; ++i )
+    {
+        os << id[i] << std::endl;
+    }
+    os << std::endl;
+
+    return os;
+}
+
 template<typename T,int M,int N>
 struct DD
 {
@@ -1190,7 +1208,7 @@ struct createWorldsComm
 
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
+    static inline const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct UpdateWorldsComm
     {
@@ -1251,7 +1269,7 @@ struct createMeshSupport
     typedef typename mesh_support_type::range_elements_type range_elements_type;
 
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
+    static inline const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct HasAllMeshSupportDefined
     {
@@ -1278,7 +1296,8 @@ struct createMeshSupport
                 this->updateImpl<T,useMeshesList>( t );
             }
         template<typename T,bool _UseMeshesList >
-        void updateImpl( T const& t, std::enable_if_t< !_UseMeshesList >* = nullptr ) const
+            requires (!_UseMeshesList)
+        void updateImpl( T const& t ) const
             {
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
@@ -1287,7 +1306,8 @@ struct createMeshSupport
                 meshSupport = M_cms.M_meshSupport0;
             }
         template<typename T,bool _UseMeshesList >
-        void updateImpl( T const& t, std::enable_if_t< _UseMeshesList >* = nullptr ) const
+            requires _UseMeshesList
+        void updateImpl( T const& t ) const
             {
                 auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
                 if ( meshSupport )
@@ -1309,7 +1329,8 @@ struct createMeshSupport
         {
             this->init<useMeshesList>(mesh);
         }
-    template<typename RangeType, typename std::enable_if_t<is_range_v<RangeType>,int> = 0 >
+    template<typename RangeType>
+        requires is_range_v<RangeType>
     createMeshSupport( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
         :
         M_mesh( mesh )
@@ -1346,13 +1367,19 @@ struct createMeshSupport
     void init2( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
         {
             if constexpr ( _UseMeshesList )
+            {
                 CHECK( false ) << fmt::format( "MeshSupport not allowed in Mesh List" );
+            }
             else
             {
                 if ( std::forward<RangeType>( rangeMeshElt ).container() )
+                {
                     M_meshSupport0.reset( new mesh_support_type(mesh,std::forward<RangeType>(rangeMeshElt) ) );
+                }
                 else
+                {
                     M_meshSupport0.reset( new mesh_support_type(mesh) );
+                }
 
                 mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
                 boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
@@ -1434,9 +1461,9 @@ struct Order
     static inline const uint16_type PolynomialOrder = PN;
     static inline const uint16_type GeometricOrder = GN;
 
-    static const bool is_isoparametric = ( PN == GN );
-    static const bool is_subparametric = ( PN > GN );
-    static const bool is_surparametric = ( PN < GN );
+    static inline const bool is_isoparametric = ( PN == GN );
+    static inline const bool is_subparametric = ( PN > GN );
+    static inline const bool is_surparametric = ( PN < GN );
 };
 
 typedef parameter::parameters<
@@ -1589,7 +1616,7 @@ public:
     /** @name Constants
      */
     //@{
-    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    static inline const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
 
     template<typename MeshListType,int N>
     struct GetMesh
@@ -1694,9 +1721,9 @@ public:
     static constexpr bool is_periodic = periodicity_0_type::is_periodic;
 
     typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
-    static const bool is_mortar = mortar_0_type::is_mortar;
-    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
-    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
+    static inline const bool is_mortar = mortar_0_type::is_mortar;
+    static inline const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
+    static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
 
     //@}
 
@@ -1869,7 +1896,7 @@ public:
         public std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>
     {
     public:
-        static const bool is_rb_context = false;
+        static inline const bool is_rb_context = false;
         //typedef std::map<int,basis_context_ptrtype> super;
         using super = std::map<int,std::pair<basis_context_ptrtype,std::vector<index_type>>>;
         typedef typename super::value_type bc_type;
@@ -2160,6 +2187,9 @@ public:
         typedef Cont container_type;
         typedef container_type vector_temporary_type;
 
+        // Bring base class operator() into scope to prevent hiding
+        using super::operator();
+
         using polyset_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::polyset_type>;
 
         using pc_type = mp11::mp_if_c<is_composite, boost::none_t, typename basis_0_type::PreCompute>;
@@ -2274,6 +2304,13 @@ public:
         /** @name Operator overloads
          */
         //@{
+        // Bring base class virtual operators into scope to prevent hiding
+        using Cont::operator=;
+        using Cont::operator+=;
+        using Cont::operator-=;
+        using Cont::load;
+        using Cont::save;
+
         Element& operator=( Element && __e );
         Element& operator=( Element const& __e );
 #if 0
@@ -2471,14 +2508,6 @@ public:
             return super::operator()( index );
         }
 #endif
-        value_type  operator()( size_t i ) const
-        {
-            return super::operator()( i );
-        }
-        value_type& operator()( size_t i )
-        {
-            return super::operator()( i );
-        }
         Element& operator+=( Element const& _e )
         {
             for ( int i=0; i < _e.nLocalDof(); ++i )
@@ -2490,7 +2519,8 @@ public:
         using p0dh_t =  FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>;
         using p0dh_element_t =  typename FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>::template Element<value_type>;
 
-        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        template<typename elt_t = p0dh_element_t>
+            requires (!std::is_same_v<elt_t, this_type>)
         Element& plusAssign( elt_t const& _e, const value_type sign = 1. )
             {
                 if ( this->mesh()  != _e.mesh() )
@@ -2509,12 +2539,14 @@ public:
                 }
                 return *this;
             }
-        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        template<typename elt_t = p0dh_element_t>
+            requires (!std::is_same_v<elt_t, this_type>)
         Element& operator+=( elt_t const& _e )
             {
                 return plusAssign( _e );
             }
-        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        template<typename elt_t = p0dh_element_t>
+            requires (!std::is_same_v<elt_t, this_type>)
         Element& operator-=( elt_t const& _e )
             {
                 return plusAssign( _e, -1. );
@@ -2579,7 +2611,8 @@ public:
         //! @endcode
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<index_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+            requires (!B::is_modal)
+        void element( std::vector<index_type> const& e, Eigen::Ref<local_interpolant_t<B>> l ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2598,7 +2631,8 @@ public:
         //! @note the vector of components is already allocated
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<index_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+            requires (!B::is_modal)
+        void element( std::vector<index_type> const& e, local_interpolant_type& l ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -3272,7 +3306,8 @@ public:
         //! compute Symmetric Gradient only in the vectorial case
         //!
         template<typename ContextType,typename EType = this_type>
-        void symmetricGradient( ContextType const & context, grad_array_type& v, std::enable_if_t<EType::is_vectorial>* = nullptr ) const;
+            requires EType::is_vectorial
+        void symmetricGradient( ContextType const & context, grad_array_type& v ) const;
 
         void
         gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
@@ -4355,7 +4390,6 @@ public:
 
 
     }; // Element
-
     //@}
     /** @name Typedefs
      */
@@ -4420,7 +4454,8 @@ public:
      * helper static function to create a std::shared_ptr<> out of
      * the \c FunctionSpace
      */
-    template <typename ... Ts,typename  = typename std::enable_if_t< sizeof...(Ts) != 0 && ( NA::is_named_argument_v<Ts> && ...) > >
+    template <typename ... Ts>
+        requires (sizeof...(Ts) != 0) && (NA::is_named_argument_v<Ts> && ...)
     static pointer_type New( Ts && ... v )
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
@@ -5672,7 +5707,8 @@ public:
      *
      * @param filepath path of the json files generated (extension can be automatically added if not given)
      */
-    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    template <typename TT=functionspace_type>
+        requires (!TT::is_composite)
     void save( std::string const& filepathstr ) const
         {
             fs::path argfilepath = filepathstr;
@@ -5764,7 +5800,8 @@ public:
      *
      * @param filepath path of the json files on the disk
      */
-    template <typename TT=functionspace_type,std::enable_if_t< !TT::is_composite, bool> = true >
+    template <typename TT=functionspace_type>
+        requires (!TT::is_composite)
     std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
         {
             fs::path argfilepath = filepathstr;
@@ -5836,7 +5873,8 @@ public:
             return mappingWithFile;
         }
 
-    template <typename TT=functionspace_type,std::enable_if_t< TT::is_composite, bool> = true >
+    template <typename TT=functionspace_type>
+        requires TT::is_composite
     std::vector<index_type> relationFromFile( std::string const& filepathstr ) const
         {
             CHECK( false ) << "composite case not implemented";
@@ -5874,8 +5912,8 @@ private:
     FEELPP_NO_EXPORT void initHead( FSpaceHead& fspacehead );
 
     template <typename RangeType>
-    void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnElements() >* = nullptr ) const
+        requires (RangeType::isOnElements())
+    void dofs( RangeType const& rangeElt, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5912,8 +5950,8 @@ private:
             }
         }
     template <typename RangeType>
-    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnFaces() >* = nullptr ) const
+        requires (RangeType::isOnFaces())
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5953,16 +5991,16 @@ private:
             }
         }
     template <typename RangeType>
-    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES &&
-                                !std::is_same<typename RangeType::super,faces_reference_wrapper_t<mesh_type> >::value >* = nullptr ) const
+        requires (boost::tuples::template element<0, typename RangeType::super>::type::value == MESH_FACES &&
+                  !std::is_same_v<typename RangeType::super,faces_reference_wrapper_t<mesh_type>>)
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             CHECK(false) << "TODO";
         }
 
     template <typename RangeType>
-    void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnEdges() >* = nullptr ) const
+        requires (RangeType::isOnEdges())
+    void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             size_type eid = invalid_v<size_type>;
             uint16_type edgeid_in_element;
@@ -6035,8 +6073,8 @@ private:
             }
         }
     template <typename RangeType>
-    void dofs( RangeType const& rangePoint, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               std::enable_if_t< RangeType::isOnPoints()>* = nullptr ) const
+        requires (RangeType::isOnPoints())
+    void dofs( RangeType const& rangePoint, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res ) const
         {
             std::vector<uint16_type> compUsed;
             static const uint16_type nDofComponents = this->dof()->nDofComponents();
@@ -6224,24 +6262,24 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         tic();
         tic();
         M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-        toc("FunctionSpace dof-1", FLAGS_v>0);
+        toc("FunctionSpace dof-1", Environment::logVerbosityLevel()>0);
         tic();
         M_dof->setDofTableExtended( this->extendedDofTable() );
-        toc("FunctionSpace dof-2", FLAGS_v>0);
+        toc("FunctionSpace dof-2", Environment::logVerbosityLevel()>0);
         DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
         tic();
         CHECK( dofindices.empty() ) << "NOT GO HERE";
         //M_dof->setDofIndices( dofindices );
-        toc("FunctionSpace dof-3", FLAGS_v>0);
+        toc("FunctionSpace dof-3", Environment::logVerbosityLevel()>0);
         DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
         tic();
         if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
             M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
-        toc("FunctionSpace dof-4", FLAGS_v>0);
+        toc("FunctionSpace dof-4", Environment::logVerbosityLevel()>0);
         tic();
         M_dof->build( M_mesh );
-        toc("FunctionSpace dof-5", FLAGS_v>0);
-        toc("FunctionSpace dof table", FLAGS_v > 0 );
+        toc("FunctionSpace dof-5", Environment::logVerbosityLevel()>0);
+        toc("FunctionSpace dof table", Environment::logVerbosityLevel() > 0 );
         M_dofOnOff = M_dof;
 
         this->applyUpdateInformationObject();
@@ -6585,20 +6623,6 @@ void FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( nl::json& p ) c
         p.emplace( "subfunctionspaces", subPt );
     }
 }
-template<typename T,int M,int N>
-std::ostream&
-operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )
-{
-    const size_type* shape =  id.M_id.shape();
-
-    for ( size_type i = 0; i < shape[0]; ++i )
-    {
-        os << id[i] << std::endl;
-    }
-    os << std::endl;
-
-    return os;
-}
 
 /**
    iostream operator to print some information about the function space \p Xh
@@ -6624,7 +6648,8 @@ namespace Feel {
 //!
 //! @return the support of a function space
 //!
-template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
+template<typename SpaceT>
+    requires is_functionspace_v<SpaceT>
 constexpr typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
 support( std::shared_ptr<SpaceT> const& X )
 {

@@ -183,8 +183,11 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
             _mesh->loadHDF5( fname, update, scale );
         }
 #endif
-        if ( straighten && _mesh_type::nOrder > 1 )
-            return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+        if constexpr ( _mesh_type::nOrder > 1 )
+        {
+            if ( straighten )
+                return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+        }
     }
     return _mesh;
 }
@@ -232,5 +235,9 @@ createGMSHMesh( Ts && ... v )
 }
 
 }
+
+// Include implementation only when needed (nOrder > 1)
+// For P1 meshes, if constexpr eliminates the straightenMesh code path at compile time
+#include <feel/feelfilters/straightenmesh_impl.hpp>
 
 #endif /* FEELPP_CREATEGMSHMESH_HPP */

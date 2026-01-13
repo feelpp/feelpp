@@ -31,7 +31,11 @@
 
 #include <set>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 namespace Feel

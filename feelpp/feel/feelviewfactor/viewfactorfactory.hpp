@@ -12,6 +12,7 @@
 #pragma once
 
 #include <memory>
+#include <feel/feelviewfactor/viewfactorbase.hpp>
 
 namespace Feel
 {
@@ -22,8 +23,9 @@ namespace Feel
 template<typename MeshType>
 class ViewFactorProducerFactory
 {
-    virtual std::unique_ptr<ViewFactorBase<MeshType>> producer();
-    virtual ~ExporterFactory() = default;
+public:
+    virtual ~ViewFactorProducerFactory() = default;
+    virtual std::unique_ptr<ViewFactorBase<MeshType>> create() = 0;
 };
 
 } // namespace Feel

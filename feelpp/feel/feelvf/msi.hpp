@@ -76,7 +76,7 @@ public:
 
     static const int Options = _Options;
 
-    static const bool is_terminal = true;
+    static inline const bool is_terminal = true;
 
     typedef Feel::MultiScaleImage<T,Options> msi_type;
     using needs_gradient_t = typename msi_type::needs_gradient_t;
@@ -86,19 +86,19 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template<typename Func>
-    static const bool has_trial_basis = false;
+    static inline const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -196,7 +196,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )

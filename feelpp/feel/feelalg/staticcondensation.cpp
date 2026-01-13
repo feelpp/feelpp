@@ -58,7 +58,7 @@ void StaticCondensation<T,IndexT>::addLocalMatrix ( int* rows, int nrows,
     //LOG(INFO) << "ROWS=" << raw_index_map_t( rows, nrows );
     //LOG(INFO) << "COLS=" << raw_index_map_t( cols, ncols );
 #endif
-    //toc("sc.addLocalMatrix",FLAGS_v>0);
+    //toc("sc.addLocalMatrix",Environment::logVerbosityLevel()>0);
 }
 
 template<typename T, typename IndexT>
@@ -85,7 +85,7 @@ void StaticCondensation<T,IndexT>::addLocalVector ( int* rows, int nrows,
     // cout << "F add entry " << this->M_block_row << "," << K << " =" << this->M_local_vectors[this->M_block_row][K] << std::endl;
     this->M_local_vrows[this->M_block_row][K] = raw_index_map_t( rows, nrows );
 #endif
-    //toc("sc.addLocalVector",FLAGS_v>0);
+    //toc("sc.addLocalVector",Environment::logVerbosityLevel()>0);
 }
 
 template class StaticCondensation<double>;

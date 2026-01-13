@@ -25,9 +25,11 @@
 
 namespace Feel {
 
-FEELPP_EXPORT MasterStream cout( std::cout );
-FEELPP_EXPORT MasterStream cerr( std::cerr );
-FEELPP_EXPORT MasterStream clog( std::clog );
+// Initialize with appropriate log levels
+// cout -> LOG(INFO), cerr -> LOG(WARNING), clog -> LOG(INFO)
+FEELPP_EXPORT MasterStream cout( std::cout, nullptr, Logger::Level::info );
+FEELPP_EXPORT MasterStream cerr( std::cerr, nullptr, Logger::Level::warn );
+FEELPP_EXPORT MasterStream clog( std::clog, nullptr, Logger::Level::info );
 
 
 }

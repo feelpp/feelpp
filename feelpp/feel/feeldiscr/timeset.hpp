@@ -501,7 +501,7 @@ public:
             std::string reprType = IsNodal? "nodal":"element";
             tic();
             auto scalarSpace = this->scalarFunctionSpace<IsNodal>( func );
-            toc( (boost::format("Timeset::add get scalar space %1%")%reprType).str(),FLAGS_v>0);
+            toc( (boost::format("Timeset::add get scalar space %1%")%reprType).str(),Environment::logVerbosityLevel()>0);
 
             tic();
             auto & fieldsMap = this->fields<IsNodal>();
@@ -683,26 +683,26 @@ public:
             M_state.clear( STEP_ON_DISK );
 
             showMe( "Step::add" );
-            toc((boost::format("Timeset::add functionspace element %1%")%__n).str(),FLAGS_v>0);
+            toc((boost::format("Timeset::add functionspace element %1%")%__n).str(),Environment::logVerbosityLevel()>0);
         }
 
 
 
         template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, ExprT const& expr, variant_representation_arg_type const& rep = "" )
             {
                 this->add( __n, __n, expr, rep );
             }
         template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
-        void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "" )
             {
                 this->add( __n, __n, expr, rangElt, rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "" )
             {
                 if ( this->isIgnored() )
                     return;
@@ -712,8 +712,8 @@ public:
             }
 
         template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "",
-                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+            requires std::is_base_of_v<ExprBase,ExprT>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "" )
             {
                 if ( this->isIgnored() )
                     return;
@@ -790,7 +790,7 @@ public:
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
-                toc((boost::format("Timeset::add expression %1%")%__n).str(),FLAGS_v>0);
+                toc((boost::format("Timeset::add expression %1%")%__n).str(),Environment::logVerbosityLevel()>0);
             }
 
         //@}

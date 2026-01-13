@@ -79,10 +79,10 @@ public:
     static const uint16_type nConvexOrder = mpl::if_<mpl::bool_<TheConvex::is_simplex>,
                              mpl::int_<nDim+nOrder+1>,
                              mpl::int_<nOrder+2> >::type::value;
-    //    static const bool is_normalized = NormalizationPolicy::is_normalized;
+    //    static inline const bool is_normalized = NormalizationPolicy::is_normalized;
     static const uint16_type convex_is_simplex = TheConvex::is_simplex;
     static const uint16_type convex_is_hypercube = TheConvex::is_hypercube;
-    static const bool is_product = false;
+    static inline const bool is_product = false;
 
     /** @name Typedefs
      */
@@ -1005,19 +1005,19 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
-    static const bool isTransformationEquivalent = true;
+    static inline const bool isTransformationEquivalent = true;
     typedef MomentPolynomialSet<Dim, Order,RealDim, PolySetType, T, Simplex> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const bool is_continuous = false;
-    static const bool is_modal = true;
+    static inline const bool is_tensor2 = polyset_type::is_tensor2;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_continuous = false;
+    static inline const bool is_modal = true;
     static const uint16_type nComponents = polyset_type::nComponents;
-    static const bool is_product = true;
-    static const bool isContinuous = false;
+    static inline const bool is_product = true;
+    static inline const bool isContinuous = false;
     typedef Discontinuous continuity_type;
 
     typedef typename super::component_type component_type;

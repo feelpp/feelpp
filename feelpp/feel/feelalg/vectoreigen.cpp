@@ -124,12 +124,13 @@ Vector<T> &
 VectorEigen<T>::operator= ( const Vector<value_type> &V )
 {
     checkInvariant();
-    FEELPP_ASSERT( this->localSize() == V.localSize() )( this->localSize() )( V.localSize() ).warn ( "invalid vector size" );
-    FEELPP_ASSERT( this->firstLocalIndex() == V.firstLocalIndex() &&
-                   this->lastLocalIndex() == V.lastLocalIndex() )
-    ( this->firstLocalIndex() )( this->lastLocalIndex() )
-    ( this->vec().size() )
-    ( V.firstLocalIndex() )( V.lastLocalIndex() ).warn( "may be vector invalid  copy" );
+    CHECK( this->localSize() == V.localSize() ) 
+        << fmt::format("invalid vector size: {} vs {}", this->localSize(), V.localSize());
+    CHECK( this->firstLocalIndex() == V.firstLocalIndex() &&
+           this->lastLocalIndex() == V.lastLocalIndex() )
+        << fmt::format("invalid index range: [{}, {}) vs [{}, {})", 
+                       this->firstLocalIndex(), this->lastLocalIndex(),
+                       V.firstLocalIndex(), V.lastLocalIndex());
 
     for ( size_type i = 0; i < this->localSize(); ++i )
     {
@@ -147,10 +148,9 @@ VectorEigen<T>::init ( const size_type n,
                                const size_type n_local,
                                const bool      fast )
 {
-    FEELPP_ASSERT ( n_local <= n )
-    ( n_local )( n )
-    ( this->comm().rank() )
-    ( this->comm().size() ).error( "Invalid local vector size" );
+    CHECK( n_local <= n )
+        << fmt::format("Invalid local vector size: {} > {} on rank {}/{}", 
+                       n_local, n, this->comm().rank(), this->comm().size());
 
     // Clear the data structures if already initialized
     if ( this->isInitialized() )
@@ -240,7 +240,7 @@ VectorEigen<T>::printMatlab( const std::string filename, bool renumber  ) const
     {
         std::ofstream file_out( name.c_str() );
 
-        FEELPP_ASSERT( file_out )( filename ).error( "[VectorEigen::printMatlab] ERROR: File cannot be opened for writing." );
+        CHECK( file_out ) << fmt::format("[VectorEigen::printMatlab] File cannot be opened: {}", filename);
 
 				std::string varName = "var_" + filename.substr(0,filename.find("."));
         file_out << varName <<" = [ ";
@@ -265,7 +265,7 @@ VectorEigen<T>::localize ( Vector<T>& v_local_in ) const
     checkInvariant();
 
     VectorEigen<T>* v_local = dynamic_cast<VectorEigen<T>*>( &v_local_in );
-    FEELPP_ASSERT( v_local != 0 ).error ( "dynamic_cast failed: invalid vector object" );
+    CHECK( v_local != 0 ) << "dynamic_cast failed: invalid vector object";
 
 #if 0
     v_local->firstLocalIndex() = 0;
@@ -289,7 +289,8 @@ VectorEigen<T>::localize ( Vector<T>& v_local_in ) const
 
 #ifndef FEELPP_HAS_MPI
 
-    FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    CHECK( this->localSize() == this->size() ) 
+        << fmt::format("invalid size in non MPI mode: {} vs {}", this->localSize(), this->size());
 
 #endif
 }
@@ -315,10 +316,14 @@ VectorEigen<T>::localize ( const size_type first_local_idx,
                                    const std::vector<size_type>& send_list )
 {
     // Only good for serial vectors
-    FEELPP_ASSERT ( this->size() == this->localSize() )( this->size() )( this->localSize() ).error( "invalid local/global size" );
-    FEELPP_ASSERT ( last_local_idx > first_local_idx )( last_local_idx )( first_local_idx ).error( "invalid first/last local indices" );
-    FEELPP_ASSERT ( send_list.size() <= this->size() )( send_list.size() )( this->size() ).error( "invalid send list size" );
-    FEELPP_ASSERT ( last_local_idx < this->size() )( last_local_idx )( this->size() ).error( "invalid last local index" );
+    CHECK( this->size() == this->localSize() ) 
+        << fmt::format("invalid local/global size: {} vs {}", this->localSize(), this->size());
+    CHECK( last_local_idx > first_local_idx ) 
+        << fmt::format("invalid first/last local indices: {} >= {}", first_local_idx, last_local_idx);
+    CHECK( send_list.size() <= this->size() ) 
+        << fmt::format("invalid send list size: {} > {}", send_list.size(), this->size());
+    CHECK( last_local_idx < this->size() ) 
+        << fmt::format("invalid last local index: {} >= {}", last_local_idx, this->size());
     Feel::detail::ignore_unused_variable_warning( send_list );
 
     const size_type size       = this->size();
@@ -386,13 +391,15 @@ VectorEigen<T>::localize ( vector_type& v_local ) const
 
     else
     {
-        FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+        CHECK( this->localSize() == this->size() ) 
+            << fmt::format("invalid size in non MPI mode: {} vs {}", this->localSize(), this->size());
         v_local = M_vec;
     }
 
 #else
 
-    FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
+    CHECK( this->localSize() == this->size() ) 
+        << fmt::format("invalid size in non MPI mode: {} vs {}", this->localSize(), this->size());
 
 #endif
 }
@@ -429,8 +436,9 @@ VectorEigen<T>::localizeToOneProcessor ( vector_type& v_local,
 
 #else
 
-    FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
-    FEELPP_ASSERT ( pid == 0  )( pid ).error( "invalid pid in non MPI mode" );
+    CHECK( this->localSize() == this->size() ) 
+        << fmt::format("invalid size in non MPI mode: {} vs {}", this->localSize(), this->size());
+    CHECK( pid == 0 ) << fmt::format("invalid pid in non MPI mode: {}", pid);
 
 #endif
 }
@@ -450,16 +458,15 @@ template <typename T>
 void
 VectorEigen<T>::checkInvariant() const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( this->localSize() <= this->size() )
-    ( this->size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT ( M_vec.size() == this->localSize() )
-    ( M_vec.size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT ( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() )
-    ( this->size() )
-    ( this->lastLocalIndex() )
-    ( this->firstLocalIndex() )
-    ( this->localSize() ).error( "vector invalid size" );
+    CHECK( this->isInitialized() ) << "vector not initialized";
+    CHECK( this->localSize() <= this->size() )
+        << fmt::format("invalid vector size: {} > {}", this->localSize(), this->size());
+    CHECK( M_vec.size() == this->localSize() )
+        << fmt::format("invalid vector size: {} vs {}", M_vec.size(), this->localSize());
+    CHECK( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() )
+        << fmt::format("invalid index range: [{}, {}) size {} (total: {})",
+                       this->firstLocalIndex(), this->lastLocalIndex(), 
+                       this->localSize(), this->size());
 }
 
 namespace detail
@@ -519,7 +526,7 @@ void
 VectorEigen<T>::insert ( const ublas::vector<T>& V,
                          const std::vector<size_type>& dof_indices )
 {
-    FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+    LOG(FATAL) << "invalid call, not implemented yet";
 }
 
 template <typename T>
@@ -531,7 +538,7 @@ void VectorEigen<T>::addVector ( const Vector<value_type>& V_in,
     //const MatrixEigenDense<T>* A = dynamic_cast<const MatrixEigenDense<T>*>( &A_in );
     const MatrixEigenDense<T>* A = dynamic_cast<const MatrixEigenDense<T>*>( &A_in );
 
-    CHECK ( A != 0 ) << "Invalid Eigen matrix\n";
+    CHECK( A != 0 ) << "Invalid Eigen matrix";
 
     M_vec += A->mat()*V->vec();
 }

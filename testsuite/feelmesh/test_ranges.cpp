@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( test_range1 )
         for ( auto const& eltw : elts )
         {
             auto elt = unwrap_ref(eltw);
-            BOOST_TEST_MESSAGE( "elt " << elt.id() << " mark " << mark );
+            BOOST_TEST_MESSAGE( "elt " << elt.id() << " has marker: " << (mark.isOn() ? "on" : "off") );
         }
     }
 

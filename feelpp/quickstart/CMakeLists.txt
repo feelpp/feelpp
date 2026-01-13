@@ -35,6 +35,9 @@ endif()
 
 enable_testing()
 
+# Set quickstart label for all tests in this directory tree
+set_directory_properties(PROPERTIES LABELS "quickstart")
+
 if ( NOT TARGET check )
   add_custom_target(check)
 endif()

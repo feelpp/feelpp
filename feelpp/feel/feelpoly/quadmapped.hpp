@@ -30,8 +30,13 @@
 #include <feel/feelcore/visitor.hpp>
 
 #include <stdexcept>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/glas.hpp>
@@ -60,7 +65,7 @@ public :
     static const uint32_type Dim = convex_type::nDim;
     static const uint32_type convexOrder = convex_type::nOrder;
 
-    static const bool is_simplex = convex_type::is_simplex;
+    static inline const bool is_simplex = convex_type::is_simplex;
 
     typedef typename pointset_type::nodes_type nodes_type;
     typedef typename matrix_node<value_type>::type points_type;

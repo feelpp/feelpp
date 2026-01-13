@@ -85,7 +85,7 @@ void partition( nl::json const& partconfig )
                              _straighten=false );
         //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
         //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
-        toc("loading mesh done",FLAGS_v>0);
+        toc("loading mesh done",Environment::logVerbosityLevel()>0);
 
 #if 0
         if constexpr ( is_simplex_v<ShapeType> && ShapeType::nDim > 1 )
@@ -206,7 +206,7 @@ void partition( nl::json const& partconfig )
             using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
             io_t io( outputPathMesh );
             io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
-            toc("paritioning and save on disk done",FLAGS_v>0);
+            toc("paritioning and save on disk done",Environment::logVerbosityLevel()>0);
 
             if ( exporter )
             {

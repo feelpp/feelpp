@@ -108,29 +108,29 @@ public:
 
     static const size_type context = vm::DYNAMIC;
 
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     template<typename Funct>
     struct HasTestFunction
     {
-        static const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
+        static inline const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                        hana::integral_constant<bool,false>{},
                                                                        typename FunctorsVariadicExpr::template HasTestFunction<Funct>{} ) )>::value;
     };
     template<typename Funct>
     struct HasTrialFunction
     {
-        static const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
+        static inline const bool result =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                        hana::integral_constant<bool,false>{},
                                                                        typename FunctorsVariadicExpr::template HasTrialFunction<Funct>{} ) )>::value;
     };
 
     template<typename Funct>
-    static const bool has_test_basis = std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
+    static inline const bool has_test_basis = std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                           hana::integral_constant<bool,false>{},
                                                                           typename FunctorsVariadicExpr::template HasTestBasis<Funct>{} ) )>::value;
     template<typename Funct>
-    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
+    static inline const bool has_trial_basis = std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{},
                                                                            hana::integral_constant<bool,false>{},
                                                                            typename FunctorsVariadicExpr::template HasTrialBasis<Funct>{} ) )>::value;
     using test_basis = std::nullptr_t;//TODO//typename expression_type::test_basis;
@@ -521,7 +521,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( this_type const& expr,
