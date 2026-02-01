@@ -30,8 +30,13 @@
 #define __PointSetInterpolation_H 1
 
 #include <feel/feelmesh/pointset.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace Feel
 {
@@ -66,8 +71,8 @@ public:
     typedef typename super::nodes_type nodes_type;
     typedef typename matrix_node<value_type>::type points_type;
 
-    static const bool is_simplex = convex_type::is_simplex;
-    static const bool is_hypercube = convex_type::is_hypercube;
+    static inline const bool is_simplex = convex_type::is_simplex;
+    static inline const bool is_hypercube = convex_type::is_hypercube;
 
     static const uint32_type convexOrder = convex_type::nOrder;
     static const uint32_type topological_dimension = convex_type::topological_dimension;

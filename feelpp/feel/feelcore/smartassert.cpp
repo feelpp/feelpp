@@ -212,6 +212,16 @@ void defaultLogger( const AssertContext & context )
         return;
 
     //dumpContextDetail( context, *( default_logger_info.out_ ) );
+#if defined(FEELPP_HAS_SPDLOG)
+    if ( context.get_level() == lvl_info )
+        dumpContextSummary( context, std::cerr );
+    if ( context.get_level() == lvl_warn )
+        dumpContextSummary( context, std::cerr );
+    if ( context.get_level() == lvl_error )
+        dumpContextSummary( context, std::cerr );
+    if ( context.get_level() == lvl_fatal )
+        dumpContextSummary( context, std::cerr );
+#else
     if ( context.get_level() == google::INFO )
         dumpContextSummary( context, LOG(INFO) );
     if ( context.get_level() == google::WARNING )
@@ -220,6 +230,7 @@ void defaultLogger( const AssertContext & context )
         dumpContextSummary( context, LOG(ERROR) );
     if ( context.get_level() == google::FATAL )
         dumpContextSummary( context, LOG(FATAL) );
+#endif
 }
 
 ///////////////////////////////////////////////////////
@@ -229,6 +240,16 @@ void defaultLogger( const AssertContext & context )
 void defaultWarnHandler( const AssertContext & context )
 {
     // dumpContextSummary( context, std::cout );
+#if defined(FEELPP_HAS_SPDLOG)
+    if ( context.get_level() == lvl_info )
+        dumpContextSummary( context, std::cerr );
+    if ( context.get_level() == lvl_warn )
+        dumpContextSummary( context, std::cerr );
+    if ( context.get_level() == lvl_error )
+        dumpContextSummary( context, std::cerr );
+    if ( context.get_level() == lvl_fatal )
+        dumpContextSummary( context, std::cerr );
+#else
     if ( context.get_level() == google::INFO )
         dumpContextSummary( context, LOG(INFO) );
     if ( context.get_level() == google::WARNING )
@@ -237,6 +258,7 @@ void defaultWarnHandler( const AssertContext & context )
         dumpContextSummary( context, LOG(ERROR) );
     if ( context.get_level() == google::FATAL )
         dumpContextSummary( context, LOG(FATAL) );
+#endif
 }
 
 
@@ -309,7 +331,11 @@ void defaultDebugHandler( const AssertContext & context )
 void defaultErrorHandler( const AssertContext & context )
 {
     //std::ostringstream out;
+#if defined(FEELPP_HAS_SPDLOG)
+    dumpContextSummary( context, std::cerr );
+#else
     dumpContextSummary( context, LOG(ERROR) );
+#endif
     //throw std::runtime_error( out.str() );
 }
 
@@ -317,7 +343,11 @@ void defaultErrorHandler( const AssertContext & context )
 // fatal : dump error and abort
 void defaultFatalHandler( const AssertContext & context )
 {
+#if defined(FEELPP_HAS_SPDLOG)
+    dumpContextDetail( context, std::cerr );
+#else
     dumpContextDetail( context, LOG(FATAL) );
+#endif
     //abort();
 }
 

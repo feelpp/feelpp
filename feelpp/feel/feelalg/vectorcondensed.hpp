@@ -84,6 +84,7 @@ public:
          M_strategy( solve::strategy::static_condensation )
         {}
 #endif
+    using super::operator=;
     VectorCondensed( VectorCondensed const& ) = default;
     VectorCondensed& operator=( VectorCondensed const& ) = default;
     ~VectorCondensed() override = default;
@@ -132,7 +133,7 @@ public:
             }
             else
                 super::addVector( rows, nrows, data, K, K2 );
-            toc("Vector::addVector",FLAGS_v>2);
+            toc("Vector::addVector",Environment::logVerbosityLevel()>2);
         }
 
     sc_ptrtype sc() { getFuture();return M_sc; }

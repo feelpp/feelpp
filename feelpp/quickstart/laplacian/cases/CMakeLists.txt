@@ -22,3 +22,5 @@
 #
 #
 
+# Set quickstart label for all tests
+set_directory_properties(PROPERTIES LABELS "quickstart")

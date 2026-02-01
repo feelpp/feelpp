@@ -15,7 +15,7 @@ FMU::FMU( std::string prefix ) :
     M_callbacks->realloc = realloc;
     M_callbacks->free = free;
     M_callbacks->logger = importlogger;
-    M_callbacks->log_level = jm_log_level_all;//FLAGS_v;
+    M_callbacks->log_level = jm_log_level_all;//Environment::logVerbosityLevel();
     M_callbacks->context = 0;
 
     M_context = fmi_import_allocate_context( M_callbacks.get() );

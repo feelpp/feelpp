@@ -193,8 +193,12 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     VLOG(1) <<"parse expression: " << strexpr;
     if ( boost::algorithm::contains( strexpr, "// Not supported in C" ) )
     {
+#if 0        
         VLOG(1) <<"invalid code: " << table;
-        throw std::invalid_argument( fmt::format( "invalid code: ", table ) );
+        std::ostringstream oss;
+        oss << table;
+        throw std::invalid_argument( fmt::format( "invalid code: {}", oss.str() ) );
+#endif        
     }
     ex e; // = reader(str);
     try
@@ -205,10 +209,10 @@ parse( std::string const& str, std::string const& seps, std::vector<symbol> cons
     }
     catch (std::invalid_argument& err)
     {
-        throw std::invalid_argument( fmt::format( "GiNaC error parsing {}: {}", e, err.what() ) );
+        throw std::invalid_argument( fmt::format( "GiNaC error parsing {}: {}", fmt::streamed(e), err.what() ) );
         reader.strict = false;
         e =reader(strexpr);
-        throw std::invalid_argument( fmt::format( "GiNaC error parsing {}: {}", e, err.what() ) );
+        throw std::invalid_argument( fmt::format( "GiNaC error parsing {}: {}", fmt::streamed(e), err.what() ) );
     }
     catch ( ... )
     {

@@ -2,18 +2,31 @@ get_filename_component(FeelppContrib_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH
 include(CMakeFindDependencyMacro)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
-foreach( dep feelpp_gflags glog nlopt eigen3 )
+foreach( dep nlopt eigen3 )
   if ( EXISTS ${FEELPP_DIR}/share/feelpp/${dep}/cmake )
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${FEELPP_DIR}/share/feelpp/${dep}/cmake )
   endif()
 endforeach()
 
-find_dependency( feelpp_gflags REQUIRED )
-find_dependency( glog REQUIRED )
 find_dependency( Eigen3 REQUIRED )
 find_dependency( pybind11 )
 find_dependency( tabulate )
 find_dependency( indicators )
+
+# cln
+find_package(PkgConfig REQUIRED)
+pkg_search_module(CLN REQUIRED IMPORTED_TARGET "cln>=1.3.6")
+message(STATUS "[feelpp] External CLN Includes: ${CLN_INCLUDE_DIRS}")
+message(STATUS "[feelpp] External CLN Libraries: ${CLN_LIBRARIES}, ${CLN_LINK_LIBRARIES}")
+
+if (CLN_FOUND AND NOT TARGET cln::cln)
+  add_library(cln::cln INTERFACE IMPORTED)
+  # Either forward to the pkg-config imported target:
+  set_property(TARGET cln::cln PROPERTY INTERFACE_LINK_LIBRARIES PkgConfig::CLN)
+  # And (optional) expose include dirs explicitly for IDEs:
+  set_property(TARGET cln::cln PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${CLN_INCLUDE_DIRS}")
+endif()
+
 if ( FEELPP_HAS_MMG )
   find_dependency( mmg )
 endif()

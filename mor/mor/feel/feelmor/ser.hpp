@@ -123,7 +123,7 @@ SER<CRBType>::run()
                 crb->offline();
             }
             while( crb->adaptationSER() );
-            toc("SER - crb offline", FLAGS_v>0);
+            toc("SER - crb offline", Environment::logVerbosityLevel()>0);
 
             crb->setRebuild( false ); //do not rebuild since co-build is not finished
             int use_rb = M_useRbInEimMuSelect || M_useRbInEimBasis;
@@ -206,7 +206,7 @@ SER<CRBType>::run()
 
                 model->assemble(); //Affine decomposition has changed since eim has changed
             }
-            toc("SER - eim offline + re-assemble", FLAGS_v>0);
+            toc("SER - eim offline + re-assemble", Environment::logVerbosityLevel()>0);
 
         } while( crb->offlineStep() );
 

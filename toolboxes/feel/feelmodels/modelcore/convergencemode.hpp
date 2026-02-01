@@ -1,6 +1,8 @@
 #ifndef FEELPP_TOOLBOXES_CONVERGENCE_HPP
 #define FEELPP_TOOLBOXES_CONVERGENCE_HPP 1
 
+#include <algorithm>
+#include <cmath>
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
 
@@ -68,7 +70,18 @@ runHConvergence(std::string const& prefix,
             std::string const& fitMeasuresName = fitMeasuresNames[k];
             double refSlope = fitMeasuresRefSlopes[k];
             double tol = 0.3;
-            auto c = polyfit( log(meshSizes), log(fitMeasuresValues[fitMeasuresName]), 1 );
+            
+            // Apply log element-wise to the vectors
+            std::vector<double> logMeshSizes(meshSizes.size());
+            std::transform(meshSizes.begin(), meshSizes.end(), logMeshSizes.begin(),
+                          [](double x) { return std::log(x); });
+            
+            const auto& measureValues = fitMeasuresValues[fitMeasuresName];
+            std::vector<double> logMeasureValues(measureValues.size());
+            std::transform(measureValues.begin(), measureValues.end(), logMeasureValues.begin(),
+                          [](double x) { return std::log(x); });
+            
+            auto c = polyfit( logMeshSizes, logMeasureValues, 1 );
             double measuredSlope = c[1];
             double diffSlope = std::abs(measuredSlope-refSlope);
             bool checkIsOk = diffSlope < tol;

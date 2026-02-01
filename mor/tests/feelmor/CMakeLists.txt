@@ -32,7 +32,7 @@ foreach( geo test_deim.geo test_geim.geo parameterspace.json )
                 ${CMAKE_CURRENT_BINARY_DIR}/${geo})
 endforeach()
 
-feelpp_add_test( eim NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp_mor )
+feelpp_add_test( eim NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp_mor CLI "--eim.rebuild-database=true" )
 feelpp_add_test( eim_grepl LINK_LIBRARIES Feelpp::feelpp_mor CLI "--eim.dimension-max=15 --trainset-eim-size=10 --eim.rebuild-database=true" )
 feelpp_add_test( eim_composite CFG test_eim_composite.cfg LINK_LIBRARIES Feelpp::feelpp_mor NO_MPI_TEST )
 

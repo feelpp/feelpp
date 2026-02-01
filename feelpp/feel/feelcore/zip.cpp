@@ -1,3 +1,9 @@
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <zip.h>
+#include <fmt/core.h>
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/zip.hpp>
 
 namespace Feel
@@ -34,7 +40,7 @@ bool extractZipFile( const std::string& zipFilePath, const std::string& extracti
         }
 
         fs::path extractionPath = fs::path(extractionDir) / fs::path( entryName );
-        std::cout << fmt::format( "Extracting {} to {}", entryName, extractionPath.string() ) << std::endl;
+        VLOG(2) << fmt::format( "Extracting {} to {}", entryName, extractionPath.string() ) << std::endl;
 
         // If it's a folder
         struct zip_stat st;

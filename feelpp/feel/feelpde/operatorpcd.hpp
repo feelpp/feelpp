@@ -250,13 +250,13 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
     double time_step = M_accel?tn1-tn:1;
     tic();
     form2_conv = integrate( _range=elements(M_Qh->mesh()), _expr=expr_mu*gradt(p)*trans(grad(p)));
-    toc("OperatorPCD::update apply diffusion",FLAGS_v>0);
+    toc("OperatorPCD::update apply diffusion",Environment::logVerbosityLevel()>0);
 
     if ( hasConvection )
     {
         tic();
         form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=(trans(expr_b)*trans(gradt(p)))*id(p));
-        toc("OperatorPCD::update apply convection",FLAGS_v>0);
+        toc("OperatorPCD::update apply convection",Environment::logVerbosityLevel()>0);
     }
 
     if ( hasAlpha )
@@ -264,7 +264,7 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
         LOG(INFO) << "[OperatorPCD] Add mass matrix...\n";
         tic();
         form2_conv += integrate( _range=elements(M_Qh->mesh()), _expr=expr_alpha/time_step*idt(p)*id(p) );
-        toc("OperatorPCD::update apply mass",FLAGS_v>0);
+        toc("OperatorPCD::update apply mass",Environment::logVerbosityLevel()>0);
     }
 
     if ( M_bcInflowType == "Robin" )
@@ -292,7 +292,7 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
                 }
             }
         }
-        toc("OperatorPCD::update apply Robin",FLAGS_v>0);
+        toc("OperatorPCD::update apply Robin",Environment::logVerbosityLevel()>0);
     }
 
 
@@ -309,7 +309,7 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
     if ( !markersApplyStrongDirichlet.empty() )
         form2_conv += on( _range=markedfaces(M_Qh->mesh(),markersApplyStrongDirichlet),
                           _element=p, _rhs=M_rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
-    toc("OperatorPCD::update apply on()",FLAGS_v>0);
+    toc("OperatorPCD::update apply on()",Environment::logVerbosityLevel()>0);
 
     //this->applyBC(G);
     M_conv->close();
@@ -327,7 +327,7 @@ OperatorPCD<space_type>::update( ExprRho const& expr_rho, ExprMu const& expr_mu,
         LOG(INFO) << "[OperatorPCD] setting pcd operator done.\n";
         //init_G = true;
     }
-    toc("Operator::PCD update",FLAGS_v>0);
+    toc("Operator::PCD update",Environment::logVerbosityLevel()>0);
 }
 
 
@@ -344,7 +344,7 @@ OperatorPCD<space_type>::assembleMass()
     M_mass->close();
     if ( !M_applyInPETSc )
         massOp = op( M_mass, "Mp" );
-    toc("OperatorPCD::mass assembly",FLAGS_v>0);
+    toc("OperatorPCD::mass assembly",Environment::logVerbosityLevel()>0);
 }
 
 template < typename space_type>
@@ -406,7 +406,7 @@ OperatorPCD<space_type>::assembleDiffusion()
     }
     if ( !M_applyInPETSc )
         diffOp = op( M_diff, "Ap" );
-    toc("OperatorPCD::diffusion assembly",FLAGS_v>0);
+    toc("OperatorPCD::diffusion assembly",Environment::logVerbosityLevel()>0);
 }
 
 template < typename space_type>
@@ -615,13 +615,13 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpDiffusionConvection( R
     auto form2_conv = form2( _test=M_Ph, _trial=M_Ph, _matrix=M_conv );
     tic();
     form2_conv += integrate( _range=rangeElt, _expr=expr_mu*gradt(M_p)*trans(grad(M_p)));
-    toc("OperatorPCD::update apply diffusion",FLAGS_v>0);
+    toc("OperatorPCD::update apply diffusion",Environment::logVerbosityLevel()>0);
 
     if ( hasConvection )
     {
         tic();
         form2_conv += integrate( _range=rangeElt, _expr=(trans(expr_b)*trans(gradt(M_p)))*id(M_p));
-        toc("OperatorPCD::update apply convection",FLAGS_v>0);
+        toc("OperatorPCD::update apply convection",Environment::logVerbosityLevel()>0);
     }
 }
 
@@ -634,7 +634,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpMass( Range<mesh_type,
     auto form2_conv = form2( _test=M_Ph, _trial=M_Ph, _matrix=M_conv );
     tic();
     form2_conv += integrate( _range=rangeElt, _expr=expr_alpha*idt(M_p)*id(M_p) );
-    toc("OperatorPCD::update apply mass",FLAGS_v>0);
+    toc("OperatorPCD::update apply mass",Environment::logVerbosityLevel()>0);
 }
 
 template<typename SpaceVelocityType,typename SpacePressureType>
@@ -654,7 +654,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFpBoundaryConditionWithD
             form2_conv += integrate( _range=range,
                                      _expr=-expr_rho*trans(expr_bc)*N()*idt(M_p)*id(M_p));
         }
-        toc("OperatorPCD::update apply Robin",FLAGS_v>0);
+        toc("OperatorPCD::update apply Robin",Environment::logVerbosityLevel()>0);
     }
 }
 
@@ -676,7 +676,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::updateFinish()
             form2_conv += on( _range=rangebc,
                               _element=*M_p, _rhs=M_rhs, _expr=cst(0.), _type="elimination_keep_diagonal" );
     }
-    toc("OperatorPCD::update apply on()",FLAGS_v>0);
+    toc("OperatorPCD::update apply on()",Environment::logVerbosityLevel()>0);
 
     M_conv->close();
 
@@ -707,7 +707,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::assembleMass()
     M_mass->close();
     if ( !M_applyInPETSc )
         massOp = op( M_mass, "Mp" );
-    toc("OperatorPCD::mass assembly",FLAGS_v>0);
+    toc("OperatorPCD::mass assembly",Environment::logVerbosityLevel()>0);
 }
 
 template<typename SpaceVelocityType,typename SpacePressureType>
@@ -771,7 +771,7 @@ OperatorPCD<SpaceVelocityType,SpacePressureType>::assembleDiffusion()
     }
     if ( !M_applyInPETSc )
         diffOp = op( M_diff, "Ap" );
-    toc("OperatorPCD::diffusion assembly",FLAGS_v>0);
+    toc("OperatorPCD::diffusion assembly",Environment::logVerbosityLevel()>0);
 }
 
 template<typename SpaceVelocityType,typename SpacePressureType>

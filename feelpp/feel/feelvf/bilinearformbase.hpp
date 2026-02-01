@@ -57,7 +57,7 @@ public:
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
     typedef std::shared_ptr<matrix_type> matrix_ptrtype;
-    static const bool is_row_major = true;//matrix_type::is_row_major;
+    static inline const bool is_row_major = true;//matrix_type::is_row_major;
 
     using size_type =  typename matrix_type::size_type;
     
@@ -93,7 +93,7 @@ public:
     BilinearFormBase( BilinearFormBase && __vf ) = default;
     ~BilinearFormBase() override
         {
-            //toc(M_name, FLAGS_v > 0 );
+            //toc(M_name, Environment::logVerbosityLevel() > 0 );
         }
 
     /**

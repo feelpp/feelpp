@@ -29,9 +29,13 @@
 #ifndef SOLVERUNCONSTRAINED_H
 #define SOLVERUNCONSTRAINED_H
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <clapack.h>
 

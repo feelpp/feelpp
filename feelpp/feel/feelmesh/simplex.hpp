@@ -119,8 +119,8 @@ private:
 
 public:
 
-    static const bool is_simplex = true;
-    static const bool is_hypercube = false;
+    static inline const bool is_simplex = true;
+    static inline const bool is_hypercube = false;
 
     static inline const uint16_type nDim = Dim;
     static inline const uint16_type nOrder = Order;
@@ -159,7 +159,7 @@ public:
         {
             return nDim+1;
         }
-    static const int numVertices = numberOfVertices();
+    static inline const int numVertices = numberOfVertices();
     
     static constexpr int numberOfGeometricFaces()
         {
@@ -168,8 +168,8 @@ public:
             else return 0;
         }
 
-    static const int numFaces = numberOfGeometricFaces();
-    static const int numGeometricFaces = numberOfGeometricFaces();
+    static inline const int numFaces = numberOfGeometricFaces();
+    static inline const int numGeometricFaces = numberOfGeometricFaces();
 
     static constexpr int numberOfTopologicalFaces()
         {
@@ -178,7 +178,7 @@ public:
             else if constexpr ( nDim == 1 ) return 2;
             else return 0;
         }
-    static const int numTopologicalFaces = numberOfTopologicalFaces();
+    static inline const int numTopologicalFaces = numberOfTopologicalFaces();
 
     static constexpr int numberOfEdges()
         {
@@ -187,7 +187,7 @@ public:
             else if constexpr ( nDim == 1 ) return 1;
             else return 0;
         }
-    static const int numEdges = numberOfEdges();
+    static inline const int numEdges = numberOfEdges();
 
     static constexpr int numberOfVolumes()
         {

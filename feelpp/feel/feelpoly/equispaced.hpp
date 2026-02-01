@@ -39,8 +39,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelcore/traits.hpp>
 
 #include <stdexcept>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelalg/glas.hpp>
 
@@ -75,8 +80,8 @@ public :
 
     static const size_type Shape = Convex::Shape;
 
-    static const bool is_simplex = Convex::is_simplex;
-    static const bool is_hypercube = Convex::is_hypercube;
+    static inline const bool is_simplex = Convex::is_simplex;
+    static inline const bool is_hypercube = Convex::is_hypercube;
 
     typedef mpl::if_< mpl::bool_< is_simplex >,
             Simplex<Dim, Order, /*nRealDim*/Dim> ,

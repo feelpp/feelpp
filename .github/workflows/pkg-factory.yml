@@ -28,8 +28,6 @@ on:
             options:
             - 'all'
             - 'noble'
-            - 'jammy'
-            - 'focal'
             - 'none'
         enable-spack:
             description: 'Enable spack distros'
@@ -142,7 +140,7 @@ jobs:
             function checkEnable(distro, dist) {
               const enabledMap = {
                 'debian': ['all', 'debian', 'bookworm', 'trixie', 'testing', 'sid'],
-                'ubuntu': ['all', 'ubuntu', 'noble', 'jammy', 'focal'],
+                'ubuntu': ['all', 'ubuntu', 'noble'],
                 'spack': ['all', 'spack', 'mpich', 'openmpi'],
                 'docker': ['all', 'docker'],
                 'apptainer': ['all', 'apptainer']
@@ -154,13 +152,13 @@ jobs:
               return res;
             }
 
-            const skips = ['all', 'debian', 'bookworm', 'trixie', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const skips = ['all', 'debian', 'bookworm', 'trixie', 'testing', 'sid', 'ubuntu', 'noble', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               console.log("skip:", item, ${{ toJson(github.event.head_commit.message || '') }}, ${{ toJson( inputs.skip || '' ) }});
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( inputs.skip || '' ) }}.includes(item);
               return acc;
             }, {});
 
-            const enables = ['debian-bookworm', 'debian-trixie', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const enables = ['debian-bookworm', 'debian-trixie', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
                           checkEnable(item.split('-')[0], item.split('-')[1]);
               return acc;
@@ -231,30 +229,7 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
-            console.log("ubuntu jammy:",enables['ubuntu-jammy'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.jammy);
-            if ((!skips.all && !skips.ubuntu && !skips.jammy) && (enables['ubuntu-jammy'])) {
-              includes.push({
-                'distro': 'ubuntu/jammy',
-                'flavor': 'ubuntu',
-                'dist': 'jammy',
-                'version': '22.04',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
-            console.log("ubuntu focal:",enables['ubuntu-focal'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.focal);
-            if ((!skips.all && !skips.ubuntu && !skips.focal) && (enables['ubuntu-focal'] )) {
-              includes.push({
-                'distro': 'ubuntu/focal',
-                'flavor': 'ubuntu',
-                'dist': 'focal',
-                'version': '20.04',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
+
             console.log("spack mpich:",enables['spack-mpich'], enables['spack-all'], skips.all, skips.spack, skips['spack-mpich']);
             if ((!skips.all && !skips.spack && !skips['spack-mpich']) && (enables['spack-mpich'])) {
               includes.push({

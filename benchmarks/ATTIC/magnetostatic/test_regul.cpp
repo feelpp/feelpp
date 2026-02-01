@@ -278,7 +278,7 @@ public:
             f2.solveb(_rhs=f1,
                       _solution=u,
                       _backend=backend(_name="ms"));
-            toc("Inverse",FLAGS_v>0);
+            toc("Inverse",Environment::logVerbosityLevel()>0);
 
 #if FEELPP_DIM==2
             w.on( _range=elements(M_mesh),  _expr=vec(curlv_op(u),cst(0.)) );

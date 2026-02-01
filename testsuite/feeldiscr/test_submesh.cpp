@@ -339,22 +339,22 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     // without optimization
     auto mesh3 = createSubmesh( _mesh=mesh, _range=allelements( mesh ), _context=0 );
     BOOST_TEST_MESSAGE( "mesh generated" );
-    //LOG(INFO) << "mesh generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    //LOG(INFO) << "mesh generated\n";     
     BOOST_CHECK_EQUAL( mesh->numElements(), mesh3->numElements() );
     auto Zh = Pch<2>( mesh3 );
-    LOG(INFO) << "space generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "space generated\n";     
     auto w = Zh->element();
-    LOG(INFO) << "element generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "element generated\n";     
 
     t.restart();
     auto b = form2( _test=Xh, _trial=Zh );
-    LOG(INFO) << "form generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "form generated\n";     
     b = integrate( _range=elements(mesh3), _expr=idt(w)*id(v) );
-    LOG(INFO) << "b computed\n";     google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "b computed\n";     
     w = project( _space=Zh, _range=elements(mesh3), _expr=Px()*Py() );
-    LOG(INFO) << "w computed\n";     google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "w computed\n";     
     double mass2 = b( v, w );
-    LOG(INFO) << "energy computed\n";     google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "energy computed\n";     
     BOOST_CHECK_CLOSE( mass2, .25, 1e-12 );
     BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
     //BOOST_CHECK_CLOSE( mass1, mass2, 1e-14 );

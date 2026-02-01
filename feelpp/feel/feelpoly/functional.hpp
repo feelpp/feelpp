@@ -30,8 +30,13 @@
 #define __Functional_H 1
 
 #include <boost/operators.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelcore/feel.hpp>
 

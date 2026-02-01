@@ -1000,7 +1000,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
         tic();
         Condenser<E,T,M_ptrtype,V_ptrtype> c( M_local_matrices, rhs->M_local_vectors, e, M_dK, M_AinvB, M_AinvF, S, V, M_condense );
         c( A00K.begin(), A00K.end() );
-        toc("sc.condense.parallel",FLAGS_v>0);
+        toc("sc.condense.parallel",Environment::logVerbosityLevel()>0);
     }
     else
     {
@@ -1102,15 +1102,15 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
-            toc("sc.condense.localassembly", FLAGS_v>1);
+            toc("sc.condense.localassembly", Environment::logVerbosityLevel()>1);
             tic();
             auto dofs = e3.dofs(dK.first->second.faces1());
 
             S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_v<size_type>, invalid_v<size_type> );
             V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
-            toc("sc.condense.globalassembly", FLAGS_v>1);
+            toc("sc.condense.globalassembly", Environment::logVerbosityLevel()>1);
         } // else
-        toc("sc.condense.sequential", FLAGS_v>0);
+        toc("sc.condense.sequential", Environment::logVerbosityLevel()>0);
 
     }
     M_nnz = S.nnz();
@@ -1327,13 +1327,13 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
-            toc("sc.condense.localassembly", FLAGS_v>1);
+            toc("sc.condense.localassembly", Environment::logVerbosityLevel()>1);
             tic();
             auto dofs = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
             
             S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_v<size_type>, invalid_v<size_type> );
             V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
-            toc("sc.condense.globalassembly", FLAGS_v>1);
+            toc("sc.condense.globalassembly", Environment::logVerbosityLevel()>1);
 
         }
         else
@@ -1501,7 +1501,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 #endif            
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
-            toc("sc.condense.localassembly", FLAGS_v>1);
+            toc("sc.condense.localassembly", Environment::logVerbosityLevel()>1);
             tic();
             auto dofs1 = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
 
@@ -1541,7 +1541,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             
             //condense2( dK, rhs, e, S, V );
            //V.vectorPtr()->printMatlab("g2.m");
-            toc("sc.condense.globalassembly", FLAGS_v>1);
+            toc("sc.condense.globalassembly", Environment::logVerbosityLevel()>1);
 
         }
 
@@ -1719,7 +1719,7 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
         ls( M_AinvB.cbegin(), M_AinvB.cend() );
         for( auto & f : ls.futures() )
             f.get();
-        toc("sc.localsolve.parallel",FLAGS_v>0);
+        toc("sc.localsolve.parallel",Environment::logVerbosityLevel()>0);
     }
     else
 #endif        
@@ -1743,7 +1743,7 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
             else
                 e1.assignE( K, zK );
         }
-        toc("local.localsolve.sequential",FLAGS_v>0);
+        toc("local.localsolve.sequential",Environment::logVerbosityLevel()>0);
     }
 }
 
@@ -1780,7 +1780,7 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
         ls( M_AinvB.cbegin(), M_AinvB.cend() );
         for( auto & f : ls.futures() )
             f.get();
-        toc("sc.localsolve.parallel",FLAGS_v>0);
+        toc("sc.localsolve.parallel",Environment::logVerbosityLevel()>0);
     }
     else
     {
@@ -1804,7 +1804,7 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
                 };
             f();
         }
-        toc("sc.localsolve.sequential",FLAGS_v>0);
+        toc("sc.localsolve.sequential",Environment::logVerbosityLevel()>0);
     }
 }
 

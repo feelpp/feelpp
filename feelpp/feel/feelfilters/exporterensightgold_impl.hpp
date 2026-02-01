@@ -139,7 +139,7 @@ ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWr
             tic();
             int stepIndex = TS_INITIAL_INDEX;
             writeGeoFiles( __ts, __ts->mesh(), stepIndex, true );
-            toc("ExporterEnsightGold::save geo",FLAGS_v>1);
+            toc("ExporterEnsightGold::save geo",Environment::logVerbosityLevel()>1);
         }
         else
         {
@@ -150,23 +150,23 @@ ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWr
                 bool isFirstStep = ( stepIndex == (*__ts->beginStep())->index() );
                 tic();
                 writeGeoFiles( __ts, mesh,stepIndex,isFirstStep );
-                toc("ExporterEnsightGold::save geo",FLAGS_v>1);
+                toc("ExporterEnsightGold::save geo",Environment::logVerbosityLevel()>1);
                 tic();
                 writeVariableFiles( __ts, __step );
-                toc("ExporterEnsightGold::save variables",FLAGS_v>1);
+                toc("ExporterEnsightGold::save variables",Environment::logVerbosityLevel()>1);
             }
         }
     }
 
     tic();
     writeCaseFile();
-    toc("ExporterEnsightGold::save case",FLAGS_v>1);
+    toc("ExporterEnsightGold::save case",Environment::logVerbosityLevel()>1);
 
     tic();
     writeSoSFile();
-    toc("ExporterEnsightGold::save sos",FLAGS_v>1);
+    toc("ExporterEnsightGold::save sos",Environment::logVerbosityLevel()>1);
 
-    toc("ExporterEnsightGold::save", FLAGS_v > 0 );
+    toc("ExporterEnsightGold::save", Environment::logVerbosityLevel() > 0 );
 }
 
 template<typename MeshType, int N>
@@ -517,7 +517,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     {
         tic();
         M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get(), false, this->meshFragmentation() );
-        toc( "ExporterEnsightGold::writeGeoFiles init cache", FLAGS_v > 0 );
+        toc( "ExporterEnsightGold::writeGeoFiles init cache", Environment::logVerbosityLevel() > 0 );
         // clear others caches with export of fields
         M_mapNodalArrayToDofId.clear();
         M_mapElementArrayToDofId.clear();
@@ -809,7 +809,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     sumOffsets = localOffset + ptIdWritingSize;
     MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
     posInFile += sumOffsets;
-    toc("ExporterEnsightGold writeVariableFiles write ids",FLAGS_v>0);
+    toc("ExporterEnsightGold writeVariableFiles write ids",Environment::logVerbosityLevel()>0);
 
     /* write points coordinates in the order x1 ... xn y1 ... yn z1 ... zn */
     tic();
@@ -829,7 +829,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
     }
     posInFile += 3*sumOffsets;
-    toc("ExporterEnsightGold writeVariableFiles write coords",FLAGS_v>0);
+    toc("ExporterEnsightGold writeVariableFiles write coords",Environment::logVerbosityLevel()>0);
 
     // write connectivity
     // fit = pairit.first;
@@ -1564,7 +1564,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         }
         posInFile+=80;
 
-        toc("saveFields intro",FLAGS_v>0);
+        toc("saveFields intro",Environment::logVerbosityLevel()>0);
         /* handle faces data */
 #if 0
         if ( boption( _name="exporter.ensightgold.save-face" ) )
@@ -1699,7 +1699,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
             }
             posInFile+=160+sizeOfInt32_t;
-            toc("saveFields part",FLAGS_v>0);
+            toc("saveFields part",Environment::logVerbosityLevel()>0);
 
 
             /* create an array to store data per node */
@@ -1840,7 +1840,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 }
             }
 
-            toc("saveFields element loop",FLAGS_v>0);
+            toc("saveFields element loop",Environment::logVerbosityLevel()>0);
             tic();
             // - write in file on cursor : posInFile + localOffset
             if ( nValuesPerComponent > 0 )
@@ -1852,7 +1852,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 }
             }
             posInFile += nComponents*nValuesPerComponentAllProcess*sizeOfFloat;
-            toc("saveFields write part",FLAGS_v>0);
+            toc("saveFields write part",Environment::logVerbosityLevel()>0);
         } // parts loop
 
         if ( M_mergeTimeSteps )
@@ -1874,7 +1874,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
 
         ++__var;
     }
-    toc("saveFields", FLAGS_v>0);
+    toc("saveFields", Environment::logVerbosityLevel()>0);
 }
 
 

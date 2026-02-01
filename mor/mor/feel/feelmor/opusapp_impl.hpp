@@ -62,7 +62,7 @@ OpusApp<ModelType,RM,Model>::run()
         M_ser->run();
     }
     this->loadDB();
-    double time_offline = toc("Offline", FLAGS_v>0);
+    double time_offline = toc("Offline", Environment::logVerbosityLevel()>0);
     M_timeData["crb"]["offline_time"] = time_offline;
 
     int run_sampling_size = ioption(_name=_o( this->about().appName(),"run.sampling.size" ));

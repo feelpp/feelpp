@@ -21,23 +21,22 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#include <feel/feelcore/warnoff.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/warnon.hpp>
 #include <feel/feelcore/ptreetools.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
-#include <feel/feelcore/disablewarnings.hpp>
-//  Copyright (c) 2001-2010 Hartmut Kaiser
-//  Copyright (c) 2001-2007 Joel de Guzman
-//
-//  Distributed under the Boost Software License, Version 1.0. (See accompanying
-//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
-#include <feel/feelcore/reenablewarnings.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <iostream>
 #include <string>

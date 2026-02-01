@@ -30,7 +30,11 @@
 #include <iostream>
 #include <fstream>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 #include <boost/math/special_functions/round.hpp>
 #include <feel/feeldiscr/fftmultiscale.hpp>
 using namespace boost::numeric;
@@ -52,7 +56,7 @@ public :
     using do_compute_gradient_t = mpl::bool_<true>;
     using no_compute_gradient_t = mpl::bool_<false>;    
     // true if must compute gradient, false otherwise.
-    static const bool needs_gradient = needs_gradient_t::value;
+    static inline const bool needs_gradient = needs_gradient_t::value;
 
     // constructor which will estimate gradient image by the FFT method and store it 
     MultiScaleImage(holo3_image<value_type> const& im, float L)

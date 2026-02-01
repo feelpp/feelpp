@@ -56,8 +56,8 @@ public:
 
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
-    static const bool is_vectorial = super::is_vectorial;
-    static const bool is_scalar = super::is_scalar;
+    static inline const bool is_vectorial = super::is_vectorial;
+    static inline const bool is_scalar = super::is_scalar;
     static inline const uint16_type nComponents = super::nComponents;
     //@}
 

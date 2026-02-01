@@ -22,6 +22,17 @@
 #
 #
 
+#
+# rsync is required by various cmake macros such as feelpp_add_testcase
+#
+find_program(RSYNC_EXECUTABLE NAMES rsync)
+if(RSYNC_EXECUTABLE)
+    message(STATUS "Found rsync: ${RSYNC_EXECUTABLE}")
+else()
+    message(FATAL_ERROR "rsync not found")
+endif()
+
+
 set(modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.dirs.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.directive.cmake

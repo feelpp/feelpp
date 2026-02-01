@@ -30,7 +30,7 @@ public :
     using subelement_type = typename subspace_type<T>::element_type;
 
 
-    static const bool is_composite = space_type::is_composite;
+    static inline const bool is_composite = space_type::is_composite;
     static const int n_spaces = space_type::nSpaces;
 
     typedef typename mpl::range_c< int, 0, n_spaces > rangespace_type;

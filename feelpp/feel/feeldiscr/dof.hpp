@@ -162,6 +162,17 @@ public:
             return *this;
         }
 
+    // Comparison operators for C++23 compatibility (opt-out of tuple-like comparison)
+    friend bool operator<(const Dof& a, const Dof& b) {
+        return static_cast<const super&>(a) < static_cast<const super&>(b);
+    }
+    friend bool operator==(const Dof& a, const Dof& b) {
+        return static_cast<const super&>(a) == static_cast<const super&>(b);
+    }
+    friend bool operator!=(const Dof& a, const Dof& b) {
+        return !(a == b);
+    }
+
     //@}
 
     /** @name Accessors
@@ -528,4 +539,14 @@ class LocalDofSet : public std::vector<LocalDof<NC,SizeT>>
 };
 
 } // Feel
+
+// C++23 tuple-like support: specialize std::tuple_size for Dof
+namespace std {
+    template<typename SizeT>
+    struct tuple_size<Feel::Dof<SizeT>> : tuple_size<std::tuple<SizeT>> {};
+    
+    template<size_t I, typename SizeT>
+    struct tuple_element<I, Feel::Dof<SizeT>> : tuple_element<I, std::tuple<SizeT>> {};
+}
+
 #endif /* FEELPP_DOF_HPP */

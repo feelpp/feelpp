@@ -782,9 +782,9 @@ class GeoMap
         static inline const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
-        static const bool is_linear = ( trans == fem::LINEAR );
+        static inline const bool is_linear = ( trans == fem::LINEAR );
 
-        static const bool condition = ( ( PDim == NDim ) || ( ( NDim >= 1 ) && ( PDim == NDim - 1 ) ) );
+        static inline const bool condition = ( ( PDim == NDim ) || ( ( NDim >= 1 ) && ( PDim == NDim - 1 ) ) );
         //BOOST_MPL_ASSERT_MSG( condition, INVALID_DIM, (mpl::int_<NDim>, mpl::int_<PDim>, ElementType ) );
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<PDim>, mpl::int_<NDim>>,
                                   mpl::identity<GeoMap<Dim, Order, NDim, T, Entity, PP>>,
@@ -2108,7 +2108,7 @@ class GeoMap
         template<size_type CTX>
         void resizeJKBN()
             {
-                static const bool IsOnFace = subEntityCoDim == 1;
+                constexpr bool IsOnFace = subEntityCoDim == 1;
                 if constexpr ( !vm::has_dynamic_v<CTX> )
                 {
                     if constexpr ( !IsOnFace )
@@ -2123,7 +2123,7 @@ class GeoMap
                     }
                 }
 
-                static const bool hasStaticB = IsOnFace?
+                constexpr bool hasStaticB = IsOnFace?
                     vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :
                     vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
                 bool hasJ = vm::has_jacobian_v<CTX>;
@@ -2257,7 +2257,7 @@ class GeoMap
         template<int CTX>
         void updateJKBN() noexcept
             {
-                static const bool IsOnFace = subEntityCoDim == 1;
+                constexpr bool IsOnFace = subEntityCoDim == 1;
                 if constexpr ( !vm::has_dynamic_v<CTX> )
                 {
                     if constexpr ( !IsOnFace )
@@ -2272,7 +2272,7 @@ class GeoMap
                     }
                 }
 
-                static const bool hasStaticB = IsOnFace?
+                constexpr bool hasStaticB = IsOnFace?
                     vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> :
                     vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
                 bool hasJ = vm::has_jacobian_v<CTX>;

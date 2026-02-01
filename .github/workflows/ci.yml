@@ -1,260 +1,254 @@
-name: Feelpp CI
+name: Feel++ CI
 
 on:
+  workflow_dispatch:
   pull_request:
-    branches:
-      - '*'
+    branches: ['*']
   push:
-    branches:
-      - master
-      - develop
+    branches: [master, develop]
+
+env:
+  REGISTRY: ghcr.io/feelpp
+  FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+  FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+  FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+  FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
+
+# Image naming:
+#   Dev images (for CI):     ghcr.io/feelpp/feelpp:ubuntu-24.04-dev
+#   Runtime images (users):  ghcr.io/feelpp/feelpp:ubuntu-24.04
 
 jobs:
-  check_skip:
-    runs-on: self-docker
+  plan_ci:
+    name: Plan CI matrix
+    runs-on: ubuntu-latest
     outputs:
-        check_skip_components: ${{ steps.check_skip_components.outputs.SKIP_COMPONENTS }}
-        check_skip_feelpp: ${{ steps.check_skip_components.outputs.SKIP_FEELPP }}
-        check_skip_tests: ${{ steps.check_skip_components.outputs.SKIP_TESTS }}
-        check_skip_toolboxes: ${{ steps.check_skip_components.outputs.SKIP_TOOLBOXES }}
-        check_skip_mor: ${{ steps.check_skip_components.outputs.SKIP_MOR }}
-        check_skip_python: ${{ steps.check_skip_components.outputs.SKIP_PYTHON }}
+      targets_json: ${{ steps.plan.outputs.targets_json }}
+      enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Check if skip components
-      id: check_skip_components
-      run: |
-        if [[ $(git show -s --format=%B) =~ "skip components" ]]; then
-          echo "SKIP_COMPONENTS=true" >> $GITHUB_OUTPUT
-        else
-          echo "SKIP_COMPONENTS=false" >> $GITHUB_OUTPUT
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip feelpp" ]]; then
-          echo "SKIP_FEELPP=true" >> $GITHUB_OUTPUT
-          echo "SKIP_FEELPP=true"
-        else
-          echo "SKIP_FEELPP=false" >> $GITHUB_OUTPUT
-          echo "SKIP_FEELPP=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip tests" ]]; then
-          echo "SKIP_TESTS=true" >> $GITHUB_OUTPUT
-          echo "SKIP_TESTS=true"
-        else
-          echo "SKIP_TESTS=false" >> $GITHUB_OUTPUT
-          echo "SKIP_TESTS=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip toolboxes" ]]; then
-          echo "SKIP_TOOLBOXES=true" >> $GITHUB_OUTPUT
-          echo "SKIP_TOOLBOXES=true"
-        else
-          echo "SKIP_TOOLBOXES=false" >> $GITHUB_OUTPUT
-          echo "SKIP_TOOLBOXES=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip mor" ]]; then
-          echo "SKIP_MOR=true" >> $GITHUB_OUTPUT
-          echo "SKIP_MOR=true"
-        else
-          echo "SKIP_MOR=false" >> $GITHUB_OUTPUT
-          echo "SKIP_MOR=false"
-        fi
-        if [[ $(git show -s --format=%B) =~ "skip python" ]]; then
-          echo "SKIP_PYTHON=true" >> $GITHUB_OUTPUT
-          echo "SKIP_PYTHON=true"
-        else
-          echo "SKIP_PYTHON=false" >> $GITHUB_OUTPUT
-          echo "SKIP_PYTHON=false"
-        fi
-
-
+      - uses: actions/checkout@v4
+      - uses: feelpp/ci-matrix-planner@v1.12
+        id: plan
+        with:
+          config-path: .github/plan-ci.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Debug planner output
+        run: |
+          echo "targets_json: ${{ steps.plan.outputs.targets_json }}"
+          echo "enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}"
 
   feelpp:
-    needs: [check_skip]
+    name: Build Feel++ (${{ matrix.target }})
+    needs: [plan_ci]
     runs-on: self-docker
-    if: |
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_feelpp == 'false'
-    continue-on-error: ${{ matrix.continue-on-error }}
+    if: contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp')
     timeout-minutes: 600
     strategy:
-          fail-fast: false
-          matrix:
-            include:
-              - { target: "ubuntu:24.04", continue-on-error: true }
-              - { target: "ubuntu:22.04", continue-on-error: false }
-              - { target: "ubuntu:20.04", continue-on-error: true }
-              - { target: "debian:12", continue-on-error: false }
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Workaround checkout Needed single revision issue
-        run: |
-          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-            submodules: recursive
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
 
-      - name: Build and Test Feelpp
-        id: build-feelpp
+      - name: Clone or update docker repo
         run: |
-          echo "Building Feelpp for branch ${{ env.BRANCH }}"
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
-        env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
-          TARGET: ${{ matrix.target }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
 
-  testsuite:
-    needs: [check_skip,feelpp]
-    runs-on: self-docker
-    if: |
-      always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_tests == 'false'
-    continue-on-error: true
-    timeout-minutes: 600
-    strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-            submodules: recursive
-
-      - name: Run Feelpp Testsuite
-        id: test-feelsuite
+      - name: Set DIST from TARGET
+        id: dist
         run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
+          # Convert debian:13 -> debian-13, ubuntu:24.04 -> ubuntu-24.04
+          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Feel++ runtime
+        working-directory: docker
+        run: docker buildx bake feelpp-runtime --push
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
 
   toolboxes:
-    needs: [check_skip,feelpp]
+    name: Build Toolboxes (${{ matrix.target }})
+    needs: [plan_ci, feelpp]
     runs-on: self-docker
     if: |
       always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_toolboxes == 'false'
-    continue-on-error: false
+      (needs.feelpp.result == 'success' || needs.feelpp.result == 'skipped') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'toolboxes')
     timeout-minutes: 600
     strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-            submodules: recursive
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
 
-      - name: Build Feelpp Toolboxes
-        id: build-feeltoolboxes
+      - name: Clone or update docker repo
         run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
+
+      - name: Set DIST from TARGET
+        id: dist
+        run: |
+          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Toolboxes runtime
+        working-directory: docker
+        run: docker buildx bake toolboxes-runtime --push
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
 
   mor:
-    needs: [check_skip,toolboxes]
+    name: Build MOR (${{ matrix.target }})
+    needs: [plan_ci, toolboxes]
     runs-on: self-docker
     if: |
       always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_mor == 'false'
-    continue-on-error: false
+      (needs.toolboxes.result == 'success' || needs.toolboxes.result == 'skipped') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'mor')
     timeout-minutes: 600
     strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-            submodules: recursive
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
 
-      - name: Build Feelpp MOR
-        id: build-feelmor
+      - name: Clone or update docker repo
         run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh mor
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
+
+      - name: Set DIST from TARGET
+        id: dist
+        run: |
+          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+
+      - name: Build and push MOR runtime
+        working-directory: docker
+        run: docker buildx bake mor-runtime --push
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
 
   python:
-    needs: [check_skip,feelpp,toolboxes,mor]
+    name: Build Python (${{ matrix.target }})
+    needs: [plan_ci, mor]
     runs-on: self-docker
     if: |
       always() &&
-      !contains ( needs.*.result, 'failure') &&
-      !contains ( needs.*.result, 'cancelled') &&
-      needs.check_skip.outputs.check_skip_components == 'false' &&
-      needs.check_skip.outputs.check_skip_python == 'false'
-    continue-on-error: false
+      (needs.mor.result == 'success' || needs.mor.result == 'skipped') &&
+      contains(needs.plan_ci.outputs.enabled_jobs, 'python')
     timeout-minutes: 600
     strategy:
-        fail-fast: false
-        matrix:
-            TARGET:
-              - "ubuntu:24.04"
-              - "ubuntu:22.04"
-              - "debian:12"
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-            submodules: recursive
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
 
-      - name: Build Feelpp Python
-        id: build-feelpython
+      - name: Clone or update docker repo
         run: |
-          feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp-python
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
+
+      - name: Set DIST from TARGET
+        id: dist
+        run: |
+          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Python runtime
+        working-directory: docker
+        run: docker buildx bake python-runtime --push
         env:
-          FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
-          TARGET: ${{ matrix.TARGET }}
-          BRANCH: ${{ github.event.pull_request && github.head_ref || github.ref_name }}
-          CR_PAT: ${{ secrets.CR_PAT }}
-          CR_LOGIN: ${{ secrets.CR_LOGIN }}
-          JOBS: 20
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+
+  # =============================================================================
+  # Full Build Mode - Build entire Feel++ stack in a single image
+  # =============================================================================
+  # Alternative to component builds - uses preset 'default' to build everything
+  # Image naming: ghcr.io/feelpp/feelpp:ubuntu-24.04-full-dev
+  #
+  # Trigger: Use "mode=full" in commit message or PR description
+  # Example: git commit -m "Build full stack mode=full"
+  # =============================================================================
+
+  feelpp-full:
+    name: Build Feel++ Full (${{ matrix.target }})
+    needs: [plan_ci]
+    runs-on: self-docker
+    if: contains(needs.plan_ci.outputs.enabled_jobs, 'feelpp-full')
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Clone or update docker repo
+        run: |
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
+
+      - name: Set DIST from TARGET
+        id: dist
+        run: |
+          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Feel++ Full runtime
+        working-directory: docker
+        run: docker buildx bake feelpp-full-runtime --push
+        env:
+          DIST: ${{ steps.dist.outputs.dist }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}

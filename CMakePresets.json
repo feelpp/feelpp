@@ -1,34 +1,196 @@
 {
-    "version": 3,
+    "buildPresets": [
+        {
+            "configurePreset": "default",
+            "jobs": 25,
+            "name": "default"
+        },
+        {
+            "configurePreset": "release",
+            "jobs": 25,
+            "name": "release"
+        },
+        {
+            "configurePreset": "release-cmake",
+            "jobs": 25,
+            "name": "release-cmake"
+        },
+        {
+            "configurePreset": "debug",
+            "jobs": 25,
+            "name": "debug"
+        },
+        {
+            "configurePreset": "debug-cmake",
+            "jobs": 25,
+            "name": "debug-cmake"
+        },
+        {
+            "configurePreset": "dbg",
+            "jobs": 2,
+            "name": "dbg"
+        },
+        {
+            "configurePreset": "doxygen",
+            "jobs": 25,
+            "name": "doxygen"
+        },
+        {
+            "configurePreset": "release-cpp20-cmake",
+            "jobs": 25,
+            "name": "release-cpp20-cmake"
+        },
+        {
+            "configurePreset": "release-cpp23-cmake",
+            "jobs": 25,
+            "name": "release-cpp23-cmake"
+        },
+        {
+            "configurePreset": "release-gcc-cmake",
+            "jobs": 25,
+            "name": "release-gcc-cmake"
+        },
+        {
+            "configurePreset": "release-clang-cmake",
+            "jobs": 25,
+            "name": "release-clang-cmake"
+        },
+        {
+            "configurePreset": "debug-gcc-cmake",
+            "jobs": 25,
+            "name": "debug-gcc-cmake"
+        },
+        {
+            "configurePreset": "debug-clang-cmake",
+            "jobs": 25,
+            "name": "debug-clang-cmake"
+        },
+        {
+            "configurePreset": "release-gcc-cpp20-cmake",
+            "jobs": 25,
+            "name": "release-gcc-cpp20-cmake"
+        },
+        {
+            "configurePreset": "release-gcc-cpp23-cmake",
+            "jobs": 25,
+            "name": "release-gcc-cpp23-cmake"
+        },
+        {
+            "configurePreset": "release-clang-cpp20-cmake",
+            "jobs": 25,
+            "name": "release-clang-cpp20-cmake"
+        },
+        {
+            "configurePreset": "release-clang-cpp23-cmake",
+            "jobs": 25,
+            "name": "release-clang-cpp23-cmake"
+        },
+        {
+            "configurePreset": "release-clang-spack",
+            "jobs": 25,
+            "name": "release-clang-spack"
+        },
+        {
+            "configurePreset": "release-clang-cpp20-spack",
+            "jobs": 25,
+            "name": "release-clang-cpp20-spack"
+        },
+        {
+            "configurePreset": "feelpp",
+            "jobs": 25,
+            "name": "feelpp"
+        },
+        {
+            "configurePreset": "testsuite",
+            "jobs": 25,
+            "name": "testsuite"
+        },
+        {
+            "configurePreset": "toolboxes",
+            "jobs": 25,
+            "name": "toolboxes"
+        },
+        {
+            "configurePreset": "mor",
+            "jobs": 25,
+            "name": "mor"
+        },
+        {
+            "configurePreset": "python",
+            "jobs": 25,
+            "name": "python"
+        },
+        {
+            "configurePreset": "feelpp-usrlocal",
+            "jobs": 25,
+            "name": "feelpp-usrlocal"
+        },
+        {
+            "configurePreset": "feelpp-cpp20-spack",
+            "jobs": 25,
+            "name": "feelpp-cpp20-spack"
+        },
+        {
+            "configurePreset": "feelpp+specx",
+            "jobs": 25,
+            "name": "feelpp+specx"
+        },
+        {
+            "configurePreset": "mor-dbg",
+            "jobs": 25,
+            "name": "mor-dbg"
+        },
+        {
+            "configurePreset": "research-mor",
+            "jobs": 25,
+            "name": "research-mor"
+        },
+        {
+            "configurePreset": "feelpp-python",
+            "jobs": 25,
+            "name": "feelpp-python"
+        },
+        {
+            "configurePreset": "feelpp-python-dbg",
+            "jobs": 25,
+            "name": "feelpp-python-dbg"
+        },
+        {
+            "configurePreset": "mor_python",
+            "jobs": 25,
+            "name": "mor_python"
+        }
+    ],
     "cmakeMinimumRequired": {
         "major": 3,
-        "minor": 21,
+        "minor": 25,
         "patch": 0
     },
     "configurePresets": [
         {
-            "name": "default",
-            "displayName": "Default Config",
-            "description": "Default build using Makefile generator",
-            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/${presetName}$env{DISTRIBUTION}$env{ARCH}",
             "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "CMAKE_C_COMPILER": "clang",
-                "FEELPP_STD_CPP": "17",
-                "FEELPP_ENABLE_TOOLBOXES": "ON",
-                "FEELPP_ENABLE_MOR": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
+                "FEELPP_ENABLE_BENCHMARKS": "ON",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
-                "FEELPP_ENABLE_BENCHMARKS": "ON",
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_TOOLBOXES": "ON",
+                "FEELPP_STD_CPP": "23",
                 "FEELPP_USE_EXTERNAL_EIGEN3": "OFF",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE"
+                "FEELPP_USE_EXTERNAL_PYBIND11": "ON"
             },
+            "description": "Default build using Ninja generator",
+            "displayName": "Default Config",
             "environment": {
                 "LDFLAGS": "-Wl,--copy-dt-needed-entries",
-                "NINJA_STATUS": "[run %r|beg %s|fin %f|tot %t|rate %o|time %e]:"
+                "NINJA_STATUS": "[%f/%t %p%%] %r\u2699 %o/s %es | "
             },
+            "generator": "Ninja",
+            "name": "default",
             "vendor": {
                 "example.com/ExampleIDE/1.0": {
                     "autoFormat": true
@@ -36,297 +198,159 @@
             }
         },
         {
-            "name": "warnings",
-            "hidden": true,
-            "description": "Enable compiler warnings on linux and osx",
             "cacheVariables": {
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wunused",
                 "CMAKE_C_FLAGS": "-Wall -Wextra -Wpedantic -Wconversion -Wunused"
-            }
+            },
+            "description": "Enable compiler warnings on linux and osx",
+            "hidden": true,
+            "name": "warnings"
         },
         {
-            "name": "usrlocal",
-            "hidden": true,
-            "description": "Install in /usr/local",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "/usr/local"
-            }
+            },
+            "description": "Install in /usr/local",
+            "hidden": true,
+            "name": "usrlocal"
         },
         {
-            "name": "cpp20",
-            "hidden": true,
-            "description": "Enable compiler C++20",
             "cacheVariables": {
                 "FEELPP_STD_CPP": "20"
-            }
+            },
+            "description": "Enable C++20",
+            "hidden": true,
+            "name": "cpp20"
         },
         {
-            "name": "cpp23",
-            "hidden": true,
-            "description": "Enable compiler C++23",
             "cacheVariables": {
                 "FEELPP_STD_CPP": "23"
-            }
-        },
-        {
-            "name": "release",
-            "hidden": false,
-            "displayName": "Release|no package manager",
-            "description": "Plain release build without dependency handling.",
-            "inherits": [
-                "default"
-            ],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        },
-        {
-            "name": "debug",
-            "hidden": false,
-            "displayName": "Debug|no package manager",
-            "description": "Plain debug build without dependency handling.",
-            "inherits": [
-                "default"
-            ],
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_VERBOSE_MAKEFILE": "TRUE",
-                "CMAKE_MESSAGE_LOG_LEVEL": "VERBOSE",
-                "H5PP_ENABLE_TESTS": "TRUE",
-                "H5PP_BUILD_EXAMPLES": "TRUE",
-                "H5PP_ENABLE_ASAN": "TRUE",
-                "H5PP_ENABLE_PCH": "FALSE",
-                "H5PP_ENABLE_CCACHE": "FALSE",
-                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
-                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
-                "FEELPP_ENABLE_TOOLBOXES": "ON",
-                "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
-                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
-                "FEELPP_MESH_MAX_ORDER": "1"
             },
-            "environment": {
-                "VERBOSE": "1"
-            }
+            "description": "Enable C++23",
+            "hidden": true,
+            "name": "cpp23"
         },
         {
-            "name": "dev",
-            "hidden": false,
-            "displayName": "Development|no package manager",
-            "description": "development config",
-            "inherits": [
-                "default"
-            ],
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_VERBOSE_MAKEFILE": "TRUE",
-                "CMAKE_MESSAGE_LOG_LEVEL": "VERBOSE",
-                "H5PP_ENABLE_TESTS": "TRUE",
-                "H5PP_BUILD_EXAMPLES": "TRUE",
-                "H5PP_ENABLE_ASAN": "TRUE",
-                "H5PP_ENABLE_PCH": "FALSE",
-                "H5PP_ENABLE_CCACHE": "FALSE",
-                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
-                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
-                "FEELPP_ENABLE_TOOLBOXES": "ON",
-                "FEELPP_ENABLE_MOR": "ON",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
-                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
-                "FEELPP_MESH_MAX_ORDER": "1"
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_C_COMPILER": "gcc"
             },
-            "environment": {
-                "VERBOSE": "1"
-            }
-        },
-        {
-            "name": "spack",
+            "description": "Use gcc compiler",
             "hidden": true,
-            "displayName": "spack package manager",
-            "description": "spack config",
-            "inherits": [
-                "default"
-            ],
-            "cacheVariables": {
-                "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "ON",
-                "FEELPP_USE_EXTERNAL_CLN": "ON",
-                "FEELPP_ENABLE_VTK": "OFF",
-                "USE_VTK": "OFF",
-                "FEELPP_ENABLE_OPENTURNS": "OFF"
-            },
-            "environment": {
-                "VERBOSE": "1"
-            }
+            "name": "gcc"
         },
         {
-            "name": "gcc",
-            "hidden": true,
-            "cacheVariables": {
-                "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++"
-            }
-        },
-        {
-            "name": "clang",
-            "hidden": true,
-            "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++"
-            }
-        },
-        {
-            "name": "release-cmake",
-            "displayName": "Release|cmake package manager",
-            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
-            "inherits": [
-                "release",
-                "default"
-            ]
-        },
-        {
-            "name": "release-cpp20-cmake",
-            "displayName": "Release|c++20|cmake package manager",
-            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
-            "inherits": [
-                "release",
-                "cpp20",
-                "default"
-            ]
-        },
-        {
-            "name": "release-cpp23-cmake",
-            "displayName": "Release|c++23|cmake package manager",
-            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
-            "inherits": [
-                "release",
-                "cpp23",
-                "default"
-            ]
-        },
-        {
-            "name": "release-gcc-cmake",
-            "displayName": "Release|gcc|cmake package manager",
-            "inherits": [
-                "gcc",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-clang-cmake-dev",
-            "displayName": "Release|clang|cmake package manager",
-            "inherits": [
-                "dev",
-                "clang",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-clang-cmake",
-            "displayName": "Release|clang|cmake package manager",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-clang-spack",
-            "displayName": "Release|clang|spack package manager",
-            "inherits": [
-                "spack",
-                "clang",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-clang-cpp20-spack",
-            "displayName": "Release|clang|cpp20|spack package manager",
-            "inherits": [
-                "cpp20",
-                "spack",
-                "clang",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-gcc-cpp20-cmake",
-            "displayName": "Release|gcc|c++20|cmake package manager",
-            "inherits": [
-                "gcc",
-                "cpp20",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-clang-cpp20-cmake",
-            "displayName": "Release|clang|c++20|cmake package manager",
-            "inherits": [
-                "clang",
-                "cpp20",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-gcc-cpp23-cmake",
-            "displayName": "Release|gcc|c++23|cmake package manager",
-            "inherits": [
-                "gcc",
-                "cpp23",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "release-clang-cpp23-cmake",
-            "displayName": "Release|clang|c++23|cmake package manager",
-            "inherits": [
-                "clang",
-                "cpp23",
-                "release-cmake"
-            ]
-        },
-        {
-            "name": "debug-cmake",
-            "displayName": "Debug|cmake package manager",
-            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
-            "inherits": [
-                "debug",
-                "default"
-            ]
-        },
-        {
-            "name": "debug-gcc-cmake",
-            "displayName": "Debug|gcc|cmake package manager",
-            "inherits": [
-                "gcc",
-                "debug-cmake"
-            ]
-        },
-        {
-            "name": "debug-clang-cmake",
-            "displayName": "Debug|clang|cmake package manager",
-            "inherits": [
-                "clang",
-                "debug-cmake"
-            ]
-        },
-        {
-            "name": "dbg",
-            "displayName": "Debug Config",
-            "description": "Debug build using Makefile generator",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/dbg",
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang"
+            },
+            "description": "Use clang compiler",
+            "hidden": true,
+            "name": "clang"
+        },
+        {
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "description": "Plain release build without dependency handling.",
+            "displayName": "Release | no package manager",
+            "hidden": false,
+            "inherits": [
+                "default"
+            ],
+            "name": "release"
+        },
+        {
+            "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
+                "CMAKE_MESSAGE_LOG_LEVEL": "VERBOSE",
+                "CMAKE_VERBOSE_MAKEFILE": "TRUE",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "ON",
+                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
+                "FEELPP_MESH_MAX_ORDER": "1",
+                "H5PP_BUILD_EXAMPLES": "TRUE",
+                "H5PP_ENABLE_ASAN": "TRUE",
+                "H5PP_ENABLE_CCACHE": "FALSE",
+                "H5PP_ENABLE_PCH": "FALSE",
+                "H5PP_ENABLE_TESTS": "TRUE"
+            },
+            "description": "Plain debug build without dependency handling.",
+            "displayName": "Debug | no package manager",
+            "environment": {
+                "VERBOSE": "1"
+            },
+            "hidden": false,
+            "inherits": [
+                "default"
+            ],
+            "name": "debug"
+        },
+        {
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "FALSE",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "FALSE",
+                "CMAKE_MESSAGE_LOG_LEVEL": "VERBOSE",
+                "CMAKE_VERBOSE_MAKEFILE": "TRUE",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
+                "FEELPP_ENABLE_MOR": "ON",
+                "FEELPP_ENABLE_TOOLBOXES": "ON",
+                "FEELPP_INSTANTIATION_ORDER_MAX": "1",
+                "FEELPP_MESH_MAX_ORDER": "1",
+                "H5PP_BUILD_EXAMPLES": "TRUE",
+                "H5PP_ENABLE_ASAN": "TRUE",
+                "H5PP_ENABLE_CCACHE": "FALSE",
+                "H5PP_ENABLE_PCH": "FALSE",
+                "H5PP_ENABLE_TESTS": "TRUE"
+            },
+            "description": "development config",
+            "displayName": "Development | no package manager",
+            "environment": {
+                "VERBOSE": "1"
+            },
+            "hidden": false,
+            "inherits": [
+                "default"
+            ],
+            "name": "dev"
+        },
+        {
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "description": "Default build with C++23 enabled",
+            "displayName": "C++23 | no package manager",
+            "hidden": false,
+            "inherits": [
+                "cpp23",
+                "default"
+            ],
+            "name": "default-cpp23"
+        },
+        {
+            "binaryDir": "${sourceDir}/build/dbg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_TOOLBOXES": {
                     "type": "BOOL",
                     "value": "ON"
                 },
-                "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_INSTANTIATION_ORDER_MAX": "1",
                 "FEELPP_MESH_MAX_ORDER": "1"
             },
+            "description": "Debug build using Ninja generator",
+            "displayName": "Debug Config",
             "environment": {
                 "MY_ENVIRONMENT_VARIABLE": "Test"
             },
+            "generator": "Ninja",
+            "name": "dbg",
             "vendor": {
                 "example.com/ExampleIDE/1.0": {
                     "autoFormat": true
@@ -334,523 +358,967 @@
             }
         },
         {
-            "name": "feelpp",
+            "cacheVariables": {
+                "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "ON",
+                "FEELPP_ENABLE_OPENTURNS": "OFF",
+                "FEELPP_ENABLE_VTK": "OFF",
+                "FEELPP_USE_EXTERNAL_CLN": "ON",
+                "USE_VTK": "OFF"
+            },
+            "description": "spack config",
+            "displayName": "spack package manager",
+            "environment": {
+                "VERBOSE": "1"
+            },
+            "hidden": true,
+            "inherits": [
+                "default"
+            ],
+            "name": "spack"
+        },
+        {
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "displayName": "Release | cmake package manager",
+            "inherits": [
+                "release",
+                "default"
+            ],
+            "name": "release-cmake"
+        },
+        {
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "displayName": "Debug | cmake package manager",
+            "inherits": [
+                "debug",
+                "default"
+            ],
+            "name": "debug-cmake"
+        },
+        {
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "displayName": "Release | C++20 | cmake package manager",
+            "inherits": [
+                "release",
+                "cpp20",
+                "default"
+            ],
+            "name": "release-cpp20-cmake"
+        },
+        {
+            "description": "Uses a custom wrapper for external_project_add at CMake configure time",
+            "displayName": "Release | C++23 | cmake package manager",
+            "inherits": [
+                "release",
+                "cpp23",
+                "default"
+            ],
+            "name": "release-cpp23-cmake"
+        },
+        {
+            "displayName": "Release | gcc | cmake package manager",
+            "inherits": [
+                "gcc",
+                "release-cmake"
+            ],
+            "name": "release-gcc-cmake"
+        },
+        {
+            "displayName": "Release | clang | cmake package manager",
+            "inherits": [
+                "dev",
+                "clang",
+                "release-cmake"
+            ],
+            "name": "release-clang-cmake-dev"
+        },
+        {
+            "displayName": "Release | clang | cmake package manager",
             "inherits": [
                 "clang",
                 "release-cmake"
             ],
-            "displayName": "feelpp|clang|release|cmake package manager",
-            "description": "Build only the Feel++ library Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "feelpp",
-                "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
-                "FEELPP_ENABLE_TESTS": "OFF",
-                "FEELPP_ENABLE_FMILIB": "OFF",
-                "FEELPP_ENABLE_BENCHMARKS": "OFF"
-            }
+            "name": "release-clang-cmake"
         },
         {
-            "name": "feelpp-cpp20-spack",
+            "displayName": "Debug | gcc | cmake package manager",
+            "inherits": [
+                "gcc",
+                "debug-cmake"
+            ],
+            "name": "debug-gcc-cmake"
+        },
+        {
+            "displayName": "Debug | clang | cmake package manager",
+            "inherits": [
+                "clang",
+                "debug-cmake"
+            ],
+            "name": "debug-clang-cmake"
+        },
+        {
+            "displayName": "Release | gcc | C++20 | cmake package manager",
+            "inherits": [
+                "gcc",
+                "cpp20",
+                "release-cmake"
+            ],
+            "name": "release-gcc-cpp20-cmake"
+        },
+        {
+            "displayName": "Release | gcc | C++23 | cmake package manager",
+            "inherits": [
+                "gcc",
+                "cpp23",
+                "release-cmake"
+            ],
+            "name": "release-gcc-cpp23-cmake"
+        },
+        {
+            "displayName": "Release | clang | C++20 | cmake package manager",
+            "inherits": [
+                "clang",
+                "cpp20",
+                "release-cmake"
+            ],
+            "name": "release-clang-cpp20-cmake"
+        },
+        {
+            "displayName": "Release | clang | C++23 | cmake package manager",
+            "inherits": [
+                "clang",
+                "cpp23",
+                "release-cmake"
+            ],
+            "name": "release-clang-cpp23-cmake"
+        },
+        {
+            "displayName": "Release | clang | spack package manager",
+            "inherits": [
+                "spack",
+                "clang",
+                "release-cmake"
+            ],
+            "name": "release-clang-spack"
+        },
+        {
+            "displayName": "Release | clang | C++20 | spack package manager",
+            "inherits": [
+                "cpp20",
+                "spack",
+                "clang",
+                "release-cmake"
+            ],
+            "name": "release-clang-cpp20-spack"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_BENCHMARKS": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_QUICKSTART": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF",
+                "FEELPP_USE_EXTERNAL_CLN": "ON"
+            },
+            "description": "Build only the Feel++ Library component",
+            "displayName": "feelpp | clang | release | cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "name": "feelpp"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "testsuite"
+            },
+            "description": "Build only the Test Suite component",
+            "displayName": "testsuite | clang | release | cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "name": "testsuite"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "toolboxes",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_CFPDE": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
+                "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "OFF"
+            },
+            "description": "Build only the Toolboxes component",
+            "displayName": "toolboxes | clang | release | cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "name": "toolboxes"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "mor",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_OPENTURNS": "ON",
+                "FEELPP_ENABLE_RESEARCH": "OFF"
+            },
+            "description": "Build only the MOR (Model Order Reduction) component",
+            "displayName": "mor | clang | release | cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "name": "mor"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "python"
+            },
+            "description": "Build only the Python Bindings component",
+            "displayName": "python | clang | release | cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "name": "python"
+        },
+        {
+            "description": "Build only the Feel++ library Component and install in /usr/local",
+            "displayName": "feelpp | usrlocal | clang | release | cmake package manager",
+            "inherits": [
+                "usrlocal",
+                "feelpp"
+            ],
+            "name": "feelpp-usrlocal"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "feelpp",
+                "FEELPP_ENABLE_BENCHMARKS": "OFF",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+            },
+            "description": "Build only the Feel++ library Component",
+            "displayName": "feelpp | clang | cpp20 | release | spack package manager",
             "inherits": [
                 "cpp20",
                 "clang",
                 "spack",
                 "release-cmake"
             ],
-            "displayName": "feelpp|clang|cpp20|release|spack package manager",
-            "description": "Build only the Feel++ library Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "feelpp",
-                "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
-                "FEELPP_ENABLE_TESTS": "OFF",
-                "FEELPP_ENABLE_FMILIB": "OFF",
-                "FEELPP_ENABLE_BENCHMARKS": "OFF"
-            }
+            "name": "feelpp-cpp20-spack"
         },
         {
-            "name": "feelpp-usrlocal",
-            "inherits": [
-                "usrlocal",
-                "feelpp"
-            ],
-            "displayName": "feelpp|usrlocal|clang|release|cmake package manager",
-            "description": "Build only the Feel++ library Component and install in /usr/local"
-        },
-        {
-            "name": "feelpp+specx",
-            "inherits": "default",
-            "displayName": "feelpp+specx",
-            "description": "Build only the Feel++ library Component with specx runtime",
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/feelpp+specx",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "feelpp",
-                "FEELPP_ENABLE_MOR": "OFF",
-                "FEELPP_ENABLE_TOOLBOXES": "OFF",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
-                "FEELPP_ENABLE_TESTS": "OFF",
-                "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_BENCHMARKS": "ON",
-                "FEELPP_ENABLE_SPECX": "ON"
-            }
-        },
-        {
-            "name": "toolboxes",
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_FMILIB": "OFF",
+                "FEELPP_ENABLE_MOR": "OFF",
+                "FEELPP_ENABLE_SPECX": "ON",
+                "FEELPP_ENABLE_TESTS": "OFF",
+                "FEELPP_ENABLE_TOOLBOXES": "OFF"
+            },
+            "description": "Build only the Feel++ library Component with SpecX",
+            "displayName": "feelpp+specx | clang | release | cmake package manager",
             "inherits": [
                 "clang",
                 "release-cmake"
             ],
-            "displayName": "toolboxes|clang|release|cmake package manager",
-            "description": "Build only the Feel++ Toolboxes Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "toolboxes"
-            }
+            "name": "feelpp+specx"
         },
         {
-            "name": "mor",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ],
-            "displayName": "mor|clang|release|cmake package manager",
-            "description": "Build only the Feel++ MOR Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "mor",
-                "FEELPP_ENABLE_RESEARCH": "OFF",
-                "FEELPP_ENABLE_OPENTURNS": "ON"
-            }
-        },
-        {
-            "name": "mor-dbg",
-            "inherits": "mor",
-            "displayName": "mor-dbg",
-            "description": "Build only the Feel++ MOR Component in Debug",
             "binaryDir": "${sourceDir}/build/mor-dbg",
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CXX_FLAGS_DEBUG": "-g -O0",
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/mor-dbg/install/",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF",
                 "FEELPP_COMPONENT": "mor",
-                "FEELPP_ENABLE_RESEARCH": "OFF",
-                "CMAKE_BUILD_TYPE": "Debug",
                 "FEELPP_ENABLE_OPENTURNS": "ON",
-                "CMAKE_VERBOSE_MAKEFILE": "OFF"
-            }
+                "FEELPP_ENABLE_RESEARCH": "OFF"
+            },
+            "description": "Build only the Feel++ MOR Component in Debug",
+            "displayName": "mor-dbg",
+            "inherits": "mor",
+            "name": "mor-dbg"
         },
         {
-            "name": "research-mor",
-            "inherits": "default",
-            "displayName": "resarch-mor",
-            "description": "Build only the Feel++ MOR and Research Components",
             "binaryDir": "${sourceDir}/build/research-mor",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "mor",
                 "FEELPP_ENABLE_RESEARCH": "ON"
-            }
-        },
-        {
-            "name": "feelpp-python",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ],
-            "displayName": "python|clang|release|cmake package manager",
-            "description": "Build only the Feel++ python Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "python"
-            }
-        },
-        {
-            "name": "python",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ],
-            "displayName": "python|clang|release|cmake package manager",
-            "description": "Build only the Feel++ python Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "python"
-            }
-        },
-        {
-            "name": "feelpp-python-dbg",
+            },
+            "description": "Build only the Feel++ MOR and Research Components",
+            "displayName": "research-mor",
             "inherits": "default",
-            "displayName": "feelpp-python-dbg",
-            "description": "Build only the Feel++ python Component in Debug mode",
+            "name": "research-mor"
+        },
+        {
+            "cacheVariables": {
+                "FEELPP_COMPONENT": "python"
+            },
+            "description": "Build only the Feel++ python Component",
+            "displayName": "python | clang | release | cmake package manager",
+            "inherits": [
+                "clang",
+                "release-cmake"
+            ],
+            "name": "feelpp-python"
+        },
+        {
             "binaryDir": "${sourceDir}/build/python-dbg",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS_DEBUG": "-g -O0",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/python-dbg/install/",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF",
                 "FEELPP_COMPONENT": "python"
-            }
+            },
+            "description": "Build only the Feel++ python Component in Debug mode",
+            "displayName": "feelpp-python-dbg",
+            "inherits": "default",
+            "name": "feelpp-python-dbg"
         },
         {
-            "name": "mor_python",
-            "inherits": [
-                "mor",
-                "python"
-            ],
-            "displayName": "mor_python|clang|release|cmake package manager",            
-            "description": "Build the Feel++ MOR and Python Components",
+            "binaryDir": "${sourceDir}/build/mor_python",
             "cacheVariables": {
                 "FEELPP_COMPONENT": "mor;python"
-            }
-        },
-        {
-            "name": "testsuite",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ],
-            "displayName": "testsuite|clang|release|cmake package manager",
-            "description": "Build only the Feel++ Testsuite library Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "testsuite"
-            }
-        },
-        {
-            "name": "testsuite-install",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ],
-            "displayName": "testsuite|clang|release|cmake package manager",            
-            "description": "Build only the Feel++ testsuite Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "testsuite"
-            }
-        },
-        {
-            "name": "benchmarks",
-            "inherits": [
-                "clang",
-                "release-cmake"
-            ],
-            "displayName": "benchmarks|clang|release|cmake package manager",            
-            "description": "Build only the Feel++ benchmarks Component",
-            "cacheVariables": {
-                "FEELPP_COMPONENT": "benchmarks"
-            }
-        },
-        {
-            "name": "windows-only",
+            },
+            "description": "Build only the Feel++ MOR and Python Components",
+            "displayName": "mor_python",
             "inherits": "default",
-            "displayName": "Windows-only configuration",
-            "description": "This build is only available on Windows",
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
-            }
+            "name": "mor_python"
         },
         {
-            "name": "macos-homebrew",
-            "inherits": "default",
-            "displayName": "MacOS configuration using Homebrew",
-            "description": "This build is only available on MacOS",
-            "binaryDir": "${sourceDir}/build/macos-homebrew",
-            "cacheVariables": {
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/macos-homebrew/install/",
-                "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
-                "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
-                "FEELPP_STD_CPP": "20",
-                "CMAKE_CXX_FLAGS": "-D_HAS_AUTO_PTR_ETC=0"
-            }
-        },
-        {
-            "name": "doxygen",
-            "inherits": "default",
-            "displayName": "doxygen",
-            "description": "Build Feel++ doxygen documentation",
+            "binaryDir": "${sourceDir}/build/doxygen",
             "cacheVariables": {
                 "FEELPP_ENABLE_DOXYGEN": "ON"
-            }
-        }
-    ],
-    "buildPresets": [
-        {
-            "name": "default",
-            "configurePreset": "default",
-            "jobs": 25
-        },
-        {
-            "name": "release",
-            "configurePreset": "release",
-            "inherits": "default"
-        },
-        {
-            "name": "release-cmake",
-            "configurePreset": "release-cmake",
-            "inherits": "release"
-        },
-        {
-            "name": "release-gcc-cmake",
-            "configurePreset": "release-gcc-cmake",
-            "inherits": "release"
-        },
-        {
-            "name": "release-clang-cmake",
-            "configurePreset": "release-clang-cmake",
-            "inherits": "release"
-        },
-        {
-            "name": "release-clang-cmake-dev",
-            "configurePreset": "release-clang-cmake-dev",
-            "inherits": "release"
-        },
-        {
-            "name": "release-clang-spack",
-            "configurePreset": "release-clang-spack",
-            "inherits": "release"
-        },
-        {
-            "name": "release-clang-cpp20-spack",
-            "configurePreset": "release-clang-cpp20-spack",
-            "inherits": "release"
-        },
-        {
-            "name": "release-gcc-cpp20-cmake",
-            "configurePreset": "release-gcc-cpp20-cmake",
-            "inherits": "release"
-        },
-        {
-            "name": "release-clang-cpp20-cmake",
-            "configurePreset": "release-clang-cpp20-cmake",
-            "inherits": "release"
-        },
-        {
-            "name": "debug",
-            "configurePreset": "debug",
-            "inherits": "default"
-        },
-        {
-            "name": "debug-clang-cmake",
-            "configurePreset": "debug-clang-cmake",
-            "inherits": "debug"
-        },
-        {
-            "name": "dbg",
-            "configurePreset": "dbg",
-            "jobs": 10,
-            "targets": [
-                "feelpp",
-                "pyfeelpp",
-                "install"
-            ]
-        },
-        {
-            "name": "macos-homebrew",
-            "configurePreset": "macos-homebrew",
-            "jobs": 2
-        },
-        {
-            "name": "feelpp",
-            "configurePreset": "feelpp",
+            },
+            "description": "Doxygen config",
+            "displayName": "doxygen",
             "inherits": "default",
-            "targets": [
-                "all",
-                "install"
-            ]
-        },
-        {
-            "name": "feelpp-usrlocal",
-            "configurePreset": "feelpp-usrlocal",
-            "inherits": "default",
-            "targets": [
-                "all",
-                "install"
-            ]
-        },
-        {
-            "name": "toolboxes",
-            "inherits": "default",
-            "configurePreset": "toolboxes",
-            "targets": [
-                "all",
-                "install"
-            ]
-        },
-        {
-            "name": "mor",
-            "inherits": "default",
-            "configurePreset": "mor"
-        },
-        {
-            "name": "mor-dbg",
-            "inherits": "default",
-            "configurePreset": "mor-dbg",
-            "configuration": "Debug"
-        },
-        {
-            "name": "feelpp-python",
-            "inherits": "default",
-            "configurePreset": "feelpp-python"
-        },
-        {
-            "name": "python",
-            "inherits": "default",
-            "configurePreset": "python"
-        },
-        {
-            "name": "feelpp-python-dbg",
-            "inherits": "default",
-            "configurePreset": "feelpp-python-dbg",
-            "targets": [
-                "all",
-                "install"
-            ]
-        },
-        {
-            "name": "mor_python",
-            "inherits": "default",
-            "configurePreset": "mor_python"
-        },
-        {
-            "name": "testsuite",
-            "configurePreset": "testsuite",
-            "inherits": "default",
-            "targets": [
-                "all"
-            ]
-        },
-        {
-            "name": "doxygen",
-            "configurePreset": "doxygen",
-            "targets": ["doxygen"]
+            "name": "doxygen"
         }
     ],
     "testPresets": [
         {
-            "name": "default",
             "configurePreset": "default",
-            "filter":{
-                "include":{
-                    "name":"feelpp"
-                }
+            "execution": {
+                "jobs": 4
             },
+            "name": "default",
             "output": {
                 "outputOnFailure": true
-            },
-            "execution": {
-                "jobs":2,
-                "noTestsAction": "error",
-                "stopOnFailure": false,
-                "repeat": {
-                    "mode": "until-pass",
-                    "count": 3
-                }
             }
         },
         {
-            "name": "release",
             "configurePreset": "release",
-            "configuration": "Release",
-            "inherits": "default"
+            "inherits": "default",
+            "name": "release",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
-            "name": "debug",
-            "configurePreset": "debug",
-            "configuration": "Debug",
-            "inherits": "default"
-        },
-        {
-            "name": "release-cmake",
             "configurePreset": "release-cmake",
-            "configuration": "Release",
-            "inherits": "default"
+            "inherits": "default",
+            "name": "release-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
-            "name": "release-clang-cmake",
+            "configurePreset": "debug",
+            "inherits": "default",
+            "name": "debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "debug-cmake",
+            "inherits": "default",
+            "name": "debug-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "dbg",
+            "execution": {
+                "jobs": 2
+            },
+            "name": "dbg",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "doxygen",
+            "name": "doxygen",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-cpp20-cmake",
+            "inherits": "default",
+            "name": "release-cpp20-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-cpp23-cmake",
+            "inherits": "default",
+            "name": "release-cpp23-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-gcc-cmake",
+            "inherits": "default",
+            "name": "release-gcc-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
             "configurePreset": "release-clang-cmake",
-            "configuration": "Release",
-            "inherits": "default"
+            "inherits": "default",
+            "name": "release-clang-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
-            "name": "release-clang-spack",
-            "configurePreset": "release-clang-spack",
-            "configuration": "Release",
-            "inherits": "default"
+            "configurePreset": "debug-gcc-cmake",
+            "inherits": [
+                "default"
+            ],
+            "name": "debug-gcc-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
-            "name": "release-clang-cpp20-spack",
-            "configurePreset": "release-clang-cpp20-spack",
-            "configuration": "Release",
-            "inherits": "default"
+            "configurePreset": "debug-clang-cmake",
+            "inherits": [
+                "default"
+            ],
+            "name": "debug-clang-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
-            "name": "release-clang-cmake-dev",
-            "configurePreset": "release-clang-cmake-dev",
-            "configuration": "Release",
-            "inherits": "default"
-        },
-        {
-            "name": "release-clang-cpp20-cmake",
-            "configurePreset": "release-clang-cpp20-cmake",
-            "configuration": "Release",
-            "inherits": ["default"]
-        },
-        {
-            "name": "release-gcc-cpp20-cmake",
             "configurePreset": "release-gcc-cpp20-cmake",
-            "configuration": "Release",
-            "inherits": ["default"]
+            "inherits": "default",
+            "name": "release-gcc-cpp20-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
         },
         {
-            "name": "feelpp",
+            "configurePreset": "release-gcc-cpp23-cmake",
+            "inherits": "default",
+            "name": "release-gcc-cpp23-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-clang-cpp20-cmake",
+            "inherits": "default",
+            "name": "release-clang-cpp20-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-clang-cpp23-cmake",
+            "inherits": "default",
+            "name": "release-clang-cpp23-cmake",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-clang-spack",
+            "inherits": "default",
+            "name": "release-clang-spack",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "release-clang-cpp20-spack",
+            "inherits": "default",
+            "name": "release-clang-cpp20-spack",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
             "configurePreset": "feelpp",
-            "inherits":"default",
             "execution": {
-                "timeout": 80
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
+            },
+            "inherits": "default",
+            "name": "feelpp",
+            "output": {
+                "outputOnFailure": true
             }
         },
         {
-            "name": "toolboxes",
-            "configurePreset": "toolboxes",
-            "inherits": "feelpp",
-            "execution": {
-                "timeout": 460
-            }
-        },
-        {
-            "name": "mor",
-            "configurePreset": "mor",
-            "inherits": "feelpp",
-            "execution": {
-                "timeout": 240
-            }
-        },
-        {
-            "name": "python",
-            "configurePreset": "python",
-            "inherits": "feelpp",
-            "execution": {
-                "timeout": 700
-            }
-        },
-        {
-            "name": "feelpp-python",
-            "configurePreset": "feelpp-python",
-            "inherits": "feelpp",
-            "execution": {
-                "timeout": 700
-            }
-        },
-        {
-            "name": "mor_python",
-            "configurePreset": "mor_python",
-            "inherits": "feelpp"
-        },
-        {
-            "name": "testsuite",
             "configurePreset": "testsuite",
-            "inherits": "feelpp"
+            "execution": {
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
+            },
+            "inherits": "default",
+            "name": "testsuite",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "toolboxes",
+            "execution": {
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
+            },
+            "inherits": "default",
+            "name": "toolboxes",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "mor",
+            "execution": {
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
+            },
+            "inherits": "default",
+            "name": "mor",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "python",
+            "execution": {
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
+            },
+            "inherits": "default",
+            "name": "python",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "feelpp-usrlocal",
+            "inherits": "feelpp",
+            "name": "feelpp-usrlocal",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "feelpp-cpp20-spack",
+            "name": "feelpp-cpp20-spack",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "feelpp+specx",
+            "name": "feelpp+specx",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "mor-dbg",
+            "name": "mor-dbg",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "research-mor",
+            "name": "research-mor",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "feelpp-python",
+            "name": "feelpp-python",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "feelpp-python-dbg",
+            "name": "feelpp-python-dbg",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "configurePreset": "mor_python",
+            "name": "mor_python",
+            "output": {
+                "outputOnFailure": true
+            }
         }
     ],
     "vendor": {
         "example.com/ExampleIDE/1.0": {
             "autoFormat": false
         }
-    }
+    },
+    "version": 6,
+    "workflowPresets": [
+        {
+            "description": "Configure, build, and test feelpp",
+            "displayName": "Workflow: feelpp",
+            "name": "feelpp",
+            "steps": [
+                {
+                    "name": "feelpp",
+                    "type": "configure"
+                },
+                {
+                    "name": "feelpp",
+                    "type": "build"
+                },
+                {
+                    "name": "feelpp",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test testsuite",
+            "displayName": "Workflow: testsuite",
+            "name": "testsuite",
+            "steps": [
+                {
+                    "name": "testsuite",
+                    "type": "configure"
+                },
+                {
+                    "name": "testsuite",
+                    "type": "build"
+                },
+                {
+                    "name": "testsuite",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test toolboxes",
+            "displayName": "Workflow: toolboxes",
+            "name": "toolboxes",
+            "steps": [
+                {
+                    "name": "toolboxes",
+                    "type": "configure"
+                },
+                {
+                    "name": "toolboxes",
+                    "type": "build"
+                },
+                {
+                    "name": "toolboxes",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test mor",
+            "displayName": "Workflow: mor",
+            "name": "mor",
+            "steps": [
+                {
+                    "name": "mor",
+                    "type": "configure"
+                },
+                {
+                    "name": "mor",
+                    "type": "build"
+                },
+                {
+                    "name": "mor",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test python",
+            "displayName": "Workflow: python",
+            "name": "python",
+            "steps": [
+                {
+                    "name": "python",
+                    "type": "configure"
+                },
+                {
+                    "name": "python",
+                    "type": "build"
+                },
+                {
+                    "name": "python",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test feelpp (for Docker builds)",
+            "displayName": "Docker: feelpp",
+            "name": "feelpp-docker",
+            "steps": [
+                {
+                    "name": "feelpp",
+                    "type": "configure"
+                },
+                {
+                    "name": "feelpp",
+                    "type": "build"
+                },
+                {
+                    "name": "feelpp",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test testsuite (for Docker builds)",
+            "displayName": "Docker: testsuite",
+            "name": "testsuite-docker",
+            "steps": [
+                {
+                    "name": "testsuite",
+                    "type": "configure"
+                },
+                {
+                    "name": "testsuite",
+                    "type": "build"
+                },
+                {
+                    "name": "testsuite",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test toolboxes (for Docker builds)",
+            "displayName": "Docker: toolboxes",
+            "name": "toolboxes-docker",
+            "steps": [
+                {
+                    "name": "toolboxes",
+                    "type": "configure"
+                },
+                {
+                    "name": "toolboxes",
+                    "type": "build"
+                },
+                {
+                    "name": "toolboxes",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test mor (for Docker builds)",
+            "displayName": "Docker: mor",
+            "name": "mor-docker",
+            "steps": [
+                {
+                    "name": "mor",
+                    "type": "configure"
+                },
+                {
+                    "name": "mor",
+                    "type": "build"
+                },
+                {
+                    "name": "mor",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test python (for Docker builds)",
+            "displayName": "Docker: python",
+            "name": "python-docker",
+            "steps": [
+                {
+                    "name": "python",
+                    "type": "configure"
+                },
+                {
+                    "name": "python",
+                    "type": "build"
+                },
+                {
+                    "name": "python",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test default",
+            "displayName": "Workflow: default",
+            "name": "default",
+            "steps": [
+                {
+                    "name": "default",
+                    "type": "configure"
+                },
+                {
+                    "name": "default",
+                    "type": "build"
+                },
+                {
+                    "name": "default",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test default (for Docker builds)",
+            "displayName": "Docker: default",
+            "name": "default-docker",
+            "steps": [
+                {
+                    "name": "default",
+                    "type": "configure"
+                },
+                {
+                    "name": "default",
+                    "type": "build"
+                },
+                {
+                    "name": "default",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test release",
+            "displayName": "Workflow: release",
+            "name": "release",
+            "steps": [
+                {
+                    "name": "release",
+                    "type": "configure"
+                },
+                {
+                    "name": "release",
+                    "type": "build"
+                },
+                {
+                    "name": "release",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test release-cmake",
+            "displayName": "Workflow: release-cmake",
+            "name": "release-cmake",
+            "steps": [
+                {
+                    "name": "release-cmake",
+                    "type": "configure"
+                },
+                {
+                    "name": "release-cmake",
+                    "type": "build"
+                },
+                {
+                    "name": "release-cmake",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test debug",
+            "displayName": "Workflow: debug",
+            "name": "debug",
+            "steps": [
+                {
+                    "name": "debug",
+                    "type": "configure"
+                },
+                {
+                    "name": "debug",
+                    "type": "build"
+                },
+                {
+                    "name": "debug",
+                    "type": "test"
+                }
+            ]
+        },
+        {
+            "description": "Configure, build, and test debug-cmake",
+            "displayName": "Workflow: debug-cmake",
+            "name": "debug-cmake",
+            "steps": [
+                {
+                    "name": "debug-cmake",
+                    "type": "configure"
+                },
+                {
+                    "name": "debug-cmake",
+                    "type": "build"
+                },
+                {
+                    "name": "debug-cmake",
+                    "type": "test"
+                }
+            ]
+        }
+    ]
 }

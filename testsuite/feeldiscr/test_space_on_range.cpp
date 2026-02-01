@@ -297,8 +297,8 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     auto mesh = unitCube();
     BOOST_TEST_MESSAGE(fmt::format("mesh built"));
     auto selected = elements(mesh, Px() < cst(0.5), _selector=select_elements_from_expression::with_value, _value=1 );
-    //wc(mesh)->print( fmt::format("number of selected elements local : {}",nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
-    //wc(mesh)->print( fmt::format("number of selected elements global: {} local: {}", nelements(selected, true),nelements(selected)), FLAGS_v>1,FLAGS_v>0,FLAGS_v>1 );
+    //wc(mesh)->print( fmt::format("number of selected elements local : {}",nelements(selected)), Environment::logVerbosityLevel()>1,Environment::logVerbosityLevel()>0,Environment::logVerbosityLevel()>1 );
+    //wc(mesh)->print( fmt::format("number of selected elements global: {} local: {}", nelements(selected, true),nelements(selected)), Environment::logVerbosityLevel()>1,Environment::logVerbosityLevel()>0,Environment::logVerbosityLevel()>1 );
 
     BOOST_TEST_MESSAGE(fmt::format("elements selected"));
     auto Vh = Pdhv<1>(mesh, selected );

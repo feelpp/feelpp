@@ -753,9 +753,14 @@ typename VectorUblasContiguousGhosts<T, Storage>::size_type
 VectorUblasContiguousGhosts<T, Storage>::startGhost() const
 {
     if constexpr ( is_vector_proxy )
+    {
         CHECK( false ) << "should not happen";
+        return 0; // should not reach here
+    }
     else
+    {
         return this->map().nLocalDofWithoutGhost();
+    }
 }
 
 template< typename T, typename Storage > 

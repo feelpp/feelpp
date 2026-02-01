@@ -65,9 +65,9 @@ public:
      */
     //@{
 
-    static const bool is_continuous = true;
-    static const bool is_discontinuous_locally = false;
-    static const bool is_discontinuous_totally = false;
+    static inline const bool is_continuous = true;
+    static inline const bool is_discontinuous_locally = false;
+    static inline const bool is_discontinuous_totally = false;
 
 
     //@}

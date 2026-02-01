@@ -206,7 +206,7 @@ VectorPetsc<T>::operator() ( const size_type i ) const
 
     value = values[i - this->firstLocalIndex()];
 
-    ierr = VecRestoreArray ( M_vec, &values );
+    ierr = VecRestoreArray( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<value_type>( value );
@@ -223,7 +223,11 @@ VectorPetsc<T>::operator() ( const size_type i )
 
     int ierr=0;
     PetscScalar *values;
-
+    PetscInt state;
+    VecLockGet(M_vec, &state);
+    if (PetscUnlikely(state != 0)) {
+        CHECK(false) << "VectorPetsc::operator() is invalid for PETSc >= 3.22";
+    }
     ierr = VecGetArray( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
 
@@ -231,7 +235,7 @@ VectorPetsc<T>::operator() ( const size_type i )
 
     ierr = VecRestoreArray ( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
-
+    
     return static_cast<value_type&>( value );
 }
 
@@ -1688,7 +1692,7 @@ VectorPetscMPI<T>::close()
     super::close();
 
     this->localize();
-    toc("VectorPetscMPI::close",FLAGS_v>0);
+    toc("VectorPetscMPI::close",Environment::logVerbosityLevel()>0);
 }
 
 //----------------------------------------------------------------------------------------------------//

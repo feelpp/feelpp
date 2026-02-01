@@ -34,13 +34,14 @@
 
 #include <boost/function.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#pragma GCC diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #if 0
 #include <Eigen/Core>
@@ -576,7 +577,6 @@ JacobiBatchDerivation( int  N, T a, T b, ublas::vector<T> const& __pts )
     typedef T value_type;
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
-    static const bool cond = N>0;
     if ( N > 0 )
     {
         typedef T value_type;

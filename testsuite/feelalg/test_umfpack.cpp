@@ -29,8 +29,12 @@
 #include <stdio.h>
 
 #include <boost/mpl/and.hpp>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>

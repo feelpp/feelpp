@@ -112,6 +112,16 @@ struct FEELPP_EXPORT ModelBoundaryId : public std::tuple<std::string,std::string
   // the name of the bc, can be also the name of the marker
   std::string const& name() const { return std::get<2>( *this ); }
 
+  // Comparison operators for C++23 compatibility (opt-out of tuple-like comparison)
+  friend bool operator<(const ModelBoundaryId& a, const ModelBoundaryId& b) {
+    return static_cast<const parent&>(a) < static_cast<const parent&>(b);
+  }
+  friend bool operator==(const ModelBoundaryId& a, const ModelBoundaryId& b) {
+    return static_cast<const parent&>(a) == static_cast<const parent&>(b);
+  }
+  friend bool operator!=(const ModelBoundaryId& a, const ModelBoundaryId& b) {
+    return !(a == b);
+  }
 };
 inline std::ostream&
 operator<<(std::ostream& os, ModelBoundaryId const& bcid )
@@ -167,6 +177,15 @@ class FEELPP_EXPORT ModelBoundaryConditionsNEW// : public std::map<std::string,n
   std::map<std::string,nl::json> M_sections;
 };
 
+}
+
+// C++23 tuple-like support: specialize std::tuple_size for ModelBoundaryId
+namespace std {
+    template<>
+    struct tuple_size<Feel::ModelBoundaryId> : tuple_size<std::tuple<std::string, std::string, std::string>> {};
+    
+    template<size_t I>
+    struct tuple_element<I, Feel::ModelBoundaryId> : tuple_element<I, std::tuple<std::string, std::string, std::string>> {};
 }
 
 #endif

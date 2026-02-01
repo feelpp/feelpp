@@ -1,3 +1,4 @@
+if ( RUBY_FOUND )
 # Actually include the module
 include(metabench)
 
@@ -13,3 +14,4 @@ metabench_add_chart(poly_chart DATASETS bench_poly_dataset1 bench_poly_dataset2)
 add_custom_target(bench_comp_poly)
 #feelpp_add_application( compile_element SRCS  element.cpp EXEC B_C_ELEMENT)
 #add_dependencies(bench_comp_poly ${B_C_ELEMENT})
+endif()

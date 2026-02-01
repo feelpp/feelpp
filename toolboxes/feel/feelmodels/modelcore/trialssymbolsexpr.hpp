@@ -148,7 +148,7 @@ private :
 template<typename SpaceType,typename... TrialSymbolsExprType>
 struct TrialSymbolsExprTraits
 {
-    static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::template apply( args... ); };
+    static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::apply( args... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<TrialSymbolsExprType...>{},  callApply ) )>;
     // TODO check that all space in tuple_type is equal to SpaceType
     using type = TrialSymbolsExpr<SpaceType,tuple_type>;
@@ -164,7 +164,7 @@ template<typename SpaceType,typename... TrialSymbolsExprType>
 trial_symbols_expr_t<SpaceType,TrialSymbolsExprType...>
 trialSymbolsExpr( const TrialSymbolsExprType&... tse )
 {
-    return trial_symbols_expr_t<SpaceType,TrialSymbolsExprType...>( Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::template apply( tse... ) );
+    return trial_symbols_expr_t<SpaceType,TrialSymbolsExprType...>( Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::apply( tse... ) );
 }
 
 template <typename FeelppTagOfMapType,typename FeelppTagOfContainerType>
@@ -284,7 +284,7 @@ private :
 template<typename... TrialSymbolsExprType>
 struct TrialsSymbolsExprTraits
 {
-    static constexpr auto callApply = [](const auto& ...args) { return Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::template apply( args... ); };
+    static constexpr auto callApply = [](const auto& ...args) { return Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::apply( args... ); };
     using map_type = std::decay_t<decltype( hana::unpack( hana::tuple<TrialSymbolsExprType...>{},  callApply ) )>;
     using type = TrialsSymbolsExpr<map_type>;
 };
@@ -298,7 +298,7 @@ template<typename... TrialSymbolsExprType>
 trials_symbols_expr_t<TrialSymbolsExprType...>
 trialsSymbolsExpr( const TrialSymbolsExprType&... tse )
 {
-    return trials_symbols_expr_t<TrialSymbolsExprType...>( Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::template apply( tse... ) );
+    return trials_symbols_expr_t<TrialSymbolsExprType...>( Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::apply( tse... ) );
 }
 
 

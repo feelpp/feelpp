@@ -36,7 +36,7 @@ namespace Feel
 template< class Convex >
 class MeshHighOrder
 {
-    static const bool is_simplex = Convex::is_simplex;
+    static inline const bool is_simplex = Convex::is_simplex;
     static inline const uint16_type Dim = Convex::nDim;
     static inline const uint16_type Order = Convex::nOrder;
 

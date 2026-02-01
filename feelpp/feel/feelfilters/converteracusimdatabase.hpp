@@ -225,7 +225,7 @@ ConverterAcusimDatabase<MeshType>::run()
         std::cout << "hasScalarSpace : " << hasScalarSpace << "\n"
                   << "hasVectorialSpace : " << hasVectorialSpace << "\n";
 
-    if ( FLAGS_v >= 1 )
+    if ( Environment::logVerbosityLevel() >= 1 )
     {
         auto mem  = Environment::logMemoryUsage("memory usage after update for use");
         std::cout << "[run] resident memory before loadMesh // : " << mem.memory_usage/1.e9  << "GBytes\n";
@@ -234,7 +234,7 @@ ConverterAcusimDatabase<MeshType>::run()
 
     auto mesh = M_feelppDatabase.loadMesh( /*MESH_UPDATE_FACES_MINIMAL|*/MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED );
 
-    if ( FLAGS_v >= 1 )
+    if ( Environment::logVerbosityLevel() >= 1 )
     {
         auto mem  = Environment::logMemoryUsage("memory usage after update for use");
         std::cout << "[run] resident memory after loadMesh // : " << mem.memory_usage/1.e9  << "GBytes\n";

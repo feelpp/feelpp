@@ -19,6 +19,8 @@ if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal" -o "$DIST" = "j
    FLAVOR=ubuntu
 elif [ "$DIST" = "buster" -o "$DIST" = "bullseye" -o "$DIST" = "bookworm" -o "$DIST" = "trixie" -o "$DIST" = "testing" -o "$DIST" = "sid" ]; then
     FLAVOR=debian
+elif [ "$DIST" = "fedora-42" ]; then
+    FLAVOR=fedora
 fi
 
 

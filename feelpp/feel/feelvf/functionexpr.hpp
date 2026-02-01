@@ -60,12 +60,12 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
@@ -161,7 +161,7 @@ public:
         typedef typename shapeType<function_invoke_result_type, std::is_arithmetic_v<function_invoke_result_type>>::type shape;
         typedef Eigen::Matrix<value_type,shape::M,shape::N> matrix_shape_type;
         // is zero
-        struct is_zero { static const bool value = false; };
+        struct is_zero { static inline const bool value = false; };
 
         // constructors
         tensor( expr_type const& expr,

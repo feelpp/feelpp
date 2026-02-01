@@ -154,7 +154,11 @@
  * the README file for the License.  Available at
  * http://www.cise.ufl.edu/research/sparse.
  */
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>

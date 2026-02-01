@@ -74,7 +74,7 @@ macro(genLibBase)
       #configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
       file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} "") #write empty file
     endif()
-    add_custom_command(TARGET ${TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET ${TARGET_COPY_FILES} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
@@ -521,7 +521,7 @@ macro( genLibCoefficientFormPDEs )
         if ( NOT EXISTS ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
           file(WRITE ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} "") #write empty file
         endif()
-        add_custom_command(TARGET ${COEFFICIENTFORMPDES_TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        add_custom_command(TARGET ${COEFFICIENTFORMPDES_TARGET_COPY_FILES} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
           ${filepath} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
 
         set(COEFFICIENTFORMPDES_CODEGEN_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )

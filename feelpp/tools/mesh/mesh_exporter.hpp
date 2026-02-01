@@ -56,7 +56,12 @@ void doExport(std::shared_ptr<mesh_t> mesh = {} )
         return std::tuple{ fields[0], fields[1], reps };
     };
 
-    for ( auto const& sexpr : vsoption( _name = "scalar_expr" ) )
+    // Get scalar expressions with default if none provided
+    auto scalar_exprs = vsoption( _name = "scalar_expr" );
+    if ( scalar_exprs.empty() )
+        scalar_exprs = { "g|sin(x):x|nodal|element" };
+    
+    for ( auto const& sexpr : scalar_exprs )
     {
         auto const& [strname, strexpr, reps] = getfns( sexpr );
         ex->add( strname, expr( strexpr ), reps );

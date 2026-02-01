@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testmaterial )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmaterial")
 
 
 foreach(TEST material)

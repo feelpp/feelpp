@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testvf )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 
 feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py )
 

@@ -12,6 +12,37 @@ config_cases=[  ("pyfeelpp-tests/core/test_config",fppc.Location.standard,False)
                 ("/tmp/toto/pyfeelpp-tests/core/test_config",fppc.Location.absolute,True),
             ]
 
+def test_repository_custom(init_feelpp):
+    """Test custom repository location with Python callback"""
+    e = init_feelpp
+    
+    # Create a custom repository config with a Python callback
+    def compute_custom_path():
+        base_dir = Path("/tmp/feelpp-custom-py-test")
+        return base_dir / "computed-subdir"
+    
+    config = fppc.customRepository("fallback-dir", compute_custom_path)
+    repo = fppc.Repository(config)
+    repo.configure()
+    
+    assert repo.isCustom()
+    assert not repo.isGlobal()
+    assert not repo.isRelative()
+    assert not repo.isAbsolute()
+    
+    root = Path(repo.root())
+    assert root.exists()
+    assert "feelpp-custom-py-test" in str(root)
+    assert "computed-subdir" in str(root)
+    
+    # Clean up
+    if e.isMasterRank():
+        base_cleanup = Path("/tmp/feelpp-custom-py-test")
+        if base_cleanup.exists():
+            shutil.rmtree(base_cleanup)
+    
+    print(f"Custom repository test passed, root: {root}")
+
 @pytest.mark.parametrize("dir,location,rm", config_cases)
 def test_config(init_feelpp,dir,location,rm):
     e=init_feelpp
@@ -44,7 +75,6 @@ def test_core(init_feelpp):
 
 def test_mpi_bcast(init_feelpp):
     fppc.Environment.changeRepository(directory="pyfeelpp-tests/core/test_core_bcast")
-    
     if fppc.Environment.isMasterRank():
         data={"key":"test"}
     else:
@@ -70,12 +100,25 @@ def test_worldcomm_split(init_feelpp):
         assert(wglob.localSize() == e.numberOfProcessors()/2)
         assert(w.localSize() == e.numberOfProcessors()/2)
         assert(w.globalSize() == e.numberOfProcessors()/2)
-          
-
 
 #def test_config_local(init_feelpp_config_local):
 #    fppc.Environment.changeRepository(
 #        directory="pyfeelpp-tests/core/test_config_local")
+
+
+def test_set_multiple_config_files(tmp_path, init_feelpp):
+    first_cfg = tmp_path / "first.cfg"
+    first_cfg.write_text(
+        "case=python-case\ncase.config-file=python-first.json\n",
+        encoding="utf-8",
+    )
+    second_cfg = tmp_path / "second.cfg"
+    second_cfg.write_text("case.config-file=python-second.json\n", encoding="utf-8")
+
+    fppc.Environment.setConfigFiles([str(first_cfg), str(second_cfg)])
+
+    assert fppc.soption("case") == "python-case"
+    assert fppc.soption("case.config-file") == "python-second.json"
 
 def test_config_parser(init_feelpp):
     e=init_feelpp

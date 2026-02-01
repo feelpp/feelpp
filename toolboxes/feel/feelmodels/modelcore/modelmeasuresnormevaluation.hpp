@@ -131,11 +131,17 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
                             typename std::enable_if< FieldType::is_tensor2 || FieldType::is_tensor2symm >::type* = nullptr )
 {
     if ( normType == "L2" || normType == "L2-error" || normType == "L2-relative-error" )
+    {
         measureNormEvaluationL2( range, idv(field), normType, ppNorm, symbolsExpr, res, false );
+    }
     else if ( normType == "H1" || normType == "SemiH1" || normType == "H1-error" || normType == "SemiH1-error" )
+    {
         CHECK( false ) << "normType " << normType << " is not implemented with tensor field";
+    }
     else
+    {
         CHECK( false ) << "invalid norm type : " << normType;
+    }
 }
 
 
@@ -225,11 +231,17 @@ measureNormEvaluation( RangeType const& range,
             {
                 auto idExpr = expr( exprGeneric.expr<nRealDim,nRealDim>(), symbolsExpr );
                 if ( normType == "L2" || normType == "L2-error" )
+                {
                     measureNormEvaluationL2( range, idExpr, normType, ppNorm, symbolsExpr, res );
+                }
                 else if ( normType == "H1" || normType == "SemiH1" || normType == "H1-error" || normType == "SemiH1-error" )
+                {
                     CHECK( false ) << "normType " << normType << " is not implemented with tensor field";
+                }
                 else
+                {
                     CHECK( false ) << "invalid norm type : " << normType;
+                }
             }
         }
     }
@@ -249,13 +261,21 @@ measureNormEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType const& d
     {
         std::string firstMarker = *meshMarkers.begin();
         if ( mesh->hasElementMarker( firstMarker ) )
+        {
             measureNormEvaluation(  markedelements( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple... );
+        }
         else if ( mesh->hasFaceMarker( firstMarker ) )
+        {
             measureNormEvaluation(  markedfaces( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple... );
+        }
         else if ( mesh->hasEdgeMarker( firstMarker ) || mesh->hasPointMarker( firstMarker ) )
+        {
             CHECK( false ) << "not implemented for edges/points";
+        }
         else if ( !mesh->hasMarker( firstMarker ) )
+        {
             CHECK( false ) << "marker " << firstMarker << " not present in mesh";
+        }
     }
 }
 

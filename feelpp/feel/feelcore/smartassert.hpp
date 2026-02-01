@@ -40,7 +40,11 @@
 #pragma warning push
 #pragma warning(disable:780)
 #endif
+#if defined(FEELPP_HAS_SPDLOG)
+#include <feel/feelcore/logger.hpp>
+#else
 #include <glog/logging.h>
+#endif
 #if defined(__INTEL_COMPILER)
 #pragma warning pop
 #endif
@@ -49,6 +53,24 @@ namespace Feel
 {
 enum
 {
+#if defined(FEELPP_HAS_SPDLOG)
+    lvl_info = 0,   // INFO level
+
+    // default behavior - just loggs this assert
+    // (a message is shown to the user to the console)
+    lvl_warn = 1,   // WARNING level
+
+    // default behavior - asks the user what to do:
+    // Ignore/ Retry/ etc.
+    lvl_debug = 0,  // INFO level (for debug context)
+
+    // default behavior - throws a SmartAssert_error
+    lvl_error = 2,  // ERROR level
+
+    // default behavior - dumps all assert context to console,
+    // and aborts
+    lvl_fatal = 3   // FATAL/CRITICAL level
+#else
     lvl_info = google::GLOG_INFO,
 
     // default behavior - just loggs this assert
@@ -65,6 +87,7 @@ enum
     // default behavior - dumps all assert context to console,
     // and aborts
     lvl_fatal = google::GLOG_FATAL
+#endif
 };
 
 
