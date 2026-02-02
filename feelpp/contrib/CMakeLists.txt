@@ -426,7 +426,9 @@ if(FEELPP_USE_EXTERNAL_PYBIND11)
   # pybind11_add_module) can link against it. Create a safe alias to
   # an available target when necessary.
   if(NOT TARGET pybind11::headers)
-    if(TARGET pybind11::module)
+    if(TARGET pybind11::pybind11_headers)
+      add_library(pybind11::headers ALIAS pybind11::pybind11_headers)
+    elseif(TARGET pybind11::module)
       add_library(pybind11::headers ALIAS pybind11::module)
     elseif(TARGET pybind11::pybind11)
       add_library(pybind11::headers ALIAS pybind11::pybind11)
