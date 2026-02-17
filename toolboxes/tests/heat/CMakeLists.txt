@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABEL heat )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-toolboxes;heat")
 
 feelpp_add_test( heat NO_SEQ_TEST LINK_LIBRARIES Feelpp::feelpp_toolbox_heat_lib CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/Building/ThermalBridgesENISO10211/case2.cfg " )
 

@@ -30,6 +30,8 @@
 #ifndef __Basis_H
 #define __Basis_H 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/fwd.hpp>
@@ -37,6 +39,8 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/operation.hpp>
 #include <boost/numeric/ublas/lu.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace Feel
 {

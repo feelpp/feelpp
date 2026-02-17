@@ -276,12 +276,12 @@ Hdg<Dim, OrderP>::convergence()
     //
     tic();
     a(0_c,0_c) += integrate(_range=elements(mesh),_expr=(trans(lambda*idt(u))*id(v)) );
-    toc("a(0,0)",FLAGS_v>0);
+    toc("a(0,0)",Environment::logVerbosityLevel()>0);
     cout << "a11 works fine" << std::endl;
 
     tic();
     a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
-    toc("a(0,1)",FLAGS_v>0);
+    toc("a(0,1)",Environment::logVerbosityLevel()>0);
     cout << "a12 works fine" << std::endl;
 
     tic();
@@ -291,7 +291,7 @@ Hdg<Dim, OrderP>::convergence()
 
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=idt(phat)*normal(v));
-    toc("a(0,2)",FLAGS_v>0);
+    toc("a(0,2)",Environment::logVerbosityLevel()>0);
     cout << "a13 works fine" << std::endl;
 
     //
@@ -309,7 +309,7 @@ Hdg<Dim, OrderP>::convergence()
 #else
     a(1_c,0_c) += integrate(_range=elements(mesh),_expr=-(id(w)*divt(u)));
 #endif
-    toc("a(1,0)",FLAGS_v>0);
+    toc("a(1,0)",Environment::logVerbosityLevel()>0);
     cout << "a21 works fine" << std::endl;
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
@@ -318,7 +318,7 @@ Hdg<Dim, OrderP>::convergence()
                               rightfacet( pow(h(),M_tau_order)*idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=-(tau_constant * pow(h(),M_tau_order)*id(w)*idt(p)));
-    toc("a(1,1)",FLAGS_v>0);
+    toc("a(1,1)",Environment::logVerbosityLevel()>0);
     cout << "a22 works fine" << std::endl;
 
     tic();
@@ -329,7 +329,7 @@ Hdg<Dim, OrderP>::convergence()
 
     a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=tau_constant * idt(phat) * pow(h(),M_tau_order)*id(w) );
-    toc("a(1,2)",FLAGS_v>0);
+    toc("a(1,2)",Environment::logVerbosityLevel()>0);
     cout << "a23 works fine" << std::endl;
 
     //
@@ -341,13 +341,13 @@ Hdg<Dim, OrderP>::convergence()
                             //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
                             _verbose=true);
         
-    toc("a(2,0).1",FLAGS_v>0);
+    toc("a(2,0).1",Environment::logVerbosityLevel()>0);
         
     tic();
     // BC
     a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=( id(l)*(normalt(u))));
-    toc("a(2,0).3",FLAGS_v>0);
+    toc("a(2,0).3",Environment::logVerbosityLevel()>0);
     cout << "a31 works fine" << std::endl;
 
     tic();
@@ -356,7 +356,7 @@ Hdg<Dim, OrderP>::convergence()
                                                            rightfacet( pow(h(),M_tau_order)*idt(p) )),_verbose=true);
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=tau_constant * id(l) * ( pow(h(),M_tau_order)*idt(p) ),_verbose=true );
-    toc("a(2,1)",FLAGS_v>0);
+    toc("a(2,1)",Environment::logVerbosityLevel()>0);
     cout << "a32 works fine" << std::endl;
 
     tic();
@@ -367,7 +367,7 @@ Hdg<Dim, OrderP>::convergence()
                             _expr=-tau_constant * idt(phat) * id(l) * ( pow(h(),M_tau_order) ) );
     a(2_c,2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                             _expr=idt(phat) * id(l) );
-    toc("a(2,2)",FLAGS_v>0);
+    toc("a(2,2)",Environment::logVerbosityLevel()>0);
     cout << "a33 works fine" << std::endl;
 
     toc("matrices",true);

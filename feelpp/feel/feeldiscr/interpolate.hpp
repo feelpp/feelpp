@@ -68,7 +68,7 @@ template<typename InterpType, typename SizeT>
 void
 interpolate_sync( InterpType & interp, bool hasMeshSupportPartialDomain, std::set<SizeT> const& dofUsedWithPartialMeshSupport )
 {
-    static const bool interp_is_vector = is_std_vector_v<InterpType>;
+    constexpr bool interp_is_vector = is_std_vector_v<InterpType>;
     if constexpr ( !interp_is_vector )
     {
         if ( hasMeshSupportPartialDomain )
@@ -102,7 +102,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
              FunctionType const& f,
              /*typename SpaceType::element_type*/  InterpType & interp )
 {
-    static const bool interp_is_vector = is_std_vector_v<InterpType>;
+    constexpr bool interp_is_vector = is_std_vector_v<InterpType>;
     typedef typename SpaceType::value_type value_type;
     typedef boost::multi_array<value_type,3> array_type;
     typedef typename SpaceType::element_type interp_element_type;

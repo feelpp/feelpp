@@ -47,6 +47,7 @@
 //#include <feel/feelpoly/context.hpp>
 
 #include <feel/feelvf/exprbase.hpp>
+#include <feel/feelvf/concepts.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 #include <feel/feelvf/lambda.hpp>
@@ -73,24 +74,24 @@ class ComponentsExpr
 public:
 
     static const size_type context = ExprT::context;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = ExprT::template HasTestFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ExprT::template HasTrialFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
     template<typename Func>
-    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    static inline const bool has_test_basis = ExprT::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
 
@@ -205,7 +206,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -373,13 +374,13 @@ constexpr bool has_symbolic_diff_v = has_symbolic_diff_type<T,diffOrder,TheSymbo
 template<typename ExprT>
 class Expr;
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT const& exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* = nullptr );
+expr( ExprT const& exprt );
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT && exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* = nullptr );
+expr( ExprT && exprt );
 
 /*!
   \class Expr
@@ -394,23 +395,23 @@ class Expr : public ExprBase, public ExprDynamicBase //: public std::enable_shar
 public:
 
     inline static const size_type context = ExprT::context;
-    static const bool is_terminal = ExprT::is_terminal;
+    static inline const bool is_terminal = ExprT::is_terminal;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = ExprT::template HasTestFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ExprT::template HasTrialFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
     template<typename Func>
-    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    static inline const bool has_test_basis = ExprT::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
 
@@ -664,7 +665,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -987,16 +988,16 @@ private:
 };
 
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT const& exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* /*= nullptr*/ )
+expr( ExprT const& exprt )
 {
     return Expr<ExprT>( exprt );
 }
 
-template <typename ExprT>
+template <VfExpr ExprT>
 Expr<ExprT>
-expr( ExprT && exprt, typename std::enable_if_t<is_vf_expr_v<ExprT> >* /*= nullptr*/ )
+expr( ExprT && exprt )
 {
     return Expr<ExprT>( std::forward<ExprT>( exprt ) );
 }
@@ -1057,7 +1058,7 @@ struct ExpressionOrder
 #endif
     static inline const uint16_type nOrderGeo = the_element_type::nOrder;
 #if 0
-    static const bool is_polynomial = ExprT::imIsPoly;
+    static inline const bool is_polynomial = ExprT::imIsPoly;
 #if 0
     static const int value = boost::mpl::if_< boost::mpl::bool_< ExprT::imIsPoly > ,
                      typename boost::mpl::if_< boost::mpl::greater< boost::mpl::int_<ExprT::imorder>,
@@ -1088,7 +1089,7 @@ class GElem
 public:
 
     static const size_type context = vm::JACOBIAN |vm::POINT;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     typedef Element element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
@@ -1109,13 +1110,13 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = ( Type==0 );
+        static inline const bool result = ( Type==0 );
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ( Type==1 );
+        static inline const bool result = ( Type==1 );
     };
 
 
@@ -1173,7 +1174,7 @@ using key_type = key_t<Geo_t>;
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( expression_type const& expr,

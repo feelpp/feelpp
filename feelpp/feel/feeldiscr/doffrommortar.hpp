@@ -70,17 +70,17 @@ class DofFromMortar
     static inline const uint16_type nComponents1 = mortar_fe_type::nComponents1;
     static inline const uint16_type nComponents2 = mortar_fe_type::nComponents2;
 
-    static const bool is_continuous = mortar_fe_type::isContinuous;
-    static const bool is_discontinuous_locally = mortar_fe_type::continuity_type::is_discontinuous_locally;
-    static const bool is_discontinuous_totally = mortar_fe_type::continuity_type::is_discontinuous_totally;
+    static inline const bool is_continuous = mortar_fe_type::isContinuous;
+    static inline const bool is_discontinuous_locally = mortar_fe_type::continuity_type::is_discontinuous_locally;
+    static inline const bool is_discontinuous_totally = mortar_fe_type::continuity_type::is_discontinuous_totally;
 
-    static const bool is_scalar = mortar_fe_type::is_scalar;
-    static const bool is_vectorial = mortar_fe_type::is_vectorial;
-    static const bool is_tensor2 = mortar_fe_type::is_tensor2;
-    static const bool is_modal = mortar_fe_type::is_modal;
-    static const bool is_product = mortar_fe_type::is_product;
+    static inline const bool is_scalar = mortar_fe_type::is_scalar;
+    static inline const bool is_vectorial = mortar_fe_type::is_vectorial;
+    static inline const bool is_tensor2 = mortar_fe_type::is_tensor2;
+    static inline const bool is_modal = mortar_fe_type::is_modal;
+    static inline const bool is_product = mortar_fe_type::is_product;
 
-    static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+    static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<mortar_fe_type::nLocalDof * nComponents1>, mpl::int_<mortar_fe_type::nLocalDof>>::type::value;
 

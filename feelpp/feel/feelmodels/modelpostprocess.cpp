@@ -28,6 +28,8 @@
 #include <feel/feelmodels/modelpostprocess.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+using namespace std::string_literals;
+
 namespace Feel {
 
 void
@@ -685,7 +687,7 @@ ModelPostprocess::setup( std::string const& name, nl::json const& jarg )
     if ( itFindMeasures != jarg.end() )
     {
         auto const& j_measures = itFindMeasures.value();
-        for ( std::string const& quantitiesSectionName : { "Quantities", "quantities" } )
+        for ( const std::string& quantitiesSectionName : { "Quantities"s, "quantities"s } )
             if ( j_measures.contains( quantitiesSectionName ) )
             {
                 ModelPostprocessQuantities ppquantities( this->worldCommPtr() );
@@ -714,7 +716,7 @@ ModelPostprocess::setup( std::string const& name, nl::json const& jarg )
         }
 
 
-        for ( std::string const& normsSectionName : { "Norm","Norms" } )
+        for ( const std::string& normsSectionName : { "Norm"s,"Norms"s } )
         {
             if ( j_measures.contains( normsSectionName ) )
             {
@@ -735,7 +737,7 @@ ModelPostprocess::setup( std::string const& name, nl::json const& jarg )
         }
 
 
-        for ( std::string const& statisticsSectionName : { "Statistic","Statistics" } )
+        for ( const char* const& statisticsSectionName : { "Statistic","Statistics" } )
         {
             if ( j_measures.contains( statisticsSectionName ) )
             {

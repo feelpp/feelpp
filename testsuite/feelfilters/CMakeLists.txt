@@ -1,4 +1,4 @@
-set_directory_properties(PROPERTIES LABEL testfilters )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testfilters")
 
 foreach(TEST importergmsh importerarm geotool geotool2 exporter_sanitize gmsh importer_mesh hbf)
 

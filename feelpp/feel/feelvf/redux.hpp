@@ -42,24 +42,24 @@ class Redux : public ExprDynamicBase
   public:
     using super = ExprDynamicBase;
     static const size_type context = ExprT::context;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     template <typename Func>
     struct HasTestFunction
     {
-        static const bool result = ExprT::template HasTestFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
     template <typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ExprT::template HasTrialFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
     template <typename Func>
-    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    static inline const bool has_test_basis = ExprT::template has_test_basis<Func>;
     template <typename Func>
-    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -149,7 +149,7 @@ class Redux : public ExprDynamicBase
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -291,9 +291,9 @@ T OpReduxProd( T init, int c2, int q,  Fun f )
  * \brief compute the sum of element array expression \p ExprT
  * \return the sum of the elements of expression v along the first array dimension whose size does not equal 1.
  */
-template <typename ExprT, typename T = typename  ExprT::value_type>
+template <VfExpr ExprT, typename T = typename  ExprT::value_type>
 inline auto
-sum( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+sum( ExprT v, T init = 0. )
 {
     Redux redux_sum( v, [&]( int c2, int q, auto shape, auto const& f ) { return detail::OpReduxSum<decltype(shape)>( init, c2, q, f ); } );
     return Expr{ redux_sum };
@@ -303,9 +303,9 @@ sum( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* 
  * \brief compute the mean of element array expression \p ExprT
  * \return the mean of the elements of expression v along the first array dimension whose size does not equal 1.
  */
-template <typename ExprT, typename T = typename  ExprT::value_type>
+template <VfExpr ExprT, typename T = typename  ExprT::value_type>
 inline auto
-mean( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+mean( ExprT v, T init = 0. )
 {
     Redux redux_mean( v, [&]( int c2, int q, auto shape, auto const& f ) { return detail::OpReduxMean<decltype(shape)>( init, c2, q, f ); } );
     return Expr{ redux_mean };
@@ -315,9 +315,9 @@ mean( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>*
  * \brief compute the productpf  element array expression \p ExprT
  * \return the product of the elements of expression v along the first array dimension whose size does not equal 1.
  */
-template <typename ExprT, typename T = typename  ExprT::value_type>
+template <VfExpr ExprT, typename T = typename  ExprT::value_type>
 inline auto
-prod( ExprT v, T init = 1., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+prod( ExprT v, T init = 1. )
 {
     Redux redux_prod( v, [&]( int c2, int q, auto shape, auto const& f ) { return detail::OpReduxProd<decltype(shape)>( init, c2, q, f ); } );
     return Expr{ redux_prod };

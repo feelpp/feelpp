@@ -12,9 +12,9 @@ namespace Feel
  * The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in \p (arg1,...,argn)
  *
  */
-template<typename PS, typename RangeMapT = StencilRangeMap0Type, 
-         typename = std::enable_if_t<std::is_base_of_v<ProductSpacesBase,std::remove_reference_t<PS>>
-                                    && std::is_base_of_v<StencilRangeMapTypeBase,RangeMapT>> >
+template<typename PS, typename RangeMapT = StencilRangeMap0Type>
+    requires std::is_base_of_v<ProductSpacesBase, std::remove_reference_t<PS>>
+          && std::is_base_of_v<StencilRangeMapTypeBase, RangeMapT>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 uint32_type pattern = Pattern::COUPLED,
@@ -103,10 +103,10 @@ csrGraphBlocks( PS&& ps,
 }
 
 template<typename PS>
+    requires std::is_base_of_v<ProductSpaceBase, std::remove_reference_t<PS>>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
-                uint32_type pattern = Pattern::COUPLED,
-                std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+                uint32_type pattern = Pattern::COUPLED )
 {
     int s = ps.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );

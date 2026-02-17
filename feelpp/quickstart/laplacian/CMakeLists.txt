@@ -23,6 +23,9 @@
 #
 cmake_minimum_required(VERSION 3.13)
 
+# Set quickstart label for all tests
+set_directory_properties(PROPERTIES LABELS "quickstart")
+
 if ( NOT TARGET qs_laplacian )
   add_custom_target(qs_laplacian)
 endif()

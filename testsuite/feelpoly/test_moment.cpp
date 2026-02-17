@@ -29,8 +29,12 @@
 #define BOOST_TEST_MODULE test_moment
 #include <feel/feelcore/testsuite.hpp>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelpoly/moment.hpp>
 #include <feel/feelpoly/polynomialset.hpp>

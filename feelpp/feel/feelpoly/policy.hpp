@@ -31,13 +31,15 @@
 #define FEELPP_FEELPOLY_POLICY_HPP 1
 
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/mpl/vector.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-#pragma GCC diagnostic pop
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/find.hpp>
@@ -66,10 +68,10 @@ struct Scalar : public ScalarBase
     static const uint16_type rank = 0;
     static const uint16_type nDim = Dim;
 
-    static const bool is_scalar = true;
-    static const bool is_vectorial = false;
-    static const bool is_tensor2 = false;
-    static const bool is_tensor3 = false;
+    static inline const bool is_scalar = true;
+    static inline const bool is_vectorial = false;
+    static inline const bool is_tensor2 = false;
+    static inline const bool is_tensor3 = false;
 
     static const uint16_type nComponents = 1;
     static const uint16_type nComponents1 = 1;
@@ -105,10 +107,10 @@ struct Vectorial : public VectorialBase
     static const uint16_type rank = 1;
     static const uint16_type nDim = Dim;
 
-    static const bool is_scalar = false;
-    static const bool is_vectorial = true;
-    static const bool is_tensor2 = false;
-    static const bool is_tensor3 = false;
+    static inline const bool is_scalar = false;
+    static inline const bool is_vectorial = true;
+    static inline const bool is_tensor2 = false;
+    static inline const bool is_tensor3 = false;
 
     static const uint16_type nComponents = nDim;
     static const uint16_type nComponents1 = nDim;
@@ -200,10 +202,10 @@ struct Field
     static const uint16_type nDim = N;
     static const uint16_type nVariables = N;
 
-    static const bool is_scalar = ( M==1 );
-    static const bool is_vectorial = ( N==M );
-    static const bool is_tensor2 = false;
-    static const bool is_tensor3 = false;
+    static inline const bool is_scalar = ( M==1 );
+    static inline const bool is_vectorial = ( N==M );
+    static inline const bool is_tensor2 = false;
+    static inline const bool is_tensor3 = false;
 
     static const uint16_type nComponents = M;
     static const uint16_type nComponents1 = M;
@@ -249,10 +251,10 @@ struct Tensor2 : public Tensor2Base
     static const uint16_type rank = 2;
     static const uint16_type nDim = Dim;
 
-    static const bool is_scalar = false;
-    static const bool is_vectorial = false;
-    static const bool is_tensor2 = true;
-    static const bool is_tensor3 = false;
+    static inline const bool is_scalar = false;
+    static inline const bool is_vectorial = false;
+    static inline const bool is_tensor2 = true;
+    static inline const bool is_tensor3 = false;
 
     static const uint16_type nComponents = nDim*nDim;
     static const uint16_type nComponents1 = nDim;
@@ -343,10 +345,10 @@ struct Tensor2Symm : public Tensor2SymmBase
     static const uint16_type rank = 2;
     static const uint16_type nDim = Dim;
 
-    static const bool is_scalar = false;
-    static const bool is_vectorial = false;
-    static const bool is_tensor2 = true;
-    static const bool is_tensor3 = false;
+    static inline const bool is_scalar = false;
+    static inline const bool is_vectorial = false;
+    static inline const bool is_tensor2 = true;
+    static inline const bool is_tensor3 = false;
 
     static const uint16_type nComponents = nDim*nDim;
     static const uint16_type nComponents1 = nDim;
@@ -465,10 +467,10 @@ struct Tensor3
     static const uint16_type rank = 3;
     static const uint16_type nDim = Dim;
 
-    static const bool is_scalar = false;
-    static const bool is_vectorial = false;
-    static const bool is_tensor2 = false;
-    static const bool is_tensor3 = true;
+    static inline const bool is_scalar = false;
+    static inline const bool is_vectorial = false;
+    static inline const bool is_tensor2 = false;
+    static inline const bool is_tensor3 = true;
 
     static const uint16_type nComponents = nDim*nDim*nDim;
     static const uint16_type nComponents1 = nDim;
@@ -632,7 +634,7 @@ struct RankCurl
 template<bool normalized>
 struct Normalized
 {
-    static const bool is_normalized = normalized;
+    static inline const bool is_normalized = normalized;
 };
 
 /**

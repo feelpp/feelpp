@@ -43,7 +43,7 @@ class OpMass
 public:
 
     static const size_type context = vm::MASS|vm::JACOBIAN;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
     typedef Element1 test_element_type;
     typedef Element2 trial_element_type;
     typedef OpMass<test_element_type, trial_element_type> this_type;
@@ -60,18 +60,18 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = true;
+        static inline const bool result = true;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = true;
+        static inline const bool result = true;
     };
 
     template<typename Func>
-    static const bool has_test_basis = true;
+    static inline const bool has_test_basis = true;
     template<typename Func>
-    static const bool has_trial_basis = true;
+    static inline const bool has_trial_basis = true;
     using test_basis = test_fe_t;
     using trial_basis = trial_fe_t;
     //using value_type = typename test_functionspace_type::value_type;
@@ -152,18 +152,18 @@ public:
         template<typename Func>
         struct HasTestFunction
         {
-            static const bool result = true;
+            static inline const bool result = true;
         };
         template<typename Func>
         struct HasTrialFunction
         {
-            static const bool result = true;
+            static inline const bool result = true;
         };
 
         template<typename Func>
-        static const bool has_test_basis = true;
+        static inline const bool has_test_basis = true;
         template<typename Func>
-        static const bool has_trial_basis = true;
+        static inline const bool has_trial_basis = true;
 
         //static inline const uint16_type nComponents = return_value_type::nComponents;
         using test_basis = test_fe_t;
@@ -177,7 +177,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
         
         tensor( this_type const& expr,

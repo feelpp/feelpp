@@ -470,7 +470,7 @@ template <typename MeshType>
 void
 MeshSupport<MeshType>::updateParallelDataPartialSupport()
 {
-    wc(this)->print( fmt::format( "[updateParallelDataPartialSupport] starts..." ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v > 1 );
+    wc(this)->print( fmt::format( "[updateParallelDataPartialSupport] starts..." ), Environment::logVerbosityLevel() > 1, Environment::logVerbosityLevel() > 0, Environment::logVerbosityLevel() > 1 );
     if ( M_mesh->worldComm().localSize() == 1 )
     {
         for ( auto const& eltWrap : M_rangeElements )//this->rangeElements() )
@@ -501,7 +501,7 @@ MeshSupport<MeshType>::updateParallelDataPartialSupport()
     // mpi comm
     int neighborSubdomains = M_mesh->neighborSubdomains().size();
     int nbMaxRequest = 2*neighborSubdomains;
-    wc(this)->print( fmt::format( "[updateParallelDataPartialSupport - {}] nbMaxRequest={}, neighborSubdomains={}", rank(M_mesh), nbMaxRequest, neighborSubdomains ), FLAGS_v > 1, FLAGS_v > 0, FLAGS_v >1  );
+    wc(this)->print( fmt::format( "[updateParallelDataPartialSupport - {}] nbMaxRequest={}, neighborSubdomains={}", rank(M_mesh), nbMaxRequest, neighborSubdomains ), Environment::logVerbosityLevel() > 1, Environment::logVerbosityLevel() > 0, Environment::logVerbosityLevel() >1  );
     std::vector<mpi::request> reqs( nbMaxRequest );
     int countRequest = 0;
     std::map<rank_type,std::size_t> sizeRecv;

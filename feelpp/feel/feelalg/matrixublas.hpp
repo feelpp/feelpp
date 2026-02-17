@@ -31,8 +31,12 @@
 
 #include <set>
 #include <boost/timer.hpp>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
 
@@ -64,7 +68,7 @@ public:
     typedef typename boost::numeric::bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type ordering_type;
     typedef typename boost::numeric::bindings::traits::sparse_matrix_traits<matrix_type>::layout_type layout_type;
 
-    static const bool is_row_major = boost::is_same<ordering_type,
+    static inline const bool is_row_major = boost::is_same<ordering_type,
                       boost::numeric::bindings::traits::row_major_t>::value;
 
 

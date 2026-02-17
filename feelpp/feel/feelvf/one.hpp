@@ -51,22 +51,22 @@ class One
 {
 public:
     static const size_type context = 0;
-    static const bool is_terminal = true;
+    static inline const bool is_terminal = true;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     template<typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template<typename Func>
-    static const bool has_trial_basis = false;
+    static inline const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -129,7 +129,7 @@ public:
         static inline const uint16_type nComponents = Dim<0? gmc_type::nDim : Dim;
         using shape = ShapeGeneric<gmc_type::nDim,nComponents,1>;
         //typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
-        // static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
+        // static inline const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
         // BOOST_MPL_ASSERT_MSG( theshape,
         //                       INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_1,
         //                       ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
@@ -141,7 +141,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = false;
+            static inline const bool value = false;
         };
 
         tensor( expression_type const& expr,

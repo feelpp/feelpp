@@ -1,6 +1,7 @@
 
 #include <feel/feelmor/mormodels.hpp>
 #include <feel/feelcore/zip.hpp>
+#include <feel/feelcore/application.hpp>
 
 namespace Feel
 {
@@ -99,7 +100,7 @@ MORModels::run( std::shared_ptr<ParameterSpaceX::Sampling> const& sampling, nl::
         {
             tic();
             results[k].emplace_back( p.run( mu, time_crb, online_tol, N, print_rb_matrix ) );
-            double t = toc( fmt::format( "rb-online-{}-{}", p.name, p.output ), FLAGS_v > 0 );
+            double t = toc( fmt::format( "rb-online-{}-{}", p.name, p.output ), ioption(_name="v") > 0 );
         }
         for ( auto const& o : observers_ )
         {

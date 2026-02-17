@@ -1100,7 +1100,7 @@ ImporterGmsh<MeshType>::readFromFile( mesh_type* mesh )
     else
         this->readFromFileVersion4<size_t,size_t,size_t,size_t>( mesh, __is, __buf, version, binary, swap );
 
-    toc("read msh from file", FLAGS_v > 0);
+    toc("read msh from file", Environment::logVerbosityLevel() > 0);
 }
 
 template<typename MeshType>
@@ -1175,7 +1175,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
         // so that they are contiguous
         //itoii[idpts[__i]] = __i;
     }
-    toc("ImporterGmsh::readFromFile read points", FLAGS_v > 0 );
+    toc("ImporterGmsh::readFromFile read points", Environment::logVerbosityLevel() > 0 );
     //ptseen.resize( __n );
     //std::fill( ptseen.begin(), ptseen.end(), -1 );
     // eat  '\n' in binary mode otherwise the next binary read will get screwd
@@ -1297,7 +1297,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 
 
         }  // element description loop
-        toc("ImporterGmsh::readFromFile read and store GMSHElement", FLAGS_v > 0 );
+        toc("ImporterGmsh::readFromFile read and store GMSHElement", Environment::logVerbosityLevel() > 0 );
     } // !binary
     else // binary case
     {
@@ -1552,7 +1552,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
     mesh->updateOrderedPoints();
-    toc( "ImporterGmsh::readFromFile store elements in Mesh", FLAGS_v > 0 );
+    toc( "ImporterGmsh::readFromFile store elements in Mesh", Environment::logVerbosityLevel() > 0 );
     // treat periodic entities if any
     for ( auto const& eit : periodic_entities )
     {

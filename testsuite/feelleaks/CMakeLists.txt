@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABEL testleaks )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testleaks")
 
 feelpp_add_test( leak_sharedptr )
 feelpp_add_test( leak_env )

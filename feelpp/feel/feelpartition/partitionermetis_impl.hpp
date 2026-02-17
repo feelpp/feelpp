@@ -105,7 +105,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std:
             this->partitionImpl( mesh, np, rangeMeshElt, usePartitionByRange );
     }
 
-    auto t = toc("PartitionerMetis::partitionImpl", FLAGS_v > 0 );
+    auto t = toc("PartitionerMetis::partitionImpl", Environment::logVerbosityLevel() > 0 );
     LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
 
 

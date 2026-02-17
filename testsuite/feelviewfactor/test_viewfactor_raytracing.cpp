@@ -13,6 +13,8 @@
 #define BOOST_TEST_MODULE test_viewfactor_raytracing
 #include <feel/feelcore/testsuite.hpp>
 
+#include <span>
+
 #include <fmt/ostream.h>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelts/bdf.hpp>
@@ -25,6 +27,9 @@
 /** use Feel namespace */
 using namespace Feel;
 using Feel::project;
+using Feel::viewfactor::detail::elementArea;
+using Feel::viewfactor::detail::getRandomDirection;
+using Feel::viewfactor::detail::isOnSurface;
 
 inline
 AboutData
@@ -50,7 +55,7 @@ double view_factor_parallel_walls_exact(double length, double width,double separ
     double c=separation;
     double X = a/c;
     double Y = b/c;
-    view_factor_bottom_to_top_wall = log(sqrt((1+X*X)*(1+Y*Y)/(1+X*X+Y*Y)));
+    view_factor_bottom_to_top_wall = std::log(sqrt((1+X*X)*(1+Y*Y)/(1+X*X+Y*Y)));
     view_factor_bottom_to_top_wall += X*sqrt(1+Y*Y)*atan(X/sqrt(1+Y*Y));
     view_factor_bottom_to_top_wall += Y*sqrt(1+X*X)*atan(Y/sqrt(1+X*X));
     view_factor_bottom_to_top_wall += -X*atan(X)-Y*atan(Y);
@@ -72,7 +77,7 @@ double view_factor_perp_walls_exact(double length, double width,double separatio
     double fact1 = (1+h*h)*(1+w*w)/(1+h*h+w*w);
     double fact2 = w*w*(1+h*h+w*w)/(((1+w*w))*(h*h+w*w));
     double fact3 = h*h*(1+h*h+w*w)/(((1+h*h))*(h*h+w*w));
-    view_factor_bottom_to_side_wall +=0.25*log(fact1*pow(fact2,w*w)*pow(fact3,h*h));    
+    view_factor_bottom_to_side_wall +=0.25*std::log(fact1*pow(fact2,w*w)*pow(fact3,h*h));    
     view_factor_bottom_to_side_wall *= 1/(M_PI*w);
 
     return view_factor_bottom_to_side_wall;
@@ -210,8 +215,8 @@ BOOST_AUTO_TEST_CASE( test_random_direction )
 
     for(int i=0; i<1e4; i++)
     {
-        getRandomDirection(three_dimensional_direction,gen1,gen2,normal3d);
-        getRandomDirection(two_dimensional_direction,gen1,gen2,normal2d);
+        getRandomDirection(std::span<double>(three_dimensional_direction),gen1,gen2,normal3d);
+        getRandomDirection(std::span<double>(two_dimensional_direction),gen1,gen2,normal2d);
 
         BOOST_CHECK_SMALL(math::pow(two_dimensional_direction[0],2)+math::pow(two_dimensional_direction[1],2)-1,1e-6);
         BOOST_CHECK_SMALL(math::pow(three_dimensional_direction[0],2)+math::pow(three_dimensional_direction[1],2)+math::pow(three_dimensional_direction[2],2)-1,1e-6);

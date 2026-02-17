@@ -109,12 +109,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
 
 BOOST_AUTO_TEST_CASE( gmshgeo )
 {
-    typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    using mesh_type = Mesh<Simplex<2,1>>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
-    mesh_ptrtype mesh;
     // simplex
-    mesh = createGMSHMesh( _mesh=new mesh_type,
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=geo( _filename="feel.geo",
                                       _dim=2,
                                       _order=1,
@@ -131,12 +130,11 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
 
 BOOST_AUTO_TEST_CASE( gmshpartgeo )
 {
-    typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    using mesh_type = Mesh<Simplex<2,1>>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
-    mesh_ptrtype mesh;
     // simplex
-    mesh = createGMSHMesh( _mesh=new mesh_type,
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=geo( _filename="feel.geo",
                                       _dim=2,
                                       _order=1,

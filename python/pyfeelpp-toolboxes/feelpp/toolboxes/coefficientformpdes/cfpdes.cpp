@@ -76,10 +76,13 @@ void defcfpdes(py::module &m)
 
     std::string pyclass_name = std::string("cfpdes_") + std::to_string(nDim) + std::string("D");
     py::class_<toolbox_cfpdes_t, std::shared_ptr<toolbox_cfpdes_t>, ModelNumerical> cfpdes_w( m, pyclass_name.c_str(), py::dynamic_attr() );
-    cfpdes_w.def( py::init<std::string const&, std::string const&, worldcomm_ptr_t const&, std::string const&, ModelBaseRepository const&>(),
+    cfpdes_w.def( py::init([](std::string const& prefix, std::string const& keyword, py::object worldComm, std::string const& subprefix, ModelBaseRepository const& modelRep) {
+                      worldcomm_ptr_t wc = worldComm.is_none() ? Environment::worldCommPtr() : py::cast<worldcomm_ptr_t>(worldComm);
+                      return new toolbox_cfpdes_t(prefix, keyword, wc, subprefix, modelRep);
+                  }),
               py::arg( "prefix" ),
               py::arg( "keyword" ) = std::string( "cfpdes" ),
-              py::arg( "worldComm" ) = Environment::worldCommPtr(),
+              py::arg( "worldComm" ) = py::none(),
               py::arg( "subprefix" ) = std::string( "" ),
               py::arg( "modelRep" ) = ModelBaseRepository(),
               "Initialize the coefficient form pdes toolbox" )

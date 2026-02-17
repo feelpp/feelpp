@@ -214,7 +214,7 @@ Hbf2Feelpp::Hbf2Feelpp( int nx, int ny, q1_space_ptrtype Yh ):M_rows(ny), M_cols
             }
         }
     }
-    toc("structured 2 feelpp relation",FLAGS_v>0);
+    toc("structured 2 feelpp relation",Environment::logVerbosityLevel()>0);
 }
 
 Hbf2Feelpp::q1_element_type
@@ -254,7 +254,7 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
 
     tic();
     auto [dof2pid, pid2dof] = Yh->dof()->pointIdToDofRelation("", false, true );
-    toc("pidToDof relation",FLAGS_v>0);
+    toc("pidToDof relation",Environment::logVerbosityLevel()>0);
     for( int i = std::max(cx[partId]-1,0); i <= std::min(cx[partId+1]+1,nx-1); ++i )
     {
         for( int j = 0; j < ny; ++j )
@@ -262,7 +262,7 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
             M_relation.push_back( dof_relation( std::make_pair(j,i), pid2dof[(ny)*i+j] ));
         }
     }
-    toc("structured to feelpp relation",FLAGS_v>0);
+    toc("structured to feelpp relation",Environment::logVerbosityLevel()>0);
     delete [] cx;
 }
 
@@ -271,17 +271,17 @@ Hbf2FeelppStruc::operator()( holo3_image<float> const& x )
 {
     tic();
     q1_element_type u = M_Xh->element();
-    toc("h2f", FLAGS_v>0);
+    toc("h2f", Environment::logVerbosityLevel()>0);
     tic();
     for( auto const & dof : M_relation.left )
     {
         u( dof.second ) = x(dof.first.first,dof.first.second);
     }
-    toc("h2f dof", FLAGS_v>0);
+    toc("h2f dof", Environment::logVerbosityLevel()>0);
     tic();
     sync(u,"=");
     u.close();
-    toc("h2f sync+close()", FLAGS_v>0);
+    toc("h2f sync+close()", Environment::logVerbosityLevel()>0);
     return u;
 
 
@@ -312,7 +312,7 @@ Hbf2FeelppStruc::operator()( q1_element_type const& u )
     holo3_image<float> yy= y.transpose();
     mpi::gatherv( u.worldComm(), yy.data()+s, sizes[p], 
                   x.data(), sizes, 0 );
-    toc("H2F feelpp to holo3_image",FLAGS_v>0);
+    toc("H2F feelpp to holo3_image",Environment::logVerbosityLevel()>0);
     return x.transpose();
 }
 

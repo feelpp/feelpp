@@ -196,14 +196,14 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             this->updateEntitiesCoDimensionOnePermutation();
             if ( this->components().test( MESH_CHECK ) )
                 this->check();
-            toc( "Mesh::updateForUse update entities of codimension 1", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update entities of codimension 1", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update entities of codimension 1";
         }
         else if ( this->components().test( MESH_UPDATE_ELEMENTS_ADJACENCY ) )
         {
             tic();
             this->updateAdjacencyElements();
-            toc( "Mesh::updateForUse update adjacency elements", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update adjacency elements", Environment::logVerbosityLevel() > 0 );
         }
 
         if ( this->components().test( MESH_UPDATE_EDGES ) )
@@ -211,7 +211,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             tic();
             // update connectivities of entities of co dimension 2 (edges in 3D)
             this->updateEntitiesCoDimensionTwo();
-            toc( "Mesh::updateForUse update entities of codimension 2", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update entities of codimension 2", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update entities of codimension 2";
         }
 
@@ -220,7 +220,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             tic();
             // update mesh entities with parallel data
             this->updateParallelData();
-            toc( "Mesh::updateForUse update parallel data", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update parallel data", Environment::logVerbosityLevel() > 0 );
         }
 
         if ( ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) ) &&
@@ -228,7 +228,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         {
             tic();
             updateOnBoundary();
-            toc( "Mesh::updateForUse update on boundary", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update on boundary", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update on boundary ";
         }
 
@@ -243,7 +243,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
                 for ( uint16_type i = 0; i < eltModified.numPoints; ++i )
                     eltModified.point( i ).addElement( eltId, i );
             }
-            toc( "Mesh::updateForUse update add element info", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update add element info", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update add element info";
         }
 
@@ -288,7 +288,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
                 }
             }
 #endif
-            toc( "Mesh::updateForUse register elements associated to marked points", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse register elements associated to marked points", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update add element info for marked points";
         }
 
@@ -311,7 +311,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
                 this->setNumVertices( vertexIds.size() );
                 vertexIds.clear();
                 std::unordered_set<size_type>().swap( vertexIds );
-                toc( "Mesh::updateForUse update number of vertices", FLAGS_v > 0 );
+                toc( "Mesh::updateForUse update number of vertices", Environment::logVerbosityLevel() > 0 );
             }
         }
 
@@ -323,13 +323,13 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         {
             tic();
             propagateMarkers( mpl::int_<nDim>() );
-            toc( "Mesh::updateForUse update propagate markers", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update propagate markers", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update propagate markers";
         }
 
         tic();
         this->updateCommonDataInEntities();
-        toc( "Mesh::updateForUse update setMesh in elements and faces", FLAGS_v > 0 );
+        toc( "Mesh::updateForUse update setMesh in elements and faces", Environment::logVerbosityLevel() > 0 );
         VLOG( 1 ) << "[Mesh::updateForUse] update setMesh in elements and faces";
 
         if ( !this->components().test( MESH_NO_UPDATE_MEASURES ) )
@@ -337,7 +337,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             tic();
             // update meas, measface, hAverage, hMin, hMax, measure of the mesh and measure of the boundary mesh
             this->updateMeasures();
-            toc( "Mesh::updateForUse update mesh measures", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse update mesh measures", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] update mesh measures";
         }
 
@@ -349,7 +349,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             tic();
             // check mesh connectivity
             this->check();
-            toc( "Mesh::updateForUse check", FLAGS_v > 0 );
+            toc( "Mesh::updateForUse check", Environment::logVerbosityLevel() > 0 );
             VLOG( 1 ) << "[Mesh::updateForUse] check";
         }
 
@@ -364,14 +364,14 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         if ( nOrder > 1 )
             M_gm1->initCache( this );
         M_is_gm_cached = true;
-        toc( "Mesh::updateForUse update geomap cache", FLAGS_v > 0 );
+        toc( "Mesh::updateForUse update geomap cache", Environment::logVerbosityLevel() > 0 );
         VLOG( 1 ) << "[Mesh::updateForUse] update geomap cache";
     }
 
     this->setUpdatedForUse( true );
 
-    toc( "[Mesh::updateForUse] total time", FLAGS_v > 0 );
-    if ( Environment::isMasterRank() && FLAGS_v >= 1 )
+    toc( "[Mesh::updateForUse] total time", Environment::logVerbosityLevel() > 0 );
+    if ( Environment::isMasterRank() && Environment::logVerbosityLevel() >= 1 )
     {
         auto mem = Environment::logMemoryUsage( "memory usage after update for use" );
         std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage / 1.e9 << "GBytes\n";
@@ -515,7 +515,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateMeasures()
             eltModified.setMeasurePointElementNeighbors( meas );
         }
     }
-    toc( "[Mesh::updateMeasures] update entity measures", FLAGS_v > 0 );
+    toc( "[Mesh::updateMeasures] update entity measures", Environment::logVerbosityLevel() > 0 );
 
     // compute h information: average, min and max
     {
@@ -528,7 +528,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateMeasures()
         LOG( INFO ) << "h average : " << this->hAverage() << "\n";
         LOG( INFO ) << "    h min : " << this->hMin() << "\n";
         LOG( INFO ) << "    h max : " << this->hMax() << "\n";
-        toc( "[Mesh::updateMeasures] update average, min and max", FLAGS_v > 0 );
+        toc( "[Mesh::updateMeasures] update average, min and max", Environment::logVerbosityLevel() > 0 );
     }
 }
 
@@ -677,16 +677,18 @@ void
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 0)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 0>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     for ( auto itp = this->beginPoint(), enp = this->endPoint(); itp != enp; ++itp )
         itp->second.setMesh( this );
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 1)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 1>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
@@ -698,8 +700,9 @@ void
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 2)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 2>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
@@ -712,8 +715,9 @@ void
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
+    requires (TheShape::nDim == 3)
 void
-     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities( std::enable_if_t<TheShape::nDim == 3>* )
+     Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateCommonDataInEntities()
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
@@ -1083,7 +1087,7 @@ void
             }
         }
     }
-    toc( "Mesh.updateEntitiesCoDimensionOne.add_faces", FLAGS_v > 1 );
+    toc( "Mesh.updateEntitiesCoDimensionOne.add_faces", Environment::logVerbosityLevel() > 1 );
 
     bool inserted = false;
     face_iterator __fit;
@@ -1300,7 +1304,7 @@ void
             } // face loop
         }     // element loop
     }
-    toc( "Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements", FLAGS_v > 1 );
+    toc( "Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements", Environment::logVerbosityLevel() > 1 );
     DVLOG( 2 ) << "[Mesh::updateFaces] finish elements loop";
 
     if ( !(nDim == 1 && nOrder > 1) ) // not remove faces in this case (can be internal point)
@@ -1323,7 +1327,7 @@ void
             else
                 ++f_it;
         }
-        toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", FLAGS_v > 1 );
+        toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", Environment::logVerbosityLevel() > 1 );
     }
 
     LOG( INFO ) << "We have now " << std::distance( this->beginFace(), this->endFace() ) << " faces in the mesh";
@@ -1813,7 +1817,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::fixPointDuplicationInHO
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& face, std::enable_if_t<TheShape::nDim == 3>* )
+    requires (TheShape::nDim == 3)
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& face )
 {
     // loop over face edges
     for ( int f = 0; f < face_type::numEdges; ++f )
@@ -1828,19 +1833,22 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( 
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& f, std::enable_if_t<TheShape::nDim != 3>* )
+    requires (TheShape::nDim != 3)
+void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyEdgesOnBoundary( face_type& f )
 {
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim != 3>* )
+    requires (TheShape::nDim != 3)
+bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt )
 {
     return false;
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 template <typename TheShape>
-bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt, std::enable_if_t<TheShape::nDim == 3>* )
+    requires (TheShape::nDim == 3)
+bool  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::modifyElementOnBoundaryFromEdge( element_type& elt )
 {
     // in 3D check if the edges of the element touch the boundary
     bool isOnBoundary = false;
@@ -2483,10 +2491,14 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::check() const
                 //FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
                 VLOG( 2 ) << "------------------------------------------------------------\n";
                 if ( elt.hasFace( j ) )
+                {
                     VLOG( 2 ) << "Element : " << elt.id() << " face lid: " << j << " face gid:  "
                               << elt.face( j ).id();
+                }
                 else
+                {
                     VLOG( 2 ) << "Element : " << elt.id() << " face lid: " << j;
+                }
             }
         }
 
@@ -2632,8 +2644,9 @@ void
     }
 
     if ( mesh_well_oriented )
+    {
         VLOG( 2 ) << "Local numbering in the elements is OK . \n";
-
+    }
     else
     {
         std::for_each( list_of_bad_elts.begin(),

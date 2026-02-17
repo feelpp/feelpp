@@ -145,8 +145,8 @@ public :
                     }
                 }
             }
-            return p;
             p->setDefined();
+            return p;
         }
     
 

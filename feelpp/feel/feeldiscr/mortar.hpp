@@ -37,13 +37,13 @@ class mortar_base {};
 class Mortar : public Feel::detail::mortar_base
 {
 public:
-    static const bool is_mortar = true;
+    static inline const bool is_mortar = true;
 
 };
 class NoMortar : public Feel::detail::mortar_base
 {
 public:
-    static const bool is_mortar = false;
+    static inline const bool is_mortar = false;
 
 };
 

@@ -27,7 +27,11 @@
    \date 2005-06-24
  */
 #include <iostream>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/operation.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 #include <feel/feelalg/glas.hpp>
 #include <feel/feeltiming/timer.hpp>
 //#include <boost/numeric/bindings/traits/traits.hpp>

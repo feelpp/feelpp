@@ -226,10 +226,12 @@ int
 Vector<float,uint32_type>::compare ( const Vector<float,uint32_type> &other_vector,
                                      const real_type threshold ) const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( other_vector.isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( this->firstLocalIndex() == other_vector.firstLocalIndex() ).error( "" );
-    FEELPP_ASSERT ( this->lastLocalIndex()  == other_vector.lastLocalIndex() ).error( "" );
+    CHECK( this->isInitialized() ) << "vector not initialized";
+    CHECK( other_vector.isInitialized() ) << "vector not initialized";
+    CHECK( this->firstLocalIndex() == other_vector.firstLocalIndex() ) 
+        << fmt::format("first local index mismatch: {} vs {}", this->firstLocalIndex(), other_vector.firstLocalIndex());
+    CHECK( this->lastLocalIndex()  == other_vector.lastLocalIndex() ) 
+        << fmt::format("last local index mismatch: {} vs {}", this->lastLocalIndex(), other_vector.lastLocalIndex());
 
     int rvalue     = -1;
     size_type i = firstLocalIndex();
@@ -253,10 +255,12 @@ int
 Vector<double,uint32_type>::compare ( const Vector<double,uint32_type> &other_vector,
                                       const real_type threshold ) const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( other_vector.isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( this->firstLocalIndex() == other_vector.firstLocalIndex() ).error( "" );
-    FEELPP_ASSERT ( this->lastLocalIndex()  == other_vector.lastLocalIndex() ).error( "" );
+    CHECK( this->isInitialized() ) << "vector not initialized";
+    CHECK( other_vector.isInitialized() ) << "vector not initialized";
+    CHECK( this->firstLocalIndex() == other_vector.firstLocalIndex() ) 
+        << fmt::format("first local index mismatch: {} vs {}", this->firstLocalIndex(), other_vector.firstLocalIndex());
+    CHECK( this->lastLocalIndex()  == other_vector.lastLocalIndex() ) 
+        << fmt::format("last local index mismatch: {} vs {}", this->lastLocalIndex(), other_vector.lastLocalIndex());
 
     int rvalue     = -1;
     size_type i = firstLocalIndex();
@@ -281,10 +285,12 @@ int
 Vector<long double>::compare ( const Vector<long double> &other_vector,
                                const real_type threshold ) const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( other_vector.isInitialized() ).error( "vector not initialized" );
-    FEELPP_ASSERT ( this->firstLocalIndex() == other_vector.firstLocalIndex() ).error( "" );
-    FEELPP_ASSERT ( this->lastLocalIndex()  == other_vector.lastLocalIndex() ).error( "" );
+    CHECK( this->isInitialized() ) << "vector not initialized";
+    CHECK( other_vector.isInitialized() ) << "vector not initialized";
+    CHECK( this->firstLocalIndex() == other_vector.firstLocalIndex() ) 
+        << fmt::format("first local index mismatch: {} vs {}", this->firstLocalIndex(), other_vector.firstLocalIndex());
+    CHECK( this->lastLocalIndex()  == other_vector.lastLocalIndex() ) 
+        << fmt::format("last local index mismatch: {} vs {}", this->lastLocalIndex(), other_vector.lastLocalIndex());
 
     int rvalue     = -1;
     size_type i = firstLocalIndex();
@@ -335,7 +341,7 @@ template <typename T, typename SizeT>
 
 void Vector<T,SizeT>::print( std::ostream& os ) const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
+    CHECK( this->isInitialized() ) << "vector not initialized";
     os << "Size\tglobal =  " << this->size()
        << "\t\tlocal =  " << this->localSize() << std::endl;
 

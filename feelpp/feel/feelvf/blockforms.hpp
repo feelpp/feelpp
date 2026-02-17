@@ -113,30 +113,32 @@ public :
     BlockBilinearForm( BlockBilinearForm && ) = default;
     
     template<typename T>
-    BlockBilinearForm( T&& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+    BlockBilinearForm( T&& ps )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}
 
     template<typename T>
-    BlockBilinearForm( T&& ps, std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<T>>::value>* = nullptr)
+        requires std::is_base_of<ProductSpaceBase,decay_type<T>>::value
+    BlockBilinearForm( T&& ps )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}    
     
     template<typename T,typename BackendT, typename RangeMapT>
-    BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap(),
-                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
+    BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap() )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
         {}
 
     template<typename T, typename BackendT, typename RangeMapT>
-    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap(),
-                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap() )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
@@ -145,8 +147,8 @@ public :
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
         {}
     template<typename T, typename BackendT>
-    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns,
-                       std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
@@ -373,10 +375,10 @@ public :
             }
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
     typename Backend<double>::solve_return_type
     solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                    bool rebuild, pre_solve_type pre, post_solve_type post,
-                    std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                    bool rebuild, pre_solve_type pre, post_solve_type post )
         {
             auto sc = M_matrix->sc();
             tic();
@@ -384,34 +386,34 @@ public :
             auto vsc = rhs.vectorPtr()->sc();
             sc->localSolve ( vsc, solution);
             cout << " . local Solve done" << std::endl;
-            toc("blockform.local.localsolve",FLAGS_v>0);
+            toc("blockform.local.localsolve",Environment::logVerbosityLevel()>0);
             typename Backend<double>::solve_return_type r;
             return r;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value
     typename Backend<double>::solve_return_type
     solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                    bool rebuild, pre_solve_type pre, post_solve_type post,
-                    std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                    bool rebuild, pre_solve_type pre, post_solve_type post )
         {
             typename Backend<double>::solve_return_type r;
             return r;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t, typename CT>
+        requires std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>> && is_condenser_v<CT>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post, CT ct,
-                       std::enable_if_t<std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>> && is_condenser_v<CT>>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post, CT ct )
         {
             return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t, typename CT>
+        requires hana::Foldable<typename decay_type<PS_t>::tuple_spaces_type>::value &&
+                 (!std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>>) &&
+                 is_condenser_v<CT>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post, CT ct,
-                       std::enable_if_t< hana::Foldable<typename decay_type<PS_t>::tuple_spaces_type>::value &&
-                                         !std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>> &&
-                                         is_condenser_v<CT>>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post, CT ct )
         {
             return solveImplCondense( ps, solution, rhs, name, kind, rebuild, pre, post,hana::integral_constant<int,decltype(hana::size( M_ps.tupleSpaces() ))::value>() );
         }
@@ -429,7 +431,7 @@ public :
                                                                              _pre=pre,
                                                                              _post=post
                                                                              );
-            toc("blockform.monolithic",FLAGS_v>0);
+            toc("blockform.monolithic",Environment::logVerbosityLevel()>0);
             if ( Environment::isSequential() && boption("exporter.matlab") )
             {
                 M_matrix->getSparseMatrix()->printMatlab("A.m");
@@ -439,26 +441,26 @@ public :
             return r1;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,1>,
-                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
-        {
-            return typename Backend<double>::solve_return_type{};
-        }
-    template <typename PS_t, typename Solution_t, typename Rhs_t> 
-    typename Backend<double>::solve_return_type
-    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,2>,
-                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,1> )
         {
             return typename Backend<double>::solve_return_type{};
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,3>,
-                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,2> )
+        {
+            return typename Backend<double>::solve_return_type{};
+        }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+    typename Backend<double>::solve_return_type
+    solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,3> )
         {
 #if 1
             auto& e3 = solution(2_c);
@@ -468,19 +470,19 @@ public :
             auto sc = M_matrix->sc();
             tic();
             auto psS = product( e3.functionSpace() );
-            toc("blockform.sc.space",FLAGS_v>0);
+            toc("blockform.sc.space",Environment::logVerbosityLevel()>0);
             tic();
             auto S = blockform2( psS, solve::strategy::monolithic, backend(), Pattern::HDG  );
-            toc("blockform.sc.bilinearform",FLAGS_v>0);
+            toc("blockform.sc.bilinearform",Environment::logVerbosityLevel()>0);
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto V = blockform1( psS, solve::strategy::monolithic, backend() );
             
             tic();
             this->syncLocalMatrix();
-            toc("blockform.sc.sync", FLAGS_v>0);
+            toc("blockform.sc.sync", Environment::logVerbosityLevel()>0);
             tic();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
-            toc("blockform.sc.condense", FLAGS_v>0);
+            toc("blockform.sc.condense", Environment::logVerbosityLevel()>0);
             S.close();V.close();
             cout << " . Condensation done" << std::endl;
             tic();
@@ -491,7 +493,7 @@ public :
             //auto r = backend(_name=prefixvm(name,"sc"),_rebuild=rebuild)->solve( _matrix=S.matrixPtr(), _rhs=V.vectorPtr(), _solution=e3);
             solution(2_c)=U(0_c);
             cout << " . Solve done" << std::endl;
-            toc("blockform.sc.solve", FLAGS_v>0);
+            toc("blockform.sc.solve", Environment::logVerbosityLevel()>0);
 
 #if 0
             S.matrixPtr()->printMatlab("S.m");
@@ -504,7 +506,7 @@ public :
             cout << " . starting local Solve" << std::endl;
             sc->localSolve ( rhs.vectorPtr()->sc(), solution);
             cout << " . local Solve done" << std::endl;
-            toc("blockform.sc.localsolve",FLAGS_v>0);
+            toc("blockform.sc.localsolve",Environment::logVerbosityLevel()>0);
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m");
@@ -521,10 +523,10 @@ public :
     //! solve using static condensation in the case of 2 trace spaces
     //!
     template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,4>,
-                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,4> )
         {
             //auto& e4 = solution(3_c,0);
             auto& e3 = solution(2_c);
@@ -542,7 +544,7 @@ public :
             tic();
             this->syncLocalMatrix();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
-            toc("blockform.sc.condense", FLAGS_v>0);
+            toc("blockform.sc.condense", Environment::logVerbosityLevel()>0);
             S.close();V.close();
             cout << " . Condensation done" << std::endl;
             tic();
@@ -551,7 +553,7 @@ public :
             auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
 
             cout << " . Solve done" << std::endl;
-            toc("blockform.sc.solve", FLAGS_v>0);
+            toc("blockform.sc.solve", Environment::logVerbosityLevel()>0);
 
             solution(2_c)=U(0_c);
             for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
@@ -568,7 +570,7 @@ public :
             sc->setDim4( M_ps[3_c]->numberOfSpaces());
             sc->localSolve ( rhs.vectorPtr()->sc(), solution );
             cout << " . local Solve done" << std::endl;
-            toc("blockform.sc.localsolve",FLAGS_v>0);
+            toc("blockform.sc.localsolve",Environment::logVerbosityLevel()>0);
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m"); 
@@ -581,10 +583,10 @@ public :
     //! solve using static condensation in the case of 2 trace spaces
     //!
     template <typename PS_t, typename Solution_t, typename Rhs_t>
+        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,5>,
-                       std::enable_if_t<!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value>* = nullptr )
+                       bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,5> )
         {
             //auto& e4 = solution(3_c,0);
             auto& e3 = solution(2_c);
@@ -605,7 +607,7 @@ public :
             tic();
             this->syncLocalMatrix();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
-            toc("blockform.sc.condense", FLAGS_v>0);
+            toc("blockform.sc.condense", Environment::logVerbosityLevel()>0);
             S.close();V.close();
             cout << " . Condensation done" << std::endl;
             tic();
@@ -614,7 +616,7 @@ public :
             auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm(name,"sc"),_rebuild=rebuild );//, _condense=true );
 
             cout << " . Solve done" << std::endl;
-            toc("blockform.sc.solve", FLAGS_v>0);
+            toc("blockform.sc.solve", Environment::logVerbosityLevel()>0);
 
             solution(2_c)=U(0_c);
             for( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
@@ -633,7 +635,7 @@ public :
             sc->setDim4( M_ps[3_c]->numberOfSpaces());
             sc->localSolve ( rhs.vectorPtr()->sc(), solution );
             cout << " . local Solve done" << std::endl;
-            toc("blockform.sc.localsolve",FLAGS_v>0);
+            toc("blockform.sc.localsolve",Environment::logVerbosityLevel()>0);
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m"); 
@@ -646,10 +648,10 @@ public :
         //! solve using static condensation in the case of 2 trace spaces
         //!
         template <typename PS_t, typename Solution_t, typename Rhs_t>
+            requires (!std::is_base_of<ProductSpaceBase, decay_type<PS_t>>::value)
         typename Backend<double>::solve_return_type
         solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
-                           bool rebuild, pre_solve_type pre, post_solve_type post, hana::integral_constant<int, 3*5>,
-                           std::enable_if_t<!std::is_base_of<ProductSpaceBase, decay_type<PS_t>>::value>* = nullptr )
+                           bool rebuild, pre_solve_type pre, post_solve_type post, hana::integral_constant<int, 3*5> )
         {
 #if 0            
             //auto& e4 = solution(3_c,0);
@@ -671,7 +673,7 @@ public :
             tic();
             this->syncLocalMatrix();
             sc->condense( rhs.vectorPtr()->sc(), solution, S, V );
-            toc( "blockform.sc.condense", FLAGS_v > 0 );
+            toc( "blockform.sc.condense", Environment::logVerbosityLevel() > 0 );
             S.close();
             V.close();
             cout << " . Condensation done" << std::endl;
@@ -681,7 +683,7 @@ public :
             auto r = S.solve( _solution = U, _rhs = V, _name = prefixvm( name, "sc" ), _rebuild = rebuild ); //, _condense=true );
 
             cout << " . Solve done" << std::endl;
-            toc( "blockform.sc.solve", FLAGS_v > 0 );
+            toc( "blockform.sc.solve", Environment::logVerbosityLevel() > 0 );
 
             solution( 2_c ) = U( 0_c );
             for ( int i = 0; i < Th[1_c]->numberOfSpaces(); ++i )
@@ -700,7 +702,7 @@ public :
             sc->setDim4( M_ps[3_c]->numberOfSpaces() );
             sc->localSolve( rhs.vectorPtr()->sc(), solution );
             cout << " . local Solve done" << std::endl;
-            toc( "blockform.sc.localsolve", FLAGS_v > 0 );
+            toc( "blockform.sc.localsolve", Environment::logVerbosityLevel() > 0 );
 #if 0
             e1.printMatlab("u1.m");
             e2.printMatlab("p1.m");
@@ -780,25 +782,29 @@ public :
     BlockLinearForm( BlockLinearForm const& ) = default;
 
     template<typename T, typename BackendT>
-    BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+    BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
         :
         M_ps(std::forward<T>(ps)),
         M_vector(std::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
-    BlockLinearForm(T&& ps, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr)
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+    BlockLinearForm(T&& ps)
         :
         M_ps(std::forward<T>(ps)),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T>
-    BlockLinearForm(T&& ps, std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<T>>::value>* = nullptr)
+        requires std::is_base_of<ProductSpaceBase,decay_type<T>>::value
+    BlockLinearForm(T&& ps)
         :
         M_ps(std::forward<T>(ps)),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}    
     template<typename T, typename BackendT>
-    BlockLinearForm(T&& ps, BackendT&& b, std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value>* = nullptr )
+        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+    BlockLinearForm(T&& ps, BackendT&& b)
         :
         M_ps(std::forward<T>(ps)),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))

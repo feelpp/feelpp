@@ -317,8 +317,8 @@ public:
 
     static inline const uint16_type nDim = N;
     static inline const uint16_type nOrder =  O;
-    static const bool isTransformationEquivalent = false;
-    static const bool isContinuous = true;
+    static inline const bool isTransformationEquivalent = false;
+    static inline const bool isContinuous = true;
 
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
@@ -328,9 +328,9 @@ public:
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_tensor2 = polyset_type::is_tensor2;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
     static inline const uint16_type nComponents = polyset_type::nComponents;
 
 

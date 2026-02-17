@@ -68,12 +68,12 @@ public:
 
     typedef typename super::polyset_type polyset_type;
 
-    static const bool is_continuous = true;
+    static inline const bool is_continuous = true;
 
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const bool is_modal = true;
+    static inline const bool is_tensor2 = polyset_type::is_tensor2;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_modal = true;
     static inline const uint16_type nComponents = polyset_type::nComponents;
     typedef typename super::component_type component_type;
 
@@ -174,11 +174,11 @@ public:
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
-    static const bool is_continuous = true;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const bool is_modal = true;
+    static inline const bool is_continuous = true;
+    static inline const bool is_tensor2 = polyset_type::is_tensor2;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_modal = true;
     static inline const uint16_type nComponents = polyset_type::nComponents;
     typedef typename super::component_type component_type;
 

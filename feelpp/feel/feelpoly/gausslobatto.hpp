@@ -35,10 +35,15 @@
 #include <feel/feelcore/visitor.hpp>
 
 #include <stdexcept>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 #include <feel/feelcore/traits.hpp>
@@ -384,8 +389,8 @@ public:
 
     static const size_type Shape = Convex::Shape;
 
-    static const bool is_simplex = Convex::is_simplex;
-    static const bool is_hypercube = Convex::is_hypercube;
+    static inline const bool is_simplex = Convex::is_simplex;
+    static inline const bool is_hypercube = Convex::is_hypercube;
 
     typedef Reference<Convex, Dim, Convex::nOrder, Convex::nDim/*Convex::nRealDim*/, value_type> reference_convex_type;
 

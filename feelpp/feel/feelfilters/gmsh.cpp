@@ -498,7 +498,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         fname=__meshname.str();
 
     }
-    google::FlushLogFiles(INFO);
+    Logger::flush();
 
     auto ret = boost::make_tuple(fname,generated);
 	if ( mpi::environment::initialized() )
@@ -699,7 +699,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
     gmsh::logger::get( gmshLog );
 #endif
-    if ( FLAGS_v >= 1 )
+    if ( Environment::logVerbosityLevel() >= 1 )
         for ( std::string const& msg : gmshLog )
             std::cout << msg << "\n";
     gmsh::logger::stop();
@@ -730,7 +730,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
          gmsh::logger::get( gmshLog );
 #endif
-         if ( FLAGS_v >= 1 )
+         if ( Environment::logVerbosityLevel() >= 1 )
          {
              std::cout << "\n\n INFO PARTITIONER\n";
              for ( std::string const& msg : gmshLog )

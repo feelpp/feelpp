@@ -14,7 +14,7 @@
 #include <feel/feelvf/norml2.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelviewfactor/unobstructedplanarviewfactor.hpp>
-#include <assert.h> 
+#include <cassert> 
 
 namespace Feel
 {      
@@ -42,6 +42,10 @@ namespace Feel
         using elementdisc_ptr_t = typename spacedisc_t::element_ptrtype;
         using elementdisc_surf_ptr_t = typename spacedisc_surf_t::element_ptrtype;
 
+        // Physics constants for radiative heat transfer
+        static constexpr double STEFAN_BOLTZMANN_DERIVATIVE_COEFF = 4.0;  // d(T⁴)/dT = 4T³
+        static constexpr int RADIATIVE_POWER = 4;                          // T^4 in Stefan-Boltzmann law
+
         RHT(nl::json specs)
         {
             // Assign the json structures to the members of the class
@@ -51,35 +55,38 @@ namespace Feel
         void init();
         void solveHeatEquationNonLinear(element_ptr_t T );
 
-        typedef Backend<double> backend_type;
-        typedef std::shared_ptr<backend_type> backend_ptrtype;
+        using backend_type = Backend<double>;
+        using backend_ptrtype = std::shared_ptr<backend_type>;
 
         /*matrix*/
-        typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-        typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-        typedef typename backend_type::vector_type vector_type;
-        typedef typename backend_type::vector_ptrtype vector_ptrtype;
+        using sparse_matrix_type = typename backend_type::sparse_matrix_type;
+        using sparse_matrix_ptrtype = typename backend_type::sparse_matrix_ptrtype;
+        using vector_type = typename backend_type::vector_type;
+        using vector_ptrtype = typename backend_type::vector_ptrtype;
 
-        typedef Bdf<space_t>  bdf_type;
-        typedef std::shared_ptr<bdf_type> bdf_ptrtype;
+        using bdf_type = Bdf<space_t>;
+        using bdf_ptrtype = std::shared_ptr<bdf_type>;
 
-        typedef Exporter<mesh_t,1> exporter_type;
-        typedef std::shared_ptr <exporter_type> exporter_ptrtype;
+        using exporter_type = Exporter<mesh_t,1>;
+        using exporter_ptrtype = std::shared_ptr<exporter_type>;
 
         void executeNonLinear();
         void computeVF_and_save();
-        void saveVF(std::string cavity_name,const Eigen::Ref<const Eigen::MatrixXd>&  M);
-        void loadVF(std::string cavity_name,std::string filename);
-        void computeVF(std::string cavity_name,std::string filename);
+        void saveVF(const std::string& cavity_name, const Eigen::Ref<const Eigen::MatrixXd>& M);
+        void loadVF(const std::string& cavity_name, const std::string& filename);
+        void computeVF(const std::string& cavity_name, const std::string& filename);
         void checkResults();
+        
+        // Helper method to find coating emissivity for a given marker
+        std::optional<std::string> getCoatingEpsilon(const std::string& marker) const;
         
         struct Tstruct
         {
             element_ptr_t T_;
 
-            element_ptr_t T(){return T_;}
+            const element_ptr_t& T() const { return T_; }
             
-            void setT(element_ptr_t& T){T_=T;}
+            void setT(const element_ptr_t& T) { T_ = T; }
 
         };
 

@@ -79,7 +79,7 @@ if ( FEELPP_USE_EXTERNAL_FMT )
   target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
 else()
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG 11.2.0)
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt.git GIT_TAG 12.1.0)
 
 set(FMT_INSTALL ON)
 set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
@@ -100,52 +100,60 @@ endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
-set( FEELPP_HAS_GFLAGS 1 )
-set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
-set( GFLAGS_IS_SUBPROJECT TRUE )
-add_subdirectory(gflags)
-if ( FEELPP_HAS_GFLAGS )
-  set(GFLAGS_IS_SUBPROJECT TRUE)
-  set(GFLAGS_NAMESPACE "google;gflags")
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gflags)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_gflags)
-
-  #add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
-  #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/gflags/include ${CMAKE_CURRENT_BINARY_DIR}/gflags/include/gflags)
-
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GFLAGS )
-  target_include_directories(feelpp_contrib
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/feelpp/contrib/gflags/include>
-    $<INSTALL_INTERFACE:include/feelpp>
-    )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
-
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
-
-  # for GLog
-  set(gflags_LIBRARIES feelpp_gflags)
-  set(gflags_FOUND 1)
-endif()
+# GFlags disabled - migrated to spdlog
+set( FEELPP_HAS_GFLAGS 0 )
+set( FEELPP_HAS_GFLAGS 0 PARENT_SCOPE )
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GLog")
-set( FEELPP_HAS_GLOG 1 )
-set( FEELPP_HAS_GLOG 1 PARENT_SCOPE )
-add_subdirectory(glog)
-if ( FEELPP_HAS_GLOG )
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GLOG )
-  target_include_directories(feelpp_contrib INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/feelpp/contrib/glog/>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/glog/src>
-    $<INSTALL_INTERFACE:include/feelpp>
-    )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_glog)
-    #     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/glog/ ${CMAKE_CURRENT_SOURCE_DIR}/glog/src)
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glog)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_glog)
-  #add_dependencies(contrib feelpp_glog)
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
+# GLog disabled - migrated to spdlog
+set( FEELPP_HAS_GLOG 0 )
+set( FEELPP_HAS_GLOG 0 PARENT_SCOPE )
+
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring spdlog")
+option(FEELPP_ENABLE_SPDLOG "Enable spdlog" ON)
+if(FEELPP_ENABLE_SPDLOG)
+  set(SPDLOG_FMT_EXTERNAL ON  CACHE BOOL "" FORCE)
+  set(SPDLOG_USE_STD_FORMAT OFF CACHE BOOL "" FORCE)
+  set(SPDLOG_INSTALL OFF CACHE BOOL "" FORCE)  # Don't install spdlog targets to avoid export conflicts
+  set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
+  FetchContent_Declare(spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG v1.16.0)
+  FetchContent_MakeAvailable(spdlog)
+  
+  # Ensure fmt::fmt alias exists for spdlog
+  if(TARGET fmt AND NOT TARGET fmt::fmt)
+    add_library(fmt::fmt ALIAS fmt)
+  endif()
+  
+  # Create a header-only interface that doesn't export spdlog targets
+  add_library(feelpp_spdlog INTERFACE)
+  # Don't link to spdlog targets - just provide include paths and definitions
+  target_include_directories(feelpp_spdlog INTERFACE
+    $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/feelpp/spdlog>)
+  target_compile_definitions(feelpp_spdlog INTERFACE 
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_ACTIVE_LEVEL=$<IF:$<CONFIG:Debug>,SPDLOG_LEVEL_TRACE,SPDLOG_LEVEL_INFO>)
+  # Note: SPDLOG_HEADER_ONLY is defined automatically by spdlog when SPDLOG_COMPILED_LIB is not set
+  
+  # Link to fmt which is already in the export set
+  target_link_libraries(feelpp_spdlog INTERFACE fmt)
+  
+  # Install spdlog headers manually
+  # CMAKE_INSTALL_INCLUDEDIR is already set to include/feelpp, so install directly there
+  install(DIRECTORY ${spdlog_SOURCE_DIR}/include/spdlog
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h")
+  
+  target_link_libraries(feelpp_contrib INTERFACE feelpp_spdlog)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPDLOG)
+  
+  install(TARGETS feelpp_spdlog EXPORT feelpp-contrib-export-targets)
+  
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} spdlog/Contrib")
 endif()
 
 # # cln
@@ -411,6 +419,22 @@ option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
 
 if(FEELPP_USE_EXTERNAL_PYBIND11)
   find_package(pybind11 CONFIG REQUIRED)
+  # Some system pybind11 package versions/export names differ between
+  # distributions (pybind11::module, pybind11::pybind11, pybind11::headers).
+  # Ensure the historically-expected imported target `pybind11::headers`
+  # exists so downstream helper code (pybind11NewTools.cmake /
+  # pybind11_add_module) can link against it. Create a safe alias to
+  # an available target when necessary.
+  if(NOT TARGET pybind11::headers)
+    if(TARGET pybind11::module)
+      add_library(pybind11::headers ALIAS pybind11::module)
+    elseif(TARGET pybind11::pybind11)
+      add_library(pybind11::headers ALIAS pybind11::pybind11)
+    elseif(TARGET pybind11)
+      add_library(pybind11::headers ALIAS pybind11)
+    endif()
+  endif()
+
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
   target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
 else()
@@ -807,8 +831,8 @@ endif()
 
 # ----------------------------------------------------------
 # # A fast and simple to use logging library.
-# option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
-# if ( FEELPP_ENABLE_SPDLOG )
+#option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
+#if ( FEELPP_ENABLE_SPDLOG )
 #   message(STATUS "------------------------------------------------------------")
 #   message(STATUS "Configuring SPDLOG")
 #   set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
@@ -817,8 +841,8 @@ endif()
 #   set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
 #   FetchContent_Declare(
 #       spdlog
-#       GIT_REPOSITORY https://github.com/feelpp/spdlog.git
-#       GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
+#       GIT_REPOSITORY https://github.com/gabime/spdlog.git
+#       GIT_TAG        486b55554f11c9cccc913e11a87085b2a91f706f)
 #   FetchContent_MakeAvailable(spdlog)
 #   add_library(feelpp_spdlog INTERFACE)
 #   set_target_properties(spdlog PROPERTIES OUTPUT_NAME "feelpp_spdlog")
@@ -887,6 +911,8 @@ if(FEELPP_ENABLE_EIGENRAND)
   # set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/EIGENRAND)
   # patch includes fix for 18.04 compilation
   set(EIGENRAND_BUILD_TEST OFF)
+  set(EIGENRAND_BUILD_EXAMPLES OFF)
+  set(EIGENRAND_BUILD_BENCHMARK OFF)
   set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
   FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
 

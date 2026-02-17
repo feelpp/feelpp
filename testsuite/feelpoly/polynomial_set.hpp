@@ -38,11 +38,15 @@
 # define DEF_Polynomial_set_H
 
 #include <vector>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/operation.hpp>
 #include <boost/numeric/ublas/triangular.hpp>
 #include <boost/numeric/ublas/lu.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 

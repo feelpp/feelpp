@@ -36,8 +36,12 @@
 #define BOOST_TEST_MODULE test_quad_order
 #include <feel/feelcore/testsuite.hpp>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <fstream>
 #include <feel/feelpoly/im.hpp>

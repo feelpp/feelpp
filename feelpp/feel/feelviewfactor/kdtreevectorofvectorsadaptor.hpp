@@ -29,6 +29,8 @@
 #pragma once
 
 #include <nanoflann.hpp>
+#include <format>
+#include <memory>
 #include <vector>
 
 namespace Feel {
@@ -64,7 +66,7 @@ struct KDTreeVectorOfVectorsAdaptor
 
     /** The kd-tree index for the user to call its methods as usual with any
      * other FLANN index */
-    index_t* index = nullptr;
+    std::unique_ptr<index_t> index;
 
     /// Constructor: takes a const ref to the vector of vectors object with the
     /// data points
@@ -76,15 +78,18 @@ struct KDTreeVectorOfVectorsAdaptor
         assert(mat.size() != 0 && mat[0].size() != 0);
         const size_t dims = mat[0].size();
         if (DIM > 0 && static_cast<int>(dims) != DIM)
-            throw std::runtime_error(
-                "Data set dimensionality does not match the 'DIM' template "
-                "argument");
-        index = new index_t(
+            throw std::runtime_error(std::format(
+                "Data set dimensionality {} does not match the 'DIM' template argument {}",
+                dims, DIM));
+        index = std::make_unique<index_t>(
             static_cast<int>(dims), *this /* adaptor */,
             nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size));
     }
 
-    ~KDTreeVectorOfVectorsAdaptor() { delete index; }
+    KDTreeVectorOfVectorsAdaptor(KDTreeVectorOfVectorsAdaptor&&) = default;
+    KDTreeVectorOfVectorsAdaptor& operator=(KDTreeVectorOfVectorsAdaptor&&) = default;
+    KDTreeVectorOfVectorsAdaptor(const KDTreeVectorOfVectorsAdaptor&) = delete;
+    KDTreeVectorOfVectorsAdaptor& operator=(const KDTreeVectorOfVectorsAdaptor&) = delete;
 
     const VectorOfVectorsType& m_data;
 

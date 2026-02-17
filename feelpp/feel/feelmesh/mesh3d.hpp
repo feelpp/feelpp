@@ -35,7 +35,13 @@
 
 
 #include <boost/multi_array.hpp>
+
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
+
 #include <boost/shared_ptr.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -552,7 +558,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionOnePermutation()
         }
     }
 #endif
-    toc( "[Mesh3D::updateFaces] element/face permutation", FLAGS_v > 1 );
+    toc( "[Mesh3D::updateFaces] element/face permutation", Environment::logVerbosityLevel() > 1 );
 }
 
 template <typename GEOSHAPE, typename T, typename IndexT>
@@ -618,7 +624,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
 #endif
         }
     }
-    toc( "[Mesh3D::updateEdges] adding edges already registered", FLAGS_v > 1 );
+    toc( "[Mesh3D::updateEdges] adding edges already registered", Environment::logVerbosityLevel() > 1 );
     tic();
 
     if ( true ) //this->edges().empty() )
@@ -674,7 +680,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
             }
         }
     }
-    toc( "[Mesh3D::updateEdges] adding boundaryfaces/edges", FLAGS_v > 1 );
+    toc( "[Mesh3D::updateEdges] adding boundaryfaces/edges", Environment::logVerbosityLevel() > 1 );
     tic();
     edge_permutation_type reversePermutation( edge_permutation_type::REVERSE_PERMUTATION );
 
@@ -784,7 +790,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
 
         } // for ( uint16_type j = 0; j < element_type::numEdges; ++j )
     }
-    toc( "[Mesh3D::updateEdges] adding element/edges", FLAGS_v > 1 );
+    toc( "[Mesh3D::updateEdges] adding element/edges", Environment::logVerbosityLevel() > 1 );
     tic();
     // update edge pointers in faces
     face_iterator face_it = this->beginFace();
@@ -802,7 +808,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
             faceModified.setEdge( e, elt_edge );
         }
     }
-    toc( "[Mesh3D::updateEdges] updating faces/edges", FLAGS_v > 1 );
+    toc( "[Mesh3D::updateEdges] updating faces/edges", Environment::logVerbosityLevel() > 1 );
 #if 0
     edge_iterator e_it = this->beginEdge();
     edge_iterator e_en = this->endEdge();

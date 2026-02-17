@@ -73,8 +73,8 @@ class Hypercube  : public Convex<Dim,Order,RDim>, HypercubeBase
 
 public:
 
-    static const bool is_simplex = false;
-    static const bool is_hypercube = true;
+    static inline const bool is_simplex = false;
+    static inline const bool is_hypercube = true;
 
     static const size_type Shape = mpl::at<shapes_t, mpl::int_<Dim> >::type::value;
     static const size_type Geometry = mpl::at<geometries_t, mpl::int_<Dim> >::type::value;

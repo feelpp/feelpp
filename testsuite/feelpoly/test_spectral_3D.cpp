@@ -24,8 +24,12 @@
 
 // Boost numeric
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 // Gmm
 
@@ -450,7 +454,7 @@ T Ortho()
     D_error_L2 << err << endl;
 
 
-    /** H¹ Error Estimation **/
+    /** Hï¿½ Error Estimation **/
 
     cout << "H^1 Error estimation ... ";
     t.restart();
@@ -716,7 +720,7 @@ T Boundary()
     B_error_L2 << err << endl;
 
 
-    /** H¹ Error Estimation **/
+    /** Hï¿½ Error Estimation **/
 
     cout << "H^1 Error estimation ... ";
     t.restart();
