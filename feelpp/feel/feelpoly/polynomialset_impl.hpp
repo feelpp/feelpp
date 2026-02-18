@@ -24,10 +24,10 @@
 
 namespace Feel {
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 resizeAndSet( rank_t<0> )
 {
 #if 0
@@ -54,10 +54,10 @@ resizeAndSet( rank_t<0> )
 #endif
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 resizeAndSet( rank_t<1> )
 {
 #if 0
@@ -103,10 +103,10 @@ resizeAndSet( rank_t<1> )
 #endif
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 resizeAndSet( rank_t<2> )
 {
 #if 0
@@ -127,10 +127,10 @@ resizeAndSet( rank_t<2> )
 #endif
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc,
         precompute_ptrtype const& __pc )
 {
@@ -152,8 +152,8 @@ update( geometric_mapping_context_ptrtype const& __gmc,
         M_phi.resize( boost::extents[ntdof][M_npoints] );
         //M_gradphi.resize( boost::extents[ntdof][M_npoints] );
 
-        int npoints_firstderivative = do_optimization_p1? 1 : M_npoints;
-        int npoints_secondderivative = do_optimization_p2? 1 : M_npoints;
+        int npoints_firstderivative = this->nPointsFirstDerivative();
+        int npoints_secondderivative = this->nPointsSecondDerivative();
 
         // normal component
         if constexpr ( rank >=1 )
@@ -267,19 +267,27 @@ update( geometric_mapping_context_ptrtype const& __gmc,
 
     M_phi = M_pc.get()->phi();
     M_gradphi = M_pc.get()->gradPtr();
+    const uint16_type nDofsRuntime = this->nDofs();
+    CHECK( M_phi.shape()[0] >= nDofsRuntime )
+        << "invalid phi precompute size: phi rows=" << M_phi.shape()[0]
+        << " required dofs=" << nDofsRuntime;
+    CHECK( M_gradphi && M_gradphi->shape()[0] >= nDofsRuntime )
+        << "invalid grad precompute size: grad rows="
+        << ( M_gradphi ? M_gradphi->shape()[0] : 0 )
+        << " required dofs=" << nDofsRuntime;
 
     update( __gmc );
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateGrad( geometric_mapping_context_type* thegmc, rank_t<0> )
 {
     tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B( thegmc->B( 0 ).data(), gmc_type::NDim, gmc_type::PDim );
-    const uint16_type Q = do_optimization_p1?1:M_npoints;
-    const uint16_type I = nDof;
+    const uint16_type Q = this->nPointsFirstDerivative();
+    const uint16_type I = this->nDofs();
     Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
     for ( uint16_type i = 0; i < I; ++i )
@@ -291,6 +299,12 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<0> )
                             new (&B) tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type>(thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
             // grad = (gradphi_1,...,gradphi_nRealDim) * B^T
             M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
+            for ( uint16_type c = 0; c < nRealDim; ++c )
+            {
+                CHECK( std::isfinite( M_grad[i][q]( 0, c, 0 ) ) )
+                    << "non-finite transformed grad value at dof=" << i
+                    << " q=" << q << " c=" << c;
+            }
             //M_grad[i][q] = (g_phi_i[q].contract( B,dims ));
 #if 0
             M_dx[i][q] = M_grad[i][q].col( 0 );
@@ -305,16 +319,16 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<0> )
 
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<0> )
 {
     // const uint16_type I = M_ref_ele->nbDof()*nComponents;
     // const uint16_type Q = nPoints();
     const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
-    const uint16_type I = nDof;
+    const uint16_type I = this->nDofs();
 
     for ( uint16_type i = 0; i < I; ++i )
     {
@@ -331,16 +345,16 @@ updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<0> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateHessian( geometric_mapping_context_type* thegmc, rank_t<0> )
 {
     precompute_type* __pc = M_pc.get().get();
     //auto* __gmc_pc = thegmc->pc().get();
-    const uint16_type Q = do_optimization_p2?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
-    const uint16_type I = nDof; //M_ref_ele->nbDof();
+    const uint16_type Q = this->nPointsSecondDerivative();//__gmc->nPoints();//M_grad.size2();
+    const uint16_type I = this->nDofs();
     //hess_type L;
     //Eigen::array<int, 3> tensorHessShapeAfterContract{{nRealDim, 1, nRealDim}};
     Eigen::array<int, 3> tensorHessShapeAfterContract{{1, nRealDim, nRealDim}};
@@ -383,14 +397,14 @@ updateHessian( geometric_mapping_context_type* thegmc, rank_t<0> )
     } // i
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<0> )
 {
-    const uint16_type Q = do_optimization_p2?1:M_npoints;
-    const uint16_type I = nDof;
+    const uint16_type Q = this->nPointsSecondDerivative();
+    const uint16_type I = this->nDofs();
     for ( uint16_type q = 0; q < Q; ++q )
     {
         for ( uint16_type i = 0; i < I; ++i )
@@ -407,10 +421,10 @@ updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<0> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();
@@ -459,10 +473,10 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
     const uint16_type Q = M_npoints;
@@ -483,13 +497,13 @@ updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<1> )
         }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
-    const uint16_type Q = do_optimization_p1?1:M_npoints;
+    const uint16_type Q = this->nPointsFirstDerivative();
     const uint16_type I = M_grad.shape()[0];
 
     typedef typename boost::multi_array<value_type,4>::index_range range;
@@ -571,13 +585,13 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> )
 
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateSymm( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
-    const uint16_type Q = do_optimization_p1?1:M_npoints;
+    const uint16_type Q = this->nPointsFirstDerivative();
     const uint16_type I = M_grad.shape()[0];
     for ( uint16_type q = 0; q < Q; ++q )
     {
@@ -590,13 +604,13 @@ updateSymm( geometric_mapping_context_type* thegmc, rank_t<1> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateDiv( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
-    const uint16_type Q = do_optimization_p1?1:M_npoints;
+    const uint16_type Q = this->nPointsFirstDerivative();
     const uint16_type I = M_grad.shape()[0];
     for ( uint16_type q = 0; q < Q; ++q )
     {
@@ -620,13 +634,13 @@ updateDiv( geometric_mapping_context_type* thegmc, rank_t<1> )
         }
     }
 }
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateCurl( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
-    const uint16_type Q = do_optimization_p1?1:M_npoints;
+    const uint16_type Q = this->nPointsFirstDerivative();
     const uint16_type I = M_grad.shape()[0];
     for ( uint16_type q = 0; q < Q; ++q )
     {
@@ -649,10 +663,10 @@ updateCurl( geometric_mapping_context_type* thegmc, rank_t<1> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
     const uint16_type Q = M_npoints;
@@ -674,14 +688,14 @@ updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<1> )
         }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
     precompute_type* __pc = M_pc.get().get();
-    const uint16_type Q = do_optimization_p2?1:M_npoints;
+    const uint16_type Q = this->nPointsSecondDerivative();
     const uint16_type I = M_hessian.shape()[0];
 
     Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(2, 1)}};
@@ -733,13 +747,13 @@ updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> )
     } //q
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
-    const uint16_type Q = do_optimization_p2?1:M_npoints;
+    const uint16_type Q = this->nPointsSecondDerivative();
     const uint16_type I = M_laplacian.shape()[0];
 
     for ( uint16_type i = 0; i < I; ++i )
@@ -756,16 +770,16 @@ updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<1> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();
     const uint16_type I = M_phi.shape()[0];
     const int Qid = M_npoints;
-    const int Q = do_optimization_p1?1:M_npoints;
+    const int Q = this->nPointsFirstDerivative();
 
     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
     if constexpr ( is_hdiv_conforming )
@@ -864,10 +878,10 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
 
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<2> )
 {
     const uint16_type Q = M_npoints;
@@ -882,10 +896,10 @@ updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<2> )
                     M_normal_component[i][q]( c1,0 ) +=  M_phi[i][q]( c1, c ) * N( c );
         }
 }
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateTrace( geometric_mapping_context_type* thegmc, rank_t<2> )
 {
     const uint16_type Q = M_npoints;
@@ -899,13 +913,13 @@ updateTrace( geometric_mapping_context_type* thegmc, rank_t<2> )
             M_trace[i][q]=res();
         }
 }
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateGrad( geometric_mapping_context_type* thegmc, rank_t<2> )
 {
-    const uint16_type Q = do_optimization_p1?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
+    const uint16_type Q = this->nPointsFirstDerivative();//__gmc->nPoints();//M_grad.size2();
     const uint16_type I = M_grad.shape()[0];
     //typedef typename boost::multi_array<value_type,4>::index_range range;
 
@@ -936,13 +950,13 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<2> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateDiv( geometric_mapping_context_type* thegmc, rank_t<2> )
 {
-    const uint16_type Q = do_optimization_p1?1:M_npoints;
+    const uint16_type Q = this->nPointsFirstDerivative();
     const uint16_type I = M_div.shape()[0];
     for ( uint16_type i = 0; i < I; ++i )
     {
@@ -959,10 +973,10 @@ updateDiv( geometric_mapping_context_type* thegmc, rank_t<2> )
     }
 }
 
-template<typename Poly, template<uint16_type> class PolySetType>
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec>
 template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g, int SubEntityCoDim>
 void
-PolynomialSet<Poly,PolySetType>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
+PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
 {
     geometric_mapping_context_type* thegmc = __gmc.get();

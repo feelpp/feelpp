@@ -111,7 +111,7 @@ public:
 
 };
 
-template<typename Basis, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, int, class> class PointSetType>
 class CrouzeixRaviartDual
     :
 public DualBasis<Basis>
@@ -265,7 +265,7 @@ template<uint16_type N,
          uint16_type RealDim,
          template<uint16_type Dim> class PolySetType,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG=0 >
 class CrouzeixRaviart
     :
@@ -523,9 +523,9 @@ private:
 
 } // fem
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
          uint16_type TheTAG=0 >
 class CrouzeixRaviart
 {

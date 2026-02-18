@@ -40,6 +40,7 @@
 
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/meta.hpp>
 
 #include <feel/feelpoly/equispaced.hpp>
 #include <feel/feelpoly/principal.hpp>
@@ -47,7 +48,7 @@
 
 namespace Feel
 {
-template<class Convex,uint16_type O,typename T> class PointSetWarpBlend;
+template<class Convex,int O,typename T> class PointSetWarpBlend;
 template<uint16_type Dim,uint16_type RealDim,uint16_type Degree,typename NormalizationPolicy,typename T,template<class> class StoragePolicy> class Dubiner;
 
 template<uint16_type Dim,
@@ -100,9 +101,9 @@ struct BoundaryAdaptedTraits
     typedef typename Convex<nOrder>::reference_type reference_convex_type;
     typedef typename Convex<nConvexOrderDiff>::type diff_convex_type;
     typedef typename Convex<nConvexOrderDiff>::reference_type diff_reference_convex_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-            mpl::identity<PointSetWarpBlend<diff_convex_type,nConvexOrderDiff,value_type> >,
-            mpl::identity<PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff,value_type> > >::type::type diff_pointset_type;
+    using diff_pointset_type = if_t<nDim == 2,
+                                    PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type>,
+                                    PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type>>;
 
     static inline const uint16_type numVertices = reference_convex_type::numVertices;
     static inline const uint16_type numFaces = reference_convex_type::numFaces;
@@ -346,15 +347,46 @@ public:
      *
      * \arg __pts is a set of points
      */
-    matrix_type evaluate( points_type const& __pts )
+    matrix_type evaluate( points_type const& __pts ) const
     {
-        return evaluate( __pts, mpl::int_<nDim>() );
+        return evaluate( __pts, int_c<nDim>{} );
+    }
+
+    matrix_type evaluate( points_type const& __pts, uint16_type order ) const
+    {
+        FEELPP_ASSERT( order <= nOrder )( order )( nOrder ).error( "invalid order" );
+        auto full = evaluate( __pts );
+        const size_type nrows = convex_type::polyDims( order );
+        if ( nrows == full.size1() )
+            return full;
+        matrix_type out( nrows, full.size2() );
+        ublas::project( out, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) ) =
+            ublas::project( full, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) );
+        return out;
     }
 
     template<typename AE>
-    vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
+    vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts ) const
     {
-        return derivate( __pts, mpl::int_<nDim>() );
+        return derivate( __pts, int_c<nDim>{} );
+    }
+
+    template<typename AE>
+    vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts, uint16_type order ) const
+    {
+        FEELPP_ASSERT( order <= nOrder )( order )( nOrder ).error( "invalid order" );
+        auto full = derivate( __pts );
+        const size_type nrows = convex_type::polyDims( order );
+        if ( full.size() == 0 || nrows == full[0].size1() )
+            return full;
+        vector_matrix_type out( full.size() );
+        for ( size_type i = 0; i < full.size(); ++i )
+        {
+            out[i].resize( nrows, full[i].size2() );
+            ublas::project( out[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) ) =
+                ublas::project( full[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) );
+        }
+        return out;
     }
 
 
@@ -373,7 +405,7 @@ private:
      *
      */
     matrix_type
-    evaluate( points_type const& __pts, mpl::int_<1> )
+    evaluate( points_type const& __pts, int_c<1> ) const
     {
         matrix_type E = M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
         matrix_type D;
@@ -395,7 +427,7 @@ private:
      */
     template<typename AE>
     vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
+    derivate( ublas::matrix_expression<AE> const& __pts, int_c<1> ) const
     {
         FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
 
@@ -421,27 +453,27 @@ private:
      * Evaluation at a set of points of the expansion basis in 2D on
      * the triangle
      */
-    matrix_type evaluate( points_type const& __pts, mpl::int_<2> );
+    matrix_type evaluate( points_type const& __pts, int_c<2> ) const;
 
     /**
      * derivation at a set of points of the expansion basis in 2D on
      * the triangle
      */
     template<typename AE>
-    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
+    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int_c<2> ) const;
 
     /**
      * Evaluation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
-    matrix_type evaluate( points_type const& __pts, mpl::int_<3> );
+    matrix_type evaluate( points_type const& __pts, int_c<3> ) const;
 
     /**
      * derivation at a set of points of the expansion basis in 3D on
      * the tetrahedron
      */
     template<typename AE>
-    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
+    vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int_c<3> ) const;
 
 private:
     reference_convex_type M_refconvex;
@@ -456,7 +488,7 @@ template<uint16_type Dim,
          typename T,
          template<class> class StoragePolicy>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::matrix_type
-BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
+BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __pts, int_c<2> ) const
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
@@ -530,7 +562,7 @@ template<uint16_type Dim,
          template<class> class StoragePolicy>
 template<typename AE>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::vector_matrix_type
-BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
+BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int_c<2> ) const
 {
     vector_matrix_type res( 2 );
     res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
@@ -636,7 +668,7 @@ template<uint16_type Dim,
          typename T,
          template<class> class StoragePolicy>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::matrix_type
-BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
+BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::evaluate( points_type const& __pts, int_c<3> ) const
 {
     matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
 
@@ -830,7 +862,7 @@ template<uint16_type Dim,
          template<class> class StoragePolicy>
 template<typename AE>
 typename BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::vector_matrix_type
-BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
+BoundaryAdapted<Dim, Degree,  T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int_c<3> ) const
 {
     vector_matrix_type res( 3 );
     res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );

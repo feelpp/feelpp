@@ -37,7 +37,7 @@
 
 namespace Feel
 {
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<int Dim, int Order, int RealDim, template<int,int,int> class Entity, typename T> struct GT_Lagrange;
 template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
 /**
  * @defgroup Quadrature 

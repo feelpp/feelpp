@@ -25,6 +25,7 @@
 #define __FEELPP_POLY_TRAITS_HPP 1
 
 #include <concepts>
+#include <utility>
 
 #include <feel/feelmesh/traits.hpp>
 
@@ -35,7 +36,7 @@ class VectorialBase {};
 class Tensor2Base {};
 
 template<typename T>
-struct polynomial_order: std::integral_constant<int,T::order()> {};
+struct polynomial_order: std::integral_constant<int,T::nOrder> {};
 
 template<typename T>
 constexpr bool polynomial_order_v = polynomial_order<T>::value;
@@ -83,7 +84,7 @@ concept LinearPolynomialType = is_linear_polynomial_v<T>;
 
 template<typename T>
 concept PolynomialOrderable = requires {
-    { T::order() } -> std::convertible_to<int>;
+    { std::declval<T const&>().order() } -> std::convertible_to<int>;
 };
 
 template<typename T>

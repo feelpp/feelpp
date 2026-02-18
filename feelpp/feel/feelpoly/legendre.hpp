@@ -38,6 +38,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/lu.hpp>
 #include <feel/feelpoly/expansions.hpp>
+#include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>
 #include <feel/feelpoly/equispaced.hpp>
@@ -46,7 +47,7 @@
 namespace Feel
 {
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetGaussLobatto;
 
@@ -348,17 +349,80 @@ public:
      */
     static matrix_type evaluate( points_type const& __pts )
     {
-        return evaluate( __pts, mpl::int_<nDim>() );
+        return evaluate( __pts, int_c<nDim>{} );
+    }
+
+    /**
+     * @brief Evaluate Legendre polynomials up to given order
+     *
+     * For Dynamic order support: when order > nOrder (compile-time),
+     * falls back to runtime evaluation using dyna::JacobiBatchEvaluation.
+     *
+     * @param __pts Points to evaluate at
+     * @param order Polynomial order (can be > nOrder for dynamic case)
+     * @return Evaluation matrix
+     */
+    static matrix_type evaluate( points_type const& __pts, uint16_type order )
+    {
+        // For Dynamic order support: use runtime evaluation when order > nOrder
+        if ( order > nOrder )
+        {
+            return evaluateRuntime( __pts, order, int_c<nDim>{} );
+        }
+
+        // Static path: evaluate at compile-time order and truncate
+        auto full = evaluate( __pts );
+        const size_type nrows = convex_type::polyDims( order );
+        if ( nrows == full.size1() )
+            return full;
+        matrix_type out( nrows, full.size2() );
+        ublas::project( out, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) ) =
+            ublas::project( full, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) );
+        return out;
     }
 
     template<typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
     {
-        return derivate( __pts, mpl::int_<nDim>() );
+        return derivate( __pts, int_c<nDim>{} );
     }
 
     /**
-     * \brief derivatives of Dubiner polynomials
+     * @brief Derivate Legendre polynomials up to given order
+     *
+     * For Dynamic order support: when order > nOrder (compile-time),
+     * falls back to runtime derivation using dyna::JacobiBatchDerivation.
+     *
+     * @param __pts Points to evaluate at
+     * @param order Polynomial order (can be > nOrder for dynamic case)
+     * @return Vector of derivation matrices (one per spatial dimension)
+     */
+    template<typename AE>
+    static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts, uint16_type order )
+    {
+        // For Dynamic order support: use runtime derivation when order > nOrder
+        if ( order > nOrder )
+        {
+            return derivateRuntime( __pts, order, int_c<nDim>{} );
+        }
+
+        // Static path: evaluate at compile-time order and truncate
+        auto full = derivate( __pts );
+        const size_type nrows = convex_type::polyDims( order );
+        if ( full.size() == 0 || nrows == full[0].size1() )
+            return full;
+        vector_matrix_type out( full.size() );
+        for ( size_type i = 0; i < full.size(); ++i )
+        {
+            out[i].resize( nrows, full[i].size2() );
+            ublas::project( out[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) ) =
+                ublas::project( full[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) );
+        }
+        return out;
+    }
+
+    /**
+     * \brief derivatives of Legendre polynomials
      * the derivatives are computed at the nodes of the lattice
      *
      * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
@@ -369,7 +433,50 @@ public:
     }
 
     /**
-     * \brief derivatives of Dubiner polynomials
+     * @brief Compute derivation matrix at runtime for given order
+     *
+     * Used for dynamic polynomial order support. Computes the derivation
+     * matrix D_i such that d/dx_i f = D_i * f for polynomial coefficients f.
+     *
+     * @param i Derivative direction (0: x, 1: y, 2: z)
+     * @param order Polynomial order
+     * @return Derivation matrix of size (nBasis x nBasis) for the given order
+     */
+    static matrix_type d( uint16_type i, uint16_type order )
+    {
+        // For compile-time order, just return precomputed matrix
+        if ( order == nOrder )
+            return _S_D[i];
+
+        // Compute derivation matrix at runtime for given order
+        // The pointset must have exactly nBasis points for the matrix to be square
+        // For Hypercube: nBasis = (order+1)^nDim
+        using diff_convex_type = Hypercube<nDim, 1, nDim>;
+
+        // Use dynamic order pointset to get exactly nBasis points for the given order
+        // Use brace initialization to avoid most vexing parse
+        PointSetEquiSpaced<diff_convex_type, Dynamic, value_type> diff_pts_gen{ RuntimeOrder{ order } };
+        points_type diff_pts = diff_pts_gen.points();
+
+        // Evaluate basis at differentiation points - A should be square (nBasis x nBasis)
+        matrix_type A = evaluate( diff_pts, order );
+
+        // Invert A to get interpolation matrix
+        matrix_type D_mat = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
+        LU<matrix_type> lu( A );
+        matrix_type C = lu.solve( D_mat );
+
+        // Compute derivatives at the points
+        vector_matrix_type d_vec = derivate( diff_pts, order );
+
+        // Derivation matrix: D_i = d_vec[i] * C
+        matrix_type result = ublas::prod( d_vec[i], C );
+        glas::clean( result );
+        return result;
+    }
+
+    /**
+     * \brief derivatives of Legendre polynomials
      * the derivatives are computed at the nodes of the lattice
      *
      * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
@@ -405,9 +512,65 @@ private:
      * the triangle
      */
     static matrix_type
-    evaluate( points_type const& __pts, mpl::int_<1> )
+    evaluate( points_type const& __pts, int_c<1> )
     {
-        matrix_type m ( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts, 0 ) ) );
+        // Delegate to unified implementation with compile-time order
+        return evaluateRuntime( __pts, nOrder, int_c<1>{} );
+    }
+
+    /**
+     * derivation at a set of points of the expansion basis in 2D on
+     * the triangle
+     */
+    template<typename AE>
+    static vector_matrix_type
+    derivate( ublas::matrix_expression<AE> const& __pts, int_c<1> )
+    {
+        // Delegate to unified implementation with compile-time order
+        return derivateRuntime( __pts, nOrder, int_c<1>{} );
+    }
+
+    /**
+     * Evaluation at a set of points of the expansion basis in 2D on
+     * the triangle
+     */
+    static matrix_type evaluate( points_type const& __pts, int_c<2> );
+
+    /**
+     * derivation at a set of points of the expansion basis in 2D on
+     * the triangle
+     */
+    template<typename AE>
+    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int_c<2> );
+
+    /**
+     * Evaluation at a set of points of the expansion basis in 3D on
+     * the tetrahedron
+     */
+    static matrix_type evaluate( points_type const& __pts, int_c<3> );
+
+    /**
+     * derivation at a set of points of the expansion basis in 3D on
+     * the tetrahedron
+     */
+    template<typename AE>
+    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int_c<3> );
+
+    //
+    // Runtime evaluation methods for Dynamic order support
+    //
+
+    /**
+     * @brief Runtime evaluation in 1D (line)
+     */
+    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<1> )
+    {
+        // Convert matrix_row to vector for JacobiBatchEvaluation
+        ublas::vector<value_type> pts( __pts.size2() );
+        for ( size_t i = 0; i < __pts.size2(); ++i )
+            pts( i ) = __pts( 0, i );
+
+        matrix_type m( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts ) );
 
         if ( is_normalized )
         {
@@ -419,49 +582,56 @@ private:
     }
 
     /**
-     * derivation at a set of points of the expansion basis in 2D on
-     * the triangle
+     * @brief Runtime evaluation in 2D (quad)
+     */
+    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<2> );
+
+    /**
+     * @brief Runtime evaluation in 3D (hexahedron)
+     */
+    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<3> );
+
+    //
+    // Runtime derivation methods for Dynamic order support
+    //
+
+    /**
+     * @brief Runtime derivation in 1D (line)
      */
     template<typename AE>
-    static vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
+    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
+                                                uint16_type order, int_c<1> )
     {
         vector_matrix_type D( 1 );
-        D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(),0 ) );
+        D[0].resize( order + 1, __pts().size2() );
+
+        // Copy matrix row to vector for JacobiBatchDerivation
+        ublas::vector<value_type> pts_vec( __pts().size2() );
+        for ( size_type k = 0; k < __pts().size2(); ++k )
+            pts_vec( k ) = __pts()( 0, k );
+
+        D[0] = dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_vec );
 
         if ( is_normalized )
-            for ( uint16_type i = 0; i < nOrder+1; ++i )
+            for ( uint16_type i = 0; i <= order; ++i )
                 ublas::row( D[0], i ) *= normalization( i );
 
         return D;
     }
 
     /**
-     * Evaluation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<2> );
-
-    /**
-     * derivation at a set of points of the expansion basis in 2D on
-     * the triangle
+     * @brief Runtime derivation in 2D (quad)
      */
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
+    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
+                                                uint16_type order, int_c<2> );
 
     /**
-     * Evaluation at a set of points of the expansion basis in 3D on
-     * the tetrahedron
-     */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<3> );
-
-    /**
-     * derivation at a set of points of the expansion basis in 3D on
-     * the tetrahedron
+     * @brief Runtime derivation in 3D (hexahedron)
      */
     template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
+    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
+                                                uint16_type order, int_c<3> );
 
     static void initDerivation();
 private:
@@ -556,26 +726,10 @@ template<uint16_type Dim,
          typename T,
          template<class> class StoragePolicy>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, int_c<2> )
 {
-    matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
-
-    ublas::vector<value_type> eta1s = ublas::row( __pts, 0 );
-    ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
-
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta2s ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
-    {
-        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
-        {
-            ublas::row( res, cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
-                                     ublas::row( bs, j ) );
-        }
-    }
-
-    return res;
+    // Delegate to unified implementation with compile-time order
+    return evaluateRuntime( __pts, nOrder, int_c<2>{} );
 }
 
 template<uint16_type Dim,
@@ -586,26 +740,75 @@ template<uint16_type Dim,
          template<class> class StoragePolicy>
 template<typename AE>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int_c<2> )
 {
-    vector_matrix_type res( 2 );
-    res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
+    // Delegate to unified implementation with compile-time order
+    return derivateRuntime( __pts, nOrder, int_c<2>{} );
+}
 
-    // evaluate Legendre polynomials components
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type dbs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
+template<uint16_type Dim,
+         uint16_type RealDim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, int_c<3> )
+{
+    // Delegate to unified implementation with compile-time order
+    return evaluateRuntime( __pts, nOrder, int_c<3>{} );
+}
 
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+template<uint16_type Dim,
+         uint16_type RealDim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+template<typename AE>
+typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int_c<3> )
+{
+    // Delegate to unified implementation with compile-time order
+    return derivateRuntime( __pts, nOrder, int_c<3>{} );
+}
+
+//
+// Runtime evaluation implementations for Dynamic order support
+//
+
+template<uint16_type Dim,
+         uint16_type RealDim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRuntime(
+    points_type const& __pts, uint16_type order, int_c<2> )
+{
+    // Number of DOFs for hypercube of order 'order' in 2D: (order+1)^2
+    const size_type ndof = ( order + 1 ) * ( order + 1 );
+    matrix_type res( ndof, __pts.size2() );
+
+    // Copy matrix rows to vectors for JacobiBatchEvaluation
+    ublas::vector<value_type> eta1s( __pts.size2() );
+    ublas::vector<value_type> eta2s( __pts.size2() );
+    for ( size_type k = 0; k < __pts.size2(); ++k )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
+        eta1s( k ) = __pts( 0, k );
+        eta2s( k ) = __pts( 1, k );
+    }
+
+    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
+    matrix_type bs( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta2s ) );
+
+    for ( uint16_type cur = 0, i = 0; i <= order; ++i )
+    {
+        for ( uint16_type j = 0; j <= order; ++j, ++cur )
         {
-            ublas::row( res[0], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( das, i ),
-                                        ublas::row( bs, j ) );
-            ublas::row( res[1], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
-                                        ublas::row( dbs, j ) );
+            ublas::row( res, cur ) = normalization( i, j ) *
+                                      ublas::element_prod( ublas::row( as, i ), ublas::row( bs, j ) );
         }
     }
 
@@ -619,30 +822,87 @@ template<uint16_type Dim,
          typename T,
          template<class> class StoragePolicy>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRuntime(
+    points_type const& __pts, uint16_type order, int_c<3> )
 {
-    matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
+    // Number of DOFs for hypercube of order 'order' in 3D: (order+1)^3
+    const size_type ndof = ( order + 1 ) * ( order + 1 ) * ( order + 1 );
+    matrix_type res( ndof, __pts.size2() );
 
-    ublas::vector<value_type> eta1s = ublas::row( __pts, 0 );
-    ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
-    ublas::vector<value_type> eta3s = ublas::row( __pts, 2 );
-
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta2s ) );
-    matrix_type cs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta3s ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    // Copy matrix rows to vectors for JacobiBatchEvaluation
+    ublas::vector<value_type> eta1s( __pts.size2() );
+    ublas::vector<value_type> eta2s( __pts.size2() );
+    ublas::vector<value_type> eta3s( __pts.size2() );
+    for ( size_type l = 0; l < __pts.size2(); ++l )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j )
+        eta1s( l ) = __pts( 0, l );
+        eta2s( l ) = __pts( 1, l );
+        eta3s( l ) = __pts( 2, l );
+    }
+
+    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
+    matrix_type bs( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta2s ) );
+    matrix_type cs( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta3s ) );
+
+    for ( uint16_type cur = 0, i = 0; i <= order; ++i )
+    {
+        for ( uint16_type j = 0; j <= order; ++j )
         {
-            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
+            for ( uint16_type k = 0; k <= order; ++k, ++cur )
             {
-                ublas::row( res, cur ) =
-                    normalization( i, j, k )*
-                    ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                         ublas::row( bs, j ) ),
-                                         ublas::row( cs, k ) );
+                ublas::row( res, cur ) = normalization( i, j, k ) *
+                                          ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
+                                                                                     ublas::row( bs, j ) ),
+                                                               ublas::row( cs, k ) );
             }
+        }
+    }
+
+    return res;
+}
+
+//
+// Runtime derivation implementations for Dynamic order support
+//
+
+template<uint16_type Dim,
+         uint16_type RealDim,
+         uint16_type Degree,
+         typename NormalizationPolicy,
+         typename T,
+         template<class> class StoragePolicy>
+template<typename AE>
+typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRuntime(
+    ublas::matrix_expression<AE> const& __pts, uint16_type order, int_c<2> )
+{
+    const size_type ndof = ( order + 1 ) * ( order + 1 );
+    vector_matrix_type res( 2 );
+    res[0].resize( ndof, __pts().size2() );
+    res[1].resize( ndof, __pts().size2() );
+
+    // Copy matrix rows to vectors for JacobiBatchEvaluation/Derivation
+    ublas::vector<value_type> pts_x( __pts().size2() );
+    ublas::vector<value_type> pts_y( __pts().size2() );
+    for ( size_type k = 0; k < __pts().size2(); ++k )
+    {
+        pts_x( k ) = __pts()( 0, k );
+        pts_y( k ) = __pts()( 1, k );
+    }
+
+    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts_x ) );
+    matrix_type das( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_x ) );
+    matrix_type bs( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts_y ) );
+    matrix_type dbs( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_y ) );
+
+    for ( uint16_type cur = 0, i = 0; i <= order; ++i )
+    {
+        for ( uint16_type j = 0; j <= order; ++j, ++cur )
+        {
+            ublas::row( res[0], cur ) = normalization( i, j ) *
+                                         ublas::element_prod( ublas::row( das, i ), ublas::row( bs, j ) );
+            ublas::row( res[1], cur ) = normalization( i, j ) *
+                                         ublas::element_prod( ublas::row( as, i ), ublas::row( dbs, j ) );
         }
     }
 
@@ -657,50 +917,59 @@ template<uint16_type Dim,
          template<class> class StoragePolicy>
 template<typename AE>
 typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
+Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRuntime(
+    ublas::matrix_expression<AE> const& __pts, uint16_type order, int_c<3> )
 {
+    const size_type ndof = ( order + 1 ) * ( order + 1 ) * ( order + 1 );
     vector_matrix_type res( 3 );
-    res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
+    res[0].resize( ndof, __pts().size2() );
+    res[1].resize( ndof, __pts().size2() );
+    res[2].resize( ndof, __pts().size2() );
 
-    // evaluate Legendre polynomials components
-    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type bs(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type dbs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type cs(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
-    matrix_type dcs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
+    // Copy matrix rows to vectors for JacobiBatchEvaluation/Derivation
+    ublas::vector<value_type> pts_x( __pts().size2() );
+    ublas::vector<value_type> pts_y( __pts().size2() );
+    ublas::vector<value_type> pts_z( __pts().size2() );
+    for ( size_type l = 0; l < __pts().size2(); ++l )
     {
-        for ( uint16_type j = 0; j < nOrder+1; ++j )
+        pts_x( l ) = __pts()( 0, l );
+        pts_y( l ) = __pts()( 1, l );
+        pts_z( l ) = __pts()( 2, l );
+    }
+
+    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts_x ) );
+    matrix_type das( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_x ) );
+    matrix_type bs( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts_y ) );
+    matrix_type dbs( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_y ) );
+    matrix_type cs( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts_z ) );
+    matrix_type dcs( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_z ) );
+
+    for ( uint16_type cur = 0, i = 0; i <= order; ++i )
+    {
+        for ( uint16_type j = 0; j <= order; ++j )
         {
-            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
+            for ( uint16_type k = 0; k <= order; ++k, ++cur )
             {
                 ublas::row( res[0], cur ) = ( normalization( i, j, k ) *
-                                              ublas::element_prod( ublas::element_prod( ublas::row( das, i ),
-                                                      ublas::row( bs, j ) ),
-                                                      ublas::row( cs, k ) ) );
+                                               ublas::element_prod( ublas::element_prod( ublas::row( das, i ),
+                                                                                          ublas::row( bs, j ) ),
+                                                                    ublas::row( cs, k ) ) );
 
                 ublas::row( res[1], cur ) = ( normalization( i, j, k ) *
-                                              ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                                      ublas::row( dbs, j ) ),
-                                                      ublas::row( cs, k ) ) );
+                                               ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
+                                                                                          ublas::row( dbs, j ) ),
+                                                                    ublas::row( cs, k ) ) );
 
                 ublas::row( res[2], cur ) = ( normalization( i, j, k ) *
-                                              ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                                      ublas::row( bs, j ) ),
-                                                      ublas::row( dcs, k ) ) );
-
-
+                                               ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
+                                                                                          ublas::row( bs, j ) ),
+                                                                    ublas::row( dcs, k ) ) );
             }
         }
     }
 
     return res;
 }
-
 
 }
 #endif /* __Legendre_H */

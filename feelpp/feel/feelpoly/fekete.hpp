@@ -35,24 +35,29 @@
 #include <feel/feelpoly/warpblend.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>
 #include <feel/feelpoly/equispaced.hpp>
+#include <feel/feelpoly/order.hpp>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <concepts>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
 namespace Feel
 {
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetWarpBlend;
 
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetGaussLobatto;
 
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetFeketeSimplex : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {
@@ -1245,24 +1250,126 @@ private :
 /**
  * Fekete point set class for simplices and simplex products
  */
+template <typename ConvexType>
+concept FeketeHypercubeLike = ConvexType::is_hypercube || ( ConvexType::nDim == 1 );
+
+template <typename ConvexType>
+concept FeketeWarpBlendLike = !FeketeHypercubeLike<ConvexType> && ( ConvexType::nDim == 3 );
+
+template <typename ConvexType, int Order, typename T>
+using pointset_fekete_backend_t =
+    std::conditional_t<FeketeHypercubeLike<ConvexType>,
+                       PointSetGaussLobatto<ConvexType, Order, T>,
+                       std::conditional_t<FeketeWarpBlendLike<ConvexType>,
+                                          PointSetWarpBlend<ConvexType, Order, T>,
+                                          PointSetFeketeSimplex<ConvexType, Order, T>>>;
+
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
-class PointSetFekete : public mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_hypercube>, mpl::bool_<true> >,
-    mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
-    mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
-    typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
-    mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
-    mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type >::type::type
+class PointSetFekete : public pointset_fekete_backend_t<Convex, Order, T>, public OrderBase<Order>
 {
-    typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<Convex::is_hypercube>, mpl::bool_<true> >,
-            mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<1> > >,
-            mpl::identity<PointSetGaussLobatto<Convex,Order,T> >,
-            typename mpl::if_<mpl::equal_to<mpl::int_<Convex::nDim>, mpl::int_<3> >,
-            mpl::identity<PointSetWarpBlend<Convex,Order,T> >,
-            mpl::identity<PointSetFeketeSimplex<Convex,Order,T> > >::type>::type::type super;
+    using super = pointset_fekete_backend_t<Convex, Order, T>;
+    using order_base_type = OrderBase<Order>;
 public:
-    PointSetFekete( int interior = 0 ) : super( interior ) {}
+    using order_base_type::order;
+    using order_base_type::runtimeOrder;
+
+    PointSetFekete( int interior = 0 ) : super( interior ), order_base_type() {}
+};
+
+/**
+ * Dynamic-order Fekete point set wrapper.
+ *
+ * Dispatches runtime order to static PointSetFekete<Convex,P,T> instances.
+ * For hypercubes (and 1D), PointSetFekete resolves to PointSetGaussLobatto.
+ */
+template< class Convex,
+          typename T >
+class PointSetFekete<Convex, Dynamic, T> : public PointSet<Convex, T>, public OrderBase<Dynamic>
+{
+    using super = PointSet<Convex, T>;
+    using order_base_type = OrderBase<Dynamic>;
+
+public:
+    using value_type = T;
+    using points_type = typename super::nodes_type;
+
+    static inline constexpr uint16_type Dim = Convex::nDim;
+    static inline constexpr bool is_simplex = Convex::is_simplex;
+    static inline constexpr bool is_hypercube = Convex::is_hypercube;
+
+    explicit PointSetFekete( RuntimeOrder order, int interior = 0 )
+        :
+        super( 0, Dim ),
+        order_base_type( order ),
+        M_interior( interior )
+    {
+        this->setPoints( dispatchByOrder(
+            [&]( auto order_c ) -> points_type
+            {
+                constexpr int P = decltype( order_c )::value;
+                PointSetFekete<Convex, P, T> pset( M_interior );
+                return pset.points();
+            } ) );
+        this->setName( "fekete", this->order() );
+    }
+
+    using order_base_type::order;
+    using order_base_type::runtimeOrder;
+
+    [[nodiscard]] uint32_type runtimeNumPoints() const noexcept
+    {
+        const auto runtime_order = this->order();
+        if constexpr ( is_simplex )
+            return static_cast<uint32_type>( ::Feel::detail::simplexTotal( Dim, runtime_order ) );
+        else
+            return static_cast<uint32_type>( ::Feel::detail::hypercubeTotal( Dim, runtime_order ) );
+    }
+
+    points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
+    {
+        return dispatchByOrder(
+            [&]( auto order_c ) -> points_type
+            {
+                constexpr int P = decltype( order_c )::value;
+                PointSetFekete<Convex, P, T> pset( M_interior );
+                return pset.pointsBySubEntity( top_dim, local_id, boundary );
+            } );
+    }
+
+private:
+    template <typename F>
+    decltype(auto) dispatchByOrder( F&& f ) const
+    {
+        // Keep runtime dispatch aligned with stable WarpBlend/Fekete support.
+        switch ( this->order() )
+        {
+        case 0:  return f( std::integral_constant<int, 0>{} );
+        case 1:  return f( std::integral_constant<int, 1>{} );
+        case 2:  return f( std::integral_constant<int, 2>{} );
+        case 3:  return f( std::integral_constant<int, 3>{} );
+        case 4:  return f( std::integral_constant<int, 4>{} );
+        case 5:  return f( std::integral_constant<int, 5>{} );
+        case 6:  return f( std::integral_constant<int, 6>{} );
+        case 7:  return f( std::integral_constant<int, 7>{} );
+        case 8:  return f( std::integral_constant<int, 8>{} );
+        case 9:  return f( std::integral_constant<int, 9>{} );
+        case 10: return f( std::integral_constant<int, 10>{} );
+        case 11: return f( std::integral_constant<int, 11>{} );
+        case 12: return f( std::integral_constant<int, 12>{} );
+        case 13: return f( std::integral_constant<int, 13>{} );
+        case 14: return f( std::integral_constant<int, 14>{} );
+        case 15: return f( std::integral_constant<int, 15>{} );
+        default:
+            throw std::out_of_range( "PointSetFekete<Dynamic>: unsupported runtime order " +
+                                     std::to_string( this->order() ) +
+                                     " (supported range is [0,15])" );
+        }
+    }
+
+private:
+    int M_interior;
 };
 
 } // Feel

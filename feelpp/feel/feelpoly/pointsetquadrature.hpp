@@ -32,6 +32,7 @@
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelpoly/imfactory.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -59,7 +60,7 @@ enum IntegrationFaceEnum
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<class Convex, typename T, typename IndexT = uint32_type>
-class PointSetQuadrature : public PointSet<Convex,T>
+class PointSetQuadrature : public PointSet<Convex,T>, public OrderBase<Dynamic>
 {
 public :
 
@@ -67,6 +68,7 @@ public :
     typedef T value_type;
     using index_type = IndexT;
     typedef PointSet<Convex,value_type> super;
+    using order_base_type = OrderBase<Dynamic>;
     typedef typename super::return_type return_type;
     typedef typename super::node_type node_type;
     typedef typename super::nodes_type nodes_type;
@@ -78,14 +80,14 @@ public :
     typedef self_type parent_quadrature_type;
     using quad_type = IMBase<value_type>;
 
-    PointSetQuadrature(): super(), M_quad(), M_w(), M_prod(), M_exprq() {}
+    PointSetQuadrature(): super(), order_base_type(), M_quad(), M_w(), M_prod(), M_exprq() {}
 
     PointSetQuadrature( const PointSetQuadrature& Qp ) = default;
 
     explicit PointSetQuadrature( uint16_type order )
         : super( order ),
-          M_order( order ),
-          M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str() ),
+          order_base_type( order ),
+          M_name( (boost::format("im(%1%,%2%,%3%)")%nDim %this->order()%Convex::type() ).str() ),
           M_quad(),
           M_w(), M_w_sum(0), M_prod(), M_exprq()
         {
@@ -95,18 +97,18 @@ public :
                 auto itFindMaxOrder = IMMaxOrderFactory<value_type>::instance().find( imNameMaxOrder );
                 CHECK( itFindMaxOrder != IMMaxOrderFactory<value_type>::instance().end() ) << "im type not found with " << imNameMaxOrder;
                 uint16_type maxOrder = itFindMaxOrder->second.maxOrder();
-                if ( M_order > maxOrder )
+                if ( this->order() > maxOrder )
                 {
-                    LOG(INFO) << "quadrature order " << M_order << " is too big, change to max defined which is " << maxOrder;
-                    M_order = maxOrder;
-                    M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %M_order%Convex::type() ).str();
+                    LOG(INFO) << "quadrature order " << this->order() << " is too big, change to max defined which is " << maxOrder;
+                    this->setOrder( maxOrder );
+                    M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %this->order()%Convex::type() ).str();
                 }
                 DLOG(INFO) << "Quad name: " << M_name << std::endl;
                 M_quad = *IMFactory<value_type>::instance().createObject( M_name );
                 M_w.resize(M_quad.numberOfPoints());
                 M_prod.resize( M_quad.numberOfPoints() );
                 M_exprq.resize( M_quad.numberOfPoints() );
-                create( M_order );
+                create( this->order() );
             }
         }
 
@@ -126,7 +128,8 @@ public :
     {
         return is_face_im;
     }
-    constexpr uint16_type order() const noexcept { return M_order; }
+    using order_base_type::order;
+    using order_base_type::runtimeOrder;
 
     std::string const& name() const noexcept { return M_name; }
 
@@ -135,8 +138,8 @@ public :
      */
     virtual void create( uint16_type order ) 
         {
-            M_order = order;
-            M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %order%Convex::type() ).str();
+            this->setOrder( order );
+            M_name = (boost::format("im(%1%,%2%,%3%)")%nDim %this->order()%Convex::type() ).str();
             M_quad = *IMFactory<T>::instance().createObject( M_name );
             this->M_npoints = M_quad.numberOfPoints();
             this->M_points.resize( nDim, M_quad.numberOfPoints() );
@@ -166,7 +169,7 @@ public :
             if ( this == &q )
                 return *this;
             super::operator=( q );
-            M_order = q.M_order;
+            this->setOrder( q.order() );
             M_name = q.M_name;
 
             if ( nDim > 0 )
@@ -666,9 +669,6 @@ protected:
                             mpl::bool_<true> );
 
 protected:
-
-    uint16_type M_order;
-
     std::string M_name;
 
     //std::unique_ptr<quad_type> M_quad;

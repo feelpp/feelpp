@@ -51,9 +51,9 @@ namespace ublas = boost::numeric::ublas;
  * @see
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<int,int,int> class Convex = Simplex>
 class PointSetInterpolation : public PointSet<Convex<Dim,Order,Dim>,T>
 {
     typedef PointSet<Convex<Dim,Order,Dim>,T> super;

@@ -36,6 +36,33 @@ namespace Feel
 
 namespace functional
 {
+namespace detail
+{
+template<typename Space>
+auto
+basisEvaluateAtPoints( Space const& b, typename Space::points_type const& pts )
+{
+    if constexpr ( requires { b.basisEvaluate( pts ); } )
+    {
+        return b.basisEvaluate( pts );
+    }
+    else
+    {
+        return b.basis().evaluate( pts );
+    }
+}
+
+template<typename Space>
+auto
+basisEvaluateAtPoint( Space const& b, typename node<typename Space::value_type>::type const& pt )
+{
+    typename Space::points_type pts( pt.size(), 1 );
+    for ( size_t i = 0; i < pt.size(); ++i )
+        pts( i, 0 ) = pt( i );
+    return basisEvaluateAtPoints( b, pts );
+}
+} // namespace detail
+
 /**
  * \class PointEvaluation
  * \brief generate the functional associated with a point evaluation
@@ -65,9 +92,34 @@ public:
         super()
     {}
     PointEvaluation( space_type const& b, node_type const& __pt )
-        : super( b, ublas::trans( b.basis()( __pt ) ) )
+        : super( b, evalBasisAtPoint( b, __pt ) )
     {
         //std::cout << "[PointEvaluation] eval = " << b.evaluate( __pt ) << "\n";
+    }
+
+private:
+    /**
+     * @brief Helper to evaluate basis at a point, supporting dynamic order
+     *
+     * Uses basisEvaluate() if available (for dynamic order support),
+     * otherwise falls back to basis()(__pt).
+     */
+    static typename super::matrix_type evalBasisAtPoint( space_type const& b, node_type const& __pt )
+    {
+        // Use basisEvaluate if available (runtime order support)
+        if constexpr ( requires { b.basisEvaluate( std::declval<typename space_type::points_type>() ); } )
+        {
+            // Convert point to matrix form for basisEvaluate
+            typename space_type::points_type pt_mat( __pt.size(), 1 );
+            for ( size_t i = 0; i < __pt.size(); ++i )
+                pt_mat( i, 0 ) = __pt( i );
+            return ublas::trans( b.basisEvaluate( pt_mat ) );
+        }
+        else
+        {
+            // Fallback to basis() for types without basisEvaluate
+            return ublas::trans( b.basis()( __pt ) );
+        }
     }
 };
 
@@ -103,7 +155,8 @@ public:
         :
         super( b )
     {
-        ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( space_type::nComponents, b.polynomialDimensionPerComponent() ) );
+        auto basisEval = detail::basisEvaluateAtPoint( b, __pt );
+        ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( space_type::nComponents, basisEval.size1() ) );
 
 #if 0
         std::cout << "[ComponentPointEvaluation] c = " << __c << "\n"
@@ -118,7 +171,7 @@ public:
                           ublas::slice( 0, 1, b.polynomialDimensionPerComponent() ) )
                   << "\n";
 #endif
-        ublas::row( m, __c ) = ublas::column( b.basis()( __pt ), 0 );
+        ublas::row( m, __c ) = ublas::column( basisEval, 0 );
 
         this->setCoefficient( m );
         //std::cout << "[ComponentPointEvaluation] m = " << m << "\n";
@@ -381,12 +434,13 @@ public:
                                          node_type const& __pt )
         : super( b )
     {
-        ublas::matrix<value_type> m( d.size(), b.basis().size() );
         ublas::matrix<value_type> pts( __pt.size(), 1 );
         ublas::column( pts, 0 ) = __pt;
+        auto basisEval = detail::basisEvaluateAtPoints( b, pts );
+        ublas::matrix<value_type> m( d.size(), basisEval.size1() );
         for ( int i = 0; i < d.size(); ++i )
         {
-            ublas::row( m, i ) = d( i ) * ublas::column( b.basis().evaluate( pts ), 0 );
+            ublas::row( m, i ) = d( i ) * ublas::column( basisEval, 0 );
         }
         this->setCoefficient( m );
     }
@@ -430,11 +484,12 @@ public:
     {
         for ( int j = 0; j < __pts.size2(); ++j )
         {
-            ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( d.size(), b.basis().size() ) );
+            auto basisEval = detail::basisEvaluateAtPoint( b, ublas::column( __pts, j ) );
+            ublas::matrix<value_type> m( ublas::zero_matrix<value_type>( d.size(), basisEval.size1() ) );
 
             for ( int i = 0; i < d.size(); ++i )
             {
-                ublas::row( m, i ) = d( i ) * ublas::column( b.basis()( ublas::column( __pts, j ) ), 0 );
+                ublas::row( m, i ) = d( i ) * ublas::column( basisEval, 0 );
             }
 
             this->push_back( functional_type( b, m ) );

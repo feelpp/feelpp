@@ -64,7 +64,7 @@ namespace ublas = boost::numeric::ublas;
 
 
 template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<int Dim, int Order, int RealDim, template<int,int,int> class Entity, typename T> struct GT_Lagrange;
 
 /*!
  * \class GaussLobatto
@@ -370,7 +370,7 @@ public :
  * @see
  */
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetGaussLobatto : public PointSetInterpolation<Convex::nDim, Order, T, Hypercube>
 {

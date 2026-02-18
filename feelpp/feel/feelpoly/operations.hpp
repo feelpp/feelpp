@@ -457,13 +457,14 @@ project( Pset const& pset, Func const& f, IM const& im )
  * computing the range of the resulting set
  */
 template<typename P, template<uint16_type> class Type,
-         template<class, template<uint16_type> class> class Poly1,
-         template<class, template<uint16_type> class> class Poly2 >
-PolynomialSet<P, Type>
-unite( Poly1<P, Type> const& pset1,
-       Poly2<P, Type> const& pset2 )
+         template<class, template<uint16_type> class, int> class Poly1,
+         template<class, template<uint16_type> class, int> class Poly2,
+         int OrderSpec1, int OrderSpec2>
+PolynomialSet<P, Type, OrderSpec1>
+unite( Poly1<P, Type, OrderSpec1> const& pset1,
+       Poly2<P, Type, OrderSpec2> const& pset2 )
 {
-    typedef PolynomialSet<P, Type> res_type;
+    typedef PolynomialSet<P, Type, OrderSpec1> res_type;
     typedef typename res_type::value_type value_type;
 
     FEELPP_ASSERT( pset1.coeff().size2() == pset2.coeff().size2() )
@@ -510,7 +511,10 @@ unite( Poly1<P, Type> const& pset1,
 
     //std::cout << "m=" << m << "\n";
 #endif
-    return res_type( P(), res_type::polyset_type::toType( m ), true  );
+    res_type result( P(), res_type::polyset_type::toType( m ), true  );
+    if constexpr ( res_type::is_order_dynamic )
+        result.setOrder( pset1.order() );
+    return result;
 }
 
 }

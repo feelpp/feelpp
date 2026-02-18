@@ -54,7 +54,7 @@ namespace fem
 /// \cond detail
 namespace details
 {
-template<typename Basis, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, int, class> class PointSetType>
 class HermiteDual
     :
 public DualBasis<Basis>
@@ -298,8 +298,8 @@ template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
+         template<int, int, int> class Convex = Simplex,
+         template<class, int, class> class Pts = PointSetEquiSpaced >
 class Hermite
     :
 public FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
@@ -487,31 +487,31 @@ template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts >
+         template<int, int, int> class Convex,
+         template<class, int, class> class Pts >
 const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::nDim;
 
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts >
+         template<int, int, int> class Convex,
+         template<class, int, class> class Pts >
 const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::nOrder;
 
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts >
+         template<int, int, int> class Convex,
+         template<class, int, class> class Pts >
 const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::numPoints;
 
 } // namespace fem
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+         template<class, int, class> class Pts = PointSetEquiSpaced>
 class Hermite
 {
 public:

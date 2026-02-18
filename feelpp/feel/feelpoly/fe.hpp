@@ -25,21 +25,24 @@
 #ifndef FEELPP_FE_HPP
 #define FEELPP_FE_HPP 1
 
+#include <cstdint>
+#include <limits>
+
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 namespace Feel
 {
-template<typename Poly, template<uint16_type> class PolySetType > class PolynomialSet;
+template<typename Poly, template<uint16_type> class PolySetType, int OrderSpec> class PolynomialSet;
 namespace detail
 {
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
          uint16_type TheTAG,
-         template<uint16_type,uint16_type,uint16_type> class Convex>
+         template<int,int,int> class Convex>
 class OrthonormalPolynomialSet;
 }
 /**
@@ -51,27 +54,27 @@ class OrthonormalPolynomialSet;
  *  @see
  */
 template<typename P,
-         template<class Pr,  template<class,uint16_type,class> class Pt> class PDual,
-         template<class,uint16_type,class> class Pts>
+         template<class Pr,  template<class,int,class> class Pt> class PDual,
+         template<class,int,class> class Pts>
 class FiniteElement :
     public mpl::if_<mpl::bool_<P::is_scalar>,
-                    mpl::identity<PolynomialSet<P, Scalar> >,
+                    mpl::identity<PolynomialSet<P, Scalar, P::nOrder> >,
                     typename mpl::if_<mpl::bool_<P::is_vectorial>,
-                                      mpl::identity<PolynomialSet<P, Vectorial> >,
+                                      mpl::identity<PolynomialSet<P, Vectorial, P::nOrder> >,
                                       typename mpl::if_<mpl::bool_<P::is_tensor2 && is_symm_v<typename P::polyset_type>>,
-                                                        mpl::identity<PolynomialSet<P, Tensor2Symm>> ,
-                                                        mpl::identity<PolynomialSet<P, Tensor2>>
+                                                        mpl::identity<PolynomialSet<P, Tensor2Symm, P::nOrder>> ,
+                                                        mpl::identity<PolynomialSet<P, Tensor2, P::nOrder>>
                                                         >::type
                                       >::type
                     >::type::type
 {
     using super = typename mpl::if_<mpl::bool_<P::is_scalar>,
-                                    mpl::identity<PolynomialSet<P, Scalar> >,
+                                    mpl::identity<PolynomialSet<P, Scalar, P::nOrder> >,
                                     typename mpl::if_<mpl::bool_<P::is_vectorial>,
-                                                      mpl::identity<PolynomialSet<P, Vectorial> >,
+                                                      mpl::identity<PolynomialSet<P, Vectorial, P::nOrder> >,
                                                       typename mpl::if_<mpl::bool_<P::is_tensor2 && is_symm_v<typename P::polyset_type>>,
-                                                                        mpl::identity<PolynomialSet<P, Tensor2Symm>>,
-                                                                        mpl::identity<PolynomialSet<P, Tensor2>>
+                                                                        mpl::identity<PolynomialSet<P, Tensor2Symm, P::nOrder>>,
+                                                                        mpl::identity<PolynomialSet<P, Tensor2, P::nOrder>>
                                                                         >::type
                                                       >::type
                                     >::type::type;
@@ -114,6 +117,8 @@ public:
     static inline const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
     //!< Number of degrees  of freedom per volume
     static inline const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    //! Compile-time order placeholder (for dynamic order, this keeps compatibility placeholder semantics)
+    static constexpr int nOrder = super::nOrder;
 
     static constexpr uint16_type nDof = nLocalDof;
     static constexpr uint16_type nNodes = nDof;
@@ -225,9 +230,25 @@ public:
     //@{
 
     //!
-    //! @return order of the finite element
+    //! @return semantic order of the finite element
     //!
-    static constexpr int order() { return super::nOrder; }
+    [[nodiscard]] uint16_type order() const
+    {
+        if constexpr ( requires( primal_space_type const& p ) { p.order(); } )
+            return static_cast<uint16_type>( M_primal.order() );
+        else if constexpr ( requires( super const& s ) { s.order(); } )
+            return static_cast<uint16_type>( static_cast<super const&>( *this ).order() );
+        else
+            return static_cast<uint16_type>( nOrder );
+    }
+
+    /**
+     * @deprecated Use order() instead
+     */
+    [[nodiscard]] uint16_type runtimeOrder() const
+    {
+        return this->order();
+    }
 
     //! return true if finite element is linear, false otherwise
     static constexpr bool isLinear() { return islinear; }
@@ -303,6 +324,85 @@ public:
      * \return the family name of the finite element
      */
     std::string familyName() const override = 0;
+
+    struct DofAttachment
+    {
+        static constexpr uint16_type invalid_id = std::numeric_limits<uint16_type>::max();
+        int8_t entityDim = -1;
+        uint16_type entityId = invalid_id;
+        uint16_type ordinal = invalid_id;
+        uint16_type kind = 0;
+
+        [[nodiscard]] bool isValid() const noexcept { return entityDim >= 0; }
+    };
+
+    struct LocalDofLayout
+    {
+        uint16_type localDofId = 0;
+        uint16_type parentLocalDofId = 0;
+        uint16_type component = 0;
+        DofAttachment attachment;
+    };
+
+    /**
+     * \return number of local dofs per component.
+     *
+     * This is FE-owned so consumers do not assume local dof layout.
+     */
+    virtual uint16_type localDofPerComponent() const
+    {
+        return nLocalDof;
+    }
+
+    /**
+     * \return local dof id from (parent local dof id, component)
+     *
+     * Layout ownership stays in FE implementation.
+     */
+    virtual uint16_type localDofId( uint16_type parentLocalDofId, uint16_type component = 0 ) const
+    {
+        if constexpr ( P::is_product )
+        {
+            const uint16_type localDofPerComp = this->localDofPerComponent();
+            FEELPP_ASSERT( parentLocalDofId < localDofPerComp )
+                ( component )( parentLocalDofId )( localDofPerComp ).error( "invalid parent local dof index" );
+            const auto localDof = static_cast<uint16_type>( component * localDofPerComp + parentLocalDofId );
+            FEELPP_ASSERT( this->dofParent( localDof ) == parentLocalDofId )
+                ( component )( parentLocalDofId )( localDof ).error( "invalid component/local dof layout" );
+            return localDof;
+        }
+        else
+        {
+            FEELPP_ASSERT( component == 0 )
+                ( component )( parentLocalDofId ).error( "non-product FE supports component 0 only" );
+            return parentLocalDofId;
+        }
+    }
+
+    /**
+     * \return entity attachment metadata for a local dof.
+     *
+     * Default implementation returns unknown entity attachment and keeps
+     * dof type as functional kind.
+     */
+    virtual DofAttachment dofAttachment( uint16_type localDofId ) const
+    {
+        return DofAttachment{ .entityDim = -1,
+                              .entityId = DofAttachment::invalid_id,
+                              .ordinal = DofAttachment::invalid_id,
+                              .kind = this->dofType( localDofId ) };
+    }
+
+    /**
+     * \return full FE-owned layout descriptor for a local dof.
+     */
+    LocalDofLayout localDofLayout( uint16_type localDofId ) const
+    {
+        return LocalDofLayout{ .localDofId = localDofId,
+                               .parentLocalDofId = this->dofParent( localDofId ),
+                               .component = this->component( localDofId ),
+                               .attachment = this->dofAttachment( localDofId ) };
+    }
 
     //! \return the component of a local dof
     virtual uint16_type component( uint16_type localDofId ) const = 0;

@@ -56,6 +56,7 @@
 
 
 #include <feel/feelpoly/dualbasis.hpp>
+#include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
@@ -416,7 +417,7 @@ namespace detail
 {
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class NedelecDualFirstKind
     :
 public DualBasis<Basis>
@@ -466,11 +467,10 @@ public:
     /** Total number of degrees of freedom (equal to refEle::nDof) */
     static inline const uint16_type nLocalDof = numPoints;
 
-    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                                                        mpl::int_<reference_convex_type::numVertices>,
-                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                                                          mpl::int_<reference_convex_type::numEdges>,
-                                                                          mpl::int_<reference_convex_type::numGeometricFaces> >::type >::type::value;
+    static constexpr uint16_type nFacesInConvex =
+        ( nDim == 1 ) ? reference_convex_type::numVertices :
+        ( nDim == 2 ) ? reference_convex_type::numEdges :
+                        reference_convex_type::numGeometricFaces;
 
     NedelecDualFirstKind( primal_space_type const& primal )
         :
@@ -508,15 +508,13 @@ public:
         //LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         //LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
 
-        size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                          mpl::int_<face_type::numEdges*nbPtsPerEdge>,
-                                          mpl::int_<face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace>
-                                          >::type::value;
+        size_type nbDofPerFace = ( nDim == 2 )
+            ? face_type::numEdges*nbPtsPerEdge
+            : face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace;
 
-        size_type nbEdgesPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                             mpl::int_<face_type::numEdges>,
-                                             mpl::int_<face_type::numTopologicalFaces>
-                                             >::type::value;
+        size_type nbEdgesPerFace = ( nDim == 2 )
+            ? face_type::numEdges
+            : face_type::numTopologicalFaces;
 
         for(auto& m : M_pts_per_face)
             m.resize(nDim,nbDofPerFace);
@@ -667,7 +665,7 @@ private:
 
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class NedelecDualSecondKind
     :
 public DualBasis<Basis>
@@ -730,11 +728,10 @@ public:
     //static inline const uint16_type nLocalDof = numPoints;
     static inline const uint16_type nLocalDof = reference_convex_type::numEdges*nDofPerEdge;
 
-    static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
-                                                        mpl::int_<reference_convex_type::numVertices>,
-                                                        typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                                                          mpl::int_<reference_convex_type::numEdges>,
-                                                                          mpl::int_<reference_convex_type::numGeometricFaces> >::type >::type::value;
+    static constexpr uint16_type nFacesInConvex =
+        ( nDim == 1 ) ? reference_convex_type::numVertices :
+        ( nDim == 2 ) ? reference_convex_type::numEdges :
+                        reference_convex_type::numGeometricFaces;
 
     NedelecDualSecondKind( primal_space_type const& primal )
         :
@@ -767,15 +764,13 @@ public:
         LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
 
-        size_type nbDofPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                          mpl::int_<face_type::numEdges*nbPtsPerEdge>,
-                                          mpl::int_<face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace>
-                                          >::type::value;
+        size_type nbDofPerFace = ( nDim == 2 )
+            ? face_type::numEdges*nbPtsPerEdge
+            : face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace;
 
-        size_type nbEdgesPerFace = mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<2> >,
-                                             mpl::int_<face_type::numEdges>,
-                                             mpl::int_<face_type::numTopologicalFaces>
-                                             >::type::value;
+        size_type nbEdgesPerFace = ( nDim == 2 )
+            ? face_type::numEdges
+            : face_type::numTopologicalFaces;
 
         for(auto& m : M_pts_per_face)
             m.resize(nDim,nbDofPerFace);
@@ -1000,14 +995,11 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 struct NedelecBase
 {
-    typedef typename mpl::if_<mpl::bool_<(Kind == NedelecKind::NED2)>,
-                              FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex>,
-                                            fem::detail::NedelecDualSecondKind, PointSetEquiSpaced >,
-                              // FiniteElement<NedelecPolynomialSet<N, O, NedelecKind::NED2, T>,
-                              //               fem::detail::NedelecDualSecondKind,
-                              //               PointSetEquiSpaced >,
-                              FiniteElement<NedelecPolynomialSet<N, O, NedelecKind::NED1, T>,
-                                            fem::detail::NedelecDualFirstKind, PointSetEquiSpaced > >::type type;
+    using type = if_t<( Kind == NedelecKind::NED2 ),
+                      FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex>,
+                                    fem::detail::NedelecDualSecondKind, PointSetEquiSpaced>,
+                      FiniteElement<NedelecPolynomialSet<N, O, NedelecKind::NED1, T>,
+                                    fem::detail::NedelecDualFirstKind, PointSetEquiSpaced>>;
 };
 
 /**
@@ -1178,6 +1170,70 @@ public:
     uint16_type dofParent( uint16_type localDofId ) const override
         {
             return localDofId;
+        }
+
+    typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
+        {
+            // Nedelec is not a product space: local dof id is already the parent dof id.
+            const uint16_type parentLocalDofId = this->dofParent( localDofId );
+
+            const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * nDofPerVertex );
+            const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * nDofPerEdge );
+            const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * nDofPerFace );
+
+            if constexpr ( nDofPerVertex > 0 )
+            {
+                if ( parentLocalDofId < nV )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 0,
+                        .entityId = static_cast<uint16_type>( parentLocalDofId / nDofPerVertex ),
+                        .ordinal = static_cast<uint16_type>( parentLocalDofId % nDofPerVertex ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
+            if constexpr ( nDofPerEdge > 0 )
+            {
+                if ( parentAfterVertex < nE )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 1,
+                        .entityId = static_cast<uint16_type>( parentAfterVertex / nDofPerEdge ),
+                        .ordinal = static_cast<uint16_type>( parentAfterVertex % nDofPerEdge ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
+            if constexpr ( nDofPerFace > 0 )
+            {
+                if ( parentAfterEdge < nF )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 2,
+                        .entityId = static_cast<uint16_type>( parentAfterEdge / nDofPerFace ),
+                        .ordinal = static_cast<uint16_type>( parentAfterEdge % nDofPerFace ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            if constexpr ( nDofPerVolume > 0 )
+            {
+                const uint16_type parentAfterFace = static_cast<uint16_type>( parentAfterEdge - nF );
+                return typename super::DofAttachment{
+                    .entityDim = 3,
+                    .entityId = 0,
+                    .ordinal = static_cast<uint16_type>( parentAfterFace % nDofPerVolume ),
+                    .kind = this->dofType( localDofId ) };
+            }
+
+            return typename super::DofAttachment{
+                .entityDim = -1,
+                .entityId = super::DofAttachment::invalid_id,
+                .ordinal = super::DofAttachment::invalid_id,
+                .kind = this->dofType( localDofId ) };
         }
 
     //! \return the type of a local dof
@@ -1406,7 +1462,7 @@ private:
 };
 
 } // fem
-template<uint16_type Order,
+template<int Order,
          NedelecKind Kind=NedelecKind::NED1,
          uint16_type TheTAG=0>
 class Nedelec

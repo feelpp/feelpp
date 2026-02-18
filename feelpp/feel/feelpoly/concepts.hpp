@@ -44,14 +44,12 @@
 // clang-format on
 
 #include <feel/feelpoly/traits.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
 
-/**
- * @brief Eigen-style dynamic sentinel for polynomial order.
- */
-inline constexpr int Dynamic = -1;
+// Dynamic is now defined in order.hpp to avoid circular dependencies
 
 //
 // Linear algebra concepts (Eigen + ublas)
@@ -146,6 +144,41 @@ concept HasOrder = StaticOrder<T> || DynamicOrder<T> ||
                    requires(std::remove_reference_t<T> t) {
                        { t.order() } -> std::convertible_to<int>;
                    };
+
+/**
+ * @brief Detect types exposing static and dynamic-order flags.
+ */
+template <typename T>
+concept HasOrderSupport = requires {
+    { std::remove_cvref_t<T>::is_order_dynamic } -> std::convertible_to<bool>;
+    { std::remove_cvref_t<T>::is_order_static } -> std::convertible_to<bool>;
+};
+
+/**
+ * @brief Detect types with dynamic-order support.
+ */
+template <typename T>
+concept HasDynamicOrder = HasOrderSupport<T> && std::remove_cvref_t<T>::is_order_dynamic;
+
+/**
+ * @brief Detect types with static-order support.
+ */
+template <typename T>
+concept HasStaticOrder = HasOrderSupport<T> && std::remove_cvref_t<T>::is_order_static;
+
+/**
+ * @brief Detect types exposing per-entity dof topology APIs.
+ */
+template <typename T>
+concept HasDofTopology = HasOrderSupport<T> &&
+                         requires(std::remove_reference_t<T> const& t) {
+                             { t.dofPerVertex() } -> std::convertible_to<uint16_type>;
+                             { t.dofPerEdge() } -> std::convertible_to<uint16_type>;
+                             { t.dofPerFace() } -> std::convertible_to<uint16_type>;
+                             { t.dofPerVolume() } -> std::convertible_to<uint16_type>;
+                             { t.localDof() } -> std::convertible_to<uint16_type>;
+                             { t.dofPerEntity( uint16_type{}, uint16_type{} ) } -> std::convertible_to<uint16_type>;
+                         };
 
 //
 // Convex concepts
@@ -391,6 +424,28 @@ concept GaussLobattoQuadrature = QuadratureConcept<T>;
  */
 template <int Order>
 concept PolynomialOrder = (Order >= 0);
+
+/**
+ * @brief Static polynomial order (Order >= 0)
+ *
+ * Use with requires clauses to provide constexpr accessors:
+ * @code
+ * constexpr uint16_type order() const requires is_static_order<nOrder> { return nOrder; }
+ * @endcode
+ */
+template <int Order>
+concept is_static_order = (Order >= 0);
+
+/**
+ * @brief Dynamic polynomial order (Order < 0, i.e., Order == Dynamic)
+ *
+ * Use with requires clauses to provide runtime accessors:
+ * @code
+ * uint16_type order() const requires is_dynamic_order<nOrder> { return M_runtime_order; }
+ * @endcode
+ */
+template <int Order>
+concept is_dynamic_order = (Order < 0);
 
 /**
  * @brief Low-order polynomial (P0, P1, P2)

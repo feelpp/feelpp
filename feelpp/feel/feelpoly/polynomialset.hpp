@@ -32,7 +32,8 @@
 #include <boost/multi_array/extent_gen.hpp>
 
 #include <boost/optional.hpp>
-#include <boost/mpl/min_max.hpp>
+#include <type_traits>
+#include <variant>
 #include <Eigen/Core>
 #include <Eigen/CXX11/Tensor>
 
@@ -49,14 +50,22 @@
 #include <feel/feelpoly/quadmapped.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/meta.hpp>
+#include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/traits.hpp>
+#include <feel/feelpoly/concepts.hpp>
 
 namespace Feel
 {
-using optimizable_t = mpl::bool_<true>;
-using default_t = mpl::bool_<false>;
+template<bool B>
+using bool_t = std::bool_constant<B>;
+template<int N>
+using int_t = std::integral_constant<int, N>;
+
+using optimizable_t = bool_t<true>;
+using default_t = bool_t<false>;
 template<int r>
-using rank_t = mpl::int_<r>;
+using rank_t = int_t<r>;
 using scalar_t = rank_t<0>;
 using vectorial_t = rank_t<1>;
 using matricial_t = rank_t<2>;
@@ -78,29 +87,34 @@ using matricial_t = rank_t<2>;
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Poly, template<uint16_type> class PolySetType = Scalar >
+template<typename Poly, template<uint16_type> class PolySetType = Scalar, int OrderSpec = Poly::nOrder>
 class PolynomialSet
     :
-        public std::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >,
+        public std::enable_shared_from_this<PolynomialSet<Poly, PolySetType, OrderSpec > >,
         public PolySetType<Poly::nRealDim>
 {
-    typedef std::enable_shared_from_this<PolynomialSet<Poly, PolySetType > > super_enable_shared_from_this;
+    typedef std::enable_shared_from_this<PolynomialSet<Poly, PolySetType, OrderSpec > > super_enable_shared_from_this;
+    template<typename, template<uint16_type> class, int>
+    friend class PolynomialSet;
 public:
 
     /** @name Constants
      */
     //@{
 
-    static const uint16_type nDim = Poly::nDim;
-    static const uint16_type nRealDim = Poly::nRealDim;
-    static const uint16_type nOrder = Poly::nOrder;
+    static constexpr uint16_type nDim = Poly::nDim;
+    static constexpr uint16_type nRealDim = Poly::nRealDim;
+    static constexpr bool is_order_static = ( OrderSpec != Dynamic );
+    static constexpr bool is_order_dynamic = !is_order_static;
+    //! Static order value (or placeholder 1 when dynamic for template instantiation)
+    static constexpr uint16_type nOrder = is_order_static ? static_cast<uint16_type>( OrderSpec ) : 1;
 
     //@}
 
     /** @name Typedefs
      */
     //@{
-    typedef PolynomialSet<Poly, PolySetType> self_type;
+    typedef PolynomialSet<Poly, PolySetType, OrderSpec> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
@@ -117,8 +131,8 @@ public:
     static const uint16_type nComponents2 = polyset_type::nComponents2;
     static const uint16_type rank = polyset_type::rank;
 
-    typedef PolynomialSet<Poly, Scalar> component_type;
-    typedef Polynomial<Poly, PolySetType> polynomial_type;
+    typedef PolynomialSet<Poly, Scalar, OrderSpec> component_type;
+    typedef Polynomial<Poly, PolySetType, typename basis_type::matrix_type, OrderSpec> polynomial_type;
     //typedef Polynomial<Poly, PolySetType, ublas::vector_range<ublas::vector<value_type> > > polynomial_type;
     typedef polynomial_type polynomial_view_type;
 
@@ -126,14 +140,14 @@ public:
     typedef typename basis_type::matrix_type matrix_type;
     typedef typename basis_type::points_type points_type;
 
-    using gradient_polynomialset_type = typename mpl::if_<is_scalar_polynomial<polyset_type>,
-                                                          mpl::identity<PolynomialSet<Poly, Vectorial> >,
-                                                          typename mpl::if_<is_vector_polynomial<polyset_type>,
-                                                                            mpl::identity<PolynomialSet<Poly, Tensor2> >,
-                                                                            mpl::identity<PolynomialSet<Poly, Tensor3> > >::type>::type::type;
+    using gradient_polynomialset_type = if_t<is_scalar_polynomial<polyset_type>::value,
+                                             PolynomialSet<Poly, Vectorial, OrderSpec>,
+                                             if_t<is_vector_polynomial<polyset_type>::value,
+                                                  PolynomialSet<Poly, Tensor2, OrderSpec>,
+                                                  PolynomialSet<Poly, Tensor3, OrderSpec>>>;
 
-    BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, value_type>::value ) );
-    BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value ) );
+    static_assert( boost::is_same<typename matrix_type::value_type, value_type>::value );
+    static_assert( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value );
 
     //@}
 
@@ -147,14 +161,36 @@ public:
         M_coeff(),
         M_fname( "pset" )
     {
+        set_order_value( nOrder );
         //std::cout << "[PolynomialSet::default] dim = " << nDim << " order = " << nOrder << "\n";
+    }
+    PolynomialSet( uint16_type order )
+        requires( is_order_dynamic )
+        :
+        M_basis(),
+        M_coeff(),
+        M_fname( "pset" )
+    {
+        set_order_value( order );
     }
     PolynomialSet( Poly const& p )
         :
         M_basis( p.basis() ),
         M_coeff( p.coeff() ),
         M_fname( p.familyName() )
-    {}
+    {
+        // Always check if Poly has runtime order info, regardless of this PolynomialSet's
+        // template order. This handles the case where FiniteElement (with static template order)
+        // is constructed from a dynamic-order primal space.
+        if constexpr ( requires { p.runtimeOrder(); } )
+        {
+            set_order_value( p.runtimeOrder() );
+        }
+        else
+        {
+            set_order_value( nOrder );
+        }
+    }
     /**
      */
     //template<typename AE>
@@ -165,6 +201,15 @@ public:
         M_coeff( p.coeff() ),
         M_fname( p.familyName() )
     {
+        // Always check if Poly has runtime order info
+        if constexpr ( requires { p.runtimeOrder(); } )
+        {
+            set_order_value( p.runtimeOrder() );
+        }
+        else
+        {
+            set_order_value( nOrder );
+        }
         setCoefficient( c, __as_is );
         //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
@@ -183,6 +228,7 @@ public:
         M_coeff( c ),
         M_fname( "pset" )
     {
+        set_order_value( nOrder );
         setCoefficient( c, __as_is );
         //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
@@ -194,6 +240,7 @@ public:
 
     PolynomialSet( PolynomialSet const & p )
         :
+        M_order( p.M_order ),
         M_basis( p.M_basis ),
         M_coeff( p.M_coeff ),
         M_fname( p.M_fname )
@@ -216,6 +263,7 @@ public:
     {
         if ( this != &pset )
         {
+            M_order = pset.M_order;
             M_basis = pset.M_basis;
             M_coeff = pset.M_coeff;
         }
@@ -230,7 +278,7 @@ public:
      */
     component_type operator[]( uint16_type i ) const
     {
-        BOOST_STATIC_ASSERT( is_vectorial );
+        static_assert( is_vectorial, "PolynomialSet::operator[] requires a vectorial polynomial set" );
         FEELPP_ASSERT( i < nComponents )( i )( nComponents ).error ( "invalid component index" );
         const int nrows = M_coeff.size1()/nComponents;
         const int ncols = M_coeff.size2();
@@ -241,7 +289,7 @@ public:
 
     component_type operator()( uint16_type i, uint16_type j ) const
         {
-            BOOST_STATIC_ASSERT( is_tensor2 );
+            static_assert( is_tensor2, "PolynomialSet::operator() requires a tensor2 polynomial set" );
             const int nrows = M_coeff.size1()/nComponents;
             const int ncols = M_coeff.size2();
             return component_type( Poly(), ublas::project( M_coeff,
@@ -256,11 +304,64 @@ public:
     //@{
 
     /**
-     * \return the degree of the polynomials in the set
+     * \return the semantic degree of the polynomials in the set
+     *
+     * Always returns the runtime semantic order storage (initialized to
+     * compile-time order for static sets).
      */
-    uint16_type degree() const
+    [[nodiscard]] uint16_type degree() const
     {
-        return nOrder;
+        return M_order;
+    }
+
+    /**
+     * \return the semantic polynomial order
+     *
+     * Always returns the runtime semantic order storage (initialized to
+     * compile-time order for static sets).
+     */
+    [[nodiscard]] uint16_type order() const
+    {
+        return M_order;
+    }
+
+    void setOrder( uint16_type order )
+        requires is_dynamic_order<OrderSpec>
+    {
+        set_order_value( order );
+    }
+
+    /**
+     * \return the runtime order value
+     * \deprecated Use order() instead - unified interface handles both static and dynamic cases
+     */
+    [[nodiscard]] uint16_type runtimeOrder() const
+    {
+        return order();
+    }
+
+    [[nodiscard]] PolynomialSet<Poly, PolySetType, Dynamic> toDynamic() const
+        requires is_static_order<OrderSpec>
+    {
+        PolynomialSet<Poly, PolySetType, Dynamic> dynamic_set;
+        dynamic_set.M_basis = M_basis;
+        dynamic_set.M_coeff = M_coeff;
+        dynamic_set.M_fname = M_fname;
+        dynamic_set.setOrder( order() );
+        return dynamic_set;
+    }
+
+    template<int N>
+    [[nodiscard]] boost::optional<PolynomialSet<Poly, PolySetType, N>> toStatic() const
+        requires is_dynamic_order<OrderSpec>
+    {
+        if ( order() != static_cast<uint16_type>( N ) )
+            return boost::none;
+        PolynomialSet<Poly, PolySetType, N> static_set;
+        static_set.M_basis = M_basis;
+        static_set.M_coeff = M_coeff;
+        static_set.M_fname = M_fname;
+        return static_set;
     }
 
     /**
@@ -351,7 +452,7 @@ public:
     std::string name( std::string sep = "." ) const
     {
         std::ostringstream os;
-        os << this->familyName() << sep << nDim << sep << nOrder;
+        os << this->familyName() << sep << nDim << sep << order_value();
         return os.str();
     }
 
@@ -401,7 +502,7 @@ public:
      * \param list_p list of indices of polynomials to extract
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomials( std::vector<int> const& list_p  ) const
+    self_type polynomials( std::vector<int> const& list_p  ) const
     {
         size_type dim_p = this->polynomialDimension();
         size_type new_dim_p = nComponents*list_p.size();
@@ -421,7 +522,7 @@ public:
 
             ++j;
         }
-        return PolynomialSet<Poly, PolySetType>( Poly(), coeff, true );
+        return self_type( Poly(), coeff, true );
     }
 
     /**
@@ -430,7 +531,7 @@ public:
      * \param dim_p polynomial dimension
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomialsUpToDimension( int dim_p  ) const
+    self_type polynomialsUpToDimension( int dim_p  ) const
     {
         matrix_type coeff( nComponents*nComponents*dim_p, M_coeff.size2() );
 
@@ -445,7 +546,7 @@ public:
                                                 ublas::range( 0, M_coeff.size2() ) );
         }
 
-        return PolynomialSet<Poly, PolySetType>( Poly(), coeff, true );
+        return self_type( Poly(), coeff, true );
     }
 
     /**
@@ -455,7 +556,7 @@ public:
      * \param dim_top polynomial dimension
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType>
+    self_type
     polynomialsRange( uint16_type dim_bot, uint16_type dim_top  ) const
     {
         uint16_type dim_p = dim_top-dim_bot;
@@ -473,7 +574,7 @@ public:
                                                 ublas::range( 0, M_coeff.size2() ) );
         }
 
-        return PolynomialSet<Poly, PolySetType>( Poly(), coeff, true );
+        return self_type( Poly(), coeff, true );
     }
 
     /**
@@ -482,7 +583,7 @@ public:
      * \param i index of the polynomial to extract
      * \return the polynomial extracted
      */
-    Polynomial<Poly, PolySetType> polynomial( uint16_type i  ) const
+    polynomial_type polynomial( uint16_type i  ) const
     {
         size_type dim_p = this->polynomialDimension();
         matrix_type coeff( nComponents, M_coeff.size2() );
@@ -496,7 +597,10 @@ public:
                                                 ublas::range( nComponents*i, nComponents*( i+1 ) ),
                                                 ublas::range( 0, M_coeff.size2() ) );
         }
-        return Polynomial<Poly, PolySetType> ( Poly(), coeff, true );
+        polynomial_type result( Poly(), coeff, true );
+        if constexpr ( polynomial_type::is_order_dynamic )
+            result.setOrder( order_value() );
+        return result;
     }
 
 
@@ -536,7 +640,16 @@ public:
     template<typename AE>
     matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
     {
-        matrix_type m ( M_basis.evaluate( __pts ) );
+        matrix_type m;
+        // Use runtime order if it differs from compile-time order (indicates dynamic order usage)
+        if ( isUsingDynamicOrder() )
+        {
+            m = M_basis.evaluate( __pts, this->runtimeOrder() );
+        }
+        else
+        {
+            m = M_basis.evaluate( __pts );
+        }
         FEELPP_ASSERT( M_coeff.size2() == m.size1() )( M_coeff.size2() )( m.size1() ).error( "invalid size" );
         return ublas::prod( M_coeff, m );
     }
@@ -579,13 +692,31 @@ public:
      */
     self_type derivate( uint16_type l ) const
     {
-        return self_type( Poly(), ublas::prod(  M_coeff, M_basis.d( l ) ), true );
+        matrix_type coeff;
+        if ( isUsingDynamicOrder() )
+            coeff = ublas::prod( M_coeff, M_basis.d( l, this->runtimeOrder() ) );
+        else
+            coeff = ublas::prod( M_coeff, M_basis.d( l ) );
+
+        self_type deriv( Poly(), coeff, true );
+        if constexpr ( is_order_dynamic )
+            deriv.setOrder( this->runtimeOrder() );
+        return deriv;
     }
 
     template<typename AE>
     ublas::vector<matrix_type> derivate( ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
+        ublas::vector<matrix_type> der;
+        // Use runtime order if it differs from compile-time order
+        if ( isUsingDynamicOrder() )
+        {
+            der = M_basis.derivate( pts, this->runtimeOrder() );
+        }
+        else
+        {
+            der = M_basis.derivate( pts );
+        }
         ublas::vector<matrix_type> res( nDim );
 
         for ( uint16_type i = 0; i < nDim; ++i )
@@ -600,7 +731,16 @@ public:
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
+        ublas::vector<matrix_type> der;
+        // Use runtime order if it differs from compile-time order
+        if ( isUsingDynamicOrder() )
+        {
+            der = M_basis.derivate( pts, this->runtimeOrder() );
+        }
+        else
+        {
+            der = M_basis.derivate( pts );
+        }
         matrix_type res( M_coeff.size1(), pts().size2() );
         ublas::axpy_prod( M_coeff, der[i], res );
         return res;
@@ -610,16 +750,38 @@ public:
     ublas::matrix<matrix_type> derivate2( ublas::matrix_expression<AE> const& pts ) const
         {
             //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-            matrix_type eval( M_basis.evaluate( pts ) );
+            matrix_type eval;
+            // Use runtime order if it differs from compile-time order
+            if ( isUsingDynamicOrder() )
+            {
+                eval = M_basis.evaluate( pts, this->runtimeOrder() );
+            }
+            else
+            {
+                eval = M_basis.evaluate( pts );
+            }
+
             ublas::matrix<matrix_type> res( nDim, nDim );
 
             for ( uint16_type i = 0; i < nDim; ++i )
             {
                 for ( uint16_type j = 0; j < nDim; ++j )
                 {
-                    matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
-                    matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
-                    res( i, j ) = ublas::prod( p2, eval );
+                    // Use runtime derivation matrix if dynamic order
+                    if ( isUsingDynamicOrder() )
+                    {
+                        matrix_type di = M_basis.d( i, this->runtimeOrder() );
+                        matrix_type dj = M_basis.d( j, this->runtimeOrder() );
+                        matrix_type p1 = ublas::prod( M_coeff, di );
+                        matrix_type p2 = ublas::prod( p1, dj );
+                        res( i, j ) = ublas::prod( p2, eval );
+                    }
+                    else
+                    {
+                        matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
+                        matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
+                        res( i, j ) = ublas::prod( p2, eval );
+                    }
                 }
             }
             return res;
@@ -628,12 +790,24 @@ public:
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
         //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-        matrix_type eval( M_basis.evaluate( pts ) );
-        //matrix_type res( M_coeff.size1(), pts().size2() );
-        //ublas::axpy_prod( M_coeff, der[i], res );
-        matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
-        matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
-        return ublas::prod( p2, eval );
+        matrix_type eval;
+        // Use runtime order if it differs from compile-time order
+        if ( isUsingDynamicOrder() )
+        {
+            eval = M_basis.evaluate( pts, this->runtimeOrder() );
+            matrix_type di = M_basis.d( i, this->runtimeOrder() );
+            matrix_type dj = M_basis.d( j, this->runtimeOrder() );
+            matrix_type p1 = ublas::prod( M_coeff, di );
+            matrix_type p2 = ublas::prod( p1, dj );
+            return ublas::prod( p2, eval );
+        }
+        else
+        {
+            eval = M_basis.evaluate( pts );
+            matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
+            matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
+            return ublas::prod( p2, eval );
+        }
     }
     /**
      * Gradient of the polynomial set
@@ -643,7 +817,7 @@ public:
     gradient_polynomialset_type
     gradient() const
     {
-        return gradient( mpl::int_<polyset_type::rank>() );
+        return gradient( int_t<polyset_type::rank>() );
     }
 
     gradient_polynomialset_type
@@ -714,7 +888,7 @@ public:
     /**
      * insert the polynomial set \p p at the end of the set
      */
-    void insert( PolynomialSet<Poly,PolySetType> const& p, bool erase = false )
+    void insert( self_type const& p, bool erase = false )
     {
         FEELPP_ASSERT( p.coeff().size2() == coeff().size2() )( p.coeff().size2() )( coeff().size2() ).warn( "invalid polynomial set" );
 
@@ -756,7 +930,9 @@ public:
     matrix_type firstMoments()
         {
             matrix_type _m( M_coeff.size1(), 1 );
-            points_type p(nDim,1);
+            points_type p( nDim, 1 );
+            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> pMap( p.data().begin(), p.size1(), p.size2() );
+            pMap.setZero();
             // we want to retrieve the constant polynomial value, we do not care
             // about the point at which we evaluate the basis
             auto b = M_basis( p );
@@ -777,7 +953,7 @@ public:
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        typedef PolynomialSet<Poly, PolySetType > reference_element_type;
+        typedef PolynomialSet<Poly, PolySetType, OrderSpec > reference_element_type;
         typedef std::shared_ptr<reference_element_type> reference_element_ptrtype;
 
         typedef typename reference_element_type::value_type value_type;
@@ -1067,6 +1243,16 @@ public:
             typedef typename grad_type::index index;
             const index I = M_ref_ele->nbDof();
             const index Q = __pts.size2();
+            CHECK( phiv.size1() >= I && phiv.size2() >= Q )
+                << "invalid phi size in precompute: phi=(" << phiv.size1() << "," << phiv.size2()
+                << ") expected at least (" << I << "," << Q << ")";
+            for ( index j = 0; j < nDim; ++j )
+            {
+                CHECK( __grad[j].size1() >= I && __grad[j].size2() >= Q )
+                    << "invalid grad size in precompute dir=" << j
+                    << " grad=(" << __grad[j].size1() << "," << __grad[j].size2()
+                    << ") expected at least (" << I << "," << Q << ")";
+            }
 
             for ( index i = 0; i < I; ++i )
             {
@@ -1432,18 +1618,24 @@ public:
         static inline const bool is_hdiv_conforming = Feel::is_hdiv_conforming<Basis_t>::value;
         static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
 
-        static const bool do_optimization_p1= ( nOrder<=1 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
-        using do_optimization_p1_t = mpl::bool_<do_optimization_p1>;
-        using optimization_p1_t = mpl::bool_<true>;
-        using no_optimization_p1_t = mpl::bool_<false>;
+        static const bool do_optimization_p1 =
+            !Basis_t::is_order_dynamic &&
+            ( nOrder <= 1 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_simplex );
+        using do_optimization_p1_t = bool_t<do_optimization_p1>;
+        using optimization_p1_t = bool_t<true>;
+        using no_optimization_p1_t = bool_t<false>;
 
 
-        static const bool do_optimization_p2= ( nOrder==2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_simplex );
-        using do_optimization_p2_t = mpl::bool_<do_optimization_p2>;
-        using optimization_p2_t = mpl::bool_<true>;
-        using no_optimization_p2_t = mpl::bool_<false>;
+        static const bool do_optimization_p2 =
+            !Basis_t::is_order_dynamic &&
+            ( nOrder == 2 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_simplex );
+        using do_optimization_p2_t = bool_t<do_optimization_p2>;
+        using optimization_p2_t = bool_t<true>;
+        using no_optimization_p2_t = bool_t<false>;
 
-        static const bool do_pt_q1= ( nOrder<=2 ) && ( Geo_t::nOrder==1 ) && ( convex_type::is_hypercube );
+        static const bool do_pt_q1 =
+            !Basis_t::is_order_dynamic &&
+            ( nOrder <= 2 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_hypercube );
 
 
         typedef typename Basis_t::polyset_type polyset_type;
@@ -1565,7 +1757,7 @@ public:
          * transformation is required
          */
         void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
-                                        mpl::bool_<true> )
+                                        bool_t<true> )
         {
             // M_phi = phi;
             // if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
@@ -1581,7 +1773,7 @@ public:
          * We deleguate the transformation to the basis
          */
         void transformationEquivalence( geometric_mapping_context_ptrtype const& __gmc,
-                                        mpl::bool_<false> )
+                                        bool_t<false> )
         {
 #if 0
             //M_ref_ele->transform( __gmc, phi, M_phi, M_gradphi, M_hessphi );
@@ -1599,7 +1791,7 @@ public:
         {
             //M_phi = M_pc->get()->phi();
             //M_gradphi = M_pc->get()->grad();
-            transformationEquivalence( __gmc, mpl::bool_<Basis_t::isTransformationEquivalent>() );
+            transformationEquivalence( __gmc, bool_t<Basis_t::isTransformationEquivalent>() );
 #if 0
 
             for ( int i = 0; i < M_gradphi.num_elements(); ++i )
@@ -1607,7 +1799,7 @@ public:
 
 #endif
             update( __gmc, rank_t<rank>() );
-            //update( __gmc, mpl::int_<rank>(), mpl::bool_<false>() );
+            //update( __gmc, int_t<rank>(), bool_t<false>() );
         }
 
         //
@@ -1657,11 +1849,97 @@ public:
         //! @return the dynamic context associated
         size_type dynamicContext() const { return M_gmc->dynamicContext()/* M_dynamic_context*/; }
 
+        [[nodiscard]] uint16_type basisOrderRuntime() const
+        {
+            if constexpr ( requires { Basis_t::is_order_dynamic; } )
+            {
+                if constexpr ( Basis_t::is_order_dynamic )
+                {
+                    if ( M_ref_ele )
+                    {
+                        if constexpr ( requires( reference_element_type const& fe ) { fe.order(); } )
+                            return static_cast<uint16_type>( M_ref_ele->order() );
+                        else if constexpr ( requires( reference_element_type const& fe ) { fe.runtimeOrder(); } )
+                            return static_cast<uint16_type>( M_ref_ele->runtimeOrder() );
+                    }
+                }
+            }
+            return static_cast<uint16_type>( nOrder );
+        }
+
+        [[nodiscard]] bool runtimeDoOptimizationP1() const
+        {
+            if constexpr ( do_optimization_p1 )
+            {
+                return true;
+            }
+            else
+            {
+                if constexpr ( convex_type::is_simplex && ( Geo_t::nOrder == 1 ) )
+                {
+                    if constexpr ( requires { Basis_t::is_order_dynamic; } )
+                    {
+                        if constexpr ( Basis_t::is_order_dynamic )
+                            return this->basisOrderRuntime() <= 1;
+                    }
+                }
+                return false;
+            }
+        }
+
+        [[nodiscard]] bool runtimeDoOptimizationP2() const
+        {
+            if constexpr ( do_optimization_p2 )
+            {
+                return true;
+            }
+            else
+            {
+                if constexpr ( convex_type::is_simplex && ( Geo_t::nOrder == 1 ) )
+                {
+                    if constexpr ( requires { Basis_t::is_order_dynamic; } )
+                    {
+                        if constexpr ( Basis_t::is_order_dynamic )
+                            return this->basisOrderRuntime() == 2;
+                    }
+                }
+                return false;
+            }
+        }
+
+        [[nodiscard]] uint16_type nPointsFirstDerivative() const
+        {
+            return this->runtimeDoOptimizationP1() ? 1 : M_npoints;
+        }
+
+        [[nodiscard]] uint16_type nPointsSecondDerivative() const
+        {
+            return this->runtimeDoOptimizationP2() ? 1 : M_npoints;
+        }
+
 
         /**
          * @return the number of basis functions
+         *
+         * Uses runtime local dof for dynamic-order bases while preserving
+         * compile-time behavior for static-order bases.
          */
-        constexpr uint16_type nDofs() const { return nDof*( reference_element_type::is_product?nComponents1*nComponents2:1 ); }
+        uint16_type nDofs() const
+        {
+            const uint16_type localDof = [&]() -> uint16_type
+            {
+                if constexpr ( requires( reference_element_type const& fe ) { fe.runtimeLocalDof(); } )
+                {
+                    return M_ref_ele ? M_ref_ele->runtimeLocalDof() : nDof;
+                }
+                else
+                {
+                    return nDof;
+                }
+            }();
+            constexpr uint16_type factor = ( reference_element_type::is_product ? nComponents1 * nComponents2 : 1 );
+            return static_cast<uint16_type>( localDof * factor );
+        }
 
         /**
          * @return the degrees of freedom
@@ -1690,7 +1968,7 @@ public:
                               uint16_type c2,
                               uint32_type q  ) const
         {
-            return id( i, c1, c2, q, mpl::int_<rank>() );
+            return id( i, c1, c2, q, int_t<rank>() );
         }
 
         value_type const& id( uint32_type i,
@@ -1746,57 +2024,65 @@ public:
             }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return d( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return d( i, c1, c2, q, optimization_p1_t() );
+                return d( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
                 return M_grad[i][0]( c1,c2,0 );
             }
-        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false>  ) const
+        value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false>  ) const
             {
                 return M_grad[i][q]( c1,c2,0 );
             }
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return dx( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return dx( i, c1, c2, q, optimization_p1_t() );
+                return dx( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
+                static_assert( nDim >= 1, "INVALID_DIM" );
                 return M_grad[i][0]( c1,0,0 );
             }
-        value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
+                static_assert( nDim >= 1, "INVALID_DIM" );
                 return M_grad[i][q]( c1,0,0 );
             }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return dy( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return dy( i, c1, c2, q, optimization_p1_t() );
+                return dy( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
+                static_assert( nDim >= 1, "INVALID_DIM" );
                 return M_grad[i][0]( c1,1,0 );
             }
-        value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
+                static_assert( nDim >= 1, "INVALID_DIM" );
                 return M_grad[i][q]( c1,1,0 );
             }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return dz( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return dz( i, c1, c2, q, optimization_p1_t() );
+                return dz( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
+                static_assert( nDim >= 1, "INVALID_DIM" );
                 return M_grad[i][0]( c1,2,0 );
             }
-        value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
-                BOOST_MPL_ASSERT_MSG( nDim >= 1, INVALID_DIM, ( mpl::int_<nDim>, rank_t<1> ) );
+                static_assert( nDim >= 1, "INVALID_DIM" );
                 return M_grad[i][q]( c1,2,0 );
             }
 
@@ -1818,26 +2104,30 @@ public:
         }
         grad_type const& grad( uint16_type i, uint32_type q ) const
             {
-                return grad( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return grad( i, q, optimization_p1_t() );
+                return grad( i, q, no_optimization_p1_t() );
             }
-        grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        grad_type const& grad( uint16_type i, uint32_type q, bool_t<true> ) const
             {
                 return M_grad[i][0];
             }
-        grad_type const& grad( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        grad_type const& grad( uint16_type i, uint32_type q, bool_t<false> ) const
             {
                 return M_grad[i][q];
             }
 
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return grad(i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return grad( i, c1, c2, q, optimization_p1_t() );
+                return grad( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
                 return M_grad[i][0]( c1,c2,0 );
             }
-        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
                 return M_grad[i][q]( c1,c2,0 );
             }
@@ -1845,63 +2135,73 @@ public:
 
         symm_grad_type const& symmetricGradient( uint16_type i, uint32_type q ) const
             {
-                return symmetricGradient( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return symmetricGradient( i, q, optimization_p1_t() );
+                return symmetricGradient( i, q, no_optimization_p1_t() );
             }
-        symm_grad_type const& symmetricGradient( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        symm_grad_type const& symmetricGradient( uint16_type i, uint32_type q, bool_t<true> ) const
             {
                 return M_symm_grad[i][0];
             }
-        symm_grad_type const& symmetricGradient( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        symm_grad_type const& symmetricGradient( uint16_type i, uint32_type q, bool_t<false> ) const
             {
                 return M_symm_grad[i][q];
             }
 
         value_type symmetricGradient( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return symmetricGradient(i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return symmetricGradient( i, c1, c2, q, optimization_p1_t() );
+                return symmetricGradient( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type symmetricGradient( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type symmetricGradient( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
                 return M_symm_grad[i][0]( c1,c2 );
             }
-        value_type symmetricGradient( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type symmetricGradient( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
                 return M_symm_grad[i][q]( c1,c2 );
             }
         
         dx_type  dx( uint16_type i, uint32_type q ) const
             {
-                return dx( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return dx( i, q, optimization_p1_t() );
+                return dx( i, q, no_optimization_p1_t() );
             }
-        dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        dx_type  dx( uint16_type i, uint32_type q, bool_t<true> ) const
             {
                 return M_grad[i][0].chip(0,1);
             }
-        dx_type  dx( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        dx_type  dx( uint16_type i, uint32_type q, bool_t<false> ) const
             {
                 return M_grad[i][q].chip(0,1);
             }
         dy_type  dy( uint16_type i, uint32_type q ) const
             {
-                return dy( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return dy( i, q, optimization_p1_t() );
+                return dy( i, q, no_optimization_p1_t() );
             }
-        dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        dy_type  dy( uint16_type i, uint32_type q, bool_t<true> ) const
             {
                 return M_grad[i][0].chip(1,1);
             }
-        dy_type  dy( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        dy_type  dy( uint16_type i, uint32_type q, bool_t<false> ) const
             {
                 return M_grad[i][q].chip(1,1);
             }
         dz_type  dz( uint16_type i, uint32_type q ) const
             {
-                return dz( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return dz( i, q, optimization_p1_t() );
+                return dz( i, q, no_optimization_p1_t() );
             }
-        dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        dz_type  dz( uint16_type i, uint32_type q, bool_t<true> ) const
             {
                 return M_grad[i][0].chip(2,1);
             }
-        dz_type  dz( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        dz_type  dz( uint16_type i, uint32_type q, bool_t<false> ) const
             {
                 return M_grad[i][q].chip(2,1);
             }
@@ -1934,28 +2234,32 @@ public:
 
         div_type const& div( uint16_type i, uint32_type q ) const
             {
-                return div( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return div( i, q, optimization_p1_t() );
+                return div( i, q, no_optimization_p1_t() );
             }
-        div_type const& div( uint16_type i, uint32_type q, mpl::bool_<true> ) const
+        div_type const& div( uint16_type i, uint32_type q, bool_t<true> ) const
             {
                 return M_div[i][0];
             }
-        div_type const& div( uint16_type i, uint32_type q, mpl::bool_<false> ) const
+        div_type const& div( uint16_type i, uint32_type q, bool_t<false> ) const
             {
                 return M_div[i][q];
             }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                return div( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return div( i, c1, c2, q, optimization_p1_t() );
+                return div( i, c1, c2, q, no_optimization_p1_t() );
             }
 
-        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c1 );
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_div[i][0]( 0,0 );
             }
-        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c1 );
                 Feel::detail::ignore_unused_variable_warning( c2 );
@@ -1967,7 +2271,9 @@ public:
          */
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<2> ) const
             {
-                return div( i, c1, c2, q, rank_t<2>(), do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return div( i, c1, c2, q, rank_t<2>(), optimization_p1_t() );
+                return div( i, c1, c2, q, rank_t<2>(), no_optimization_p1_t() );
             }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<2>, optimization_p1_t ) const
             {
@@ -1988,7 +2294,9 @@ public:
          */
         curl_type const& curl( uint16_type i, uint32_type q ) const
             {
-                return curl( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return curl( i, q, optimization_p1_t() );
+                return curl( i, q, no_optimization_p1_t() );
             }
         curl_type const& curl( uint16_type i, uint32_type q, optimization_p1_t ) const
             {
@@ -2002,7 +2310,7 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return curl( i, c1, c2, q, mpl::int_<rank>() );
+            return curl( i, c1, c2, q, int_t<rank>() );
         }
 
         value_type curl( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, rank_t<0> ) const
@@ -2017,7 +2325,9 @@ public:
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                return curl( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return curl( i, c1, c2, q, optimization_p1_t() );
+                return curl( i, c1, c2, q, no_optimization_p1_t() );
             }
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p1_t ) const
             {
@@ -2032,7 +2342,9 @@ public:
 
         value_type curlx( uint16_type i, uint32_type q ) const
             {
-                return curlx( i, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return curlx( i, q, optimization_p1_t() );
+                return curlx( i, q, no_optimization_p1_t() );
             }
         value_type curlx( uint16_type i, uint32_type q, optimization_p1_t ) const
             {
@@ -2047,7 +2359,7 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return curlx( i, c1, c2, q, mpl::int_<rank>() );
+            return curlx( i, c1, c2, q, int_t<rank>() );
         }
 
         value_type curlx( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, rank_t<0> ) const
@@ -2062,14 +2374,16 @@ public:
 
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                return curlx( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return curlx( i, c1, c2, q, optimization_p1_t() );
+                return curlx( i, c1, c2, q, no_optimization_p1_t() );
             }
-        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<true> ) const
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<true> ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][0]( 0 );
             }
-        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::bool_<false> ) const
+        value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, bool_t<false> ) const
             {
                 Feel::detail::ignore_unused_variable_warning( c2 );
                 return M_curl[i][q]( 0 );
@@ -2079,7 +2393,7 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return curly( i, c1, c2, q, mpl::int_<rank>() );
+            return curly( i, c1, c2, q, int_t<rank>() );
         }
 
         value_type curly( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, rank_t<0> ) const
@@ -2094,7 +2408,9 @@ public:
 
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                return curly( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return curly( i, c1, c2, q, optimization_p1_t() );
+                return curly( i, c1, c2, q, no_optimization_p1_t() );
             }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p1_t ) const
             {
@@ -2111,7 +2427,7 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return curlz( i, c1, c2, q, mpl::int_<rank>() );
+            return curlz( i, c1, c2, q, int_t<rank>() );
         }
 
         value_type curlz( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, rank_t<0> ) const
@@ -2126,7 +2442,9 @@ public:
 
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                return curlz( i, c1, c2, q, do_optimization_p1_t() );
+                if ( this->runtimeDoOptimizationP1() )
+                    return curlz( i, c1, c2, q, optimization_p1_t() );
+                return curlz( i, c1, c2, q, no_optimization_p1_t() );
             }
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p1_t ) const
             {
@@ -2145,7 +2463,9 @@ public:
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return hess( i, c1, c2, q, mpl::int_<rank>(), do_optimization_p2_t() );
+                if ( this->runtimeDoOptimizationP2() )
+                    return hess( i, c1, c2, q, int_t<rank>(), optimization_p2_t() );
+                return hess( i, c1, c2, q, int_t<rank>(), no_optimization_p2_t() );
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<0>, optimization_p2_t ) const
             {
@@ -2157,7 +2477,9 @@ public:
             }
         laplacian_type const& laplacian( uint16_type i, uint32_type q ) const
             {
-                return laplacian( i, q, do_optimization_p2_t() );
+                if ( this->runtimeDoOptimizationP2() )
+                    return laplacian( i, q, optimization_p2_t() );
+                return laplacian( i, q, no_optimization_p2_t() );
             }
         laplacian_type const& laplacian( uint16_type i, uint32_type q, optimization_p2_t ) const
             {
@@ -2169,7 +2491,9 @@ public:
             }
         value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                return laplacian( i, c1, c2, q, do_optimization_p2_t() );
+                if ( this->runtimeDoOptimizationP2() )
+                    return laplacian( i, c1, c2, q, optimization_p2_t() );
+                return laplacian( i, c1, c2, q, no_optimization_p2_t() );
             }
         value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, optimization_p2_t ) const
             {
@@ -2189,7 +2513,7 @@ public:
         void print()
             {
                 const uint16_type Q = M_npoints;
-                const uint16_type I = nDof;
+                const uint16_type I = this->nDofs();
                 for ( uint16_type i = 0; i < I; ++i )
                 {
                     for ( uint16_type q = 0; q < Q; ++q )
@@ -2284,19 +2608,41 @@ public:
     }
 
 protected:
+    //! Always store runtime order to support dynamic order from derived classes
+    using order_storage_type = uint16_type;
+
+    [[nodiscard]] uint16_type order_value() const
+    {
+        return M_order;
+    }
+
+    void set_order_value( uint16_type order )
+    {
+        M_order = order;
+    }
+
+    //! Check if runtime order differs from compile-time nOrder (indicates dynamic order usage)
+    [[nodiscard]] bool isUsingDynamicOrder() const
+    {
+        return M_order != nOrder;
+    }
 
 private:
-
-private:
-
+    order_storage_type M_order{};
     basis_type M_basis;
     matrix_type M_coeff;
     std::string M_fname;
 };
 
-template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents;
-template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents1;
-template<typename Poly,template<uint16_type> class PolySetType> const uint16_type PolynomialSet<Poly,PolySetType>::nComponents2;
+template<typename Poly, template<uint16_type> class PolySetType = Scalar>
+using DynamicPolynomialSet = PolynomialSet<Poly, PolySetType, Dynamic>;
+
+template<typename Poly,template<uint16_type> class PolySetType, int OrderSpec>
+const uint16_type PolynomialSet<Poly,PolySetType,OrderSpec>::nComponents;
+template<typename Poly,template<uint16_type> class PolySetType, int OrderSpec>
+const uint16_type PolynomialSet<Poly,PolySetType,OrderSpec>::nComponents1;
+template<typename Poly,template<uint16_type> class PolySetType, int OrderSpec>
+const uint16_type PolynomialSet<Poly,PolySetType,OrderSpec>::nComponents2;
 
 } // Feel
 

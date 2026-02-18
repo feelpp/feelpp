@@ -63,6 +63,7 @@
 #include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/fe.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/meta.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -120,7 +121,7 @@ struct extract_all_poly_indices
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG = 0>
 class RaviartThomasPolynomialSet
     :
@@ -218,7 +219,7 @@ namespace detail
 
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class RaviartThomasDual
     :
 public DualBasis<Basis>
@@ -440,7 +441,7 @@ private:
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG=0 >
 class RaviartThomas
     :
@@ -597,9 +598,74 @@ public:
             return localDofId;
         }
 
+    typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
+        {
+            // RT is not a product space: local dof id is already the parent dof id.
+            const uint16_type parentLocalDofId = this->dofParent( localDofId );
+
+            const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * nDofPerVertex );
+            const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * nDofPerEdge );
+            const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * nDofPerFace );
+
+            if constexpr ( nDofPerVertex > 0 )
+            {
+                if ( parentLocalDofId < nV )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 0,
+                        .entityId = static_cast<uint16_type>( parentLocalDofId / nDofPerVertex ),
+                        .ordinal = static_cast<uint16_type>( parentLocalDofId % nDofPerVertex ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
+            if constexpr ( nDofPerEdge > 0 )
+            {
+                if ( parentAfterVertex < nE )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 1,
+                        .entityId = static_cast<uint16_type>( parentAfterVertex / nDofPerEdge ),
+                        .ordinal = static_cast<uint16_type>( parentAfterVertex % nDofPerEdge ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
+            if constexpr ( nDofPerFace > 0 )
+            {
+                if ( parentAfterEdge < nF )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 2,
+                        .entityId = static_cast<uint16_type>( parentAfterEdge / nDofPerFace ),
+                        .ordinal = static_cast<uint16_type>( parentAfterEdge % nDofPerFace ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            if constexpr ( nDofPerVolume > 0 )
+            {
+                const uint16_type parentAfterFace = static_cast<uint16_type>( parentAfterEdge - nF );
+                return typename super::DofAttachment{
+                    .entityDim = 3,
+                    .entityId = 0,
+                    .ordinal = static_cast<uint16_type>( parentAfterFace % nDofPerVolume ),
+                    .kind = this->dofType( localDofId ) };
+            }
+
+            return typename super::DofAttachment{
+                .entityDim = -1,
+                .entityId = super::DofAttachment::invalid_id,
+                .ordinal = super::DofAttachment::invalid_id,
+                .kind = this->dofType( localDofId ) };
+        }
+
     //! \return the type of a local dof
     uint16_type dofType( uint16_type localDofId ) const override
         {
+            // Keep legacy functional kind value for compatibility.
             return 1;
         }
 
@@ -688,8 +754,8 @@ public:
             }
         }
 
-    using apply_curl_t = mpl::bool_<true>;
-    using apply_id_t = mpl::bool_<false>;
+    using apply_curl_t = bool_c<true>;
+    using apply_id_t = bool_c<false>;
 
     template<typename ExprType>
     void
@@ -886,7 +952,7 @@ private:
 };
 
 } // fem
-template<uint16_type Order,
+template<int Order,
          uint16_type TheTAG=0 >
 class RaviartThomas
 {
@@ -897,10 +963,10 @@ public:
              typename Convex = Simplex<N> >
     struct apply
     {
-        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<fem::RaviartThomas<N,Order,T,Simplex,TheTAG> >,
-                mpl::identity<fem::RaviartThomas<N,Order,T,Hypercube,TheTAG> > >::type::type result_type;
-        typedef result_type type;
+        using result_type = if_t<Convex::is_simplex,
+                                 fem::RaviartThomas<N,Order,T,Simplex,TheTAG>,
+                                 fem::RaviartThomas<N,Order,T,Hypercube,TheTAG>>;
+        using type = result_type;
     };
 
     template<uint16_type TheNewTAG>

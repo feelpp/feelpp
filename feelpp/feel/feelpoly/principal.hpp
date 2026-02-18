@@ -113,7 +113,7 @@ public:
     //@}
 
 
-    self_type const& operator=( self_type const& d ) = default;
+    self_type& operator=( self_type const& d ) = default;
     self_type& operator=( self_type&& d ) = default;
 
     /** @name Accessors

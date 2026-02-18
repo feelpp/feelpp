@@ -35,7 +35,7 @@
 namespace Feel
 {
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetElectrostatic : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {

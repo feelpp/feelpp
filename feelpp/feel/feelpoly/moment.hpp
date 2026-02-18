@@ -990,11 +990,11 @@ namespace detail
  *
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType = Scalar,
          typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<int,int,int> class Convex = Simplex>
 class MomentPolynomialSet
     :
 public PolynomialSet<Moment<Dim, Order, Convex<Dim,1,Dim>, T, StorageUBlas>, PolySetType >
@@ -1103,17 +1103,17 @@ public:
 };
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex>
+         template<int,int,int> class Convex>
 const uint16_type MomentPolynomialSet<Dim, Order, RealDim, PolySetType,T, Convex>::nLocalDof;
 
 } // detail
 /// \encond
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar>
 class MomentPolynomialSet
 {

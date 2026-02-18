@@ -83,7 +83,7 @@ struct IntegrationDegree
  **/
 template<int Dim,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
+         template<int, int, int> class Entity = Simplex>
 class IMGeneral
     :
         public PointSetQuadrature<Entity<Dim,1,Dim> , T, index_type>
@@ -95,6 +95,7 @@ public:
     static inline const bool is_exact = false;
     static const uint16_type nDim = Dim;
     static const uint16_type nRealDim = Dim;
+    static constexpr uint16_type Degree = invalid_uint16_type_value;
 
     typedef Entity<Dim,1,Dim> convex_type;
     typedef typename super::value_type value_type;
@@ -207,7 +208,7 @@ im_t<typename MeshT::element_type,T> im( std::shared_ptr<MeshT> mesh, uint16_typ
 template<int DIM,
          int IMORDER,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Entity = Simplex>
+         template<int, int, int> class Entity = Simplex>
 class IM
         :
         public IMGeneral<DIM, T, Entity>
@@ -216,7 +217,7 @@ class IM
 public:
     template<int DIM1,
              typename T1,
-             template<uint16_type, uint16_type, uint16_type> class Entity1>
+             template<int, int, int> class Entity1>
     struct apply
     {
         typedef IMGeneral<DIM1, T1, Entity1> type;
@@ -241,7 +242,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     struct Apply
     {
         typedef IMGeneral<DIM, T, Entity> type;
@@ -258,7 +259,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     typename Apply<DIM,T,Entity>::type apply( uint16_type O ) const
         {
             return typename Apply<DIM,T,Entity>::type( O );
@@ -266,7 +267,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     typename Apply<DIM,T,Entity>::type apply() const
         {
             return typename Apply<DIM,T,Entity>::type( this->order() );
@@ -275,7 +276,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     typename Apply<DIM,T,Entity>::type get() const
         {
             return typename Apply<DIM,T,Entity>::type( this->order() );
@@ -283,14 +284,14 @@ struct _Q : public _QBase
 
     template< typename T,
               int DIM,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     typename Apply<DIM,T,Entity>::type get( Entity<DIM,1,DIM> const& e ) const
         {
             return typename Apply<DIM,T,Entity>::type( this->order() );
         }
     template< typename T,
               int DIM,
-              template<uint16_type, uint16_type, uint16_type> class Entity>
+              template<int, int, int> class Entity>
     typename Apply<DIM,T,Entity>::type get( Entity<DIM,1,DIM> && e ) const
         {
             return typename Apply<DIM,T,Entity>::type( this->order() );
@@ -305,7 +306,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     struct ApplyIMGeneral
     {
         //typedef IMGeneral<DIM, IMORDER, T, Entity,QPS> type;
@@ -314,7 +315,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     typename ApplyIMGeneral<DIM,T,Entity>::type applyIMGeneral( uint16_type O ) const 
         {
             return typename ApplyIMGeneral<DIM,T,Entity>::type( O );
@@ -322,7 +323,7 @@ struct _Q : public _QBase
 
     template<int DIM,
              typename T,
-             template<uint16_type, uint16_type, uint16_type> class Entity>
+             template<int, int, int> class Entity>
     typename ApplyIMGeneral<DIM,T,Entity>::type applyIMGeneral() const 
         {
             return typename ApplyIMGeneral<DIM,T,Entity>::type( this->order() );
@@ -374,7 +375,7 @@ private:
 
 template<int IMORDER,
          int DIM,
-         template<uint16_type, uint16_type, uint16_type> class Entity,
+         template<int, int, int> class Entity,
          template<class Convex, uint16_type O, typename T2> class QPS,
          typename T>
 struct IMGeneric
@@ -395,9 +396,9 @@ struct IMGeneric
 
 #if 0
 template<int Dim,
-         uint16_type Order,
+         int Order,
          typename T,
-         template<uint16_type,uint16_type,uint16_type> class Entity,
+         template<int,int,int> class Entity,
          template<class Convex, uint16_type O, typename T2> class QPS,
          template<uint16_type N> class DegreePolicy>
 std::ostream&

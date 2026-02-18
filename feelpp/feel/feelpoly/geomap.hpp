@@ -64,6 +64,7 @@
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/lagrange.hpp>
+#include <feel/feelpoly/order.hpp>
 
 
 namespace Feel
@@ -99,10 +100,10 @@ struct GeomapInverse
     //GeomapInverse
 };
 
-template <uint16_type O,
+template <int O,
           template <uint16_type Dim> class PolySetType,
           typename ContinuityType,
-          template <class, uint16_type, class> class Pts,
+          template <class, int, class> class Pts,
           uint16_type TheTag>
 class Lagrange;
 
@@ -115,13 +116,13 @@ class Lagrange;
  * element on the current element, and its values on integration points
  *
  */
-template <uint16_type Dim,
-          uint16_type Order,
-          uint16_type RealDim,
+template <int Dim,
+          int Order,
+          int RealDim,
           typename T = double,
-          template <uint16_type, uint16_type, uint16_type> class Entity = Simplex,
-          template <uint16_type, template <uint16_type RDim> class PolySetType, typename ContinuityType,
-                    template <class, uint16_type, class> class Pts, uint16_type> class PP = Lagrange>
+          template <int, int, int> class Entity = Simplex,
+          template <int, template <uint16_type RDim> class PolySetType, typename ContinuityType,
+                    template <class, int, class> class Pts, uint16_type> class PP = Lagrange>
 class GeoMap
     : public PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type //,
                                                                                                                                                              //public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
@@ -155,10 +156,18 @@ class GeoMap
     static constexpr uint16_type nDim = super::nDim;
     static constexpr uint16_type nRealDim = super::nRealDim;
     static constexpr uint16_type nDof = super::nDof;
-    static constexpr uint16_type nOrder = Order;
+    //! @brief True if Order is known at compile time (i.e., Order >= 0)
+    static constexpr bool is_order_static = ( Order != Dynamic );
+    //! @brief True if Order is determined at runtime (i.e., Order == Dynamic == -1)
+    static constexpr bool is_order_dynamic = !is_order_static;
+    //! @brief Template order parameter (use order() accessor for runtime value)
+    static constexpr int nOrder_v = Order;
+    //! @brief Static order (1 for dynamic as placeholder in template expressions)
+    static constexpr uint16_type nOrder = ( Order >= 0 ) ? static_cast<uint16_type>( Order ) : 1;
     static constexpr uint16_type nNodes = super::nNodes;
     static constexpr fem::transformation_type trans = super::trans;
-    static constexpr bool is_linear = ( trans == fem::LINEAR );
+    // Dynamic-order geomaps are not linear at compile-time: linearity is decided at runtime.
+    static constexpr bool is_linear = is_order_dynamic ? false : ( trans == fem::LINEAR );
     
     typedef typename super::value_type value_type;
 
@@ -219,90 +228,40 @@ class GeoMap
 
     using hessian_basis_type = Eigen::Tensor<value_type,3>;
     
-    /** default constructor */
-    GeoMap()
+    /** default constructor (static order only) */
+    GeoMap() requires( is_order_static )
         : super(),
           M_is_cached( false ),
           _elementMap(),
           _boundaryMap(),
-          M_g_linear( nNodes, nDim ),
+          M_g_linear( this->nbPoints(), nDim ),
           M_refconvex()
     {
-        if ( trans == fem::LINEAR )
-        {
-            //M_g_linear.resize( nNodes, nDim );
-            matrix_node_t_type __dummy_pts( ublas::zero_matrix<value_type>( nDim, 1 ) );
-
-            ublas::vector<ublas::matrix<value_type>> m = super::derivate( __dummy_pts );
-
-            FEELPP_ASSERT( M_g_linear.size2() == m.size() )
-            ( M_g_linear.size2() )( m.size() ).error( "invalid dimension" );
-            FEELPP_ASSERT( m( 0 ).size2() == 1 )
-            ( m( 0 ).size2() ).error( "Invalid number of points" );
-
-            FEELPP_ASSERT( M_g_linear.size1() == m( 0 ).size1() )
-            ( M_g_linear.size1() )( m( 0 ).size1() ).error( "invalid number of DOF" );
-
-            //std::cout << "nNodes= " << nNodes << "\n"
-            //<< "nDim= " << nDim << "\n";
-            //std::cout << "M_g_linear = " << M_g_linear << "\n"
-            //<< "m(0) = " << m( 0 ) << "\n";
-
-            for ( uint16_type i = 0; i < nNodes; ++i )
-            {
-                for ( uint16_type n = 0; n < nDim; ++n )
-                {
-                    //std::cout << "m(n)= " << m( n ) << "\n";
-                    M_g_linear( i, n ) = m( n )( i, 0 );
-                }
-            }
-
-#if 0
-
-                       for ( uint16_type i = 0; i < nNodes; ++i )
-                       {
-                           for ( uint16_type n = 0; n < nDim; ++n )
-                           {
-                               M_g_linear( i, n ) = this->dPhi( i, n, __dummy_pt );
-                           }
-                       }
-
-#endif // 0
-        }
+        initLinearGradientCache();
     }
-    /** default constructor */
-    GeoMap( element_gm_ptrtype const& e, face_gm_ptrtype const& f )
+
+    /** constructor with runtime order (dynamic order only) */
+    explicit GeoMap( RuntimeOrder o ) requires( is_order_dynamic )
+        : super( o ),
+          M_is_cached( false ),
+          _elementMap(),
+          _boundaryMap(),
+          M_g_linear( this->nbPoints(), nDim ),
+          M_refconvex()
+    {
+        initLinearGradientCache();
+    }
+
+    /** constructor with element and face maps (static order only) */
+    GeoMap( element_gm_ptrtype const& e, face_gm_ptrtype const& f ) requires( is_order_static )
         : super(),
           M_is_cached( false ),
           _elementMap( e ),
           _boundaryMap( f ),
-          M_g_linear( nNodes, nDim ),
+          M_g_linear( this->nbPoints(), nDim ),
           M_refconvex()
     {
-        if ( trans == fem::LINEAR )
-        {
-            //M_g_linear.resize( nNodes, nDim );
-            node_t_type __dummy_pt( nDim );
-
-            matrix_node_t_type __dummy_pts( ublas::zero_matrix<value_type>( nDim, 1 ) );
-
-            //std::cout << "geomap::derivate<> pts=" << __dummy_pts << "\n";
-            //std::cout << "geomap::derivate<> m=" << super::derivate( __dummy_pts ) << "\n";
-            ublas::vector<ublas::matrix<value_type>> m = super::derivate( __dummy_pts );
-            //std::cout << "nNodes= " << nNodes << "\n"
-            //<< "nDim= " << nDim << "\n";
-            //std::cout << "M_g_linear = " << M_g_linear << "\n"
-            //<< "m(0) = " << m( 0 ) << "\n";
-
-            for ( uint16_type i = 0; i < nNodes; ++i )
-            {
-                for ( uint16_type n = 0; n < nDim; ++n )
-                {
-                    //std::cout << "m(n)= " << m( n ) << "\n";
-                    M_g_linear( i, n ) = m( n )( i, 0 );
-                }
-            }
-        }
+        initLinearGradientCache();
     }
     /**
             destructor
@@ -325,11 +284,37 @@ class GeoMap
     }
 
     /**
+     * @return the polynomial order of the geometric mapping
+     * For static order, returns the template parameter.
+     * For dynamic order, returns the runtime value.
+     */
+    [[nodiscard]] constexpr uint16_type order() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return nOrder;
+        else if constexpr ( requires( super const& s ) { s.order(); } )
+            return static_cast<uint16_type>( static_cast<super const&>( *this ).order() );
+        else
+            return nOrder;
+    }
+
+    /**
+     * @deprecated Use order() instead
+     */
+    [[nodiscard]] uint16_type runtimeOrder() const noexcept
+    {
+        return this->order();
+    }
+
+    /**
    \return true if the geometric mapping is linear, false otherwise
 */
     bool isLinear() const
     {
-        return trans == fem::LINEAR;
+        if constexpr ( is_order_dynamic )
+            return this->order() == 1;
+        else
+            return is_linear;
     }
 
     /**
@@ -386,7 +371,8 @@ class GeoMap
         real_p.clear();
 
         // Loop over all nodes
-        for (uint16_type i = 0; i < nNodes; ++i)
+        const auto nPts = static_cast<size_type>( G.size2() );
+        for ( size_type i = 0; i < nPts; ++i )
         {
             // Evaluate phi at the current point and assign it to phi_at_pt
             value_type phi_at_pt = super::evaluate(i, ref_p)(0);
@@ -411,7 +397,8 @@ class GeoMap
         real_p.clear();
 
         // Loop over all nodes
-        for (uint16_type i = 0; i < nNodes; ++i)
+        const auto nPts = static_cast<size_type>( G.size2() );
+        for ( size_type i = 0; i < nPts; ++i )
         {
             // Evaluate the transformation at the given point
             value_type phi_at_pt = pc->phi(id_ref, i);
@@ -448,7 +435,7 @@ class GeoMap
     void gradient( const node_t_type& __pt,
                    matrix_type& __g ) const
         {
-            if ( trans == fem::LINEAR )
+            if ( this->isLinear() )
             {
                 __g = M_g_linear;
             }
@@ -485,7 +472,7 @@ class GeoMap
         FEELPP_ASSERT( __pc )
         ( __idref ).error( "a PreCompute must be set first before using this function" );
 
-        if ( trans == fem::LINEAR )
+        if ( this->isLinear() )
         {
             __g = M_g_linear;
         }
@@ -495,7 +482,8 @@ class GeoMap
             FEELPP_ASSERT( __pc->dim() == dim() )
             ( __pc->dim() )( dim() ).error( "invalid dimension" );
 
-            for ( size_type i = 0; i < nNodes; ++i )
+            const auto nPts = static_cast<size_type>( __g.size1() );
+            for ( size_type i = 0; i < nPts; ++i )
             {
                 for ( uint16_type n = 0; n < nDim; ++n )
                 {
@@ -519,7 +507,8 @@ class GeoMap
         {
             DCHECK( __pc ) << "a PreCompute must be set first before using this function:"  << __idref;
             
-            for ( size_type i = 0; i < nNodes; ++i )
+            const auto nPts = static_cast<size_type>( _hessian.dimension( 0 ) );
+            for ( size_type i = 0; i < nPts; ++i )
             {
                 _hessian.chip( i, 0 ) = __pc->hessian( i, __idref ).chip( 0, 2 );
             }
@@ -557,6 +546,27 @@ class GeoMap
     }
 
     bool M_is_cached;
+    void initLinearGradientCache()
+    {
+        if ( !this->isLinear() )
+            return;
+
+        matrix_node_t_type __dummy_pts( ublas::zero_matrix<value_type>( nDim, 1 ) );
+        ublas::vector<ublas::matrix<value_type>> m = super::derivate( __dummy_pts );
+
+        FEELPP_ASSERT( M_g_linear.size2() == m.size() )
+            ( M_g_linear.size2() )( m.size() ).error( "invalid dimension" );
+        FEELPP_ASSERT( m( 0 ).size2() == 1 )
+            ( m( 0 ).size2() ).error( "Invalid number of points" );
+        FEELPP_ASSERT( M_g_linear.size1() == m( 0 ).size1() )
+            ( M_g_linear.size1() )( m( 0 ).size1() ).error( "invalid number of DOF" );
+
+        const auto nPts = static_cast<size_type>( this->nbPoints() );
+        for ( size_type i = 0; i < nPts; ++i )
+            for ( uint16_type n = 0; n < nDim; ++n )
+                M_g_linear( i, n ) = m( n )( i, 0 );
+    }
+
     bool isCached() const
     {
         return M_is_cached;
@@ -782,7 +792,7 @@ class GeoMap
         static inline const uint16_type nDim = NDim;
         // type of transformation (linear or not)
         static const fem::transformation_type trans = geometric_mapping_type::trans;
-        static inline const bool is_linear = ( trans == fem::LINEAR );
+        static inline const bool is_linear = geometric_mapping_type::is_linear;
 
         static inline const bool condition = ( ( PDim == NDim ) || ( ( NDim >= 1 ) && ( PDim == NDim - 1 ) ) );
         //BOOST_MPL_ASSERT_MSG( condition, INVALID_DIM, (mpl::int_<NDim>, mpl::int_<PDim>, ElementType ) );
@@ -851,7 +861,7 @@ class GeoMap
               M_pc( __pc ),
               M_pc_faces(),
               M_npoints( ( M_pc ) ? M_pc->nPoints() : 0 ),
-              M_G( NDim, gm_type::nNodes ),
+              M_G( NDim, __gm->nbPoints() ),
               M_g( M_G.cols(), PDim ),
               M_hessian_basis_at_pt( M_G.cols(), PDim, PDim ),
               M_CS(),
@@ -1020,19 +1030,21 @@ class GeoMap
                 {
                     M_context_updated = 0;
                     M_element = std::addressof( __e );
+                    const bool use_vertices = ( M_G.cols() == element_type::numVertices );
                     if constexpr ( !is_reference_convex_v<element_type> )
                     {
-                        if constexpr ( gm_type::nNodes == element_type::numVertices )
+                        if ( use_vertices )
                             __e.updateVertices( M_G );
                         else
                             __e.updateG( M_G );
                     }
                     else
                     {
+                        auto const& elementNodes = use_vertices ? __e.vertices() : __e.G();
                         if constexpr( std::is_same_v<value_type,typename element_type::value_type> )
-                            M_G = em_cmatrix_col_type<value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() );
+                            M_G = em_cmatrix_col_type<value_type>( elementNodes.data().begin(), M_G.rows(), M_G.cols() );
                         else
-                            M_G = em_cmatrix_col_type<typename element_type::value_type>( ( ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G() ).data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
+                            M_G = em_cmatrix_col_type<typename element_type::value_type>( elementNodes.data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
                     }
 
                     M_id = __e.id();
@@ -1378,7 +1390,7 @@ class GeoMap
          */
         bool isOnConvexSurface() const
         {
-            if constexpr ( trans == fem::LINEAR )
+            if constexpr ( is_linear )
             {
 #if 0
                 // x -x0 - K(0)\bar{x}
@@ -2843,7 +2855,7 @@ class GeoMap
 
         matrix_node_t_type operator()( matrix_node_t_type const& real_pts, bool allow_extrapolation = false ) const
         {
-            if ( trans == fem::LINEAR )
+            if ( M_gm->isLinear() )
                 return linearInversePoints( real_pts, allow_extrapolation );
 
             else
@@ -3286,7 +3298,7 @@ class GeoMap
 #include <boost/preprocessor/tuple/eat.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 
-template <int Dim, int Order, int RealDim, template <uint16_type, uint16_type, uint16_type> class Entity = Simplex, typename T = double>
+template <int Dim, int Order, int RealDim, template <int, int, int> class Entity = Simplex, typename T = double>
 struct GT_Lagrange
 {
 };
@@ -3435,7 +3447,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_GT_FACTORY_OP, 4, ( FEELPP_GEOMAP, FEELPP
 #undef FEELPP_REALDIMS
 #undef FEELPP_NEWDIMS
 
-template <typename Elem, template <uint16_type, uint16_type, uint16_type> class Entity = Simplex, typename T = double>
+template <typename Elem, template <int, int, int> class Entity = Simplex, typename T = double>
 class RealToReference
 {
   public:

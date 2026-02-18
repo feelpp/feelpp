@@ -416,6 +416,36 @@ struct scalings
 
     matrix_type M_s;
 };
+
+/**
+ * \brief Runtime scalings for dynamic order Dubiner polynomials
+ *
+ * Computes powers of (1-eta)/2 up to given order.
+ * Used when polynomial order is determined at runtime.
+ *
+ * @param order The maximum order
+ * @param pts The evaluation points in [-1,1]
+ * @return Matrix where row k contains ((1-pts)/2)^k
+ */
+template<typename T>
+ublas::matrix<T> scalingsRuntime( uint16_type order, ublas::vector<T> const& pts )
+{
+    ublas::matrix<T> s( order + 1, pts.size() );
+    ublas::row( s, 0 ) = ublas::scalar_vector<T>( pts.size(), T( 1 ) );
+
+    if ( order > 0 )
+    {
+        ublas::row( s, 1 ) = T( 0.5 ) * ( ublas::row( s, 0 ) - pts );
+
+        for ( uint16_type k = 2; k <= order; ++k )
+        {
+            ublas::row( s, k ) = ublas::element_prod( ublas::row( s, k - 1 ),
+                                                       ublas::row( s, 1 ) );
+        }
+    }
+    return s;
+}
+
 } // details
 /// \endcond
 

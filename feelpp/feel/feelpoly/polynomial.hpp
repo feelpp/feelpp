@@ -38,15 +38,19 @@
 // clang-format on
 
 
+#include <type_traits>
+#include <variant>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/policy.hpp>
 
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template<typename, template<uint16_type> class PolySetType > class PolynomialSet;
+template<typename, template<uint16_type> class PolySetType, int OrderSpec> class PolynomialSet;
 
 /**
  * \class Polynomial
@@ -67,7 +71,8 @@ template<typename, template<uint16_type> class PolySetType > class PolynomialSet
  */
 template<typename Poly,
          template<uint16_type> class PolySetType = Scalar,
-         typename Container =  typename Poly::basis_type::matrix_type>
+         typename Container = typename Poly::basis_type::matrix_type,
+         int OrderSpec = Poly::nOrder>
 class Polynomial
 {
 public:
@@ -76,8 +81,10 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Poly::nDim;
-    static const uint16_type nOrder = Poly::nOrder;
+    static constexpr uint16_type nDim = Poly::nDim;
+    static constexpr bool is_order_static = ( OrderSpec != Dynamic );
+    static constexpr bool is_order_dynamic = !is_order_static;
+    static constexpr uint16_type nOrder = is_order_static ? static_cast<uint16_type>( OrderSpec ) : Poly::nOrder;
 
     //@}
 
@@ -86,7 +93,7 @@ public:
      */
     //@{
 
-    typedef Polynomial<Poly, PolySetType> self_type;
+    typedef Polynomial<Poly, PolySetType, Container, OrderSpec> self_type;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
 
@@ -101,7 +108,7 @@ public:
     static const uint16_type nComponents2 = polyset_type::nComponents2;
 
     typedef typename GetComponent<polyset_type>::type component_type;
-    typedef Polynomial<Poly,Scalar> scalar_component_type;
+    typedef Polynomial<Poly, Scalar, typename Poly::basis_type::matrix_type, OrderSpec> scalar_component_type;
 
     typedef typename basis_type::points_type points_type;
     typedef typename basis_type::matrix_type matrix_type;
@@ -126,6 +133,16 @@ public:
         M_basis(),
         M_coeff( M_basis.coeff() )
     {
+        set_order_value( nOrder );
+    }
+
+    Polynomial( uint16_type order )
+        requires( is_order_dynamic )
+        :
+        M_basis(),
+        M_coeff( M_basis.coeff() )
+    {
+        set_order_value( order );
     }
 
 
@@ -138,6 +155,7 @@ public:
         M_basis( __poly.basis() ),
         M_coeff( M_basis.coeff() )
     {
+        set_order_value( nOrder );
     }
 
     /**
@@ -153,6 +171,7 @@ public:
         M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
+        set_order_value( nOrder );
     }
 
     /**
@@ -167,6 +186,7 @@ public:
         M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
+        set_order_value( nOrder );
     }
 
     /**
@@ -183,10 +203,12 @@ public:
         M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
+        set_order_value( nOrder );
     }
 
     Polynomial( Polynomial const & p )
         :
+        M_order( p.M_order ),
         M_basis( p.M_basis ),
         M_coeff( p.M_coeff )
     {}
@@ -204,6 +226,7 @@ public:
     {
         if ( this != &__p )
         {
+            M_order = __p.M_order;
             M_basis = __p.M_basis;
             M_coeff = __p.M_coeff;
         }
@@ -304,11 +327,27 @@ public:
         return M_basis;
     }
 
+    uint16_type degree() const
+    {
+        return order_value();
+    }
+
+    uint16_type order() const
+    {
+        return order_value();
+    }
+
     //@}
 
     /** @name  Mutators
      */
     //@{
+
+    void setOrder( uint16_type order )
+        requires( is_order_dynamic )
+    {
+        set_order_value( order );
+    }
 
     /**
      * set the coefficient of the polynomial in the basis.
@@ -406,9 +445,12 @@ public:
      *
      * \return a \p PolynomialSet
      */
-    PolynomialSet<Poly,PolySetType> toSet( bool asis = false ) const
+    PolynomialSet<Poly, PolySetType, OrderSpec> toSet( bool asis = false ) const
     {
-        return PolynomialSet<Poly,PolySetType>( Poly(), M_coeff, asis );
+        PolynomialSet<Poly, PolySetType, OrderSpec> result( Poly(), M_coeff, asis );
+        if constexpr ( is_order_dynamic )
+            result.setOrder( order_value() );
+        return result;
     }
 #if 0
     Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p ) const
@@ -425,15 +467,35 @@ protected:
 
 private:
 
+    using order_storage_type = std::conditional_t<is_order_static, std::monostate, uint16_type>;
+
+    [[nodiscard]] uint16_type order_value() const
+    {
+        if constexpr ( is_order_static )
+            return nOrder;
+        else
+            return M_order;
+    }
+
+    void set_order_value( uint16_type order )
+    {
+        if constexpr ( is_order_dynamic )
+            M_order = order;
+    }
+
+    [[no_unique_address]] order_storage_type M_order{};
     basis_type M_basis;
     container_type M_coeff;
 };
-template<typename Poly, template<uint16_type> class PolySetType>
-Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1,Polynomial<Poly, PolySetType> const& p2 )
+template<typename Poly, template<uint16_type> class PolySetType, typename Container, int OrderSpec>
+Polynomial<Poly, PolySetType, Container, OrderSpec> operator-( Polynomial<Poly, PolySetType, Container, OrderSpec> const& p1,Polynomial<Poly, PolySetType, Container, OrderSpec> const& p2 )
 {
     auto c = p1.coeff()-p2.coeff();
     //std::cout << "operator- c=" << c << "\n";
-    return Polynomial<Poly, PolySetType>( Poly(), c );
+    Polynomial<Poly, PolySetType, Container, OrderSpec> result( Poly(), c );
+    if constexpr ( Polynomial<Poly, PolySetType, Container, OrderSpec>::is_order_dynamic )
+        result.setOrder( p1.order() );
+    return result;
 }
 
 }
