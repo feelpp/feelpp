@@ -210,6 +210,13 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
         return true;
     cout << "================================================================================\n"
          << "[Checker] " << this->journalWatcherInstanceName() << "\n";
+
+    // Print exact solution and gradient expressions for verification
+    cout << "  Exact solution: " << M_solution << "\n";
+    if ( M_gradient.has_value() )
+        cout << "  Exact gradient: " << M_gradient.value() << "\n";
+    cout << "--------------------------------------------------------------------------------\n";
+
     auto err = fn( M_solution );
     std::vector<bool> checkSuccess;
     nl::json pt;
