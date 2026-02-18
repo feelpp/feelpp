@@ -35,10 +35,16 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feelpoly/brezzidouglasmarini.hpp>
+
+#include <algorithm>
+#include <map>
+#include <vector>
 
 using namespace Feel;
 
@@ -77,6 +83,108 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( HDivRT0, T, dim_types )
 
     BOOST_TEST_MESSAGE( "HDivRT, a1(u)=" << a1(u)  );
     BOOST_TEST_MESSAGE( "check continuity for HDivRT in  " << nDim << "D P" << nOrder << " done\n" );
+}
+
+template<typename SpacePtrType>
+void
+checkInternalFaceDofConsistency( SpacePtrType const& Xh,
+                                 typename SpacePtrType::element_type::mesh_ptrtype const& mesh,
+                                 bool requireNonIdentityPermutation )
+{
+    using space_type = typename SpacePtrType::element_type;
+    using fe_type = typename space_type::fe_type;
+    using size_type = typename space_type::size_type;
+    using mesh_type = typename space_type::mesh_type;
+    using face_permutation_type = typename mesh_type::element_type::face_permutation_type;
+
+    auto const& fe = *Xh->fe();
+    auto const localDofCount = static_cast<uint16_type>( Xh->nLocalDof() );
+    auto dof = Xh->dof();
+
+    int checkedFaces = 0;
+    bool hasNonIdentityPermutation = false;
+
+    for ( auto fit = mesh->beginFace(), fend = mesh->endFace(); fit != fend; ++fit )
+    {
+        auto const& face = fit->second;
+        if ( face.isOnBoundary() )
+            continue;
+
+        const size_type e0 = face.ad_first();
+        const size_type e1 = face.ad_second();
+        const uint16_type lf0 = face.pos_first();
+        const uint16_type lf1 = face.pos_second();
+        if ( e0 == invalid_v<size_type> || e1 == invalid_v<size_type> ||
+             lf0 == invalid_uint16_type_value || lf1 == invalid_uint16_type_value )
+            continue;
+
+        auto const& elt0 = mesh->element( e0 );
+        auto const& elt1 = mesh->element( e1 );
+        if constexpr ( fe_type::nDim == 3 )
+        {
+            hasNonIdentityPermutation =
+                hasNonIdentityPermutation ||
+                ( elt0.facePermutation( lf0 ) != face_permutation_type( face_permutation_type::IDENTITY ) ) ||
+                ( elt1.facePermutation( lf1 ) != face_permutation_type( face_permutation_type::IDENTITY ) );
+        }
+
+        std::map<size_type, int> g0ToSign;
+        std::map<size_type, int> g1ToSign;
+
+        auto const& signs0 = dof->localToGlobalSigns( e0 );
+        auto const& signs1 = dof->localToGlobalSigns( e1 );
+
+        for ( uint16_type ldof = 0; ldof < localDofCount; ++ldof )
+        {
+            auto const attachment = fe.dofAttachment( ldof );
+            if ( !attachment.isValid() || attachment.entityDim != 2 )
+                continue;
+
+            if ( attachment.entityId == lf0 )
+            {
+                const size_type gdof = dof->localToGlobal( e0, ldof ).index();
+                g0ToSign[gdof] = signs0( ldof );
+            }
+            if ( attachment.entityId == lf1 )
+            {
+                const size_type gdof = dof->localToGlobal( e1, ldof ).index();
+                g1ToSign[gdof] = signs1( ldof );
+            }
+        }
+
+        BOOST_REQUIRE_EQUAL( g0ToSign.size(), g1ToSign.size() );
+        BOOST_REQUIRE( !g0ToSign.empty() );
+        for ( auto const& [gdof, sign0] : g0ToSign )
+        {
+            auto const it = g1ToSign.find( gdof );
+            BOOST_REQUIRE( it != g1ToSign.end() );
+            BOOST_CHECK_EQUAL( sign0, -it->second );
+        }
+        ++checkedFaces;
+    }
+
+    BOOST_CHECK_GT( checkedFaces, 0 );
+    if ( requireNonIdentityPermutation )
+        BOOST_CHECK( hasNonIdentityPermutation );
+}
+
+BOOST_AUTO_TEST_CASE( HDivRT0_FacePermutationConsistency3D )
+{
+    using mesh_type = Mesh<Simplex<3,1>>;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = Dh<0>( mesh );
+    checkInternalFaceDofConsistency( Xh, mesh, false );
+}
+
+BOOST_AUTO_TEST_CASE( HDivBDM1_FacePermutationConsistency3D )
+{
+    using mesh_type = Mesh<Simplex<3,1>>;
+    using basis_type = bases<BrezziDouglasMarini<0>>;
+    using space_type = FunctionSpace<mesh_type, basis_type>;
+
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = space_type::New( mesh );
+    checkInternalFaceDofConsistency( Xh, mesh, true );
 }
 
 

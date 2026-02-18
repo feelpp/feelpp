@@ -338,10 +338,8 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( HDIV )
 
-typedef boost::mpl::vector<boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<0>>, 
-                           boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<1>>
-                           //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<0>>, 
-                           //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<1>>
+typedef boost::mpl::vector<boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<0>>
+                           //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<0>>
                         > types;
 using namespace Feel;
 

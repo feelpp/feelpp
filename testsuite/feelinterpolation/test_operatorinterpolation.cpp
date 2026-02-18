@@ -355,7 +355,7 @@ std::shared_ptr<Mesh<Simplex<3, OrderGeo>>>
     return mesh;
 }
 
-template <uint16_type Dim, uint16_type OrderGeo,int Order=3, template<class Convex, uint16_type OrderP, typename T> class PointSetT = PointSetFekete>
+template <uint16_type Dim, uint16_type OrderGeo,int Order=3, template<class Convex, int OrderP, typename T> class PointSetT = PointSetFekete>
 void testSMD( double tol )
 {
     BOOST_TEST_MESSAGE( "start test SMD " << Dim << "d Geo" << OrderGeo );

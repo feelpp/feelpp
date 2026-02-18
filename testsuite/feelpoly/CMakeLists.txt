@@ -3,14 +3,25 @@ set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testpoly"
 set(FEELPP_POLY_TEST_TARGETS)
 
 
-# C++20 modernization tests
-foreach(TEST concepts meta order)
+# C++20 modernization tests - Phase 1-3 (foundation, policies, polynomialset)
+foreach(TEST concepts meta order dynamic_order basis_dynamic)
+  feelpp_add_test( ${TEST} )
+  list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
+endforeach()
+
+# C++20 modernization tests - Phase 3.5+ (type-level dynamic order)
+# These tests define the target API for Simplex<Dim, Dynamic>, Hypercube<Dim, Dynamic>, and Lagrange<Dynamic>
+foreach(TEST simplex_dynamic hypercube_dynamic lagrange_dynamic lagrange_derivative_equivalence dynamic_order_integration pointset)
   feelpp_add_test( ${TEST} )
   list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 endforeach()
 
 # Additional C++20 modernization tests
 feelpp_add_test( policy )
+list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
+feelpp_add_test( rt0_static )
+list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
+feelpp_add_test( bdm_static )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 
 feelpp_add_test( feelpoly_traits SRCS test_traits.cpp )

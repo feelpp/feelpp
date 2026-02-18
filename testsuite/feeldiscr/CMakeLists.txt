@@ -14,7 +14,7 @@ feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )
 
-# comment out as it breaks compilation and buildkite testuite pipeline
+# comment out as it breaks compilation in the legacy testsuite pipeline
 # feelpp_add_test( space_0d SKIP_TEST )
 
 
@@ -104,3 +104,7 @@ feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )
 feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
 
 feelpp_add_test( geometricspace )
+
+feelpp_add_test( pch_dynamic NO_MPI_TEST )
+feelpp_add_test( dynamic_order_math_parity NO_MPI_TEST )
+feelpp_add_test( hdiv_runtime_order_parity NO_MPI_TEST )

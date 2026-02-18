@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
+  Copyright (C) 2026 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,17 +24,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file test_mesh.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
+   @file test_mesh.cpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-09-03
+   @brief Mesh testsuite with C++20/23 modernization and static/dynamic order support
  */
 
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
 
 #include <feel/feelcore/testsuite.hpp>
+
+#include <concepts>
+#include <type_traits>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -43,170 +46,433 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelpoly/order.hpp>
 
-namespace Feel
+namespace Feel::test_mesh_detail
 {
-namespace detail
+
+//! @brief Concept for mesh types supporting our tests
+template<typename M>
+concept TestMeshConcept = requires( M m )
 {
-typedef Mesh<Simplex<2> > mesh_type;
-typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-}
-}
-struct test_mesh_filters
-{
-    test_mesh_filters( double meshSize_=1 ): meshSize( meshSize_ ), mesh()
-    {
-        BOOST_TEST_MESSAGE( "setup mesh" );
-        BOOST_CHECK( meshSize_ <= 1 );
-
-        mesh = this->createMesh( meshSize );
-
-        BOOST_CHECK( mesh != 0 );
-        BOOST_TEST_MESSAGE( "setup mesh done" );
-    }
-    Feel::detail::mesh_ptrtype
-    createMesh( double hsize )
-    {
-        BOOST_TEST_MESSAGE( "create mesh" );
-        using namespace Feel;
-        double meshSize = hsize;
-        //std::cout << "hsize = " << meshSize << std::endl;
-
-        Gmsh __gmsh;
-        std::string fname;
-        std::ostringstream ostr;
-        std::ostringstream nameStr;
-
-        BOOST_TEST_CHECKPOINT( "Gmsh generator instantiated" );
-
-        GeoTool::Node x1(-1, -1);
-        GeoTool::Node x2( 1, -1);
-        GeoTool::Node x3(-1,  1);
-        GeoTool::Triangle T( meshSize,"MyTriangle",x1,x2,x3);
-        T.setMarker(_type="line",_name="Gamma1",_marker1=true);
-        T.setMarker(_type="line",_name="Gamma2",_marker2=true);
-        T.setMarker(_type="line",_name="Gamma3",_marker3=true);
-        T.setMarker(_type="surface",_name="Omega",_markerAll=true);
-
-        auto mesh = T.createMesh(_mesh = new Feel::detail::mesh_type,
-                                 _name="triangle" );
-
-        BOOST_TEST_CHECKPOINT( "mesh ready for use" );
-        BOOST_TEST_MESSAGE( "create mesh done" );
-        return mesh;
-    }
-
-    void operator()()
-    {
-        BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize );
-
-
-        using namespace Feel;
-
-        BOOST_TEST_MESSAGE( "testing mesh faces" );
-        // location faces
-        {
-            auto rangeInternalFaces = mesh->internalFaces();
-            auto it = std::get<0>( rangeInternalFaces );
-            auto en = std::get<1>( rangeInternalFaces );
-            //BOOST_CHECK( std::distance( it, en ) == 1 );
-            for ( ; it != en; ++it )
-            {
-                auto const& iface = boost::unwrap_ref( *it );
-                // the face must be connected with two elements
-                BOOST_CHECK( iface.isConnectedTo0() &&
-                             iface.isConnectedTo1() );
-                // check that the points coordinates are the same for the face vertices
-                int face_0 = iface.pos_first();
-                int face_1 = iface.pos_second();
-                Feel::node<double>::type n00 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
-                Feel::node<double>::type n10 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 1 ) ).node();
-                FEELPP_ASSERT( ublas::norm_2( n00 - n10 ) < 1e-15 )
-                ( iface.id() )
-                ( iface.element( 0 ).G() )
-                ( face_0 )
-                ( iface.element( 0 ).fToP( face_0, 0 ) )
-                ( iface.element( 1 ).G() )
-                ( face_1 )
-                ( iface.element( 1 ).fToP( face_1, 1 ) )
-                ( n00 )
-                ( n10 )
-                ( ublas::norm_2( n00 - n10 ) ).warn( "check failed" );
-                BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
-                Feel::node<double>::type n01 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 1 ) ).node();
-                Feel::node<double>::type n11 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
-                FEELPP_ASSERT( ublas::norm_2( n01 - n11 ) < 1e-15 )
-                ( iface.id() )
-                ( iface.element( 0 ).G() )
-                ( face_0 )
-                ( iface.element( 0 ).fToP( face_0, 1 ) )
-                ( iface.element( 1 ).G() )
-                ( face_1 )
-                ( iface.element( 1 ).fToP( face_1, 0 ) )
-                ( face_1 )
-                ( n01 )( n11 )( ublas::norm_2( n01 - n11 ) ).warn( "check failed" );
-                BOOST_CHECK( ublas::norm_2( n01 - n11 ) < 1e-15 );
-            }
-
-            auto rangeBoundaryFaces = mesh->facesOnBoundary();
-            it = std::get<0>( rangeBoundaryFaces );
-            en = std::get<1>( rangeBoundaryFaces );
-            //BOOST_CHECK( std::distance( it, en ) == 4 );
-            for ( ; it != en; ++it )
-            {
-                auto const& bface = boost::unwrap_ref( *it );
-                BOOST_CHECK( bface.isConnectedTo0() &&
-                             !bface.isConnectedTo1() );
-                BOOST_CHECK( bface.marker().value() == mesh->markerName("Gamma1") ||
-                             bface.marker().value() == mesh->markerName("Gamma2") ||
-                             bface.marker().value() == mesh->markerName("Gamma3") );
-            }
-        }
-        BOOST_TEST_MESSAGE( "testing mesh elements" );
-        // elements
-        {
-            Feel::detail::mesh_type::gm_ptrtype __gm = mesh->gm();
-            //
-            // Precompute some data in the reference element for
-            // geometric mapping and reference finite element
-            //1
-            Feel::detail::mesh_type::reference_convex_type ref_conv;
-            auto __geopc = __gm->preCompute( ref_conv.points() );
-            Feel::MeshTraits<Feel::detail::mesh_type>::element_const_iterator it = mesh->beginElement();
-            Feel::MeshTraits<Feel::detail::mesh_type>::element_const_iterator en = mesh->endElement();
-
-            //BOOST_CHECK( std::distance( it, en ) == 1 );
-            for ( ; it != en; ++it )
-            {
-                auto const& elt = it->second;
-                // check that the geometric transformation from
-                // the current gives back the vertices of the
-                // element
-                auto __c = __gm->template context<vm::POINT>( elt, __geopc );
-
-                BOOST_CHECK( ublas::norm_frobenius( __c->xReal() - elt.G() ) < 1e-15 );
-            }
-        }
-        BOOST_TEST_MESSAGE( "testing mesh for h=" << meshSize << " done" );
-    }
-    double meshSize;
-    Feel::detail::mesh_ptrtype mesh;
+    { m.numElements() } -> std::convertible_to<typename M::size_type>;
+    { m.numFaces() } -> std::convertible_to<typename M::size_type>;
+    { m.numPoints() } -> std::convertible_to<typename M::size_type>;
+    { m.order() } -> std::convertible_to<uint16_type>;
 };
+
+/**
+ * @brief Generic mesh test fixture that works for both static and dynamic order
+ *
+ * Uses C++20 concepts to constrain mesh type and if constexpr for
+ * static/dynamic order handling.
+ */
+template <typename MeshType>
+    requires TestMeshConcept<MeshType>
+class MeshTestFixture
+{
+public:
+    using mesh_type = MeshType;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+
+    static constexpr bool is_order_static = mesh_type::is_order_static;
+    static constexpr bool is_order_dynamic = mesh_type::is_order_dynamic;
+    static constexpr uint16_type nDim = mesh_type::nDim;
+
+    /**
+     * @brief Construct fixture for static order mesh
+     */
+    explicit MeshTestFixture( double meshSize = 1.0 )
+        requires( is_order_static )
+        : M_meshSize( meshSize )
+    {
+        BOOST_TEST_MESSAGE( "Setting up static order mesh (order=" << mesh_type::nOrder << ")" );
+        M_mesh = createMesh();
+        BOOST_CHECK( M_mesh != nullptr );
+    }
+
+    /**
+     * @brief Construct fixture for dynamic order mesh
+     */
+    explicit MeshTestFixture( RuntimeOrder runtime_order, double meshSize = 1.0 )
+        requires( is_order_dynamic )
+        : M_meshSize( meshSize ), M_runtime_order( runtime_order.value )
+    {
+        BOOST_TEST_MESSAGE( "Setting up dynamic order mesh (order=" << runtime_order.value << ")" );
+        M_mesh = createMesh( runtime_order );
+        BOOST_CHECK( M_mesh != nullptr );
+    }
+
+    //! @brief Get the mesh
+    [[nodiscard]] mesh_ptrtype mesh() const noexcept { return M_mesh; }
+
+    //! @brief Get the effective order (works for both static and dynamic)
+    [[nodiscard]] uint16_type order() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return mesh_type::nOrder;
+        else
+            return M_runtime_order;
+    }
+
+    /**
+     * @brief Run mesh filter tests (same logic for static and dynamic)
+     */
+    void testFilters()
+    {
+        BOOST_TEST_MESSAGE( "Testing mesh filters for order=" << order() );
+
+        // Test internal faces
+        auto rangeInternalFaces = M_mesh->internalFaces();
+        auto it = std::get<0>( rangeInternalFaces );
+        auto en = std::get<1>( rangeInternalFaces );
+
+        for ( ; it != en; ++it )
+        {
+            auto const& iface = boost::unwrap_ref( *it );
+
+            // Internal faces must be connected to two elements
+            BOOST_CHECK( iface.isConnectedTo0() && iface.isConnectedTo1() );
+
+            // Check face vertex coordinates consistency
+            int face_0 = iface.pos_first();
+            int face_1 = iface.pos_second();
+
+            auto n00 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 0 ) ).node();
+            auto n10 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 1 ) ).node();
+            BOOST_CHECK( ublas::norm_2( n00 - n10 ) < 1e-15 );
+
+            auto n01 = iface.element( 0 ).point( iface.element( 0 ).fToP( face_0, 1 ) ).node();
+            auto n11 = iface.element( 1 ).point( iface.element( 1 ).fToP( face_1, 0 ) ).node();
+            BOOST_CHECK( ublas::norm_2( n01 - n11 ) < 1e-15 );
+        }
+
+        // Test boundary faces
+        auto rangeBoundaryFaces = M_mesh->facesOnBoundary();
+        it = std::get<0>( rangeBoundaryFaces );
+        en = std::get<1>( rangeBoundaryFaces );
+
+        for ( ; it != en; ++it )
+        {
+            auto const& bface = boost::unwrap_ref( *it );
+
+            // Boundary faces connect to exactly one element
+            BOOST_CHECK( bface.isConnectedTo0() && !bface.isConnectedTo1() );
+
+            // Check marker validity
+            BOOST_CHECK( bface.marker().value() == M_mesh->markerName("Gamma1") ||
+                         bface.marker().value() == M_mesh->markerName("Gamma2") ||
+                         bface.marker().value() == M_mesh->markerName("Gamma3") );
+        }
+
+        BOOST_TEST_MESSAGE( "Mesh filter tests passed for order=" << order() );
+    }
+
+    /**
+     * @brief Run mesh element tests (same logic for static and dynamic)
+     */
+    void testElements()
+    {
+        BOOST_TEST_MESSAGE( "Testing mesh elements for order=" << order() );
+
+        auto __gm = M_mesh->gm();
+        typename mesh_type::reference_convex_type ref_conv;
+        auto __geopc = __gm->preCompute( ref_conv.points() );
+
+        auto it = M_mesh->beginElement();
+        auto en = M_mesh->endElement();
+
+        for ( ; it != en; ++it )
+        {
+            auto const& elt = it->second;
+
+            // Check geometric transformation gives back element vertices
+            auto __c = __gm->template context<vm::POINT>( elt, __geopc );
+
+            // For P1 elements, xReal should match G exactly
+            // For higher order elements, the comparison is more complex
+            // since G contains more points than the reference vertices
+            auto xReal = __c->xReal();
+            if constexpr ( mesh_type::nOrder <= 1 )
+            {
+                BOOST_CHECK( ublas::norm_frobenius( xReal - elt.G() ) < 1e-15 );
+            }
+            else
+            {
+                // For higher order, just verify we have valid geometry data
+                BOOST_CHECK( xReal.size2() > 0 );
+                BOOST_CHECK( elt.G().size2() > 0 );
+            }
+        }
+
+        BOOST_TEST_MESSAGE( "Mesh element tests passed for order=" << order() );
+    }
+
+    /**
+     * @brief Run component tests (same logic for both static and dynamic)
+     */
+    void testComponents()
+    {
+        BOOST_TEST_MESSAGE( "Testing mesh components for order=" << order() );
+
+        M_mesh->components().reset();
+        BOOST_CHECK( M_mesh->components().test( MESH_CHECK ) == false );
+        BOOST_CHECK( M_mesh->components().test( MESH_RENUMBER ) == false );
+        BOOST_CHECK( M_mesh->components().test( MESH_UPDATE_FACES ) == false );
+        BOOST_CHECK( M_mesh->components().test( MESH_UPDATE_EDGES ) == false );
+
+        M_mesh->components().reset();
+        M_mesh->components().set( MESH_CHECK );
+        BOOST_CHECK( M_mesh->components().test( MESH_CHECK ) == true );
+        BOOST_CHECK( M_mesh->components().test( MESH_RENUMBER ) == false );
+
+        M_mesh->components().reset();
+        M_mesh->components().set( MESH_CHECK | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+        BOOST_CHECK( M_mesh->components().test( MESH_CHECK ) == true );
+        BOOST_CHECK( M_mesh->components().test( MESH_UPDATE_FACES ) == true );
+        BOOST_CHECK( M_mesh->components().test( MESH_UPDATE_EDGES ) == true );
+
+        BOOST_TEST_MESSAGE( "Mesh component tests passed for order=" << order() );
+    }
+
+private:
+    /**
+     * @brief Create mesh for static order
+     */
+    mesh_ptrtype createMesh()
+        requires( is_order_static )
+    {
+        BOOST_TEST_MESSAGE( "Creating static order mesh" );
+
+        GeoTool::Node x1( -1, -1 );
+        GeoTool::Node x2( 1, -1 );
+        GeoTool::Node x3( -1, 1 );
+        GeoTool::Triangle T( M_meshSize, "MyTriangle", x1, x2, x3 );
+        T.setMarker( _type = "line", _name = "Gamma1", _marker1 = true );
+        T.setMarker( _type = "line", _name = "Gamma2", _marker2 = true );
+        T.setMarker( _type = "line", _name = "Gamma3", _marker3 = true );
+        T.setMarker( _type = "surface", _name = "Omega", _markerAll = true );
+
+        return T.createMesh( _mesh = new mesh_type, _name = "triangle_static" );
+    }
+
+    /**
+     * @brief Create mesh for dynamic order
+     */
+    mesh_ptrtype createMesh( RuntimeOrder runtime_order )
+        requires( is_order_dynamic )
+    {
+        BOOST_TEST_MESSAGE( "Creating dynamic order mesh (order=" << runtime_order.value << ")" );
+
+        // For dynamic order, we need to create the mesh differently
+        // Currently, GeoTool may not support dynamic order directly
+        // This is a placeholder that shows the intended API
+
+        GeoTool::Node x1( -1, -1 );
+        GeoTool::Node x2( 1, -1 );
+        GeoTool::Node x3( -1, 1 );
+        GeoTool::Triangle T( M_meshSize, "MyTriangle", x1, x2, x3 );
+        T.setMarker( _type = "line", _name = "Gamma1", _marker1 = true );
+        T.setMarker( _type = "line", _name = "Gamma2", _marker2 = true );
+        T.setMarker( _type = "line", _name = "Gamma3", _marker3 = true );
+        T.setMarker( _type = "surface", _name = "Omega", _markerAll = true );
+
+        // Create mesh with runtime order
+        auto mesh = std::make_shared<mesh_type>( runtime_order );
+        // Note: Full implementation requires updating GeoTool to support dynamic order
+        return T.createMesh( _mesh = mesh.get(), _name = "triangle_dynamic" );
+    }
+
+    double M_meshSize;
+    mesh_ptrtype M_mesh;
+    uint16_type M_runtime_order{1};  // Default runtime order
+};
+
+} // namespace Feel::test_mesh_detail
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( mesh )
 
+//==============================================================================
+// Static Order Tests (P1)
+//==============================================================================
 
-BOOST_AUTO_TEST_CASE( test_mesh_filters_ )
-{
-    test_mesh_filters tmf;
-    tmf();
-}
-BOOST_AUTO_TEST_CASE( test_mesh_comp )
+BOOST_AUTO_TEST_CASE( test_mesh_static_order_p1_filters )
 {
     using namespace Feel;
-    typedef Mesh<Simplex<2,1> >  mesh_type;
+    using mesh_type = Mesh<Simplex<2, 1>>;
+
+    BOOST_TEST_MESSAGE( "Testing static order P1 mesh filters" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( 0.5 );
+
+    // Verify static order properties
+    static_assert( mesh_type::is_order_static, "Must be static order" );
+    static_assert( mesh_type::nOrder == 1, "Must be P1" );
+    BOOST_CHECK_EQUAL( test_fixture.order(), 1 );
+
+    test_fixture.testFilters();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_static_order_p1_elements )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, 1>>;
+
+    BOOST_TEST_MESSAGE( "Testing static order P1 mesh elements" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( 0.5 );
+    test_fixture.testElements();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_static_order_p1_components )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, 1>>;
+
+    BOOST_TEST_MESSAGE( "Testing static order P1 mesh components" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( 0.5 );
+    test_fixture.testComponents();
+}
+
+//==============================================================================
+// Static Order Tests (P2)
+//==============================================================================
+
+BOOST_AUTO_TEST_CASE( test_mesh_static_order_p2_filters )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, 2>>;
+
+    BOOST_TEST_MESSAGE( "Testing static order P2 mesh filters" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( 0.5 );
+
+    // Verify static order properties
+    static_assert( mesh_type::is_order_static, "Must be static order" );
+    static_assert( mesh_type::nOrder == 2, "Must be P2" );
+    BOOST_CHECK_EQUAL( test_fixture.order(), 2 );
+
+    test_fixture.testFilters();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_static_order_p2_elements )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, 2>>;
+
+    BOOST_TEST_MESSAGE( "Testing static order P2 mesh elements" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( 0.5 );
+    test_fixture.testElements();
+}
+
+//==============================================================================
+// Dynamic Order Tests (order set at runtime)
+//==============================================================================
+
+#if 0  // Enable when dynamic order mesh infrastructure is complete
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p1_filters )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    BOOST_TEST_MESSAGE( "Testing dynamic order P1 mesh filters" );
+
+    // Create with runtime order = 1
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( RuntimeOrder(1), 0.5 );
+
+    // Verify dynamic order properties
+    static_assert( mesh_type::is_order_dynamic, "Must be dynamic order" );
+    BOOST_CHECK_EQUAL( test_fixture.order(), 1 );
+
+    test_fixture.testFilters();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p2_filters )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    BOOST_TEST_MESSAGE( "Testing dynamic order P2 mesh filters" );
+
+    // Create with runtime order = 2
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( RuntimeOrder(2), 0.5 );
+
+    // Verify dynamic order properties
+    static_assert( mesh_type::is_order_dynamic, "Must be dynamic order" );
+    BOOST_CHECK_EQUAL( test_fixture.order(), 2 );
+
+    test_fixture.testFilters();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p1_elements )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    BOOST_TEST_MESSAGE( "Testing dynamic order P1 mesh elements" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( RuntimeOrder(1), 0.5 );
+    test_fixture.testElements();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p2_elements )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    BOOST_TEST_MESSAGE( "Testing dynamic order P2 mesh elements" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( RuntimeOrder(2), 0.5 );
+    test_fixture.testElements();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency )
+{
+    using namespace Feel;
+
+    BOOST_TEST_MESSAGE( "Testing consistency between static and dynamic order meshes" );
+
+    constexpr double meshSize = 0.5;
+
+    // Create static P1 mesh
+    using static_mesh_type = Mesh<Simplex<2, 1>>;
+    test_mesh_detail::MeshTestFixture<static_mesh_type> static_test_fixture( meshSize );
+
+    // Create dynamic P1 mesh
+    using dynamic_mesh_type = Mesh<Simplex<2, Dynamic>>;
+    test_mesh_detail::MeshTestFixture<dynamic_mesh_type> dynamic_test_fixture( RuntimeOrder(1), meshSize );
+
+    // Both should have order 1
+    BOOST_CHECK_EQUAL( static_test_fixture.order(), 1 );
+    BOOST_CHECK_EQUAL( dynamic_test_fixture.order(), 1 );
+
+    // Both should have same number of elements (assuming same mesh generation)
+    BOOST_CHECK_EQUAL( static_test_fixture.mesh()->numElements(),
+                       dynamic_test_fixture.mesh()->numElements() );
+
+    // Both should pass the same tests
+    static_test_fixture.testFilters();
+    dynamic_test_fixture.testFilters();
+
+    static_test_fixture.testElements();
+    dynamic_test_fixture.testElements();
+
+    BOOST_TEST_MESSAGE( "Static and dynamic order meshes are consistent" );
+}
+#endif
+
+//==============================================================================
+// Legacy Tests (preserved for compatibility)
+//==============================================================================
+
+BOOST_AUTO_TEST_CASE( test_mesh_comp_legacy )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, 1>>;
     mesh_type mesh;
 
     mesh.components().reset();
@@ -217,134 +483,46 @@ BOOST_AUTO_TEST_CASE( test_mesh_comp )
 
     mesh.components().reset();
     mesh.components().set( MESH_CHECK );
-    BOOST_TEST_MESSAGE( "check MESH_CHECK comp: " << mesh.components().context()  << "\n" );
+    BOOST_TEST_MESSAGE( "check MESH_CHECK comp: " << mesh.components().context() );
     BOOST_CHECK( mesh.components().test( MESH_CHECK ) == true );
     BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == false );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == false );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
 
-
     mesh.components().reset();
-    mesh.components().set( MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-    BOOST_TEST_MESSAGE( "check MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES comp: " << mesh.components().context() << "\n" );
+    mesh.components().set( MESH_CHECK | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+    BOOST_TEST_MESSAGE( "check MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES comp: " << mesh.components().context() );
     BOOST_CHECK( mesh.components().test( MESH_CHECK ) == true );
     BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == false );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == true );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == true );
 
-
     mesh.components().reset();
-    mesh.components().set( MESH_RENUMBER|MESH_UPDATE_FACES );
-    BOOST_TEST_MESSAGE( "check MESH_RENUMBER|MESH_UPDATE_FACES comp: " << mesh.components().context() << "\n" );
+    mesh.components().set( MESH_RENUMBER | MESH_UPDATE_FACES );
+    BOOST_TEST_MESSAGE( "check MESH_RENUMBER|MESH_UPDATE_FACES comp: " << mesh.components().context() );
     BOOST_CHECK( mesh.components().test( MESH_CHECK ) == false );
     BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == true );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == true );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
 
-
     mesh.components().reset();
     mesh.components().set( MESH_RENUMBER );
-    BOOST_TEST_MESSAGE( "check MESH_RENUMBER comp: " << mesh.components().context() << "\n" );
+    BOOST_TEST_MESSAGE( "check MESH_RENUMBER comp: " << mesh.components().context() );
     BOOST_CHECK( mesh.components().test( MESH_CHECK ) == false );
     BOOST_CHECK( mesh.components().test( MESH_RENUMBER ) == true );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_FACES ) == false );
     BOOST_CHECK( mesh.components().test( MESH_UPDATE_EDGES ) == false );
 }
-BOOST_AUTO_TEST_CASE( test_mesh_lmethod )
-{
 
-    using namespace Feel;
-    typedef Mesh<Simplex<2,1> >  mesh_type;
-    mesh_type mesh;
-
-    auto pit = mesh.beginPoint();
-    auto pen = mesh.endPoint();
-
-
-    while ( pit != pen )
-    {
-#if 0
-        auto eit = pit->beginElement();
-        auto een = pit->endElement();
-
-        while ( eit != een )
-        {
-            auto element = mesh->element( *eit );
-
-            for ( int f = 0; f < eit->nDim; ++f )
-            {
-                // plocal local id of the vertex in the element
-                auto face = mesh->face( element->v2f( plocal, f ) );
-
-
-            }
-
-            ++eit;
-        }
-
-#endif
-        ++pit;
-    }
-
-
-}
-BOOST_AUTO_TEST_CASE( test_simple_mesh2d )
+BOOST_AUTO_TEST_CASE( test_simple_mesh2d_legacy )
 {
     using namespace Feel;
-
-    typedef Mesh<Simplex<2,1> >  mesh_type;
+    using mesh_type = Mesh<Simplex<2, 1>>;
     mesh_type mesh;
 
-
-#if 0
-    std::vector<Feel::detail::mesh_type::point_type*> vector_p;
-    boost::sub_range<std::vector<Feel::detail::mesh_type::point_type*> > range_p;
-    std::vector<std::vector<Feel::detail::mesh_type::point_type*> > vector_face_p( 4 );
-
-    node_type n1( 2 );
-    n1( 0 ) = 0;
-    n1( 1 ) = 0;
-    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 0, n1, true, 0 ) ) );
-
-    node_type n2( 2 );
-    n2( 0 ) = 1;
-    n2( 1 ) = 0;
-    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 1, n2, true, 1 ) ) );
-
-    node_type n3( 2 );
-    n3( 0 ) = 0;
-    n3( 1 ) = 1;
-    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 2, n3, true, 2 ) ) );
-
-    node_type n4( 2 );
-    n4( 0 ) = 1;
-    n4( 1 ) = 1;
-    vector_p.push_back( mesh.add( Feel::detail::mesh_type::point_type( 3, n4, true, 2 ) ) );
-
-    // face points
-    vector_face_p[0].push_back( vector_p[0] );
-    vector_face_p[0].push_back( vector_p[1] );
-    vector_face_p[1].push_back( vector_p[1] );
-    vector_face_p[1].push_back( vector_p[2] );
-    vector_face_p[2].push_back( vector_p[2] );
-    vector_face_p[2].push_back( vector_p[0] );
-
-    Feel::detail::mesh_type::element_type* elt;
-    elt = mesh.add( Feel::detail::mesh_type::element_type( 0, range_p( vector_p.begin(), vector_p.end() ), 0 ) );
-
-    Feel::detail::mesh_type::face_type* f1;
-    f1 = mesh.add( Feel::detail::mesh_type::face_type( 0, range_p( vector_face_p[0].begin(), vector_face_p[0].end() ), 0 ) );
-
-    Feel::detail::mesh_type::face_type* f2;
-    f2 = mesh.add( Feel::detail::mesh_type::face_type( 1, range_p( vector_face_p[1].begin(), vector_face_p[1].end() ), 1 ) );
-
-    Feel::detail::mesh_type::face_type* f3;
-    f3 = mesh.add( Feel::detail::mesh_type::face_type( 1, range_p( vector_face_p[2].begin(), vector_face_p[2].end() ), 2 ) );
-
-#endif
-    //mesh.updateElementFaces();
-
+    // Basic instantiation test
+    BOOST_CHECK( mesh.numElements() == 0 );
+    BOOST_CHECK( mesh.numPoints() == 0 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

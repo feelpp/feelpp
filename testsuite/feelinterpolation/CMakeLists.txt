@@ -24,6 +24,7 @@ feelpp_add_test( interpolation_id )
 feelpp_add_test( operatorinterpolation_basisexpr CFG test_operatorinterpolation_basisexpr.cfg GEO test_operatorinterpolation_basisexpr_2d.geo )
 
 feelpp_add_test( interpolation_RT CFG test_interpolation_RT.cfg NO_MPI_TEST)
+feelpp_add_test( interpolation_BDM CFG test_interpolation_BDM.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec CFG test_interpolation_Nedelec.cfg NO_MPI_TEST)
 feelpp_add_test( interpolation_Nedelec3d CFG test_interpolation_Nedelec3d.cfg NO_MPI_TEST )
 

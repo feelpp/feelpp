@@ -60,6 +60,29 @@ if ( NOT TARGET testsuite )
   add_dependencies(testsuite testsuite-feelpp)
 endif()
 
+set(FEELPP_HDIV_SMOKE_REGEX
+    "feelpp_test_interpolation_RT-np-1\\|feelpp_test_hdiv_oneelt-np-1\\|feelpp_test_hdiv3D_oneelt-np-1\\|feelpp_test_continuity_hdiv-np-1")
+set(FEELPP_HDIV_EXTENDED_REGEX
+    "feelpp_test_interpolation_BDM-np-1\\|feelpp_test_bdm_static-np-1\\|feelpp_test_rt0_static-np-1\\|feelpp_test_interpolation_Nedelec-np-1\\|feelpp_test_interpolation_Nedelec3d-np-1\\|feelpp_test_hcurl_oneelt-np-1\\|feelpp_test_hcurl3D_oneelt-np-1\\|feelpp_test_continuity_hcurl-np-1\\|feelpp_test_hdiv_runtime_order_parity-np-1\\|feelpp_test_dynamic_order_math_parity-np-1")
+
+set(FEELPP_HDIV_SMOKE_BUDGET_SECONDS 120 CACHE STRING "Expected runtime budget (seconds) for feelpp_hdiv_smoke")
+set(FEELPP_HDIV_EXTENDED_BUDGET_SECONDS 900 CACHE STRING "Expected runtime budget (seconds) for feelpp_hdiv_extended")
+
+if ( NOT TARGET feelpp_hdiv_smoke )
+  add_custom_target(feelpp_hdiv_smoke
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R "${FEELPP_HDIV_SMOKE_REGEX}" --test-dir ${CMAKE_BINARY_DIR}
+    USES_TERMINAL
+  )
+endif()
+
+if ( NOT TARGET feelpp_hdiv_extended )
+  add_custom_target(feelpp_hdiv_extended
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R "${FEELPP_HDIV_EXTENDED_REGEX}" --test-dir ${CMAKE_BINARY_DIR}
+    USES_TERMINAL
+  )
+  add_dependencies(feelpp_hdiv_extended feelpp_hdiv_smoke)
+endif()
+
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)
 
 option(FEELPP_DISABLE_COMPILE_FAILURE "disable compilation failure in testsuite" OFF)

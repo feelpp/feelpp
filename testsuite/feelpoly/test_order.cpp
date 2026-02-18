@@ -33,6 +33,7 @@
 
 #include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/concepts.hpp>
+#include <feel/feelpoly/doftopology.hpp>
 
 using namespace Feel;
 
@@ -71,6 +72,71 @@ BOOST_AUTO_TEST_CASE( test_order_t_dynamic )
     static_assert( !order_t<Dynamic>::is_static, "order_t<Dynamic> should not be static" );
 
     BOOST_CHECK( true );
+}
+
+BOOST_AUTO_TEST_CASE( test_runtime_order_checked )
+{
+    const RuntimeOrder valid = RuntimeOrder::checked( 3 );
+    BOOST_CHECK_EQUAL( static_cast<uint16_type>( valid ), 3 );
+    BOOST_CHECK_THROW( []() { (void)RuntimeOrder::checked( -1 ); }(), std::invalid_argument );
+}
+
+BOOST_AUTO_TEST_CASE( test_order_base )
+{
+    static_assert( OrderBase<2>::is_order_static, "OrderBase<2> should be static" );
+    static_assert( !OrderBase<2>::is_order_dynamic, "OrderBase<2> should not be dynamic" );
+    static_assert( OrderBase<Dynamic>::is_order_dynamic, "OrderBase<Dynamic> should be dynamic" );
+    static_assert( !OrderBase<Dynamic>::is_order_static, "OrderBase<Dynamic> should not be static" );
+
+    constexpr OrderBase<2> staticOrder;
+    static_assert( staticOrder.order() == 2, "static order mismatch" );
+    static_assert( staticOrder.runtimeOrder() == 2, "static runtimeOrder mismatch" );
+
+    const OrderBase<Dynamic> dynamicOrder( RuntimeOrder( 4 ) );
+    BOOST_CHECK_EQUAL( dynamicOrder.order(), 4 );
+    BOOST_CHECK_EQUAL( dynamicOrder.runtimeOrder(), 4 );
+}
+
+BOOST_AUTO_TEST_CASE( test_doftopology_simplex )
+{
+    using simplex_static_t = DofTopology<SimplexTag, 2, 2>;
+    constexpr simplex_static_t simplexStatic;
+    static_assert( simplex_static_t::is_order_static );
+    static_assert( simplexStatic.order() == 2 );
+    static_assert( simplexStatic.localDof() == 6 );
+    static_assert( simplexStatic.dofPerVertex() == 1 );
+    static_assert( simplexStatic.dofPerEdge() == 1 );
+    static_assert( simplexStatic.dofPerFace() == 0 );
+
+    const DofTopology<SimplexTag, 3, Dynamic> simplexDynamic( RuntimeOrder( 3 ) );
+    BOOST_CHECK_EQUAL( simplexDynamic.order(), 3 );
+    BOOST_CHECK_EQUAL( simplexDynamic.localDof(), 20 );
+    BOOST_CHECK_EQUAL( simplexDynamic.dofPerVertex(), 1 );
+    BOOST_CHECK_EQUAL( simplexDynamic.dofPerEdge(), 2 );
+    BOOST_CHECK_EQUAL( simplexDynamic.dofPerFace(), 1 );
+    BOOST_CHECK_EQUAL( simplexDynamic.dofPerVolume(), 0 );
+    BOOST_CHECK_EQUAL( simplexDynamic.dofPerEntity( 1, 0 ), simplexDynamic.dofPerEdge() );
+}
+
+BOOST_AUTO_TEST_CASE( test_doftopology_hypercube )
+{
+    using hypercube_static_t = DofTopology<HypercubeTag, 2, 2>;
+    constexpr hypercube_static_t hypercubeStatic;
+    static_assert( hypercube_static_t::is_order_static );
+    static_assert( hypercubeStatic.order() == 2 );
+    static_assert( hypercubeStatic.localDof() == 9 );
+    static_assert( hypercubeStatic.dofPerVertex() == 1 );
+    static_assert( hypercubeStatic.dofPerEdge() == 1 );
+    static_assert( hypercubeStatic.dofPerFace() == 1 );
+
+    const DofTopology<HypercubeTag, 3, Dynamic> hypercubeDynamic( RuntimeOrder( 2 ) );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.order(), 2 );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.localDof(), 27 );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.dofPerVertex(), 1 );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.dofPerEdge(), 1 );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.dofPerFace(), 1 );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.dofPerVolume(), 1 );
+    BOOST_CHECK_EQUAL( hypercubeDynamic.dofPerEntity( 3, 0 ), hypercubeDynamic.dofPerVolume() );
 }
 
 //
@@ -115,23 +181,23 @@ BOOST_AUTO_TEST_CASE( test_binomial )
 BOOST_AUTO_TEST_CASE( test_pow_int )
 {
     // base^0 = 1
-    static_assert( detail::pow_int( 2, 0 ) == 1, "2^0 = 1" );
-    static_assert( detail::pow_int( 5, 0 ) == 1, "5^0 = 1" );
+    static_assert( detail::powInt( 2, 0 ) == 1, "2^0 = 1" );
+    static_assert( detail::powInt( 5, 0 ) == 1, "5^0 = 1" );
 
     // base^1 = base
-    static_assert( detail::pow_int( 2, 1 ) == 2, "2^1 = 2" );
-    static_assert( detail::pow_int( 5, 1 ) == 5, "5^1 = 5" );
+    static_assert( detail::powInt( 2, 1 ) == 2, "2^1 = 2" );
+    static_assert( detail::powInt( 5, 1 ) == 5, "5^1 = 5" );
 
     // Powers of 2
-    static_assert( detail::pow_int( 2, 2 ) == 4, "2^2 = 4" );
-    static_assert( detail::pow_int( 2, 3 ) == 8, "2^3 = 8" );
-    static_assert( detail::pow_int( 2, 4 ) == 16, "2^4 = 16" );
-    static_assert( detail::pow_int( 2, 10 ) == 1024, "2^10 = 1024" );
+    static_assert( detail::powInt( 2, 2 ) == 4, "2^2 = 4" );
+    static_assert( detail::powInt( 2, 3 ) == 8, "2^3 = 8" );
+    static_assert( detail::powInt( 2, 4 ) == 16, "2^4 = 16" );
+    static_assert( detail::powInt( 2, 10 ) == 1024, "2^10 = 1024" );
 
     // Other bases
-    static_assert( detail::pow_int( 3, 3 ) == 27, "3^3 = 27" );
-    static_assert( detail::pow_int( 4, 3 ) == 64, "4^3 = 64" );
-    static_assert( detail::pow_int( 5, 4 ) == 625, "5^4 = 625" );
+    static_assert( detail::powInt( 3, 3 ) == 27, "3^3 = 27" );
+    static_assert( detail::powInt( 4, 3 ) == 64, "4^3 = 64" );
+    static_assert( detail::powInt( 5, 4 ) == 625, "5^4 = 625" );
 
     BOOST_CHECK( true );
 }
@@ -144,28 +210,28 @@ BOOST_AUTO_TEST_CASE( test_simplex_dof_static )
 {
     // 1D simplex (segment)
     // P0: 1 DOF, P1: 2 DOFs, P2: 3 DOFs, Pk: k+1 DOFs
-    static_assert( detail::simplex_dof_static<1, 0>() == 1, "1D P0: 1 DOF" );
-    static_assert( detail::simplex_dof_static<1, 1>() == 2, "1D P1: 2 DOFs" );
-    static_assert( detail::simplex_dof_static<1, 2>() == 3, "1D P2: 3 DOFs" );
-    static_assert( detail::simplex_dof_static<1, 3>() == 4, "1D P3: 4 DOFs" );
-    static_assert( detail::simplex_dof_static<1, 5>() == 6, "1D P5: 6 DOFs" );
+    static_assert( detail::simplexDofStatic<1, 0>() == 1, "1D P0: 1 DOF" );
+    static_assert( detail::simplexDofStatic<1, 1>() == 2, "1D P1: 2 DOFs" );
+    static_assert( detail::simplexDofStatic<1, 2>() == 3, "1D P2: 3 DOFs" );
+    static_assert( detail::simplexDofStatic<1, 3>() == 4, "1D P3: 4 DOFs" );
+    static_assert( detail::simplexDofStatic<1, 5>() == 6, "1D P5: 6 DOFs" );
 
     // 2D simplex (triangle)
     // P0: 1, P1: 3, P2: 6, P3: 10, Pk: (k+1)(k+2)/2
-    static_assert( detail::simplex_dof_static<2, 0>() == 1, "2D P0: 1 DOF" );
-    static_assert( detail::simplex_dof_static<2, 1>() == 3, "2D P1: 3 DOFs" );
-    static_assert( detail::simplex_dof_static<2, 2>() == 6, "2D P2: 6 DOFs" );
-    static_assert( detail::simplex_dof_static<2, 3>() == 10, "2D P3: 10 DOFs" );
-    static_assert( detail::simplex_dof_static<2, 4>() == 15, "2D P4: 15 DOFs" );
-    static_assert( detail::simplex_dof_static<2, 5>() == 21, "2D P5: 21 DOFs" );
+    static_assert( detail::simplexDofStatic<2, 0>() == 1, "2D P0: 1 DOF" );
+    static_assert( detail::simplexDofStatic<2, 1>() == 3, "2D P1: 3 DOFs" );
+    static_assert( detail::simplexDofStatic<2, 2>() == 6, "2D P2: 6 DOFs" );
+    static_assert( detail::simplexDofStatic<2, 3>() == 10, "2D P3: 10 DOFs" );
+    static_assert( detail::simplexDofStatic<2, 4>() == 15, "2D P4: 15 DOFs" );
+    static_assert( detail::simplexDofStatic<2, 5>() == 21, "2D P5: 21 DOFs" );
 
     // 3D simplex (tetrahedron)
     // P0: 1, P1: 4, P2: 10, P3: 20, Pk: (k+1)(k+2)(k+3)/6
-    static_assert( detail::simplex_dof_static<3, 0>() == 1, "3D P0: 1 DOF" );
-    static_assert( detail::simplex_dof_static<3, 1>() == 4, "3D P1: 4 DOFs" );
-    static_assert( detail::simplex_dof_static<3, 2>() == 10, "3D P2: 10 DOFs" );
-    static_assert( detail::simplex_dof_static<3, 3>() == 20, "3D P3: 20 DOFs" );
-    static_assert( detail::simplex_dof_static<3, 4>() == 35, "3D P4: 35 DOFs" );
+    static_assert( detail::simplexDofStatic<3, 0>() == 1, "3D P0: 1 DOF" );
+    static_assert( detail::simplexDofStatic<3, 1>() == 4, "3D P1: 4 DOFs" );
+    static_assert( detail::simplexDofStatic<3, 2>() == 10, "3D P2: 10 DOFs" );
+    static_assert( detail::simplexDofStatic<3, 3>() == 20, "3D P3: 20 DOFs" );
+    static_assert( detail::simplexDofStatic<3, 4>() == 35, "3D P4: 35 DOFs" );
 
     BOOST_CHECK( true );
 }
@@ -173,23 +239,23 @@ BOOST_AUTO_TEST_CASE( test_simplex_dof_static )
 BOOST_AUTO_TEST_CASE( test_simplex_dof_dynamic )
 {
     // Compare dynamic calculation with static values
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<1>( 0 ), 1 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<1>( 1 ), 2 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<1>( 2 ), 3 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<1>( 5 ), 6 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<1>( 0 ), 1 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<1>( 1 ), 2 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<1>( 2 ), 3 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<1>( 5 ), 6 );
 
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<2>( 0 ), 1 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<2>( 1 ), 3 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<2>( 2 ), 6 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<2>( 3 ), 10 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<2>( 0 ), 1 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<2>( 1 ), 3 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<2>( 2 ), 6 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<2>( 3 ), 10 );
 
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<3>( 0 ), 1 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<3>( 1 ), 4 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<3>( 2 ), 10 );
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<3>( 3 ), 20 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<3>( 0 ), 1 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<3>( 1 ), 4 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<3>( 2 ), 10 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<3>( 3 ), 20 );
 
     // Invalid order
-    BOOST_CHECK_EQUAL( detail::simplex_dof_dynamic<2>( -1 ), 0 );
+    BOOST_CHECK_EQUAL( detail::simplexDofDynamic<2>( -1 ), 0 );
 }
 
 //
@@ -199,25 +265,25 @@ BOOST_AUTO_TEST_CASE( test_simplex_dof_dynamic )
 BOOST_AUTO_TEST_CASE( test_hypercube_dof_static )
 {
     // 1D hypercube (segment) - same as simplex
-    static_assert( detail::hypercube_dof_static<1, 0>() == 1, "1D Q0: 1 DOF" );
-    static_assert( detail::hypercube_dof_static<1, 1>() == 2, "1D Q1: 2 DOFs" );
-    static_assert( detail::hypercube_dof_static<1, 2>() == 3, "1D Q2: 3 DOFs" );
-    static_assert( detail::hypercube_dof_static<1, 3>() == 4, "1D Q3: 4 DOFs" );
+    static_assert( detail::hypercubeDofStatic<1, 0>() == 1, "1D Q0: 1 DOF" );
+    static_assert( detail::hypercubeDofStatic<1, 1>() == 2, "1D Q1: 2 DOFs" );
+    static_assert( detail::hypercubeDofStatic<1, 2>() == 3, "1D Q2: 3 DOFs" );
+    static_assert( detail::hypercubeDofStatic<1, 3>() == 4, "1D Q3: 4 DOFs" );
 
     // 2D hypercube (quadrilateral)
     // Q0: 1, Q1: 4, Q2: 9, Q3: 16, Qk: (k+1)^2
-    static_assert( detail::hypercube_dof_static<2, 0>() == 1, "2D Q0: 1 DOF" );
-    static_assert( detail::hypercube_dof_static<2, 1>() == 4, "2D Q1: 4 DOFs" );
-    static_assert( detail::hypercube_dof_static<2, 2>() == 9, "2D Q2: 9 DOFs" );
-    static_assert( detail::hypercube_dof_static<2, 3>() == 16, "2D Q3: 16 DOFs" );
-    static_assert( detail::hypercube_dof_static<2, 4>() == 25, "2D Q4: 25 DOFs" );
+    static_assert( detail::hypercubeDofStatic<2, 0>() == 1, "2D Q0: 1 DOF" );
+    static_assert( detail::hypercubeDofStatic<2, 1>() == 4, "2D Q1: 4 DOFs" );
+    static_assert( detail::hypercubeDofStatic<2, 2>() == 9, "2D Q2: 9 DOFs" );
+    static_assert( detail::hypercubeDofStatic<2, 3>() == 16, "2D Q3: 16 DOFs" );
+    static_assert( detail::hypercubeDofStatic<2, 4>() == 25, "2D Q4: 25 DOFs" );
 
     // 3D hypercube (hexahedron)
     // Q0: 1, Q1: 8, Q2: 27, Q3: 64, Qk: (k+1)^3
-    static_assert( detail::hypercube_dof_static<3, 0>() == 1, "3D Q0: 1 DOF" );
-    static_assert( detail::hypercube_dof_static<3, 1>() == 8, "3D Q1: 8 DOFs" );
-    static_assert( detail::hypercube_dof_static<3, 2>() == 27, "3D Q2: 27 DOFs" );
-    static_assert( detail::hypercube_dof_static<3, 3>() == 64, "3D Q3: 64 DOFs" );
+    static_assert( detail::hypercubeDofStatic<3, 0>() == 1, "3D Q0: 1 DOF" );
+    static_assert( detail::hypercubeDofStatic<3, 1>() == 8, "3D Q1: 8 DOFs" );
+    static_assert( detail::hypercubeDofStatic<3, 2>() == 27, "3D Q2: 27 DOFs" );
+    static_assert( detail::hypercubeDofStatic<3, 3>() == 64, "3D Q3: 64 DOFs" );
 
     BOOST_CHECK( true );
 }
@@ -225,22 +291,22 @@ BOOST_AUTO_TEST_CASE( test_hypercube_dof_static )
 BOOST_AUTO_TEST_CASE( test_hypercube_dof_dynamic )
 {
     // Compare dynamic calculation with static values
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<1>( 0 ), 1 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<1>( 1 ), 2 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<1>( 2 ), 3 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<1>( 0 ), 1 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<1>( 1 ), 2 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<1>( 2 ), 3 );
 
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<2>( 0 ), 1 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<2>( 1 ), 4 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<2>( 2 ), 9 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<2>( 3 ), 16 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<2>( 0 ), 1 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<2>( 1 ), 4 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<2>( 2 ), 9 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<2>( 3 ), 16 );
 
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<3>( 0 ), 1 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<3>( 1 ), 8 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<3>( 2 ), 27 );
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<3>( 3 ), 64 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<3>( 0 ), 1 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<3>( 1 ), 8 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<3>( 2 ), 27 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<3>( 3 ), 64 );
 
     // Invalid order
-    BOOST_CHECK_EQUAL( detail::hypercube_dof_dynamic<2>( -1 ), 0 );
+    BOOST_CHECK_EQUAL( detail::hypercubeDofDynamic<2>( -1 ), 0 );
 }
 
 //
@@ -331,19 +397,19 @@ BOOST_AUTO_TEST_CASE( test_simplex_vs_hypercube_dofs )
     // (except in 1D where they are equal)
 
     // 1D: equal
-    static_assert( detail::simplex_dof_static<1, 3>() == detail::hypercube_dof_static<1, 3>(),
+    static_assert( detail::simplexDofStatic<1, 3>() == detail::hypercubeDofStatic<1, 3>(),
                    "1D: simplex and hypercube have same DOFs" );
 
     // 2D: hypercube has more
-    static_assert( detail::hypercube_dof_static<2, 2>() > detail::simplex_dof_static<2, 2>(),
+    static_assert( detail::hypercubeDofStatic<2, 2>() > detail::simplexDofStatic<2, 2>(),
                    "2D: hypercube has more DOFs (9 > 6)" );
-    static_assert( detail::hypercube_dof_static<2, 3>() > detail::simplex_dof_static<2, 3>(),
+    static_assert( detail::hypercubeDofStatic<2, 3>() > detail::simplexDofStatic<2, 3>(),
                    "2D: hypercube has more DOFs (16 > 10)" );
 
     // 3D: hypercube has more
-    static_assert( detail::hypercube_dof_static<3, 2>() > detail::simplex_dof_static<3, 2>(),
+    static_assert( detail::hypercubeDofStatic<3, 2>() > detail::simplexDofStatic<3, 2>(),
                    "3D: hypercube has more DOFs (27 > 10)" );
-    static_assert( detail::hypercube_dof_static<3, 3>() > detail::simplex_dof_static<3, 3>(),
+    static_assert( detail::hypercubeDofStatic<3, 3>() > detail::simplexDofStatic<3, 3>(),
                    "3D: hypercube has more DOFs (64 > 20)" );
 
     BOOST_CHECK( true );
@@ -356,16 +422,16 @@ BOOST_AUTO_TEST_CASE( test_high_order_dofs )
 {
     // Test that high-order calculations don't overflow for reasonable orders
     // 2D simplex P10: C(12, 2) = 66
-    static_assert( detail::simplex_dof_static<2, 10>() == 66, "2D P10: 66 DOFs" );
+    static_assert( detail::simplexDofStatic<2, 10>() == 66, "2D P10: 66 DOFs" );
 
     // 3D simplex P5: C(8, 3) = 56
-    static_assert( detail::simplex_dof_static<3, 5>() == 56, "3D P5: 56 DOFs" );
+    static_assert( detail::simplexDofStatic<3, 5>() == 56, "3D P5: 56 DOFs" );
 
     // 2D hypercube Q10: 11^2 = 121
-    static_assert( detail::hypercube_dof_static<2, 10>() == 121, "2D Q10: 121 DOFs" );
+    static_assert( detail::hypercubeDofStatic<2, 10>() == 121, "2D Q10: 121 DOFs" );
 
     // 3D hypercube Q5: 6^3 = 216
-    static_assert( detail::hypercube_dof_static<3, 5>() == 216, "3D Q5: 216 DOFs" );
+    static_assert( detail::hypercubeDofStatic<3, 5>() == 216, "3D Q5: 216 DOFs" );
 
     BOOST_CHECK( true );
 }
