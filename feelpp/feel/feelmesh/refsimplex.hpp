@@ -32,7 +32,7 @@
 
 namespace Feel
 {
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<int Dim, int Order, int RDim,  typename T>
 class Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>
     :
 public Simplex<Dim, Order, RDim>
@@ -1109,7 +1109,7 @@ template<typename T> class Entity<SHAPE_TRIANGLE, T>: public Reference<Simplex<2
 template<typename T> class Entity<SHAPE_TETRA, T>: public Reference<Simplex<3, 1, 3>,3,1, 3, T> {};
 
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<int Dim, int Order, int RDim,  typename T>
 void
 Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
 {
@@ -1121,7 +1121,7 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
         ublas::column( M_barycenterfaces, f ) = ublas::column( glas::average( faceVertices( f ) ), 0 );
     }
 }
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<int Dim, int Order, int RDim,  typename T>
 void
 Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 {

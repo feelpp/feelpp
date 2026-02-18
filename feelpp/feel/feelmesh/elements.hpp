@@ -8,6 +8,7 @@
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2026 Feel++ Consortium - C++20/23 modernization
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -24,13 +25,16 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file elements.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
+   @file elements.hpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-09-03
+   @brief Elements container class (C++20/23 modernized)
  */
 #ifndef FEELPP_MESH_ELEMENTS_HPP
 #define FEELPP_MESH_ELEMENTS_HPP
 
+#include <concepts>
+#include <type_traits>
 #include <unordered_map>
 
 #include <feel/feelcore/commobject.hpp>
@@ -81,22 +85,22 @@ public:
         >;
     using element_ptrtype = std::shared_ptr<element_type>;
 
-    typedef std::unordered_map<size_type,element_type> elements_type;
+    using elements_type = std::unordered_map<size_type, element_type>;
 
-    typedef typename elements_type::iterator element_iterator;
-    typedef typename elements_type::const_iterator element_const_iterator;
+    using element_iterator = typename elements_type::iterator;
+    using element_const_iterator = typename elements_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<element_type const> > elements_reference_wrapper_type;
-    typedef std::shared_ptr<elements_reference_wrapper_type> elements_reference_wrapper_ptrtype;
-    typedef typename elements_reference_wrapper_type::iterator element_reference_wrapper_iterator;
-    typedef typename elements_reference_wrapper_type::const_iterator element_reference_wrapper_const_iterator;
+    using elements_reference_wrapper_type = std::vector<boost::reference_wrapper<element_type const>>;
+    using elements_reference_wrapper_ptrtype = std::shared_ptr<elements_reference_wrapper_type>;
+    using element_reference_wrapper_iterator = typename elements_reference_wrapper_type::iterator;
+    using element_reference_wrapper_const_iterator = typename elements_reference_wrapper_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<element_type> > ordered_elements_reference_wrapper_type;
-    typedef typename ordered_elements_reference_wrapper_type::iterator ordered_element_reference_wrapper_iterator;
-    typedef typename ordered_elements_reference_wrapper_type::const_iterator ordered_element_reference_wrapper_const_iterator;
+    using ordered_elements_reference_wrapper_type = std::vector<boost::reference_wrapper<element_type>>;
+    using ordered_element_reference_wrapper_iterator = typename ordered_elements_reference_wrapper_type::iterator;
+    using ordered_element_reference_wrapper_const_iterator = typename ordered_elements_reference_wrapper_type::const_iterator;
 
-    typedef std::map<int, size_type> parts_map_type;
-    typedef typename parts_map_type::const_iterator parts_const_iterator_type;
+    using parts_map_type = std::map<int, size_type>;
+    using parts_const_iterator_type = typename parts_map_type::const_iterator;
 
     /// \cond disabled
     struct update_element_neighbor_type
@@ -955,31 +959,31 @@ private:
 
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        if constexpr ( Archive::is_loading::value )
         {
-            if ( Archive::is_loading::value )
+            M_elements.clear();
+            M_orderedElements.clear();
+            M_needToOrderElements = false;
+            size_type nElements = 0;
+            ar& BOOST_SERIALIZATION_NVP( nElements );
+            element_type newElt;
+            for ( size_type k = 0; k < nElements; ++k )
             {
-                M_elements.clear();
-                M_orderedElements.clear();
-                M_needToOrderElements =  false;
-                size_type nElements = 0;
-                ar & BOOST_SERIALIZATION_NVP( nElements );
-                element_type newElt;
-                for ( size_type k=0 ; k<nElements ; ++k )
-                {
-                    ar & boost::serialization::make_nvp( "element", newElt );
-                    this->addElement( std::move( newElt ) );
-                }
-            }
-            else
-            {
-                auto it = beginOrderedElement(), en = endOrderedElement();
-                size_type nElements = std::distance( it, en );
-                ar & BOOST_SERIALIZATION_NVP( nElements );
-                for ( ; it != en ; ++it )
-                    ar & boost::serialization::make_nvp( "element", unwrap_ref( *it ) );
+                ar& boost::serialization::make_nvp( "element", newElt );
+                this->addElement( std::move( newElt ) );
             }
         }
+        else
+        {
+            auto it = beginOrderedElement(), en = endOrderedElement();
+            size_type nElements = std::distance( it, en );
+            ar& BOOST_SERIALIZATION_NVP( nElements );
+            for ( ; it != en; ++it )
+                ar& boost::serialization::make_nvp( "element", unwrap_ref( *it ) );
+        }
+    }
 
 
 private:

@@ -27,12 +27,12 @@
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <concepts>
+#include <type_traits>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-
-#include <boost/mpl/print.hpp>
 #include <boost/multi_array.hpp>
 
 // clang-format off
@@ -54,6 +54,7 @@
 #include <feel/feelmesh/faces.hpp>
 #include <feel/feelmesh/functors.hpp>
 #include <feel/feelmesh/points.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -82,15 +83,24 @@ class Mesh2D
                    typename Elements<Shape,T>::element_type>
 {
     // check at compilation time that the shape has indeed dimension 2
-    BOOST_STATIC_ASSERT( Shape::nDim == 2 );
+    static_assert( Shape::nDim == 2, "Mesh2D requires a 2D shape" );
 
   public:
     /** @name Typedefs
      */
     //@{
 
-    static inline const uint16_type nDim = Shape::nRealDim;
-    static inline const uint16_type nRealDim = Shape::nRealDim;
+    static constexpr uint16_type nDim = Shape::nRealDim;
+    static constexpr uint16_type nRealDim = Shape::nRealDim;
+
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = Shape::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = Shape::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = Shape::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = Shape::nOrder;
 
     typedef typename VisitableBase<>::return_type return_type;
 

@@ -31,7 +31,7 @@ class ConvexBase {};
 /**
  * @brief Convex base class
  */
-template<uint16_type Dim, uint16_type Order, uint16_type RDim = Dim>
+template<int Dim, int Order, int RDim = Dim>
 class Convex : public ConvexBase
 {
 public:

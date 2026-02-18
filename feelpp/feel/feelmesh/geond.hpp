@@ -5,6 +5,7 @@
   Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
   Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
   Copyright (C) 2011-2016 Feel++ Consortium
+  Copyright (C) 2026 Feel++ Consortium - C++20/23 modernization
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,7 +22,8 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-  \file geond.hpp
+  @file geond.hpp
+  @brief Multi-dimensional geometric entities with C++20/23 and Dynamic order support
 */
 #ifndef _GEOND_HH_
 #define _GEOND_HH_
@@ -32,26 +34,31 @@
 #include <feel/feelcore/warnon.hpp>
 // clang-format on
 
+#include <concepts>
+#include <type_traits>
+#include <variant>
+
 #include <feel/feelmesh/geo0d.hpp>
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelpoly/im.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
 template <typename IndexT>
 class MeshBase;
 
-template <int Dim, int Order, int RealDim, template <uint16_type, uint16_type, uint16_type> class Entity, typename T>
+template <int Dim, int Order, int RealDim, template <int, int, int> class Entity, typename T>
 struct GT_Lagrange;
 
 template <class Convex, uint16_type O, typename T2>
 class Gauss;
 template <int IMORDER,
           int DIM,
-          template <uint16_type, uint16_type, uint16_type> class Entity,
+          template <int, int, int> class Entity,
           template <class Convex, uint16_type O, typename T2> class QPS,
           typename T>
 struct IMGeneric;
@@ -189,6 +196,7 @@ private :
  * @ingroup Mesh
  * @brief Base class for Multi-dimensional basis Geometrical Entities.
  *
+ * @note C++20/23 modernized with Dynamic order support
  */
 template <uint16_type Dim,
           typename GEOSHAPE,
@@ -198,10 +206,10 @@ template <uint16_type Dim,
           bool UseMeasuresStorage = false >
 class GeoND
     : public GeoEntity<GEOSHAPE, T>,
-      public mpl::if_<mpl::bool_<UseMeasuresStorage>,  mpl::identity<GeoNDMeasuresStorage<T>>,  mpl::identity<GeoNDNoMeasuresStorage<T>>>::type::type
+      public std::conditional_t<UseMeasuresStorage, GeoNDMeasuresStorage<T>, GeoNDNoMeasuresStorage<T>>
 {
-    typedef GeoEntity<GEOSHAPE, T> super;
-    typedef typename mpl::if_<mpl::bool_<UseMeasuresStorage>,  mpl::identity<GeoNDMeasuresStorage<T>>,  mpl::identity<GeoNDNoMeasuresStorage<T>>>::type::type super2;
+    using super = GeoEntity<GEOSHAPE, T>;
+    using super2 = std::conditional_t<UseMeasuresStorage, GeoNDMeasuresStorage<T>, GeoNDNoMeasuresStorage<T>>;
 
   public:
     typedef T value_type;
@@ -234,102 +242,204 @@ class GeoND
     typedef typename matrix_node<value_type>::type matrix_node_type;
     typedef typename node<value_type>::type node_type;
 
-    static inline const uint16_type nDim = super::nDim;
-    static inline const uint16_type nOrder = super::nOrder;
-    static inline const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
+    //! @brief True if Order is known at compile time (i.e., Order >= 0)
+    static constexpr bool is_order_static = GEOSHAPE::is_order_static;
+    //! @brief True if Order is determined at runtime (i.e., Order == Dynamic)
+    static constexpr bool is_order_dynamic = GEOSHAPE::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = GEOSHAPE::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = super::nOrder;
+
+    //-------------------------------------------------------------------------
+    // Geometric mapping helper - C++20 modernized
+    //-------------------------------------------------------------------------
     template <int GmOrder>
     struct GetGm
     {
-
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Hypercube, T>>,
-                                  mpl::identity<GT_Lagrange<nDim, GmOrder, nRealDim, Simplex, T>>>::type::type type;
-        typedef std::shared_ptr<type> ptrtype;
+        using type = std::conditional_t<GeoShape::is_hypercube,
+                                        GT_Lagrange<nDim, GmOrder, nRealDim, Hypercube, T>,
+                                        GT_Lagrange<nDim, GmOrder, nRealDim, Simplex, T>>;
+        using ptrtype = std::shared_ptr<type>;
     };
-    typedef typename GetGm<nOrder>::type gm_type;
-    typedef typename GetGm<nOrder>::ptrtype gm_ptrtype;
 
-    typedef typename GetGm<1>::type gm1_type;
-    typedef typename GetGm<1>::ptrtype gm1_ptrtype;
+    using gm_type = typename GetGm<nOrder>::type;
+    using gm_ptrtype = typename GetGm<nOrder>::ptrtype;
 
-    typedef typename gm_type::super::reference_convex_type reference_convex_type;
-    typedef typename gm1_type::super::reference_convex_type reference_convex1_type;
+    using gm1_type = typename GetGm<1>::type;
+    using gm1_ptrtype = typename GetGm<1>::ptrtype;
 
-    typedef typename super::vertex_permutation_type vertex_permutation_type;
-    typedef typename super::edge_permutation_type edge_permutation_type;
-    typedef typename super::face_permutation_type face_permutation_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,
-                                            mpl::int_<1>>,
-                              mpl::identity<vertex_permutation_type>,
-                              typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,
-                                                              mpl::int_<2>>,
-                                                mpl::identity<edge_permutation_type>,
-                                                mpl::identity<face_permutation_type>>::type>::type::type permutation_type;
+    using reference_convex_type = typename gm_type::super::reference_convex_type;
+    using reference_convex1_type = typename gm1_type::super::reference_convex_type;
 
-    static inline constexpr uint16_type meas_quad_order = ( nOrder - 1 ) * nDim;
+    using vertex_permutation_type = typename super::vertex_permutation_type;
+    using edge_permutation_type = typename super::edge_permutation_type;
+    using face_permutation_type = typename super::face_permutation_type;
 
+    //! @brief Permutation type based on dimension (C++20 style)
+    using permutation_type = std::conditional_t<
+        nDim == 1,
+        vertex_permutation_type,
+        std::conditional_t<nDim == 2, edge_permutation_type, face_permutation_type>>;
+
+    //! @brief Quadrature order for measure computation (static value for static order)
+    static constexpr uint16_type meas_quad_order = ( nOrder >= 1 ) ? ( nOrder - 1 ) * nDim : 0;
+
+    //-------------------------------------------------------------------------
+    // Integration method helper - C++20 modernized
+    //-------------------------------------------------------------------------
     template <int GeoOrder>
     struct GetImMeasure
     {
-        // quadrature formula used in entity measure (for ho geo, need to check)
-        static inline const uint16_type quad_order = ( nOrder - 1 ) * nDim;
-        typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<typename IMGeneric<quad_order, Dim, Hypercube, Gauss, value_type /*double*/>::type>,
-                                  mpl::identity<typename IMGeneric<quad_order, Dim, Simplex, Gauss, value_type /*double*/>::type>>::type::type type;
+        static constexpr uint16_type quad_order = ( GeoOrder >= 1 ) ? ( GeoOrder - 1 ) * nDim : 0;
+        using type = std::conditional_t<GeoShape::is_hypercube,
+                                        typename IMGeneric<quad_order, Dim, Hypercube, Gauss, value_type>::type,
+                                        typename IMGeneric<quad_order, Dim, Simplex, Gauss, value_type>::type>;
     };
-    typedef typename GetImMeasure<nOrder>::type quad_meas_type;
-    typedef typename GetImMeasure<1>::type quad_meas1_type;
+
+    using quad_meas_type = typename GetImMeasure<nOrder>::type;
+    using quad_meas1_type = typename GetImMeasure<1>::type;
+
+    //-------------------------------------------------------------------------
+    // Runtime order support
+    //-------------------------------------------------------------------------
+
+    /**
+     * @brief Get the polynomial order of the geometric entity.
+     * @return The order (compile-time for static order, runtime for dynamic).
+     */
+    [[nodiscard]] constexpr uint16_type order() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return nOrder;
+        else
+            return M_runtime_order;
+    }
+
+    /**
+     * @brief Get the quadrature order for measure computation.
+     * @return The quadrature order (accounts for runtime order if dynamic).
+     */
+    [[nodiscard]] constexpr uint16_type measureQuadOrder() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return meas_quad_order;
+        else
+            return ( M_runtime_order >= 1 ) ? ( M_runtime_order - 1 ) * nDim : 0;
+    }
+
+    /**
+     * @brief Get the number of points in the element (runtime-aware).
+     * @return The number of points.
+     */
+    [[nodiscard]] uint16_type nPointsRuntime() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return numPoints;
+        else
+        {
+            if constexpr ( GeoShape::is_simplex )
+                return static_cast<uint16_type>( Feel::detail::simplexTotal( nDim, M_runtime_order ) );
+            else
+                return static_cast<uint16_type>( Feel::detail::hypercubeTotal( nDim, M_runtime_order ) );
+        }
+    }
 
 
     /**
-     * default constructor
+     * default constructor (static order only)
      */
-    GeoND()
+    GeoND() requires( is_order_static )
         : super( 0 ),
           super2( numTopologicalFaces ),
           M_points( numPoints, nullptr ),
-        M_neighbors( 0 ),
-        M_commonData( nullptr )
+          M_neighbors( 0 ),
+          M_commonData( nullptr )
     {
     }
 
     /**
-     * constructor from an id
+     * constructor with runtime order (dynamic order only)
+     *
+     * @param runtime_order the polynomial order specified at runtime
+     */
+    explicit GeoND( RuntimeOrder runtime_order ) requires( is_order_dynamic )
+        : super( 0 ),
+          super2( numTopologicalFaces ),
+          M_points( computeNumPoints( runtime_order.value ), nullptr ),
+          M_neighbors( 0 ),
+          M_commonData( nullptr ),
+          M_runtime_order( runtime_order.value )
+    {
+    }
+
+  private:
+    //! @brief Helper to compute number of points for dynamic order (used in initializer list)
+    static constexpr size_type computeNumPoints( uint16_type order ) noexcept
+    {
+        if constexpr ( GeoShape::is_simplex )
+            return Feel::detail::simplexTotal( nDim, order );
+        else
+            return Feel::detail::hypercubeTotal( nDim, order );
+    }
+
+  public:
+
+    /**
+     * constructor from an id (static order only)
      *
      * @param id identifier for the element to store
      *
      */
-    explicit GeoND( size_type id )
+    explicit GeoND( size_type id ) requires( is_order_static )
         : super( id ),
           super2( numTopologicalFaces ),
           M_points( numPoints, nullptr ),
-        M_neighbors( 0 ),
-        M_commonData( nullptr )
+          M_neighbors( 0 ),
+          M_commonData( nullptr )
+    {
+    }
+
+    /**
+     * constructor from an id with runtime order (dynamic order only)
+     *
+     * @param id identifier for the element to store
+     * @param runtime_order the polynomial order specified at runtime
+     */
+    GeoND( size_type id, RuntimeOrder runtime_order ) requires( is_order_dynamic )
+        : super( id ),
+          super2( numTopologicalFaces ),
+          M_points( computeNumPoints( runtime_order.value ), nullptr ),
+          M_neighbors( 0 ),
+          M_commonData( nullptr ),
+          M_runtime_order( runtime_order.value )
     {
     }
 
     GeoND( GeoND const& e ) = default;
-    GeoND( GeoND&& e )
+    GeoND( GeoND&& e ) noexcept
         : super( std::move( e ) ),
           super2( std::move( e ) ),
           M_points( std::move( e.M_points ) ),
           M_neighbors( std::move( e.M_neighbors ) ),
-          M_commonData( std::move( e.M_commonData ) )
+          M_commonData( std::move( e.M_commonData ) ),
+          M_runtime_order( std::move( e.M_runtime_order ) )
     {
-        //std::cout << "GeoND move ctor\n";
     }
 
     GeoND& operator=( GeoND const& ) = default;
-    GeoND& operator=( GeoND&& e )
+    GeoND& operator=( GeoND&& e ) noexcept
     {
         super::operator=( std::move( e ) );
         super2::operator=( std::move( e ) );
         M_points = std::move( e.M_points );
         M_neighbors = std::move( e.M_neighbors );
         M_commonData = std::move( e.M_commonData );
-        //M_face_measures = std::move( e.M_face_measures );
-        //std::cout << "GeoND move assign\n";
+        if constexpr ( is_order_dynamic )
+            M_runtime_order = std::move( e.M_runtime_order );
         return *this;
     }
 
@@ -857,14 +967,10 @@ class GeoND
      */
     static uint16_type fToP( uint16_type const _localFace, uint16_type const _point )
     {
-#if 1
-        typedef typename mpl::if_<mpl::not_equal_to<mpl::int_<super::nDim>, mpl::int_<2>>,
-                                  mpl::identity<super>,
-                                  mpl::identity<tt>>::type the_type;
-        return the_type::type::fToP( _localFace, _point );
-#else
-        return super::fToP( _localFace, _point );
-#endif
+        if constexpr ( super::nDim != 2 )
+            return super::fToP( _localFace, _point );
+        else
+            return tt::fToP( _localFace, _point );
     }
 
     /**
@@ -1061,6 +1167,10 @@ class GeoND
 
     //! common data shared in a collection of multi-dimensional geometrical entity
     mutable GeoNDCommon<self_type> * M_commonData;
+
+    //! @brief Runtime order storage (only occupies space when is_order_dynamic is true)
+    [[no_unique_address]]
+    std::conditional_t<is_order_dynamic, uint16_type, std::monostate> M_runtime_order{};
 };
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>

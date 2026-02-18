@@ -6,6 +6,7 @@
        Date: 2005-09-03
 
   Copyright (C) 2005,2006 EPFL
+  Copyright (C) 2026 Feel++ Consortium - C++20/23 modernization
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,13 +23,16 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file points.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
+   @file points.hpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-09-03
+   @brief Points container class (C++20/23 modernized)
  */
 #ifndef FEELPP_MESH_POINTS_HPP
 #define FEELPP_MESH_POINTS_HPP
 
+#include <concepts>
+#include <type_traits>
 #include <unordered_map>
 
 #include <feel/feelcore/commobject.hpp>
@@ -53,23 +57,23 @@ class Points
     //@{
     using index_type = IndexT;
     using size_type = index_type;
-    typedef GeoElement0D<nDim, SubFace, T, IndexT> point_type;
+    using point_type = GeoElement0D<nDim, SubFace, T, IndexT>;
 
-    typedef std::unordered_map<size_type, point_type> points_type;
+    using points_type = std::unordered_map<size_type, point_type>;
 
-    typedef typename points_type::iterator point_iterator;
-    typedef typename points_type::const_iterator point_const_iterator;
+    using point_iterator = typename points_type::iterator;
+    using point_const_iterator = typename points_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<point_type const>> points_reference_wrapper_type;
-    typedef std::shared_ptr<points_reference_wrapper_type> points_reference_wrapper_ptrtype;
-    typedef typename points_reference_wrapper_type::iterator point_reference_wrapper_iterator;
-    typedef typename points_reference_wrapper_type::const_iterator point_reference_wrapper_const_iterator;
+    using points_reference_wrapper_type = std::vector<boost::reference_wrapper<point_type const>>;
+    using points_reference_wrapper_ptrtype = std::shared_ptr<points_reference_wrapper_type>;
+    using point_reference_wrapper_iterator = typename points_reference_wrapper_type::iterator;
+    using point_reference_wrapper_const_iterator = typename points_reference_wrapper_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<point_type>> ordered_points_reference_wrapper_type;
-    typedef typename ordered_points_reference_wrapper_type::iterator ordered_point_reference_wrapper_iterator;
-    typedef typename ordered_points_reference_wrapper_type::const_iterator ordered_point_reference_wrapper_const_iterator;
+    using ordered_points_reference_wrapper_type = std::vector<boost::reference_wrapper<point_type>>;
+    using ordered_point_reference_wrapper_iterator = typename ordered_points_reference_wrapper_type::iterator;
+    using ordered_point_reference_wrapper_const_iterator = typename ordered_points_reference_wrapper_type::const_iterator;
 
-    using point_interprocess_map_type = std::unordered_map<index_type,std::set<rank_type>>;
+    using point_interprocess_map_type = std::unordered_map<index_type, std::set<rank_type>>;
 
     //@}
 
@@ -657,7 +661,7 @@ protected:
     template <class Archive>
     void serialize( Archive& ar, const unsigned int version )
     {
-        if ( Archive::is_loading::value )
+        if constexpr ( Archive::is_loading::value )
         {
             M_points.clear();
             M_orderedPoints.clear();

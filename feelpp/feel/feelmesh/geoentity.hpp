@@ -24,16 +24,21 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file geoentity.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-08-10
+   @file geoentity.hpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-08-10
+   @brief Base class for all geometric entities (C++20/23 modernized)
  */
 #ifndef __GeoEntity_H
 #define __GeoEntity_H 1
 
+#include <concepts>
+#include <type_traits>
+
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/refentity.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -74,31 +79,38 @@ public:
     typedef typename Entity::edge_permutation_type edge_permutation_type;
     typedef typename Entity::face_permutation_type face_permutation_type;
 
-    static inline const size_type Shape = super::Shape;
-    static inline const size_type Geometry = super::Geometry;
+    static constexpr size_type Shape = super::Shape;
+    static constexpr size_type Geometry = super::Geometry;
 
-    static inline const uint16_type nDim = super::nDim;
-    static inline const uint16_type nOrder = super::nOrder;
-    static inline const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
+    //! @brief True if Order is known at compile time (i.e., Order >= 0)
+    static constexpr bool is_order_static = super::is_order_static;
+    //! @brief True if Order is determined at runtime (i.e., Order == Dynamic)
+    static constexpr bool is_order_dynamic = super::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = super::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = super::nOrder;
 
-    static inline const uint16_type numVertices = super::numVertices;
-    static inline const uint16_type numFaces = super::numFaces;
-    static inline const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static inline const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static inline const uint16_type numEdges = super::numEdges;
-    static inline const uint16_type numNormals = super::numNormals;
+    static constexpr uint16_type numVertices = super::numVertices;
+    static constexpr uint16_type numFaces = super::numFaces;
+    static constexpr uint16_type numGeometricFaces = super::numGeometricFaces;
+    static constexpr uint16_type numTopologicalFaces = super::numTopologicalFaces;
+    static constexpr uint16_type numEdges = super::numEdges;
+    static constexpr uint16_type numNormals = super::numNormals;
 
-    static inline const uint16_type numPoints = super::numPoints;
-    static inline const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static inline const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static inline const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static inline const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+    static constexpr uint16_type numPoints = super::numPoints;
+    static constexpr uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
+    static constexpr uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace = super::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
 
-    typedef Entity convex_type;
+    using convex_type = Entity;
 
-    static inline const bool is_simplex = super::is_simplex;
-    static inline const bool is_hypercube = super::is_hypercube;
+    static constexpr bool is_simplex = super::is_simplex;
+    static constexpr bool is_hypercube = super::is_hypercube;
 
     /**
      * helper class to construct the associated reference convex.
@@ -222,9 +234,22 @@ public:
      *
      * @return the number of points on the reference shape
      */
-    constexpr uint16_type nPoints() const
+    [[nodiscard]] constexpr uint16_type nPoints() const
     {
         return super::numPoints;
+    }
+
+    /**
+     * @brief Get the polynomial order of the geometric entity.
+     * For dynamic order, this returns the runtime order from the underlying shape.
+     * @return The order value.
+     */
+    [[nodiscard]] constexpr uint16_type order() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return nOrder;
+        else
+            return super::order();
     }
 
     /**

@@ -20,13 +20,16 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /*!
-  \file geoElement.hpp
-  \brief Geometric elements
-  Introduces all the geometric elements
+  @file geoElement.hpp
+  @brief Geometric elements (C++20/23 modernized)
+  Introduces all the geometric elements with Dynamic order support
 */
 
 #ifndef _GEOELEMENT_HH_
 #define _GEOELEMENT_HH_
+
+#include <concepts>
+#include <type_traits>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -35,6 +38,7 @@
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/geond.hpp>
 #include <feel/feelmesh/traits.hpp>
+#include <feel/feelpoly/order.hpp>
 
 //#include <feel/feelalg/lu.hpp>
 
@@ -810,31 +814,36 @@ template<uint16_type Dim,
 class GeoElement1D
     :
     public GeoND<Dim, GEOSHAPE, T, IndexT,
-                 typename mpl::if_<mpl::bool_<PointTypeIsSubFaceOf>,
-                                   mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT> >,
-                                   mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type,
-                 UseMeasuresStorage
-                 >,
+                 std::conditional_t<PointTypeIsSubFaceOf,
+                                    GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT>,
+                                    GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>>,
+                 UseMeasuresStorage>,
     public SubFace
 {
 public:
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT,
-                  typename mpl::if_<mpl::bool_<PointTypeIsSubFaceOf>,
-                                    mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT> >,
-                                    mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type,
-                  UseMeasuresStorage
-                  > super;
+    using super = GeoND<Dim, GEOSHAPE, T, IndexT,
+                        std::conditional_t<PointTypeIsSubFaceOf,
+                                           GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT>,
+                                           GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>>,
+                        UseMeasuresStorage>;
 
-    typedef SubFace super2;
+    using super2 = SubFace;
     using connection_t = SubFace;
 
-    static inline const uint16_type nDim = super::nDim;
-    static inline const uint16_type nOrder = super::nOrder;
-    static inline const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
-    static inline const bool condition = ( Dim==nRealDim );
-    BOOST_MPL_ASSERT_MSG( ( condition ), INVALID_ELEMENT_REAL_DIMENSION, ( mpl::int_<Dim>, mpl::int_<nRealDim>, GEOSHAPE ) );
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = super::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = super::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = super::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = super::nOrder;
+
+    static_assert( Dim == nRealDim, "GeoElement1D: invalid element real dimension" );
 
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
@@ -1130,36 +1139,42 @@ template<uint16_type Dim,
          bool UseMeasuresStorage = false >
 class GeoElement2D
     :
-        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage >,
-public SubFace
+        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage>,
+        public SubFace
 {
 public:
 
-
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
-    typedef SubFace super2;
+    using super = GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage>;
+    using super2 = SubFace;
     using connection_t = SubFace;
-    static inline const uint16_type nDim = super::nDim;
-    static inline const uint16_type nOrder = super::nOrder;
-    static inline const uint16_type nRealDim = super::nRealDim;
 
-    static inline const bool condition = ( Dim==nRealDim );
-    BOOST_MPL_ASSERT_MSG( ( condition ), INVALID_ELEMENT_REAL_DIMENSION, ( mpl::int_<Dim>, mpl::int_<nRealDim>, GEOSHAPE ) );
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
+
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = super::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = super::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = super::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = super::nOrder;
+
+    static_assert( Dim == nRealDim, "GeoElement2D: invalid element real dimension" );
 
     //! Number of element edges
-    static inline const uint16_type numLocalEdges = super::numEdges;
-    static inline const uint16_type numLocalFaces = super::numFaces;
+    static constexpr uint16_type numLocalEdges = super::numEdges;
+    static constexpr uint16_type numLocalFaces = super::numFaces;
 
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
-    typedef GEOSHAPE GeoShape;
-    typedef typename super::face_type entity_face_type;
-    typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T, IndexT, UseMeasuresStorage> self_type;
-    //typedef typename SubFace::template Element<self_type>::type element_type;
-    typedef self_type element_type;
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<2> >,
-                              mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T, IndexT> >,
-                              mpl::identity<GeoElement1D<Dim, entity_face_type, SubFaceOfMany<self_type>, T, IndexT> > >::type::type edge_type;
+    using GeoShape = GEOSHAPE;
+    using entity_face_type = typename super::face_type;
+    using self_type = GeoElement2D<Dim, GEOSHAPE, SubFace, T, IndexT, UseMeasuresStorage>;
+    using element_type = self_type;
+    using edge_type = std::conditional_t<nRealDim == 2,
+                                          GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T, IndexT>,
+                                          GeoElement1D<Dim, entity_face_type, SubFaceOfMany<self_type>, T, IndexT>>;
     //typedef GeoElement1D<Dim, entity_face_type, SubFaceOf<self_type>, T > edge_type;
     typedef GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> point_type;
 #if 0
@@ -1496,41 +1511,50 @@ template<uint16_type Dim,
          bool UseMeasuresStorage = false >
 class GeoElement3D
     :
-        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>,UseMeasuresStorage >,
-public SubFaceOfNone<0>
+        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage>,
+        public SubFaceOfNone<0>
 {
 public:
 
-    static inline const uint16_type nDim = Dim;
+    static constexpr uint16_type nDim = Dim;
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
-    typedef SubFaceOfNone<0> super2;
+    using super = GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage>;
+    using super2 = SubFaceOfNone<0>;
+
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = super::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = super::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = super::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = super::nOrder;
 
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
-    typedef GEOSHAPE GeoShape;
+    using GeoShape = GEOSHAPE;
 
-    typedef typename super::face_type entity_face_type;
+    using entity_face_type = typename super::face_type;
 
-    typedef GeoElement3D<Dim, GEOSHAPE,T,IndexT,UseMeasuresStorage> self_type;
-    typedef self_type element_type;
-    typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T, IndexT > face_type;
-    typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T, IndexT> edge_type;
-    typedef GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> point_type;
+    using self_type = GeoElement3D<Dim, GEOSHAPE, T, IndexT, UseMeasuresStorage>;
+    using element_type = self_type;
+    using face_type = GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T, IndexT>;
+    using edge_type = GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T, IndexT>;
+    using point_type = GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>;
 
-    typedef typename super::node_type node_type;
+    using node_type = typename super::node_type;
 
-    typedef typename super::vertex_permutation_type vertex_permutation_type;
-    typedef typename super::edge_permutation_type edge_permutation_type;
-    typedef typename super::face_permutation_type face_permutation_type;
-    typedef typename super::face_permutation_type permutation_type;
+    using vertex_permutation_type = typename super::vertex_permutation_type;
+    using edge_permutation_type = typename super::edge_permutation_type;
+    using face_permutation_type = typename super::face_permutation_type;
+    using permutation_type = typename super::face_permutation_type;
 
     //! Number of local Vertices
-    static inline const uint16_type numLocalVertices = super::numVertices;
+    static constexpr uint16_type numLocalVertices = super::numVertices;
     //! Number of local Faces
-    static inline const uint16_type numLocalFaces = super::numFaces;
+    static constexpr uint16_type numLocalFaces = super::numFaces;
     //! Number of local Edges (using Euler Formula)
-    static inline const uint16_type numLocalEdges = super::numEdges;
+    static constexpr uint16_type numLocalEdges = super::numEdges;
 
     /**
      *
