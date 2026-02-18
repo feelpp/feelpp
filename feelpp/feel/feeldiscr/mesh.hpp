@@ -25,6 +25,9 @@
 #define FEELPP_MESH_HPP 1
 
 #include <bitset>
+#include <concepts>
+#include <type_traits>
+#include <variant>
 
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
@@ -63,6 +66,7 @@
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelpoly/geomap.hpp>
 #include <feel/feelpoly/geomapinv.hpp>
+#include <feel/feelpoly/order.hpp>
 
 #include <boost/preprocessor/comparison/less.hpp>
 #include <boost/preprocessor/control/if.hpp>
@@ -193,11 +197,18 @@ class Mesh
     //!
     //! @{
 
-    static inline const uint16_type nDim = GeoShape::nDim;
-    static inline const uint16_type nRealDim = GeoShape::nRealDim;
-    static inline const uint16_type Shape = GeoShape::Shape;
-    static inline const uint16_type nOrder = GeoShape::nOrder;
-    static inline const uint16_type tag = Tag;
+    static constexpr uint16_type nDim = GeoShape::nDim;
+    static constexpr uint16_type nRealDim = GeoShape::nRealDim;
+    static constexpr uint16_type Shape = GeoShape::Shape;
+    static constexpr uint16_type nOrder = GeoShape::nOrder;
+    static constexpr uint16_type tag = Tag;
+
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = GeoShape::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = GeoShape::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = GeoShape::nOrder_v;
 
     //! @}
     //!  @name Typedefs
@@ -280,14 +291,29 @@ class Mesh
     //@}
 
     //!
-    //!  Default mesh constructor
+    //!  Default mesh constructor (static order)
     //
     explicit Mesh( std::string const& name,
                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& props = "00001" );
+                   std::string const& props = "00001" )
+        requires( is_order_static );
 
     explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& props = "00001"  )
+        requires( is_order_static )
         : Mesh( "", worldComm, props ) {}
+
+    //!
+    //! @brief Construct mesh with runtime order (dynamic order shapes only)
+    //! @param runtime_order the polynomial order to use at runtime
+    //! @param name optional mesh name
+    //! @param worldComm optional communicator
+    //! @param props structure properties
+    //!
+    explicit Mesh( RuntimeOrder runtime_order,
+                   std::string const& name = "",
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                   std::string const& props = "00001" )
+        requires( is_order_dynamic );
 
     ~Mesh() override {}
 
@@ -319,13 +345,39 @@ class Mesh
     }
 
     //!
-    //! @brief allocate a new Mesh
+    //! @brief allocate a new Mesh (static order)
     //! @param worldcomm communicator defaulting to Environment::worldComm()
     //! @return the Mesh shared pointer
     //!
     static mesh_ptrtype New( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_static )
     {
         return std::make_shared<mesh_type>( worldComm );
+    }
+
+    //!
+    //! @brief allocate a new Mesh with runtime order (dynamic order shapes only)
+    //! @param runtime_order the polynomial order to use at runtime
+    //! @param worldcomm communicator defaulting to Environment::worldComm()
+    //! @return the Mesh shared pointer
+    //!
+    static mesh_ptrtype New( RuntimeOrder runtime_order,
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_dynamic )
+    {
+        return std::make_shared<mesh_type>( runtime_order, "", worldComm );
+    }
+
+    //!
+    //! @brief Get the runtime order of the mesh
+    //! @return the polynomial order (static value for static order meshes, runtime value for dynamic)
+    //!
+    [[nodiscard]] constexpr uint16_type order() const noexcept
+    {
+        if constexpr ( is_order_static )
+            return nOrder;
+        else
+            return M_runtime_order;
     }
 
     self_type& operator+=( self_type const& m );
@@ -1805,6 +1857,10 @@ public:
     std::shared_ptr<GeoNDCommon<typename face_type::super>> M_geondFaceCommon;
     //! data accessibles in each edges
     std::shared_ptr<GeoNDCommon<typename edge_type::super>> M_geondEdgeCommon;
+
+    //! Runtime order storage (zero overhead for static order meshes)
+    [[no_unique_address]]
+    std::conditional_t<is_order_dynamic, uint16_type, std::monostate> M_runtime_order{};
 };
 
 

@@ -86,6 +86,7 @@ struct hash<std::tuple<TT...>>
 #include <boost/unordered_map.hpp>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 
 #include <boost/multi_array.hpp>
@@ -107,6 +108,7 @@ struct hash<std::tuple<TT...>>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/mapped.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
+#include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feeldiscr/doftablebase.hpp>
@@ -218,6 +220,9 @@ public:
 
     static inline const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents>, mpl::int_<FEType::nLocalDof> >::type::value;
+
+    //! @brief True if polynomial order is determined at runtime
+    static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
 
     typedef PeriodicityType periodicity_type;
     static inline const bool is_periodic = periodicity_type::is_periodic;
@@ -378,16 +383,38 @@ public:
         }
     fe_type const& fe() const { return *M_fe; }
 
-    constexpr size_type nRealLocalDof( bool per_component = false ) const
+    size_type nRealLocalDof( bool per_component = false ) const
         {
-            return  (is_product&&!per_component)?(nRealComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
-                                                                   fe_type::nDofPerFace * element_type::numGeometricFaces +
-                                                                   fe_type::nDofPerEdge * element_type::numEdges +
-                                                                   fe_type::nDofPerVertex * element_type::numVertices)):
-                (fe_type::nDofPerVolume * element_type::numVolumes +
-                 fe_type::nDofPerFace * element_type::numGeometricFaces +
-                 fe_type::nDofPerEdge * element_type::numEdges +
-                 fe_type::nDofPerVertex * element_type::numVertices);
+            if constexpr ( is_order_dynamic )
+            {
+                // Use runtime DOF counts from the basis
+                const uint16_type nDofPerVertex = runtimeDofPerVertex();
+                const uint16_type nDofPerEdge = runtimeDofPerEdge();
+                const uint16_type nDofPerFace = runtimeDofPerFace();
+                const uint16_type nDofPerVolume = runtimeDofPerVolume();
+
+                return (is_product && !per_component) ?
+                    (nRealComponents * (nDofPerVolume * element_type::numVolumes +
+                                        nDofPerFace * element_type::numGeometricFaces +
+                                        nDofPerEdge * element_type::numEdges +
+                                        nDofPerVertex * element_type::numVertices)) :
+                    (nDofPerVolume * element_type::numVolumes +
+                     nDofPerFace * element_type::numGeometricFaces +
+                     nDofPerEdge * element_type::numEdges +
+                     nDofPerVertex * element_type::numVertices);
+            }
+            else
+            {
+                return (is_product && !per_component) ?
+                    (nRealComponents * (fe_type::nDofPerVolume * element_type::numVolumes +
+                                        fe_type::nDofPerFace * element_type::numGeometricFaces +
+                                        fe_type::nDofPerEdge * element_type::numEdges +
+                                        fe_type::nDofPerVertex * element_type::numVertices)) :
+                    (fe_type::nDofPerVolume * element_type::numVolumes +
+                     fe_type::nDofPerFace * element_type::numGeometricFaces +
+                     fe_type::nDofPerEdge * element_type::numEdges +
+                     fe_type::nDofPerVertex * element_type::numVertices);
+            }
         }
 
     DofTableInfos infos() const override
@@ -430,25 +457,66 @@ public:
             return infos;
         }
 
-    constexpr size_type nLocalDof( bool per_component = false ) const
+    size_type nLocalDof( bool per_component = false ) const
         {
-            return  (is_product&&!per_component)?(nComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
-                                                               fe_type::nDofPerFace * element_type::numGeometricFaces +
-                                                               fe_type::nDofPerEdge * element_type::numEdges +
-                                                               fe_type::nDofPerVertex * element_type::numVertices)):
-                (fe_type::nDofPerVolume * element_type::numVolumes +
-                 fe_type::nDofPerFace * element_type::numGeometricFaces +
-                 fe_type::nDofPerEdge * element_type::numEdges +
-                 fe_type::nDofPerVertex * element_type::numVertices);
+            if constexpr ( is_order_dynamic )
+            {
+                // Use runtime DOF counts from the basis
+                const uint16_type nDofPerVertex = runtimeDofPerVertex();
+                const uint16_type nDofPerEdge = runtimeDofPerEdge();
+                const uint16_type nDofPerFace = runtimeDofPerFace();
+                const uint16_type nDofPerVolume = runtimeDofPerVolume();
+
+                return (is_product && !per_component) ?
+                    (nComponents * (nDofPerVolume * element_type::numVolumes +
+                                    nDofPerFace * element_type::numGeometricFaces +
+                                    nDofPerEdge * element_type::numEdges +
+                                    nDofPerVertex * element_type::numVertices)) :
+                    (nDofPerVolume * element_type::numVolumes +
+                     nDofPerFace * element_type::numGeometricFaces +
+                     nDofPerEdge * element_type::numEdges +
+                     nDofPerVertex * element_type::numVertices);
+            }
+            else
+            {
+                return (is_product && !per_component) ?
+                    (nComponents * (fe_type::nDofPerVolume * element_type::numVolumes +
+                                    fe_type::nDofPerFace * element_type::numGeometricFaces +
+                                    fe_type::nDofPerEdge * element_type::numEdges +
+                                    fe_type::nDofPerVertex * element_type::numVertices)) :
+                    (fe_type::nDofPerVolume * element_type::numVolumes +
+                     fe_type::nDofPerFace * element_type::numGeometricFaces +
+                     fe_type::nDofPerEdge * element_type::numEdges +
+                     fe_type::nDofPerVertex * element_type::numVertices);
+            }
         }
-    constexpr size_type nLocalDofOnFace( bool per_component = false ) const
+    size_type nLocalDofOnFace( bool per_component = false ) const
         {
-            return (is_product&&!per_component)?(nComponents*( face_type::numVertices * fe_type::nDofPerVertex +
-                                                               face_type::numEdges * fe_type::nDofPerEdge +
-                                                               face_type::numFaces * fe_type::nDofPerFace )):
-                ( face_type::numVertices * fe_type::nDofPerVertex +
-                  face_type::numEdges * fe_type::nDofPerEdge +
-                  face_type::numFaces * fe_type::nDofPerFace );
+            if constexpr ( is_order_dynamic )
+            {
+                // Use runtime DOF counts from the basis
+                const uint16_type nDofPerVertex = runtimeDofPerVertex();
+                const uint16_type nDofPerEdge = runtimeDofPerEdge();
+                const uint16_type nDofPerFace = runtimeDofPerFace();
+
+                return (is_product && !per_component) ?
+                    (nComponents * (face_type::numVertices * nDofPerVertex +
+                                    face_type::numEdges * nDofPerEdge +
+                                    face_type::numFaces * nDofPerFace)) :
+                    (face_type::numVertices * nDofPerVertex +
+                     face_type::numEdges * nDofPerEdge +
+                     face_type::numFaces * nDofPerFace);
+            }
+            else
+            {
+                return (is_product && !per_component) ?
+                    (nComponents * (face_type::numVertices * fe_type::nDofPerVertex +
+                                    face_type::numEdges * fe_type::nDofPerEdge +
+                                    face_type::numFaces * fe_type::nDofPerFace)) :
+                    (face_type::numVertices * fe_type::nDofPerVertex +
+                     face_type::numEdges * fe_type::nDofPerEdge +
+                     face_type::numFaces * fe_type::nDofPerFace);
+            }
         }
     local_dof_set_type const&
     localDofSet( size_type eid ) const
@@ -823,7 +891,7 @@ public:
 
     uint16_type localDofId( uint16_type const lid, uint16_type const c = 0 ) const
         {
-            return fe_type::nLocalDof * c  + lid;
+            return runtimeLocalDofId( lid, c );
         }
 
     std::pair<local_dof_const_iterator,local_dof_const_iterator> localDof() const
@@ -879,8 +947,11 @@ public:
     template<typename ElemTest,typename ElemTrial>
     std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial, mpl::true_ ) const
         {
-            double dotVec= ublas::inner_prod( ublas::column(eltTest.G(),1)  - ublas::column(eltTest.G(),0),
-                                              ublas::column(eltTrial.G(),1) - ublas::column(eltTrial.G(),0) );
+            auto const& gTest = eltTest.G();
+            auto const& gTrial = eltTrial.G();
+            Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> gTestMap( gTest.data().begin(), gTest.size1(), gTest.size2() );
+            Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> gTrialMap( gTrial.data().begin(), gTrial.size1(), gTrial.size2() );
+            double dotVec = ( gTestMap.col( 1 ) - gTestMap.col( 0 ) ).dot( gTrialMap.col( 1 ) - gTrialMap.col( 0 ) );
             CHECK( std::abs( dotVec ) > 1e-9 ) << " inner_prod is null " << dotVec << "\n";
 
             if ( dotVec > 0 ) // identity permutation
@@ -894,8 +965,9 @@ public:
                                           const uint16_type localNode,
                                           const uint16_type c = 0 ) const override
         {
-            auto it = M_el_l2g.left.find( localdof_type(ElId,fe_type::nLocalDof * c  + localNode ) );
-            DCHECK( it != M_el_l2g.left.end() ) << "Invalid dof entry ( " << ElId << ", " << fe_type::nLocalDof * c  + localNode << ")";
+            const uint16_type localDof = runtimeLocalDofId( localNode, c );
+            auto it = M_el_l2g.left.find( localdof_type(ElId, localDof ) );
+            DCHECK( it != M_el_l2g.left.end() ) << "Invalid dof entry ( " << ElId << ", " << localDof << ")";
             //DCHECK( it->second.index() < nDof() && nDof() > 0 ) << "Invalid Dof Entry: " << it->second.index() << " > " << this->nDof();
             return it->second;
         }
@@ -904,10 +976,121 @@ public:
                                             const uint16_type localNode,
                                             const uint16_type c = 0 ) const
         {
-            Dof resloc = M_el_l2g.left.find( localdof_type( ElId, fe_type::nLocalDof * c  + localNode ) )->second;
+            Dof resloc = M_el_l2g.left.find( localdof_type( ElId, runtimeLocalDofId( localNode, c ) ) )->second;
             resloc.setIndex( this->mapGlobalProcessToGlobalCluster()[resloc.index()] );
             return resloc;
         }
+
+  private:
+    [[nodiscard]] uint16_type runtimeLocalDofId( uint16_type localNode, uint16_type c = 0 ) const noexcept
+        {
+            if ( !M_fe )
+                return localNode;
+
+            if constexpr ( requires( fe_type const& fe, uint16_type lid, uint16_type comp ) { fe.localDofId( lid, comp ); } )
+                return M_fe->localDofId( localNode, c );
+            else
+                return static_cast<uint16_type>( runtimeNLocalDof() * c + localNode );
+        }
+
+    //! @brief Get nLocalDof value for runtime use (avoids code duplication)
+    [[nodiscard]] uint16_type runtimeNLocalDof() const noexcept
+        {
+            if constexpr ( is_order_dynamic )
+            {
+                if ( !M_fe )
+                    return 0;
+                if constexpr ( requires( fe_ptrtype const& fe ) { fe->localDof(); } )
+                    return M_fe->localDof();
+                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeLocalDof(); } )
+                    return M_fe->runtimeLocalDof();
+                else
+                    return 0;
+            }
+            else
+                return fe_type::nLocalDof;
+        }
+
+    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
+        {
+            if constexpr ( is_order_dynamic )
+            {
+                if ( !M_fe )
+                    return 0;
+                if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerVertex(); } )
+                    return M_fe->dofPerVertex();
+                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerVertex(); } )
+                    return M_fe->runtimeDofPerVertex();
+                else
+                    return 0;
+            }
+            else
+                return fe_type::nDofPerVertex;
+        }
+
+    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
+        {
+            if constexpr ( is_order_dynamic )
+            {
+                if ( !M_fe )
+                    return 0;
+                if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerEdge(); } )
+                    return M_fe->dofPerEdge();
+                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerEdge(); } )
+                    return M_fe->runtimeDofPerEdge();
+                else
+                    return 0;
+            }
+            else
+                return fe_type::nDofPerEdge;
+        }
+
+    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
+        {
+            if constexpr ( is_order_dynamic )
+            {
+                if ( !M_fe )
+                    return 0;
+                if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerFace(); } )
+                    return M_fe->dofPerFace();
+                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerFace(); } )
+                    return M_fe->runtimeDofPerFace();
+                else
+                    return 0;
+            }
+            else
+                return fe_type::nDofPerFace;
+        }
+
+    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
+        {
+            if constexpr ( is_order_dynamic )
+            {
+                if ( !M_fe )
+                    return 0;
+                if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerVolume(); } )
+                    return M_fe->dofPerVolume();
+                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerVolume(); } )
+                    return M_fe->runtimeDofPerVolume();
+                else
+                    return 0;
+            }
+            else
+                return fe_type::nDofPerVolume;
+        }
+
+    //! @brief Get nDofPerElement value for runtime use
+    [[nodiscard]] size_type runtimeNDofPerElement() const noexcept
+        {
+            if constexpr ( is_order_dynamic )
+            {
+                const uint16_type nldof = runtimeNLocalDof();
+                return is_product ? nldof * nComponents : nldof;
+            }
+            else
+                return nDofPerElement;
+        }
+  public:
 
     global_dof_fromface_type const& faceLocalToGlobal( const size_type ElId,
                                                        const uint16_type localNode,
@@ -925,11 +1108,11 @@ public:
             {}
         global_dof_type const& operator()( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return M_d.M_el_l2g.left.find( localdof_type(__id, M_d.nLocalDof(true) * c+ __loc ) )->second;
+                return M_d.M_el_l2g.left.find( localdof_type( __id, M_d.localDofId( __loc, c ) ) )->second;
             }
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return M_d.nLocalDof(true) * c+__loc;
+                return M_d.localDofId( __loc, c );
             }
         DofTable const& M_d;
     };
@@ -949,7 +1132,11 @@ public:
 
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
             {
-                return M_d.nLocalDof(true)*c + M_d.M_face_l2g.find( __id )->second[M_d.nLocalDofOnFace( true )*c+__loc].localDof();
+                auto const& ldofFace = M_d.M_face_l2g.find( __id )->second[M_d.nLocalDofOnFace( true )*c+__loc];
+                const uint16_type ldof = ldofFace.localDof();
+                if ( M_d.fe().component( ldof ) == c )
+                    return ldof;
+                return M_d.localDofId( M_d.fe().dofParent( ldof ), c );
             }
 
         DofTable const& M_d;
@@ -1232,10 +1419,11 @@ public:
         {
             bool res = true;
             const int ncdof = is_product?nComponents:1;
+            const uint16_type nldof = runtimeNLocalDof();
 
             //for ( int c = 0; c < ncdof; ++c )
             {
-                uint16_type lc_dof = fe_type::nLocalDof*0+l_dof;
+                uint16_type lc_dof = nldof*0+l_dof;
                 Feel::detail::ignore_unused_variable_warning( lc );
                 dof_map_iterator endof = map_gdof.end();
 
@@ -1268,13 +1456,13 @@ public:
                             for( int c2 = 0; c2 < c1; ++c2 )
                             {
                                 const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
-                                M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c2)+l_dof );
+                                M_ldof.setLocalDof( nldof*(nComponents1*c1+c2)+l_dof );
                                 M_gdof.setIndex( itdof->second+shift+k );
                                 auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                                 DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                     ie << "," << lc_dof << ")";
 
-                                M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c2+c1)+l_dof );
+                                M_ldof.setLocalDof( nldof*(nComponents1*c2+c1)+l_dof );
                                 res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                                 DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                     ie << "," << lc_dof << ")";
@@ -1283,7 +1471,7 @@ public:
                                 if ( !marker.empty() )
                                     M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
                             }
-                            M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
+                            M_ldof.setLocalDof( nldof*(nComponents1*c1+c1)+l_dof );
                             const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
                             M_gdof.setIndex( itdof->second+shift+k);
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
@@ -1297,7 +1485,7 @@ public:
                     {
                         for( int c = 0; c < ncdof; ++c )
                         {
-                            M_ldof.setLocalDof( fe_type::nLocalDof*c+l_dof );
+                            M_ldof.setLocalDof( nldof*c+l_dof );
                             M_gdof.setIndex( itdof->second+shift+c );
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                             //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
@@ -1510,18 +1698,201 @@ private:
             checkDofEntity<2>( mesh );
         }
 
+    [[nodiscard]] static bool
+    hasTriangularSidePointCount( uint16_type nFaceDof, uint16_type& nSidePoints )
+        {
+            if ( nFaceDof == 0 )
+                return false;
+
+            const int disc = 1 + 8 * int( nFaceDof );
+            const int root = static_cast<int>( std::lround( std::sqrt( static_cast<double>( disc ) ) ) );
+            if ( root * root != disc )
+                return false;
+
+            const int sidePoints = ( root - 1 ) / 2;
+            if ( sidePoints <= 0 || sidePoints * ( sidePoints + 1 ) / 2 != int( nFaceDof ) )
+                return false;
+
+            nSidePoints = static_cast<uint16_type>( sidePoints );
+            return true;
+        }
+
+    [[nodiscard]] static permutation_vector_type
+    composeFacePermutation( permutation_vector_type const& first,
+                            permutation_vector_type const& second )
+        {
+            FEELPP_ASSERT( first.size() == second.size() )
+                ( first.size() )( second.size() ).error( "invalid permutation composition sizes" );
+            permutation_vector_type out( first.size() );
+            for ( uint16_type i = 0; i < first.size(); ++i )
+            {
+                FEELPP_ASSERT( first( i ) < second.size() )
+                    ( i )( first( i ) )( second.size() ).error( "invalid permutation composition index" );
+                out( i ) = second( first( i ) );
+            }
+            return out;
+        }
+
+    void
+    clearFacePermutationTables()
+        {
+            vector_permutation.clear();
+            vector_permutation_dense.clear();
+            vector_permutation_dense.resize( face_permutation_type::N_PERMUTATIONS );
+        }
+
+    void
+    setFacePermutationVector( face_permutation_type permutation,
+                              permutation_vector_type perm )
+        {
+            const auto idx = static_cast<size_type>( permutation.value() );
+            FEELPP_ASSERT( idx < vector_permutation_dense.size() )
+                ( int( permutation.value() ) )
+                ( vector_permutation_dense.size() )
+                .error( "invalid face permutation index" );
+
+            vector_permutation[permutation] = perm;
+            vector_permutation_dense[idx] = std::move( perm );
+        }
+
+    bool
+    tryGenerateSimplexTriangularFacePermutations( uint16_type nDofPerFace )
+        {
+            if constexpr ( !( nDim == 3 && convex_type::is_simplex ) )
+                return false;
+
+            uint16_type nSidePoints = 0;
+            if ( !hasTriangularSidePointCount( nDofPerFace, nSidePoints ) )
+                return false;
+
+            permutation_vector_type reverseHypotenuse( nDofPerFace );
+            permutation_vector_type reverseBase( nDofPerFace );
+
+            // Reverse along the hypotenuse direction.
+            for ( uint16_type i = 0; i < nSidePoints; ++i )
+            {
+                for ( uint16_type j = 0; j <= i; ++j )
+                {
+                    const uint16_type first = i + j * ( j - 1 ) / 2 + j * ( nSidePoints - j );
+                    const uint16_type last = i +
+                                             ( i - j ) * ( i - j - 1 ) / 2 +
+                                             ( i - j ) * ( nSidePoints - ( i - j ) );
+                    FEELPP_ASSERT( first < nDofPerFace && last < nDofPerFace )
+                        ( first )( last )( nDofPerFace ).error( "invalid triangular permutation index" );
+                    reverseHypotenuse( first ) = last;
+                }
+            }
+
+            // Reverse along the base direction.
+            for ( uint16_type i = 0; i < nSidePoints; ++i )
+            {
+                const uint16_type begin = i * nSidePoints - i * ( i - 1 ) / 2;
+                const uint16_type end = ( i + 1 ) * nSidePoints - ( i + 1 ) * i / 2 - 1;
+                for ( uint16_type j = 0; j <= nSidePoints - i - 1; ++j )
+                {
+                    FEELPP_ASSERT( begin + j < nDofPerFace && end >= j && end - j < nDofPerFace )
+                        ( begin + j )( end - j )( nDofPerFace ).error( "invalid triangular permutation index" );
+                    reverseBase( begin + j ) = end - j;
+                }
+            }
+
+            auto const rotationAntiClock = composeFacePermutation( reverseBase, reverseHypotenuse );
+            auto const rotationClockwise = composeFacePermutation( reverseHypotenuse, reverseBase );
+            auto const reverseHeight = composeFacePermutation( reverseBase, rotationClockwise );
+
+            this->setFacePermutationVector( face_permutation_type( face_permutation_type::REVERSE_HYPOTENUSE ),
+                                            std::move( reverseHypotenuse ) );
+            this->setFacePermutationVector( face_permutation_type( face_permutation_type::REVERSE_BASE ),
+                                            std::move( reverseBase ) );
+            this->setFacePermutationVector( face_permutation_type( face_permutation_type::ROTATION_ANTICLOCK ),
+                                            std::move( rotationAntiClock ) );
+            this->setFacePermutationVector( face_permutation_type( face_permutation_type::ROTATION_CLOCKWISE ),
+                                            std::move( rotationClockwise ) );
+            this->setFacePermutationVector( face_permutation_type( face_permutation_type::REVERSE_HEIGHT ),
+                                            std::move( reverseHeight ) );
+            return true;
+        }
+
+    [[nodiscard]] bool
+    hasValidFacePermutation( face_permutation_type permutation,
+                             uint16_type nDofPerFace ) const
+        {
+            const auto idx = static_cast<size_type>( permutation.value() );
+            if ( idx < vector_permutation_dense.size() )
+                return vector_permutation_dense[idx].size() == nDofPerFace;
+            auto const it = vector_permutation.find( permutation );
+            return it != vector_permutation.end() && it->second.size() == nDofPerFace;
+        }
+
+    [[nodiscard]] permutation_vector_type const&
+    facePermutationVector( face_permutation_type permutation,
+                           uint16_type nDofPerFace ) const
+        {
+            FEELPP_ASSERT( hasValidFacePermutation( permutation, nDofPerFace ) )
+                ( int( permutation.value() ) )( int( nDofPerFace ) )
+                .error( "missing/invalid face permutation vector" );
+
+            const auto idx = static_cast<size_type>( permutation.value() );
+            if ( idx < vector_permutation_dense.size() )
+                return vector_permutation_dense[idx];
+
+            auto const it = vector_permutation.find( permutation );
+            FEELPP_ASSERT( it != vector_permutation.end() )
+                ( int( permutation.value() ) ).error( "missing face permutation vector" );
+            return it->second;
+        }
+
     void generateFacePermutations ( mesh_type& /*mesh*/, mpl::bool_<false> ) {}
 
     void generateFacePermutations ( mesh_type& mesh, mpl::bool_<true> )
         {
             if (! mesh.numElements() )
+            {
+                this->clearFacePermutationTables();
                 return;
+            }
+
+            const uint16_type nDofPerFace = runtimeDofPerFace();
+            if ( nDofPerFace <= 1 )
+            {
+                this->clearFacePermutationTables();
+                return;
+            }
+
+            this->clearFacePermutationTables();
 
             element_type const& _elt = mesh.beginElement()->second;
             PointSetMapped<element_type, convex_type, nOrder> pts( _elt );
 
             for ( uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; i++ )
-                vector_permutation[face_permutation_type( i )] = pts.getVectorPermutation( face_permutation_type( i ) );
+            {
+                auto perm = pts.getVectorPermutation( face_permutation_type( i ) );
+                if ( perm.size() == nDofPerFace )
+                    this->setFacePermutationVector( face_permutation_type( i ), std::move( perm ) );
+            }
+
+            if constexpr ( nDim == 3 && convex_type::is_simplex )
+            {
+                bool missing = false;
+                for ( uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; ++i )
+                {
+                    if ( !hasValidFacePermutation( face_permutation_type( i ), nDofPerFace ) )
+                    {
+                        missing = true;
+                        break;
+                    }
+                }
+                if ( missing )
+                    this->tryGenerateSimplexTriangularFacePermutations( nDofPerFace );
+            }
+
+            for ( uint16_type i = 2; i < face_permutation_type::N_PERMUTATIONS; ++i )
+            {
+                FEELPP_ASSERT( hasValidFacePermutation( face_permutation_type( i ), nDofPerFace ) )
+                    ( int( i ) )( int( nDofPerFace ) )
+                    ( int( face_permutation_type::N_PERMUTATIONS ) )
+                    .error( "missing/invalid face permutation table" );
+            }
         }
     /**
      * @return true if dof points are computed, false otherwise
@@ -1561,6 +1932,8 @@ private:
     global_dof_type M_gdof;
 
     std::map<face_permutation_type, permutation_vector_type> vector_permutation;
+    // Dense permutation cache indexed by face_permutation_type::value() for hot-path access.
+    std::vector<permutation_vector_type> vector_permutation_dense;
 
     /**
      * coordinates of the nodal dofs
@@ -1605,17 +1978,26 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     M_n_dof_per_face( invalid_uint16_type_value ),
     M_el_l2g(),
     M_face_l2g(),
-    M_local_dof_set( 0, nLocalDof() ),
+    M_local_dof_set( 0, is_order_dynamic ? 0 : nLocalDof() ),
     map_gdof(),
     M_hasBuiltDofPoints( false ),
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( DofTableExtendedType::VERTICES ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
-    M_localIndicesPerm( nDofPerElement ),
-    M_localIndicesIdentity( nDofPerElement ),
+    M_localIndicesPerm( is_order_dynamic ? 0 : nDofPerElement ),
+    M_localIndicesIdentity( is_order_dynamic ? 0 : nDofPerElement ),
     M_dfe( this )
 {
+    // For dynamic order, resize vectors after M_fe is available
+    if constexpr ( is_order_dynamic )
+    {
+        const size_type ndpe = runtimeNDofPerElement();
+        M_local_dof_set = local_dof_set_type( 0, nLocalDof() );
+        M_localIndicesPerm.resize( ndpe );
+        M_localIndicesIdentity.resize( ndpe );
+    }
+
     VLOG(2) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
 
@@ -1640,17 +2022,25 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     M_n_dof_per_face( invalid_uint16_type_value ),
     M_el_l2g(),
     M_face_l2g(),
-    M_local_dof_set( 0, nLocalDof() ),
+    M_local_dof_set( 0, is_order_dynamic ? 0 : nLocalDof() ),
     map_gdof(),
     M_hasBuiltDofPoints( false ),
     M_dof_indices(),
     M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( DofTableExtendedType::VERTICES ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
-    M_localIndicesPerm( nDofPerElement ),
-    M_localIndicesIdentity( nDofPerElement ),
+    M_localIndicesPerm( is_order_dynamic ? 0 : nDofPerElement ),
+    M_localIndicesIdentity( is_order_dynamic ? 0 : nDofPerElement ),
     M_dfe( this )
 {
+    // For dynamic order, resize vectors after M_fe is available
+    if constexpr ( is_order_dynamic )
+    {
+        const size_type ndpe = runtimeNDofPerElement();
+        M_local_dof_set = local_dof_set_type( 0, nLocalDof() );
+        M_localIndicesPerm.resize( ndpe );
+        M_localIndicesIdentity.resize( ndpe );
+    }
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
@@ -1738,31 +2128,67 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     size_type numMeshElements = (this->hasMeshSupport())? this->meshSupport()->numElements() : M.numElements();
     M_n_el = numMeshElements;
 
-    size_type nldof =
-        fe_type::nDofPerVolume * element_type::numVolumes +
-        fe_type::nDofPerFace * element_type::numGeometricFaces +
-        fe_type::nDofPerEdge * element_type::numEdges +
-        fe_type::nDofPerVertex * element_type::numVertices;
+    // Use runtime DOF counts for dynamic order
+    size_type nldof;
+    if constexpr ( is_order_dynamic )
+    {
+        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const uint16_type nDofPerFace = runtimeDofPerFace();
+        const uint16_type nDofPerVolume = runtimeDofPerVolume();
 
-    VLOG(2) << "==============================\n";
-    VLOG(2) << "[initDofMap]\n";
-    VLOG(2) << "is_hdiv_conforming     = "  << is_hdiv_conforming << "\n";
-    VLOG(2) << "is_hcurl_conforming    = "  << is_hcurl_conforming << "\n";
-    VLOG(2) << "nldof                  = "  << int( nldof ) << "\n";
-    VLOG(2) << "fe_type::nLocalDof     = "  << int( fe_type::nLocalDof ) << "\n";
-    VLOG(2) << "fe_type::nDofPerVolume = "  << int( fe_type::nDofPerVolume ) << "\n";
-    VLOG(2) << "fe_type::nDofPerFace   = "  << int( fe_type::nDofPerFace ) << "\n";
-    VLOG(2) << "fe_type::nDofPerEdge   = "  << int( fe_type::nDofPerEdge ) << "\n";
-    VLOG(2) << "fe_type::nDofPerVertex = "  << int( fe_type::nDofPerVertex ) << "\n";
-    VLOG(2) << "element_type::numVolumes= "  << int( element_type::numVolumes ) << "\n";
-    VLOG(2) << "element_type::numFaces= "    << int( element_type::numFaces ) << "\n";
-    VLOG(2) << "element_type::numEdges= "    << int( element_type::numEdges ) << "\n";
-    VLOG(2) << "element_type::numVertices= " << int( element_type::numVertices ) << "\n";
-    VLOG(2) << "==============================\n";
+        nldof = nDofPerVolume * element_type::numVolumes +
+                nDofPerFace * element_type::numGeometricFaces +
+                nDofPerEdge * element_type::numEdges +
+                nDofPerVertex * element_type::numVertices;
 
-    FEELPP_ASSERT( nldof == fe_type::nLocalDof )
-        ( nldof )
-        ( fe_type::nLocalDof ).error( "Something wrong in FE specification" ) ;
+        VLOG(2) << "==============================\n";
+        VLOG(2) << "[initDofMap] (dynamic order)\n";
+        VLOG(2) << "is_hdiv_conforming     = "  << is_hdiv_conforming << "\n";
+        VLOG(2) << "is_hcurl_conforming    = "  << is_hcurl_conforming << "\n";
+        VLOG(2) << "nldof                  = "  << int( nldof ) << "\n";
+        VLOG(2) << "runtimeLocalDof        = "  << int( runtimeNLocalDof() ) << "\n";
+        VLOG(2) << "nDofPerVolume          = "  << int( nDofPerVolume ) << "\n";
+        VLOG(2) << "nDofPerFace            = "  << int( nDofPerFace ) << "\n";
+        VLOG(2) << "nDofPerEdge            = "  << int( nDofPerEdge ) << "\n";
+        VLOG(2) << "nDofPerVertex          = "  << int( nDofPerVertex ) << "\n";
+        VLOG(2) << "element_type::numVolumes= "  << int( element_type::numVolumes ) << "\n";
+        VLOG(2) << "element_type::numFaces= "    << int( element_type::numFaces ) << "\n";
+        VLOG(2) << "element_type::numEdges= "    << int( element_type::numEdges ) << "\n";
+        VLOG(2) << "element_type::numVertices= " << int( element_type::numVertices ) << "\n";
+        VLOG(2) << "==============================\n";
+
+        FEELPP_ASSERT( nldof == runtimeNLocalDof() )
+            ( nldof )
+            ( runtimeNLocalDof() ).error( "Something wrong in FE specification (dynamic)" );
+    }
+    else
+    {
+        nldof = fe_type::nDofPerVolume * element_type::numVolumes +
+                fe_type::nDofPerFace * element_type::numGeometricFaces +
+                fe_type::nDofPerEdge * element_type::numEdges +
+                fe_type::nDofPerVertex * element_type::numVertices;
+
+        VLOG(2) << "==============================\n";
+        VLOG(2) << "[initDofMap]\n";
+        VLOG(2) << "is_hdiv_conforming     = "  << is_hdiv_conforming << "\n";
+        VLOG(2) << "is_hcurl_conforming    = "  << is_hcurl_conforming << "\n";
+        VLOG(2) << "nldof                  = "  << int( nldof ) << "\n";
+        VLOG(2) << "fe_type::nLocalDof     = "  << int( fe_type::nLocalDof ) << "\n";
+        VLOG(2) << "fe_type::nDofPerVolume = "  << int( fe_type::nDofPerVolume ) << "\n";
+        VLOG(2) << "fe_type::nDofPerFace   = "  << int( fe_type::nDofPerFace ) << "\n";
+        VLOG(2) << "fe_type::nDofPerEdge   = "  << int( fe_type::nDofPerEdge ) << "\n";
+        VLOG(2) << "fe_type::nDofPerVertex = "  << int( fe_type::nDofPerVertex ) << "\n";
+        VLOG(2) << "element_type::numVolumes= "  << int( element_type::numVolumes ) << "\n";
+        VLOG(2) << "element_type::numFaces= "    << int( element_type::numFaces ) << "\n";
+        VLOG(2) << "element_type::numEdges= "    << int( element_type::numEdges ) << "\n";
+        VLOG(2) << "element_type::numVertices= " << int( element_type::numVertices ) << "\n";
+        VLOG(2) << "==============================\n";
+
+        FEELPP_ASSERT( nldof == fe_type::nLocalDof )
+            ( nldof )
+            ( fe_type::nLocalDof ).error( "Something wrong in FE specification" );
+    }
 
     // initialize the local to global map and fill it with invalid
     // values that will allow to check whether we have a new dof or
@@ -1780,7 +2206,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
         M_locglob_signs.reserve( nV );
     }
     else
-        M_locglob_nosigns = localglobal_indices_type::Ones( nDofPerElement );
+        M_locglob_nosigns = localglobal_indices_type::Ones( runtimeNDofPerElement() );
 
     if ( this->hasMeshSupport() && this->meshSupport()->isPartialSupport() )
     {
@@ -1788,9 +2214,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
         for ( auto const& eltWrap : elements(this->meshSupport(), entity_process_t::ALL ) )
         {
             size_type eltId = unwrap_ref( eltWrap ).id();
-            M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
+            M_locglob_indices[eltId] = localglobal_indices_type::Zero( runtimeNDofPerElement() );
             if ( is_hdiv_conforming || is_hcurl_conforming )
-                M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
+                M_locglob_signs[eltId] = localglobal_indices_type::Ones( runtimeNDofPerElement() );
         }
     }
     else
@@ -1798,13 +2224,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
         for ( auto const& elt : allelements( M ) )
         {
             size_type eltId = unwrap_ref( elt ).id();
-            M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
+            M_locglob_indices[eltId] = localglobal_indices_type::Zero( runtimeNDofPerElement() );
             if ( is_hdiv_conforming || is_hcurl_conforming )
-                M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
+                M_locglob_signs[eltId] = localglobal_indices_type::Ones( runtimeNDofPerElement() );
         }
     }
 
-    const bool doperm = ( ( ( Shape == SHAPE_TETRA ) && ( nOrder > 2 ) ) || ( ( Shape == SHAPE_HEXA ) && ( nOrder > 1 ) ) );
+    constexpr bool doperm = is_hdiv_conforming || is_hcurl_conforming ||
+                            ( ( ( Shape == SHAPE_TETRA ) && ( nOrder > 2 ) ) ||
+                              ( ( Shape == SHAPE_HEXA ) && ( nOrder > 1 ) ) );
     DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
@@ -2042,14 +2470,14 @@ typename DofTable<MeshType, FEType, PeriodicityType, MortarType>::size_type
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( mesh_type& M )
 {
     size_type nldof =
-        fe_type::nDofPerVolume * element_type::numVolumes +
-        fe_type::nDofPerFace * element_type::numGeometricFaces +
-        fe_type::nDofPerEdge * element_type::numEdges +
-        fe_type::nDofPerVertex * element_type::numVertices;
+        runtimeDofPerVolume() * element_type::numVolumes +
+        runtimeDofPerFace() * element_type::numGeometricFaces +
+        runtimeDofPerEdge() * element_type::numEdges +
+        runtimeDofPerVertex() * element_type::numVertices;
 
-    FEELPP_ASSERT( nldof == fe_type::nLocalDof )
+    FEELPP_ASSERT( nldof == runtimeNLocalDof() )
         ( nldof )
-        ( fe_type::nLocalDof ).error( "Something wrong in FE specification" ) ;
+        ( runtimeNLocalDof() ).error( "Something wrong in FE specification" ) ;
 
     const size_type n_proc  = M.worldComm().localSize();
 
@@ -2340,28 +2768,34 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 
     tic();
     tic();
-    size_type nldof =
-        fe_type::nDofPerVolume * element_type::numVolumes +
-        fe_type::nDofPerFace * element_type::numGeometricFaces +
-        fe_type::nDofPerEdge * element_type::numEdges +
-        fe_type::nDofPerVertex * element_type::numVertices;
+    const uint16_type dofPerVertex = runtimeDofPerVertex();
+    const uint16_type dofPerEdge = runtimeDofPerEdge();
+    const uint16_type dofPerFace = runtimeDofPerFace();
+    const uint16_type dofPerVolume = runtimeDofPerVolume();
+    const uint16_type nLocalDofRt = runtimeNLocalDof();
 
-    CHECK( nldof == fe_type::nLocalDof ) << "Something wrong in FE specification "
-                                         << nldof << " != " << fe_type::nLocalDof
-                                         << "\n";
+    size_type nldof =
+        dofPerVolume * element_type::numVolumes +
+        dofPerFace * element_type::numGeometricFaces +
+        dofPerEdge * element_type::numEdges +
+        dofPerVertex * element_type::numVertices;
+
+    CHECK( nldof == nLocalDofRt ) << "Something wrong in FE specification "
+                                  << nldof << " != " << nLocalDofRt
+                                  << "\n";
 
     int ncdof  = is_product?nComponents:1;
 
-    for ( uint16_type i=0;i<FEType::nLocalDof;++i)
+    for ( uint16_type i = 0; i < nLocalDofRt; ++i )
         for ( uint16_type c=0;c<ncdof;++c)
         {
-            M_localIndicesIdentity[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + i;
+            M_localIndicesIdentity[nLocalDofRt * c + i] = nLocalDofRt * c + i;
 
-            if ( i < fe_type::nDofPerVertex*element_type::numVertices )
-                M_localIndicesPerm[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + fe_type::nDofPerVertex*element_type::numVertices-1-i;
-            else if ( i < fe_type::nDofPerVertex*element_type::numVertices + fe_type::nDofPerEdge * element_type::numEdges )
-                M_localIndicesPerm[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + 2*fe_type::nDofPerVertex*element_type::numVertices +
-                    fe_type::nDofPerEdge*element_type::numEdges-1-i;
+            if ( i < dofPerVertex * element_type::numVertices )
+                M_localIndicesPerm[nLocalDofRt * c + i] = nLocalDofRt * c + dofPerVertex * element_type::numVertices - 1 - i;
+            else if ( i < dofPerVertex * element_type::numVertices + dofPerEdge * element_type::numEdges )
+                M_localIndicesPerm[nLocalDofRt * c + i] = nLocalDofRt * c + 2 * dofPerVertex * element_type::numVertices +
+                                                          dofPerEdge * element_type::numEdges - 1 - i;
         }
     toc( "DofTable buildDofMap allocation", Environment::logVerbosityLevel() > 1 );
     wc( this )->print( fmt::format( "[DofTable::buildDofMap] allocation done" ), Environment::logVerbosityLevel() > 1, Environment::logVerbosityLevel() > 0, Environment::logVerbosityLevel() > 1 );
@@ -2556,9 +2990,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     tic();
     size_type nDofF = nLocalDofOnFace(true);
     M_n_dof_per_face_on_bdy = nDofF;
-    DVLOG(2) << "vertex dof : " <<  face_type::numVertices * fe_type::nDofPerVertex << "\n";
-    DVLOG(2) << "edge dof : " <<  face_type::numEdges * fe_type::nDofPerEdge << "\n";
-    DVLOG(2) << "face dof : " << face_type::numFaces * fe_type::nDofPerFace  << "\n";
+    DVLOG(2) << "vertex dof : " <<  face_type::numVertices * runtimeDofPerVertex() << "\n";
+    DVLOG(2) << "edge dof : " <<  face_type::numEdges * runtimeDofPerEdge() << "\n";
+    DVLOG(2) << "face dof : " << face_type::numFaces * runtimeDofPerFace()  << "\n";
     DVLOG(2) << "number of Dof on an Element Face : " << nDofF << "\n";
 
     if ( nDofF == 0 ) return;
@@ -3017,6 +3451,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
     std::vector<bool> dof_done( periodic_dof_points.size() );
     std::fill( dof_done.begin(), dof_done.end(), false );
 
+    const uint16_type nDofPerVertexRt = runtimeDofPerVertex();
+    const uint16_type nDofPerEdgeRt = runtimeDofPerEdge();
+
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
         __c->template update<vm::POINT>( *it_elt->template get<0>() );
@@ -3045,9 +3482,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
                 FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
                 // Loop number of Dof per vertex
-                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+                for ( uint16_type l = 0; l < nDofPerVertexRt; ++l )
                 {
-                    uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
+                    uint16_type lid = iVeEl * nDofPerVertexRt + l;
 
                     size_type thedof = std::get<0>( localToGlobal( it_elt->template get<0>()->id(), lid, c1 ) );
                     FEELPP_ASSERT( thedof < dof_done.size() )
@@ -3076,9 +3513,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
                     }
                 }
                 // loop on edge
-                for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+                for ( uint16_type l = 0; l < nDofPerEdgeRt; ++l )
                 {
-                    uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
+                    uint16_type lid = element_type::numVertices * nDofPerVertexRt + iFaEl * nDofPerEdgeRt + l;
                     size_type thedof = std::get<0>( localToGlobal( it_elt->template get<0>()->id(), lid, c1 ) );
                     FEELPP_ASSERT( thedof < dof_done.size() )
                         ( thedof )
@@ -3145,17 +3582,21 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofVer
              pen = M.endPointWithMarker( M.markerName("CrossPoints") );
          pit!=pen; ++pit )
     {
+        const uint16_type nDofPerVertexRt = runtimeDofPerVertex();
+        if ( nDofPerVertexRt == 0 )
+            continue;
+
         // get one element
         auto __elt = M.element( *pit->elements().begin() );
         size_type ie = __elt.id();
         int lc = 0;
         for ( uint16_type i = 0; i < element_type::numVertices; ++i )
         {
-            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
+            for ( uint16_type l = 0; l < nDofPerVertexRt; ++l, ++lc )
             {
                 if (__elt.point( i ).id()==pit->id() )
                 {
-                    const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+                    const size_type gDof = ( __elt.point( i ).id() ) * nDofPerVertexRt + l;
                     this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
                                      M.worldComm().localRank(), next_free_dof, 1, false, 0 );
                     std::cout << "Adding crosspoint " << pit->id() << " with dof " << next_free_dof << "\n";
@@ -3185,6 +3626,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdg
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<3> )
 {
+    const uint16_type nDofPerEdgeRt = runtimeDofPerEdge();
+    if ( nDofPerEdgeRt == 0 )
+        return;
+
     // go through all Wirebasket edges
     for( auto pit = M.beginEdgeWithMarker( M.markerName("WireBasket") ),
              pen = M.endEdgeWithMarker( M.markerName("WireBasket") );
@@ -3197,11 +3642,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdg
 
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
-            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
+            for ( uint16_type l = 0; l < nDofPerEdgeRt; ++l, ++lc )
             {
                 if (__elt.edge( i ).id()==pit->id() )
                 {
-                    size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
+                    size_type gDof = __elt.edge( i ).id() * nDofPerEdgeRt;
                     int32_type sign = 1;
 
                     if ( __elt.edgePermutation( i ).value()  == edge_permutation_type::IDENTITY )
@@ -3219,7 +3664,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdg
                         }
 
                         else
-                            gDof += fe_type::nDofPerEdge - 1 - l ;
+                            gDof += nDofPerEdgeRt - 1 - l ;
                     }
                     else
                         FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
@@ -3252,6 +3697,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<3> )
 {
+    const uint16_type nDofPerFaceRt = runtimeDofPerFace();
+    if ( nDofPerFaceRt == 0 )
+        return;
+
     std::vector<std::string> faces = assign::list_of("TOP")("BOTTOM")("NORTH")("EAST")("WEST")("SOUTH");
     for( auto face : faces )
     {
@@ -3274,9 +3723,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
                 uint16_type q=0;
 
                 // MaxOrder = Order - 2
-                int MaxOrder = int( ( 3 + std::sqrt( 1+8*fe_type::nDofPerFace ) )/2 ) - 2;
+                int MaxOrder = int( ( 3 + std::sqrt( 1 + 8 * nDofPerFaceRt ) ) / 2 ) - 2;
 
-                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
+                for ( uint16_type l = 0; l < nDofPerFaceRt; ++l, ++lc )
                 {
                     if (__elt.face( i ).id()==pit->id() )
                     {
@@ -3285,7 +3734,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
                         // dof of the connected faces. There
                         // are a priori many permutations of
                         // the dof face indices
-                        size_type gDof = __elt.face( i ).id() * fe_type::nDofPerFace;
+                        size_type gDof = __elt.face( i ).id() * nDofPerFaceRt;
                         int32_type sign = 1;
 
                         q=q+1;
@@ -3299,12 +3748,14 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
 
                         if ( !fe_type::is_modal )
                         {
-                            // no need of permutation is identity or only one dof on face
-                            if ( permutation  == face_permutation_type( 1 ) || fe_type::nDofPerFace == 1 )
+                            // no need of permutation if identity or only one dof on face
+                            if ( permutation == face_permutation_type( face_permutation_type::IDENTITY ) || nDofPerFaceRt == 1 )
                                 gDof += l;
-
                             else
-                                gDof += vector_permutation[permutation][l];
+                            {
+                                auto const& perm = facePermutationVector( permutation, nDofPerFaceRt );
+                                gDof += perm( l );
+                            }
                         }
 
                         else

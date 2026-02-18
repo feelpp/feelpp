@@ -24,6 +24,10 @@
 #ifndef FEELPP_DOFFROMEDGE_HPP
 #define FEELPP_DOFFROMEDGE_HPP 1
 
+#include <algorithm>
+#include <vector>
+#include <feel/feelpoly/order.hpp>
+
 namespace Feel
 {
 /**
@@ -81,6 +85,7 @@ public:
     static inline const bool is_modal = fe_type::is_modal;
     static inline const bool is_product = fe_type::is_product;
 
+    static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
     static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
@@ -133,6 +138,127 @@ private:
     fe_type const& M_fe;
 
 private:
+    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVertex(); } )
+                return M_fe.dofPerVertex();
+            else
+                return M_fe.runtimeDofPerVertex();
+        }
+        else
+            return fe_type::nDofPerVertex;
+    }
+    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerEdge(); } )
+                return M_fe.dofPerEdge();
+            else
+                return M_fe.runtimeDofPerEdge();
+        }
+        else
+            return fe_type::nDofPerEdge;
+    }
+    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.localDof(); } )
+                return M_fe.localDof();
+            else
+                return M_fe.runtimeLocalDof();
+        }
+        else
+            return fe_type::nLocalDof;
+    }
+    [[nodiscard]] size_type runtimeNDofOnEdge() const noexcept
+    {
+        return edge_type::numVertices * runtimeDofPerVertex() +
+               edge_type::numEdges * runtimeDofPerEdge();
+    }
+
+    [[nodiscard]] uint16_type localEdgeDofIndexFromAttachment( uint16_type edge_id,
+                                                               typename fe_type::DofAttachment const& attachment,
+                                                               uint16_type nDofPerVertex,
+                                                               uint16_type nDofPerEdge ) const
+    {
+        const uint16_type invalid = invalid_uint16_type_value;
+        if ( !attachment.isValid() )
+            return invalid;
+
+        if ( attachment.entityDim == 0 )
+        {
+            if ( nDofPerVertex == 0 || attachment.ordinal >= nDofPerVertex )
+                return invalid;
+
+            for ( uint16_type iVeEd = 0; iVeEd < edge_type::numVertices; ++iVeEd )
+            {
+                const uint16_type iVeEl = element_type::eToP( edge_id, iVeEd );
+                if ( iVeEl == attachment.entityId )
+                    return static_cast<uint16_type>( iVeEd * nDofPerVertex + attachment.ordinal );
+            }
+            return invalid;
+        }
+
+        if ( attachment.entityDim == 1 )
+        {
+            if ( nDofPerEdge == 0 || attachment.ordinal >= nDofPerEdge )
+                return invalid;
+
+            if ( attachment.entityId == edge_id )
+                return static_cast<uint16_type>( edge_type::numVertices * nDofPerVertex + attachment.ordinal );
+        }
+
+        return invalid;
+    }
+
+    bool addEdgeDofUsingFiniteElementLayout( size_type el_id, uint16_type edge_id,
+                                             std::vector<global_dof_from_entity_type>& edge_dof ) const
+    {
+        if constexpr ( !( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ) )
+            return false;
+
+        if constexpr ( fe_type::is_modal )
+            return false;
+
+        const uint16_type nLocalDof = runtimeLocalDof();
+        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const size_type ndofF = runtimeNDofOnEdge();
+        if ( nLocalDof == 0 || ndofF == 0 )
+            return false;
+
+        const int ncdof = is_product ? nComponents : 1;
+        std::vector<global_dof_from_entity_type> edgeDofs( ncdof * ndofF );
+        std::vector<bool> hasEdgeDof( ncdof * ndofF, false );
+
+        for ( uint16_type parentLid = 0; parentLid < nLocalDof; ++parentLid )
+        {
+            auto const layout = M_fe.localDofLayout( parentLid );
+            const uint16_type localIndexOnEdge =
+                localEdgeDofIndexFromAttachment( edge_id, layout.attachment, nDofPerVertex, nDofPerEdge );
+            if ( localIndexOnEdge == invalid_uint16_type_value )
+                continue;
+
+            for ( int c = 0; c < ncdof; ++c )
+            {
+                const uint16_type lcc = static_cast<uint16_type>( c * ndofF + localIndexOnEdge );
+                const uint16_type ldinelt = M_doftable->localDofId( parentLid, c );
+                auto const& temp = M_doftable->localToGlobal( el_id, parentLid, c );
+                edgeDofs[lcc] = global_dof_from_entity_type( temp, lcc, ldinelt );
+                hasEdgeDof[lcc] = true;
+            }
+        }
+
+        if ( std::any_of( hasEdgeDof.begin(), hasEdgeDof.end(), []( bool x ) { return !x; } ) )
+            return false;
+
+        edge_dof = std::move( edgeDofs );
+        return true;
+    }
 
     template<typename Container>
     void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::back_insert_iterator<Container> d ) const
@@ -152,7 +278,7 @@ private:
                     {
                         uint16_type ldinelt = edge_id * fe_type::nDofPerVertex + l;
                         auto const& temp= M_doftable->localToGlobal( el_id, ldinelt, c );
-                        *d = std::move(global_dof_from_entity_type( temp, lc, ldinelt ));
+                        *d = std::move( global_dof_from_entity_type( temp, lc, M_doftable->localDofId( ldinelt, c ) ) );
                     }
                 }
             }
@@ -180,7 +306,7 @@ private:
                         {
                             uint16_type ldinelt = iVeEl * fe_type::nDofPerVertex + l;
                             auto const& temp = M_doftable->localToGlobal( el_id, ldinelt, c );
-                            *d = std::move(global_dof_from_entity_type( temp, lc, ldinelt ));
+                            *d = std::move( global_dof_from_entity_type( temp, lc, M_doftable->localDofId( ldinelt, c ) ) );
                         }
                     }
                 }
@@ -209,7 +335,7 @@ private:
                     uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
                         edge_id * fe_type::nDofPerEdge + l ;
                     auto const& temp = M_doftable->localToGlobal( el_id,ldinelt, c );
-                    *d = std::move( global_dof_from_entity_type( temp, lcc, ldinelt ) );
+                    *d = std::move( global_dof_from_entity_type( temp, lcc, M_doftable->localDofId( ldinelt, c ) ) );
                 }
             }
         }
@@ -221,8 +347,11 @@ std::vector<typename DofFromEdge<DofTableType,FEType>::global_dof_from_entity_ty
 DofFromEdge<DofTableType,FEType>::operator()( size_type elid, uint16_type edge_id ) const
 {
     std::vector<global_dof_from_entity_type> edge_dof;
-    size_type ndofF = ( edge_type::numVertices * fe_type::nDofPerVertex +
-                        edge_type::numEdges * fe_type::nDofPerEdge );
+    if ( this->addEdgeDofUsingFiniteElementLayout( elid, edge_id, edge_dof ) )
+        return edge_dof;
+
+    size_type ndofF = ( edge_type::numVertices * runtimeDofPerVertex() +
+                        edge_type::numEdges * runtimeDofPerEdge() );
     edge_dof.reserve( ndofF );
     
     uint16_type lcVertex = 0;

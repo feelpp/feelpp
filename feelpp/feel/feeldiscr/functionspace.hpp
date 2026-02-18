@@ -97,6 +97,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/periodic.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
+#include <feel/feelpoly/order.hpp>
 #include <feel/feeldiscr/doftable.hpp>
 #include <feel/feeldiscr/dofcomposite.hpp>
 #include <feel/feeldiscr/parameter.hpp>
@@ -4417,11 +4418,13 @@ public:
                    periodicity_type  periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT),
+                   RuntimeOrder runtime_order = RuntimeOrder{0},
                    const std::string& name = "" )
         :
         super( name, _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_extendedDofTableComposite( extendedDofTable )
+        M_extendedDofTableComposite( extendedDofTable ),
+        M_runtime_order( runtime_order )
     {
         this->init( mesh, meshSupport, mesh_components, periodicity );
     }
@@ -4465,10 +4468,12 @@ public:
         auto && periodicity = args.get_else(_periodicity,periodicity_type());
         auto && extended_doftable = args.get_else(_extended_doftable,std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT ) );
         auto && range = args.get_else(_range,mesh_support_vector_type());
+        // Get runtime order (defaults to 0, used only when basis has is_order_dynamic)
+        RuntimeOrder runtime_order = args.get_else(_runtime_order, RuntimeOrder{0});
 
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
         std::vector<DofTableExtendedType> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
-        return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, edt );
+        return NewImpl( mesh, cms.M_meshSupportVector, worldscomm, components, periodicity, edt, runtime_order );
     }
 
     static pointer_type New( mesh_ptrtype const& m ) { return New(_mesh=m); }
@@ -4478,10 +4483,11 @@ public:
                                  worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
-                                 std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT) )
+                                 std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT),
+                                 RuntimeOrder runtime_order = RuntimeOrder{0} )
     {
 
-        return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldscomm, extendedDofTable ) );
+        return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, periodicity, worldscomm, extendedDofTable, runtime_order ) );
     }
 
     template<typename ...FSpaceList>
@@ -4920,6 +4926,32 @@ public:
     std::vector<int> basisOrder( mpl::bool_<false> ) const
     {
         return { basis_type::nOrder };
+    }
+
+    /**
+     * @brief Get the polynomial order of the basis.
+     *
+     * For static-order bases, returns the compile-time order.
+     * For dynamic-order bases, returns the runtime order specified at construction.
+     */
+    [[nodiscard]] uint16_type order() const noexcept
+    {
+        if constexpr ( orderIsDynamic<basis_type> )
+        {
+            return M_runtime_order.value;
+        }
+        else
+        {
+            return basis_type::nOrder;
+        }
+    }
+
+    /**
+     * @deprecated Use order() instead.
+     */
+    [[nodiscard]] uint16_type runtimeOrder() const noexcept
+    {
+        return order();
     }
 
     /**
@@ -6195,6 +6227,9 @@ protected:
     /** region tree associated with the mesh */
     mutable boost::optional<region_tree_ptrtype> M_rt;
 
+    //! Runtime order for dynamic order bases (used when basis_type::is_order_dynamic is true)
+    RuntimeOrder M_runtime_order{0};
+
     //mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, real_type, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, real_type> > > M_prof_find_points;
 private:
 
@@ -6257,7 +6292,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
             M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
         }
 
-        M_ref_fe = std::make_shared<basis_type>();
+        // Create reference finite element, passing RuntimeOrder for dynamic order bases
+        if constexpr ( requires { basis_type::is_order_dynamic; } && basis_type::is_order_dynamic )
+        {
+            M_ref_fe = std::make_shared<basis_type>( M_runtime_order );
+        }
+        else
+        {
+            M_ref_fe = std::make_shared<basis_type>();
+        }
 
         tic();
         tic();

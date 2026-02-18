@@ -29,6 +29,8 @@
 #ifndef FEELPP_DofFromPeriodic_H
 #define FEELPP_DofFromPeriodic_H 1
 
+#include <feel/feelpoly/order.hpp>
+
 namespace Feel
 {
 /**
@@ -86,6 +88,7 @@ public:
     static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
+    static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
 
     typedef boost::tuple<element_type const*, face_type const*> element_face_pair_type;
     typedef std::list<element_face_pair_type> periodic_element_list_type;
@@ -170,6 +173,43 @@ private:
             return *this;
         }
 
+    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVertex(); } )
+                return M_fe.dofPerVertex();
+            else
+                return M_fe.runtimeDofPerVertex();
+        }
+        else
+            return fe_type::nDofPerVertex;
+    }
+    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerEdge(); } )
+                return M_fe.dofPerEdge();
+            else
+                return M_fe.runtimeDofPerEdge();
+        }
+        else
+            return fe_type::nDofPerEdge;
+    }
+    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerFace(); } )
+                return M_fe.dofPerFace();
+            else
+                return M_fe.runtimeDofPerFace();
+        }
+        else
+            return fe_type::nDofPerFace;
+    }
+
     /**
      * Add a new periodic dof to the dof map and to the list of periodic dof \p
      * periodic_dof for a given tag \p tag
@@ -186,7 +226,9 @@ private:
                                std::map<size_type,periodic_dof_map_type>& periodic_dof,
                                size_type tag )
     {
-        addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<(fe_type::nDofPerVertex>0)>() );
+        if ( runtimeDofPerVertex() == 0 )
+            return;
+        addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<true>() );
     }
     void addVertexPeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<false> ) {}
     void addVertexPeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<true> );
@@ -197,8 +239,9 @@ private:
                              std::map<size_type,periodic_dof_map_type>& periodic_dof,
                              size_type tag )
     {
-        constexpr bool cond = fe_type::nDofPerEdge > 0;
-        addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag , mpl::bool_<cond>(), mpl::int_<nDim>() );
+        if ( runtimeDofPerEdge() == 0 )
+            return;
+        addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag , mpl::bool_<true>(), mpl::int_<nDim>() );
     }
     void addEdgePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof, size_type tag, mpl::bool_<false>, mpl::int_<1> ) {}
     void addEdgePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof, size_type tag, mpl::bool_<false>, mpl::int_<2> ) {}
@@ -210,8 +253,9 @@ private:
 
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag )
     {
-        constexpr bool cond = fe_type::nDofPerFace > 0;
-        addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<cond>() );
+        if ( runtimeDofPerFace() == 0 )
+            return;
+        addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, tag, mpl::bool_<true>() );
     }
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<false> ) {}
     void addFacePeriodicDof( element_type const& __elt,face_type const& __face,size_type& next_free_dof,std::map<size_type,periodic_dof_map_type>& periodic_dof,size_type tag, mpl::bool_<true> );
@@ -227,6 +271,10 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
         size_type tag,
         mpl::bool_<true> )
 {
+    const uint16_type nDofPerVertex = runtimeDofPerVertex();
+    if ( nDofPerVertex == 0 )
+        return;
+
     // store the element and local dof id for further
     // reference when inserting the associated global dof
     // id of the element adjacent to the face
@@ -249,11 +297,11 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
         FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
         // Loop number of Dof per vertex
-        for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l )
+        for ( uint16_type l = 0; l < nDofPerVertex; ++l )
         {
-            uint16_type lid = iVeEl * fe_type::nDofPerVertex + l;
-            //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-            const size_type gDof = ( __elt.point( iVeEl ).id() ) * fe_type::nDofPerVertex + l;
+            uint16_type lid = iVeEl * nDofPerVertex + l;
+            //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * nDofPerVertex + l;
+            const size_type gDof = ( __elt.point( iVeEl ).id() ) * nDofPerVertex + l;
 
             VLOG(2) << "add vertex periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
@@ -288,6 +336,11 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
         mpl::bool_<true>,
         mpl::int_<2> )
 {
+    const uint16_type nDofPerVertex = runtimeDofPerVertex();
+    const uint16_type nDofPerEdge = runtimeDofPerEdge();
+    if ( nDofPerEdge == 0 )
+        return;
+
 #if 0
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
@@ -304,11 +357,11 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
 #endif
 
     // Loop number of DofTable per edge
-    for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+    for ( uint16_type l = 0; l < nDofPerEdge; ++l )
     {
-        uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
-        //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-        const size_type gDof = ( __elt.edge( iFaEl ).id() ) * fe_type::nDofPerEdge + l;
+        uint16_type lid = element_type::numVertices*nDofPerVertex + iFaEl * nDofPerEdge + l;
+        //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * nDofPerVertex + l;
+        const size_type gDof = ( __elt.edge( iFaEl ).id() ) * nDofPerEdge + l;
 
         DVLOG(4) << "add edge periodic dof " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
         size_type dof_id = next_free_dof;
@@ -340,6 +393,11 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
         mpl::bool_<true>,
         mpl::int_<3> )
 {
+    const uint16_type nDofPerVertex = runtimeDofPerVertex();
+    const uint16_type nDofPerEdge = runtimeDofPerEdge();
+    if ( nDofPerEdge == 0 )
+        return;
+
     //BOOST_STATIC_ASSERT( face_type::numEdges );
 
     // id of the element adjacent to the face
@@ -364,27 +422,27 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
         FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
         // Loop number of Dof per edge
-        for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l )
+        for ( uint16_type l = 0; l < nDofPerEdge; ++l )
         {
 
-            uint16_type lid = element_type::numVertices*fe_type::nDofPerVertex + iFaEl * fe_type::nDofPerEdge + l;
-            //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-            size_type gDof = __elt.edge( l ).id() * fe_type::nDofPerEdge;
+            uint16_type lid = element_type::numVertices*nDofPerVertex + iEdEl * nDofPerEdge + l;
+            //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * nDofPerVertex + l;
+            size_type gDof = __elt.edge( iEdEl ).id() * nDofPerEdge;
 
-            if ( __elt.edgePermutation( l ).value()  == edge_permutation_type::IDENTITY )
+            if ( __elt.edgePermutation( iEdEl ).value()  == edge_permutation_type::IDENTITY )
             {
                 gDof += l ; // both nodal and modal case
             }
 
-            else if ( __elt.edgePermutation( l ).value()  == edge_permutation_type::REVERSE_PERMUTATION )
+            else if ( __elt.edgePermutation( iEdEl ).value()  == edge_permutation_type::REVERSE_PERMUTATION )
             {
-                gDof += fe_type::nDofPerEdge - 1 - l ;
+                gDof += nDofPerEdge - 1 - l ;
             }
 
             DVLOG(4) << "add periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
             // next_free_dof might be incremented if a new dof is created
-            bool inserted = M_doftable->insertDof( __elt.id(), lid, l, std::make_tuple(  1, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( l ).marker() );
+            bool inserted = M_doftable->insertDof( __elt.id(), lid, iEdEl, std::make_tuple(  1, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( iEdEl ).marker() );
             DVLOG(4) << "periodic dof inserted : " << inserted << "\n";
 
             const int ncdof = is_product?nComponents:1;
@@ -411,6 +469,12 @@ DofFromPeriodic<DofTableType,FEType>::addFacePeriodicDof( element_type const& __
                                                           size_type tag,
                                                           mpl::bool_<true> )
 {
+    const uint16_type nDofPerVertex = runtimeDofPerVertex();
+    const uint16_type nDofPerEdge = runtimeDofPerEdge();
+    const uint16_type nDofPerFace = runtimeDofPerFace();
+    if ( nDofPerFace == 0 )
+        return;
+
 #if 0
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
@@ -425,17 +489,17 @@ DofFromPeriodic<DofTableType,FEType>::addFacePeriodicDof( element_type const& __
 #endif
 
     // Loop on number of Dof per face
-    for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
+    for ( uint16_type l = 0; l < nDofPerFace; ++l )
     {
         auto temp = M_doftable->localToGlobal( iElAd,
-                                               element_type::numVertices*fe_type::nDofPerVertex +
-                                               element_type::numEdges*fe_type::nDofPerEdge +
-                                               iFaEl * fe_type::nDofPerFace + l,
+                                               element_type::numVertices*nDofPerVertex +
+                                               element_type::numEdges*nDofPerEdge +
+                                               iFaEl * nDofPerFace + l,
                                                c );
         M_face_l2g[ __face_it->id()][ lc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                                                                  element_type::numVertices*fe_type::nDofPerVertex +
-                                                                  element_type::numEdges*fe_type::nDofPerEdge +
-                                                                  iFaEl * fe_type::nDofPerFace + l );
+                                                                  element_type::numVertices*nDofPerVertex +
+                                                                  element_type::numEdges*nDofPerEdge +
+                                                                  iFaEl * nDofPerFace + l );
     }
 
 #endif // 0

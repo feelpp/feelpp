@@ -30,47 +30,89 @@
 #define FEELPP_PDH_HPP
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel {
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_ptrtype=std::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_element_t=typename Pdh_type<MeshType,Order,Pts>::element_type;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_element_type=Pdh_element_t<MeshType,Order,Pts>;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are
    piecewise polynomial of degree (total or in each variable) less than k.
 */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType>
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+Pdh( std::shared_ptr<MeshType> const& mesh,
+     RuntimeOrder order,
+     DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                              _extended_doftable=dte );
+                                              _extended_doftable=dte,
+                                              _runtime_order=order );
+}
+
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType>
+    requires ( Order >= 0 )
+inline
+Pdh_ptrtype<MeshType,Order,Pts>
+Pdh( std::shared_ptr<MeshType> const& mesh,
+     DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Pdh<Order,Pts>( mesh, RuntimeOrder{ static_cast<uint16_type>( Order ) }, dte );
 }
 
 /**
  Given a \p mesh, build a function space of discontinuous function which are
  piecewise polynomial of degree (total or in each variable) less than k.
  */
-template<int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,typename RangeType>
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         typename RangeType>
 inline
 Pdh_ptrtype<MeshType,Order,Pts>
-Pdh( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+Pdh( std::shared_ptr<MeshType> const& mesh,
+     RangeType&& rangeElt,
+     RuntimeOrder order,
+     DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pdh_type<MeshType,Order,Pts>::New( _mesh=mesh,
                                               _range=std::forward<RangeType>(rangeElt),
                                               _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                              _extended_doftable=dte );
+                                              _extended_doftable=dte,
+                                              _runtime_order=order );
+}
+
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         typename RangeType>
+    requires ( Order >= 0 )
+inline
+Pdh_ptrtype<MeshType,Order,Pts>
+Pdh( std::shared_ptr<MeshType> const& mesh,
+     RangeType&& rangeElt,
+     DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Pdh<Order,Pts>( mesh,
+                           std::forward<RangeType>(rangeElt),
+                           RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                           dte );
 }
 
 }

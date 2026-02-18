@@ -590,7 +590,7 @@ public:
                              {
                                  auto rangeElt = rangeInterpWithRelatedMesh();
                                  for ( int c1 = 0; c1 < FunctionType::nComponents ;++c1 )
-                                     fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=idv(func.comp(mapIndicesToComponent.at(c1)) ),_close=true );
+                                     fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=idv(func)(c1,0),_close=true );
                              }
                              else
                                  interpolate( scalarSpace, func, fieldsMap[__fname].second );
@@ -622,8 +622,7 @@ public:
                             for ( int c1 = 0; c1 < FunctionType::nComponents1 ;++c1 )
                                 for ( int c2 = 0; c2 < FunctionType::nComponents2 ;++c2 )
                                     fieldsMap[__fname].second[c1][c2]->on(_range=rangeElt,
-                                                                          _expr=idv(func.comp( mapIndicesToComponent.at(c1),
-                                                                                               mapIndicesToComponent.at(c2) )),
+                                                                          _expr=idv(func)(c1,c2),
                                                                           _close=true );
                         }
                         else
@@ -658,8 +657,7 @@ public:
                             for ( int c1 = 0; c1 < FunctionType::nComponents1 ;++c1 )
                                 for ( int c2 = 0; c2 <= c1 ;++c2 )
                                     fieldsMap[__fname].second[c1][c2]->on(_range=rangeElt,
-                                                                          _expr=idv(func.comp( mapIndicesToComponent.at(c1),
-                                                                                               mapIndicesToComponent.at(c2) )),
+                                                                          _expr=idv(func)(c1,c2),
                                                                           _close=true );
                         }
                         else

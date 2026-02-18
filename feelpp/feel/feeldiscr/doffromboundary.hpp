@@ -29,6 +29,13 @@
 #ifndef FEELPP_DofFromBoundary_H
 #define FEELPP_DofFromBoundary_H 1
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+#include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
+
 namespace Feel
 {
 /**
@@ -59,6 +66,7 @@ public:
     typedef typename doftable_type::face_type face_type;
     typedef typename doftable_type::ref_shift_type ref_shift_type;
     typedef typename doftable_type::localdof_type localdof_type;
+    using global_dof_from_entity_type = typename doftable_type::global_dof_from_entity_type;
     typedef FEType fe_type;
 
     typedef typename element_type::edge_permutation_type edge_permutation_type;
@@ -146,6 +154,12 @@ public:
         {
             bool useConnection0 = (connectionId == 0);
 
+            if ( this->addBoundaryDofUsingFiniteElementLayout( face, useConnection0 ) )
+                return;
+
+            if ( this->addBoundaryDofUsingFiniteElementOrdering( face, useConnection0 ) )
+                return;
+
             uint16_type lcVertex = 0;
             uint16_type lcEdge = 0;
             uint16_type lcFace = 0;
@@ -178,304 +192,383 @@ private:
             return *this;
         }
 
-    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
+    static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
+
+    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
     {
-        addVertexBoundaryDof( face, useConnection0, lc, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVertex(); } )
+                return M_fe.dofPerVertex();
+            else
+                return M_fe.runtimeDofPerVertex();
+        }
+        else
+            return fe_type::nDofPerVertex;
     }
-    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-    void addVertexBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
-
-    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<1>  )
+    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
     {
-        BOOST_STATIC_ASSERT( face_type::numVertices );
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerEdge(); } )
+                return M_fe.dofPerEdge();
+            else
+                return M_fe.runtimeDofPerEdge();
+        }
+        else
+            return fe_type::nDofPerEdge;
+    }
+    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.dofPerFace(); } )
+                return M_fe.dofPerFace();
+            else
+                return M_fe.runtimeDofPerFace();
+        }
+        else
+            return fe_type::nDofPerFace;
+    }
+    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
+    {
+        if constexpr ( is_order_dynamic )
+        {
+            if constexpr ( requires( fe_type const& fe ) { fe.localDof(); } )
+                return M_fe.localDof();
+            else
+                return M_fe.runtimeLocalDof();
+        }
+        else
+            return fe_type::nLocalDof;
+    }
+    [[nodiscard]] size_type runtimeNDofOnFace() const noexcept
+    {
+        return face_type::numVertices * runtimeDofPerVertex() +
+               face_type::numEdges * runtimeDofPerEdge() +
+               face_type::numFaces * runtimeDofPerFace();
+    }
 
-        uint16_type iFaEl;
-        size_type iElAd;
-
+    void getAdjacentElementAndLocalFace( face_type const& face, bool useConnection0, size_type& iElAd, uint16_type& iFaEl ) const
+    {
         if ( useConnection0 )
         {
             iElAd = face.ad_first();
             FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
             iFaEl = face.pos_first();
-            FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
-
         else
         {
             iElAd = face.ad_second();
             FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
             iFaEl = face.pos_second();
-            FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
         }
-
-        // Loop number of Dof per vertex
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
-        {
-            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
-            {
-                uint16_type ldinelt = iFaEl * fe_type::nDofPerVertex + l;
-                auto const& temp= M_doftable->localToGlobal( iElAd, ldinelt, c );
-                M_doftable->M_face_l2g[ face.id()][ lc ] = FaceDof( temp, lc, ldinelt );
-            }
-        }
+        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error( "invalid element index in face" );
     }
 
-    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2>  )
+    template<typename MatA, typename MatB>
+    static bool pointsMatch( MatA const& a, uint16_type ia, MatB const& b, uint16_type ib, double tol = 1e-12 )
     {
-        BOOST_STATIC_ASSERT( face_type::numVertices );
-
-        uint16_type iFaEl;
-        size_type iElAd;
-
-        if ( useConnection0 )
+        CHECK( a.size1() == b.size1() ) << "incompatible point dimensions " << a.size1() << " vs " << b.size1();
+        for ( uint16_type d = 0; d < static_cast<uint16_type>( a.size1() ); ++d )
         {
-            iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            iFaEl = face.pos_first();
-            FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
+            if ( std::abs( a( d, ia ) - b( d, ib ) ) > tol )
+                return false;
         }
-        else
+        return true;
+    }
+
+    [[nodiscard]] uint16_type localFaceDofIndexFromAttachment( uint16_type iFaEl,
+                                                               typename fe_type::DofAttachment const& attachment,
+                                                               uint16_type nDofPerVertex,
+                                                               uint16_type nDofPerEdge,
+                                                               uint16_type nDofPerFace ) const
+    {
+        const uint16_type invalid = invalid_uint16_type_value;
+        if ( !attachment.isValid() )
+            return invalid;
+
+        if ( attachment.entityDim == 0 )
         {
-            iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            iFaEl = face.pos_second();
-            FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-        }
-        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
-                            face_type::numEdges * fe_type::nDofPerEdge +
-                            face_type::numFaces * fe_type::nDofPerFace );
-
-
-        //M_dof2elt[gDof].push_back( boost::make_tuple( iElAd, lc-1, 48, 0 ) );
-        // loop on face vertices
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
-        {
-            uint16_type lcc=c*ndofF;
-
+            if ( nDofPerVertex == 0 || attachment.ordinal >= nDofPerVertex )
+                return invalid;
             for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
             {
-                // local vertex number (in element)
-                uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
+                const uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
+                if ( iVeEl == attachment.entityId )
+                    return static_cast<uint16_type>( iVeFa * nDofPerVertex + attachment.ordinal );
+            }
+            return invalid;
+        }
 
-                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+        if ( attachment.entityDim == 1 )
+        {
+            if ( nDofPerEdge == 0 || attachment.ordinal >= nDofPerEdge )
+                return invalid;
 
-                // Loop number of Dof per vertex
-                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lcc )
+            if constexpr ( nDim == 2 )
+            {
+                if ( attachment.entityId != iFaEl )
+                    return invalid;
+                return static_cast<uint16_type>( face_type::numVertices * nDofPerVertex + attachment.ordinal );
+            }
+            else if constexpr ( nDim == 3 )
+            {
+                for ( uint16_type iEdFa = 0; iEdFa < face_type::numEdges; ++iEdFa )
                 {
-                    uint16_type ldinelt = iVeEl * fe_type::nDofPerVertex + l;
+                    const uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
+                    if ( iEdEl == attachment.entityId )
+                    {
+                        return static_cast<uint16_type>( face_type::numVertices * nDofPerVertex +
+                                                         iEdFa * nDofPerEdge + attachment.ordinal );
+                    }
+                }
+            }
+            return invalid;
+        }
+
+        if ( attachment.entityDim == 2 )
+        {
+            if ( nDofPerFace == 0 || attachment.ordinal >= nDofPerFace )
+                return invalid;
+
+            if constexpr ( nDim == 3 )
+            {
+                if ( attachment.entityId != iFaEl )
+                    return invalid;
+                return static_cast<uint16_type>( face_type::numVertices * nDofPerVertex +
+                                                 face_type::numEdges * nDofPerEdge +
+                                                 attachment.ordinal );
+            }
+            return invalid;
+        }
+
+        return invalid;
+    }
+
+    bool addBoundaryDofUsingFiniteElementLayout( face_type const& face, bool useConnection0 )
+    {
+        if constexpr ( fe_type::is_modal )
+            return false;
+
+        size_type iElAd;
+        uint16_type iFaEl;
+        getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
+
+        const uint16_type nLocalDof = runtimeLocalDof();
+        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const uint16_type nDofPerFace = runtimeDofPerFace();
+
+        const size_type ndofF = runtimeNDofOnFace();
+        if ( nLocalDof == 0 || ndofF == 0 )
+            return false;
+
+        const int ncdof = is_product ? nComponents : 1;
+        std::vector<global_dof_from_entity_type> faceDofs( ncdof * ndofF );
+        std::vector<bool> hasFaceDof( ncdof * ndofF, false );
+
+        for ( uint16_type parentLid = 0; parentLid < nLocalDof; ++parentLid )
+        {
+            auto const layout = M_fe.localDofLayout( parentLid );
+            auto const localIndexOnFace = localFaceDofIndexFromAttachment( iFaEl, layout.attachment,
+                                                                           nDofPerVertex, nDofPerEdge, nDofPerFace );
+            if ( localIndexOnFace == invalid_uint16_type_value )
+                continue;
+
+            for ( int c = 0; c < ncdof; ++c )
+            {
+                const uint16_type lcc = static_cast<uint16_type>( c * ndofF + localIndexOnFace );
+                const uint16_type ldinelt = M_doftable->localDofId( parentLid, c );
+                auto const& temp = M_doftable->localToGlobal( iElAd, parentLid, c );
+                faceDofs[lcc] = FaceDof( temp, lcc, ldinelt );
+                hasFaceDof[lcc] = true;
+            }
+        }
+
+        if ( std::any_of( hasFaceDof.begin(), hasFaceDof.end(), []( bool x ) { return !x; } ) )
+            return false;
+
+        for ( uint16_type lcc = 0; lcc < static_cast<uint16_type>( faceDofs.size() ); ++lcc )
+            M_doftable->M_face_l2g[face.id()][lcc] = faceDofs[lcc];
+
+        return true;
+    }
+
+    bool addBoundaryDofUsingFiniteElementOrdering( face_type const& face, bool useConnection0 )
+    {
+        if constexpr ( fe_type::is_modal )
+            return false;
+
+        size_type iElAd;
+        uint16_type iFaEl;
+        getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
+
+        auto const& facePts = M_fe.points( iFaEl );
+        auto const& eltPts = M_fe.points();
+
+        const uint16_type nFacePts = static_cast<uint16_type>( facePts.size2() );
+        const uint16_type nEltPts = static_cast<uint16_type>( eltPts.size2() );
+        if ( nFacePts == 0 || nEltPts == 0 )
+            return false;
+
+        std::vector<uint16_type> faceToElt( nFacePts, invalid_uint16_type_value );
+        for ( uint16_type q = 0; q < nFacePts; ++q )
+        {
+            for ( uint16_type l = 0; l < nEltPts; ++l )
+            {
+                if ( pointsMatch( facePts, q, eltPts, l ) )
+                {
+                    faceToElt[q] = l;
+                    break;
+                }
+            }
+            CHECK( faceToElt[q] != invalid_uint16_type_value )
+                << "failed to map face dof point " << q << " on face " << iFaEl
+                << " of element " << iElAd;
+        }
+
+        size_type ndofF = runtimeNDofOnFace();
+        CHECK( nFacePts == ndofF ) << "invalid face dof count mismatch " << nFacePts << " vs " << ndofF;
+
+        const int ncdof = is_product ? nComponents : 1;
+        for ( int c = 0; c < ncdof; ++c )
+        {
+            const uint16_type cOffset = static_cast<uint16_type>( c * ndofF );
+            for ( uint16_type q = 0; q < nFacePts; ++q )
+            {
+                const uint16_type lcc = cOffset + q;
+                const uint16_type ldinelt = faceToElt[q];
+                auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                M_doftable->M_face_l2g[face.id()][lcc] = FaceDof( temp, lcc, M_doftable->localDofId( ldinelt, c ) );
+            }
+        }
+        return true;
+    }
+
+    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
+    {
+        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        if ( nDofPerVertex == 0 )
+            return;
+
+        size_type iElAd;
+        uint16_type iFaEl;
+        getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
+
+        const int ncdof = is_product ? nComponents : 1;
+        if constexpr ( nDim == 1 )
+        {
+            for ( int c = 0; c < ncdof; ++c )
+            {
+                for ( uint16_type l = 0; l < nDofPerVertex; ++l, ++lc )
+                {
+                    uint16_type ldinelt = iFaEl * nDofPerVertex + l;
                     auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
-                    M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
+                    M_doftable->M_face_l2g[face.id()][lc] = FaceDof( temp, lc, M_doftable->localDofId( ldinelt, c ) );
+                }
+            }
+            return;
+        }
+
+        size_type ndofF = runtimeNDofOnFace();
+        for ( int c = 0; c < ncdof; ++c )
+        {
+            uint16_type lcc = c * ndofF;
+            for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
+            {
+                uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
+                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                for ( uint16_type l = 0; l < nDofPerVertex; ++l, ++lcc )
+                {
+                    uint16_type ldinelt = iVeEl * nDofPerVertex + l;
+                    auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                    M_doftable->M_face_l2g[face.id()][lcc] = FaceDof( temp, lcc, M_doftable->localDofId( ldinelt, c ) );
                 }
             }
         }
-    }
-
-    void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3>  )
-    {
-        addVertexBoundaryDof( face, useConnection0, lc, mpl::bool_<true>(), mpl::int_<2>() );
+        lc = static_cast<uint16_type>( ncdof * ndofF );
     }
 
     void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        constexpr bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
-        addEdgeBoundaryDof( face, useConnection0, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
-    }
+        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        if ( nDofPerEdge == 0 || face_type::numEdges == 0 )
+            return;
 
-    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) {}
-
-    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) {}
-
-    void addEdgeBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) {}
-
-    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<2> )
-    {
-        uint16_type iFaEl;
         size_type iElAd;
-
-
-
-        if ( useConnection0 )
-        {
-            iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
-            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            iFaEl = face.pos_first();
-        }
-
-        else
-        {
-            iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
-            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            iFaEl = face.pos_second();
-        }
-
-        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-#if !defined(NDEBUG)
-        DVLOG(4) << " local face id : " << iFaEl << "\n";
-#endif
-        size_type nVerticesF = face_type::numVertices * fe_type::nDofPerVertex;
-        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
-                            face_type::numEdges * fe_type::nDofPerEdge +
-                            face_type::numFaces * fe_type::nDofPerFace );
-
-
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
-        {
-            uint16_type lcc=nVerticesF+c*ndofF;
-
-            // Loop number of Dof per edge
-            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lcc )
-            {
-                uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
-                    iFaEl * fe_type::nDofPerEdge + l ;
-                auto const& temp = M_doftable->localToGlobal( iElAd,ldinelt, c );
-                M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
-            }
-        }
-    }
-
-    void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true>, mpl::int_<3> )
-    {
-        //BOOST_STATIC_ASSERT( face_type::numEdges );
         uint16_type iFaEl;
-        size_type iElAd;
+        getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
 
-        if ( useConnection0 )
+        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        size_type nVerticesF = face_type::numVertices * nDofPerVertex;
+        size_type ndofF = runtimeNDofOnFace();
+        const int ncdof = is_product ? nComponents : 1;
+
+        if constexpr ( nDim == 2 )
         {
-            iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
-            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            iFaEl = face.pos_first();
-        }
-
-        else
-        {
-            iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
-            ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-            // local id of the face in its adjacent element
-            iFaEl = face.pos_second();
-        }
-
-#if !defined(NDEBUG)
-        DVLOG(4) << " local face id : " << iFaEl << "\n";
-#endif
-        size_type nVerticesF = face_type::numVertices * fe_type::nDofPerVertex;
-        size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
-                            face_type::numEdges * fe_type::nDofPerEdge +
-                            face_type::numFaces * fe_type::nDofPerFace );
-
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
-        {
-            uint16_type lcc=nVerticesF+c*ndofF;
-
-            // loop on face vertices
-            for ( uint16_type iEdFa = 0; iEdFa < face_type::numEdges; ++iEdFa )
+            for ( int c = 0; c < ncdof; ++c )
             {
-                // local edge number (in element)
-                uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
-
-                FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
-
-                // Loop number of Dof per edge
-                for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lcc )
+                uint16_type lcc = nVerticesF + c * ndofF;
+                for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lcc )
                 {
-                    uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
-                        iEdEl * fe_type::nDofPerEdge + l;
+                    uint16_type ldinelt = element_type::numVertices * nDofPerVertex + iFaEl * nDofPerEdge + l;
                     auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
-                    M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
+                    M_doftable->M_face_l2g[face.id()][lcc] = FaceDof( temp, lcc, M_doftable->localDofId( ldinelt, c ) );
                 }
             }
         }
+        else if constexpr ( nDim == 3 )
+        {
+            for ( int c = 0; c < ncdof; ++c )
+            {
+                uint16_type lcc = nVerticesF + c * ndofF;
+                for ( uint16_type iEdFa = 0; iEdFa < face_type::numEdges; ++iEdFa )
+                {
+                    uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
+                    FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
+                    for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lcc )
+                    {
+                        uint16_type ldinelt = element_type::numVertices * nDofPerVertex + iEdEl * nDofPerEdge + l;
+                        auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                        M_doftable->M_face_l2g[face.id()][lcc] = FaceDof( temp, lcc, M_doftable->localDofId( ldinelt, c ) );
+                    }
+                }
+            }
+        }
+        lc = static_cast<uint16_type>( nVerticesF + ncdof * face_type::numEdges * nDofPerEdge );
     }
-
 
     void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        addFaceBoundaryDof( face, useConnection0, lc, mpl::bool_<(face_type::numFaces*fe_type::nDofPerFace > 0)>() );
-    }
+        const uint16_type nDofPerFace = runtimeDofPerFace();
+        if ( nDofPerFace == 0 || face_type::numFaces == 0 )
+            return;
 
-    void addFaceBoundaryDof( face_type const& /*face*/, bool /*useConnection0*/, uint16_type& /*lc*/, mpl::bool_<false> )
-    {
-    }
+        size_type iElAd;
+        uint16_type iFaEl;
+        getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
 
-    void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc, mpl::bool_<true> )
+        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        size_type nVerticesAndEdgeF = face_type::numVertices * nDofPerVertex + face_type::numEdges * nDofPerEdge;
+        size_type ndofF = runtimeNDofOnFace();
+        const int ncdof = is_product ? nComponents : 1;
+
+        for ( int c = 0; c < ncdof; ++c )
         {
-
-            uint16_type iFaEl;
-            size_type iElAd;
-
-            if ( useConnection0 )
+            uint16_type lcc = nVerticesAndEdgeF + c * ndofF;
+            for ( uint16_type l = 0; l < nDofPerFace; ++l, ++lcc )
             {
-                iElAd = face.ad_first();
-                FEELPP_ASSERT( iElAd != invalid_v<size_type> )
-                    ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-                // local id of the face in its adjacent element
-                iFaEl = face.pos_first();
-            }
-
-            else
-            {
-                iElAd = face.ad_second();
-                FEELPP_ASSERT( iElAd != invalid_v<size_type> )
-                    ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
-
-                // local id of the face in its adjacent element
-                iFaEl = face.pos_second();
-            }
-
-#if !defined(NDEBUG)
-            DVLOG(4) << " local face id : " << iFaEl << "\n";
-#endif
-            size_type nVerticesAndEdgeF = ( face_type::numVertices * fe_type::nDofPerVertex +
-                                            face_type::numEdges * fe_type::nDofPerEdge );
-            size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
-                                face_type::numEdges * fe_type::nDofPerEdge +
-                                face_type::numFaces * fe_type::nDofPerFace );
-
-            const int ncdof = is_product?nComponents:1;
-
-            for ( int c = 0; c < ncdof; ++c )
-            {
-                uint16_type lcc=nVerticesAndEdgeF+c*ndofF;
-
-                // Loop on number of Dof per face
-                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lcc )
-                {
-                    uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
-                        element_type::numEdges*fe_type::nDofPerEdge +
-                        iFaEl * fe_type::nDofPerFace + l;
-                    auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
-                    M_doftable->M_face_l2g[ face.id()][ lcc ] = FaceDof( temp, lcc, ldinelt );
-                }
+                uint16_type ldinelt = element_type::numVertices * nDofPerVertex +
+                                      element_type::numEdges * nDofPerEdge +
+                                      iFaEl * nDofPerFace + l;
+                auto const& temp = M_doftable->localToGlobal( iElAd, ldinelt, c );
+                M_doftable->M_face_l2g[face.id()][lcc] = FaceDof( temp, lcc, M_doftable->localDofId( ldinelt, c ) );
             }
         }
+        lc = static_cast<uint16_type>( nVerticesAndEdgeF + ncdof * face_type::numFaces * nDofPerFace );
+    }
 
 };
 }

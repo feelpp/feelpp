@@ -667,9 +667,22 @@ private :
             map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
             M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
 
-            using shape = typename t_expr_type::shape;
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                             image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
+            auto localDofPerComp = []( auto const& fePtr ) -> int
+            {
+                if constexpr ( requires { fePtr->localDof(); } )
+                    return static_cast<int>( fePtr->localDof() );
+                else if constexpr ( requires { fePtr->runtimeLocalDof(); } )
+                    return static_cast<int>( fePtr->runtimeLocalDof() );
+                else
+                    return static_cast<int>( std::remove_reference_t<decltype( *fePtr )>::nLocalDof );
+            };
+            const int domainLocalDofPerComp = localDofPerComp( M_XhDomain->fe() );
+            const int imageLocalDofPerComp = localDofPerComp( image_fe );
+            const int nRows = fe_type::is_product ? fe_type::nComponents * domainLocalDofPerComp
+                                                  : domainLocalDofPerComp;
+            const int nCols = image_fe_type::is_product ? image_fe_type::nComponents * imageLocalDofPerComp
+                                                        : imageLocalDofPerComp;
+            M_IhLoc = Eigen::MatrixXd::Zero( nRows, nCols );
 #if 0
             image_fe->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
 #endif
@@ -758,9 +771,22 @@ private :
             //t_expr_type texpr( M_expr, mapgmc, mapfec );
             M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
 
-            using shape = typename t_expr_type::shape;
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                             image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
+            auto localDofPerComp = []( auto const& fePtr ) -> int
+            {
+                if constexpr ( requires { fePtr->localDof(); } )
+                    return static_cast<int>( fePtr->localDof() );
+                else if constexpr ( requires { fePtr->runtimeLocalDof(); } )
+                    return static_cast<int>( fePtr->runtimeLocalDof() );
+                else
+                    return static_cast<int>( std::remove_reference_t<decltype( *fePtr )>::nLocalDof );
+            };
+            const int domainLocalDofPerComp = localDofPerComp( M_XhDomain->fe() );
+            const int imageLocalDofPerComp = localDofPerComp( image_fe );
+            const int nRows = fe_type::is_product ? fe_type::nComponents * domainLocalDofPerComp
+                                                  : domainLocalDofPerComp;
+            const int nCols = image_fe_type::is_product ? image_fe_type::nComponents * imageLocalDofPerComp
+                                                        : imageLocalDofPerComp;
+            M_IhLoc = Eigen::MatrixXd::Zero( nRows, nCols );
 #if 0
             M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
 #endif
@@ -1750,6 +1776,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     bool meshAreRelated = this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
 
     auto const& imagedof = this->dualImageSpace()->dof();
+    auto const& imagefe = *this->dualImageSpace()->fe();
 
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
     // // init container used in send/recv
@@ -1777,31 +1804,37 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     continue;
             }
 
-            for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+            for( auto const& ldof : imagedof->localDof( theImageElt ) )
             {
-                for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                size_type igp = invalid_v<size_type>;
+                uint16_type iloc = invalid_v<uint16_type>;
+                if constexpr ( idim_type::value == MESH_FACES )
                 {
-                    uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
-                    auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
-                    size_type igp = thedofImage.index();
+                    igp = ldof.index();
+                    iloc = ldof.localDof();
+                    const uint16_type compFromFaceDof = static_cast<uint16_type>( ldof.localDofInFace() / imagedof->nLocalDofOnFace( true ) );
+                    if ( imagefe.component( iloc ) != compFromFaceDof )
+                        iloc = imagedof->localDofId( imagefe.dofParent( iloc ), compFromFaceDof );
+                }
+                else
+                {
+                    igp = ldof.second.index();
+                    iloc = ldof.first.localDof();
+                }
+                const uint16_type comp = imagefe.component( iloc );
+                if ( !dof_done[igp].insert( comp ).second )
+                    continue;
 
-                    if ( ( image_basis_type::is_product && dof_done[igp].empty() ) ||
-                         ( !image_basis_type::is_product && dof_done[igp].find( comp ) == dof_done[igp].end() ) )
-                    {
-                        if ( imagedof->dofGlobalProcessIsGhost( igp ) )
-                        {
-                            const size_type igc = imagedof->mapGlobalProcessToGlobalCluster()[igp];
-                            const rank_type theproc = imagedof->procOnGlobalCluster( igc );
-                            dataToSend[theproc].push_back( igc );
-
-                            dof_done[igp].insert( comp );
-                        }
-                        else if ( imagedof->activeDofSharedOnCluster().find( igp ) != imagedof->activeDofSharedOnCluster().end() )
-                        {
-                            activeDofSharedPresentInRange.insert(igp);
-                        }
-                    } // dof_done
-                } // comp
+                if ( imagedof->dofGlobalProcessIsGhost( igp ) )
+                {
+                    const size_type igc = imagedof->mapGlobalProcessToGlobalCluster()[igp];
+                    const rank_type theproc = imagedof->procOnGlobalCluster( igc );
+                    dataToSend[theproc].push_back( igc );
+                }
+                else if ( imagedof->activeDofSharedOnCluster().find( igp ) != imagedof->activeDofSharedOnCluster().end() )
+                {
+                    activeDofSharedPresentInRange.insert(igp);
+                }
             }
         }
     }
@@ -1925,6 +1958,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 #endif
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
+    auto const& imagefe = *this->dualImageSpace()->fe();
+    auto const& domainfe = *this->domainSpace()->fe();
 
     bool needToUpdateGraph = true;
     bool needToCopyMatrix = false;
@@ -2142,21 +2177,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         if constexpr ( idim_type::value == MESH_FACES )
                         {
                             i = ldof.index();
-                            iloc = ldof.localDof(); // WRONG HERE IN VECTORIAL, SEE FIX BELOW
-                            //comp = ldof.first.component( image_basis_type::nLocalDof ); // TODO
-
-                            uint16_type ccc = ldof.localDofInFace()/nLocalDofInDualImageElt;//image_basis_type::nLocalEdgeDof;
-                            iloc = ldof.localDof()+ccc*image_basis_type::nLocalDof;
+                            iloc = ldof.localDof();
+                            const uint16_type compFromFaceDof = static_cast<uint16_type>( ldof.localDofInFace() / imagedof->nLocalDofOnFace( true ) );
+                            if ( imagefe.component( iloc ) != compFromFaceDof )
+                                iloc = imagedof->localDofId( imagefe.dofParent( iloc ), compFromFaceDof );
                         }
                         else
                         {
                             i = ldof.second.index();
                             iloc = ldof.first.localDof();
-                            //comp = ldof.first.component( image_basis_type::nLocalDof ); // TODO
                         }
-                        uint16_type comp = iloc/image_basis_type::nLocalDof;
+                        const uint16_type comp = imagefe.component( iloc );
 
-                        if ( dof_done[i].empty() )
+                        if ( dof_done[i].insert( comp ).second )
                         {
                             const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
                             const auto theproc = imagedof->procOnGlobalCluster( ig1 );
@@ -2182,12 +2215,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                 {
                                     index_type j = ldof_domain.second.index();
                                     uint16_type jloc = ldof_domain.first.localDof();
-                                    uint16_type cdomain = ldof_domain.first.component( domain_basis_type::nLocalDof );
+                                    uint16_type cdomain = domainfe.component( jloc );
 
-                                    if ( domain_basis_type::is_product &&
-                                         image_basis_type::is_product &&
-                                         ( M_interptype.interpolationOperand() == interpolation_operand_type::ID )
-                                         && cdomain != comp ) continue;
+                                    if ( M_interptype.interpolationOperand() == interpolation_operand_type::ID &&
+                                         cdomain != comp ) continue;
 
                                     if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                                     {
@@ -2204,7 +2235,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                 //break;/////WARING ONLY FOR CONTINUE!!!!
                             }  // for ( auto const& domain_elt : domains_eid_set.elements() )
 
-                            dof_done[i].insert( comp );
                         } // if ( !dof_done[i] )
                     } // for( auto const& ldof : imagedof->localDof( theImageElt ) )
                 } /// for ( auto const& domains_eid_set : meshEntitiesImageToDomain )

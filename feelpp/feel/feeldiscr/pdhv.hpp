@@ -30,6 +30,7 @@
 #define FEELPP_PDHV_HPP
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel {
 
@@ -38,7 +39,7 @@ namespace meta
 
 template<typename MeshType,
          int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pdhv
 {
@@ -54,20 +55,20 @@ struct Pdhv
 
 template<typename MeshType,
          int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhv_type = typename meta::Pdhv<MeshType,Order,Pts,Tag>::type;
 
 template<typename MeshType,
          int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhv_ptrtype = typename meta::Pdhv<MeshType,Order,Pts,Tag>::ptrtype;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
 using Pdhv_element_t=typename Pdhv_type<MeshType,Order,Pts>::element_type;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
 using Pdhv_element_type=Pdhv_element_t<MeshType,Order,Pts>;
 
 /**
@@ -76,15 +77,33 @@ using Pdhv_element_type=Pdhv_element_t<MeshType,Order,Pts>;
    than k using Lagrange basis functions
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,
+         template<class, int, class> class Pts = PointSetFekete,typename MeshType,
          int Tag = 0>
 inline
 Pdhv_ptrtype<MeshType,Order,Pts,Tag>
-Pdhv( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+Pdhv( std::shared_ptr<MeshType> mesh,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                   _extended_doftable=dte );
+                                                   _extended_doftable=dte,
+                                                   _runtime_order=order );
+}
+
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pdhv_ptrtype<MeshType,Order,Pts,Tag>
+Pdhv( std::shared_ptr<MeshType> mesh,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+{
+    return Pdhv<Order,Pts,MeshType,Tag>( mesh,
+                                         RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                         dte );
 }
 
 /**
@@ -93,17 +112,39 @@ Pdhv( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtende
  than k using Lagrange basis functions
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,typename RangeType,
          int Tag = 0>
 inline
 Pdhv_ptrtype<MeshType,Order,Pts,Tag>
-Pdhv( std::shared_ptr<MeshType> const& mesh, RangeType&& rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+Pdhv( std::shared_ptr<MeshType> const& mesh,
+      RangeType&& rangeElt,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
     return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
                                                    _range=std::forward<RangeType>(rangeElt),
                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                   _extended_doftable=dte );
+                                                   _extended_doftable=dte,
+                                                   _runtime_order=order );
+}
+
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         typename RangeType,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pdhv_ptrtype<MeshType,Order,Pts,Tag>
+Pdhv( std::shared_ptr<MeshType> const& mesh,
+      RangeType&& rangeElt,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+{
+    return Pdhv<Order,Pts,MeshType,Tag>( mesh,
+                                         std::forward<RangeType>(rangeElt),
+                                         RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                         dte );
 }
 
 }

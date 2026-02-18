@@ -136,9 +136,10 @@ void print( MeshT* m )
                    } );
 }
 
-// Constructor.
+// Constructor (static order).
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
- Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
+    requires( is_order_static )
     : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type ),
@@ -150,7 +151,29 @@ template <typename Shape, typename T, int Tag, typename IndexT, bool EnableShare
       //M_part(),
       M_tool_localization( std::make_shared<Localization<self_type>>() )
 {
-    VLOG( 2 ) << "[Mesh] constructor called\n";
+    VLOG( 2 ) << "[Mesh] constructor called (static order = " << nOrder << ")\n";
+    CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
+}
+
+// Constructor (dynamic order).
+template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( RuntimeOrder runtime_order,
+                                                          std::string const& name,
+                                                          worldcomm_ptr_t const& worldComm,
+                                                          std::string const& props )
+    requires( is_order_dynamic )
+    : super( name, worldComm ),
+      M_numGlobalElements( 0 ),
+      M_gm( new gm_type( runtime_order ) ),
+      M_gm1( runtime_order.value == 1 ? M_gm : gm1_ptrtype( new gm1_type ) ),
+      M_meas( 0 ),
+      M_measbdy( 0 ),
+      M_substructuring( false ),
+      M_structure_property( props ),
+      M_tool_localization( std::make_shared<Localization<self_type>>() ),
+      M_runtime_order( runtime_order.value )
+{
+    VLOG( 2 ) << "[Mesh] constructor called (dynamic order = " << runtime_order.value << ")\n";
     CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
 }
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>

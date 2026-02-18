@@ -784,43 +784,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    //std::cout << "coeff=" << coeff << "\n";
-    //array_type v( boost::extents[nComponents1][nRealDim][context.xRefs().size2()] );
-    //std::fill( v.data(), v.data()+v.num_elements(), value_type( 0 ) );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
+    for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
-        const int ncdof = is_product?nComponents1:1;
+        size_type index = ldof.second.index();
+        uint16_type local_dof = ldof.first.localDof();
+        value_type v_ = super::operator[]( index ) * s( local_dof );
 
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
         {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-#if 0
-                em_fixed_size_matrix_t<nComponents1,nRealDim> mv( v[q].data() );
-                em_fixed_size_cmatrix_t<nComponents1,nRealDim> mg( context.grad( ldof, q ).data() );
-                mv.noalias()= v_*mg;
-#else
-                //v[q] = v_*context.grad( ldof, q );
-                for ( int k = 0; k < nComponents1; ++k )
-                    for ( int j = 0; j < nRealDim; ++j )
-                    {
-                        v[q]( k,j ) += v_*context.grad( ldof, k, j, q );
-                    }
-#endif
-            }
+            for ( int k = 0; k < nComponents1; ++k )
+                for ( int j = 0; j < nRealDim; ++j )
+                    v[q]( k,j ) += v_ * context.grad( local_dof, k, j, q );
         }
     }
 
@@ -881,22 +856,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextTy
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
+    for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
-        const int ncdof = is_product?nComponents1:1;
+        size_type index = ldof.second.index();
+        uint16_type local_dof = ldof.first.localDof();
+        value_type v_ = super::operator[]( index ) * s( local_dof );
 
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-                v[q] = v_*context.symmetricGradient( ldof, q );
-            }
-        }
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            v[q] = v_ * context.symmetricGradient( local_dof, q );
     }
 
 }

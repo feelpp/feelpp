@@ -30,6 +30,7 @@
 #define FEELPP_PDHM_H 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel {
 
@@ -38,7 +39,7 @@ template<typename MeshType,
          int Order,
          template <uint16_type> class Pset = Tensor2,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pdhmg
 {
@@ -53,14 +54,14 @@ struct Pdhmg
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhm = Pdhmg<MeshType,Order,Tensor2,T,Pts,Tag>;
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhms = Pdhmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 
@@ -69,26 +70,26 @@ using Pdhms = Pdhmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhm_type = typename meta::Pdhm<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhm_ptrtype = typename meta::Pdhm<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhms_type = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
          int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pdhms_ptrtype = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::ptrtype;
 
@@ -100,16 +101,35 @@ using Pdhms_ptrtype = typename meta::Pdhms<MeshType,Order,T,Pts,Tag>::ptrtype;
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
 Pdhm_ptrtype<MeshType,Order,T,Pts,Tag>
-Pdhm( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+Pdhm( std::shared_ptr<MeshType> mesh,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pdhm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                    _extended_doftable=dte );
+                                                      _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                                      _extended_doftable=dte,
+                                                      _runtime_order=order );
+}
+
+template<int Order,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pdhm_ptrtype<MeshType,Order,T,Pts,Tag>
+Pdhm( std::shared_ptr<MeshType> mesh,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Pdhm<Order,T,Pts,MeshType,Tag>( mesh,
+                                           RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                           dte );
 }
 
 /**
@@ -118,16 +138,35 @@ Pdhm( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtende
  */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
 Pdhms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pdhms( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+Pdhms( std::shared_ptr<MeshType> const& mesh,
+       RuntimeOrder order,
+       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     return Pdhms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                       _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                      _extended_doftable=dte );
+                                                      _extended_doftable=dte,
+                                                      _runtime_order=order );
+}
+
+template<int Order,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pdhms_ptrtype<MeshType,Order,T,Pts,Tag>
+Pdhms( std::shared_ptr<MeshType> const& mesh,
+       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Pdhms<Order,T,Pts,MeshType,Tag>( mesh,
+                                            RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                            dte );
 }
 
 
