@@ -175,6 +175,7 @@ mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-parabolic3app.cpp
 mor/heat1d/heat1dapp.cpp
 mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
+feelppdb*/
 gmsh-config.err
 python/pyfeelpp/feelpp/core/__init__.py
 *.msh
