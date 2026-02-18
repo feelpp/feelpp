@@ -469,23 +469,55 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( M_test_gmc );
     DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
+    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
+    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
+    const uint16_type nDofTestComp = [&]()
+    {
+        if constexpr ( test_dof_type::is_order_dynamic )
+        {
+            auto const testFe = M_form.testFiniteElement<UseMortarTest>();
+            if constexpr ( requires { testFe->localDof(); } )
+                return static_cast<uint16_type>( testFe->localDof() );
+            else if constexpr ( requires { testFe->runtimeLocalDof(); } )
+                return static_cast<uint16_type>( testFe->runtimeLocalDof() );
+            else
+                return static_cast<uint16_type>( M_test_dof->nLocalDof()/test_dof_type::nComponents );
+        }
+        else
+            return static_cast<uint16_type>( test_dof_type::fe_type::nLocalDof );
+    }();
+    const uint16_type nDofTrialComp = [&]()
+    {
+        if constexpr ( trial_dof_type::is_order_dynamic )
+        {
+            auto const trialFe = M_form.trialFiniteElement<UseMortarTrial>();
+            if constexpr ( requires { trialFe->localDof(); } )
+                return static_cast<uint16_type>( trialFe->localDof() );
+            else if constexpr ( requires { trialFe->runtimeLocalDof(); } )
+                return static_cast<uint16_type>( trialFe->runtimeLocalDof() );
+            else
+                return static_cast<uint16_type>( M_trial_dof->nLocalDof()/trial_dof_type::nComponents );
+        }
+        else
+            return static_cast<uint16_type>( trial_dof_type::fe_type::nLocalDof );
+    }();
 
     if ( M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
          trial_dof_type::is_product && !UseMortar )
     {
-        //if ( useEigenDynamicAlloc )
-        M_rep = local_matrix_type::Zero(nDofPerElementTest, nDofPerElementTrial);
-        //else
-        //M_rep = local_matrix_type::Zero();
+        // Keep support for both static and dynamic order:
+        // - static: fixed-size local matrix, dimensions are compile-time
+        // - dynamic: matrix has already been resized at runtime in initDynamicEigenMatrix()
+        M_rep.setZero();
 
         if ( M_form.isPatternSymmetric() )
         {
             for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
-                for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
+                for ( uint16_type j = 0; j < nDofTrialComp; ++j )
                     for ( uint16_type i = 0; i <= j; ++i )
                     {
-                        uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
-                        uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                        uint16_type testLocalDofIndex = i + c * nDofTestComp;
+                        uint16_type trialLocalDofIndex = j + c * nDofTrialComp;
                         M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
                         M_rep( trialLocalDofIndex, testLocalDofIndex ) = M_rep( testLocalDofIndex, trialLocalDofIndex );
                     }
@@ -498,25 +530,25 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 for ( uint16_type c1 = 0; c1 < trial_dof_type::nComponents1; ++c1 )
                 {
                     for ( uint16_type c2 = 0; c2 < c1; ++c2 )
-                        for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                            for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        for ( uint16_type j = 0; j < nDofTrialComp; ++j )
+                            for ( uint16_type i = 0; i < nDofTestComp; ++i )
                         {
                             uint16_type cc1 = (c2+trial_dof_type::nComponents2*c1);
-                            uint16_type testLocalDofIndex = i+cc1*test_dof_type::fe_type::nLocalDof;
-                            uint16_type trialLocalDofIndex = j+cc1*trial_dof_type::fe_type::nLocalDof;
+                            uint16_type testLocalDofIndex = i + cc1 * nDofTestComp;
+                            uint16_type trialLocalDofIndex = j + cc1 * nDofTrialComp;
                             M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
 
                             uint16_type cc2 = (c1+trial_dof_type::nComponents2*c2);
-                            uint16_type testLocalDofIndex2 = i+cc2*test_dof_type::fe_type::nLocalDof;
-                            uint16_type trialLocalDofIndex2 = j+cc2*trial_dof_type::fe_type::nLocalDof;
+                            uint16_type testLocalDofIndex2 = i + cc2 * nDofTestComp;
+                            uint16_type trialLocalDofIndex2 = j + cc2 * nDofTrialComp;
                             M_rep( testLocalDofIndex2, trialLocalDofIndex2 ) = M_rep( testLocalDofIndex, trialLocalDofIndex );
                         }
                     uint16_type c = (c1+trial_dof_type::nComponents2*c1);
-                    for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                        for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                    for ( uint16_type j = 0; j < nDofTrialComp; ++j )
+                        for ( uint16_type i = 0; i < nDofTestComp; ++i )
                         {
-                            uint16_type testLocalDofIndex = i+c*test_dof_type::fe_type::nLocalDof;
-                            uint16_type trialLocalDofIndex = j+c*trial_dof_type::fe_type::nLocalDof;
+                            uint16_type testLocalDofIndex = i + c * nDofTestComp;
+                            uint16_type trialLocalDofIndex = j + c * nDofTrialComp;
                             M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
                         }
                 }
@@ -526,22 +558,22 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 if constexpr ( has_mass_v<ExprT::context> )
                 {
                     for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
-                        for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                            for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        for ( uint16_type j = 0; j < nDofTrialComp; ++j )
+                            for ( uint16_type i = 0; i < nDofTestComp; ++i )
                             {
-                                uint16_type testLocalDofIndex = i + c * test_dof_type::fe_type::nLocalDof;
-                                uint16_type trialLocalDofIndex = j + c * trial_dof_type::fe_type::nLocalDof;
+                                uint16_type testLocalDofIndex = i + c * nDofTestComp;
+                                uint16_type trialLocalDofIndex = j + c * nDofTrialComp;
                                 M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_eval_expr00->evalij( testLocalDofIndex, trialLocalDofIndex );
                             }
                 }
                 else
                 {
                     for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
-                        for ( uint16_type j = 0; j < trial_dof_type::fe_type::nLocalDof; ++j )
-                            for ( uint16_type i = 0; i < test_dof_type::fe_type::nLocalDof; ++i )
+                        for ( uint16_type j = 0; j < nDofTrialComp; ++j )
+                            for ( uint16_type i = 0; i < nDofTestComp; ++i )
                             {
-                                uint16_type testLocalDofIndex = i + c * test_dof_type::fe_type::nLocalDof;
-                                uint16_type trialLocalDofIndex = j + c * trial_dof_type::fe_type::nLocalDof;
+                                uint16_type testLocalDofIndex = i + c * nDofTestComp;
+                                uint16_type trialLocalDofIndex = j + c * nDofTrialComp;
                                 M_rep( testLocalDofIndex, trialLocalDofIndex ) = M_integrator( *M_eval_expr00, testLocalDofIndex, trialLocalDofIndex, 0, 0 );
                             }
                 }
@@ -553,7 +585,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     {
         if ( boost::is_same<trial_dof_type,test_dof_type>::value && M_form.isPatternSymmetric() && !UseMortar )
         {
-            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+            for ( uint16_type j = 0; j < nDofTrialElt; ++j )
                 for ( uint16_type i = 0; i <= j; ++i )
                 {
                     M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
@@ -574,16 +606,16 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
             {
                 if constexpr ( has_mass_v<ExprT::context> )
                 {
-                        for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                        for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                            for ( uint16_type i = 0; i < nDofTestElt; ++i )
                             {
                                 M_rep( i, j ) = M_eval_expr00->evalij( i, j );
                             }
                 }
                 else
                 {
-                    for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                        for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                    for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                        for ( uint16_type i = 0; i < nDofTestElt; ++i )
                         {
                             M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
                         }
@@ -594,10 +626,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
                 CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
                 DVLOG(2) << "local Assembly for element " << _gmc.id()
-                         << "ntestdof : " << test_dof_type::nDofPerElement-1;
+                         << "ntestdof : " << nDofTestElt-1;
 #endif
-                for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                    for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
+                for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                    for ( uint16_type i = 0; i < uint16_type( nDofTestElt-1 ); ++i )
                     {
                         M_mortarTest_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
                         DVLOG(2) << "mortar_rep(" << i << "," << j << ")=" << M_mortarTest_rep( i, j );
@@ -613,8 +645,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
                 CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-                for ( uint16_type j = 0; j < uint16_type(trial_dof_type::nDofPerElement-1); ++j )
-                    for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                for ( uint16_type j = 0; j < uint16_type( nDofTrialElt-1 ); ++j )
+                    for ( uint16_type i = 0; i < nDofTestElt; ++i )
                     {
                         M_mortarTrial_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
                     }
@@ -639,11 +671,13 @@ integrate( mpl::int_<2> )
                             mpl::equal_to<mpl::int_<shape::N>,mpl::int_<1> > >::value ),
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
+    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
+    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
 
     if ( M_form.isPatternExtended() )
     {
-        for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+        for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+            for ( uint16_type i = 0; i < nDofTestElt; ++i )
             {
                 uint16_type ii = i;
                 uint16_type jj = j;
@@ -651,33 +685,33 @@ integrate( mpl::int_<2> )
                 M_rep_2( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
 
                 ii = i;
-                jj = j + trial_dof_type::nDofPerElement;
+                jj = j + nDofTrialElt;
                 // test dof element 0 - trial dof element 1
                 M_rep_2( ii,jj ) = M_integrator( *M_eval_expr01, i, j, 0, 0 );
 
-                ii = i + test_dof_type::nDofPerElement;
+                ii = i + nDofTestElt;
                 jj = j;
                 // test dof element 1 - trial dof element 0
                 M_rep_2( ii,jj ) = M_integrator( *M_eval_expr10, i, j, 0, 0 );
 
-                ii = i + test_dof_type::nDofPerElement;
-                jj = j + trial_dof_type::nDofPerElement;
+                ii = i + nDofTestElt;
+                jj = j + nDofTrialElt;
                 // test dof element 1 - trial dof element 1
                 M_rep_2( ii,jj ) = M_integrator( *M_eval_expr11, i, j, 0, 0 );
             }
     }
     else
     {
-        for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+        for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+            for ( uint16_type i = 0; i < nDofTestElt; ++i )
             {
                 uint16_type ii = i;
                 uint16_type jj = j;
                 // test dof element 0 - trial dof element 0
                 M_rep_2( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
 
-                ii = i + test_dof_type::nDofPerElement;
-                jj = j + trial_dof_type::nDofPerElement;
+                ii = i + nDofTestElt;
+                jj = j + nDofTrialElt;
                 // test dof element 1 - trial dof element 1
                 M_rep_2( ii,jj ) = M_integrator( *M_eval_expr11, i, j, 0, 0 );
             }
@@ -706,19 +740,21 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     bool useMortarTestAssembly = test_dof_type::is_mortar && M_test_dof->mesh()->isBoundaryElement( _gmcTest.id() );
     bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( _gmcTrial.id() );
 #endif
+    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
+    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
 
     if constexpr ( UseMortarType == 0 )
     {
         if ( isFirstExperience )
-            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                for ( uint16_type i = 0; i < nDofTestElt; ++i )
                 {
                     M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
 
         else
-            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                for ( uint16_type i = 0; i < nDofTestElt; ++i )
                 {
                     M_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
@@ -730,14 +766,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
         if ( isFirstExperience )
-            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
+            for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                for ( uint16_type i = 0; i < uint16_type( nDofTestElt-1 ); ++i )
                 {
                     M_mortarTest_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
         else
-            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
+            for ( uint16_type j = 0; j < nDofTrialElt; ++j )
+                for ( uint16_type i = 0; i < uint16_type( nDofTestElt-1 ); ++i )
                 {
                     M_mortarTest_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
@@ -749,14 +785,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
         if ( isFirstExperience )
-            for ( uint16_type j = 0; j < uint16_type(trial_dof_type::nDofPerElement-1); ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for ( uint16_type j = 0; j < uint16_type( nDofTrialElt-1 ); ++j )
+                for ( uint16_type i = 0; i < nDofTestElt; ++i )
                 {
                     M_mortarTrial_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
         else
-            for ( uint16_type j = 0; j < uint16_type(trial_dof_type::nDofPerElement-1); ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+            for ( uint16_type j = 0; j < uint16_type( nDofTrialElt-1 ); ++j )
+                for ( uint16_type i = 0; i < nDofTestElt; ++i )
                 {
                     M_mortarTrial_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
@@ -783,10 +819,42 @@ template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapEx
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( std::pair<index_type, index_type> const& elt )
 {
+    constexpr bool UseMortarTest = ( UseMortarType == 1 );
+    constexpr bool UseMortarTrial = ( UseMortarType == 2 );
     index_type elt_0 = elt.first;
     index_type trial_eid = elt.second;
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
+    const uint16_type nDofTestComp = [&]()
+    {
+        if constexpr ( test_dof_type::is_order_dynamic )
+        {
+            auto const testFe = M_form.testFiniteElement<UseMortarTest>();
+            if constexpr ( requires { testFe->localDof(); } )
+                return static_cast<uint16_type>( testFe->localDof() );
+            else if constexpr ( requires { testFe->runtimeLocalDof(); } )
+                return static_cast<uint16_type>( testFe->runtimeLocalDof() );
+            else
+                return static_cast<uint16_type>( M_test_dof->nLocalDof()/test_dof_type::nComponents );
+        }
+        else
+            return static_cast<uint16_type>( test_dof_type::fe_type::nLocalDof );
+    }();
+    const uint16_type nDofTrialComp = [&]()
+    {
+        if constexpr ( trial_dof_type::is_order_dynamic )
+        {
+            auto const trialFe = M_form.trialFiniteElement<UseMortarTrial>();
+            if constexpr ( requires { trialFe->localDof(); } )
+                return static_cast<uint16_type>( trialFe->localDof() );
+            else if constexpr ( requires { trialFe->runtimeLocalDof(); } )
+                return static_cast<uint16_type>( trialFe->runtimeLocalDof() );
+            else
+                return static_cast<uint16_type>( M_trial_dof->nLocalDof()/trial_dof_type::nComponents );
+        }
+        else
+            return static_cast<uint16_type>( trial_dof_type::fe_type::nLocalDof );
+    }();
 
     //
     DCHECK( trial_eid != invalid_v<index_type> )
@@ -808,17 +876,17 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     {
         for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
         {
-            M_c_rep = M_rep.block( c*test_dof_type::fe_type::nLocalDof, c*trial_dof_type::fe_type::nLocalDof,
-                                    test_dof_type::fe_type::nLocalDof, trial_dof_type::fe_type::nLocalDof );
-            M_c_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array().segment( c*test_dof_type::fe_type::nLocalDof,
-                                    test_dof_type::fe_type::nLocalDof );
-            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid,M_form.dofIdToContainerIdTrial() ).array().segment( c*trial_dof_type::fe_type::nLocalDof,
-                                    trial_dof_type::fe_type::nLocalDof );
+            M_c_rep = M_rep.block( c*nDofTestComp, c*nDofTrialComp,
+                                   nDofTestComp, nDofTrialComp );
+            M_c_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array().segment( c*nDofTestComp,
+                                    nDofTestComp );
+            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid,M_form.dofIdToContainerIdTrial() ).array().segment( c*nDofTrialComp,
+                                    nDofTrialComp );
 
             if ( test_dof_type::is_modal || trial_dof_type::is_modal )
             {
-                M_c_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 ).segment( c*test_dof_type::fe_type::nLocalDof,test_dof_type::fe_type::nLocalDof );
-                M_c_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid ).segment( c*trial_dof_type::fe_type::nLocalDof,trial_dof_type::fe_type::nLocalDof );
+                M_c_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 ).segment( c*nDofTestComp,nDofTestComp );
+                M_c_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid ).segment( c*nDofTrialComp,nDofTrialComp );
                 M_c_rep.array() *= ( M_c_local_rowsigns*M_c_local_colsigns.transpose() ).array().template cast<value_type>();
             }
 
@@ -906,25 +974,27 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 assemble( std::pair<index_type,index_type> const& elt_0,
           std::pair<index_type,index_type> const& elt_1 )
 {
+    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
+    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
 
     index_type test_elt_0 = elt_0.first;
     index_type test_elt_1 = elt_1.first;
     index_type trial_elt_0 = elt_0.second;
     index_type trial_elt_1 = elt_1.second;
 
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( test_elt_0,M_form.dofIdToContainerIdTest() ).array();
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( test_elt_1,M_form.dofIdToContainerIdTest() ).array();
+    M_local_rows_2.head( nDofTestElt ).array() = M_test_dof->localToGlobalIndices( test_elt_0,M_form.dofIdToContainerIdTest() ).array();
+    M_local_rows_2.tail( nDofTestElt ).array() = M_test_dof->localToGlobalIndices( test_elt_1,M_form.dofIdToContainerIdTest() ).array();
 
-    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_elt_0,M_form.dofIdToContainerIdTrial() ).array();
-    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( trial_elt_1,M_form.dofIdToContainerIdTrial() ).array();
+    M_local_cols_2.head( nDofTrialElt ).array() = M_trial_dof->localToGlobalIndices( trial_elt_0,M_form.dofIdToContainerIdTrial() ).array();
+    M_local_cols_2.tail( nDofTrialElt ).array() = M_trial_dof->localToGlobalIndices( trial_elt_1,M_form.dofIdToContainerIdTrial() ).array();
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {
-        M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( test_elt_0 );
-        M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( test_elt_1 );
+        M_local_rowsigns_2.head( nDofTestElt ) = M_test_dof->localToGlobalSigns( test_elt_0 );
+        M_local_rowsigns_2.tail( nDofTestElt ) = M_test_dof->localToGlobalSigns( test_elt_1 );
 
-        M_local_colsigns_2.template head<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( trial_elt_0 );
-        M_local_colsigns_2.template tail<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( trial_elt_1 );
+        M_local_colsigns_2.head( nDofTrialElt ) = M_trial_dof->localToGlobalSigns( trial_elt_0 );
+        M_local_colsigns_2.tail( nDofTrialElt ) = M_trial_dof->localToGlobalSigns( trial_elt_1 );
 
         M_rep_2.array() *= ( M_local_rowsigns_2*M_local_colsigns_2.transpose() ).array().template cast<value_type>();
     }
@@ -936,13 +1006,13 @@ assemble( std::pair<index_type,index_type> const& elt_0,
     }
     else
     {
-        M_rep = M_rep_2.topLeftCorner(test_dof_type::nDofPerElement, trial_dof_type::nDofPerElement);
-        M_form.addMatrix( M_local_rows_2.data(), test_dof_type::nDofPerElement,
-                          M_local_cols_2.data(), trial_dof_type::nDofPerElement,
+        M_rep = M_rep_2.topLeftCorner(nDofTestElt, nDofTrialElt);
+        M_form.addMatrix( M_local_rows_2.data(), nDofTestElt,
+                          M_local_cols_2.data(), nDofTrialElt,
                           M_rep.data(), test_elt_0, trial_elt_0 );//(nDimTest>nDimTrial)?test_elt_0:trial_elt_0 );
-        M_rep = M_rep_2.bottomRightCorner(test_dof_type::nDofPerElement, trial_dof_type::nDofPerElement);
-        M_form.addMatrix( M_local_rows_2.data()+test_dof_type::nDofPerElement,  test_dof_type::nDofPerElement,
-                          M_local_cols_2.data()+trial_dof_type::nDofPerElement, trial_dof_type::nDofPerElement,
+        M_rep = M_rep_2.bottomRightCorner(nDofTestElt, nDofTrialElt);
+        M_form.addMatrix( M_local_rows_2.data()+nDofTestElt,  nDofTestElt,
+                          M_local_cols_2.data()+nDofTrialElt, nDofTrialElt,
                           M_rep.data(), test_elt_1, trial_elt_1 ); //(nDimTest>nDimTrial)?test_elt_1:trial_elt_1  );
     }
 }

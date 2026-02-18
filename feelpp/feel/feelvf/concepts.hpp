@@ -199,7 +199,24 @@ template <typename T>
 concept VfQuadratureConcept = requires {
     typename T::return_type;
     { T::Degree } -> std::convertible_to<int>;
-} || std::integral<T>; // Allow integer order specifications
+};
+
+/**
+ * @brief A quadrature order specification
+ *
+ * @details Accepts either an integer (quadrature order) or a quadrature type.
+ * This is used in integrate() to allow both:
+ *   - integrate(_range=elements(mesh), _expr=cst(1.), _quad=5)
+ *   - integrate(_range=elements(mesh), _expr=cst(1.), _quad=_Q<5>())
+ *
+ * @example
+ * @code
+ * template <QuadOrderConcept QuadT>
+ * auto integrate(Range range, Expr expr, QuadT quad);
+ * @endcode
+ */
+template <typename T>
+concept QuadOrderConcept = std::integral<T> || VfQuadratureConcept<T>;
 
 /**
  * @brief A bilinear form (matrix assembly)

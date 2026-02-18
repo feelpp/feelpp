@@ -360,8 +360,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 operator()( TheExpr... e) { return *this; }             \
                                                                         \
             uint16_type polynomialOrder() const {                       \
-                int imorder_test = element_type::functionspace_type::basis_type::nOrder + VF_OPERATOR_DIFFORDERIM(O); \
-                return (imorder_test<0)?0:imorder_test; \
+                using _basis_type = typename element_type::functionspace_type::basis_type; \
+                int baseOrder;                                          \
+                if constexpr ( _basis_type::is_order_dynamic )          \
+                    baseOrder = this->e().functionSpace()->order(); \
+                else                                                    \
+                    baseOrder = _basis_type::nOrder;                    \
+                int imorder_test = baseOrder + VF_OPERATOR_DIFFORDERIM(O); \
+                return (imorder_test<0)?0:imorder_test;                 \
             }                                                           \
                                                                         \
             bool isPolynomial() const { return true; }                  \

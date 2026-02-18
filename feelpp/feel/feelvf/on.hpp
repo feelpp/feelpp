@@ -693,11 +693,16 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     index_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
+                    CHECK( thedof < trialDofIdToContainerId.size() )
+                        << "Invalid trial dof id in onFaces(): dof=" << thedof
+                        << " map-size=" << trialDofIdToContainerId.size()
+                        << " face-id=" << theface.id();
                     thedof = trialDofIdToContainerId[ thedof ];
 
-                    DCHECK( ldof.localDofInFace() < IhLoc.size() )
-                        << "Invalid local dof index in face for face Interpolant "
-                        << ldof.localDofInFace() << ">=" << IhLoc.size();
+                    CHECK( ldof.localDofInFace() < IhLoc.size() )
+                        << "Invalid local dof index in face for face interpolant: "
+                        << ldof.localDofInFace() << " >= " << IhLoc.size()
+                        << " (face-id=" << theface.id() << ")";
                     double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
                     DVLOG(3) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
                              << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
@@ -740,6 +745,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
     x->setVector( dofs.data(), dofs.size(), values.data() );
     x->close();
 
+    if ( !values.empty() )
+    {
+        auto [minIt, maxIt] = std::minmax_element( values.begin(), values.end() );
+        LOG(INFO) << fmt::format( "IntegratorOnExpr<>::onFaces() Dirichlet values: count={} min={} max={}",
+                                  values.size(), *minIt, *maxIt );
+    }
     LOG(INFO) << fmt::format("IntegratorOnExpr<>::onFaces() zeroRows set {} rhs values and set {} dofs", values.size(), dofs.size());
     __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
     x.reset();

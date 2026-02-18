@@ -131,7 +131,10 @@ public:
     typename finite_element<space_type,UseMortar>::ptrtype
     testFiniteElement() const
     {
-        return std::make_shared<typename finite_element<space_type,UseMortar>::type>();
+        if constexpr ( UseMortar && space_type::is_mortar )
+            return std::make_shared<typename finite_element<space_type,UseMortar>::type>();
+        else
+            return M_X->fe();
     }
 
     //@}
@@ -281,13 +284,15 @@ public:
         //typedef boost::multi_array<value_type, rep_shape> local_vector_type;
         typedef typename space_type::dof_type test_dof_type;
         static const int nDofPerElementTest = space_type::dof_type::nDofPerElement;
-        typedef Eigen::Matrix<value_type, nDofPerElementTest, 1> local_vector_type;
-        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 1> local2_vector_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
+        // Use dynamic-size types to support runtime/dynamic polynomial orders
+        // When nOrder == Dynamic (-1), the actual DOF count is determined at runtime
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> local_vector_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> local2_vector_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> local_row_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> local2_row_type;
 
-        typedef Eigen::Matrix<value_type, nDofPerElementTest-1, 1> mortar_local_vector_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> mortar_local_vector_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> mortar_local_row_type;
 
     public:
 

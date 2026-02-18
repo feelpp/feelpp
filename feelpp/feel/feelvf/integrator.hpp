@@ -46,6 +46,7 @@
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/detail/clean.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelvf/concepts.hpp>
 
 #include <feel/feelvf/formcontextbase.hpp>
 #include <feel/feelvf/bilinearform.hpp>
@@ -99,8 +100,14 @@ enum IntegratorType
  *
  * @author Christophe Prud'homme
  * @see IntegratorOn
+ *
+ * @tparam Elements Range type satisfying RangeConcept (e.g., elements(mesh), boundaryfaces(mesh))
+ * @tparam Im Quadrature type satisfying QuadOrderConcept (integer order or _Q<N> type)
+ * @tparam Expr Expression type satisfying VfExprConcept
+ * @tparam Im2 Secondary quadrature type (defaults to Im)
  */
-template<typename Elements, typename Im, typename Expr, typename Im2=Im>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2=Im>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 class Integrator: public IntegratorBase
 {
 public:
@@ -880,7 +887,8 @@ private:
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_global_assembly;
 };
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename Elem1, typename Elem2, typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u,
@@ -934,7 +942,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u
 }
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename Elem1, typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v,
@@ -978,7 +987,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v
 
     //assemble( __form, mpl::int_<iDim>(), mpl::bool_<true>() );
 }
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
@@ -1243,7 +1253,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 #endif // FEELPP_HAS_TBB
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
@@ -2028,7 +2039,8 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, std::shared_p
 
 } // namespace detail
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2247,7 +2259,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         } // end loop on list of elements
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2504,7 +2517,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         } // end loop on list of elements
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
@@ -2512,7 +2526,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     CHECK ( false ) << "[assembleWithRelationDifferentMeshType<LinearForm,MESH_ELEMENTS>] : not implement\n";
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2684,7 +2699,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
 } // assembleInCaseOfInterpolate
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2915,7 +2931,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 } // assembleInCaseOfInterpolate
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
@@ -3059,7 +3076,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 }
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -3069,7 +3087,8 @@ Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::BilinearForm<FE1,F
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
@@ -3079,7 +3098,8 @@ Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::LinearForm<FE,Vect
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
 std::vector<std::tuple<uint16_type,
                        typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_1_type const*,
@@ -3150,7 +3170,8 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
 std::vector<std::tuple<uint16_type,
                        typename vf::detail::LinearForm<FE,VectorType,ElemContType>::mesh_test_element_type const*>>
@@ -3193,7 +3214,8 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Linear
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -3224,7 +3246,8 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
 
     return res;
 }
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
@@ -3237,7 +3260,8 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
@@ -3452,7 +3476,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     toc("integrating over faces", Environment::logVerbosityLevel()>1);
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
@@ -3467,7 +3492,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     }
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -3706,7 +3732,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
@@ -3900,7 +3927,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -4126,7 +4154,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     delete formc;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -4410,7 +4439,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     delete formc;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
@@ -4634,7 +4664,8 @@ auto
 generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<3> ) { return exprLambda(vec(exprX,exprY,exprZ)); }
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename T, int M,int N>
 decltype(auto)
 Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v, bool parallel ) const
@@ -4813,7 +4844,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template <int iDimDummy>
     requires (iDimDummy == MESH_ELEMENTS)
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -5470,7 +5502,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                     return res;
                 }
 }
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template <int iDimDummy>
     requires (iDimDummy == MESH_FACES) /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -5671,7 +5704,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     return res;
 }
 
- template<typename Elements, typename Im, typename Expr, typename Im2>
+ template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
  template <int iDimDummy>
      requires (iDimDummy == MESH_POINTS)
  typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -5686,7 +5720,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
  }
 
- template<typename Elements, typename Im, typename Expr, typename Im2>
+ template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
      template<typename P0hType>
      typename P0hType::element_type
      Integrator<Elements, Im, Expr, Im2>::broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
@@ -5767,7 +5802,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
      return p0;
  }
- template<typename Elements, typename Im, typename Expr, typename Im2>
+ template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
      template<typename P0hType>
      typename P0hType::element_type
      Integrator<Elements, Im, Expr, Im2>::broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
@@ -5976,8 +6012,15 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  /**
   * integrate an expression \c expr over a set of convexes \c elts
   * using the integration rule \c im .
+  *
+  * @tparam Elts Range type (elements(mesh), boundaryfaces(mesh), etc.)
+  * @tparam Im Quadrature specification (integer order or _Q<N> type)
+  * @tparam ExprT Variational formulation expression
+  * @tparam Im2 Secondary quadrature specification (defaults to Im)
   */
- template<typename Elts, typename Im, typename ExprT, typename Im2 = Im>
+ template<typename Elts, typename Im, VfExprConcept ExprT, typename Im2 = Im>
+     requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
+           && RangeConcept<typename Feel::detail::quadptlocrangetype<Elts>::type>
      Expr<Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> >
      integrate_impl( Elts const& elts,
                      Im const& im,
