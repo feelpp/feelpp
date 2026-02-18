@@ -2,16 +2,16 @@
 
 set -eo pipefail
 
-BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
-BUILDKITE_BRANCH=${BUILDKITE_BRANCH:-develop}
-BRANCH=${BRANCH:-${BUILDKITE_BRANCH}}
+CI_AGENT_NAME=${CI_AGENT_NAME:-default}
+CI_BRANCH=${CI_BRANCH:-develop}
+BRANCH=${BRANCH:-${CI_BRANCH}}
 
 # default values
 CHANNEL=${CHANNEL:-latest}
-if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
+if [ "$BRANCH" = "develop" ]; then
     CHANNEL=latest
 fi
-if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
+if [ "$BRANCH" = "master" ]; then
     CHANNEL=stable
 fi 
 DIST=${DIST:-focal}
