@@ -71,12 +71,20 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
+      - name: Set Docker-safe BRANCH tag
+        id: branch
+        run: |
+          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g; s#^-+##; s#-+$##; s#-+#-#g')
+          if [ -z "$SAFE_BRANCH" ]; then SAFE_BRANCH="unknown-branch"; fi
+          echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Feel++ runtime
         working-directory: docker
         run: docker buildx bake feelpp-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
 
   toolboxes:
     name: Build Toolboxes (${{ matrix.target }})
@@ -113,12 +121,20 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
+      - name: Set Docker-safe BRANCH tag
+        id: branch
+        run: |
+          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g; s#^-+##; s#-+$##; s#-+#-#g')
+          if [ -z "$SAFE_BRANCH" ]; then SAFE_BRANCH="unknown-branch"; fi
+          echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Toolboxes runtime
         working-directory: docker
         run: docker buildx bake toolboxes-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
 
   mor:
     name: Build MOR (${{ matrix.target }})
@@ -155,12 +171,20 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
+      - name: Set Docker-safe BRANCH tag
+        id: branch
+        run: |
+          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g; s#^-+##; s#-+$##; s#-+#-#g')
+          if [ -z "$SAFE_BRANCH" ]; then SAFE_BRANCH="unknown-branch"; fi
+          echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push MOR runtime
         working-directory: docker
         run: docker buildx bake mor-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
 
   # =============================================================================
   # Full Build Mode - Build entire Feel++ stack in a single image
@@ -204,9 +228,17 @@ jobs:
           DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
           echo "dist=${DIST}" >> $GITHUB_OUTPUT
 
+      - name: Set Docker-safe BRANCH tag
+        id: branch
+        run: |
+          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
+          SAFE_BRANCH=$(echo "$RAW_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g; s#^-+##; s#-+$##; s#-+#-#g')
+          if [ -z "$SAFE_BRANCH" ]; then SAFE_BRANCH="unknown-branch"; fi
+          echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Feel++ Full runtime
         working-directory: docker
         run: docker buildx bake feelpp-full-runtime --push
         env:
           DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
