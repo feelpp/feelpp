@@ -34,22 +34,22 @@
 
 namespace Feel {
 
-template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_type=FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>;
-template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_ptrtype=std::shared_ptr<Pdh_type<MeshType,Order,Pts>>;
 
-template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_element_t=typename Pdh_type<MeshType,Order,Pts>::element_type;
 
-template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete>
 using Pdh_element_type=Pdh_element_t<MeshType,Order,Pts>;
 
 /**
    Given a \p mesh, build a function space of discontinuous function which are
    piecewise polynomial of degree (total or in each variable) less than k.
 */
-template<int Order,
+template<int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType>
 inline
@@ -80,7 +80,7 @@ Pdh( std::shared_ptr<MeshType> const& mesh,
  Given a \p mesh, build a function space of discontinuous function which are
  piecewise polynomial of degree (total or in each variable) less than k.
  */
-template<int Order,
+template<int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          typename RangeType>

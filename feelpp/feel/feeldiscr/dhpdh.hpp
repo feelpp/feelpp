@@ -29,6 +29,14 @@
 
 namespace Feel {
 
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_type = FunctionSpace<MeshType,
+                                 bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous>>,
+                                 T>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_ptrtype = std::shared_ptr<DhPdh_type<MeshType,Order,T>>;
+
 /**
 
    \code
@@ -36,16 +44,32 @@ namespace Feel {
    auto Xh = DhPdh<2>( mesh );
    \endcode
  */
-template<int Order,typename MeshType>
+template<int Order = Dynamic,typename MeshType, typename T = double>
 inline
-std::shared_ptr<FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous> > > >
+DhPdh_ptrtype<MeshType,Order,T>
+DhPdh( std::shared_ptr<MeshType> mesh,
+       RuntimeOrder order,
+       std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2, DofTableExtendedType::DEFAULT ) )
+{
+    CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
+    return DhPdh_type<MeshType,Order,T>::New( _mesh=mesh,
+                                              _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
+                                              _runtime_order=order,
+                                              _extended_doftable=dte );
+}
+
+template<int Order,typename MeshType, typename T = double>
+requires ( Order >= 0 )
+inline
+DhPdh_ptrtype<MeshType,Order,T>
 DhPdh( std::shared_ptr<MeshType> mesh,
        std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2, DofTableExtendedType::DEFAULT ) )
 {
     CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
-    return FunctionSpace<MeshType,bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
-                                                                                                          _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
-                                                                                                          _extended_doftable=dte );
+    return DhPdh_type<MeshType,Order,T>::New( _mesh=mesh,
+                                              _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
+                                              _runtime_order=RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                              _extended_doftable=dte );
 }
 
 

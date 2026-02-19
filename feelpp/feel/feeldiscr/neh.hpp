@@ -34,13 +34,13 @@
 
 namespace Feel {
 
-template<typename MeshType, int Order, typename T = double>
+template<typename MeshType, int Order = Dynamic, typename T = double>
 using Neh_type = Ned1h_type<MeshType, Order, T>;
 
-template<typename MeshType, int Order, typename T = double>
+template<typename MeshType, int Order = Dynamic, typename T = double>
 using Neh_ptrtype = Ned1h_ptrtype<MeshType, Order, T>;
 
-template<int Order, typename MeshType, typename T = double>
+template<int Order = Dynamic, typename MeshType, typename T = double>
 inline
 Neh_ptrtype<MeshType, Order, T>
 Neh( std::shared_ptr<MeshType> const& mesh,
@@ -60,7 +60,7 @@ Neh( std::shared_ptr<MeshType> const& mesh,
     return Ned1h<Order, MeshType, T>( mesh, dte );
 }
 
-template<int Order, typename MeshType, typename RangeType, typename T = double>
+template<int Order = Dynamic, typename MeshType, typename RangeType, typename T = double>
 inline
 Neh_ptrtype<MeshType, Order, T>
 Neh( std::shared_ptr<MeshType> const& mesh,

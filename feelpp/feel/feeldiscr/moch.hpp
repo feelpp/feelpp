@@ -33,28 +33,53 @@
 
 namespace Feel {
 
+template<typename MeshType,
+         int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
+         typename T = double>
+using Moch_type = FunctionSpace<MeshType,
+                                bases<Lagrange<Order,Scalar,Continuous,Pts>>,
+                                T,
+                                Periodicity <NoPeriodicity>,
+                                mortars<Mortar>>;
+
+template<typename MeshType,
+         int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
+         typename T = double>
+using Moch_ptrtype = std::shared_ptr<Moch_type<MeshType,Order,Pts,T>>;
+
 /**
  * build a function space of continuous function which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
-template<int Order,
+template<int Order = Dynamic,
          template<class, int, class> class Pts = PointSetEquiSpaced,
          typename MeshType,typename T = double>
 inline
-std::shared_ptr<FunctionSpace<MeshType,
-                                bases<Lagrange<Order,Scalar,Continuous,Pts>>,
-                                T,
-                                Periodicity <NoPeriodicity>,
-                                mortars<Mortar>>>
+Moch_ptrtype<MeshType,Order,Pts,T>
+Moch( std::shared_ptr<MeshType> const& mesh,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Moch_type<MeshType,Order,Pts,T>::New( _mesh=mesh,
+                                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                                 _runtime_order=order,
+                                                 _extended_doftable=dte );
+}
+
+template<int Order,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
+         typename MeshType,typename T = double>
+requires ( Order >= 0 )
+inline
+Moch_ptrtype<MeshType,Order,Pts,T>
 Moch( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return FunctionSpace<MeshType,
-                         bases<Lagrange<Order,Scalar,Continuous,Pts>>,
-                         T,
-                         Periodicity <NoPeriodicity>,
-                         mortars<Mortar>>::New( _mesh=mesh,
-                                                _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                _extended_doftable=dte );
+    return Moch_type<MeshType,Order,Pts,T>::New( _mesh=mesh,
+                                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                                 _runtime_order=RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                                 _extended_doftable=dte );
 }
 
 }

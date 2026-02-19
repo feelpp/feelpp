@@ -36,7 +36,7 @@
 namespace Feel {
 
 namespace meta {
-template<typename MeshType,int Order,typename T = double>
+template<typename MeshType,int Order = Dynamic,typename T = double>
 struct Ned1h
 {
     typedef FunctionSpace<MeshType,
@@ -49,17 +49,17 @@ struct Ned1h
 
 } // meta
 
-template<typename MeshType,int Order,typename T = double>
+template<typename MeshType,int Order = Dynamic,typename T = double>
 using Ned1h_type = typename meta::Ned1h<MeshType,Order,T>::type;
 
-template<typename MeshType,int Order, typename T = double>
+template<typename MeshType,int Order = Dynamic, typename T = double>
 using Ned1h_ptrtype = typename meta::Ned1h<MeshType,Order,T>::ptrtype;
 
 /**
  * \fn Ned1h<k,MeshType>
  *
  */
-template<int Order,typename MeshType,typename T=double>
+template<int Order = Dynamic,typename MeshType,typename T=double>
 inline
 typename meta::Ned1h<MeshType,Order,T>::ptrtype
 Ned1h( std::shared_ptr<MeshType> const& mesh,
@@ -90,6 +90,7 @@ Ned1h( std::shared_ptr<MeshType> const& mesh,
  *
  */
 template<int Order,typename MeshType, typename RangeType, typename T = double>
+    requires ( Order >= 0 )
 inline
 typename meta::Ned1h<MeshType,Order,T>::ptrtype
 Ned1h( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
@@ -104,7 +105,7 @@ Ned1h( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExt
  * \fn Ned1h<k,MeshType>
  *
  */
-template<int Order,typename MeshType, typename RangeType, typename T = double>
+template<int Order = Dynamic,typename MeshType, typename RangeType, typename T = double>
 inline
 typename meta::Ned1h<MeshType,Order,T>::ptrtype
 Ned1h( std::shared_ptr<MeshType> const& mesh,

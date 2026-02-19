@@ -50,7 +50,7 @@ namespace meta {
  * @tparam Tag Space tag
  */
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
@@ -68,22 +68,22 @@ struct Pch
 } // meta
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pch_type = typename meta::Pch<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pch_ptrtype = typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype;
 
-template<typename MeshType,int Order,typename T = double, template<class, int, class> class Pts = PointSetFekete, int Tag = 0>
+template<typename MeshType,int Order = Dynamic,typename T = double, template<class, int, class> class Pts = PointSetFekete, int Tag = 0>
 using Pch_element_t=typename Pch_type<MeshType,Order, T,Pts, Tag>::element_type;
 
-template<typename MeshType,int Order,typename T = double,template<class, int, class> class Pts = PointSetFekete, int Tag = 0>
+template<typename MeshType,int Order = Dynamic,typename T = double,template<class, int, class> class Pts = PointSetFekete, int Tag = 0>
 using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
 
 
@@ -110,7 +110,7 @@ using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
  * @param dte Extended doftable type
  * @return Shared pointer to the function space
  */
-template<int Order,
+template<int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
@@ -169,7 +169,7 @@ Pch( std::shared_ptr<MeshType> const& mesh,
  * @param components Mesh components
  * @return Shared pointer to the function space
  */
-template<int Order,
+template<int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType, typename RangeType,
@@ -225,18 +225,6 @@ Pch( std::shared_ptr<MeshType> const& mesh,
         _components = components,
         _runtime_order = order );
 }
-
-#if !defined( FEELPP_INSTANTIATE )
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<0,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<1,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<2,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<2>>,bases<Lagrange<3,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<0,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<1,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<2,Scalar>>>;
-extern template class FunctionSpace<Mesh<Simplex<3>>,bases<Lagrange<3,Scalar>>>;
-
-#endif
 
 } // Feel
 
