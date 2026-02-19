@@ -49,6 +49,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
+      - uses: actions/checkout@v4
       - name: Build and push Feel++ runtime
         uses: ./.github/actions/docker-bake
         with:
@@ -72,6 +73,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
+      - uses: actions/checkout@v4
       - name: Build and push Toolboxes runtime
         uses: ./.github/actions/docker-bake
         with:
@@ -95,6 +97,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
+      - uses: actions/checkout@v4
       - name: Build and push MOR runtime
         uses: ./.github/actions/docker-bake
         with:
@@ -125,6 +128,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
+      - uses: actions/checkout@v4
       - name: Build and push Feel++ Full runtime
         uses: ./.github/actions/docker-bake
         with:
