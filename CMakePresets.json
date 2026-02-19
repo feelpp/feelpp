@@ -515,6 +515,7 @@
                 "FEELPP_COMPONENT": "feelpp",
                 "FEELPP_ENABLE_BENCHMARKS": "OFF",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_PYTHON": "ON",
                 "FEELPP_ENABLE_FMILIB": "OFF",
                 "FEELPP_ENABLE_MOR": "OFF",
                 "FEELPP_ENABLE_QUICKSTART": "OFF",
@@ -546,6 +547,8 @@
             "cacheVariables": {
                 "FEELPP_COMPONENT": "toolboxes",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_PYTHON": "ON",
+                "FEELPP_TOOLBOXES_ENABLE_PYTHON": "ON",
                 "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
                 "FEELPP_TOOLBOXES_ENABLE_CFPDE": "OFF",
                 "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
@@ -571,6 +574,8 @@
             "cacheVariables": {
                 "FEELPP_COMPONENT": "mor",
                 "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_ENABLE_PYTHON": "ON",
+                "FEELPP_MOR_ENABLE_PYTHON": "ON",
                 "FEELPP_ENABLE_OPENTURNS": "ON",
                 "FEELPP_ENABLE_RESEARCH": "OFF"
             },

@@ -32,6 +32,7 @@ project(feelpp-python)
 set(FEELPP_PYTHON_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_PYTHON_BINARY_DIR ${PROJECT_BINARY_DIR})
 SET( CMAKE_MODULE_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+get_filename_component(FEELPP_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
@@ -84,7 +85,9 @@ message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
 if(DEFINED FEELPP_USE_EXTERNAL_PYBIND11 AND FEELPP_USE_EXTERNAL_PYBIND11)
   find_package(pybind11 CONFIG REQUIRED)
   if(NOT TARGET pybind11::headers)
-    if(TARGET pybind11::module)
+    if(TARGET pybind11::pybind11_headers)
+      add_library(pybind11::headers ALIAS pybind11::pybind11_headers)
+    elseif(TARGET pybind11::module)
       add_library(pybind11::headers ALIAS pybind11::module)
     elseif(TARGET pybind11::pybind11)
       add_library(pybind11::headers ALIAS pybind11::pybind11)
@@ -242,15 +245,15 @@ endif(FEELPP_ENABLE_PYTHON3_VENV)
 
 #include(feelpp.module.pyfeelpp)
 if ( FEELPP_FOUND )
-add_subdirectory(pyfeelpp)
+add_subdirectory("${FEELPP_ROOT_SOURCE_DIR}/feelpp/python" "${CMAKE_BINARY_DIR}/feelpp/python")
 add_subdirectory(notebooks)
 endif()
 
 # TOOLBOXES needs to be defined for pyfeelpp-toolboxes 
 if (FEELPP_TOOLBOXES_FOUND )
-add_subdirectory( pyfeelpp-toolboxes )
+add_subdirectory("${FEELPP_ROOT_SOURCE_DIR}/toolboxes/python" "${CMAKE_BINARY_DIR}/toolboxes/python")
 endif()
 
 if ( FEELPP_MOR_FOUND ) 
-add_subdirectory(pyfeelpp-mor)
+add_subdirectory("${FEELPP_ROOT_SOURCE_DIR}/mor/python" "${CMAKE_BINARY_DIR}/mor/python")
 endif()

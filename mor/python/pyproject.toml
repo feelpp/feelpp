@@ -1,0 +1,12 @@
+[build-system]
+requires = ["scikit-build-core>=0.9", "pybind11>=2.11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "feelpp-mor"
+version = "0.111.0-preview.12"
+description = "Feel++ MOR Python bindings"
+dependencies = ["feelpp-core"]
+
+[tool.scikit-build]
+cmake.minimum-version = "3.13"

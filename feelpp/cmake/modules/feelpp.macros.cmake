@@ -1021,6 +1021,21 @@ macro(feelpp_add_pymodule)
     )
   CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
   message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
+  if(NOT TARGET pybind11::headers)
+    # Some distro pybind11 packages only export pybind11::pybind11_headers.
+    find_package(pybind11 CONFIG QUIET)
+    if(NOT TARGET pybind11::headers)
+      if(TARGET pybind11::pybind11_headers)
+        add_library(pybind11::headers ALIAS pybind11::pybind11_headers)
+      elseif(TARGET pybind11::pybind11)
+        add_library(pybind11::headers ALIAS pybind11::pybind11)
+      elseif(TARGET pybind11::module)
+        add_library(pybind11::headers ALIAS pybind11::module)
+      elseif(TARGET pybind11)
+        add_library(pybind11::headers ALIAS pybind11)
+      endif()
+    endif()
+  endif()
   pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
   target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${PETSC4PY_INCLUDE_DIR})
   target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp ${FEELPP_PYMODULE_LINK_LIBRARIES} )
@@ -1038,12 +1053,18 @@ macro(feelpp_add_pymodule)
   # Copy corresponding .py wrapper file to build directory for testing without install
   if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_PYMODULE_NAME}.py )
     # Create destination directory structure in build dir
-    get_filename_component(DEST_DIR ${CMAKE_BINARY_DIR}/python/pyfeelpp/${FEELPP_PYMODULE_DESTINATION} ABSOLUTE)
+    if (DEFINED FEELPP_PYTHON_BUILD_DIR)
+      set(_FEELPP_PYTHON_BUILD_DIR "${FEELPP_PYTHON_BUILD_DIR}")
+    else()
+      set(_FEELPP_PYTHON_BUILD_DIR "${CMAKE_BINARY_DIR}")
+    endif()
+    get_filename_component(DEST_DIR "${_FEELPP_PYTHON_BUILD_DIR}/${FEELPP_PYMODULE_DESTINATION}" ABSOLUTE)
     add_custom_command(
            TARGET _${FEELPP_PYMODULE_NAME} POST_BUILD
            COMMAND ${CMAKE_COMMAND} -E make_directory ${DEST_DIR}
            COMMAND ${CMAKE_COMMAND} -E copy
                    ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_PYMODULE_NAME}.py
                    ${DEST_DIR}/${FEELPP_PYMODULE_NAME}.py)
+    unset(_FEELPP_PYTHON_BUILD_DIR)
   endif()
 endmacro(feelpp_add_pymodule)
