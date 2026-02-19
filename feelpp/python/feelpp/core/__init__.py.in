@@ -1,0 +1,247 @@
+import sys
+import os
+import json, re
+petsc_dir = '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc'
+petsc_dir = os.path.join(os.getenv('PETSC_DIR')
+                         or petsc_dir, 'lib/python3/dist-packages')
+petsc_dir in sys.path or sys.path.append(petsc_dir)
+
+import time
+from ._feelpp import  *
+from ._core import *
+from ._alg import *
+from ._mesh import *
+from ._plot import *
+from ._discr import *
+from ._exporter import  *
+from ._ls import *
+from ._ts import  *
+from ._vf import  *
+from ._models import *
+
+__version__ = '@FEELPP_VERSION_STRING@'
+
+def readCfg(filename):
+    """read a Feel++ config file and get a ConfigParser to manipulate the options
+
+    Args:
+        filename (string): filename of the config file
+
+    Returns:
+        ConfigParser: a ConfigParser data structure containing the properties
+
+    Yields:
+        ConfigParser:
+    """
+    from collections import OrderedDict
+    from configparser import ConfigParser, RawConfigParser
+    # use this function to add a
+    def FeelppHead(fp):
+        yield '[feelpp]\n'
+        yield from fp
+    class MultiOrderedDict(OrderedDict):
+        def __setitem__(self, key, value):
+            if key in self:
+                if isinstance(value, list):
+                    self[key].extend(value)
+                    return
+                elif isinstance(value,str):
+                    return # ignore conversion list to string (line 554)
+            super(MultiOrderedDict, self).__setitem__(key, value)
+
+    config = RawConfigParser(dict_type=MultiOrderedDict, strict=False)
+    config.read_file(FeelppHead(open(filename)))
+    return config
+
+def download(data,worldComm):
+    """Download remote data file"""
+    rd = RemoteData(data,worldComm)
+    if rd.canDownload():
+        d = Environment.downloadsRepository()
+        return rd.download( d )
+    else:
+        raise RuntimeError("Remote Data " + data + " cannot be downloaded")
+
+_meshes={
+    'mesh(3,1,3)':Mesh_S3DG1R3,
+    'mesh(3,2,3)':Mesh_S3DG2R3,
+    'mesh(2,1,3)':Mesh_S2DG1R3,
+    #'mesh(2,2,3)':Mesh_2DG2R3,
+    #'mesh(1,1,3)':Mesh_1DG1R3,
+    #'mesh(1,2,3)':Mesh_1DG2R3,
+    'mesh(2,1,2)':Mesh_S2DG1R2,
+    #'meshstructured(2,1,2)':Mesh_H2DG1R2,
+    'mesh(2,2,2)':Mesh_S2DG2R2,
+    'mesh(1,1,2)':Mesh_S1DG1R2,
+    #'mesh(1,2,2)':Mesh_1DG2R2,
+    'mesh(1,1,1)':Mesh_S1DG1R1,
+    'mesh(1,2,1)':Mesh_S1DG2R1
+}
+
+def mesh( dim=2, geo=1, realdim=2, worldComm=None ):
+    """create a mesh
+    The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
+    The mesh is configured with a WorldComm which provides the parallel process layout.
+    Keyword arguments:
+    dim -- the topological dimension (default: 2)
+    geo -- the geometrical order (default: 1)
+    realdim -- the real dimension (default: 2)
+    worldComm -- the parallel communicator for the mesh (default: Environment::worldCommPtr())
+    """
+    if worldComm is None:
+        worldComm=Environment.worldCommPtr()
+    key='mesh('+str(dim)+','+str(geo)+','+str(realdim)+')'
+    if key not in _meshes:
+        raise RuntimeError('Mesh '+key+' no existing')
+    return _meshes[key]( worldComm )
+
+def meshstructured( dim=2, geo=1, realdim=2, worldComm=None ):
+    """create a structured mesh
+    The mesh is of topological dimension 'dim', in real dimension 'realdim' with geometric order 'geo'.
+    The mesh is configured with a WorldComm which provides the parallel process layout.
+    Keyword arguments:
+    dim -- the topological dimension (default: 2)
+    geo -- the geometrical order (default: 1)
+    realdim -- the real dimension (default: 2)
+    worldComm -- the parallel communicator for the mesh (default: Environment::worldCommPtr())
+    """
+    if worldComm is None:
+        worldComm=Environment.worldCommPtr()
+    key='meshstructured('+str(dim)+','+str(geo)+','+str(realdim)+')'
+    if key not in _meshes:
+        raise RuntimeError('Mesh '+key+' no existing')
+    return _meshes[key]( worldComm )
+
+from . import discr as _discr_shim
+
+function_space = _discr_shim.function_space
+available_function_spaces = _discr_shim.available_function_spaces
+# Backward-compatible aliases (legacy camelCase API)
+functionSpace = function_space
+availableFunctionSpaces = available_function_spaces
+_space_registry = _discr_shim.space_registry
+_spaces = _discr_shim.spaces
+_space_aliases = _discr_shim.space_aliases
+
+
+def expr(e,row=1, col=1,filename=None,worldComm=None,directory=None):
+    """create expression with MxN components
+
+    Args:
+        e (string): expression string
+        row (int, optional): number of components. Defaults to 1.
+        col (int, optional): number of variables. Defaults to 1.
+        filename (_type_, optional): name of the file to store the compiled expression. Defaults to None.
+        worldComm (_type_, optional): communicator. Defaults to None.
+        directory (_type_, optional): directory to store the expressions. Defaults to None.
+
+    Returns:
+        Expression: an expression
+    """
+    if filename is None:
+        filename=""
+    if directory is None:
+        directory=""
+    if worldComm is None:
+        worldComm=Environment.worldComm()
+    if row==1 and col==1:
+        return expr112_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==2 and col==1:
+        return expr212_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==3 and col==1:
+        return expr312_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==2 and col==2:
+        return expr222_(e,filename=filename,dir=directory,worldComm=worldComm)
+    if row==3 and col==3:
+        return expr332_(e,filename=filename,dir=directory,worldComm=worldComm)
+
+def gmshGenerate(dim, fname):
+    mshname = '{}-{}.msh'.format(fname,
+                                 Environment.numberOfProcessors())
+    if Environment.isMasterRank():
+        import gmsh
+        gmsh.model.mesh.generate(dim)
+        #gmsh.option.setNumber("Mesh.PartitionCreateGhostCells", 1)
+        gmsh.option.setNumber("Mesh.PartitionCreatePhysicals", 1)
+        #gmsh.model.mesh.partition(Environment.numberOfProcessors())
+        gmsh.write(mshname)
+    Environment.worldComm().to_comm().barrier()
+    return mshname
+
+
+def create_rectangle(filename="rectangle"):
+    """create the mesh of the rectangle [0,1]x[0,2] with z=0
+
+    Args:
+        filename (str, optional):  prefix of the file name of the mesh. Defaults to "rectangle".
+
+    Returns:
+        _type_: file name, dimension, length of Gamma_1, length of Gamma_2, total surface, total length
+    """
+    mshname = None
+    if Environment.isMasterRank():
+        import gmsh
+        gmsh.initialize()
+        gmsh.option.setNumber('General.Verbosity', 1)
+        gmsh.model.add("rectangle")
+        gmsh.logger.start()
+        rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
+        gmsh.model.occ.synchronize()
+        omega = gmsh.model.addPhysicalGroup(2, [rectangle])
+        gmsh.model.setPhysicalName(2, omega, "Omega")
+        gamma_1 = gmsh.model.addPhysicalGroup(1, [1, 3])
+        gmsh.model.setPhysicalName(1, gamma_1, "Gamma_1")
+        gamma_2 = gmsh.model.addPhysicalGroup(1, [2, 4])
+        gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
+    mshname = gmshGenerate(2, filename)
+    return mshname, 2, 2, 2, 4, 6
+
+
+def create_box(filename="box"):
+    """create the mesh of the box [0,1]x[0,2]x[0,0.5]
+
+    Args:
+        filename (str, optional): _description_. Defaults to "box".
+
+    Returns:
+        _type_: file name, dimension, measure of Gamma_1, measure of Gamma_2
+    """
+    mshname = None
+    if Environment.isMasterRank():
+        import gmsh
+        gmsh.initialize()
+        gmsh.model.add("box")
+        gmsh.logger.start()
+        box = gmsh.model.occ.addBox(0, 0, 0, 1, 2, 0.5)
+        gmsh.model.occ.synchronize()
+        omega = gmsh.model.addPhysicalGroup(3, [box])
+        gmsh.model.setPhysicalName(3, omega, "Omega")
+        gamma_1 = gmsh.model.addPhysicalGroup(2, [1, 3])
+        gmsh.model.setPhysicalName(2, gamma_1, "Gamma_1")
+        gamma_2 = gmsh.model.addPhysicalGroup(2, [2, 4])
+        gmsh.model.setPhysicalName(2, gamma_2, "Gamma_2")
+        gamma_3 = gmsh.model.addPhysicalGroup(2, [5, 6])
+        gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
+    mshname = gmshGenerate(3, filename)
+    return mshname, 3, 1, 1.5, 1.5, 7
+
+
+
+def readJson(path):
+    """read a json file with comments in it, using json package
+
+    Args:
+        path (str): path of the json file
+
+    Returns:
+        dict: loaded model, as a dictionary
+    """
+    file = open(path, 'r')
+    data =  file.read()
+    file.close()
+
+    clear_data = re.sub('//.*', '', data)
+    clear_data = re.sub(r'/\*([\s\S]*?)\*/', '', clear_data)
+
+    j = json.loads(clear_data)
+    return j

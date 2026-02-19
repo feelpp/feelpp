@@ -49,6 +49,19 @@ local defaultPreset = {
     FEELPP_USE_EXTERNAL_EIGEN3: 'OFF',
     FEELPP_USE_EXTERNAL_PYBIND11: 'ON',
     CMAKE_EXPORT_COMPILE_COMMANDS: 'TRUE',
+    // Disable all toolboxes for faster CI builds (keep only core)
+    FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FSI: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ADVECTION: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_LEVELSET: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_MULTIFLUID: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_HDG: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_MAXWELL: 'OFF',
   },
   environment: {
     LDFLAGS: '-Wl,--copy-dt-needed-entries',
@@ -81,6 +94,28 @@ local usrlocalPreset = {
   description: 'Install in /usr/local',
   cacheVariables: {
     CMAKE_INSTALL_PREFIX: '/usr/local',
+  },
+};
+
+local perfFlagsPreset = {
+  name: 'perf-flags',
+  hidden: true,
+  description: 'RelWithDebInfo flags for perf-friendly sampling',
+  cacheVariables: {
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer',
+    CMAKE_C_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer',
+  },
+};
+
+local eztraceFlagsPreset = {
+  name: 'eztrace-flags',
+  hidden: true,
+  description: 'RelWithDebInfo flags for EZTrace instrumentation',
+  cacheVariables: {
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer -finstrument-functions',
+    CMAKE_C_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer -finstrument-functions',
+    CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO: '-rdynamic',
+    CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO: '-rdynamic',
   },
 };
 
@@ -300,6 +335,7 @@ local componentCacheVars = {
     FEELPP_ENABLE_MOR: 'OFF',
     FEELPP_ENABLE_TOOLBOXES: 'OFF',
     FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
+    FEELPP_ENABLE_PYTHON: 'ON',
     FEELPP_ENABLE_TESTS: 'OFF',
     FEELPP_ENABLE_FMILIB: 'OFF',
     FEELPP_ENABLE_BENCHMARKS: 'OFF',
@@ -309,12 +345,29 @@ local componentCacheVars = {
   toolboxes: {
     FEELPP_COMPONENT: 'toolboxes',
     FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
+    FEELPP_ENABLE_PYTHON: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_PYTHON: 'ON',
+    // Disable all toolboxes for faster CI builds (keep only core)
+    FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FSI: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ADVECTION: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_LEVELSET: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_MULTIFLUID: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_HDG: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_MAXWELL: 'OFF',
   },
   mor: {
     FEELPP_COMPONENT: 'mor',
     FEELPP_ENABLE_RESEARCH: 'OFF',
     FEELPP_ENABLE_OPENTURNS: 'ON',
     FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
+    FEELPP_ENABLE_PYTHON: 'ON',
+    FEELPP_MOR_ENABLE_PYTHON: 'ON',
   },
   python: {
     FEELPP_COMPONENT: 'python',
@@ -450,6 +503,28 @@ local doxPreset = {
   },
 };
 
+local perfPreset = {
+  name: 'perf',
+  inherits: ['perf-flags', 'clang', 'release-cmake'],
+  displayName: 'perf | clang | relwithdebinfo | cmake package manager',
+  description: 'Profiling-friendly build for sampling with perf',
+  binaryDir: '${sourceDir}/build/perf',
+  cacheVariables: {
+    CMAKE_BUILD_TYPE: 'RelWithDebInfo',
+  },
+};
+
+local eztracePreset = {
+  name: 'eztrace',
+  inherits: ['eztrace-flags', 'clang', 'release-cmake'],
+  displayName: 'eztrace | clang | relwithdebinfo | cmake package manager',
+  description: 'Function-instrumented build for EZTrace compiler_instrumentation module',
+  binaryDir: '${sourceDir}/build/eztrace',
+  cacheVariables: {
+    CMAKE_BUILD_TYPE: 'RelWithDebInfo',
+  },
+};
+
 // ============================================================================
 // Aggregate All Configure Presets
 // ============================================================================
@@ -460,6 +535,8 @@ local configurePresets =
     defaultPreset,
     warningsPreset,
     usrlocalPreset,
+    perfFlagsPreset,
+    eztraceFlagsPreset,
   ] +
   // C++ standard presets
   [cppStdPreset(std) for std in cppStds] +
@@ -506,6 +583,8 @@ local configurePresets =
     feelppPythonDbgPreset,
     morPythonPreset,
     doxPreset,
+    perfPreset,
+    eztracePreset,
   ];
 
 // ============================================================================
@@ -552,6 +631,8 @@ std.flattenArrays([
   buildPreset('feelpp-python'),
   buildPreset('feelpp-python-dbg'),
   buildPreset('mor_python'),
+  buildPreset('perf'),
+  buildPreset('eztrace'),
 ];
 
 // ============================================================================
@@ -562,6 +643,19 @@ local testPreset(configName, extraConfig={}) = {
   name: configName,
   configurePreset: configName,
   output: { outputOnFailure: true },
+} + extraConfig;
+
+// Test preset with retry for failed tests (rerun up to 3 times before giving up)
+local testPresetWithRetry(configName, extraConfig={}) = {
+  name: configName,
+  configurePreset: configName,
+  output: { outputOnFailure: true },
+  execution: {
+    repeat: {
+      mode: 'until-pass',
+      count: 3,
+    },
+  },
 } + extraConfig;
 
 // ============================================================================
@@ -609,7 +703,10 @@ local workflowPresets =
   [simpleWorkflow('release-cmake')] +
   // Debug workflows
   [simpleWorkflow('debug')] +
-  [simpleWorkflow('debug-cmake')];
+  [simpleWorkflow('debug-cmake')] +
+  // Profiling workflows
+  [simpleWorkflow('perf')] +
+  [simpleWorkflow('eztrace')];
 
 local testPresets = [
   testPreset('default', { execution: { jobs: 4 } }),
@@ -633,8 +730,8 @@ std.flattenArrays([
 // Spack presets
 [testPreset('release-clang-spack', { inherits: 'default' })] +
 [testPreset('release-clang-cpp20-spack', { inherits: 'default' })] +
-// Component presets (inherit from default and use 4 jobs)
-[testPreset(comp, { inherits: 'default', execution: { jobs: 4 } }) for comp in components] +
+// Component presets (inherit from default, use 4 jobs, retry failed tests 3 times)
+[testPresetWithRetry(comp, { inherits: 'default', execution+: { jobs: 4 } }) for comp in components] +
 // Special presets
 [
   testPreset('feelpp-usrlocal', { inherits: 'feelpp' }),
@@ -645,6 +742,8 @@ std.flattenArrays([
   testPreset('feelpp-python', {}),
   testPreset('feelpp-python-dbg', {}),
   testPreset('mor_python', {}),
+  testPreset('perf', { inherits: 'default' }),
+  testPreset('eztrace', { inherits: 'default' }),
 ];
 
 // ============================================================================

@@ -29,8 +29,9 @@ echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COM
 #     sudo apt install -y --reinstall libfeelpp-dev feelpp-tools 
 # fi
 
+#PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${CI_AGENT_NAME}/${CHANNEL}/
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
 #if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
 #    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
 #    pbuilder-dist $DIST create

@@ -108,6 +108,10 @@ if ( FEELPP_ENABLE_MOR_EXAMPLES )
   add_subdirectory( examples )
 endif()
 
+if (FEELPP_MOR_ENABLE_PYTHON)
+  add_subdirectory(python)
+endif()
+
 
 include(${FEELPP_MOR_SOURCE_DIR}/cmake/feelpp.mor.cmake)
 install(EXPORT feelpp-mor-export-targets

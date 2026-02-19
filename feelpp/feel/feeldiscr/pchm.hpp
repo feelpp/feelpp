@@ -37,7 +37,7 @@ namespace Feel {
 
 namespace meta {
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          template <uint16_type> class Pset = Tensor2,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
@@ -51,14 +51,14 @@ struct Pchmg
 };
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm = Pchmg<MeshType,Order,Tensor2,T,Pts,Tag>;
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
@@ -67,26 +67,26 @@ using Pchms = Pchmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 } // meta
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm_type = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm_ptrtype = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms_type = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
@@ -98,7 +98,7 @@ using Pchms_ptrtype = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::ptrtype;
  * build a function space of continuous matrix fields which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
-template<int Order,
+template<int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
@@ -115,7 +115,7 @@ Pchm( std::shared_ptr<MeshType> mesh,
                                                       _runtime_order=order );
 }
 
-template<int Order,
+template<int Order = Dynamic,
          typename T = double,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,

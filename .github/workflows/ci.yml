@@ -49,34 +49,15 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - name: Build and push Feel++ runtime
+        uses: ./.github/actions/docker-bake
         with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
-
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          # Convert debian:13 -> debian-13, ubuntu:24.04 -> ubuntu-24.04
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Feel++ (dev + runtime)
-        working-directory: docker
-        run: docker buildx bake feelpp feelpp-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          bake-target: feelpp-runtime
+          matrix-target: ${{ matrix.target }}
+          raw-branch: ${{ github.head_ref || github.ref_name }}
+          cr-login: ${{ secrets.CR_LOGIN }}
+          cr-pat: ${{ secrets.CR_PAT }}
 
   toolboxes:
     name: Build Toolboxes (${{ matrix.target }})
@@ -92,33 +73,15 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - name: Build and push Toolboxes runtime
+        uses: ./.github/actions/docker-bake
         with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
-
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Toolboxes (dev + runtime)
-        working-directory: docker
-        run: docker buildx bake toolboxes toolboxes-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          bake-target: toolboxes-runtime
+          matrix-target: ${{ matrix.target }}
+          raw-branch: ${{ github.head_ref || github.ref_name }}
+          cr-login: ${{ secrets.CR_LOGIN }}
+          cr-pat: ${{ secrets.CR_PAT }}
 
   mor:
     name: Build MOR (${{ matrix.target }})
@@ -134,75 +97,15 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - name: Build and push MOR runtime
+        uses: ./.github/actions/docker-bake
         with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
-
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
-
-      - name: Build and push MOR (dev + runtime)
-        working-directory: docker
-        run: docker buildx bake mor mor-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-  python:
-    name: Build Python (${{ matrix.target }})
-    needs: [plan_ci, mor]
-    runs-on: self-docker
-    if: |
-      always() &&
-      (needs.mor.result == 'success' || needs.mor.result == 'skipped') &&
-      contains(needs.plan_ci.outputs.enabled_jobs, 'python')
-    timeout-minutes: 600
-    strategy:
-      fail-fast: false
-      matrix:
-        target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
-    steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
-
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Python (dev + runtime)
-        working-directory: docker
-        run: docker buildx bake python python-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          bake-target: mor-runtime
+          matrix-target: ${{ matrix.target }}
+          raw-branch: ${{ github.head_ref || github.ref_name }}
+          cr-login: ${{ secrets.CR_LOGIN }}
+          cr-pat: ${{ secrets.CR_PAT }}
 
   # =============================================================================
   # Full Build Mode - Build entire Feel++ stack in a single image
@@ -225,30 +128,12 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.plan_ci.outputs.targets_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - name: Build and push Feel++ Full runtime
+        uses: ./.github/actions/docker-bake
         with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
-
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Feel++ Full (dev + runtime)
-        working-directory: docker
-        run: docker buildx bake feelpp-full feelpp-full-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+          bake-target: feelpp-full-runtime
+          matrix-target: ${{ matrix.target }}
+          raw-branch: ${{ github.head_ref || github.ref_name }}
+          cr-login: ${{ secrets.CR_LOGIN }}
+          cr-pat: ${{ secrets.CR_PAT }}

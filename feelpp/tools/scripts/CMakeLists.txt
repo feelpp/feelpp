@@ -23,5 +23,6 @@
 #
 add_subdirectory(pkg)
 add_subdirectory(ParaView)
+add_subdirectory(buildkite)
 add_subdirectory(docker)
 add_subdirectory(astyle)

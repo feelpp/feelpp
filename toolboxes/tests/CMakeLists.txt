@@ -51,7 +51,13 @@ message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COM
 
 
 
-foreach( testdir heat coefficientformpdes)
-  add_custom_target( ${testdir} )
-  add_subdirectory( ${testdir} )
-endforeach()
+# Only add test subdirectories for enabled toolboxes
+if(FEELPP_TOOLBOXES_ENABLE_HEAT)
+  add_custom_target(heat)
+  add_subdirectory(heat)
+endif()
+
+if(FEELPP_TOOLBOXES_ENABLE_CFPDE)
+  add_custom_target(coefficientformpdes)
+  add_subdirectory(coefficientformpdes)
+endif()

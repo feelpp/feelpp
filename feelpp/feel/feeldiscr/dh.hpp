@@ -42,10 +42,10 @@ template<int Order,typename MeshType>
 using dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
 
 
-template<typename MeshType, int Order,typename T = double>
+template<typename MeshType, int Order = Dynamic,typename T = double>
 using Dh_type = FunctionSpace<MeshType,bases<RaviartThomas<Order>>,T>;
 
-template<typename MeshType, int Order>
+template<typename MeshType, int Order = Dynamic>
 using Dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
 
 /**
@@ -54,7 +54,7 @@ using Dh_ptrtype = std::shared_ptr<dh_type<Order,MeshType>>;
  * build a function space of continuous function which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
-template<int Order,typename MeshType>
+template<int Order = Dynamic,typename MeshType>
 inline
 dh_ptrtype<Order,MeshType>
 Dh( std::shared_ptr<MeshType> const& mesh,
@@ -83,7 +83,7 @@ using RTh_type = Dh_type<MeshType, Order, T>;
 template<typename MeshType, int Order, typename T = double>
 using RTh_ptrtype = std::shared_ptr<RTh_type<MeshType, Order, T>>;
 
-template<int Order, typename MeshType>
+template<int Order = Dynamic, typename MeshType>
 inline
 RTh_ptrtype<MeshType, Order>
 RTh( std::shared_ptr<MeshType> const& mesh,

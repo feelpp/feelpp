@@ -40,7 +40,7 @@ namespace meta
 {
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
@@ -53,22 +53,22 @@ struct Pchv
 } // meta
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
 using Pchv_type = typename meta::Pchv<MeshType,Order,Pts,T,Tag>::type;
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
 using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,T,Tag>::ptrtype;
 
-template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
 using Pchv_element_t=typename Pchv_type<MeshType,Order,Pts,T,Tag>::element_type;
 
-template<typename MeshType,int Order,template<class, int, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
 using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts,T,Tag>;
 
 
@@ -77,7 +77,7 @@ using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts,T,Tag>;
    which are piecewise polynomial of degree (total or in each variable) less
    than k using Lagrange basis functions
  */
-template<int Order,
+template<int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          typename T=double,
@@ -115,7 +115,7 @@ Pchv( std::shared_ptr<MeshType> const& mesh,
  which are piecewise polynomial of degree (total or in each variable) less
  than k using Lagrange basis functions
  */
-template<int Order,
+template<int Order = Dynamic,
          template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,typename RangeType,
          typename T=double,

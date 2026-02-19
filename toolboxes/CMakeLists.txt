@@ -164,6 +164,10 @@ endif()
 
 message(STATUS "[toolboxes] Toolboxes enabled : ${TOOLBOXES}")
 
+if (FEELPP_TOOLBOXES_ENABLE_PYTHON)
+  add_subdirectory(python)
+endif()
+
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
 if (FEELPP_ENABLE_TESTS  )
   add_subdirectory(tests)
