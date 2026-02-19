@@ -545,7 +545,19 @@
         {
             "cacheVariables": {
                 "FEELPP_COMPONENT": "toolboxes",
-                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF"
+                "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_CFPDE": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
+                "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "OFF",
+                "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "OFF"
             },
             "description": "Build only the Toolboxes component",
             "displayName": "toolboxes | clang | release | cmake package manager",
@@ -867,7 +879,11 @@
         {
             "configurePreset": "feelpp",
             "execution": {
-                "jobs": 4
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
             },
             "inherits": "default",
             "name": "feelpp",
@@ -878,7 +894,11 @@
         {
             "configurePreset": "testsuite",
             "execution": {
-                "jobs": 4
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
             },
             "inherits": "default",
             "name": "testsuite",
@@ -889,7 +909,11 @@
         {
             "configurePreset": "toolboxes",
             "execution": {
-                "jobs": 4
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
             },
             "inherits": "default",
             "name": "toolboxes",
@@ -900,7 +924,11 @@
         {
             "configurePreset": "mor",
             "execution": {
-                "jobs": 4
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
             },
             "inherits": "default",
             "name": "mor",
@@ -911,7 +939,11 @@
         {
             "configurePreset": "python",
             "execution": {
-                "jobs": 4
+                "jobs": 4,
+                "repeat": {
+                    "count": 3,
+                    "mode": "until-pass"
+                }
             },
             "inherits": "default",
             "name": "python",

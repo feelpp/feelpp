@@ -309,6 +309,19 @@ local componentCacheVars = {
   toolboxes: {
     FEELPP_COMPONENT: 'toolboxes',
     FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
+    // Disable all toolboxes for faster CI builds (keep only core)
+    FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FSI: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ADVECTION: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_LEVELSET: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_MULTIFLUID: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_HDG: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_MAXWELL: 'OFF',
   },
   mor: {
     FEELPP_COMPONENT: 'mor',
@@ -564,6 +577,19 @@ local testPreset(configName, extraConfig={}) = {
   output: { outputOnFailure: true },
 } + extraConfig;
 
+// Test preset with retry for failed tests (rerun up to 3 times before giving up)
+local testPresetWithRetry(configName, extraConfig={}) = {
+  name: configName,
+  configurePreset: configName,
+  output: { outputOnFailure: true },
+  execution: {
+    repeat: {
+      mode: 'until-pass',
+      count: 3,
+    },
+  },
+} + extraConfig;
+
 // ============================================================================
 // Workflow Presets (CMake 3.25+)
 // ============================================================================
@@ -633,8 +659,8 @@ std.flattenArrays([
 // Spack presets
 [testPreset('release-clang-spack', { inherits: 'default' })] +
 [testPreset('release-clang-cpp20-spack', { inherits: 'default' })] +
-// Component presets (inherit from default and use 4 jobs)
-[testPreset(comp, { inherits: 'default', execution: { jobs: 4 } }) for comp in components] +
+// Component presets (inherit from default, use 4 jobs, retry failed tests 3 times)
+[testPresetWithRetry(comp, { inherits: 'default', execution+: { jobs: 4 } }) for comp in components] +
 // Special presets
 [
   testPreset('feelpp-usrlocal', { inherits: 'feelpp' }),

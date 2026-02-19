@@ -21,8 +21,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-add_subdirectory(pkg)
-add_subdirectory(ParaView)
-add_subdirectory(buildkite)
-add_subdirectory(docker)
-add_subdirectory(astyle)
+install(PROGRAMS list.sh   DESTINATION share/feelpp/scripts  COMPONENT Bin)
+install(PROGRAMS common.sh   DESTINATION share/feelpp/scripts  COMPONENT Bin)
+
+configure_file(release.sh ${CMAKE_CURRENT_BINARY_DIR}/release.sh @ONLY)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/release.sh   DESTINATION share/feelpp/scripts  COMPONENT Bin)
+
