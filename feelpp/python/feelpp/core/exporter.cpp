@@ -138,6 +138,22 @@ void defExporter(py::module &m)
                                             py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" );
 
                        });
+    step_wrapper.def( "add", []( step_ptr_t& self, std::string const& n, typename Pch_type<mesh_t, Dynamic>::element_type const& v, std::string const& reps )
+                                { self->add( n, v, reps ); },
+                                fmt::format( "add P{} continuous scalar Lagrange function in {}D", "Dynamic", mesh_t::nDim ).c_str(),
+                                py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                .def( "add", []( step_ptr_t& self, std::string const& n, typename Pchv_type<mesh_t, Dynamic>::element_type const& v, std::string const& reps )
+                                { self->add( n, v, reps ); },
+                                fmt::format( "add P{} continuous vectorial Lagrange function in {}D", "Dynamic", mesh_t::nDim ).c_str(),
+                                py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                .def( "add", []( step_ptr_t& self, std::string const& n, typename Pdh_type<mesh_t, Dynamic>::element_type const& v, std::string const& reps )
+                                { self->add( n, v, reps ); },
+                                fmt::format( "add P{} discontinuous scalar Lagrange function in {}D", "Dynamic", mesh_t::nDim ).c_str(),
+                                py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" )
+                .def( "add", []( step_ptr_t& self, std::string const& n, typename Pdhv_type<mesh_t, Dynamic>::element_type const& v, std::string const& reps )
+                                { self->add( n, v, reps ); },
+                                fmt::format( "add P{} discontinuous vectorial Lagrange function in {}D", "Dynamic", mesh_t::nDim ).c_str(),
+                                py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "" );
 
     pyclass_name = std::string("Exporter") + suffix;
     py::class_<exporter_t, PyExporter<MeshT, 1>, exporter_ptr_t>( m, pyclass_name.c_str() )
@@ -159,6 +175,10 @@ void defExporter(py::module &m)
         .def( "add", &exporter_t::template add<typename Pdh_type<mesh_t, 1>::element_type>, "add P1 discontinuous Lagrange function  to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
         .def( "add", &exporter_t::template add<typename Pdh_type<mesh_t, 2>::element_type>, "add P2 discontinuous Lagrange function  to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
         .def( "add", &exporter_t::template add<typename Pdh_type<mesh_t, 3>::element_type>, "add P3 discontinuous Lagrange function  to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
+        .def( "add", &exporter_t::template add<typename Pch_type<mesh_t, Dynamic>::element_type>, "add dynamic continuous Lagrange function to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
+        .def( "add", &exporter_t::template add<typename Pchv_type<mesh_t, Dynamic>::element_type>, "add dynamic continuous vectorial Lagrange function to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
+        .def( "add", &exporter_t::template add<typename Pdh_type<mesh_t, Dynamic>::element_type>, "add dynamic discontinuous Lagrange function to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
+        .def( "add", &exporter_t::template add<typename Pdhv_type<mesh_t, Dynamic>::element_type>, "add dynamic discontinuous vectorial Lagrange function to exported data", py::arg( "name" ), py::arg( "element" ), py::arg( "reps" ) = "", py::arg( "enable_if" ) = nullptr )
 
         .def( "step", static_cast<step_ptr_t ( exporter_t::* )( double )>( &exporter_t::step ), "get time step at time t associated to default timeset", py::arg( "time" ) = 0. )
         .def( "step", static_cast<step_ptr_t ( exporter_t::* )( double, int )>( &exporter_t::step ), "get time step  at time t associated to timeset with index", py::arg( "time" ) = 0., py::arg( "index" ) = 1 )

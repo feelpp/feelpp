@@ -58,8 +58,9 @@ void defInterpolate( py::module& m )
         suffix = std::string("Pdh");
     if ( !space_t::is_continuous && space_t::is_vectorial )
         suffix = std::string("Pdhv");
-    std::string pyclass_name_range_ptr = fmt::format( "OperatorInterpolation_range_ptr_{}_{}D_P{}", suffix, Dim, Order );
-    std::string pyclass_name_range = fmt::format( "OperatorInterpolation_range_{}_{}D_P{}", suffix, Dim, Order );
+    std::string order_label = ( Order == Dynamic ) ? "Dynamic" : std::to_string( Order );
+    std::string pyclass_name_range_ptr = fmt::format( "OperatorInterpolation_range_ptr_{}_{}D_P{}", suffix, Dim, order_label );
+    std::string pyclass_name_range = fmt::format( "OperatorInterpolation_range_{}_{}D_P{}", suffix, Dim, order_label );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name_range_ptr ) << std::endl;
     using iterator_range_t = Range<mesh_t,MESH_ELEMENTS>;
     using iterator_range_ptr_t = Range<mesh_ptr_t,MESH_ELEMENTS>;
@@ -124,5 +125,10 @@ PYBIND11_MODULE( _interpolation, m )
         defInterpolate<Pch_type<Mesh<Simplex<3>>, _order>>( m );
         defInterpolate<Pchv_type<Mesh<Simplex<3>>, _order>>( m );
     });
+    defInterpolate<Pch_type<Mesh<Simplex<1>>, Dynamic>>( m );
+    defInterpolate<Pch_type<Mesh<Simplex<2>>, Dynamic>>( m );
+    defInterpolate<Pchv_type<Mesh<Simplex<2>>, Dynamic>>( m );
+    defInterpolate<Pch_type<Mesh<Simplex<3>>, Dynamic>>( m );
+    defInterpolate<Pchv_type<Mesh<Simplex<3>>, Dynamic>>( m );
     
 }

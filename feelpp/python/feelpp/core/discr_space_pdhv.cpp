@@ -21,18 +21,38 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
-#include <mpi4py/mpi4py.h>
 #include "discr_bindings.hpp"
 
-PYBIND11_MODULE(_discr, m )
+namespace
 {
-    if ( import_mpi4py() < 0 )
-        return;
+template<int Dim, int Geo, int Order>
+void bindPdhvOrder( py::module& m )
+{
+    defDiscr<Pdhv_type<Mesh<Simplex<Dim, Geo>>, Order>, Order>( m );
+}
 
-    bindDiscrCommon( m );
-    bindDiscrPch( m );
-    bindDiscrPchv( m );
-    bindDiscrPdh( m );
-    bindDiscrPdhv( m );
-    bindDiscrDh( m );
+template<int Dim, int Geo>
+void bindPdhvGeo( py::module& m )
+{
+    bindPdhvOrder<Dim, Geo, 0>( m );
+    bindPdhvOrder<Dim, Geo, 1>( m );
+    bindPdhvOrder<Dim, Geo, 2>( m );
+    bindPdhvOrder<Dim, Geo, 3>( m );
+    bindPdhvOrder<Dim, Geo, Dynamic>( m );
+}
+
+template<int Dim>
+void bindPdhvDim( py::module& m )
+{
+    bindPdhvGeo<Dim, 1>( m );
+    bindPdhvGeo<Dim, 2>( m );
+}
+}
+
+void
+bindDiscrPdhv( py::module& m )
+{
+    bindPdhvDim<1>( m );
+    bindPdhvDim<2>( m );
+    bindPdhvDim<3>( m );
 }

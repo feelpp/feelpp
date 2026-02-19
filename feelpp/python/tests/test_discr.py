@@ -13,6 +13,7 @@ def run(m, geo):
     tic()
     Xh = fppc.functionSpace(mesh=m2d)
     toc("functionSpace")
+    assert Xh.order() == 1
 
     if fppc.Environment.isMasterRank():
         print("Xh basisname: ", Xh.basisName())
@@ -48,6 +49,7 @@ def run_vectorial(m, geo):
     tic()
     Xh = fppc.functionSpace(mesh=m2d,space="Pchv")
     toc("functionSpace")
+    assert Xh.order() == 1
 
     if fppc.Environment.isMasterRank():
         print("Xh basisname: ", Xh.basisName())
@@ -82,6 +84,7 @@ def run_element(m, geo):
     m2d= fppc.load(m, mesh_name, 0.1)
 
     Xh = fppc.functionSpace(mesh=m2d)
+    assert Xh.order() == 1
 
     if fppc.Environment.isMasterRank():
         print("Xh basisname: ", Xh.basisName())
@@ -144,3 +147,25 @@ def test_element(dim,geo,init_feelpp):
     fppc.Environment.changeRepository(
         directory="pyfeelpp-tests/discr/test_{}d_element".format(dim))
     run_element( fppc.mesh(dim=dim, realdim=dim), geo(filename="boxelement" if dim==3 else "rectelement") )
+
+
+def test_dynamic_spaces_and_missing_families(init_feelpp):
+    fppc.Environment.changeRepository(directory="pyfeelpp-tests/discr/test_dynamic_spaces")
+    mesh_name, *_ = fppc.create_rectangle(filename="rectdynamicspaces")
+    m2d = fppc.load(fppc.mesh(dim=2, realdim=2), mesh_name, 0.1)
+
+    Xh2 = fppc.functionSpace(mesh=m2d, order=2)
+    assert Xh2.order() == 2
+    assert Xh2.element().size() == Xh2.nDof()
+
+    Xdhv = fppc.functionSpace(mesh=m2d, space="Pdhv", order=1)
+    assert Xdhv.order() == 1
+    assert Xdhv.element().size() == Xdhv.nDof()
+
+    for family in ("Dh", "RTh"):
+        Xh = fppc.functionSpace(mesh=m2d, space=family, order=1)
+        assert Xh.order() == 1
+        assert Xh.element().size() == Xh.nDof()
+
+    with pytest.raises(RuntimeError, match="FunctionSpace Odh"):
+        fppc.functionSpace(mesh=m2d, space="Odh", order=1)

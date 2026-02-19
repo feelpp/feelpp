@@ -97,6 +97,28 @@ local usrlocalPreset = {
   },
 };
 
+local perfFlagsPreset = {
+  name: 'perf-flags',
+  hidden: true,
+  description: 'RelWithDebInfo flags for perf-friendly sampling',
+  cacheVariables: {
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer',
+    CMAKE_C_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer',
+  },
+};
+
+local eztraceFlagsPreset = {
+  name: 'eztrace-flags',
+  hidden: true,
+  description: 'RelWithDebInfo flags for EZTrace instrumentation',
+  cacheVariables: {
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer -finstrument-functions',
+    CMAKE_C_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer -finstrument-functions',
+    CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO: '-rdynamic',
+    CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO: '-rdynamic',
+  },
+};
+
 // C++ Standard presets
 local cppStdPreset(std) = {
   name: 'cpp' + std,
@@ -481,6 +503,28 @@ local doxPreset = {
   },
 };
 
+local perfPreset = {
+  name: 'perf',
+  inherits: ['perf-flags', 'clang', 'release-cmake'],
+  displayName: 'perf | clang | relwithdebinfo | cmake package manager',
+  description: 'Profiling-friendly build for sampling with perf',
+  binaryDir: '${sourceDir}/build/perf',
+  cacheVariables: {
+    CMAKE_BUILD_TYPE: 'RelWithDebInfo',
+  },
+};
+
+local eztracePreset = {
+  name: 'eztrace',
+  inherits: ['eztrace-flags', 'clang', 'release-cmake'],
+  displayName: 'eztrace | clang | relwithdebinfo | cmake package manager',
+  description: 'Function-instrumented build for EZTrace compiler_instrumentation module',
+  binaryDir: '${sourceDir}/build/eztrace',
+  cacheVariables: {
+    CMAKE_BUILD_TYPE: 'RelWithDebInfo',
+  },
+};
+
 // ============================================================================
 // Aggregate All Configure Presets
 // ============================================================================
@@ -491,6 +535,8 @@ local configurePresets =
     defaultPreset,
     warningsPreset,
     usrlocalPreset,
+    perfFlagsPreset,
+    eztraceFlagsPreset,
   ] +
   // C++ standard presets
   [cppStdPreset(std) for std in cppStds] +
@@ -537,6 +583,8 @@ local configurePresets =
     feelppPythonDbgPreset,
     morPythonPreset,
     doxPreset,
+    perfPreset,
+    eztracePreset,
   ];
 
 // ============================================================================
@@ -583,6 +631,8 @@ std.flattenArrays([
   buildPreset('feelpp-python'),
   buildPreset('feelpp-python-dbg'),
   buildPreset('mor_python'),
+  buildPreset('perf'),
+  buildPreset('eztrace'),
 ];
 
 // ============================================================================
@@ -653,7 +703,10 @@ local workflowPresets =
   [simpleWorkflow('release-cmake')] +
   // Debug workflows
   [simpleWorkflow('debug')] +
-  [simpleWorkflow('debug-cmake')];
+  [simpleWorkflow('debug-cmake')] +
+  // Profiling workflows
+  [simpleWorkflow('perf')] +
+  [simpleWorkflow('eztrace')];
 
 local testPresets = [
   testPreset('default', { execution: { jobs: 4 } }),
@@ -689,6 +742,8 @@ std.flattenArrays([
   testPreset('feelpp-python', {}),
   testPreset('feelpp-python-dbg', {}),
   testPreset('mor_python', {}),
+  testPreset('perf', { inherits: 'default' }),
+  testPreset('eztrace', { inherits: 'default' }),
 ];
 
 // ============================================================================

@@ -9,6 +9,7 @@ def run(m, geo):
     mesh_name, dim, e_meas, e_s_1, e_s_2, e_s_bdy=geo
     mesh= fppc.load(m, mesh_name, 0.1)
     Xh = fppc.functionSpace(mesh=mesh)
+    assert Xh.order() == 1
     v=Xh.element()
     v.on(range=fppc.elements(mesh), expr=fppc.expr("1"))
 

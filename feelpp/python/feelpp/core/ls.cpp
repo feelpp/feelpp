@@ -51,6 +51,15 @@ dist2range_inst( py::module &m )
         py::arg( "fmStride" ) = -1.,
         fmt::format("compute the distance field in space to the range of faces in {}D",Dim).c_str() );
     m.def(
+        "distanceToRange", []( Pch_ptrtype<mesh_t, Dynamic> const& Xh, Range<mesh_ptr_t,MESH_FACES> const& facets, double maxDistance, double fmStride )
+        { return distanceToRange( _space=Xh, _range=facets, _max_distance=maxDistance, _fm_stride=fmStride ); },
+        py::return_value_policy::copy,
+        py::arg( "space" ),
+        py::arg( "faces" ),
+        py::arg( "maxDistance" ) = -1.,
+        py::arg( "fmStride" ) = -1.,
+        fmt::format("compute the distance field in space to the range of faces in {}D",Dim).c_str() );
+    m.def(
         "gradedls", []( Pch_ptrtype<mesh_t, 1> const& Xh, Range<mesh_ptr_t,MESH_FACES> const& facets, double hclose, double hfar )
         { 
             return gradedfromls( Xh, facets, hclose, hfar);
@@ -62,8 +71,28 @@ dist2range_inst( py::module &m )
         py::arg( "hfar" ),
         fmt::format("compute the graded metric field with metric set to hclose on facets and hfar the farthest away from facets in {}D",Dim).c_str() );
     m.def(
+        "gradedls", []( Pch_ptrtype<mesh_t, Dynamic> const& Xh, Range<mesh_ptr_t,MESH_FACES> const& facets, double hclose, double hfar )
+        {
+            return gradedfromls( Xh, facets, hclose, hfar );
+        },
+        py::return_value_policy::copy,
+        py::arg( "space" ),
+        py::arg( "faces" ),
+        py::arg( "hclose" ),
+        py::arg( "hfar" ),
+        fmt::format("compute the graded metric field with metric set to hclose on facets and hfar the farthest away from facets in {}D",Dim).c_str() );
+    m.def(
         "expr", []( Pch_ptrtype<mesh_t, 1> const& Xh, std::string const& e )
         { 
+            return expr( Xh, expr(e) );
+        },
+        py::return_value_policy::copy,
+        py::arg( "space" ),
+        py::arg( "expr" ),
+        fmt::format("compute the  metric field with metric set from expression in {}D",Dim).c_str() );
+    m.def(
+        "expr", []( Pch_ptrtype<mesh_t, Dynamic> const& Xh, std::string const& e )
+        {
             return expr( Xh, expr(e) );
         },
         py::return_value_policy::copy,
