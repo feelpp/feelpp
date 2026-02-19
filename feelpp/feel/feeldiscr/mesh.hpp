@@ -1939,8 +1939,8 @@ public:
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ );
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ );
 
-    FEELPP_NO_EXPORT void invalidatePeriodicCanonicalMaps();
-    FEELPP_NO_EXPORT void buildPeriodicCanonicalMaps();
+    void invalidatePeriodicCanonicalMaps();
+    void buildPeriodicCanonicalMaps();
 
   private:
 
