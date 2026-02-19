@@ -42,6 +42,7 @@ feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS F
 
 # Minimal simplex Laplacian with dynamic polynomial order
 feelpp_add_application( simple_lap_2d SRCS simple_lap.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_SIMPLE_LAP_2D INSTALL )
+feelpp_add_application( periodic_laplacian_2d SRCS qs_periodic_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_PERIODIC_LAPLACIAN_2D INSTALL TESTS NO_MPI_TEST )
 
 
 # CG laplacian using model properties
@@ -49,6 +50,7 @@ feelpp_add_application( laplacian_model_2d SRCS qs_laplacian_model.cpp INCLUDE_I
 
 add_dependencies(qs_laplacian ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D} ${QS_MODEL_LAPLACIAN_2D} )
 add_dependencies(qs_laplacian ${QS_SIMPLE_LAP_2D} )
+add_dependencies(qs_laplacian ${QS_PERIODIC_LAPLACIAN_2D} )
 
 #
 # HDG Laplacian

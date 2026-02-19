@@ -89,7 +89,6 @@ void defDiscr(py::module &m, std::string const& suffix = "")
     using space_t = SpaceT;
     using space_ptr_t = std::shared_ptr<space_t>;
     using mesh_support_vector_t = typename space_t::mesh_support_vector_type;
-    using periodicity_t = typename space_t::periodicity_type;
     using mesh_t = typename space_t::mesh_type;
     using size_type = typename mesh_t::size_type;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
@@ -109,11 +108,17 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         pyclass_name = std::string("Pdhv_") + suffix2;
 
     py::class_<space_t,std::shared_ptr<space_t>>(m,pyclass_name.c_str())
-        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, worldscomm_ptr_t const&, std::vector<DofTableExtendedType> >(),
+        .def(py::init([]( mesh_ptr_t const& mesh,
+                          mesh_support_vector_t const& support,
+                          size_type components,
+                          worldscomm_ptr_t const& worldsComm,
+                          std::vector<DofTableExtendedType> extendedDofTable )
+             {
+                 return std::make_shared<space_t>( mesh, support, components, worldsComm, extendedDofTable );
+             }),
              py::arg("mesh"),
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
-             py::arg("periodicity")=periodicity_t(),
              py::arg("worldsComm"),
              py::arg("extendedDofTable") = std::vector<DofTableExtendedType>(space_t::nSpaces,DofTableExtendedType::DEFAULT)
              )
@@ -228,15 +233,6 @@ PYBIND11_MODULE(_discr, m )
         .value("DEFAULT", DofTableExtendedType::DEFAULT )
         .export_values();
     py::bind_vector<std::vector<DofTableExtendedType>>(m, "VectorDofTableExtendedType");
-
-    pyclass_name = std::string("Periodic");
-    py::class_<Periodic<double>>(m,pyclass_name.c_str()).def(py::init<>());
-    pyclass_name = std::string("PeriodicityPeriodic");
-    py::class_<Periodicity<Periodic<double>>>(m,pyclass_name.c_str()).def(py::init<>());
-    pyclass_name = std::string("NoPeriodicity");
-    py::class_<NoPeriodicity>(m,pyclass_name.c_str()).def(py::init<>());
-    pyclass_name = std::string("PeriodicityNoPeriodicity");
-    py::class_<Periodicity<NoPeriodicity>>(m,pyclass_name.c_str()).def(py::init<>());
 
     auto dimt = hana::make_tuple( hana::int_c<1>, hana::int_c<2>, hana::int_c<3>);
     auto ordert = hana::make_tuple( hana::int_c<0>, hana::int_c<1>, hana::int_c<2>, hana::int_c<3> );

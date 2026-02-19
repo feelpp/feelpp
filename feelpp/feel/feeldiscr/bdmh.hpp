@@ -36,13 +36,13 @@
 namespace Feel {
 
 template<int Order, typename MeshType, typename T = double>
-using bdmh_type = FunctionSpace<MeshType, bases<BrezziDouglasMarini<Order>>, T, Periodicity<NoPeriodicity>>;
+using bdmh_type = FunctionSpace<MeshType, bases<BrezziDouglasMarini<Order>>, T>;
 
 template<int Order, typename MeshType>
 using bdmh_ptrtype = std::shared_ptr<bdmh_type<Order, MeshType>>;
 
 template<typename MeshType, int Order, typename T = double>
-using BDMh_type = FunctionSpace<MeshType, bases<BrezziDouglasMarini<Order>>, T, Periodicity<NoPeriodicity>>;
+using BDMh_type = FunctionSpace<MeshType, bases<BrezziDouglasMarini<Order>>, T>;
 
 template<typename MeshType, int Order>
 using BDMh_ptrtype = std::shared_ptr<bdmh_type<Order, MeshType>>;

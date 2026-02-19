@@ -52,7 +52,7 @@ int main( int argc, char** argv )
                        NoPeriodicity >::type periodicity_type;
 
     typedef bases<Lagrange<order, Scalar> > basis_type;
-    typedef FunctionSpace<mesh_type, basis_type, Feel::Periodicity <Feel::NoPeriodicity> > space_type;
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
 
     Feel::Environment env( argc, argv );
 

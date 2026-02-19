@@ -44,7 +44,6 @@ struct NChv
     typedef FunctionSpace<MeshType,
                           bases<CrouzeixRaviart<Order,Vectorial,Pts,Tag>>,
                           T,
-                          Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
 };

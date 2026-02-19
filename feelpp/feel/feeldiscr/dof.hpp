@@ -116,7 +116,7 @@ public:
         {
         }
 #else
-    Dof( size_type _index, int16_type _sign, bool per )
+    Dof( size_type _index, int16_type /*unusedSign*/, bool /*unusedPeriodic*/ )
         :
         super(_index ) //, _sign, per)
         {
@@ -229,7 +229,7 @@ public:
     /**
      * set the global dof
      */
-    void set( size_type _index, int16_type _sign, bool per )
+    void set( size_type _index, int16_type /*unusedSign*/, bool /*unusedPeriodic*/ )
         {
             std::get<0>(*this) =  _index;
             //this->get<1>() =  _sign;

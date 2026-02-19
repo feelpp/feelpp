@@ -27,6 +27,7 @@
    \date 2007-06-16
  */
 #include <sstream>
+#include <cmath>
 
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
@@ -58,7 +59,7 @@ using boost::unit_test::test_suite;
 using namespace Feel;
 
 
-template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+template<int Dim, template <int,int,int> class Entity = Simplex>
 void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
@@ -80,6 +81,131 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
     BOOST_CHECK_NE( nelements(markedfaces(mesh, "Dirichlet" ),true), 0 );
     BOOST_CHECK_EQUAL( nelements(markedfaces(mesh, "Dirichlet"),false)+nelements(markedfaces(mesh, "Neumann"),false),
                        nelements(boundaryfaces(mesh),false) );
+}
+
+namespace
+{
+using periodic_mesh_type = Mesh<Simplex<2,1>>;
+using periodic_mesh_ptrtype = std::shared_ptr<periodic_mesh_type>;
+
+bool gmshDefaultIsV4()
+{
+    std::string version = FEELPP_GMSH_FORMAT_VERSION;
+    return !version.empty() && version.front() == '4';
+}
+
+std::string periodicSquareGeoDescription( std::string const& mshVersion, double h = 0.2 )
+{
+    std::ostringstream ostr;
+    ostr << "Mesh.MshFileVersion = " << mshVersion << ";\n"
+         << "h=" << h << ";\n"
+         << "Point(1) = {0,0,0,h};\n"
+         << "Point(2) = {1,0,0,h};\n"
+         << "Point(3) = {1,1,0,h};\n"
+         << "Point(4) = {0,1,0,h};\n"
+         << "Line(1) = {1,2};\n"
+         << "Line(2) = {2,3};\n"
+         << "Line(3) = {3,4};\n"
+         << "Line(4) = {4,1};\n"
+         << "Line Loop(5) = {1,2,3,4};\n"
+         << "Plane Surface(6) = {5};\n"
+         << "Physical Surface(\"Omega\") = {6};\n"
+         << "Physical Line(\"Bottom\") = {1};\n"
+         << "Physical Line(\"Right\") = {2};\n"
+         << "Physical Line(\"Top\") = {3};\n"
+         << "Physical Line(\"Left\") = {4};\n"
+         << "Periodic Curve {2} = {4} Translate {1,0,0};\n"
+         << "Periodic Curve {3} = {1} Translate {0,1,0};\n";
+    return ostr.str();
+}
+
+periodic_mesh_ptrtype createPeriodicMeshFromGmsh( GMSH_FORMAT format, std::string const& prefix,
+                                                  std::string const& mshVersion = FEELPP_GMSH_FORMAT_VERSION )
+{
+    Gmsh gmsh;
+    gmsh.setDimension( 2 );
+    gmsh.setOrder( 1 );
+    gmsh.setVersion( mshVersion, format );
+    gmsh.setPrefix( prefix );
+
+    std::string fname;
+    bool generated_or_modified = false;
+    boost::tie( fname, generated_or_modified ) = gmsh.generate( prefix, periodicSquareGeoDescription( mshVersion ), true );
+    Feel::detail::ignore_unused_variable_warning( generated_or_modified );
+
+    return loadGMSHMesh( _mesh=new periodic_mesh_type,
+                         _filename=fname,
+                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+}
+
+void checkPeriodicMeshData( periodic_mesh_ptrtype const& mesh )
+{
+    BOOST_REQUIRE( mesh );
+    BOOST_CHECK( mesh->isPeriodic() );
+
+    auto const& periodicEntities = mesh->periodicEntities();
+    BOOST_CHECK_GE( periodicEntities.size(), static_cast<std::size_t>( 2 ) );
+
+    int matchedEntities = 0;
+    for ( auto const& e : periodicEntities )
+    {
+        if ( e.dim != 1 )
+            continue;
+
+        double tx = 0.0;
+        double ty = 0.0;
+        bool known = false;
+        if ( e.slave == 2 && e.master == 4 )
+        {
+            tx = 1.0;
+            ty = 0.0;
+            known = true;
+        }
+        else if ( e.slave == 3 && e.master == 1 )
+        {
+            tx = 0.0;
+            ty = 1.0;
+            known = true;
+        }
+
+        if ( !known )
+            continue;
+
+        BOOST_CHECK( !e.correspondingVertices.empty() );
+        int checkedPairs = 0;
+        int mappedPairs = 0;
+        for ( auto const& [slavePointId, masterPointId] : e.correspondingVertices )
+        {
+            auto pitSlave = mesh->pointIterator( slavePointId );
+            auto pitMaster = mesh->pointIterator( masterPointId );
+            BOOST_REQUIRE( pitSlave != mesh->endPoint() );
+            BOOST_REQUIRE( pitMaster != mesh->endPoint() );
+
+            auto const& pSlave = pitSlave->second;
+            auto const& pMaster = pitMaster->second;
+            BOOST_CHECK_SMALL( std::abs( pSlave.node()[0] - pMaster.node()[0] - tx ), 1e-11 );
+            BOOST_CHECK_SMALL( std::abs( pSlave.node()[1] - pMaster.node()[1] - ty ), 1e-11 );
+            if ( pSlave.id() != pMaster.id() )
+            {
+                ++checkedPairs;
+                if ( pSlave.masterId() == pMaster.id() )
+                    ++mappedPairs;
+            }
+        }
+        BOOST_CHECK_GT( checkedPairs, 0 );
+        BOOST_CHECK_GT( mappedPairs, 0 );
+        ++matchedEntities;
+    }
+    BOOST_CHECK_EQUAL( matchedEntities, 2 );
+
+    int periodicPointCount = 0;
+    for ( auto it = mesh->beginPoint(); it != mesh->endPoint(); ++it )
+    {
+        if ( it->second.masterId() != it->second.id() )
+            ++periodicPointCount;
+    }
+    BOOST_CHECK_GT( periodicPointCount, 0 );
+}
 }
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -140,6 +266,42 @@ BOOST_AUTO_TEST_CASE( gmshpartgeo )
                                       _order=1,
                                       _h=0.2 ),
                            _partitions=2 );
+}
+
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v4_ascii )
+{
+    if ( Environment::isParallel() || !gmshDefaultIsV4() )
+        return;
+
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_ASCII, "periodic-import-v4-ascii" );
+    checkPeriodicMeshData( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v4_binary )
+{
+    if ( Environment::isParallel() || !gmshDefaultIsV4() )
+        return;
+
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_BINARY, "periodic-import-v4-binary" );
+    checkPeriodicMeshData( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v2_ascii )
+{
+    if ( Environment::isParallel() )
+        return;
+
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_ASCII, "periodic-import-v2-ascii", "2" );
+    checkPeriodicMeshData( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v2_binary )
+{
+    if ( Environment::isParallel() )
+        return;
+
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_BINARY, "periodic-import-v2-binary", "2" );
+    checkPeriodicMeshData( mesh );
 }
 
 

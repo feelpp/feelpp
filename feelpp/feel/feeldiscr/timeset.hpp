@@ -82,7 +82,7 @@ enum
     STEP_IGNORED   = ( 1<<4 ),
     STEP_OVERWRITE = ( 1<<10 )
 };
-template<typename A0,typename A1,typename A2,typename A3,typename A4> class FunctionSpace;
+template<typename A0, typename A1, typename A2, typename A3> class FunctionSpace;
 namespace detail
 {
 /**

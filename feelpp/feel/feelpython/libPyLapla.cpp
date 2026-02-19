@@ -55,11 +55,11 @@ namespace py = boost::parameter::python;
 
 // retrieval of complicated return types with the "give bad type to have the good one" trick 
 
-typedef Feel::vf::detail::LinearForm<Feel::FunctionSpace<Feel::Mesh<Feel::Simplex<2, 1, 2>, double, 0>,Feel::bases<Feel::Lagrange<1, Scalar, Feel::Continuous, PointSetEquiSpaced, 0> >, double,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> >, Feel::Vector<double>,Feel::Vector<double> > form1_return_type;
+typedef Feel::vf::detail::LinearForm<Feel::FunctionSpace<Feel::Mesh<Feel::Simplex<2, 1, 2>, double, 0>,Feel::bases<Feel::Lagrange<1, Scalar, Feel::Continuous, PointSetEquiSpaced, 0> >, double, Feel::mortars<Feel::NoMortar> >, Feel::Vector<double>,Feel::Vector<double> > form1_return_type;
 
-typedef Feel::vf::detail::BilinearForm<Feel::FunctionSpace<Feel::Mesh<Feel::Simplex<2, 1, 2>, double, 0>,Feel::bases<Feel::Lagrange<1, Scalar, Feel::Continuous, PointSetEquiSpaced, 0> >, double,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar> >,Feel::FunctionSpace<Feel::Mesh<Feel::Simplex<2, 1, 2>, double, 0>, Feel::bases<Feel::Lagrange<1, Scalar,Feel::Continuous, PointSetEquiSpaced, 0> >, double, Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar> >, Feel::VectorUblas<double, ublas::vector<double> > > form2_return_type;
+typedef Feel::vf::detail::BilinearForm<Feel::FunctionSpace<Feel::Mesh<Feel::Simplex<2, 1, 2>, double, 0>,Feel::bases<Feel::Lagrange<1, Scalar, Feel::Continuous, PointSetEquiSpaced, 0> >, double, Feel::mortars<Feel::NoMortar> >,Feel::FunctionSpace<Feel::Mesh<Feel::Simplex<2, 1, 2>, double, 0>, Feel::bases<Feel::Lagrange<1, Scalar,Feel::Continuous, PointSetEquiSpaced, 0> >, double, Feel::mortars<Feel::NoMortar> >, Feel::VectorUblas<double, ublas::vector<double> > > form2_return_type;
 
-typedef FunctionSpace<Mesh<Simplex<2>>,Feel::bases<Feel::Lagrange<1,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::Periodicity<Feel::NoPeriodicity>,Feel::mortars<Feel::NoMortar>> function_space_type;
+typedef FunctionSpace<Mesh<Simplex<2>>,Feel::bases<Feel::Lagrange<1,Feel::Scalar,Feel::Continuous,Feel::PointSetEquiSpaced,0>>,double,Feel::mortars<Feel::NoMortar>> function_space_type;
 
 //definition of all methods we need for the wrapping and which are create from a BOOST_PARAMETER_FUNCTION or a method with default value arguments  
 

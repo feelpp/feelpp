@@ -116,7 +116,6 @@ struct hash<std::tuple<TT...>>
 #include <feel/feeldiscr/doffrommortar.hpp>
 #include <feel/feeldiscr/doffromboundary.hpp>
 #include <feel/feeldiscr/doffromedge.hpp>
-#include <feel/feeldiscr/doffromperiodic.hpp>
 
 #include <feel/feelmesh/meshsupport.hpp>
 
@@ -145,7 +144,7 @@ namespace bimaps = boost::bimaps;
  * \author Christophe Prud'homme
  * \author Goncalo Pena
  */
-template<typename MeshType,  typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 class DofTable : public DofTableBase<typename MeshType::size_type>
 {
     typedef DofTableBase<typename MeshType::size_type> super;
@@ -156,7 +155,7 @@ public:
      */
     typedef MeshType mesh_type;
     typedef FEType fe_type;
-    using self_type = DofTable<MeshType, FEType, PeriodicityType, MortarType>;
+    using self_type = DofTable<MeshType, FEType, MortarType>;
     using doftable_type = self_type;
     using size_type = typename mesh_type::size_type;
     typedef std::shared_ptr<FEType> fe_ptrtype;
@@ -224,8 +223,7 @@ public:
     //! @brief True if polynomial order is determined at runtime
     static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
 
-    typedef PeriodicityType periodicity_type;
-    static inline const bool is_periodic = periodicity_type::is_periodic;
+    static inline const bool is_periodic = false;
 
     static constexpr uint16_type nDofComponents() { return is_product?nComponents:1; }
 
@@ -279,10 +277,6 @@ public:
     typedef typename std::unordered_map<size_type,dof_point_type>::iterator dof_points_iterator;
     typedef typename std::unordered_map<size_type,dof_point_type>::const_iterator dof_points_const_iterator;
 
-    typedef std::vector<dof_point_type> dof_periodic_points_type;
-    typedef typename std::vector<dof_point_type>::iterator dof_periodic_points_iterator;
-    typedef typename std::vector<dof_point_type>::const_iterator dof_periodic_points_const_iterator;
-
     /**
      * Tuple that holds a size_type \p elt 1 uint16_type \p l and 1
      * uint16_type ent
@@ -335,13 +329,6 @@ public:
 
     typedef ublas::vector<uint16_type> permutation_vector_type;
 
-    typedef boost::tuple<element_type const*, face_type const*> element_face_pair_type;
-    typedef std::list<element_face_pair_type> periodic_element_list_type;
-    typedef typename periodic_element_list_type::iterator periodic_element_list_iterator;
-    typedef typename periodic_element_list_type::const_iterator periodic_element_list_const_iterator;
-    typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
-    typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
-
     //typedef typename std::vector<localglobal_indices_type,Eigen::aligned_allocator<localglobal_indices_type> > vector_indices_type;
     using vector_indices_type = std::unordered_map<size_type,localglobal_indices_type,
                                         std::hash<size_type>,std::equal_to<size_type>,
@@ -358,7 +345,7 @@ public:
      * @param _fe reference element
      *
      */
-    DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
+    DofTable( fe_ptrtype const& _fe, WorldComm const& _worldComm );
 
     /**
      * copy constructor
@@ -373,7 +360,7 @@ public:
      *  @param mesh a RegionMesh3D
      *  @param _fe reference element
      */
-    DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
+    DofTable( mesh_type& mesh, fe_ptrtype const& _fe, WorldComm const& _worldComm );
 
     ~DofTable() override
         {
@@ -722,9 +709,6 @@ public:
             if (!hasDofPoints()) this->generateDofPoints(*M_mesh);
             return M_dof_points.end();
         }
-
-    periodic_element_list_const_iterator beginPeriodicElements() const { return periodic_elements.begin(); }
-    periodic_element_list_const_iterator endPeriodicElements() const { return periodic_elements.end(); }
 
     /**
      * insted of creating the dof indices on the fly, get them from a
@@ -1267,12 +1251,6 @@ public:
 private :
 
     /**
-     * build dof map associated to the periodic dof, must be called
-     * before buildDofMap
-     */
-    size_type buildPeriodicDofMap( mesh_type& M );
-
-    /**
      * build dof associated to local discontinuities
      */
     size_type buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof );
@@ -1571,7 +1549,6 @@ private:
     template<typename, typename, typename > friend class DofFromMortar;
     template<typename, typename > friend class DofFromBoundary;
     template<typename, typename > friend class DofFromEdge;
-    template<typename, typename > friend class DofFromPeriodic;
 
     void addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof );
     void addSubstructuringDofVertex( mesh_type const& M, size_type next_free_dof );
@@ -1900,7 +1877,6 @@ private:
      */
     bool hasDofPoints() const { return M_hasBuiltDofPoints;/*!M_dof_points.empty();*/ }
     void generateDofPoints( mesh_type& M, bool buildMinimalParallel = false ) const;
-    void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_periodic_points_type& periodic_dof_points );
     void generateDofPointsExtendedGhostMap( mesh_type& M ) const;
     void generateDofPoints( Range<mesh_type,MESH_ELEMENTS> const& range ) const;
 
@@ -1943,10 +1919,6 @@ private:
 
     std::vector<globaldof_type> M_dof_indices;
 
-    periodicity_type M_periodicity;
-    //! list of elements which have a periodic face Tag2
-    periodic_element_list_type periodic_elements;
-
     /// a view of the dof container
     //dof_container_type M_dof_view;
 
@@ -1965,10 +1937,9 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh,
+template<typename MeshType, typename FEType, typename MortarType>
+DofTable<MeshType, FEType, MortarType>::DofTable( mesh_type& mesh,
                                                                    fe_ptrtype const& _fe,
-                                                                   periodicity_type const& periodicity,
                                                                    WorldComm const& _worldComm )
     :
     super( _worldComm ),
@@ -1982,7 +1953,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     map_gdof(),
     M_hasBuiltDofPoints( false ),
     M_dof_indices(),
-    M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( DofTableExtendedType::VERTICES ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( is_order_dynamic ? 0 : nDofPerElement ),
@@ -1998,11 +1968,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
         M_localIndicesIdentity.resize( ndpe );
     }
 
-    VLOG(2) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
-
-    if ( is_periodic )
-        start_next_free_dof = buildPeriodicDofMap( mesh );
 
     buildDofMap( mesh, start_next_free_dof );
     if ( !is_mortar )
@@ -2010,9 +1976,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     map_gdof.clear();
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype const& _fe,
-                                                                   periodicity_type const& periodicity,
+template<typename MeshType, typename FEType, typename MortarType>
+DofTable<MeshType, FEType, MortarType>::DofTable( fe_ptrtype const& _fe,
                                                                    WorldComm const& _worldComm )
     :
     super( _worldComm ),
@@ -2026,7 +1991,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     map_gdof(),
     M_hasBuiltDofPoints( false ),
     M_dof_indices(),
-    M_periodicity( periodicity ),
     M_buildDofTableMPIExtended( DofTableExtendedType::VERTICES ),
     M_nGhostDofAddedInExtendedDofTable( 0 ),
     M_localIndicesPerm( is_order_dynamic ? 0 : nDofPerElement ),
@@ -2043,8 +2007,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     }
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_type & dof2 )
+template<typename MeshType, typename FEType, typename MortarType>
+DofTable<MeshType, FEType, MortarType>::DofTable( const self_type & dof2 )
     :
     super( dof2 ),
     M_fe( dof2.M_fe ),
@@ -2057,7 +2021,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     map_gdof( dof2.map_gdof ),
     M_hasBuiltDofPoints( false ),
     M_dof_indices( dof2.M_dof_indices ),
-    M_periodicity( dof2.M_periodicity ),
     M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended ),
     M_nGhostDofAddedInExtendedDofTable( dof2.M_nGhostDofAddedInExtendedDofTable ),
     M_localIndicesPerm( dof2.M_localIndicesPerm ),
@@ -2066,9 +2029,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::showMe() const
+DofTable<MeshType, FEType, MortarType>::showMe() const
 {
     LOG(INFO)  << " Degree of Freedom (DofTable) Object" << "\n";
     //if ( verbose )
@@ -2121,9 +2084,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::showMe() const
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& M )
+DofTable<MeshType, FEType, MortarType>::initDofMap( mesh_type& M )
 {
     size_type numMeshElements = (this->hasMeshSupport())? this->meshSupport()->numElements() : M.numElements();
     M_n_el = numMeshElements;
@@ -2236,9 +2199,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
+DofTable<MeshType, FEType, MortarType>::build( mesh_type& M )
 {
     tic();
     M_mesh = boost::addressof( M );
@@ -2265,14 +2228,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     size_type start_next_free_dof = 0;
     VLOG(2) << "[Dof::build] start_next_free_dof = " << start_next_free_dof << "\n";
     toc("DofTable::init", Environment::logVerbosityLevel()>1);
-    tic();
-    if ( is_periodic )
-    {
-        VLOG(2) << "[build] call buildPeriodicDofMap()\n";
-        start_next_free_dof = this->buildPeriodicDofMap( M );
-        VLOG(2) << "[Dof::build] start_next_free_dof(after periodic) = " << start_next_free_dof << "\n";
-    }
-    toc("DofTable::buildPeriodicDof", Environment::logVerbosityLevel()>1);
     tic();
     if ( is_discontinuous_locally )
     {
@@ -2465,299 +2420,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     toc("DofTable::build", Environment::logVerbosityLevel()>1);
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-typename DofTable<MeshType, FEType, PeriodicityType, MortarType>::size_type
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( mesh_type& M )
-{
-    size_type nldof =
-        runtimeDofPerVolume() * element_type::numVolumes +
-        runtimeDofPerFace() * element_type::numGeometricFaces +
-        runtimeDofPerEdge() * element_type::numEdges +
-        runtimeDofPerVertex() * element_type::numVertices;
-
-    FEELPP_ASSERT( nldof == runtimeNLocalDof() )
-        ( nldof )
-        ( runtimeNLocalDof() ).error( "Something wrong in FE specification" ) ;
-
-    const size_type n_proc  = M.worldComm().localSize();
-
-
-    for ( size_type processor=0; processor<n_proc; processor++ )
-    {
-        // compute the number of dof on current processor
-        auto rangeElements = M.elementsWithProcessId( processor );
-        auto it_elt = std::get<0>( rangeElements );
-        auto en_elt = std::get<1>( rangeElements );
-        size_type n_elts = std::distance( it_elt, en_elt );
-        VLOG(2) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
-        //this->M_first_df[processor] = next_free_dof;
-
-        it_elt = std::get<2>( rangeElements )->begin();
-
-        // VLOG(2) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
-
-        for ( ; it_elt!=en_elt; ++it_elt )
-        {
-            auto const& __elt = boost::unwrap_ref( *it_elt );
-            //VLOG(2) << "next_free_dof " << next_free_dof  << "\n";
-            //VLOG(2) << "current dof " << dofIndex( next_free_dof ) << "\n";
-
-            typename element_type::face_const_iterator it, en;
-            boost::tie( it, en ) = __elt.faces();
-
-            //bool found_periodic_face_in_element = false;
-            for ( ; it != en; ++it )
-            {
-                if ( !( *it )->hasMarker() ) continue;
-                if ( ( *it )->marker().value() == M_periodicity.tag2() ||
-                     ( *it )->marker().value() == M_periodicity.tag1() )
-                {
-                    // store the element reference for the end, the associated
-                    // dof on the periodic face is in fact already taken care of.
-                    // the "internal" dof or on not periodic face will be added
-                    periodic_elements.push_back( boost::make_tuple( boost::addressof( __elt ), *it ) );
-                    //found_periodic_face_in_element = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    VLOG(2) << "[buildPeriodicDofMap] built periodic_elements " << periodic_elements.size() << "\n";
-    std::map<size_type,periodic_dof_map_type> periodic_dof;
-    /*
-     * Generate the periodic dof, assign a gid to the tag1 dof and set
-     * the tag2 dof to invalid_v<size_type> for now.
-     */
-    periodic_element_list_iterator it_periodic = periodic_elements.begin();
-    periodic_element_list_iterator en_periodic = periodic_elements.end();
-    size_type next_free_dof = 0;
-
-    DofFromPeriodic<self_type,fe_type> dfp( this, *M_fe );
-    while ( it_periodic != en_periodic )
-    {
-        element_type const& __elt = *it_periodic->template get<0>();
-        face_type const& __face = *it_periodic->template get<1>();
-
-        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag1() )
-        {
-            dfp.add(  __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
-        }
-
-        ++it_periodic;
-    }
-
-    it_periodic = periodic_elements.begin();
-
-    while ( it_periodic != en_periodic )
-    {
-        element_type const& __elt = *it_periodic->template get<0>();
-        face_type const& __face = *it_periodic->template get<1>();
-
-        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag2() )
-        {
-            dfp.add(  __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
-        }
-
-        ++it_periodic;
-    }
-
-    VLOG(2) << "[periodic dof table] next_free_dof : " << next_free_dof << "\n";
-    VLOG(2) << "[periodic dof table] number of periodic dof : " << periodic_dof[M_periodicity.tag1()].size() << "\n";
-
-    dof_periodic_points_type periodic_dof_points( next_free_dof );
-    generatePeriodicDofPoints( M, periodic_elements, periodic_dof_points );
-
-    VLOG(2) << "[periodic dof table] generated dof points\n";
-    VLOG(2) << "[periodic dof table] start matching the dof points\n";
-
-    size_type max_gid = 0;
-    for( auto [ gid, doftype] : periodic_dof[M_periodicity.tag1( )] )
-    {
-        max_gid = ( max_gid > gid )?max_gid:gid;
-    }
-
-    size_type max_gid2 = 0;
-    for( auto [gid2, dof2] : periodic_dof[M_periodicity.tag2( )] )
-    {
-        max_gid2 = ( max_gid2 > gid2 )?max_gid2:gid2;
-    }
-    CHECK( ( max_gid+1 ) == ( max_gid2+1-( max_gid+1 ) ) )
-        << "[periodic] invalid periodic setup"
-        << "  max_gid+1  = " <<  max_gid+1
-        << ", ( max_gid2+1-( max_gid+1 ) =" << ( max_gid2+1-( max_gid+1 ) )
-        << ", max gid = " << max_gid
-        << ", max_gid2 = " << max_gid2 << "\n";
-
-    std::vector<bool> periodic_dof_done( max_gid+1 );
-    std::fill( periodic_dof_done.begin(), periodic_dof_done.end(), false );
-
-    for( auto [gid,dof] : periodic_dof[M_periodicity.tag1( )] )
-    {
-        if ( periodic_dof_done[gid] )
-            continue;
-
-        node_type x1 = periodic_dof_points[gid].template get<0>();
-        bool match = false;
-        typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
-        typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[M_periodicity.tag2()].end();
-#if 0
-        for ( ; it_dof2 != en_dof2; ++ it_dof2 )
-        {
-            size_type gid2 = it_dof2->first;
-            FEELPP_ASSERT( gid2 < next_free_dof )( gid )( gid2 )( next_free_dof ).error( "[periodic] invalid dof id" );
-            node_type x2 = periodic_dof_points[gid2].template get<0>();
-            //FEELPP_ASSERT( math::abs( x2[0]-M_periodicity.translation()[0]) < 1e-10 )
-            //( x1 )( x2 )( M_periodicity.translation() ).error( "[periodic] invalid periodic setup");
-        }
-#endif
-        it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
-        size_type corresponding_gid = invalid_v<size_type>;
-
-        for ( ; it_dof2 != en_dof2; ++ it_dof2 )
-        {
-            // make sure that we iterate over dof belonging to the same function
-            // component (e.g. in vectorial)
-            if ( it_dof2->second.template get<2>() != dof.template get<2>() )
-                continue;
-            size_type gid2 = it_dof2->first;
-            node_type x2 = periodic_dof_points[gid2].template get<0>();
-
-            if ( ublas::norm_2( x1-( x2-M_periodicity.translation() ) ) < 1e-10 )
-            {
-                // loop on each pair (element, lid) which
-                // has a global id gid2 and set it to gid
-                corresponding_gid = gid2;
-                match = true;
-                break;
-            }
-        }
-
-        // if we have --- actually we must have one --- a match, remove the
-        // iterator from dof2 to quicken the search for the next dof1 match
-        if ( match )
-        {
-            size_type ie1 = dof.template get<0>();
-            size_type lid1 = dof.template get<1>();
-            size_type c1 = dof.template get<2>();
-            size_type gDof1 = dof.template get<3>();
-            uint16_type dof1_type = dof.template get<4>();
-
-            VLOG(2) << "matching dof id " << gid << " with dof id=" << corresponding_gid << "\n";
-
-            it_dof2 = periodic_dof[M_periodicity.tag2()].lower_bound( corresponding_gid );
-            en_dof2 = periodic_dof[M_periodicity.tag2()].upper_bound( corresponding_gid );
-            VLOG(2) << "distance = " << std::distance( it_dof2, en_dof2 ) << "\n";
-
-            while ( it_dof2 != en_dof2 )
-            {
-
-                size_type ie = it_dof2->second.template get<0>();
-                size_type lid = it_dof2->second.template get<1>();
-                size_type c2 = it_dof2->second.template get<2>();
-                CHECK( c1 == c2 ) << "[periodic] invalid dof component, c1 = " << c1 << ", c2 = " << c2 << "\n";
-                size_type gDof = it_dof2->second.template get<3>();
-                uint16_type dof2_type = it_dof2->second.template get<4>();
-                uint16_type dof1_type = dof.template get<4>();
-
-                FEELPP_ASSERT( dof1_type == dof2_type )
-                    ( gid )( it_dof2->first )( gDof )( lid )( c2) ( ie )
-                    ( dof1_type )( dof2_type ).error ( "invalid dof" );
-
-                VLOG(2) << "link " <<  M_el_l2g.left.find( localdof_type( ie, localDofId(lid,c2) ) )->second.index()  << " -> " << gid << "\n"
-                        << "element id1: " << ie1 << ", lid1: " << lid1 << ", c1: " << c1 << ",  gDof1: " << gDof1 << ", type1: " << dof1_type << "\n"
-                        << "element id2: " << ie << ", lid2: " << lid << ", c2: " << c2 << ",  gDof2: " << gDof << ", type: " << dof2_type << "\n";
-
-                // gid is given by dof1
-                auto it = M_el_l2g.left.find(localdof_type( ie, localDofId(lid,c2) ));
-                //bool successful_modify = M_el_l2g.left.modify_data( it, bimaps::_data = Dof( boost::make_tuple( gid, 1, true ) ) );
-                bool successful_modify = M_el_l2g.left.modify_data( it, bimaps::_data = Dof( gid ) );
-
-                CHECK( successful_modify ) << "modify periodic dof table failed: element id "
-                                           << ie << " local dof id " << lid << " component " << c2;
-                // map_gdof define only for one component
-                if ( c1 == 0 )
-                {
-#if 1
-                // warning: must modify the data structure that allows to
-                // generate unique global dof ids
-                CHECK( ( map_gdof[  std::make_tuple( dof2_type, gDof ) ] == corresponding_gid ) ||
-                       ( map_gdof[ std::make_tuple( dof2_type, gDof ) ] == gid ) )
-                    << "[periodic] invalid matching periodic gid, "
-                    << "corresponding_gid = " << corresponding_gid << ", dof2_type = " <<  dof2_type
-                    << ", gDof = " << gDof << ", gid=" << gid
-                    << ", c2 = " << c2
-                    << ", map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ]= "
-                    << map_gdof[ std::make_tuple( dof2_type, gDof ) ] << "\n";
-#endif
-                VLOG(2) << "link mapgdof " <<   map_gdof[ std::make_tuple( dof2_type, gDof ) ]  << " -> " << gid << "\n";
-                map_gdof[ std::make_tuple( dof2_type, gDof ) ] = gid;
-                }
-#if 0
-                FEELPP_ASSERT( map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ] == gid )
-                    ( corresponding_gid )( dof2_type )( gDof )( gid )
-                    ( map_gdof[ boost::make_tuple( dof2_type, c2, gDof ) ] ) .error ( "invalid gid" );
-#endif
-                ++it_dof2;
-            }
-
-            it_dof2 = periodic_dof[M_periodicity.tag2()].lower_bound( corresponding_gid );
-            periodic_dof[M_periodicity.tag2()].erase( it_dof2, en_dof2 );
-            periodic_dof_done[gid] =  true;
-        }
-
-        else
-        {
-            // we have a problem, no match was found, this should not happen
-            VLOG(2) << "[periodic] invalid point/dof matching\n";
-            VLOG(2) << "[periodic] n = " << x1 << "\n";
-        }
-
-    }
-    VLOG(2) << "[periodic dof table] done matching the dof points\n";
-    VLOG(2) << "[periodic dof table] is empty : " << periodic_dof[M_periodicity.tag2()].empty() << "\n";
-
-    // ensure that periodic_dof[M_periodicity.tag2()] is empty
-    if ( !periodic_dof[M_periodicity.tag2()].empty() )
-    {
-        VLOG(2) << "[periodic] periodic conditions not set properly, some periodic dof were not assigned\n";
-        typename periodic_dof_map_type::iterator it_dof2 = periodic_dof[M_periodicity.tag2()].begin();
-        typename periodic_dof_map_type::iterator en_dof2 = periodic_dof[M_periodicity.tag2()].end();
-
-        while ( it_dof2 != en_dof2 )
-        {
-
-            size_type ie = it_dof2->second.template get<0>();
-            size_type lid = it_dof2->second.template get<1>();
-
-            VLOG(2) << "[periodic] dof " << it_dof2->first << " not assigned, "
-                    << "x = " << periodic_dof_points[it_dof2->first].template get<0>() << " "
-                    << "elt = " << ie << ", lid= " << lid << "\n";
-
-
-
-            ++it_dof2;
-        }
-    }
-
-    else
-    {
-        VLOG(2) << "[periodic] periodic condition done\n";
-    }
-
-    return max_gid+1;
-}
-
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-typename DofTable<MeshType, FEType, PeriodicityType, MortarType>::size_type
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
+template<typename MeshType, typename FEType, typename MortarType>
+typename DofTable<MeshType, FEType, MortarType>::size_type
+DofTable<MeshType, FEType, MortarType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     typedef typename continuity_type::template apply<MeshType, self_type> builder;
     return fusion::accumulate( typename continuity_type::discontinuity_markers_type(), start_next_free_dof,  builder( M, *this ) );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, MortarType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     wc( this )->print( fmt::format( "[DofTable::buildDofMap] starts, dof_indices empty: {}", M_dof_indices.empty() ), Environment::logVerbosityLevel() > 1, Environment::logVerbosityLevel() > 0, Environment::logVerbosityLevel() > 1 );
 
@@ -2818,7 +2490,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 
     size_type theFirstDf = start_next_free_dof;
 
-    if ( is_periodic || is_discontinuous_locally )
+    if ( is_discontinuous_locally )
         theFirstDf = 0;
 
     //if ( is_periodic || is_discontinuous_locally )
@@ -2983,9 +2655,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     toc( "DofTable buildDofMap done", Environment::logVerbosityLevel()>1);
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( mesh_type& mesh )
+DofTable<MeshType, FEType, MortarType>::buildBoundaryDofMap( mesh_type& mesh )
 {
     tic();
     size_type nDofF = nLocalDofOnFace(true);
@@ -3171,9 +2843,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
 }    // updateBoundaryDof
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofForUse()
+DofTable<MeshType, FEType, MortarType>::updateMultiprocessDofForUse()
 {
     size_type _nLocalDofWithGhost = this->nLocalDofWithGhost();
     size_type _nLocalDofWithoutGhost = this->nLocalDofWithoutGhost();
@@ -3302,7 +2974,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
             for ( size_type gcDofIndex : gcDofs )
             {
                 //this->addNeighborSubdomain( rank );
-                size_type dofIndex = mapActiveGcToGp.at( gcDofIndex );
+                auto itDofIndex = mapActiveGcToGp.find( gcDofIndex );
+                CHECK( itDofIndex != mapActiveGcToGp.end() )
+                    << fmt::format( "missing active gc dof {} received from rank {} (active map size={}, nLocalWithoutGhost={})",
+                                    gcDofIndex, rank, mapActiveGcToGp.size(), _nLocalDofWithoutGhost );
+                size_type dofIndex = itDofIndex->second;
                 this->M_activeDofSharedOnCluster[dofIndex].insert(rank);
             }
         }
@@ -3310,9 +2986,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateMultiprocessDofFo
 }
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool __buildMinimalParallel/*, mpl::bool_<false>*/ ) const
+DofTable<MeshType, FEType, MortarType>::generateDofPoints(  mesh_type& M, bool __buildMinimalParallel/*, mpl::bool_<false>*/ ) const
 {
     if ( M_hasBuiltDofPoints )// !M_dof_points.empty() )
         return;
@@ -3417,158 +3093,18 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 #endif
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoints(  mesh_type& M,
-                                                                                     periodic_element_list_type const& periodic_elements,
-                                                                                     dof_periodic_points_type& periodic_dof_points )
-{
-    if ( fe_type::is_modal )
-        return;
-
-    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
-
-    typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
-
-    gm_ptrtype gm( new gm_type );
-    fe_type fe;
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, fe.points() ) );
-
-    //const uint16_type ndofv = fe_type::nDof;
-
-    periodic_element_list_const_iterator it_elt = periodic_elements.begin();
-    periodic_element_list_const_iterator en_elt = periodic_elements.end();
-
-    if ( it_elt == en_elt )
-        return;
-
-    auto __c = gm->template context<vm::POINT>( *it_elt->template get<0>(), __geopc );
-
-    std::vector<bool> dof_done( periodic_dof_points.size() );
-    std::fill( dof_done.begin(), dof_done.end(), false );
-
-    const uint16_type nDofPerVertexRt = runtimeDofPerVertex();
-    const uint16_type nDofPerEdgeRt = runtimeDofPerEdge();
-
-    for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
-    {
-        __c->template update<vm::POINT>( *it_elt->template get<0>() );
-
-        face_type const& __face = *it_elt->template get<1>();
-
-        size_type iElAd = __face.ad_first();
-        FEELPP_ASSERT( iElAd != invalid_v<size_type> )( __face.id() ).error( "[periodic]invalid face/element in face" );
-        Feel::detail::ignore_unused_variable_warning( iElAd );
-
-        // local id of the face in its adjacent element
-        uint16_type iFaEl = __face.pos_first();
-        FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
-
-        int ncdof  = is_product?nComponents:1;
-
-        for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
-        {
-            // loop on face vertices
-            for ( uint16_type iVeFa = 0; iVeFa < face_type::numVertices; ++iVeFa )
-            {
-                // local vertex number (in element)
-                uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
-                Feel::detail::ignore_unused_variable_warning( iVeEl );
-
-                FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
-
-                // Loop number of Dof per vertex
-                for ( uint16_type l = 0; l < nDofPerVertexRt; ++l )
-                {
-                    uint16_type lid = iVeEl * nDofPerVertexRt + l;
-
-                    size_type thedof = std::get<0>( localToGlobal( it_elt->template get<0>()->id(), lid, c1 ) );
-                    FEELPP_ASSERT( thedof < dof_done.size() )
-                        ( thedof )
-                        ( dof_done.size() )
-                        ( c1 )
-                        ( it_elt->template get<0>()->id() )
-                        ( lid ).error ( "[generatePeriodicDofPoints] invalid dof id" );
-
-                    if ( dof_done[ thedof ] == false )
-                    {
-                        periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, c1 );
-                        // these tests are problem specific x=0 and x=translation
-#if 0
-
-                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag1() )
-                            FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1" );
-
-                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag2() )
-                            FEELPP_ASSERT( math::abs( __c->xReal( lid )[0] - M_periodicity.translation()[0] ) < 1e-10 )
-                                ( __c->xReal( lid ) )( M_periodicity.translation() ).warn( "[periodic] invalid p[eriodic point tag1" );
-
-#endif
-                        dof_done[thedof] = true;
-                        ++dof_id;
-                    }
-                }
-                // loop on edge
-                for ( uint16_type l = 0; l < nDofPerEdgeRt; ++l )
-                {
-                    uint16_type lid = element_type::numVertices * nDofPerVertexRt + iFaEl * nDofPerEdgeRt + l;
-                    size_type thedof = std::get<0>( localToGlobal( it_elt->template get<0>()->id(), lid, c1 ) );
-                    FEELPP_ASSERT( thedof < dof_done.size() )
-                        ( thedof )
-                        ( dof_done.size() )
-                        ( c1 )
-                        ( it_elt->template get<0>()->id() )
-                        ( lid ).error ( "[generatePeriodicDofPoints] invalid dof id" );
-
-                    if ( dof_done[ thedof ] == false )
-                    {
-                        periodic_dof_points[thedof] = boost::make_tuple( __c->xReal( lid ), thedof, c1 );
-                        // these tests are problem specific x=0 and x=translation
-#if 0
-
-                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag1() )
-                            FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] +1 ) < 1e-10 )( __c->xReal( lid ) ).warn( "[periodic] invalid p[eriodic point tag1" );
-
-                        if ( __face.hasMarker() && __face.marker().value() == M_periodicity.tag2() )
-                            FEELPP_ASSERT( math::abs( __c->xReal( lid )[1] - ( M_periodicity.translation()[1]-1 ) ) < 1e-10 )
-                                ( __c->xReal( lid ) )( M_periodicity.translation() ).warn( "[periodic] invalid p[eriodic point tag1" );
-
-#endif
-                        dof_done[thedof] = true;
-                        ++dof_id;
-                    }
-                }
-            }
-        }
-    }
-    for ( size_type dof_id = 0; dof_id < periodic_dof_points.size() ; ++dof_id )
-    {
-        FEELPP_ASSERT( boost::get<1>( periodic_dof_points[dof_id] ) >= 0 &&
-                       boost::get<1>( periodic_dof_points[dof_id] ) < periodic_dof_points.size() )
-            ( dof_id )( periodic_dof_points.size() )
-            ( boost::get<1>( periodic_dof_points[dof_id] ) )
-            ( boost::get<0>( periodic_dof_points[dof_id] ) ).error( "invalid dof point" );
-        FEELPP_ASSERT( dof_done[dof_id] == true )( dof_id ).error( "invalid dof point" );
-    }
-}
-
-
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
 {
     addSubstructuringDofVertex( M, next_free_dof );
     addSubstructuringDofEdge( M, next_free_dof, mpl::int_<nDim>() );
     addSubstructuringDofFace( M, next_free_dof, mpl::int_<nDim>() );
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofVertex(mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofVertex(mesh_type const& M,
                                                                                     size_type next_free_dof )
 {
     std::cout << "found CrossPoints and WireBasket\n";
@@ -3606,23 +3142,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofVer
     }
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<1> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<2> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<3> )
 {
@@ -3677,23 +3213,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdg
 
     }
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<1> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<2> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<3> )
 {
@@ -3784,9 +3320,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-typename DofTable<MeshType, FEType, PeriodicityType, MortarType>::pidtodofid_type
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(std::string fname, bool dof2pid, bool pid2dof ) const
+template<typename MeshType, typename FEType, typename MortarType>
+typename DofTable<MeshType, FEType, MortarType>::pidtodofid_type
+DofTable<MeshType, FEType, MortarType>::pointIdToDofRelation(std::string fname, bool dof2pid, bool pid2dof ) const
 {
     std::unordered_map<size_type,size_type> pidtodof,doftopid;
     auto rangeElements = M_mesh->elementsWithProcessId( M_mesh->worldComm().localRank() );

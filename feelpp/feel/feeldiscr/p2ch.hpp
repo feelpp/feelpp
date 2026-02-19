@@ -36,7 +36,6 @@ struct P2ch
     typedef FunctionSpace<MeshType,
                           bases<Lagrange<Order1,Vectorial>,Lagrange<Order2,Scalar>>,
                           double,
-                          Periodicity <NoPeriodicity,NoPeriodicity>,
                           mortars<NoMortar,NoMortar> > type;
     typedef std::shared_ptr<type> ptrtype;
 };
@@ -53,7 +52,6 @@ template<typename Base1,typename Base2,typename MeshType>
 using P2ch_type = FunctionSpace<MeshType,
                                 bases<Base1, Base2>,
                                 double,
-                                Periodicity <NoPeriodicity,NoPeriodicity>,
                                 mortars<NoMortar,NoMortar> >;
 /**
  * Define the shared_ptr type for Taylor-Hood space
