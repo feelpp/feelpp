@@ -624,19 +624,36 @@ if(FEELPP_ENABLE_PYTHON)
     set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
   else ()
     execute_process(
-      COMMAND ${Python3_EXECUTABLE} -c
-        "
-import sys, sysconfig
+      COMMAND ${Python3_EXECUTABLE} -c "
+import sys, sysconfig, site, os
 base = '${CMAKE_INSTALL_PREFIX}'
+cands = []
 try:
-    # Python ≥3.12 (preferred)
-    print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+    cands += site.getsitepackages()
 except Exception:
-  try:
-    from distutils import sysconfig as dsys
-    print(dsys.get_python_lib(plat_specific=True, prefix=base))
-  except Exception as e:
-    sys.exit('Could not compute platlib path: %s' % e)"
+    pass
+cands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+# Prefer Debian-style lib/python3/dist-packages under current base
+preferred = [base + '/lib/python3/dist-packages']
+choice = None
+for p in cands:
+    if not p: continue
+    if any(p.startswith(pr) for pr in preferred):
+        choice = p; break
+# Next, prefer any path under the current base but not under base+'/local/'
+# (avoids Debian posix_local scheme doubling /usr/local/local/...)
+if choice is None:
+    for p in cands:
+        if p and p.startswith(base + os.sep) and not p.startswith(base + os.sep + 'local' + os.sep):
+            choice = p; break
+# Fallback to first candidate
+if choice is None and cands:
+    choice = cands[0]
+if choice:
+    print(choice)
+else:
+    sys.exit('Could not compute Python module path')
+"
       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
       RESULT_VARIABLE _PYTHON_pythonlib_result
       OUTPUT_STRIP_TRAILING_WHITESPACE
