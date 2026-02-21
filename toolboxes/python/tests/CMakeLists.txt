@@ -10,7 +10,33 @@ foreach(item in ${TOOLBOXES} ${TOOLBOXES_CORE})
   set(LDPATH "${FEELPP_PYTHON_BUILD_DIR}/feel/feelmodels/${item}:${LDPATH}")
 endforeach()
 
-foreach(toolbox fluid cfpdes heat electric thermoelectric heatfluid interpolation )
+# Build list of enabled toolboxes for testing
+set(_enabled_toolboxes "")
+if(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS)
+  list(APPEND _enabled_toolboxes fluid)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_CFPDE)
+  list(APPEND _enabled_toolboxes cfpdes)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_HEAT)
+  list(APPEND _enabled_toolboxes heat)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_ELECTRIC)
+  list(APPEND _enabled_toolboxes electric)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC)
+  list(APPEND _enabled_toolboxes thermoelectric)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_HEAT AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS)
+  list(APPEND _enabled_toolboxes heatfluid)
+endif()
+if(_enabled_toolboxes)
+  list(APPEND _enabled_toolboxes interpolation)
+endif()
+
+message(STATUS "[pyfeelpptoolboxes] enabled toolboxes for testing: ${_enabled_toolboxes}")
+
+foreach(toolbox IN LISTS _enabled_toolboxes)
   add_test (NAME feelpp_toolbox_python-tests-${toolbox}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
