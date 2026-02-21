@@ -37,18 +37,20 @@ endif()
 message(STATUS "[pyfeelpptoolboxes] enabled toolboxes for testing: ${_enabled_toolboxes}")
 
 foreach(toolbox IN LISTS _enabled_toolboxes)
+  # Run pytest on the specific test file to avoid collecting/importing
+  # test files for disabled toolboxes
   add_test (NAME feelpp_toolbox_python-tests-${toolbox}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
           PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-          ${Python3_EXECUTABLE} -m pytest -k ${toolbox} -s ${CMAKE_CURRENT_SOURCE_DIR}
+          ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/test_${toolbox}.py
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
   add_test (NAME feelpp_toolbox_python-tests-mpi-${toolbox}
     COMMAND ${CMAKE_COMMAND} -E env
           LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}
           PYTHONPATH=${CMAKE_INSTALL_PREFIX}/${FEELPP_PYTHON_MODULE_PATH}
-          mpirun -np 2 ${Python3_EXECUTABLE} -m pytest -k ${toolbox} -s ${CMAKE_CURRENT_SOURCE_DIR}
+          mpirun -np 2 ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/test_${toolbox}.py
           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 endforeach()
