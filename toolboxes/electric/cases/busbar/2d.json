@@ -4,8 +4,9 @@
     "ShortName":"cvg2d",
     "Parameters":
     {
-        "v_expr":"0.25*x/L:x:L",
-        "c_expr":"{-0.25/L,0}:L"
+        "v_expr":"0.25*x:x",
+        "c_expr":"{-0.25,0}:x:y",
+        "grad_v_expr":"{0.25,0}:x:y"
     },
     "Meshes":
     {
@@ -49,6 +50,9 @@
             "Exports":
             {
                 "fields":["electric-potential","electric-field","pid"]
+            },
+            "Checkers":
+            {
             }
         }
     }

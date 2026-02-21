@@ -4,18 +4,19 @@
 #include <feel/feelmodels/electric/electric.hpp>
 
 template <int nDim,int OrderT>
-void
+int
 runApplicationElectric()
 {
     using namespace Feel;
 
     typedef FeelModels::Electric< Simplex<nDim,1>,
                                   Lagrange<OrderT, Scalar,Continuous,PointSetFekete> > model_type;
-    std::shared_ptr<model_type> electric( new model_type("electric") );
+    auto electric = std::make_shared<model_type>("electric");
     electric->init();
     electric->printAndSaveInfo();
     electric->solve();
     electric->exportResults();
+    return !electric->checkResults();
 }
 
 int
@@ -39,15 +40,16 @@ main(int argc, char**argv )
 
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
+        int status = 0;
 
-        hana::for_each( Pc_t<2,3,1,2>, [&discretization, &dimension]( auto const& d )
+        hana::for_each( Pc_t<2,3,1,2>, [&discretization, &dimension, &status]( auto const& d )
                         {
                             constexpr int _dim = std::decay_t<decltype( hana::at_c<0>( d ) )>::value;
                             constexpr int _torder = std::decay_t<decltype( hana::at_c<1>( d ) )>::value;
                             std::string const& _discretization = hana::at_c<2>( d );
                             if ( dimension == _dim && discretization == _discretization )
-                                runApplicationElectric<_dim,_torder>(); } );
-        return 0;
+                                status = runApplicationElectric<_dim,_torder>(); } );
+        return status;
     }
     catch(...)
     {
