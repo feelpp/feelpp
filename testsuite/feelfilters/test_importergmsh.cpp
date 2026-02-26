@@ -28,6 +28,8 @@
  */
 #include <sstream>
 #include <cmath>
+#include <array>
+#include <type_traits>
 
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
@@ -35,12 +37,13 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
 #include <feel/feelcore/testsuite.hpp>
-#include <boost/mpl/list.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 
 using boost::unit_test::test_suite;
+namespace bdata = boost::unit_test::data;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -85,6 +88,66 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
 
 namespace
 {
+template <typename Callable>
+void runForDim( int dim, Callable&& c )
+{
+    switch ( dim )
+    {
+    case 1:
+        c( std::integral_constant<int, 1>{} );
+        break;
+    case 2:
+        c( std::integral_constant<int, 2>{} );
+        break;
+    case 3:
+        c( std::integral_constant<int, 3>{} );
+        break;
+    default:
+        BOOST_FAIL( "Unsupported dimension " << dim );
+    }
+}
+
+template <int Dim>
+void checkGmshImportExport()
+{
+    if ( Environment::worldComm().size() > 1 )
+        return;
+
+    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << Dim << "\n" );
+    using mesh_type = Mesh<Simplex<Dim,1>>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+
+    mesh_ptrtype mesh, meshimp;
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=( boost::format( "simplex-%1%" )  % Dim ).str() ,
+                                         _usenames=true,
+                                         _addmidpoint=false,
+                                         _shape="simplex",
+                                         _dim=Dim,
+                                         _h=0.5 ) );
+
+    std::ostringstream fstr;
+    fstr << "gmshexp-" << Dim << ".msh";
+    saveGMSHMesh( _mesh=mesh, _filename=fstr.str() );
+
+    meshimp = loadGMSHMesh( _mesh=new mesh_type,
+                            _filename=fstr.str(),
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+    BOOST_CHECK_EQUAL( nelements( elements( mesh ) ), nelements( elements( meshimp ) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces( mesh, "Neumann" ) ), nelements( markedfaces( meshimp, "Neumann" ) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces( mesh, "Dirichlet" ) ), nelements( markedfaces( meshimp, "Dirichlet" ) ) );
+    BOOST_WARN_EQUAL( nelements( boundaryfaces( mesh ) ), nelements( boundaryfaces( meshimp ) ) );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
+                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+
+    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( std::abs( r1-r2 ), 1e-12 );
+
+    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << Dim << " done.\n" );
+}
+
 using periodic_mesh_type = Mesh<Simplex<2,1>>;
 using periodic_mesh_ptrtype = std::shared_ptr<periodic_mesh_type>;
 
@@ -212,25 +275,49 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( gmshsuite )
 
-
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshsimplex, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "simplex" );
+    BOOST_TEST_CONTEXT( "shape=simplex dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim>( "simplex" );
+        } );
+    }
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_simplex, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshhypercube_simplex, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "hypercube" );
+    BOOST_TEST_CONTEXT( "shape=hypercube simplex-convex dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim>( "hypercube" );
+        } );
+    }
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_hypercube, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshhypercube_hypercube, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value, Hypercube>( "hypercube", "Hypercube" );
+    BOOST_TEST_CONTEXT( "shape=hypercube hypercube-convex dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim, Hypercube>( "hypercube", "Hypercube" );
+        } );
+    }
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshellipsoid, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "ellipsoid" );
+    BOOST_TEST_CONTEXT( "shape=ellipsoid dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim>( "ellipsoid" );
+        } );
+    }
 }
 
 BOOST_AUTO_TEST_CASE( gmshgeo )
@@ -374,57 +461,16 @@ BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
 }
 #endif // FEELPP_HAS_TBB
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshimportexport, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    if ( Environment::worldComm().size()>1) return;
-
-    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << "\n" );
-    typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
-    mesh_ptrtype mesh,meshimp;
-    // simplex
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
-                                         _usenames=true,
-                                         _addmidpoint=false,
-                                         _shape="simplex",
-                                         _dim=T::value,
-                                         _h=0.5 ) );
-
-#if 0
-    std::ostringstream estr;
-    estr << "gmshexp-" << T::value;
-    typedef Exporter<mesh_type> export_type;
-    typedef std::shared_ptr<export_type> export_ptrtype;
-    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->save();
-    std::ostringstream fstr;
-    fstr << "gmshexp-" << T::value << "-1_0.msh";
-#else
-    std::ostringstream fstr;
-    fstr << "gmshexp-" << T::value << ".msh";
-    saveGMSHMesh(_mesh=mesh,_filename=fstr.str() );
-#endif
-
-
-    meshimp = loadGMSHMesh( _mesh=new mesh_type,
-                            _filename=fstr.str(),
-                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-
-    BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Neumann") ),nelements( markedfaces(meshimp,"Neumann") ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Dirichlet") ),nelements( markedfaces(meshimp,"Dirichlet") ) );
-    BOOST_WARN_EQUAL( nelements( boundaryfaces( mesh ) ),  nelements( boundaryfaces( meshimp ) ) );
-    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-
-    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()(0,0);
-    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0);
-    BOOST_CHECK_SMALL( std::abs(r1-r2),1e-12 );
-
-    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
+    BOOST_TEST_CONTEXT( "gmshimportexport dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkGmshImportExport<Dim>();
+        } );
+    }
 }
 
 /*

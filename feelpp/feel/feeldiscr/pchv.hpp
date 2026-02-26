@@ -146,10 +146,11 @@ Pchv( std::shared_ptr<MeshType> const& mesh,
       RangeType&& rangeElt,
       DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
-    return Pchv<Order,Pts,MeshType,T,Tag>( mesh,
-                                           std::forward<RangeType>(rangeElt),
-                                           RuntimeOrder{ static_cast<uint16_type>( Order ) },
-                                           dte );
+    return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
+                                                     _range=std::forward<RangeType>(rangeElt),
+                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                                     _extended_doftable=dte,
+                                                     _runtime_order=RuntimeOrder{ static_cast<uint16_type>( Order ) } );
 }
 
 

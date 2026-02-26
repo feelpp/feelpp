@@ -546,19 +546,19 @@ private:
     FEELPP_NO_EXPORT int addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
 
     FEELPP_NO_EXPORT int addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
-    FEELPP_NO_EXPORT int addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> );
-    FEELPP_NO_EXPORT int addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<2> );
-    FEELPP_NO_EXPORT int addEdge( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<3> );
+    FEELPP_NO_EXPORT int addEdgeDim1( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    FEELPP_NO_EXPORT int addEdgeDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    FEELPP_NO_EXPORT int addEdgeDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
 
     FEELPP_NO_EXPORT int addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
-    FEELPP_NO_EXPORT int addFace( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<1> );
-    FEELPP_NO_EXPORT int addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<2> );
-    FEELPP_NO_EXPORT int addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> );
+    FEELPP_NO_EXPORT int addFaceDim1( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    FEELPP_NO_EXPORT int addFaceDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    FEELPP_NO_EXPORT int addFaceDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
 
     FEELPP_NO_EXPORT int addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
-    FEELPP_NO_EXPORT int addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<1> );
-    FEELPP_NO_EXPORT int addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<2> );
-    FEELPP_NO_EXPORT int addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> );
+    FEELPP_NO_EXPORT int addVolumeDim1( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    FEELPP_NO_EXPORT int addVolumeDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    FEELPP_NO_EXPORT int addVolumeDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
 
     FEELPP_NO_EXPORT void updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                     std::vector<int> const& nbMsgToRecv );
@@ -2849,11 +2849,16 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    return addEdge( mesh, __e, mpl::int_<mesh_type::nDim>() );
+    if constexpr ( mesh_type::nDim == 1 )
+        return addEdgeDim1( mesh, __e );
+    else if constexpr ( mesh_type::nDim == 2 )
+        return addEdgeDim2( mesh, __e );
+    else
+        return addEdgeDim3( mesh, __e );
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const& __e, mpl::int_<1> )
+ImporterGmsh<MeshType>::addEdgeDim1( mesh_type*mesh, Feel::detail::GMSHElement const& __e )
 {
     element_type e;
     e.setId( ( false )? __e.num : mesh->elements().size() );
@@ -2892,7 +2897,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
 
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<2> )
+ImporterGmsh<MeshType>::addEdgeDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
     face_type e;
     e.setProcessIdInPartition( this->worldComm().localRank() );
@@ -2930,7 +2935,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> )
+ImporterGmsh<MeshType>::addEdgeDim3( mesh_type*mesh, Feel::detail::GMSHElement const& __e )
 {
     edge_type e;
     e.setProcessIdInPartition( this->worldComm().localRank() );
@@ -2970,12 +2975,17 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    return addFace( mesh, __e, mpl::int_<mesh_type::nDim>() );
+    if constexpr ( mesh_type::nDim == 1 )
+        return addFaceDim1( mesh, __e );
+    else if constexpr ( mesh_type::nDim == 2 )
+        return addFaceDim2( mesh, __e );
+    else
+        return addFaceDim3( mesh, __e );
 }
 
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addFace( mesh_type*, Feel::detail::GMSHElement const&, mpl::int_<1> )
+ImporterGmsh<MeshType>::addFaceDim1( mesh_type*, Feel::detail::GMSHElement const& )
 {
     CHECK( false ) << "ImporterGmsh<MeshType>::addFace with dim=1 not valid";
     return 0;
@@ -2983,7 +2993,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type*, Feel::detail::GMSHElement const&, m
 
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<2> )
+ImporterGmsh<MeshType>::addFaceDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
     GmshOrdering<element_type> ordering;
 
@@ -3021,7 +3031,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> )
+ImporterGmsh<MeshType>::addFaceDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
     GmshOrdering<face_type> ordering;
 
@@ -3058,25 +3068,30 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    return addVolume( mesh, __e, mpl::int_<mesh_type::nDim>() );
+    if constexpr ( mesh_type::nDim == 1 )
+        return addVolumeDim1( mesh, __e );
+    else if constexpr ( mesh_type::nDim == 2 )
+        return addVolumeDim2( mesh, __e );
+    else
+        return addVolumeDim3( mesh, __e );
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addVolume( mesh_type*, Feel::detail::GMSHElement const&, mpl::int_<1> )
+ImporterGmsh<MeshType>::addVolumeDim1( mesh_type*, Feel::detail::GMSHElement const& )
 {
     CHECK( false ) << "ImporterGmsh<MeshType>::addVolume with dim=1 not valid";
     return 0;
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addVolume( mesh_type*, Feel::detail::GMSHElement const&, mpl::int_<2> )
+ImporterGmsh<MeshType>::addVolumeDim2( mesh_type*, Feel::detail::GMSHElement const& )
 {
     CHECK( false ) << "ImporterGmsh<MeshType>::addVolume with dim=2 not valid";
     return 0;
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> )
+ImporterGmsh<MeshType>::addVolumeDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
     element_type e;
     e.setId( ( false )? __e.num : mesh->elements().size() );
