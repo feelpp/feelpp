@@ -1,12 +1,11 @@
 // -*- mode: javascript -*-
 {
-    "Name":"cvg2d",
-    "ShortName":"cvg2d",
+    "Name":"electric-convergence-square-2d",
+    "ShortName":"conv-square-2d",
     "Parameters":
     {
-        "v_expr":"2*0.25/Pi*atan2(x,y):x:y",
-        "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y)}:x:y:z",
-        "grad_v_expr":"{0.5/Pi*y/(x*x+y*y),-0.5/Pi*x/(x*x+y*y)}:x:y"
+        "v_expr":"exp(x)*cos(y):x:y",
+        "grad_v_expr":"{exp(x)*cos(y),-exp(x)*sin(y)}:x:y"
     },
     "Meshes":
     {
@@ -23,7 +22,7 @@
     {
         "omega":
         {
-            "sigma":"4.8e7"
+            "sigma":"1"
         }
     },
     "BoundaryConditions":
@@ -32,13 +31,10 @@
         {
             "electric_potential":
             {
-                "V0":
+                "Vexact":
                 {
-                    "expr":"0" // V_in
-                },
-                "V1":
-                {
-                    "expr":"0.25" // V_out
+                    "expr":"v_expr:v_expr",
+                    "markers":["Vexact"]
                 }
             }
         }
@@ -60,7 +56,9 @@
                         "field":"electric-potential",
                         "type":["L2-error","H1-error"],
                         "solution":"v_expr:v_expr",
-                        "grad_solution":"{0.5/Pi*y/(x*x+y*y),-0.5/Pi*x/(x*x+y*y)}:x:y"
+                        "grad_solution":"{exp(x)*cos(y),-exp(x)*sin(y)}:x:y",
+                        "quad":15,
+                        "quad1":15
                     }
                 }
             },
@@ -76,7 +74,7 @@
                     "Norm_error-evaluated_H1-error":
                     {
                         "value":0,
-                        "tolerance":1
+                        "tolerance":1e-1
                     }
                 }
             }

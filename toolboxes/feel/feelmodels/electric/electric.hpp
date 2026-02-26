@@ -108,7 +108,9 @@ public:
               std::string const& keyword = "electric",
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix = "",
-              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+              ModelBaseRepository const& modelRep = ModelBaseRepository(),
+              RuntimeOrder polynomialOrder = RuntimeOrder{ basis_electricpotential_type::is_order_dynamic ? 1 : nOrderPolyElectricPotential },
+              RuntimeOrder geometryOrder = RuntimeOrder{ convex_type::is_order_dynamic ? 1 : nOrderGeo } );
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
@@ -364,6 +366,9 @@ public :
         }
 
 private :
+
+    RuntimeOrder M_runtimeOrderPotential;
+    RuntimeOrder M_runtimeOrderGeo;
 
     Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 
