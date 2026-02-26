@@ -3,7 +3,6 @@
 
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
-#include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <boost/preprocessor/array/to_list.hpp>
 #include <boost/preprocessor/list/append.hpp>
 
@@ -461,7 +460,7 @@ ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
 template <typename IndexType>
 template <typename MeshType>
 void
-ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
+ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, RuntimeOrder runtimeGeometryOrder )
 {
     using mesh_type = MeshType;
 
@@ -488,17 +487,34 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
             if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
-                meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
-                                  _filename=inputMeshFilename,
-                                  _prefix=mMeshes.prefix(),
-                                  _vm=mMeshes.clovm(),
-                                  _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                  _straighten=importConfig.straightenMesh(),
-                                  _rebuild_partitions=generatePartitioning,
-                                  _rebuild_partitions_filename=meshPartitionedFilename,
-                                  _partitions=importConfig.numberOfPartition(),
-                                  _savehdf5=0,
-                                  _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+                if constexpr ( mesh_type::is_order_dynamic )
+                {
+                    meshLoaded = loadMesh(_mesh=new mesh_type( runtimeGeometryOrder, M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                                      _filename=inputMeshFilename,
+                                      _prefix=mMeshes.prefix(),
+                                      _vm=mMeshes.clovm(),
+                                      _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                      _straighten=importConfig.straightenMesh(),
+                                      _rebuild_partitions=generatePartitioning,
+                                      _rebuild_partitions_filename=meshPartitionedFilename,
+                                      _partitions=importConfig.numberOfPartition(),
+                                      _savehdf5=0,
+                                      _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+                }
+                else
+                {
+                    meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                                      _filename=inputMeshFilename,
+                                      _prefix=mMeshes.prefix(),
+                                      _vm=mMeshes.clovm(),
+                                      _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                      _straighten=importConfig.straightenMesh(),
+                                      _rebuild_partitions=generatePartitioning,
+                                      _rebuild_partitions_filename=meshPartitionedFilename,
+                                      _partitions=importConfig.numberOfPartition(),
+                                      _savehdf5=0,
+                                      _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+                }
             }
 
             meshFilename = (generatePartitioning)? meshPartitionedFilename : importConfig.meshFilename();
@@ -523,16 +539,32 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                             _h=importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
                 geodesc->setPrefix(meshFilenameBase);
-                meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
-                                        _desc=geodesc,
-                                        _prefix=mMeshes.prefix(),
-                                        _vm=mMeshes.clovm(),
-                                        _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                        _h=importConfig.meshSize(),
-                                        _straighten=importConfig.straightenMesh(),
-                                        _partitions=importConfig.numberOfPartition(),
-                                        _update=importConfig.meshComponents(),
-                                        _directory=mMeshes.rootRepository() );
+                if constexpr ( mesh_type::is_order_dynamic )
+                {
+                    meshLoaded = createGMSHMesh(_mesh=new mesh_type( runtimeGeometryOrder, M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                                            _desc=geodesc,
+                                            _prefix=mMeshes.prefix(),
+                                            _vm=mMeshes.clovm(),
+                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                            _h=importConfig.meshSize(),
+                                            _straighten=importConfig.straightenMesh(),
+                                            _partitions=importConfig.numberOfPartition(),
+                                            _update=importConfig.meshComponents(),
+                                            _directory=mMeshes.rootRepository() );
+                }
+                else
+                {
+                    meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                                            _desc=geodesc,
+                                            _prefix=mMeshes.prefix(),
+                                            _vm=mMeshes.clovm(),
+                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                            _h=importConfig.meshSize(),
+                                            _straighten=importConfig.straightenMesh(),
+                                            _partitions=importConfig.numberOfPartition(),
+                                            _update=importConfig.meshComponents(),
+                                            _directory=mMeshes.rootRepository() );
+                }
             }
             meshFilename = mshfile;
         }
@@ -973,39 +1005,6 @@ template class ModelMeshes<uint32_type>;
           ( Simplex,1,1,3) ) )                                          \
     /**/
 
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST \
-    BOOST_PP_TUPLE_TO_LIST(                                             \
-        ( ( Simplex,2,2,2),                                             \
-          ( Simplex,3,2,3),                                             \
-          ( Simplex,1,2,2),                                             \
-          ( Simplex,1,2,3) ) )                                          \
-    /**/
-#else
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST BOOST_PP_NIL
-#endif
-
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST \
-    BOOST_PP_TUPLE_TO_LIST(                                             \
-        ( ( Simplex,2,3,2),                                             \
-          ( Simplex,3,3,3) ) )                                          \
-    /**/
-#else
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST BOOST_PP_NIL
-#endif
-
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST \
-    BOOST_PP_TUPLE_TO_LIST(                                             \
-        ( ( Simplex,2,4,2),                                             \
-          ( Simplex,3,4,3) ) )                                          \
-    /**/
-#else
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST BOOST_PP_NIL
-#endif
-
-
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)   BOOST_PP_TUPLE_ELEM(4, 0, T)
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T)   BOOST_PP_TUPLE_ELEM(4, 1, T)
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_ORDER(T)   BOOST_PP_TUPLE_ELEM(4, 2, T)
@@ -1019,10 +1018,7 @@ template class ModelMeshes<uint32_type>;
     /**/
 
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST     \
-    BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST, \
-                          BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST, \
-                                                BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST, \
-                                                                      FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST ) ) ) \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST \
     /**/
 
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST    \
@@ -1035,7 +1031,7 @@ template class ModelMeshes<uint32_type>;
     FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE IS    \
    /**/
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE(PP_I,PP_GS) \
-    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const& ); \
+    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const&, RuntimeOrder ); \
     template void ModelMesh<PP_I>::applyRemesh<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( std::shared_ptr<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>> const& );
     /**/
 

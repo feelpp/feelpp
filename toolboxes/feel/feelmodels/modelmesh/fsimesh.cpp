@@ -304,25 +304,7 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
 
 template class FSIMesh< Simplex<2,1> >;
 template class FSIMesh< Simplex<3,1> >;
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
-template class FSIMesh< Simplex<2,2> >;
-template class FSIMesh< Simplex<3,2> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-template class FSIMesh< Simplex<2,3> >;
-template class FSIMesh< Simplex<3,3> >;
-#endif
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-template class FSIMesh< Simplex<2,4> >;
-template class FSIMesh< Simplex<3,4> >;
-#endif
-#if 0 // miss straigten instantiation
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 5 )
-template class FSIMesh< Simplex<2,5> >;
-#endif
-#endif
 
 
 } // namespace FeelModels
 } // namespace Feel
-

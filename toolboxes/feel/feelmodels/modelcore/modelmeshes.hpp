@@ -7,6 +7,7 @@
 #include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/nedelec.hpp>
+#include <feel/feelpoly/order.hpp>
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
@@ -516,7 +517,7 @@ public :
     import_config_type const& importConfig() const { return M_mmeshCommon->importConfig(); }
 
     template <typename MeshType>
-    void updateForUse( ModelMeshes<IndexType> const& mMeshes );
+    void updateForUse( ModelMeshes<IndexType> const& mMeshes, RuntimeOrder runtimeGeometryOrder = RuntimeOrder{1} );
 
     template <typename MeshType>
     void initMeasurePointsEvaluationTool()
@@ -958,10 +959,10 @@ public:
     void setModelMeshAsShared( ModelMesh<IndexType> const& m ) { this->setModelMeshAsShared( this->keyword(), m ); }
 
     template <typename MeshType>
-    void updateForUse( std::string const& meshName )
+    void updateForUse( std::string const& meshName, RuntimeOrder runtimeGeometryOrder = RuntimeOrder{1} )
     {
         if ( this->hasModelMesh( meshName ) )
-            this->modelMesh( meshName ).template updateForUse<MeshType>( *this );
+            this->modelMesh( meshName ).template updateForUse<MeshType>( *this, runtimeGeometryOrder );
     }
 
     template <typename MeshType>
