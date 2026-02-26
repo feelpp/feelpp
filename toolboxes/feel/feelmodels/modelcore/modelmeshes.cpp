@@ -1050,7 +1050,9 @@ template class ModelMeshes<uint32_type>;
         ( ( Simplex,2,1,2),                                             \
           ( Simplex,3,1,3),                                             \
           ( Simplex,1,1,2),                                             \
-          ( Simplex,1,1,3) ) )                                          \
+          ( Simplex,1,1,3),                                             \
+          ( Hypercube,2,1,2),                                           \
+          ( Hypercube,3,1,3)  ) )                                       \
     /**/
 
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )

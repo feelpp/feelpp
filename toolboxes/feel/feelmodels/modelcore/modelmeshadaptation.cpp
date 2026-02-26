@@ -257,6 +257,8 @@ template class ModelMesh<uint32_type>;
 
 template std::shared_ptr<Mesh<Simplex<2,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>> );
 template std::shared_ptr<Mesh<Simplex<3,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>> );
+template std::shared_ptr<Mesh<Hypercube<2,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Hypercube<2,1>>>( std::shared_ptr<Mesh<Hypercube<2,1>>> );
+template std::shared_ptr<Mesh<Hypercube<3,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Hypercube<3,1>>>( std::shared_ptr<Mesh<Hypercube<3,1>>> );
 
 } // namespace FeelModel
 } // namespace Feel
