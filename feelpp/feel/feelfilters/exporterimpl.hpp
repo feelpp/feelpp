@@ -32,6 +32,9 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
+#include <functional>
+#include <unordered_map>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
@@ -85,7 +88,7 @@ Exporter<MeshType, N>::Exporter( worldcomm_ptr_t const& worldComm )
     M_freq( 1 ),
     M_ft( ASCII ),
     M_path( "." ),
-    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    M_ex_geometry( EXPORTER_GEOMETRY_STATIC )
 {
     VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
@@ -103,7 +106,7 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     M_freq( __freq ),
     M_ft( ASCII ),
     M_path( "." ),
-    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    M_ex_geometry( EXPORTER_GEOMETRY_STATIC )
 {
 
 }
@@ -121,7 +124,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_freq( 1 ),
     M_ft( ASCII ),
     M_path( "." ),
-    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    M_ex_geometry( EXPORTER_GEOMETRY_STATIC )
 {
     VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
@@ -139,7 +142,7 @@ Exporter<MeshType, N>::Exporter( std::string const& exp_prefix, worldcomm_ptr_t 
     M_freq( 1 ),
     M_ft( ASCII ),
     M_path( "." ),
-    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    M_ex_geometry( EXPORTER_GEOMETRY_STATIC )
 {
     VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
@@ -157,7 +160,7 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     M_freq( __ex.M_freq ),
     M_ft( __ex.M_ft ),
     M_path( __ex.M_path ),
-    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    M_ex_geometry( __ex.M_ex_geometry )
 {
 
 }
@@ -170,37 +173,49 @@ template<typename MeshType, int N>
 std::shared_ptr<Exporter<MeshType, N> >
 Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix, worldcomm_ptr_t const& worldComm )
 {
-    Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
+    using exporter_ptr_type = std::shared_ptr<Exporter<MeshType, N>>;
+    using creator_fn_type = std::function<exporter_ptr_type()>;
+    std::unordered_map<std::string, creator_fn_type> creators;
 
-    if ( N == 1 && ( exportername == "ensight" ) )
-        exporter = new ExporterEnsight<MeshType, N>( worldComm );
+    if constexpr ( N == 1 )
+    {
+        creators.emplace( "ensight", [&worldComm]() { return std::make_shared<ExporterEnsight<MeshType, N>>( worldComm ); } );
+        creators.emplace( "exodus", [&worldComm]() { return std::make_shared<ExporterExodus<MeshType, N>>( worldComm ); } );
+    }
 #if defined(FEELPP_HAS_MPIIO)
-    else if ( N <= 2 && ( exportername == "ensightgold"  ) )
-        exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
+    if constexpr ( N <= 2 )
+        creators.emplace( "ensightgold", [&worldComm]() { return std::make_shared<ExporterEnsightGold<MeshType, N>>( worldComm ); } );
 #endif
-    else if ( N == 1 && ( exportername == "exodus"  ) )
-        exporter = new ExporterExodus<MeshType, N>( worldComm );
 #if defined(FEELPP_HAS_HDF5)
-    else if ( N == 1 && ( exportername == "xdmf" ))
-        exporter = new ExporterXDMF<MeshType, N> ( worldComm ) ;
+    if constexpr ( N == 1 )
+        creators.emplace( "xdmf", [&worldComm]() { return std::make_shared<ExporterXDMF<MeshType, N>>( worldComm ); } );
 #endif
 #if defined(FEELPP_HAS_VTK)
-    else if ( N == 1 && ( exportername == "vtk"  ) )
-        exporter = new ExporterVTK<MeshType, N>( worldComm );
+    if constexpr ( N == 1 )
+        creators.emplace( "vtk", [&worldComm]() { return std::make_shared<ExporterVTK<MeshType, N>>( worldComm ); } );
 #endif
 #ifdef FEELPP_HAS_GMSH
-    else if ( N > 1 || ( exportername == "gmsh" ) )
-        exporter = new ExporterGmsh<MeshType,N>( worldComm );
+    creators.emplace( "gmsh", [&worldComm]() { return std::make_shared<ExporterGmsh<MeshType, N>>( worldComm ); } );
 #endif
-    else // fallback
+
+    std::string requestedName = exportername;
+#ifdef FEELPP_HAS_GMSH
+    if constexpr ( N > 1 )
+        requestedName = "gmsh";
+#endif
+
+    auto itCreator = creators.find( requestedName );
+    exporter_ptr_type exporter = ( itCreator != creators.end() ) ? itCreator->second() : nullptr;
+
+    if ( !exporter )
     {
         LOG(INFO) << "[Exporter] The exporter format " << exportername << " Cannot be found. Falling back to Ensight exporter." << std::endl;
-        exporter = new ExporterEnsight<MeshType, N>( worldComm );
+        exporter = std::make_shared<ExporterEnsight<MeshType, N>>( worldComm );
     }
 
-    exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
+    exporter->addTimeSet( std::make_shared<timeset_type>( prefix ) );
     exporter->setPrefix( prefix );
-    return std::shared_ptr<Exporter<MeshType, N> >(exporter);
+    return exporter;
 }
 
 template<typename MeshType, int N>
@@ -214,34 +229,46 @@ std::shared_ptr<Exporter<MeshType, N> >
 Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm )
 {
     std::string estr = soption("exporter.format");
-    std::shared_ptr<Exporter<MeshType, N> > exporter;
+    using exporter_ptr_type = std::shared_ptr<Exporter<MeshType, N>>;
+    using creator_fn_type = std::function<exporter_ptr_type()>;
+    std::unordered_map<std::string, creator_fn_type> creators;
 
     LOG(INFO) << "[Exporter] format :  " << estr << "\n";
     LOG(INFO) << "[Exporter] N      :  " << N << "\n";
     if( N > 1 && estr != "gmsh" )
         LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
 
-    if ( N == 1 && ( estr == "ensight"   ) )
-        exporter = std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm );
+    if constexpr ( N == 1 )
+    {
+        creators.emplace( "ensight", [&prefix, &worldComm]() { return std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm ); } );
+        creators.emplace( "exodus", [&prefix, &worldComm]() { return std::make_shared<ExporterExodus<MeshType, N>>( prefix, worldComm ); } );
+    }
 #if defined(FEELPP_HAS_MPIIO)
-    else if ( N <= 2 && ( estr == "ensightgold"   ) )
-        exporter = std::make_shared<ExporterEnsightGold<MeshType, N>>( prefix, worldComm );
+    if constexpr ( N <= 2 )
+        creators.emplace( "ensightgold", [&prefix, &worldComm]() { return std::make_shared<ExporterEnsightGold<MeshType, N>>( prefix, worldComm ); } );
 #endif
-    else if ( N == 1 && ( estr == "exodus"   ) )
-        exporter = std::make_shared<ExporterExodus<MeshType, N>>( prefix, worldComm );
 #if defined(FEELPP_HAS_HDF5)
-    else if ( N == 1 && ( estr == "xdmf" ) )
-        exporter = std::make_shared<ExporterXDMF<MeshType, N>> ( prefix, worldComm ) ;
+    if constexpr ( N == 1 )
+        creators.emplace( "xdmf", [&prefix, &worldComm]() { return std::make_shared<ExporterXDMF<MeshType, N>>( prefix, worldComm ); } );
 #endif
 #if defined(FEELPP_HAS_VTK)
-    else if ( N == 1 && ( estr == "vtk"  ) )
-        exporter = std::make_shared<ExporterVTK<MeshType, N>>( prefix, worldComm );
+    if constexpr ( N == 1 )
+        creators.emplace( "vtk", [&prefix, &worldComm]() { return std::make_shared<ExporterVTK<MeshType, N>>( prefix, worldComm ); } );
 #endif
 #ifdef FEELPP_HAS_GMSH
-    else if ( N > 1 || estr == "gmsh" )
-        exporter = std::make_shared<ExporterGmsh<MeshType,N>>( prefix, worldComm );
+    creators.emplace( "gmsh", [&prefix, &worldComm]() { return std::make_shared<ExporterGmsh<MeshType, N>>( prefix, worldComm ); } );
 #endif
-    else // fallback
+
+    std::string requestedName = estr;
+#ifdef FEELPP_HAS_GMSH
+    if constexpr ( N > 1 )
+        requestedName = "gmsh";
+#endif
+
+    auto itCreator = creators.find( requestedName );
+    exporter_ptr_type exporter = ( itCreator != creators.end() ) ? itCreator->second() : nullptr;
+
+    if ( !exporter )
     {
         LOG(INFO) << "[Exporter] The exporter format " << estr << " Cannot be found. Falling back to Ensight exporter." << std::endl;
         exporter = std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm );

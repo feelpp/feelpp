@@ -142,35 +142,25 @@ typedef std::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
 void run( data_geo_ptrtype __dg );
-
-
-
-#define GEOTOOL_INSTANTIATES_FOR_COMP(r, state)                         \
-        BOOST_PP_NOT_EQUAL( BOOST_PP_TUPLE_ELEM(2, 0, state),           \
-                            BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
-                            )                                           \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-#define GEOTOOL_INSTANTIATES_FOR_INCR(r, state)             \
-        (                                                   \
-         BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)),	\
-         BOOST_PP_TUPLE_ELEM(2, 1, state) )                 \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-#define GEOTOOL_INSTANTIATES_FOR(r,state)                               \
-        void BOOST_PP_CAT(run,GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))) (data_geo_ptrtype dg); \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
-              GEOTOOL_INSTANTIATES_FOR_COMP,
-              GEOTOOL_INSTANTIATES_FOR_INCR,
-              GEOTOOL_INSTANTIATES_FOR )
+void runLine( data_geo_ptrtype dg );
+void runTriangle( data_geo_ptrtype dg );
+void runRectangle( data_geo_ptrtype dg );
+void runQuadrangle( data_geo_ptrtype dg );
+void runPentagon( data_geo_ptrtype dg );
+void runHexagon( data_geo_ptrtype dg );
+void runCircle( data_geo_ptrtype dg );
+void runEllipse( data_geo_ptrtype dg );
+void runPie( data_geo_ptrtype dg );
+void runSpecial_1a( data_geo_ptrtype dg );
+void runSpecial_1b( data_geo_ptrtype dg );
+void runPeanut( data_geo_ptrtype dg );
+void runTetrahedron( data_geo_ptrtype dg );
+void runHexahedron( data_geo_ptrtype dg );
+void runCube( data_geo_ptrtype dg );
+void runCylindre( data_geo_ptrtype dg );
+void runSphere( data_geo_ptrtype dg );
+void runTube( data_geo_ptrtype dg );
+void runSpecial3D_1( data_geo_ptrtype dg );
 
 
 

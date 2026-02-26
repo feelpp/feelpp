@@ -33,6 +33,7 @@
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/concepts.hpp>
 
 #if defined(FEELPP_HAS_GMSH_H)
 #include <feel/feelfilters/geo.hpp>
@@ -82,7 +83,7 @@ using args_loadMesh_type = NA::arguments<
     typename na::verbose::template required_as_t<int>
     >;
 
-template <typename MeshType>
+template <FiltersMeshConcept MeshType>
 std::shared_ptr<MeshType>
 loadMeshImpl( args_loadMesh_type<MeshType> && args )
 {
@@ -141,10 +142,17 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
                 _mesh_ptrtype m( mesh );
                 m->setWorldComm( worldcomm );
                 m->loadHDF5( json_fname, update, scale );
-                if constexpr ( _mesh_type::nOrder > 1 )
+                if ( straighten )
                 {
-                    if ( straighten )
+                    if constexpr ( _mesh_type::is_order_dynamic )
+                    {
+                        if ( m->order() > 1 )
+                            return straightenMesh( m, worldcomm->subWorldCommPtr() );
+                    }
+                    else if constexpr ( _mesh_type::nOrder > 1 )
+                    {
                         return straightenMesh( m, worldcomm->subWorldCommPtr() );
+                    }
                 }
                 return m;
             }
@@ -248,10 +256,17 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
         m->loadHDF5( mesh_name.string(), update, scale );
-        if constexpr ( _mesh_type::nOrder > 1 )
+        if ( straighten )
         {
-            if ( straighten )
+            if constexpr ( _mesh_type::is_order_dynamic )
+            {
+                if ( m->order() > 1 )
+                    return straightenMesh( m, worldcomm->subWorldCommPtr() );
+            }
+            else if constexpr ( _mesh_type::nOrder > 1 )
+            {
                 return straightenMesh( m, worldcomm->subWorldCommPtr() );
+            }
         }
         return m;
     }
@@ -375,6 +390,7 @@ loadMesh( Ts && ... v )
                                                           NA::make_default_argument_invocable( _verbose, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm); } )
                                                           );
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    static_assert( FiltersMeshConcept<mesh_type>, "loadMesh requires a mesh-like type." );
 
     return loadMeshImpl<mesh_type>( std::move( args ) );
 }

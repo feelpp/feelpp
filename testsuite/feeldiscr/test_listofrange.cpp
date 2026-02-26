@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE( listofrange1 )
     BOOST_CHECK_SMALL( submesh2->measure()-measBoundaryRef,1e-12 );
 
     // projection
-    auto Vh = Pch<2>( mesh );
+    auto Vh = Pch<1>( mesh );
     auto u = Vh->element();
     u.on(_range=markedelements( mesh,myElementMarkers ),_expr=cst(3.) );
     double intu = integrate( _range=markedelements( mesh,myElementMarkers ), _expr=idv(u) ).evaluate()( 0,0 );
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE( listofrange1 )
     BOOST_CHECK_SMALL( evallinftyNorm2, 1e-12 );
 
     // interpolation operator
-    auto Wh = Pch<3>( mesh );
+    auto Wh = Pch<Dynamic>( mesh, RuntimeOrder{ 3 } );
     auto w = Wh->element();
     auto opI = opInterpolation( _domainSpace=Vh,_imageSpace=Wh,
                                 _range=markedfaces( mesh,myFaceMarkers ) );
@@ -124,6 +124,3 @@ BOOST_AUTO_TEST_CASE( listofrange1 )
 
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
-

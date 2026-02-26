@@ -47,8 +47,10 @@
 
 #include <concepts>
 #include <type_traits>
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <string>
 #include <vector>
 
 using namespace Feel;
@@ -228,6 +230,94 @@ void compareGeomapHessianStaticDynamicSimplex2D()
         }
         BOOST_CHECK_SMALL( max_err_h, tol );
     }
+}
+
+template<int Order>
+void compareGeomapMeshOpsStaticDynamicSimplex2D()
+{
+    using mesh_type = Mesh<Simplex<2, Order, 2>>;
+    using gm_static_type = typename mesh_type::gm_type;
+    using gm_dynamic_type = GeoMap<2, Dynamic, 2, double, Simplex>;
+    using size_type = typename mesh_type::size_type;
+
+    constexpr size_type gmc_context_v = vm::POINT | vm::JACOBIAN | vm::KB;
+    constexpr double tol = 1e-11;
+
+    auto mesh = std::make_shared<mesh_type>();
+    GmshSimplexDomain td( 2, Order );
+    td.setVersion( FEELPP_GMSH_FORMAT_VERSION );
+    td.setCharacteristicLength( doption( _name = "gmsh.hsize" ) );
+
+    auto fname = td.generate( ( std::string( "geomap_mesh_ops_order" ) + std::to_string( Order ) ).c_str() );
+    ImporterGmsh<mesh_type> import( fname );
+    import.setVersion( FEELPP_GMSH_FORMAT_VERSION );
+    mesh->accept( import );
+
+    mesh->components().set( MESH_CHECK | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+    mesh->updateForUse();
+
+    auto gm_static = mesh->gm();
+    auto gm_dynamic = std::make_shared<gm_dynamic_type>( RuntimeOrder{ Order } );
+
+    BOOST_REQUIRE_EQUAL( gm_static->order, Order );
+    BOOST_REQUIRE_EQUAL( gm_dynamic->order(), Order );
+
+    typename mesh_type::reference_convex_type ref_conv;
+    auto pc_static = gm_static->preCompute( ref_conv.points() );
+    auto pc_dynamic = gm_dynamic->preCompute( ref_conv.points() );
+
+    MeshInverse<mesh_type> meshinv( mesh );
+    meshinv.addPoints( mesh->points() );
+    meshinv.distribute();
+
+    double max_err_x = 0.0;
+    double max_err_J = 0.0;
+    double max_err_K = 0.0;
+    std::size_t n_points_checked = 0;
+
+    auto rangeElements = elements( *mesh );
+    for ( auto it = rangeElements.begin(), en = rangeElements.end(); it != en; ++it )
+    {
+        auto const& elt = unwrap_ref( *it );
+
+        auto gmc_static = gm_static->template context<gmc_context_v>( elt, pc_static );
+        auto gmc_dynamic = gm_dynamic->template context<gmc_context_v>( elt, pc_dynamic );
+        BOOST_REQUIRE( gmc_static );
+        BOOST_REQUIRE( gmc_dynamic );
+
+        const uint16_type npts = ref_conv.points().size2();
+        for ( uint16_type q = 0; q < npts; ++q )
+        {
+            auto x_static = gmc_static->xReal( q );
+            auto x_dynamic = gmc_dynamic->xReal( q );
+            for ( int c = 0; c < 2; ++c )
+                max_err_x = std::max( max_err_x, std::abs( x_static( c ) - x_dynamic( c ) ) );
+
+            max_err_J = std::max( max_err_J, std::abs( gmc_static->J( q ) - gmc_dynamic->J( q ) ) );
+            auto const& K_static = gmc_static->K( q );
+            auto const& K_dynamic = gmc_dynamic->K( q );
+            for ( int i = 0; i < 2; ++i )
+                for ( int j = 0; j < 2; ++j )
+                    max_err_K = std::max( max_err_K, std::abs( K_static( i, j ) - K_dynamic( i, j ) ) );
+        }
+
+        std::vector<boost::tuple<size_type, uint16_type>> itab;
+        meshinv.pointsInConvex( elt.id(), itab );
+        for ( auto const& pt : itab )
+        {
+            auto itref = meshinv.referenceCoords().find( boost::get<0>( pt ) );
+            BOOST_REQUIRE( itref != meshinv.referenceCoords().end() );
+            auto const& xref = itref->second;
+            auto const in_static = gmc_static->geometricMapping()->isIn( xref );
+            BOOST_CHECK( boost::get<0>( in_static ) );
+            ++n_points_checked;
+        }
+    }
+
+    BOOST_CHECK( n_points_checked > 0 );
+    BOOST_CHECK_SMALL( max_err_x, tol );
+    BOOST_CHECK_SMALL( max_err_J, tol );
+    BOOST_CHECK_SMALL( max_err_K, tol );
 }
 
 //=============================================================================
@@ -660,6 +750,11 @@ BOOST_AUTO_TEST_CASE( test_geomap_context_equivalence_simplex_2d_p3 )
     compareGeomapContextStaticDynamicSimplex2D<3>();
 }
 
+BOOST_AUTO_TEST_CASE( test_geomap_context_equivalence_simplex_2d_p4 )
+{
+    compareGeomapContextStaticDynamicSimplex2D<4>();
+}
+
 BOOST_AUTO_TEST_CASE( test_geomap_hessian_equivalence_simplex_2d_p1 )
 {
     compareGeomapHessianStaticDynamicSimplex2D<1>();
@@ -673,6 +768,30 @@ BOOST_AUTO_TEST_CASE( test_geomap_hessian_equivalence_simplex_2d_p2 )
 BOOST_AUTO_TEST_CASE( test_geomap_hessian_equivalence_simplex_2d_p3 )
 {
     compareGeomapHessianStaticDynamicSimplex2D<3>();
+}
+
+BOOST_AUTO_TEST_CASE( test_geomap_hessian_equivalence_simplex_2d_p4 )
+{
+    compareGeomapHessianStaticDynamicSimplex2D<4>();
+}
+
+//=============================================================================
+// SECTION 10: Static vs Dynamic Equivalence on Real Mesh Operations
+//=============================================================================
+
+BOOST_AUTO_TEST_CASE( test_geomap_mesh_ops_equivalence_simplex_2d_p1 )
+{
+    compareGeomapMeshOpsStaticDynamicSimplex2D<1>();
+}
+
+BOOST_AUTO_TEST_CASE( test_geomap_mesh_ops_equivalence_simplex_2d_p2 )
+{
+    compareGeomapMeshOpsStaticDynamicSimplex2D<2>();
+}
+
+BOOST_AUTO_TEST_CASE( test_geomap_mesh_ops_equivalence_simplex_2d_p3 )
+{
+    compareGeomapMeshOpsStaticDynamicSimplex2D<3>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

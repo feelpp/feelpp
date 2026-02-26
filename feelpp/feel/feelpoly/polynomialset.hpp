@@ -640,16 +640,7 @@ public:
     template<typename AE>
     matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
     {
-        matrix_type m;
-        // Use runtime order if it differs from compile-time order (indicates dynamic order usage)
-        if ( isUsingDynamicOrder() )
-        {
-            m = M_basis.evaluate( __pts, this->runtimeOrder() );
-        }
-        else
-        {
-            m = M_basis.evaluate( __pts );
-        }
+        matrix_type m = basisEvaluate( __pts );
         FEELPP_ASSERT( M_coeff.size2() == m.size1() )( M_coeff.size2() )( m.size1() ).error( "invalid size" );
         return ublas::prod( M_coeff, m );
     }
@@ -693,10 +684,7 @@ public:
     self_type derivate( uint16_type l ) const
     {
         matrix_type coeff;
-        if ( isUsingDynamicOrder() )
-            coeff = ublas::prod( M_coeff, M_basis.d( l, this->runtimeOrder() ) );
-        else
-            coeff = ublas::prod( M_coeff, M_basis.d( l ) );
+        coeff = ublas::prod( M_coeff, basisD( l ) );
 
         self_type deriv( Poly(), coeff, true );
         if constexpr ( is_order_dynamic )
@@ -707,16 +695,7 @@ public:
     template<typename AE>
     ublas::vector<matrix_type> derivate( ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der;
-        // Use runtime order if it differs from compile-time order
-        if ( isUsingDynamicOrder() )
-        {
-            der = M_basis.derivate( pts, this->runtimeOrder() );
-        }
-        else
-        {
-            der = M_basis.derivate( pts );
-        }
+        ublas::vector<matrix_type> der = basisDerivate( pts );
         ublas::vector<matrix_type> res( nDim );
 
         for ( uint16_type i = 0; i < nDim; ++i )
@@ -731,16 +710,7 @@ public:
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der;
-        // Use runtime order if it differs from compile-time order
-        if ( isUsingDynamicOrder() )
-        {
-            der = M_basis.derivate( pts, this->runtimeOrder() );
-        }
-        else
-        {
-            der = M_basis.derivate( pts );
-        }
+        ublas::vector<matrix_type> der = basisDerivate( pts );
         matrix_type res( M_coeff.size1(), pts().size2() );
         ublas::axpy_prod( M_coeff, der[i], res );
         return res;
@@ -750,16 +720,7 @@ public:
     ublas::matrix<matrix_type> derivate2( ublas::matrix_expression<AE> const& pts ) const
         {
             //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-            matrix_type eval;
-            // Use runtime order if it differs from compile-time order
-            if ( isUsingDynamicOrder() )
-            {
-                eval = M_basis.evaluate( pts, this->runtimeOrder() );
-            }
-            else
-            {
-                eval = M_basis.evaluate( pts );
-            }
+            matrix_type eval = basisEvaluate( pts );
 
             ublas::matrix<matrix_type> res( nDim, nDim );
 
@@ -767,21 +728,11 @@ public:
             {
                 for ( uint16_type j = 0; j < nDim; ++j )
                 {
-                    // Use runtime derivation matrix if dynamic order
-                    if ( isUsingDynamicOrder() )
-                    {
-                        matrix_type di = M_basis.d( i, this->runtimeOrder() );
-                        matrix_type dj = M_basis.d( j, this->runtimeOrder() );
-                        matrix_type p1 = ublas::prod( M_coeff, di );
-                        matrix_type p2 = ublas::prod( p1, dj );
-                        res( i, j ) = ublas::prod( p2, eval );
-                    }
-                    else
-                    {
-                        matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
-                        matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
-                        res( i, j ) = ublas::prod( p2, eval );
-                    }
+                    matrix_type di = basisD( i );
+                    matrix_type dj = basisD( j );
+                    matrix_type p1 = ublas::prod( M_coeff, di );
+                    matrix_type p2 = ublas::prod( p1, dj );
+                    res( i, j ) = ublas::prod( p2, eval );
                 }
             }
             return res;
@@ -790,24 +741,10 @@ public:
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
         //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-        matrix_type eval;
-        // Use runtime order if it differs from compile-time order
-        if ( isUsingDynamicOrder() )
-        {
-            eval = M_basis.evaluate( pts, this->runtimeOrder() );
-            matrix_type di = M_basis.d( i, this->runtimeOrder() );
-            matrix_type dj = M_basis.d( j, this->runtimeOrder() );
-            matrix_type p1 = ublas::prod( M_coeff, di );
-            matrix_type p2 = ublas::prod( p1, dj );
-            return ublas::prod( p2, eval );
-        }
-        else
-        {
-            eval = M_basis.evaluate( pts );
-            matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
-            matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
-            return ublas::prod( p2, eval );
-        }
+        matrix_type eval = basisEvaluate( pts );
+        matrix_type p1 = ublas::prod( M_coeff, basisD( i ) );
+        matrix_type p2 = ublas::prod( p1, basisD( j ) );
+        return ublas::prod( p2, eval );
     }
     /**
      * Gradient of the polynomial set
@@ -2608,6 +2545,38 @@ public:
     }
 
 protected:
+    template<typename AE>
+    matrix_type basisEvaluate( ublas::matrix_expression<AE> const& pts ) const
+    {
+        if ( isUsingDynamicOrder() )
+        {
+            if constexpr ( requires( basis_type const& b, decltype( pts ) p, uint16_type order ) { b.evaluate( p, order ); } )
+                return M_basis.evaluate( pts, this->runtimeOrder() );
+        }
+        return M_basis.evaluate( pts );
+    }
+
+    template<typename AE>
+    ublas::vector<matrix_type> basisDerivate( ublas::matrix_expression<AE> const& pts ) const
+    {
+        if ( isUsingDynamicOrder() )
+        {
+            if constexpr ( requires( basis_type const& b, decltype( pts ) p, uint16_type order ) { b.derivate( p, order ); } )
+                return M_basis.derivate( pts, this->runtimeOrder() );
+        }
+        return M_basis.derivate( pts );
+    }
+
+    matrix_type basisD( uint16_type i ) const
+    {
+        if ( isUsingDynamicOrder() )
+        {
+            if constexpr ( requires( basis_type const& b, uint16_type j, uint16_type order ) { b.d( j, order ); } )
+                return M_basis.d( i, this->runtimeOrder() );
+        }
+        return M_basis.d( i );
+    }
+
     //! Always store runtime order to support dynamic order from derived classes
     using order_storage_type = uint16_type;
 

@@ -32,6 +32,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
+#include <feel/feelfilters/concepts.hpp>
 
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
@@ -84,7 +85,7 @@ using args_createGMSHMesh_type = NA::arguments<
     typename na::directory::template required_as_t<std::string const&>
     >;
 
-template <typename MeshType>
+template <FiltersMeshConcept MeshType>
 std::shared_ptr<MeshType>
 createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
 {
@@ -103,7 +104,7 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
     {
         VLOG(1) << fmt::format( "[createGMSHMesh]: active om rank {}", worldcomm->isActive() );
         desc->setDimension( mesh->nDim );
-        desc->setOrder( mesh->nOrder );
+        desc->setOrder( mesh->order() );
         desc->setWorldComm( Environment::worldCommSeqPtr()/*worldcomm*/ );
         desc->setNumberOfPartitions( 1/*partitions*/ );
         desc->setPartitioner( (GMSH_PARTITIONER) partitioner );
@@ -148,7 +149,11 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
 
             if ( partitions > 1 )
             {
-                _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                _mesh_ptrtype _meshSeq;
+                if constexpr ( _mesh_type::is_order_dynamic )
+                    _meshSeq = std::make_shared<_mesh_type>( RuntimeOrder{ _mesh->order() }, "", Environment::worldCommSeqPtr() );
+                else
+                    _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
                 _meshSeq->accept( import );
                 _meshSeq->components().reset();
                 _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_UPDATE_FACES|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
@@ -183,10 +188,17 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
             _mesh->loadHDF5( fname, update, scale );
         }
 #endif
-        if constexpr ( _mesh_type::nOrder > 1 )
+        if ( straighten )
         {
-            if ( straighten )
+            if constexpr ( _mesh_type::is_order_dynamic )
+            {
+                if ( _mesh->order() > 1 )
+                    return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+            }
+            else if constexpr ( _mesh_type::nOrder > 1 )
+            {
                 return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+            }
         }
     }
     return _mesh;
@@ -231,6 +243,7 @@ createGMSHMesh( Ts && ... v )
     auto args = std::move( args1 ).add_default_arguments( NA::make_default_argument( _partitions, (worldcomm)?worldcomm->globalSize():1 ) );
 
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    static_assert( FiltersMeshConcept<mesh_type>, "createGMSHMesh requires a mesh-like type." );
     return createGMSHMesh<mesh_type>( std::move( args ) );
 }
 

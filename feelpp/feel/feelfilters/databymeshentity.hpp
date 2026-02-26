@@ -50,11 +50,11 @@ public :
     DataByMeshEntity( DataByMeshEntity const& ) = default;
     DataByMeshEntity( DataByMeshEntity && ) = default;
 
-    std::shared_ptr<mesh_base_type> mesh() const { return M_mesh; }
-    ElementsType entityType() const { return M_entityType; }
-    mapping_id2value_type const& entityIdToValue() const { return M_entityIdToValue; }
+    [[nodiscard]] std::shared_ptr<mesh_base_type> mesh() const { return M_mesh; }
+    [[nodiscard]] ElementsType entityType() const { return M_entityType; }
+    [[nodiscard]] mapping_id2value_type const& entityIdToValue() const { return M_entityIdToValue; }
 
-    std::optional<value_type> valueAtEntityIdIfExists( index_type id ) const
+    [[nodiscard]] std::optional<value_type> valueAtEntityIdIfExists( index_type id ) const
         {
             auto itFindVal = M_entityIdToValue.find( id );
             if ( itFindVal != M_entityIdToValue.end() )

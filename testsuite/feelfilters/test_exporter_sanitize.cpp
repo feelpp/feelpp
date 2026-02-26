@@ -23,6 +23,10 @@
 */
 #define BOOST_TEST_MODULE test_exporter_sanitize
 #include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <array>
+#include <string>
+#include <vector>
 
 
 #include <feel/feelfilters/loadmesh.hpp>
@@ -32,6 +36,19 @@
 
 /** use Feel namespace */
 using namespace Feel;
+namespace bdata = boost::unit_test::data;
+
+namespace
+{
+const std::array<std::string,2> sanitize_expectations = {{
+    "u",
+    "v_v"
+}};
+const std::array<std::size_t,2> sanitize_expectation_indices = {{
+    0,
+    1
+}};
+}
 
 inline
 po::options_description makeOptions()
@@ -61,7 +78,7 @@ makeAbout()
  BOOST_AUTO_TEST_SUITE( inner_suite )
 
 
-BOOST_AUTO_TEST_CASE( test_1 )
+BOOST_DATA_TEST_CASE( test_1, bdata::make( sanitize_expectation_indices ), expected_name_index )
 {
     auto mesh = unitSquare();
     auto Xh = Pch<1>(mesh);
@@ -73,13 +90,15 @@ BOOST_AUTO_TEST_CASE( test_1 )
 
     auto it = e->step(0)->beginNodal();
     auto en = e->step(0)->endNodal();
-    BOOST_CHECK( std::distance( it,en ) == 2 );
-    auto n = it->second.second[0][0]->name() ;
-    BOOST_MESSAGE( "1st name : " << n );
-    BOOST_CHECK_EQUAL(  n, "u" );
-    n = (++it)->second.second[0][0]->name() ;
-    BOOST_MESSAGE( "2nd name : " << n );
-    BOOST_CHECK_EQUAL(  n, "v_v" );
+    std::vector<std::string> sanitized_names;
+    for ( ; it != en; ++it )
+        sanitized_names.push_back( it->second.second[0][0]->name() );
+
+    BOOST_REQUIRE_EQUAL( sanitized_names.size(), sanitize_expectations.size() );
+    BOOST_TEST_CONTEXT( "index=" << expected_name_index )
+    {
+        BOOST_CHECK_EQUAL( sanitized_names.at( expected_name_index ), sanitize_expectations.at( expected_name_index ) );
+    }
 
     e->save();
 }

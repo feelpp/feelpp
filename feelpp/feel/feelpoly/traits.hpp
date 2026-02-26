@@ -25,6 +25,7 @@
 #define __FEELPP_POLY_TRAITS_HPP 1
 
 #include <concepts>
+#include <type_traits>
 #include <utility>
 
 #include <feel/feelmesh/traits.hpp>
@@ -36,15 +37,37 @@ class VectorialBase {};
 class Tensor2Base {};
 
 template<typename T>
-struct polynomial_order: std::integral_constant<int,T::nOrder> {};
+struct polynomial_order: std::integral_constant<int,
+                                                []() consteval -> int
+                                                {
+                                                    if constexpr ( requires { T::nOrder; } )
+                                                        return static_cast<int>( T::nOrder );
+                                                    else if constexpr ( requires { { T::order() } -> std::convertible_to<int>; } )
+                                                        return static_cast<int>( T::order() );
+                                                    else
+                                                    {
+                                                        static_assert( std::is_void_v<T>,
+                                                                       "polynomial_order<T> requires T::nOrder or static T::order()" );
+                                                        return 0;
+                                                    }
+                                                }()>
+{};
 
 template<typename T>
-constexpr bool polynomial_order_v = polynomial_order<T>::value;
+constexpr int polynomial_order_v = polynomial_order<T>::value;
 
 
 template<typename T>
-struct is_linear_polynomial: std::integral_constant<bool,T::is_linear> {};
-//struct is_linear_polynomial: std::integral_constant<bool,(polynomial_order_v<T> == 1)> {};
+struct is_linear_polynomial
+{
+    static constexpr bool value = []() consteval
+    {
+        if constexpr ( requires { T::is_linear; } )
+            return static_cast<bool>( T::is_linear );
+        else
+            return polynomial_order_v<T> == 1;
+    }();
+};
 
 template<typename T>
 constexpr bool is_linear_polynomial_v = is_linear_polynomial<T>::value;

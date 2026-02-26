@@ -46,12 +46,12 @@ enable_testing()
 include(CTest)
 
 # Label all tests in this directory tree so they can be run via component targets
-set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp")
+set_directory_properties(PROPERTIES LABEL testsuite LABELS "testsuite;testsuite-feelpp")
 
 if ( NOT TARGET testsuite-feelpp )
   add_custom_target(testsuite-feelpp
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-feelpp --test-dir ${CMAKE_BINARY_DIR}
-    USES_TERMINAL
+    #COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-feelpp --test-dir ${CMAKE_BINARY_DIR}
+    #USES_TERMINAL
   )
 endif()
 

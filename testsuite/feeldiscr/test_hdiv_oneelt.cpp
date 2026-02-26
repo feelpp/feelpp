@@ -276,7 +276,7 @@ void
     int check_size = Xh->nLocalDof()*Xh->nLocalDof();
     std::vector<double> checkidv( check_size );
     std::vector<double> checkform1( check_size );
-    std::vector<std::string> faces = boost::assign::list_of( "hypo" )( "vert" )( "hor" );
+    std::vector<std::string> faces = { "hypo", "vert", "hor" };
 
     std::vector<double> checkStokesidv( 2*Xh->nLocalDof() );
     std::vector<double> checkStokesform1( 2*Xh->nLocalDof() );

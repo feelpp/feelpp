@@ -89,6 +89,7 @@ public:
         BOOST_TEST_MESSAGE( "Setting up static order mesh (order=" << mesh_type::nOrder << ")" );
         M_mesh = createMesh();
         BOOST_CHECK( M_mesh != nullptr );
+        BOOST_CHECK_EQUAL( M_mesh->order(), mesh_type::nOrder );
     }
 
     /**
@@ -101,6 +102,7 @@ public:
         BOOST_TEST_MESSAGE( "Setting up dynamic order mesh (order=" << runtime_order.value << ")" );
         M_mesh = createMesh( runtime_order );
         BOOST_CHECK( M_mesh != nullptr );
+        BOOST_CHECK_EQUAL( M_mesh->order(), runtime_order.value );
     }
 
     //! @brief Get the mesh
@@ -193,7 +195,14 @@ public:
             // For higher order elements, the comparison is more complex
             // since G contains more points than the reference vertices
             auto xReal = __c->xReal();
-            if constexpr ( mesh_type::nOrder <= 1 )
+            const bool use_p1_vertex_equivalence = [&]() {
+                if constexpr ( is_order_static )
+                    return mesh_type::nOrder <= 1;
+                else
+                    return order() <= 1;
+            }();
+
+            if ( use_p1_vertex_equivalence )
             {
                 BOOST_CHECK( ublas::norm_frobenius( xReal - elt.G() ) < 1e-15 );
             }
@@ -373,7 +382,11 @@ BOOST_AUTO_TEST_CASE( test_mesh_static_order_p2_elements )
 // Dynamic Order Tests (order set at runtime)
 //==============================================================================
 
-#if 0  // Enable when dynamic order mesh infrastructure is complete
+// NOTE:
+// Mesh<Simplex<..., Dynamic>> is not yet fully supported in the mesh core
+// (GeoElement/Mesh2D type stack). Keep these tests disabled until core support
+// is completed. Dynamic geometric-order parity is covered in feeldiscr/geomap tests.
+#if 0
 BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p1_filters )
 {
     using namespace Feel;
@@ -430,6 +443,28 @@ BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p2_elements )
     test_fixture.testElements();
 }
 
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p1_components )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    BOOST_TEST_MESSAGE( "Testing dynamic order P1 mesh components" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( RuntimeOrder(1), 0.5 );
+    test_fixture.testComponents();
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p2_components )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    BOOST_TEST_MESSAGE( "Testing dynamic order P2 mesh components" );
+
+    test_mesh_detail::MeshTestFixture<mesh_type> test_fixture( RuntimeOrder(2), 0.5 );
+    test_fixture.testComponents();
+}
+
 BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency )
 {
     using namespace Feel;
@@ -462,6 +497,33 @@ BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency )
     dynamic_test_fixture.testElements();
 
     BOOST_TEST_MESSAGE( "Static and dynamic order meshes are consistent" );
+}
+
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency_p2 )
+{
+    using namespace Feel;
+
+    BOOST_TEST_MESSAGE( "Testing consistency between static and dynamic order meshes (P2)" );
+
+    constexpr double meshSize = 0.5;
+
+    using static_mesh_type = Mesh<Simplex<2, 2>>;
+    test_mesh_detail::MeshTestFixture<static_mesh_type> static_test_fixture( meshSize );
+
+    using dynamic_mesh_type = Mesh<Simplex<2, Dynamic>>;
+    test_mesh_detail::MeshTestFixture<dynamic_mesh_type> dynamic_test_fixture( RuntimeOrder(2), meshSize );
+
+    BOOST_CHECK_EQUAL( static_test_fixture.order(), 2 );
+    BOOST_CHECK_EQUAL( dynamic_test_fixture.order(), 2 );
+    BOOST_CHECK_EQUAL( static_test_fixture.mesh()->numElements(),
+                       dynamic_test_fixture.mesh()->numElements() );
+
+    static_test_fixture.testFilters();
+    dynamic_test_fixture.testFilters();
+    static_test_fixture.testElements();
+    dynamic_test_fixture.testElements();
+
+    BOOST_TEST_MESSAGE( "Static and dynamic order P2 meshes are consistent" );
 }
 #endif
 

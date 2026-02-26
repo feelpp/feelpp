@@ -29,6 +29,9 @@
 #ifndef __expansions_H
 #define __expansions_H 1
 
+#include <cmath>
+#include <limits>
+
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelpoly/jacobi.hpp>
@@ -146,6 +149,7 @@ struct eta<TRIANGLE, T>
 {
     typedef T value_type;
     typedef typename node<value_type>::type node_type;
+    static constexpr value_type boundary_tolerance = value_type( 64 ) * std::numeric_limits<value_type>::epsilon();
 
     eta()
         :
@@ -156,22 +160,24 @@ struct eta<TRIANGLE, T>
         :
         M_eta( 2 )
     {
-        if ( xi[1] == 1.0 )
+        const value_type den = value_type( 1 ) - xi[1];
+        if ( std::abs( den ) <= boundary_tolerance )
             M_eta[0] = -1.0;
 
         else
-            M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / ( 1.0 - xi[1] ) - 1.0;
+            M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / den - 1.0;
 
         M_eta[1] = xi[1];
     }
 
     node_type const& operator()( node_type const& xi )
     {
-        if ( xi[1] == 1.0 )
+        const value_type den = value_type( 1 ) - xi[1];
+        if ( std::abs( den ) <= boundary_tolerance )
             M_eta[0] = -1.0;
 
         else
-            M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / ( 1.0 - xi[1] ) - 1.0;
+            M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / den - 1.0;
 
         M_eta[1] = xi[1];
         return M_eta;
@@ -187,6 +193,7 @@ struct etas<TRIANGLE, T>
 {
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
+    static constexpr value_type boundary_tolerance = value_type( 64 ) * std::numeric_limits<value_type>::epsilon();
 
     etas()
         :
@@ -199,11 +206,12 @@ struct etas<TRIANGLE, T>
     {
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
-            if ( xi( 1, i ) == 1.0 )
+            const value_type den = value_type( 1 ) - xi( 1, i );
+            if ( std::abs( den ) <= boundary_tolerance )
                 M_eta( 0, i ) = -1.0;
 
             else
-                M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / ( 1.0 - xi( 1, i ) ) - 1.0;
+                M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / den - 1.0;
 
             M_eta( 1, i ) = xi( 1, i );
         }
@@ -216,11 +224,12 @@ struct etas<TRIANGLE, T>
 
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
-            if ( xi( 1, i ) == 1.0 )
+            const value_type den = value_type( 1 ) - xi( 1, i );
+            if ( std::abs( den ) <= boundary_tolerance )
                 M_eta( 0, i ) = -1.0;
 
             else
-                M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / ( 1.0 - xi( 1, i ) ) - 1.0;
+                M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / den - 1.0;
 
             M_eta( 1, i ) = xi( 1, i );
         }
@@ -239,6 +248,7 @@ struct etas<TETRAHEDRON, T>
 {
     typedef T value_type;
     typedef typename matrix_node<value_type>::type matrix_node_type;
+    static constexpr value_type boundary_tolerance = value_type( 64 ) * std::numeric_limits<value_type>::epsilon();
 
     etas()
         :
@@ -251,17 +261,19 @@ struct etas<TETRAHEDRON, T>
     {
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
-            if ( xi( 1, i ) + xi( 2, i ) == 0. )
+            const value_type den0 = xi( 1, i ) + xi( 2, i );
+            if ( std::abs( den0 ) <= boundary_tolerance )
                 M_eta( 0, i ) = 1.;
 
             else
-                M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / ( xi( 1, i ) + xi( 2, i ) ) - 1.;
+                M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / den0 - 1.;
 
-            if ( xi( 2, i ) == 1. )
+            const value_type den1 = value_type( 1 ) - xi( 2, i );
+            if ( std::abs( den1 ) <= boundary_tolerance )
                 M_eta( 1, i ) = -1.;
 
             else
-                M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / ( 1. - xi( 2, i ) ) - 1.;
+                M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / den1 - 1.;
 
             M_eta( 2, i ) = xi( 2, i );
         }
@@ -273,17 +285,19 @@ struct etas<TETRAHEDRON, T>
 
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
-            if ( xi( 1, i ) + xi( 2, i ) == 0. )
+            const value_type den0 = xi( 1, i ) + xi( 2, i );
+            if ( std::abs( den0 ) <= boundary_tolerance )
                 M_eta( 0, i ) = 1.;
 
             else
-                M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / ( xi( 1, i ) + xi( 2, i ) ) - 1.;
+                M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / den0 - 1.;
 
-            if ( xi( 2, i ) == 1. )
+            const value_type den1 = value_type( 1 ) - xi( 2, i );
+            if ( std::abs( den1 ) <= boundary_tolerance )
                 M_eta( 1, i ) = -1.;
 
             else
-                M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / ( 1. - xi( 2, i ) ) - 1.;
+                M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / den1 - 1.;
 
             M_eta( 2, i ) = xi( 2, i );
         }

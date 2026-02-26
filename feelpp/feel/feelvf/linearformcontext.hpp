@@ -320,16 +320,14 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 #if !defined(NDEBUG)
         CHECK( M_test_dof->mesh()->isBoundaryElement( M_gmc_left->id() ) ) << "element in context must be on boundary";
 #endif
-        const auto rtNDof = [&]() -> uint16_type
-        {
-            const auto testCtx = fusion::at_key<gmc<0> >( M_test_fec );
-            if constexpr ( requires { testCtx->nDofs(); } )
-                return static_cast<uint16_type>( testCtx->nDofs() );
-            return static_cast<uint16_type>( M_test_dof->nLocalDof() );
-        }();
-        if ( M_rep_mortar.size() != rtNDof - 1 )
-            M_rep_mortar = mortar_local_vector_type::Zero( rtNDof - 1 );
-        for ( uint16_type i = 0; i < rtNDof - 1; ++i )
+        // For mortar spaces, use the runtime local dof count on the current boundary element.
+        // This avoids underflow/mismatch when dynamic dof metadata differs from historical rtNDof-1 logic.
+        const auto nLocalDofOnElt = static_cast<uint16_type>(
+                                        M_test_dof->localToGlobalIndices( M_gmc_left->id(),
+                                                                          M_form.dofIdToContainerId() ).size() );
+        if ( M_rep_mortar.size() != nLocalDofOnElt )
+            M_rep_mortar = mortar_local_vector_type::Zero( nLocalDofOnElt );
+        for ( uint16_type i = 0; i < nLocalDofOnElt; ++i )
         {
             M_rep_mortar( i ) = M_integrator( *M_eval0_expr, i, 0, 0 );
         }
@@ -414,17 +412,20 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
         CHECK( M_test_dof->mesh()->isBoundaryElement( M_gmc_left->id() ) ) << "element in context must be on boundary";
 #endif
         // Resize M_rep_mortar for dynamic-size types
-        if ( M_rep_mortar.size() != rtNDof - 1 )
-            M_rep_mortar = mortar_local_vector_type::Zero( rtNDof - 1 );
+        const auto nLocalDofOnElt = static_cast<uint16_type>(
+                                        M_test_dof->localToGlobalIndices( M_gmc_left->id(),
+                                                                          M_form.dofIdToContainerId() ).size() );
+        if ( M_rep_mortar.size() != nLocalDofOnElt )
+            M_rep_mortar = mortar_local_vector_type::Zero( nLocalDofOnElt );
 
         if ( isFirstExperience )
-            for ( uint16_type i = 0; i < rtNDof - 1; ++i )
+            for ( uint16_type i = 0; i < nLocalDofOnElt; ++i )
             {
                 M_rep_mortar( i ) = M_integrator( *M_eval0_expr, i, 0, 0, indexLocalToQuad );
             }
 
         else
-            for ( uint16_type i = 0; i < rtNDof - 1; ++i )
+            for ( uint16_type i = 0; i < nLocalDofOnElt; ++i )
             {
                 M_rep_mortar( i ) += M_integrator( *M_eval0_expr, i, 0, 0, indexLocalToQuad );
             }

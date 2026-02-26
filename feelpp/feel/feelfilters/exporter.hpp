@@ -166,24 +166,24 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static std::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
-                                                         std::string prefix,
-                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    [[nodiscard]] static std::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
+                                                                      std::string prefix,
+                                                                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
-                                                         std::string prefix = Environment::about().appName(),
-                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    [[nodiscard]] static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
+                                                                      std::string prefix = Environment::about().appName(),
+                                                                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
      */
-    static std::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
-                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    [[nodiscard]] static std::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
+                                                                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}
 
@@ -397,7 +397,7 @@ public:
             M_use_single_transient_file = s;
         }
     void
-    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_STATIC )
         {
             M_ex_geometry = exgeo;
             M_ts_set.back()->setMesh( mesh );
@@ -410,9 +410,9 @@ public:
     //! \param u scalar quantity to be exported
     //! \param cst true if the scalar is constant over time, false otherwise
     template<typename T>
+        requires std::is_floating_point_v<T>
     void
-    add( std::string const& name, T const& u, bool cst = false,
-         typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr )
+    add( std::string const& name, T const& u, bool cst = false )
         {
             this->step( 0 )->add( name, u, cst );
         }
@@ -423,9 +423,9 @@ public:
     //! \param u the field (element of function space)
     //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename F>
+        requires is_functionspace_element_v<F>
     void
-    add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if<is_functionspace_element_v<F>>::type* = nullptr )
+    add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "" )
         {
             this->step( 0 )->add( name, u, reps );
         }
@@ -436,9 +436,9 @@ public:
     //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
     //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename ExprT>
+        requires std::is_base_of_v<ExprBase,ExprT>
     void
-    add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+    add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "" )
     {
         this->step( 0 )->add( name, expr, reps );
     }
@@ -450,9 +450,9 @@ public:
     //! \param rangeElt collection of mesh element
     //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
+        requires ( std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> )
     void
-    add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> >* = nullptr )
+    add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "" )
     {
         this->step( 0 )->add( name, expr, rangeElt, reps );
     }
@@ -467,12 +467,12 @@ public:
     /**
      * @return the step shared_ptr at time \p time
      */
-    step_ptrtype step( double time )
+    [[nodiscard]] step_ptrtype step( double time )
     {
         CHECK( !M_ts_set.empty() ) << "timeset is empty";
         return this->step( time, M_ts_set.size() -1 );
     }
-    step_ptrtype step( double time, int s )
+    [[nodiscard]] step_ptrtype step( double time, int s )
     {
         CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
         timeset_ptrtype __ts = M_ts_set[s];

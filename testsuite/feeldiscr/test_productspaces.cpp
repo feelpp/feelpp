@@ -116,6 +116,50 @@ makeAbout()
      ex->save();
  }
 
+BOOST_AUTO_TEST_CASE( test_dynamic_static_mix )
+{
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto b = backend( _rebuild=true );
+
+    auto Xh = Pch<1>( mesh );
+    auto Yh = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
+
+    BOOST_CHECK_EQUAL( Yh->runtimeOrder(), 2 );
+
+    auto ps = product( Xh, Yh );
+    BOOST_CHECK_EQUAL( ps.numberOfSpaces(), 2 );
+    BOOST_CHECK_EQUAL( ps[0_c]->nDof(), Xh->nDof() );
+    BOOST_CHECK_EQUAL( ps[1_c]->nDof(), Yh->nDof() );
+
+    auto U = ps.element();
+    auto u = Xh->element();
+    auto v = Yh->element();
+    auto a = blockform2( ps, solve::strategy::monolithic, b );
+    auto l = blockform1( ps, solve::strategy::monolithic, b );
+
+    a( 0_c, 0_c ) += integrate( _range=elements( mesh ), _expr=idt( u )*id( u ) );
+    a( 1_c, 1_c ) += integrate( _range=elements( mesh ), _expr=idt( v )*id( v ) );
+    l( 0_c ) += integrate( _range=elements( mesh ), _expr=cst( 1. )*id( u ) );
+    l( 1_c ) += integrate( _range=elements( mesh ), _expr=cst( 2. )*id( v ) );
+
+    a.close();
+    l.close();
+
+    BOOST_CHECK_GT( l.vectorPtr()->getVector()->l2Norm(), 0.0 );
+
+    a.solve( _solution=U, _rhs=l );
+
+    auto const errU = normL2( _range=elements( mesh ), _expr=idv( U(0_c) )-cst( 1. ) );
+    auto const errV = normL2( _range=elements( mesh ), _expr=idv( U(1_c) )-cst( 2. ) );
+    BOOST_CHECK_SMALL( errU, 1e-8 );
+    BOOST_CHECK_SMALL( errV, 1e-8 );
+
+    auto psRev = product( Yh, Xh );
+    BOOST_CHECK_EQUAL( psRev.numberOfSpaces(), 2 );
+    BOOST_CHECK_EQUAL( psRev[0_c]->nDof(), Yh->nDof() );
+    BOOST_CHECK_EQUAL( psRev[1_c]->nDof(), Xh->nDof() );
+}
+
 BOOST_AUTO_TEST_CASE( test3 )
 {
     using namespace Feel;

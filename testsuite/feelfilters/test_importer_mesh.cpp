@@ -26,6 +26,9 @@
 #define BOOST_TEST_MODULE importer mesh testsuite
 
 #include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <array>
+#include <type_traits>
 
 #include <feel/feelfilters/loadmesh.hpp>
 
@@ -33,12 +36,35 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( test_importer_mesh )
 
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+namespace bdata = boost::unit_test::data;
 using namespace Feel;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_scale, T, dim_types )
+template <typename Callable>
+void runForDim( int dim, Callable&& c )
 {
-    typedef Mesh<Simplex<T::value> > mesh_type;
+    switch ( dim )
+    {
+    case 1:
+        c( std::integral_constant<int,1>{} );
+        break;
+    case 2:
+        c( std::integral_constant<int,2>{} );
+        break;
+    case 3:
+        c( std::integral_constant<int,3>{} );
+        break;
+    default:
+        BOOST_FAIL( "Unsupported dimension " << dim );
+    }
+}
+
+BOOST_DATA_TEST_CASE( test_scale, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
+{
+    BOOST_TEST_CONTEXT( "dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+    using mesh_type = Mesh<Simplex<decltype( d )::value>>;
     auto mesh = loadMesh( _mesh=new mesh_type);
     double scalingUsed = 10;
     auto meshWithScale = loadMesh( _mesh=new mesh_type,
@@ -57,6 +83,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_scale, T, dim_types )
     auto meshHDF5 = loadMesh( _mesh=new mesh_type,_filename=filenameHDF5,_scale=scalingUsed3);
     double volumeHDF5 = meshHDF5->measure();
     BOOST_CHECK_CLOSE( volume*std::pow(scalingUsed2*scalingUsed3, mesh_type::nDim), volumeHDF5, 1e-10 );
+        } );
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

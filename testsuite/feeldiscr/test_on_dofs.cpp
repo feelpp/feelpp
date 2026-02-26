@@ -127,7 +127,7 @@ void runTestElimination()
 }
 
 
-template<int Dim, int PolyOrder=1,template<class Convex, uint16_type Order, typename T> class PointSetT = PointSetFekete>
+template<int Dim, int PolyOrder=1,template<class Convex, int Order, typename T> class PointSetT = PointSetFekete>
 void runTestAssignMeshRelated()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim,1>>);
@@ -209,4 +209,3 @@ BOOST_AUTO_TEST_CASE( elimination_3d )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

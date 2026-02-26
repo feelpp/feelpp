@@ -734,24 +734,5 @@ ExporterVTK<MeshType,N>::updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDat
 }
 #endif
 
-#if 0
-#if defined( FEELPP_INSTANTIATION_MODE )
-
-//
-// explicit instances
-//
-
-# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-# define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-// exporter VTK
-# define FACTORY(LDIM,LORDER,ORDERFUN) template class ExporterVTK<Mesh<Simplex<LDIM,LORDER,LDIM> >, ORDERFUN >;
-# define FACTORY_OP(_, GDO) FACTORY GDO
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_OP, 3, ( DIMS, ORDERS, ORDERS_FUN_GMSH ) )
-
-#endif // FEELPP_INSTANTIATION_MODE
-#endif
 }
 #endif // __EXPORTERVTK_CPP

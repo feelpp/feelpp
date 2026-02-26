@@ -677,7 +677,10 @@ private :
                     return static_cast<int>( std::remove_reference_t<decltype( *fePtr )>::nLocalDof );
             };
             const int domainLocalDofPerComp = localDofPerComp( M_XhDomain->fe() );
-            const int imageLocalDofPerComp = localDofPerComp( image_fe );
+            // Storage columns must match the image FE dof indexing used in
+            // interpolateBasisFunction(..., mapExprPointToDofPoint), which
+            // targets the full image FE local dof numbering.
+            const int imageLocalDofPerComp = localDofPerComp( M_XhImage->fe() );
             const int nRows = fe_type::is_product ? fe_type::nComponents * domainLocalDofPerComp
                                                   : domainLocalDofPerComp;
             const int nCols = image_fe_type::is_product ? image_fe_type::nComponents * imageLocalDofPerComp
@@ -781,7 +784,10 @@ private :
                     return static_cast<int>( std::remove_reference_t<decltype( *fePtr )>::nLocalDof );
             };
             const int domainLocalDofPerComp = localDofPerComp( M_XhDomain->fe() );
-            const int imageLocalDofPerComp = localDofPerComp( image_fe );
+            // Storage columns must match the image FE dof indexing used in
+            // interpolateBasisFunction(..., mapExprPointToDofPoint), which
+            // targets the full image FE local dof numbering.
+            const int imageLocalDofPerComp = localDofPerComp( M_XhImage->fe() );
             const int nRows = fe_type::is_product ? fe_type::nComponents * domainLocalDofPerComp
                                                   : domainLocalDofPerComp;
             const int nCols = image_fe_type::is_product ? image_fe_type::nComponents * imageLocalDofPerComp

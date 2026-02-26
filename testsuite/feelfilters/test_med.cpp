@@ -27,18 +27,48 @@
    \date 2016-12-01
  */
 
-#define USE_BOOST_TEST 1
-//#undef USE_BOOST_TEST
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE med
 #include <feel/feelcore/testsuite.hpp>
-#endif
-
+#include <boost/test/data/test_case.hpp>
+#include <array>
+#include <cmath>
 #include <string>
 
 #include <feel/feelfilters/loadmesh.hpp>
 
 using namespace Feel;
+namespace bdata = boost::unit_test::data;
+
+namespace
+{
+using mesh_type = Mesh<Simplex<3>>;
+
+const std::array<std::string,2> med_default_files = {{
+    "data/geo/Cylref.med",
+    "data/geo/tripod.med"
+}};
+
+void checkLoadMedMesh( std::string const& filename )
+{
+    std::string resolved = Environment::findFile( filename );
+    BOOST_REQUIRE_MESSAGE( !resolved.empty(), "Unable to resolve MED file '" << filename << "'" );
+    BOOST_REQUIRE_MESSAGE( fs::exists( resolved ), "MED file does not exist: '" << resolved << "'" );
+
+    auto mesh = loadMesh( _mesh=new mesh_type,
+                          _filename=resolved,
+                          _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+    BOOST_REQUIRE_MESSAGE( mesh, "MED mesh load returned null for '" << resolved << "'" );
+
+    BOOST_CHECK_GT( mesh->numVertices(), 0 );
+    BOOST_CHECK_GT( mesh->numFaces(), 0 );
+    BOOST_CHECK_GT( mesh->numEdges(), 0 );
+    BOOST_CHECK_GT( mesh->numElements(), 0 );
+
+    double meshMeasure = mesh->measure();
+    BOOST_CHECK( std::isfinite( meshMeasure ) );
+    BOOST_CHECK_GT( meshMeasure, 0.0 );
+}
+}
 
 inline
 Feel::po::options_description
@@ -46,7 +76,7 @@ makeOptions()
 {
     Feel::po::options_description medoptions("Med options");
     medoptions.add_options()
-        ("medfile", Feel::po::value<std::string>()->default_value( "test_med.med" ), "name of the input MED file")
+        ( "med.filename", Feel::po::value<std::string>()->default_value( "data/geo/Cylref.med" ), "name of the input MED file" )
         ;
     return medoptions.add( Feel::feel_options() );
 }
@@ -66,59 +96,24 @@ makeAbout()
     return about;
 
 }
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+BOOST_AUTO_TEST_SUITE( inner_suite )
 
-void runTest0()
+BOOST_DATA_TEST_CASE( test_default_med_files, bdata::make( med_default_files ), medfile )
 {
-    typedef Mesh<Simplex<3> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
-    mesh_ptrtype mesh;
-    std::string filename = soption(_name="gmsh.filename");
-    Feel::cout << "Loading " << filename << std::endl;
-
-    if ( !filename.empty() )
+    BOOST_TEST_CONTEXT( "medfile=" << medfile )
     {
-        mesh = loadMesh( _mesh=new mesh_type,
-			 _filename=filename,
-			 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-
-	if ( Environment::isMasterRank() )
-	  {
-	    std::cout << "Number of vertices in mesh : " << mesh->numVertices() << std::endl;
-	    std::cout << "Number of faces in mesh : " << mesh->numFaces() << std::endl;
-	    std::cout << "Number of edges in mesh : " << mesh->numEdges() << std::endl;
-	    std::cout << "Number of elts in mesh : " << mesh->numElements() << std::endl;
-	  }
-	
-        // Feel::cout << "Markers:" << std::endl;
-        // for (auto marker:  mesh->markerNames() )
-        // {
-        //     auto name = marker.first;
-        //     auto data = marker.second;
-        //     Feel::cout << "\t" << name << " dim=" << data[1] << " (" << name.size() << ")\n";
-        // }
-        // Feel::cout << std::endl;
+        checkLoadMedMesh( medfile );
     }
 }
 
-
-#if defined(USE_BOOST_TEST)
-
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
-BOOST_AUTO_TEST_SUITE( inner_suite )
-BOOST_AUTO_TEST_CASE( test_0 )
+BOOST_AUTO_TEST_CASE( test_configured_med_file )
 {
-    runTest0();
+    auto configuredMedFile = soption( _name="med.filename" );
+    BOOST_TEST_CONTEXT( "med.filename=" << configuredMedFile )
+    {
+        checkLoadMedMesh( configuredMedFile );
+    }
 }
+
 BOOST_AUTO_TEST_SUITE_END()
-#else
-
-int main( int argc, char* argv[] )
-{
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=makeAbout() );
-    runTest0();
-}
-#endif

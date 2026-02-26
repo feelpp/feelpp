@@ -189,7 +189,7 @@ void defExporter(py::module &m)
            &exporter_impl<MeshT,Order>,
            py::arg("mesh"),
            py::arg("name") = "Exporter",
-           py::arg("geo") = "change_coords_only",
+           py::arg("geo") = "static",
            "create an Exporter object" );
 }
     

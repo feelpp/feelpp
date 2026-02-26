@@ -29,6 +29,8 @@
 #if !defined(FEELPP_DETAIL_MESH_HPP)
 #define FEELPP_DETAIL_MESH_HPP 1
 
+#include <type_traits>
+
 #if 0
 namespace Feel {
 
@@ -45,9 +47,9 @@ struct mesh
                 >::type
             >::type
     >::type _type;
-typedef typename mpl::if_<is_shared_ptr<_type>,
-                          mpl::identity<typename _type::element_type>,
-                          mpl::identity<_type> >::type::type type;
+using type = std::conditional_t<is_shared_ptr<_type>,
+                                typename _type::element_type,
+                                _type>;
 typedef std::shared_ptr<type> ptrtype;
 };
 

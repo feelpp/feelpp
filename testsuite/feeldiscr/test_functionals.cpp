@@ -45,7 +45,7 @@
 #include <feel/feelvf/print.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/dh.hpp>
-#include <feel/feeldiscr/odh.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 
 using namespace Feel;
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( test_projection_hdiv_rt )
         BOOST_TEST_MESSAGE( "n elements of extracted element " << element.id() << " : " << nelements( elements(mesh_element)  ) );
         auto mesh_face = createSubmesh( _mesh=mesh_element, _range=boundaryfaces( mesh_element ), _worldcomm=Environment::worldCommSeqPtr() );
         BOOST_TEST_MESSAGE( "n boundary faces in extracted element " << element.id() << " : " << nelements( elements(mesh_face)  ) );
-        auto Ph = Odh<0>( mesh_face );
+        auto Ph = Pdh<0>( mesh_face );
         BOOST_TEST_MESSAGE( "dimension of Ph : " << Ph->nLocalDof() );
         auto p = Ph->element();
         auto l = form1( _test=Ph );

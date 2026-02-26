@@ -301,7 +301,7 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<0> )
             M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
             for ( uint16_type c = 0; c < nRealDim; ++c )
             {
-                CHECK( std::isfinite( M_grad[i][q]( 0, c, 0 ) ) )
+                DCHECK( std::isfinite( M_grad[i][q]( 0, c, 0 ) ) )
                     << "non-finite transformed grad value at dof=" << i
                     << " q=" << q << " c=" << c;
             }

@@ -34,6 +34,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <type_traits>
 
 #include <cstring>
 #ifdef FEELPP_HAS_LIBXML2
@@ -155,54 +156,21 @@ public :
     typedef vtkUnstructuredGridWriter vtkoutwriter_type;
 
     /* Compute face type from mesh parameters */
-    typedef typename
-    /* face type */
-    /* if (Mdim == 1) */
-    mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<1> >,
-        mpl::identity<vtkVertex>,
-        /* if (Mdim == 2) */
-        typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<2> >,
-            /* if(MShape == SHAPE_TRIANGLE) */
-            mpl::identity<vtkLine>,
-            /* if (Mdim == 3) */
-            typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3> >,
-                /* if(MShape == SHAPE_TETRA) */
-                typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::Shape>, mpl::size_t<SHAPE_TETRA> >,
-                    mpl::identity<vtkTriangle>,
-                    mpl::identity<vtkQuad>
-                >::type,
-                /* We should normally not reach this case */
-                /* anyway we set a default vtkTriangle for face type */
-                mpl::identity<vtkTriangle>
-            >::type
-        >::type
-    >::type::type vtkface_type;
+    using vtkface_type =
+        std::conditional_t<MeshType::nDim == 1, vtkVertex,
+        std::conditional_t<MeshType::nDim == 2, vtkLine,
+        std::conditional_t<MeshType::nDim == 3,
+            std::conditional_t<MeshType::Shape == SHAPE_TETRA, vtkTriangle, vtkQuad>,
+            vtkTriangle>>>;
 
     /* Compute element type from the parameters */
-    typedef typename
-    /* if (Mdim == 1) */
-    mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<1> >,
-        mpl::identity<vtkLine>,
-        /* if (Mdim == 2) */
-        typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<2> >,
-            /* if(MShape == SHAPE_TRIANGLE) */
-            typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::Shape>, mpl::size_t<SHAPE_TRIANGLE> >,
-                mpl::identity<vtkTriangle>,
-                mpl::identity<vtkQuad>
-            >::type,
-            /* if (Mdim == 3) */
-            typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>, mpl::int_<3> >,
-                /* if(MShape == SHAPE_TETRA) */
-                typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::Shape>, mpl::size_t<SHAPE_TETRA> >,
-                    mpl::identity<vtkTetra>,
-                    mpl::identity<vtkHexahedron>
-                >::type,
-                /* We should normally not reach this case */
-                /* anyway we set a default vtkTetra for face type */
-                mpl::identity<vtkTetra>
-            >::type
-        >::type
-    >::type::type vtkelement_type;
+    using vtkelement_type =
+        std::conditional_t<MeshType::nDim == 1, vtkLine,
+        std::conditional_t<MeshType::nDim == 2,
+            std::conditional_t<MeshType::Shape == SHAPE_TRIANGLE, vtkTriangle, vtkQuad>,
+        std::conditional_t<MeshType::nDim == 3,
+            std::conditional_t<MeshType::Shape == SHAPE_TETRA, vtkTetra, vtkHexahedron>,
+            vtkTetra>>>;
 
     //@}
 

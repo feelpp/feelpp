@@ -160,7 +160,7 @@ Test<Dim,Order>::run()
     double error = integrate( _range=elements( Th->mesh() ), _expr=idv( t )-idv( g_trace ) ).evaluate()( 0,0 );
     std::cout << " -- |op_trace-trace|  =" << error << "\n";
 
-    std::vector<std::string> bdynames = boost::assign::list_of( "Dirichlet" )( "Neumann" );
+    std::vector<std::string> bdynames = { "Dirichlet", "Neumann" };
     for( auto bdy : bdynames )
     {
         std::cout << "============================================================\n";

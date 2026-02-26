@@ -284,7 +284,7 @@ TestHCurlOneElt::shape_functions( std::string one_element_mesh )
     int check_size = Xh->nLocalDof()*Xh->nLocalDof();
     std::vector<double> checkidv( check_size );
     std::vector<double> checkform1( check_size );
-    std::vector<std::string> edges = boost::assign::list_of( "hypo" )( "vert" )( "hor" );
+    std::vector<std::string> edges = { "hypo", "vert", "hor" };
 
     std::vector<double> checkStokesidv( 2*Xh->nLocalDof() );
     std::vector<double> checkStokesform1( 2*Xh->nLocalDof() );
